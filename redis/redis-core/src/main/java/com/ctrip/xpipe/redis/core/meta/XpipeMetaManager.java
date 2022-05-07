@@ -4,9 +4,11 @@ package com.ctrip.xpipe.redis.core.meta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -129,20 +131,25 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<RouteMeta> routes(String currentDc, String tag) { return read(()->doGetRoutes(currentDc, tag)); }
 	List<RouteMeta> doGetRoutes(String currentDc, String tag);
 
-	default RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) { return read(()->doGetRandomRoute(currentDc, tag, orgId, dstDc)); }
-	RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc);
-
 	default List<RouteMeta>  metaRoutes(String currentDc){
 		return routes(currentDc, Route.TAG_META);
-	}
-
-	default RouteMeta metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
-		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
 	default List<RouteMeta> consoleRoutes(String currentDc) {
 		return routes(currentDc, Route.TAG_CONSOLE);
 	}
+
+	default Map<String, RouteMeta> chooseMetaRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+							Map<String, List<RouteMeta>> clusterPrioritizedRoutes, RouteChooseStrategy strategy) {
+		return chooseRoutes(clusterName, srcDc, dstDcs, orgId, Route.TAG_META, clusterPrioritizedRoutes, strategy);
+	}
+
+	default Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+					 String tag, Map<String, List<RouteMeta>>  clusterPrioritizedRoutes, RouteChooseStrategy strategy) {
+		return read(() -> doChooseRoutes(clusterName, srcDc, dstDcs, orgId, strategy, tag, clusterPrioritizedRoutes));
+	}
+	Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,RouteChooseStrategy strategy,
+										 String tag, Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 

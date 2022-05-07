@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dchange.impl;
 
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
@@ -70,6 +71,8 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 		redises.add(redis2);
 
 		when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(redises);
+
+		when(currentMetaManager.getClusterMeta(getClusterDbId())).thenReturn(new ClusterMeta().setActiveDc(getDc()));
 		
 		when(newMasterChooser.choose(anyList())).thenReturn(redis1);
 	}

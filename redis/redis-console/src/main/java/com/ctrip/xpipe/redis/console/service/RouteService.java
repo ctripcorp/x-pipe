@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -38,6 +40,8 @@ public interface RouteService {
 
     List<RouteInfoModel> getAllActiveRouteInfoModels();
 
+    List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName);
+
     List<RouteInfoModel> getAllActiveRouteInfoModelsByTag(String tag);
 
     List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndDirection(String tag, String srcDcName, String dstDcName);
@@ -46,5 +50,8 @@ public interface RouteService {
 
     List<RouteDirectionModel> getAllRouteDirectionModelsByTag(String tag);
 
+    RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap);
+
+    Map<Long, RouteInfoModel> getRouteIdInfoModelMap();
 
 }

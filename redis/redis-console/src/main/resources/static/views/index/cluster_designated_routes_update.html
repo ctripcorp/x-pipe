@@ -1,0 +1,176 @@
+
+<div >
+    <h3 class="header smaller lighter blue">
+        <a href="/#/cluster_list">Cluster List</a>
+        <span> > </span>
+        <a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
+        <span> > </span>
+        <span>Cluster Routes</span>
+    </h3>
+    <div>
+        <div style="height:35px">
+            <ul style="float:left" class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+                <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
+                    <a ng-click="switchDc(dc)" data-toggle="tab">
+                        {{dc.dcName}}
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content" ng-if="dcs && dcs.length">
+            <div>
+                <div class="panel panel-primary" style="margin-top: 15px;">
+                    <header class="panel-heading">
+                        <div class="row">
+                            <div class="col-md-6">集群粒度路由</div>
+                            <div class="col-md-6 text-right">
+                                <a class="btn btn-primary btn-sm" ng-click="preAddClusterDesignatedRoute()" >新增集群粒度路由</a>
+                            </div>
+                        </div>
+                    </header>
+                    <table class="table table-striped table-hover">
+                        <thead ng-if="designatedRoutes && designatedRoutes.length">
+                            <tr>
+                                <th>Route_id</th>
+                                <th>org_name</th>
+                                <th>public</th>
+                                <th>src_dcName</th>
+                                <th>src_proxies</th>
+                                <th>optional_info</th>
+                                <th>dst_dcName</th>
+                                <th>dst_proxies</th>
+                                <th>desc</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="designatedRoute in designatedRoutes">
+                                <td >{{designatedRoute.id}}</td>
+                                <td filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="designatedRoute.orgName"></td>
+                                <td style= "margin: 0pt 0cm 0pt 0cm;" class="{{designatedRoute.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>
+                                <td ng-bind="designatedRoute.srcDcName"> </td>
+                                <td >
+                                    <span>
+                                        <p align="left" style= "margin: 0cm 0cm 0pt 0pt;" ng-repeat="proxy in designatedRoute.srcProxies">{{proxy}}</p>
+                                    </span>
+                                </td>
+                                <td >
+                                    <span>
+                                        <p align="left" style= "margin: 0cm 0cm 0pt 0pt;" ng-repeat="proxy in designatedRoute.optionalProxies">{{proxy}}</p>
+                                    </span>
+                                </td>
+                                <td ng-bind="designatedRoute.dstDcName"></td>
+                                <td>
+                                    <span>
+                                        <p align="left" style= "margin: 0cm 0cm 0pt 0pt;" ng-repeat="proxy in designatedRoute.dstProxies">{{proxy}}</p>
+                                    </span>
+                                </td>
+                                <td ng-bind="designatedRoute.description"></td>
+                                <td >
+                                    <a ng-click="deleteDesignatedRoute(designatedRoute.id)" class="btn btn-warning btn-xs" type="button">删除</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p ng-if="(!designatedRoutes || !designatedRoutes.length)">无集群粒度路由</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 text-right">
+            <button type="button" class="btn btn-primary btn-sm" ng-click="preSubmitUpdates()">提交</button>
+            <a class="btn btn-info btn-sm" href="/#/cluster_routes?clusterName={{clusterName}}&dcName={{currentDcName}}">取消</a>
+        </div>
+    </div>
+</div>
+
+<form class="modal fade form-horizontal" id="addClusterDesignatedRouteModal" tabindex="-1" role="dialog"
+      ng-submit="addClusterDesignatedRoute()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">新增集群指定路由</span>
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div ng-repeat="toAddDesignatedRoute in toAddDesignatedRoutes">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> routeId </label>
+                        <div class="col-sm-6">
+                            <select
+                                    ng-model="toAddDesignatedRoute.id"
+                                    allow_single_deselect=true
+                                    style="width:250px;"
+                                    ng-options="routeId for routeId in allRouteIds"
+                                    ng-required="true"
+                            >
+                                <option value=""></option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" ng-show="$index >= 0">
+                            <button class="btn btn-danger btn-xs" type="button"
+                                    ng-click="removeOtherDesignatedRoutes($index)">remove
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> orgName </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].orgName" ng-disabled="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> srcDcName </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].srcDcName" ng-disabled="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> src_proxies </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].srcProxies" ng-disabled="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> dstDcName </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].dstDcName" ng-disabled="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> dst_proxies </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].dstProxies" ng-disabled="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> desc </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="allRoutes[toAddDesignatedRoute.id].description" ng-disabled="true">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group text-center">
+                    <button class="btn btn-default btn-xs" type="button" ng-click="addOtherDesignatedRoutes()">
+                        add backup route
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary" >增加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<xpipeconfirmdialog xpipe-dialog-id="'doSubmitUpdates'" xpipe-title="'更新集群粒度路由'"
+                    xpipe-detail="'您确定要更新该集群的集群粒度路由吗?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="submitUpdates"></xpipeconfirmdialog>
