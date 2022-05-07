@@ -242,6 +242,11 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+        return null;
+    }
+
+    @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();

@@ -86,6 +86,15 @@ public class RouteDaoTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void testGetAllActiveRoutesAndSrcDcId() {
+        List<RouteTbl> routes = routeDao.getAllActiveRoutesByTagAndSrcDcId(Route.TAG_META, 1);
+        Assert.assertEquals(1, routes.size());
+
+        routes = routeDao.getAllActiveRoutesByTagAndSrcDcId(Route.TAG_CONSOLE, 2);
+        Assert.assertEquals(0, routes.size());
+    }
+
+    @Test
     public void testGetRouteById() {
         RouteTbl route = routeDao.getRouteById(1L);
 

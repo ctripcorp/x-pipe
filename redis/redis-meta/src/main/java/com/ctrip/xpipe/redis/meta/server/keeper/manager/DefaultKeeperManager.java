@@ -429,7 +429,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,6 +50,8 @@ public interface MetaCache {
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 
     List<RouteMeta> getRoutes();
+
+    Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
     boolean isCrossRegion(String activeDc, String backupDc);
 

@@ -4,12 +4,10 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.google.common.collect.Maps;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -164,5 +162,10 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	@Override
 	public long getNewMasterCacheTimeoutMilli() {
 		return 10L;
+	}
+
+	@Override
+	public String getChooseRouteStrategyType() {
+		return "crc32_hash";
 	}
 }

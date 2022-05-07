@@ -13,8 +13,13 @@ import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -50,6 +55,11 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
+    private RouteChooseStrategy strategy = null;
 
     private List<Set<String>> clusterParts;
 
@@ -136,6 +146,27 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         } catch (Throwable th) {
             logger.warn("[refreshClusterParts] fail", th);
         }
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+                                               Map<String, List<RouteMeta>> clusterPrioritizedRoutes){
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
+                RouteChooseStrategyFactory.RouteStrategyType.lookup(consoleConfig.getChooseRouteStrategyType());
+
+        return xpipeMetaManager.chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
+                getRouteChooseStrategy(routeStrategyType));
+    }
+
+    private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
+        RouteChooseStrategy localStrategy = strategy;
+        if(null == localStrategy || !ObjectUtils.equals(routeStrategyType, localStrategy.getRouteStrategyType())) {
+            localStrategy = routeChooseStrategyFactory.create(routeStrategyType);
+            strategy = localStrategy;
+        }
+
+        return localStrategy;
     }
 
     @Override

@@ -43,6 +43,8 @@
 			<route id="6" org-id="0" tag="meta" src-dc="oy"  dst-dc="jq" weight="6" isPublic="true" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
 			<route id="7" org-id="1" tag="console" src-dc="fra" dst-dc="jq" weight="1" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
 			<route id="8" org-id="1" tag="console" src-dc="jq" dst-dc="jq" weight="1" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
+			<route id="9" org-id="1" tag="meta" src-dc="fra" dst-dc="oy" weight="1" isPublic="true" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="10" org-id="0" tag="meta" src-dc="fra" dst-dc="oy" weight="1" isPublic="true" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
 		</routes>
 
 		<zkServer address="127.0.0.1:2281" />
@@ -57,7 +59,7 @@
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
-		<cluster id="cluster2" active-dc="jq" backup-dcs="" phase="1" org-id="1000" type="one_way">
+		<cluster id="cluster2" active-dc="jq" backup-dcs="" phase="1" org-id="1000" type="one_way"  clusterDesignatedRouteIds="3, 10">
 			<shard id="shard1" upstream="127.0.0.1:6000">
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
 						ip="127.0.0.1" port="6100" active="true" />
@@ -77,5 +79,19 @@
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
+		<cluster id="bi-cluster1" db-id="2" dcs="oy, jq, fra" type="bi_direction" clusterDesignatedRouteIds="5,9">
+			<shard id="shard1" db-id="2">
+				<redis ip="127.0.0.1" port="8200" />
+				<redis ip="127.0.0.1" port="8201" />
+			</shard>
+		</cluster>
+
+		<cluster id="bi-cluster2" db-id="2" dcs="oy, jq, fra" type="bi_direction" >
+			<shard id="shard1" db-id="2">
+				<redis ip="127.0.0.1" port="8300" />
+				<redis ip="127.0.0.1" port="8301" />
+			</shard>
+		</cluster>
+
 	</dc>
 </xpipe>

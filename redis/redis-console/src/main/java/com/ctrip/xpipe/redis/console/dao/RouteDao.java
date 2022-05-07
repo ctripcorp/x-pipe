@@ -60,6 +60,15 @@ public class RouteDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<RouteTbl> getAllActiveRoutesByTagAndSrcDcId(String tag, long srcDcId) {
+        return queryHandler.handleQuery(new DalQuery<List<RouteTbl>>() {
+            @Override
+            public List<RouteTbl> doQuery() throws DalException {
+                return dao.findAllActiveByTagAndSrcDc(tag, srcDcId, RouteTblEntity.READSET_MAIN);
+            }
+        });
+    }
+
     public List<RouteTbl> getAllActiveRoutes() {
         return queryHandler.handleQuery(new DalQuery<List<RouteTbl>>() {
             @Override

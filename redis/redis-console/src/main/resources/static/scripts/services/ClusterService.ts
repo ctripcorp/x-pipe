@@ -126,6 +126,25 @@ function ClusterService($resource, $q) {
         get_cluster_hickwall: {
             method: 'GET',
             url: '/console/cluster/hickwall/:clusterName'
+        },
+       get_cluster_default_routes_by_src_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/clusters/:clusterName/default-routes/:srcDcName',
+            isArray: true
+        },
+       get_cluster_used_routes_by_src_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/clusters/:clusterName/used-routes/:srcDcName',
+            isArray: true
+        },
+       get_cluster_designated_routes_by_src_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/clusters/:clusterName/designated-routes/:srcDcName',
+            isArray: true
+        },
+        update_cluster_designated_routes_by_cluster_name: {
+            method: 'POST',
+            url: '/console/clusters/:clusterName/designated-routes/:srcDcName',
         }
     });
     function getInvolvedOrgs() {
@@ -448,7 +467,65 @@ function ClusterService($resource, $q) {
             });
         return d.promise;
     }
-    
+
+
+
+    function getClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_default_routes_by_src_dc_name_and_cluster_name({
+                srcDcName : srcDcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_used_routes_by_src_dc_name_and_cluster_name({
+                srcDcName : srcDcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getClusterDesignatedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_designated_routes_by_src_dc_name_and_cluster_name({
+                srcDcName : srcDcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function updateClusterDesignatedRoutes(srcDcName, clusterName, designatedRouteInfoModels) {
+        var d = $q.defer();
+        resource.update_cluster_designated_routes_by_cluster_name({
+                srcDcName : srcDcName,
+                clusterName : clusterName
+             }, designatedRouteInfoModels,
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -476,5 +553,9 @@ function ClusterService($resource, $q) {
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
         getClusterHickwallAddr: getClusterHickwallAddr,
+        getClusterDefaultRoutesBySrcDcNameAndClusterName : getClusterDefaultRoutesBySrcDcNameAndClusterName,
+        getClusterUsedRoutesBySrcDcNameAndClusterName : getClusterUsedRoutesBySrcDcNameAndClusterName,
+        getClusterDesignatedRoutesBySrcDcNameAndClusterName : getClusterDesignatedRoutesBySrcDcNameAndClusterName,
+        updateClusterDesignatedRoutes : updateClusterDesignatedRoutes
     }
 }

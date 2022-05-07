@@ -35,7 +35,7 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
 
     @Test
     public void testCompareWithRouteAdd() {
-        future.addRoute(new RouteMeta(1000).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.7:443").setSrcDc("fra").setDstDc("jq"));
+        future.addRoute(new RouteMeta().setId(1000L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.7:443").setSrcDc("fra").setDstDc("jq"));
         comparator = new DcRouteMetaComparator(current, future);
         comparator.compare();
 
@@ -43,7 +43,7 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
         Assert.assertTrue(comparator.getRemoved().isEmpty());
         Assert.assertTrue(comparator.getMofified().isEmpty());
 
-        future.addRoute(new RouteMeta(2000).setTag(Route.TAG_META));
+        future.addRoute(new RouteMeta().setId(2000L).setTag(Route.TAG_META));
         comparator = new DcRouteMetaComparator(current, future);
         comparator.compare();
 
@@ -91,8 +91,8 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
 
     @Test
     public void testCompareWithModifiedWithPublic2() {
-        RouteMeta routeMeta1 = new RouteMeta().setId(4).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
-        RouteMeta routeMeta2 = new RouteMeta().setId(4).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
+        RouteMeta routeMeta1 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
+        RouteMeta routeMeta2 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
 
 
         DcMeta currentMeta = new DcMeta().addRoute(routeMeta1);
