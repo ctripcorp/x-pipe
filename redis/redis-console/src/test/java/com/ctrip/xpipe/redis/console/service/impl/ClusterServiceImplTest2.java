@@ -55,14 +55,14 @@ public class ClusterServiceImplTest2 {
 
     private final List<String> mockShards = Arrays.asList("shard1", "shard2");
 
-    private final RouteMeta routeMeta1 = new RouteMeta().setId(1).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0))
+    private final RouteMeta routeMeta1 = new RouteMeta().setId(1L).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0))
             .setDstDc(mockDcs.get(2)).setIsPublic(true)
             .setRouteInfo("PROXYTCP://1.1.1.1:80,PROXYTCP://1.1.1.9:80 PROXYTLS://1.1.1.11:443,PROXYTLS://1.1.1.12:443  PROXYTLS://1.1.1.2:443");
-    private final RouteMeta routeMeta2 = new RouteMeta().setId(2).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0))
+    private final RouteMeta routeMeta2 = new RouteMeta().setId(2L).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0))
             .setDstDc(mockDcs.get(2)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.3:80 PROXYTLS://1.1.1.4:443");
-    private final RouteMeta routeMeta3 = new RouteMeta().setId(3).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0))
+    private final RouteMeta routeMeta3 = new RouteMeta().setId(3L).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0))
             .setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.5:80 PROXYTLS://1.1.1.6:443");
-    private final RouteMeta routeMeta4 = new RouteMeta().setId(4).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0))
+    private final RouteMeta routeMeta4 = new RouteMeta().setId(4L).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0))
             .setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.7:80 PROXYTLS://1.1.1.8:443");
 
     private final ShardMeta shardMeta = new ShardMeta().setId(mockShards.get(0));
@@ -112,7 +112,7 @@ public class ClusterServiceImplTest2 {
                 = useWrongRouteClusterInfos.getUnexpectedRouteUsageDetailInfos().get(mockClusters.get(0)).get(0);
         Assert.assertEquals(mockClusters.get(0), clusterDetail.getClusterName());
         Assert.assertEquals(1, clusterDetail.getChooseRouteId());
-        Assert.assertEquals(Sets.newHashSet(2), clusterDetail.getUsedRouteId());
+        Assert.assertEquals(Sets.newHashSet(2L), clusterDetail.getUsedRouteId());
     }
 
     @Test

@@ -124,7 +124,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     public void testRouteChangeNonMetaChange() {
         DcMeta current = getDcMeta("fra");
         DcMeta future = MetaClone.clone(current);
-        future.addRoute(new RouteMeta(1000).setTag(Route.TAG_CONSOLE).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
+        future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_CONSOLE).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
         dcMetaCache.checkRouteChange(current, future);
@@ -135,7 +135,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     public void testRouteChangeWithMetaAdd() {
         DcMeta current = getDcMeta("fra");
         DcMeta future = MetaClone.clone(current);
-        future.addRoute(new RouteMeta(1000).setTag(Route.TAG_META).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
+        future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_META).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
         dcMetaCache.checkRouteChange(current, future);
@@ -168,13 +168,13 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
     @Test
     public void testGetClusterDesignatedRoutes() {
-        RouteMeta routeMeta1 = new RouteMeta().setId(1);
-        RouteMeta routeMeta3 = new RouteMeta().setId(3);
-        RouteMeta routeMeta4 = new RouteMeta().setId(4);
-        RouteMeta routeMeta5 = new RouteMeta().setId(5);
-        RouteMeta routeMeta6 = new RouteMeta().setId(6);
-        RouteMeta routeMeta9 = new RouteMeta().setId(9);
-        RouteMeta routeMeta10 = new RouteMeta().setId(10);
+        RouteMeta routeMeta1 = new RouteMeta().setId(1L);
+        RouteMeta routeMeta3 = new RouteMeta().setId(3L);
+        RouteMeta routeMeta4 = new RouteMeta().setId(4L);
+        RouteMeta routeMeta5 = new RouteMeta().setId(5L);
+        RouteMeta routeMeta6 = new RouteMeta().setId(6L);
+        RouteMeta routeMeta9 = new RouteMeta().setId(9L);
+        RouteMeta routeMeta10 = new RouteMeta().setId(10L);
 
         String clusterName1 = "cluster1";
         String clusterName2 = "cluster2";

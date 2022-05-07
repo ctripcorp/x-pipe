@@ -380,7 +380,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(observer, times(1)).update(any(), any());
 		verify(currentMeta, times(1)).updateClusterRoutes(any(), any());
 		
-		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1));
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1L));
 		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDbId(clusterDbId).setDcs("jq,oy,fq");
 		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1").setDbId(shardDbId);
 		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -452,7 +452,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
 		verify(observer, times(1)).update(any(), any());
 
-		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1));
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1L));
 		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDbId(clusterDbId).setDcs("jq,oy,fq");
 		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1").setDbId(shardDbId);
 		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -518,7 +518,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
 		verify(observer, times(1)).update(any(), any());
 
-		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1));
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1L));
 		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy").setDbId(clusterDbId).setClusterDesignatedRouteIds("1");
 		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1").setDbId(shardDbId);
 		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379);
@@ -580,7 +580,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
 		verify(observer, times(1)).update(any(), any());
 
-		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1).setIsPublic(true).setDstDc("oy"));
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1L).setIsPublic(true).setDstDc("oy"));
 		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDbId(clusterDbId).setDcs("jq,oy,fq").setClusterDesignatedRouteIds("1");
 		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1").setDbId(shardDbId);
 		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);

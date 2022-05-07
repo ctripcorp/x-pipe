@@ -18,7 +18,7 @@ public class UnexpectedRouteUsageInfoModel {
         this.unexpectedRouteUsageDirectionInfos = new HashMap<>();
     }
 
-    public void addUsedWrongRouteCluster(String clusterName, String srcDcName, String dstDcName, Set<Integer> usedRouteId, Integer chooseRouteId) {
+    public void addUsedWrongRouteCluster(String clusterName, String srcDcName, String dstDcName, Set<Long> usedRouteId, Long chooseRouteId) {
         if(!unexpectedRouteUsageDetailInfos.containsKey(clusterName)) {
             unexpectedRouteUsedClusterNum++;
             this.unexpectedRouteUsageDetailInfos.put(clusterName, new ArrayList<>());
@@ -67,14 +67,14 @@ public class UnexpectedRouteUsageInfoModel {
 
         private String dstDcName;
 
-        private Set<Integer> usedRouteId;
+        private Set<Long> usedRouteId;
 
-        private int chooseRouteId;
+        private long chooseRouteId;
 
         public UnexpectedRouteUsageInfo() {
         }
 
-        public UnexpectedRouteUsageInfo(String clusterName, String srcDcName, String dstDcName, Set<Integer> usedRouteId, int chooseRouteId) {
+        public UnexpectedRouteUsageInfo(String clusterName, String srcDcName, String dstDcName, Set<Long> usedRouteId, long chooseRouteId) {
             this.clusterName = clusterName;
             this.srcDcName = srcDcName;
             this.dstDcName = dstDcName;
@@ -109,33 +109,22 @@ public class UnexpectedRouteUsageInfoModel {
             return this;
         }
 
-        public Set<Integer> getUsedRouteId() {
+        public Set<Long> getUsedRouteId() {
             return usedRouteId;
         }
 
-        public UnexpectedRouteUsageInfo setUsedRouteId(Set<Integer> usedRouteId) {
+        public UnexpectedRouteUsageInfo setUsedRouteId(Set<Long> usedRouteId) {
             this.usedRouteId = usedRouteId;
             return this;
         }
 
-        public int getChooseRouteId() {
+        public long getChooseRouteId() {
             return chooseRouteId;
         }
 
-        public UnexpectedRouteUsageInfo setChooseRouteId(int chooseRouteId) {
+        public UnexpectedRouteUsageInfo setChooseRouteId(long chooseRouteId) {
             this.chooseRouteId = chooseRouteId;
             return this;
-        }
-
-        @Override
-        public String toString() {
-            return "UnexpectedRouteUsageInfo{" +
-                    "clusterName='" + clusterName + '\'' +
-                    ", srcDcName='" + srcDcName + '\'' +
-                    ", dstDcName='" + dstDcName + '\'' +
-                    ", usedRouteId=" + usedRouteId +
-                    ", chooseRouteId=" + chooseRouteId +
-                    '}';
         }
 
         @Override
@@ -143,8 +132,7 @@ public class UnexpectedRouteUsageInfoModel {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             UnexpectedRouteUsageInfo that = (UnexpectedRouteUsageInfo) o;
-            return usedRouteId == that.usedRouteId && chooseRouteId == that.chooseRouteId && Objects.equals(clusterName, that.clusterName)
-                    && Objects.equals(srcDcName, that.srcDcName) && Objects.equals(dstDcName, that.dstDcName);
+            return chooseRouteId == that.chooseRouteId && Objects.equals(clusterName, that.clusterName) && Objects.equals(srcDcName, that.srcDcName) && Objects.equals(dstDcName, that.dstDcName) && Objects.equals(usedRouteId, that.usedRouteId);
         }
 
         @Override

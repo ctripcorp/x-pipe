@@ -88,7 +88,7 @@
     <attribute name="gid" value-type="int" />
   </entity>
   <entity name="route">
-    <attribute name="id" value-type="int" />
+    <attribute name="id" value-type="long" />
     <attribute name="org-id" value-type="int" />
     <attribute name="tag" value-type="String" />
     <attribute name="src-dc" value-type="String" />

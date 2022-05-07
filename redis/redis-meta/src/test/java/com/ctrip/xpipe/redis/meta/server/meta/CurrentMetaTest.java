@@ -277,7 +277,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	public void testGetActiveDc() {
 		ClusterMeta clusterMeta1 = MetaClone.clone(clusterMeta);
 		clusterMeta1.setActiveDc("fq").setBackupDcs("jq,fra");
-		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1").setIsPublic(true);
+		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2L).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1").setIsPublic(true);
 		Map<String, RouteMeta> newChooseRoutes = new HashMap<>();
 		newChooseRoutes.put("fq", hadOrgIdRoute);
 		
