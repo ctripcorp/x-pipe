@@ -601,4 +601,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getChooseRouteStrategyType() { return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);}
+
+    @Override
+    public String getClusterExcludedRegex() {
+        return getProperty(KEY_ALERT_CLUSTER_EXCLUDED_REGEX, "");
+    }
 }

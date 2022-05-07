@@ -352,7 +352,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			
 			dcMetaChange((DcMetaComparator)args);
 		} else if(args instanceof DcRouteMetaComparator) {
-
+			logger.debug("[routeChanges]{}", (DcRouteMetaComparator) args);
 			routeChanges();
 		} else{
 			
