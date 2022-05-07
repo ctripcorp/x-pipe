@@ -17,7 +17,7 @@ public class Crc32HashRouteChooseStrategyTest {
     @Before
     public void beforeCrc32HashRouteChooseStrategyTest() {
         routes = new LinkedList<>();
-        for(int i = 0; i < 100; i++) {
+        for(long i = 0; i < 100; i++) {
             routes.add(new RouteMeta().setId(i));
         }
     }

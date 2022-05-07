@@ -705,7 +705,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		Map<Long, RouteInfoModel> routeIdInfoModelMap = routeService.getRouteIdInfoModelMap();
 		for (RouteMeta routeMeta : chooseRoutes.values()) {
-			defaultRoutes.add(routeIdInfoModelMap.get(Long.valueOf(routeMeta.getId())));
+			defaultRoutes.add(routeIdInfoModelMap.get(routeMeta.getId()));
 		}
 		Collections.sort(defaultRoutes);
 		logger.debug("cluster {} exists default routes {} at source dc {}", clusterName, defaultRoutes, srcDcName);
@@ -873,7 +873,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private void checkClusterRouteUsageInfo(ClusterMeta clusterMeta, String srcDcName, List<RouteMeta> allDcRoutes,
 											UnexpectedRouteUsageInfoModel unexpectedRouteUsageInfoModel) {
 		Map<String, RouteMeta> chooseDcRouteIds = getChooseRoutes(srcDcName, clusterMeta, allDcRoutes);
-		Map<String, Set<Integer>> usedDcRouteIds = getUsedRoutes(srcDcName, clusterMeta, allDcRoutes);
+		Map<String, Set<Long>> usedDcRouteIds = getUsedRoutes(srcDcName, clusterMeta, allDcRoutes);
 
 		Set<String> allDcNames = Sets.newHashSet();
 		allDcNames.addAll(chooseDcRouteIds.keySet());
@@ -887,15 +887,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 	}
 
-	private boolean isUsingUnexpectedRoute(Set<Integer> usedRouteIds, Integer expectedRouteId) {
+	private boolean isUsingUnexpectedRoute(Set<Long> usedRouteIds, Long expectedRouteId) {
 		if (usedRouteIds == null && expectedRouteId == null) return false;
 		if (usedRouteIds == null || expectedRouteId == null) return true;
 
 		return !ObjectUtils.equals(usedRouteIds, Sets.newHashSet(expectedRouteId));
 	}
 
-	private Map<String, Set<Integer>> getUsedRoutes(String srcDcName, ClusterMeta clusterMeta, List<RouteMeta> allDcRoutes) {
-		Map<String, Set<Integer>> usedDcRoutes = new HashMap<>();
+	private Map<String, Set<Long>> getUsedRoutes(String srcDcName, ClusterMeta clusterMeta, List<RouteMeta> allDcRoutes) {
+		Map<String, Set<Long>> usedDcRoutes = new HashMap<>();
 		List<String> dstDcNames = parseDstDcs(clusterMeta);
 
 		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {

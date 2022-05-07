@@ -43,14 +43,14 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		List<RouteMeta> routeMetas = metaManager.metaRoutes(dcBak2);
 		Assert.assertEquals(7, routeMetas.size());
-		routeMetas.sort((o1, o2) -> o1.getId() - o2.getId());
-		Assert.assertEquals(new Integer(1), routeMetas.get(0).getId());
-		Assert.assertEquals(new Integer(2), routeMetas.get(1).getId());
-		Assert.assertEquals(new Integer(3), routeMetas.get(2).getId());
-		Assert.assertEquals(new Integer(4), routeMetas.get(3).getId());
-		Assert.assertEquals(new Integer(5), routeMetas.get(4).getId());
-		Assert.assertEquals(new Integer(9), routeMetas.get(5).getId());
-		Assert.assertEquals(new Integer(10), routeMetas.get(6).getId());
+		routeMetas.sort((o1, o2) -> Long.compare(o1.getId(), o2.getId()));
+		Assert.assertEquals(Long.valueOf(1), routeMetas.get(0).getId());
+		Assert.assertEquals(Long.valueOf(2), routeMetas.get(1).getId());
+		Assert.assertEquals(Long.valueOf(3), routeMetas.get(2).getId());
+		Assert.assertEquals(Long.valueOf(4), routeMetas.get(3).getId());
+		Assert.assertEquals(Long.valueOf(5), routeMetas.get(4).getId());
+		Assert.assertEquals(Long.valueOf(9), routeMetas.get(5).getId());
+		Assert.assertEquals(Long.valueOf(10), routeMetas.get(6).getId());
 
 		List<RouteMeta> routeMetas2 = metaManager.metaRoutes(dcBak1);
 		Assert.assertEquals(0, routeMetas2.size());
@@ -284,11 +284,11 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		List<String> dstDcs = Lists.newArrayList("jq");
 		String currentDc = "fra";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy();
-		RouteMeta routeMeta1 = new RouteMeta().setId(1);
-		RouteMeta routeMeta2 = new RouteMeta().setId(2);
-		RouteMeta routeMeta3 = new RouteMeta().setId(3);
-		RouteMeta routeMeta4 = new RouteMeta().setId(4);
-		RouteMeta routeMeta9 = new RouteMeta().setId(9);
+		RouteMeta routeMeta1 = new RouteMeta().setId(1L);
+		RouteMeta routeMeta2 = new RouteMeta().setId(2L);
+		RouteMeta routeMeta3 = new RouteMeta().setId(3L);
+		RouteMeta routeMeta4 = new RouteMeta().setId(4L);
+		RouteMeta routeMeta9 = new RouteMeta().setId(9L);
 
 		//test same org-id
 		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(clusterId1, currentDc, dstDcs, 1, null, strategy);
@@ -321,12 +321,12 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		List<String> dstDcs = Lists.newArrayList("jq", "OY");
 		String currentDc = "fra";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy();
-		RouteMeta routeMeta1 = new RouteMeta().setId(1);
-		RouteMeta routeMeta2 = new RouteMeta().setId(2);
-		RouteMeta routeMeta3 = new RouteMeta().setId(3);
-		RouteMeta routeMeta4 = new RouteMeta().setId(4);
-		RouteMeta routeMeta9 = new RouteMeta().setId(9);
-		RouteMeta routeMeta10 = new RouteMeta().setId(10);
+		RouteMeta routeMeta1 = new RouteMeta().setId(1L);
+		RouteMeta routeMeta2 = new RouteMeta().setId(2L);
+		RouteMeta routeMeta3 = new RouteMeta().setId(3L);
+		RouteMeta routeMeta4 = new RouteMeta().setId(4L);
+		RouteMeta routeMeta9 = new RouteMeta().setId(9L);
+		RouteMeta routeMeta10 = new RouteMeta().setId(10L);
 
 		//test same org-id
 		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(clusterId1, currentDc, dstDcs, 1, null, strategy);
