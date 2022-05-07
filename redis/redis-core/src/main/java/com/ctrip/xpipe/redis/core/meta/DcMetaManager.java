@@ -18,7 +18,7 @@ public interface DcMetaManager{
 
 	List<RouteMeta> getAllMetaRoutes();
 
-	Map<String, RouteMeta> chooseRoutes(List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+	Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
 										Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	/**

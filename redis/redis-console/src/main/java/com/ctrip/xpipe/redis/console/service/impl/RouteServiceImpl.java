@@ -96,6 +96,14 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
+    public Map<Long, RouteInfoModel> getRouteIdInfoModelMap(){
+        Map<Long, RouteInfoModel> result = new HashMap<>();
+        getAllActiveRouteInfoModels().forEach(routeInfoModel -> result.put(routeInfoModel.getId(), routeInfoModel));
+
+        return result;
+    }
+
+    @Override
     public List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName) {
         DcTbl srcDcTbl = dcService.findByDcName(srcDcName);
         return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, srcDcTbl.getId()));

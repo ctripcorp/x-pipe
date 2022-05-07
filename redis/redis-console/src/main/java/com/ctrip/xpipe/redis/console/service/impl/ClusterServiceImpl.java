@@ -703,8 +703,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Map<String, RouteMeta> chooseRoutes = metaCache.chooseRoutes(clusterName, srcDcName, dstDcNames, (int)clusterTbl.getClusterOrgId(), null);
 		if (chooseRoutes == null || chooseRoutes.isEmpty())  return defaultRoutes;
 
+		Map<Long, RouteInfoModel> routeIdInfoModelMap = routeService.getRouteIdInfoModelMap();
 		for (RouteMeta routeMeta : chooseRoutes.values()) {
-			defaultRoutes.add(routeService.getRouteInfoModelById(routeMeta.getId()));
+			defaultRoutes.add(routeIdInfoModelMap.get(Long.valueOf(routeMeta.getId())));
 		}
 		Collections.sort(defaultRoutes);
 		logger.debug("cluster {} exists default routes {} at source dc {}", clusterName, defaultRoutes, srcDcName);
@@ -788,10 +789,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
 		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return Collections.emptyList();
 
+		Map<Long, RouteInfoModel> routeIdInfoModelMap = routeService.getRouteIdInfoModelMap();
 		List<RouteInfoModel> designatedRoutes = new ArrayList<>();
 		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(DESIGNATED_ROUTE_ID_SPLITTER));
 		routeIds.forEach(routeId -> {
-			RouteInfoModel routeInfoModel = routeService.getRouteInfoModelById(Long.parseLong(routeId));
+			RouteInfoModel routeInfoModel = routeIdInfoModelMap.get(Long.valueOf(routeId));
 			if (routeInfoModel != null && srcDcName.equalsIgnoreCase(routeInfoModel.getSrcDcName())) {
 				designatedRoutes.add(routeInfoModel);
 			}

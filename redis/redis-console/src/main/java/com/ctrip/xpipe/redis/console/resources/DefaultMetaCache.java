@@ -151,8 +151,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
                 RouteChooseStrategyFactory.RouteStrategyType.lookup(consoleConfig.getChooseRouteStrategyType());
 
-        return xpipeMetaManager.chooseMetaRoutes(srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
-                    routeChooseStrategyFactory.create(routeStrategyType, clusterName));
+        return xpipeMetaManager.chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
+                    routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType));
     }
 
     @Override

@@ -7,7 +7,7 @@ import java.util.*;
 @JsonPropertyOrder({"unExpectedRouteUsedClusterNum", "unexpectedRouteUsageDirectionInfos", "unexpectedRouteUsageDetailInfos"})
 public class UnexpectedRouteUsageInfoModel {
 
-    private int unExpectedRouteUsedClusterNum;
+    private int unexpectedRouteUsedClusterNum;
 
     private Map<String, Integer> unexpectedRouteUsageDirectionInfos;
 
@@ -20,7 +20,7 @@ public class UnexpectedRouteUsageInfoModel {
 
     public void addUsedWrongRouteCluster(String clusterName, String srcDcName, String dstDcName, Set<Integer> usedRouteId, Integer chooseRouteId) {
         if(!unexpectedRouteUsageDetailInfos.containsKey(clusterName)) {
-            unExpectedRouteUsedClusterNum++;
+            unexpectedRouteUsedClusterNum++;
             this.unexpectedRouteUsageDetailInfos.put(clusterName, new ArrayList<>());
         }
         this.unexpectedRouteUsageDetailInfos.get(clusterName).add(new UnexpectedRouteUsageInfo(clusterName, srcDcName, dstDcName, usedRouteId, chooseRouteId))
@@ -33,12 +33,12 @@ public class UnexpectedRouteUsageInfoModel {
         }
     }
 
-    public int getUnExpectedRouteUsedClusterNum() {
-        return unExpectedRouteUsedClusterNum;
+    public int getUnexpectedRouteUsedClusterNum() {
+        return unexpectedRouteUsedClusterNum;
     }
 
-    public UnexpectedRouteUsageInfoModel setUnExpectedRouteUsedClusterNum(int unExpectedRouteUsedClusterNum) {
-        this.unExpectedRouteUsedClusterNum = unExpectedRouteUsedClusterNum;
+    public UnexpectedRouteUsageInfoModel setUnexpectedRouteUsedClusterNum(int unexpectedRouteUsedClusterNum) {
+        this.unexpectedRouteUsedClusterNum = unexpectedRouteUsedClusterNum;
         return this;
     }
 

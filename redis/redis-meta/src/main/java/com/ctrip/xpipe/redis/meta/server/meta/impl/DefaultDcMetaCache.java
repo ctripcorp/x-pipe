@@ -279,9 +279,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
 				RouteChooseStrategyFactory.RouteStrategyType.lookup(metaServerConfig.getChooseRouteStrategyType());
-		RouteChooseStrategy strategy = routeChooseStrategyFactory.create(routeStrategyType, clusterMeta.getId());
+		RouteChooseStrategy strategy = routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType);
 
-		return dcMetaManager.get().chooseRoutes(dstDcs, orgId, strategy, clusterDesignatedRoutes);
+		return dcMetaManager.get().chooseRoutes(clusterMeta.getId(), dstDcs, orgId, strategy, clusterDesignatedRoutes);
 	}
 
 	private List<String> parseDstDcs(ClusterMeta clusterMeta) {

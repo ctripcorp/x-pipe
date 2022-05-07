@@ -52,4 +52,6 @@ public interface RouteService {
 
     RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap);
 
+    Map<Long, RouteInfoModel> getRouteIdInfoModelMap();
+
 }

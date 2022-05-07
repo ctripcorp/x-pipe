@@ -25,12 +25,12 @@ public class Crc32HashRouteChooseStrategyTest {
     @Test
     public void testCrc32HashRouteChooseStrategy() {
         RouteChooseStrategy strategy = new DefaultRouteChooseStrategyFactory()
-                .create(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH, "cluster");
+                .getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH);
 
-        RouteMeta first = strategy.choose(routes);
+        RouteMeta first = strategy.choose(routes, "cluster");
 
         for(int i = 0; i < 100; i++) {
-            RouteMeta next = strategy.choose(routes);
+            RouteMeta next = strategy.choose(routes, "cluster");
             Assert.assertEquals(first, next);
         }
     }
