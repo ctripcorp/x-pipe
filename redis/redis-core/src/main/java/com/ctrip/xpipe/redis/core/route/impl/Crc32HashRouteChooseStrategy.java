@@ -20,12 +20,12 @@ public class Crc32HashRouteChooseStrategy implements RouteChooseStrategy {
 
     }
 
-
     @Override
     public RouteMeta choose(List<RouteMeta> routeMetas, String clusterName) {
         if (routeMetas == null || routeMetas.isEmpty()) {
             return null;
         }
+
         if(StringUtil.isEmpty(clusterName)) {
             return routeMetas.get(random.nextInt(routeMetas.size()));
         }

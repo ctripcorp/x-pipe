@@ -15,14 +15,18 @@ public class DefaultRouteChooseStrategyFactory implements RouteChooseStrategyFac
         if(strategy == null) {
             synchronized (this) {
                 if(strategy == null) {
-                    switch (routeStrategyType) {
-                        case CRC32_HASH:
-                        default:
-                            strategy = new Crc32HashRouteChooseStrategy();
-                    }
+                    strategy = createRouteChooseStrategy(routeStrategyType);
                 }
             }
         }
         return strategy;
+    }
+
+    private RouteChooseStrategy createRouteChooseStrategy(RouteStrategyType routeStrategyType) {
+        switch (routeStrategyType) {
+            case CRC32_HASH:
+            default:
+                return new Crc32HashRouteChooseStrategy();
+        }
     }
 }
