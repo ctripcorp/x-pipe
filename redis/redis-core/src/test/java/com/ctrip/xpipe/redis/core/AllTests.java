@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParserTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParserTest;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocolTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
+import com.ctrip.xpipe.redis.core.route.impl.Crc32HashRouteChooseStrategyTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
@@ -48,6 +49,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRunIdGeneratorTest.class,
         ArrayParserTest.class,
         BulkStringParserTest.class,
+        Crc32HashRouteChooseStrategyTest.class,
         ArrayParserTest.class,
         RedisErrorParserTest.class,
         MetaCloneTest.class,

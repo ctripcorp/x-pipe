@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,9 +32,9 @@ public interface DcMetaCache extends Observable {
 
 	ClusterType getClusterType(Long clusterDbId);
 
-	RouteMeta randomRoute(Long clusterDbId);
+	List<RouteMeta> getAllMetaRoutes();
 
-	List<RouteMeta> getAllRoutes();
+	Map<String, RouteMeta> chooseRoutes(long clusterDbId);
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 

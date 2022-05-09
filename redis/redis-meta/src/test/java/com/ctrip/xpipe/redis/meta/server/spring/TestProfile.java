@@ -33,7 +33,7 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 	public MetaServerConfig  getMetaServerConfig(){
 		return new UnitTestServerConfig();
 	}
-	
+
 	@Bean
 	public ZkClient getZkClient() throws Exception{
 		

@@ -11,6 +11,8 @@ public class ProxyChainModel {
 
     private TunnelInfo activeDcTunnel;
 
+    private TunnelInfo optionalTunnel;
+
     private TunnelInfo backupDcTunnel;
 
     public ProxyChainModel(ProxyChain chain, String activeDcId, String backupDcId) {
@@ -21,6 +23,8 @@ public class ProxyChainModel {
                 this.activeDcTunnel = info;
             } else if(info.getProxyModel().getDcName().equalsIgnoreCase(backupDcId)){
                 this.backupDcTunnel = info;
+            } else {
+                this.optionalTunnel = info;
             }
         }
     }
@@ -31,6 +35,10 @@ public class ProxyChainModel {
 
     public TunnelInfo getBackupDcTunnel() {
         return backupDcTunnel;
+    }
+
+    public TunnelInfo getOptionalTunnel() {
+        return optionalTunnel;
     }
 
     public TunnelInfo getActiveDcTunnel() {

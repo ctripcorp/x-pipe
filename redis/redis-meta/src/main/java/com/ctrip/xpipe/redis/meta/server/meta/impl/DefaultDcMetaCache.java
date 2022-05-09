@@ -16,19 +16,20 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.utils.*;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -57,6 +58,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	@Autowired
 	private MetaServerConfig metaServerConfig;
+
+	@Autowired
+	private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
+	private RouteChooseStrategy strategy = null;
 
 	private String currentDc = FoundationService.DEFAULT.getDataCenter();
 
@@ -259,13 +265,54 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public RouteMeta randomRoute(Long clusterDbId) {
-		return dcMetaManager.get().randomRoute(clusterDbId);
+	public List<RouteMeta> getAllMetaRoutes() {
+		return dcMetaManager.get().getAllMetaRoutes();
 	}
 
 	@Override
-	public List<RouteMeta> getAllRoutes() {
-		return dcMetaManager.get().getAllMetaRoutes();
+	public Map<String, RouteMeta> chooseRoutes(long clusterDbId) {
+		ClusterMeta clusterMeta = getClusterMeta(clusterDbId);
+		List<String> dstDcs = parseDstDcs(clusterMeta);
+		Map<String, List<RouteMeta>> clusterDesignatedRoutes =
+				getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
+		int orgId = clusterMeta.getOrgId() == null ? 0 : clusterMeta.getOrgId();
+		RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
+				RouteChooseStrategyFactory.RouteStrategyType.lookup(metaServerConfig.getChooseRouteStrategyType());
+
+		return dcMetaManager.get().chooseRoutes(clusterMeta.getId(), dstDcs, orgId, getRouteChooseStrategy(routeStrategyType), clusterDesignatedRoutes);
+	}
+
+	private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
+		RouteChooseStrategy localStrategy = strategy;
+		if(null == localStrategy || !ObjectUtils.equals(routeStrategyType, localStrategy.getRouteStrategyType())) {
+			localStrategy = routeChooseStrategyFactory.create(routeStrategyType);
+			strategy = localStrategy;
+		}
+
+		return localStrategy;
+	}
+
+	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
+		if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
+		} else {
+			return Lists.newArrayList(clusterMeta.getActiveDc());
+		}
+	}
+
+	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
+		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
+
+		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new HashMap<>();
+		List<RouteMeta> allMetaRoutes = getAllMetaRoutes();
+		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split("\\s*,\\s*"));
+		allMetaRoutes.forEach((routeMeta -> {
+			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {
+				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
+			}
+		}));
+
+		return clusterDesignatedRoutes;
 	}
 
 	@Override
@@ -451,5 +498,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@VisibleForTesting
 	protected void setMetaServerConfig(MetaServerConfig metaServerConfig) {
 		this.metaServerConfig = metaServerConfig;
+	}
+
+	@VisibleForTesting
+	protected void setRouteChooseStrategyFactory(RouteChooseStrategyFactory routeChooseStrategyFactory) {
+		this.routeChooseStrategyFactory = routeChooseStrategyFactory;
 	}
 }

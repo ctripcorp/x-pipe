@@ -121,7 +121,8 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
     private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, List<ApplierMeta> appliers,
               Pair<String, Integer> master, String sids, GtidSet gtidSet) {
 
-        RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
+        //TODO ayq route
+        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
         return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }
 

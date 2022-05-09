@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		this.buildClusterDbIdMap();
 	}
 
-	
 	public static DcMetaManager buildFromFile(String dcId, String fileName){
 		
 		return new DefaultDcMetaManager(dcId, DefaultXpipeMetaManager.buildFromFile(fileName));
@@ -130,19 +130,16 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.getDcClusters(currentDc);
 	}
 
-	@Override
-	public RouteMeta randomRoute(String clusterId) {
-
-		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
-		if(clusterMeta == null){
-			throw new IllegalArgumentException("clusterId not exist:" + clusterId);
-		}
-		return metaManager.metaRandomRoutes(currentDc, clusterMeta.getOrgId(), clusterMeta.getActiveDc());
-	}
 
 	@Override
 	public List<RouteMeta> getAllMetaRoutes() {
 		return metaManager.metaRoutes(currentDc);
+	}
+
+	@Override
+	public Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+											   Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+		return metaManager.chooseMetaRoutes(clusterName,currentDc, dstDcs, orgId, clusterPrioritizedRoutes, strategy);
 	}
 
 	@Override
@@ -338,11 +335,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		}
 		ShardMeta shardMeta = clusterMeta.getAllShards().get(shardId);
 		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
-	}
-
-	@Override
-	public RouteMeta randomRoute(Long clusterDbId) {
-		return randomRoute(clusterDbId2Name(clusterDbId));
 	}
 
 	@Override

@@ -372,6 +372,16 @@
 					]]>
 				</statement>
 			</query>
+			<query name='update-cluster-designated-route-ids' type='UPDATE' batch='false'>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='cluster-designated-route-ids'/> = ${cluster-designated-route-ids}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name='update-status-by-id' type='UPDATE' batch='false'>
 				<statement>
 					<![CDATA[
@@ -2305,6 +2315,20 @@
 					WHERE <FIELD name='deleted'/> = 0
 					AND <FIELD name='active'/> = 1
 					AND <FIELD name='tag'/> = ${tag}
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-active-by-tag-and-src-dc" type="SELECT" multiple="true">
+				<param name='tag'/>
+				<param name="src-dc-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELD name='tag'/> = ${tag}
+					AND <FIELD name='src-dc-id'/> = ${src-dc-id}
 					]]>
 				</statement>
 			</query>
