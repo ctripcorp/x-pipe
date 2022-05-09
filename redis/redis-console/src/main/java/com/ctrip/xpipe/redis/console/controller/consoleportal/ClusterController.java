@@ -40,6 +40,9 @@ public class ClusterController extends AbstractConsoleController {
     @Autowired
     private ClusterHealthMonitorManager clusterHealthMonitorManager;
 
+    private static final String DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT
+            = "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s";
+
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs", method = RequestMethod.GET)
     public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
         return valueOrEmptySet(DcTbl.class, dcService.findClusterRelatedDc(clusterName));
@@ -208,9 +211,12 @@ public class ClusterController extends AbstractConsoleController {
         return clusterService.findAllClusterByKeeperContainer(containerId);
     }
 
-    @RequestMapping(value = "/cluster/hickwall/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public RetMessage getClusterHickwallUrl(@PathVariable String clusterName) {
-        return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
+
+    @RequestMapping(value = "/cluster/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/{clusterType}", method = RequestMethod.GET)
+    public RetMessage getClusterHickwallUrl(@PathVariable String clusterName, @PathVariable String clusterType) {
+        String hickwallAddress = config.getHickwallClusterMetricFormat().get(clusterType.toLowerCase());
+        if(StringUtil.isEmpty(hickwallAddress)) hickwallAddress = DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT;
+        return RetMessage.createSuccessMessage(String.format(hickwallAddress, clusterName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/default-routes/{srcDcName}", method = RequestMethod.GET)

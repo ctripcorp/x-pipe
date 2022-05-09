@@ -125,14 +125,14 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         return $scope.dcs[cluster.activedcId] || "Unbind";
     }
     
-    function isBiDirectionCluster(type) {
+    function isBiDirectionOrOneWayCluster(type) {
         var clusterType = ClusterType.lookup(type)
-        return "bi_direction" == clusterType.value
+        return "bi_direction" == clusterType.value || "one_way" == clusterType.value;
     }
     
     function gotoClusterHickwall(type, clusterName) {
-        if(isBiDirectionCluster(type)) {
-            ClusterService.getClusterHickwallAddr(clusterName).then(function(result) {
+        if(isBiDirectionOrOneWayCluster(type)) {
+            ClusterService.getClusterHickwallAddr(clusterName, type).then(function(result) {
                 if(result != null && result.state === SUCCESS_STATE) {
                     $window.open(result.message, '_blank');
                 }

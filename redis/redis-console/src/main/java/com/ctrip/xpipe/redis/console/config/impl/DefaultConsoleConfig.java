@@ -187,8 +187,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private HickwallMetricInfo info;
 
     @Override
-    public String getHickwallClusterMetricFormat() {
-        return getProperty(KEY_HICKWALL_CLUSTER_METRIC_FORMAT, "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s");
+    public Map<String,String> getHickwallClusterMetricFormat() {
+        String property = getProperty(KEY_HICKWALL_CLUSTER_METRIC_FORMAT, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     @Override
