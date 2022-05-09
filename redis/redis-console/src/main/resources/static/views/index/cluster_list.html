@@ -64,7 +64,7 @@
                 	<a ng-if="showAll" href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=retrieve" class="btn btn-info btn-xs">Cluster</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_shards?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">Shards</a>
-                    <a ng-if="showAll" href="/#/cluster_routes?clusterName={{cluster.clusterName}}&dcName" class="btn btn-info btn-xs">Routes</a>
+                    <a href="/#/cluster_routes?clusterName={{cluster.clusterName}}&dcName" class="btn btn-info btn-xs">Routes</a>
                     <a href="/#/migration_event_list?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">迁移事件</a>&nbsp;
                     <a ng-if="showAll || showUnhealthy" href="/#/active_dc_migration?clusterName={{cluster.clusterName}}" class="btn btn-danger btn-xs">迁移</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=update" class="btn btn-info btn-xs">修改</a>
