@@ -48,7 +48,7 @@ public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
         }
     }
 
-    private RouteMeta getRouteMeta(DcMeta dcMeta, Integer id) {
+    private RouteMeta getRouteMeta(DcMeta dcMeta, Long id) {
         for(RouteMeta routeMeta : dcMeta.getRoutes()) {
             if(routeMeta.getId().equals(id)) {
                 return routeMeta;

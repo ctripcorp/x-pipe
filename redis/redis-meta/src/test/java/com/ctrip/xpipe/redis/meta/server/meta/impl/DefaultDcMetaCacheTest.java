@@ -5,11 +5,18 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -21,6 +28,9 @@ import static org.mockito.Mockito.*;
 public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
     private DefaultDcMetaCache dcMetaCache;
+
+    @Autowired
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     @Before
     public void beforeDefaultDcMetaCacheTest(){
@@ -114,7 +124,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     public void testRouteChangeNonMetaChange() {
         DcMeta current = getDcMeta("fra");
         DcMeta future = MetaClone.clone(current);
-        future.addRoute(new RouteMeta(1000).setTag(Route.TAG_CONSOLE).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
+        future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_CONSOLE).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
         dcMetaCache.checkRouteChange(current, future);
@@ -125,7 +135,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     public void testRouteChangeWithMetaAdd() {
         DcMeta current = getDcMeta("fra");
         DcMeta future = MetaClone.clone(current);
-        future.addRoute(new RouteMeta(1000).setTag(Route.TAG_META).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
+        future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_META).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
         dcMetaCache.checkRouteChange(current, future);
@@ -155,4 +165,58 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         dcMetaCache.checkRouteChange(current, future);
         verify(observer, times(1)).update(any(DcRouteMetaComparator.class), any());
     }
+
+    @Test
+    public void testGetClusterDesignatedRoutes() {
+        RouteMeta routeMeta1 = new RouteMeta().setId(1L);
+        RouteMeta routeMeta3 = new RouteMeta().setId(3L);
+        RouteMeta routeMeta4 = new RouteMeta().setId(4L);
+        RouteMeta routeMeta5 = new RouteMeta().setId(5L);
+        RouteMeta routeMeta6 = new RouteMeta().setId(6L);
+        RouteMeta routeMeta9 = new RouteMeta().setId(9L);
+        RouteMeta routeMeta10 = new RouteMeta().setId(10L);
+
+        String clusterName1 = "cluster1";
+        String clusterName2 = "cluster2";
+        String biClusterName1 = "bi-cluster1";
+        String biClusterName2 = "bi-cluster2";
+
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        UnitTestServerConfig localConfig = new UnitTestServerConfig();
+        localConfig.setWaitForMetaSyncDelayMilli(5000);
+        dcMetaCache.setMetaServerConfig(localConfig);
+        RouteChooseStrategyFactory routeChooseStrategyFactory = new DefaultRouteChooseStrategyFactory();
+        dcMetaCache.setRouteChooseStrategyFactory(routeChooseStrategyFactory);
+        RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
+                RouteChooseStrategyFactory.RouteStrategyType.lookup(config.getChooseRouteStrategyType());
+        RouteChooseStrategy strategy = routeChooseStrategyFactory.create(routeStrategyType);
+
+        // init DcMetaManager
+        DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[2];
+        DcMeta future = MetaClone.clone(dcMeta);
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 10000);
+
+        Map<String, RouteMeta> routes = dcMetaCache.chooseRoutes(1L);
+        Assert.assertEquals(1, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta4), clusterName1).getId(), routes.get("jq").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
+        routes = dcMetaCache.chooseRoutes(2L);
+        Assert.assertEquals(1, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3), clusterName2).getId(), routes.get("jq").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
+        routes = dcMetaCache.chooseRoutes(4L);
+        Assert.assertEquals(2, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta6), biClusterName1).getId(), routes.get("jq").getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10), biClusterName1).getId(), routes.get("oy").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
+        routes = dcMetaCache.chooseRoutes(5L);
+        Assert.assertEquals(2, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5), biClusterName2).getId(), routes.get("jq").getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9), biClusterName2).getId(), routes.get("oy").getId());
+
+    }
+
 }

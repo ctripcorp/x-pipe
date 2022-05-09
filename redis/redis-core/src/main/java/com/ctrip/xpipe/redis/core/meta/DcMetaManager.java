@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,14 +16,10 @@ import java.util.Set;
  */
 public interface DcMetaManager{
 
-	/**
-	 * if no route found return null
-	 * @param clusterId
-	 * @return
-	 */
-	RouteMeta randomRoute(String clusterId);
-
 	List<RouteMeta> getAllMetaRoutes();
+
+	Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+										Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc
@@ -109,8 +107,6 @@ public interface DcMetaManager{
 	Long clusterId2DbId(String clusterId);
 
 	Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId);
-
-	RouteMeta randomRoute(Long clusterDbId);
 
 	boolean hasCluster(Long clusterDbId);
 

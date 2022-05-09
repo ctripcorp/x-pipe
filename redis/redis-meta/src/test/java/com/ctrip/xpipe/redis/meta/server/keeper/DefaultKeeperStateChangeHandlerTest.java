@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -47,7 +48,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 
 	@Mock
 	private MultiDcService multiDcService;
-	
+
 	private String clusterId, shardId;
 	private Long clusterDbId, shardDbId;
 	
@@ -85,7 +86,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		appliers = createRandomAppliers(1);
 		redis = newRandomFakeRedisMeta("localhost", randomPort());
 
-		
+
 		keeperMaster = new Pair<>("localhost", randomPort());
 		
 		LifecycleHelper.initializeIfPossible(handler);
@@ -131,6 +132,8 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 
 		when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(keepers);
 		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(keeperMaster);
+		when(currentMetaManager.getClusterMeta(clusterDbId)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(true);
 		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(false);
 		when(dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)).thenReturn(true);
 		when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Collections.singletonList(redis));
@@ -145,6 +148,8 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		List<KeeperMeta> newKeepers = Lists.newArrayList(MetaClone.clone(keepers.get(1)).setActive(true));
 		when(currentMetaManager.getSurviveKeepers(clusterDbId1, shardDbId1)).thenReturn(newKeepers);
 		when(currentMetaManager.getKeeperMaster(clusterDbId1, shardDbId1)).thenReturn(keeperMaster);
+		when(currentMetaManager.getClusterMeta(clusterDbId1)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId1, shardDbId1)).thenReturn(true);
 		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(false);
 
 		when(dcMetaCache.isCurrentDcBackUp(clusterDbId1)).thenReturn(false);

@@ -76,7 +76,8 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public RouteInfoModel getRouteInfoModelById(long routeId) {
-        return convertRouteTblToRouteInfoModel(routeDao.getRouteById(routeId), new DcIdNameMapper.DefaultMapper(dcService), proxyService.proxyIdUriMap());
+        return convertRouteTblToRouteInfoModel(routeDao.getRouteById(routeId),
+                new DcIdNameMapper.DefaultMapper(dcService), proxyService.proxyIdUriMap());
     }
 
     @Override
@@ -95,13 +96,30 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
+    public Map<Long, RouteInfoModel> getRouteIdInfoModelMap(){
+        Map<Long, RouteInfoModel> result = new HashMap<>();
+        getAllActiveRouteInfoModels().forEach(routeInfoModel -> result.put(routeInfoModel.getId(), routeInfoModel));
+
+        return result;
+    }
+
+    @Override
+    public List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName) {
+        DcTbl srcDcTbl = dcService.findByDcName(srcDcName);
+        return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, srcDcTbl.getId()));
+    }
+
+    @Override
     public List<RouteInfoModel> getAllActiveRouteInfoModelsByTag(String tag) {
         return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTag(tag));
     }
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndDirection(String tag, String srcDcName, String dstDcName) {
-        return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndDirection(tag, dcService.findByDcName(srcDcName).getId(), dcService.findByDcName(dstDcName).getId()));
+        DcTbl srcDcTbl = dcService.findByDcName(srcDcName);
+        DcTbl dstDcTbl = dcService.findByDcName(dstDcName);
+
+        return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndDirection(tag, srcDcTbl.getId(), dstDcTbl.getId()));
     }
 
     private List<RouteInfoModel> convertRouteTblsToRouteInfoModels(List<RouteTbl> routeTbls) {
@@ -118,8 +136,10 @@ public class RouteServiceImpl implements RouteService {
         return Lists.newArrayList(clone);
     }
 
-    private RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap ) {
+    @Override
+    public RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap) {
         RouteInfoModel routeInfoModel = new RouteInfoModel();
+        if(routeTbl == null) return routeInfoModel;
 
         routeInfoModel.setActive(routeTbl.isActive()).setId(routeTbl.getId()).setTag(routeTbl.getTag())
                 .setSrcDcName(dcIdNameMapper.getName(routeTbl.getSrcDcId()))
@@ -131,7 +151,7 @@ public class RouteServiceImpl implements RouteService {
                 .setDescription(routeTbl.getDescription());
 
         if (!OrgUtil.isDefaultOrg(routeTbl.getRouteOrgId())) {
-            routeInfoModel.setOrgName(organizationService.getOrganizationTblByCMSOrganiztionId(routeTbl.getRouteOrgId()).getOrgName());
+            routeInfoModel.setOrgName(organizationService.getOrganization(routeTbl.getRouteOrgId()).getOrgName());
         }
         return routeInfoModel;
     }
@@ -142,7 +162,7 @@ public class RouteServiceImpl implements RouteService {
         List<String> proxyUris = new ArrayList<>();
 
         proxys.forEach((proxyId) -> {
-            proxyUris.add(proxyIdUriMap.get(Long.parseLong(proxyId)));
+            proxyUris.add(proxyIdUriMap.get(Long.parseLong(proxyId.trim())));
         });
 
         return proxyUris;
@@ -209,7 +229,7 @@ public class RouteServiceImpl implements RouteService {
         Map<String, Long> proxyUriIdMap = proxyService.proxyUriIdMap();
 
         if(model.getId() != 0)  routeTbl.setId(model.getId());
-        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getOrgId());
+        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
 
         routeTbl.setSrcProxyIds(model.getSrcProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getSrcProxies()));
         routeTbl.setOptionalProxyIds(model.getOptionalProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getOptionalProxies()));

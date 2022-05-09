@@ -148,4 +148,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getBiDirectionMigrationDcPriority();
 
+	String getChooseRouteStrategyType();
+
 }

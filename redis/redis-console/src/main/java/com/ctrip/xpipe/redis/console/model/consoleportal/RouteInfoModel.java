@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import java.util.List;
+import java.util.Objects;
 
-public class RouteInfoModel {
+public class RouteInfoModel implements Comparable<RouteInfoModel> {
 
     private long id;
 
@@ -24,7 +25,7 @@ public class RouteInfoModel {
 
     private boolean isPublic;
 
-    private String description="";
+    private String description = "";
 
     public RouteInfoModel() {
 
@@ -130,6 +131,29 @@ public class RouteInfoModel {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RouteInfoModel that = (RouteInfoModel) o;
+        return id == that.id
+                && active == that.active
+                && isPublic == that.isPublic
+                && Objects.equals(orgName, that.orgName)
+                && Objects.equals(srcProxies, that.srcProxies)
+                && Objects.equals(optionalProxies, that.optionalProxies)
+                && Objects.equals(dstProxies, that.dstProxies)
+                && Objects.equals(srcDcName, that.srcDcName)
+                && Objects.equals(dstDcName, that.dstDcName)
+                && Objects.equals(tag, that.tag)
+                && Objects.equals(description, that.description);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, isPublic, description);
+    }
+
+    @Override
     public String toString() {
         return "RouteInfoModel{" +
                 "id=" + id +
@@ -145,4 +169,11 @@ public class RouteInfoModel {
                 ", description='" + description + '\'' +
                 '}';
     }
+
+    @Override
+    public int compareTo(RouteInfoModel o) {
+        int i = this.dstDcName.compareTo(o.getDstDcName());
+        return i != 0 ? i : Long.compare(this.id, o.id);
+    }
+
 }

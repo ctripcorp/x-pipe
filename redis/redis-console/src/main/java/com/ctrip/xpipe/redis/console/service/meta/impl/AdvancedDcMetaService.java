@@ -287,7 +287,7 @@ public class AdvancedDcMetaService implements DcMetaService {
                 continue;
             }
             RouteMeta routeMeta = new RouteMeta();
-            routeMeta.setId((int) route.getId()).setOrgId((int) route.getRouteOrgId()).setTag(route.getTag());
+            routeMeta.setId(route.getId()).setOrgId((int) route.getRouteOrgId()).setTag(route.getTag());
             routeMeta.setSrcDc(getDcName(route.getSrcDcId(), dcTbls)).setDstDc(getDcName(route.getDstDcId(), dcTbls));
             routeMeta.setRouteInfo(getRouteInfo(route, proxyTblMap));
             routeMeta.setIsPublic(route.isIsPublic());

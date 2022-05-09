@@ -1,17 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutorTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTriggerTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultClusterServersTest;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.PeerMasterMetaServerStateChangeHandlerTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.*;
-import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.*;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.DefaultPeerMasterStateAdjusterTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.DefaultPeerMasterStateManagerTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.PeerMasterAdjustActionTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.PeerMasterAdjustJobFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.ClusterShardCachedNewMasterChooserTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.dchange.impl.*;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMasterTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.*;
@@ -32,15 +35,13 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
-import com.ctrip.xpipe.redis.meta.server.meta.ChooseRouteStrategyTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.*;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheRefreshTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
-import com.ctrip.xpipe.redis.meta.server.dchange.impl.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -69,7 +70,6 @@ import org.junit.runners.Suite.SuiteClasses;
 	ForwardInfoTest.class,
 	AtLeastOneCheckerTest.class,
 	CurrentMetaTest.class, 
-	ChooseRouteStrategyTest.class,
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
 	DefaultKeeperElectorManagerTest.class,
