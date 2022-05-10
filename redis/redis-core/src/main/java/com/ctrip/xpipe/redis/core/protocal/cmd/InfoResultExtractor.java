@@ -105,9 +105,7 @@ public class InfoResultExtractor {
         return extractAsLong(KEY_MASTER_REPL_OFFSET);
     }
 
-
     public long getSlaveReplOffset() {
         return extractAsLong(KEY_SLAVE_REPL_OFFSET);
     }
-
 }
