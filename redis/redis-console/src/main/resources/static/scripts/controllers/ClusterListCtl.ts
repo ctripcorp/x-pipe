@@ -50,7 +50,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     if($scope.clusterName) {
     	ClusterService.load_cluster($scope.clusterName)
         .then(function (data) {
-            loadTable([data])
+            loadTable([data]);
+            $scope.showAll = true;
         });
     } else if ($scope.dcName) {
         if ($scope.type === "activeDC") {
