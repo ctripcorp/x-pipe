@@ -1,5 +1,5 @@
 
-<div class="col-md-10 col-md-offset-1">
+<div class="col-md-12">
     <div class="panel panel-primary">
         <header class="panel-heading">
             <div class="row">
@@ -46,6 +46,7 @@
                         <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
                     </span>
                     </td>
+                    <td data-title="'desc'" ng-bind="route.description"></td>
             </table>
 
             <div class="form-group">
