@@ -104,6 +104,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getOuterClientSyncInterval();
 
+	String getOuterClientToken();
+
 	String filterOuterClusters();
 
 	Map<String, String> getConsoleDomains();

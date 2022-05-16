@@ -51,6 +51,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTER_CLIENT_SYNC_INTERVAL = "console.outer.client.sync.interval";
 
+    private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
+
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
@@ -377,6 +379,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getOuterClientSyncInterval() {
         return getIntProperty(KEY_OUTER_CLIENT_SYNC_INTERVAL, 10 * 1000);
+    }
+
+    @Override
+    public String getOuterClientToken() {
+        return getProperty(KEY_OUTER_CLIENT_TOKEN, "");
     }
 
     @Override
