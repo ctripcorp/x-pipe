@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.*;
 
-@JsonPropertyOrder({"unExpectedRouteUsedClusterNum", "unexpectedRouteUsageDirectionInfos", "unexpectedRouteUsageDetailInfos"})
+@JsonPropertyOrder({"unexpectedRouteUsedClusterNum", "unexpectedRouteUsageDirectionInfos", "unexpectedRouteUsageDetailInfos"})
 public class UnexpectedRouteUsageInfoModel {
 
     private int unexpectedRouteUsedClusterNum;

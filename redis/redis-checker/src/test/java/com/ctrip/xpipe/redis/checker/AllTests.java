@@ -41,6 +41,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostat
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.CrdtSyncListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeMetricListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.inforeplication.InfoReplicationActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.inforeplication.InfoReplicationActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.inforeplication.RedisMasterBacklogOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.inforeplication.RedisSlaveBacklogOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.infostats.InfoStatsActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.infostats.InfoStatsActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.infostats.RedisSnycListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeMetricListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckActionFactoryTest;
@@ -108,6 +115,13 @@ import org.junit.runners.Suite;
         DelayActionTest.class,
         CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
+        InfoReplicationActionTest.class,
+        InfoReplicationActionFactoryTest.class,
+        RedisMasterBacklogOffsetListenerTest.class,
+        RedisSlaveBacklogOffsetListenerTest.class,
+        InfoStatsActionFactoryTest.class,
+        InfoStatsActionTest.class,
+        RedisSnycListenerTest.class,
 
         RedisMasterControllerTest.class,
         DefaultHealthCheckerMockTest.class,

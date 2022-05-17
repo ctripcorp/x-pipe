@@ -97,13 +97,28 @@
             <div class="modal-body form-horizontal">
                 <div ng-repeat="toAddDesignatedRoute in toAddDesignatedRoutes">
                     <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> dstDcName </label>
+                        <div class="col-sm-6">
+                            <select
+                                    ng-model="toAddDesignatedRoute.dstDcName"
+                                    allow_single_deselect=true
+                                    style="width:250px;"
+                                    ng-options="dcName for dcName in dstDcs"
+                                    ng-required="true"
+                            >
+                                <option value=""></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label class="col-sm-4 control-label no-padding-right"> routeId </label>
                         <div class="col-sm-6">
                             <select
                                     ng-model="toAddDesignatedRoute.id"
                                     allow_single_deselect=true
                                     style="width:250px;"
-                                    ng-options="routeId for routeId in allRouteIds"
+                                    ng-options="routeId for routeId in allDcRouteIdsMap[toAddDesignatedRoute.dstDcName]"
                                     ng-required="true"
                             >
                                 <option value=""></option>

@@ -253,6 +253,11 @@ public class RedisSession {
         return info(InfoCommand.INFO_TYPE.STATS.cmd(), callback);
     }
 
+
+    public CommandFuture<String> infoReplication(Callbackable<String> callback) {
+        return info(InfoCommand.INFO_TYPE.REPLICATION.cmd(), callback);
+    }
+
     public CommandFuture infoServer(Callbackable<String> callback) {
         String section = "server";
         return info(section, callback);
@@ -264,11 +269,6 @@ public class RedisSession {
 
     public CommandFuture<String> crdtInfoReplication(Callbackable<String> callback) {
         return crdtInfo(InfoCommand.INFO_TYPE.REPLICATION.cmd(), callback);
-    }
-
-    public void infoReplication(Callbackable<String> callback) {
-        String infoReplicationSection = "replication";
-        info(infoReplicationSection, callback);
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
