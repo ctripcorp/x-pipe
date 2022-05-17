@@ -23,6 +23,7 @@ public class RedisSnycListener extends AbstractMetricListener<InfoStatsContext, 
             InfoResultExtractor extractor = context.getResult();
             long recvTimeMilli = context.getRecvTimeMilli();
             RedisInstanceInfo info = context.instance().getCheckInfo();
+            if(!info.isMaster()) return;
 
             tryWriteMetric(getPoint(METRIC_TYPE_REDIS_SYNC_FULL, extractor.getSyncFull(), recvTimeMilli, info));
             tryWriteMetric(getPoint(METRIC_TYPE_REDIS_SYNC_PARTIAL_OK, extractor.getSyncPartialOk(), recvTimeMilli, info));

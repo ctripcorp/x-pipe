@@ -68,9 +68,18 @@ public class RedisSnycListenerTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testRedisSync() throws MetricProxyException {
+    public void testMasterRedisSync() throws MetricProxyException {
+        instance.getCheckInfo().isMaster(true);
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));
         Mockito.verify(proxy, Mockito.times(3)).writeBinMultiDataPoint(Mockito.any());
+    }
+
+    @Test
+    public void testSlaveRedisSync() throws MetricProxyException {
+        instance.getCheckInfo().isMaster(false);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Mockito.verify(proxy, Mockito.times(0)).writeBinMultiDataPoint(Mockito.any());
     }
 }
