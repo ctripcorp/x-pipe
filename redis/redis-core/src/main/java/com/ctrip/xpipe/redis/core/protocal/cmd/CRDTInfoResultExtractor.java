@@ -6,8 +6,6 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.logging.log4j.util.Strings;
 
@@ -23,13 +21,6 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
     private static final String TEMP_PROXY_SERVERS = "peer%d_proxy_servers";
     private static final String TEMP_PROXY_PARAMS = "peer%d_proxy_params";
     private static final String TEMP_REPL_OFFSET = "peer%d_repl_offset";
-
-
-    private static final String KEY_SYNC_FULL = "sync_full";
-    private static final String KEY_SYNC_PARTIAL_OK = "sync_partial_ok";
-    private static final String KEY_SYNC_PARTIAL_ERR = "sync_partial_err";
-
-    private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
     
     public CRDTInfoResultExtractor(String result) {
         super(result);
@@ -112,21 +103,4 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
         info.setReplOffset(replOffset);
         return info;
     }
-    
-    public long getSyncFull() {
-        return extractAsLong(KEY_SYNC_FULL);
-    }
-
-    public long getSyncPartialOk() {
-        return extractAsLong(KEY_SYNC_PARTIAL_OK);
-    }
-
-    public long getSyncPartialErr() {
-        return extractAsLong(KEY_SYNC_PARTIAL_ERR);
-    }
-    
-    public long getMasterReplOffset() {
-        return extractAsLong(KEY_MASTER_REPL_OFFSET);
-    }
-    
 }

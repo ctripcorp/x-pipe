@@ -17,7 +17,11 @@ module.exports = {
       { 
         test: /ng-table\/.*\.html$/, 
         use: ['ngtemplate-loader?requireAngular&relativeTo=/src/browser/&prefix=ng-table/', 'html-loader'] 
-      }
+      },
+      {
+        test: /\.(jpg|png|gif)$/,
+        loader: 'url-loader'
+      },
     ],
   },
   resolve: {

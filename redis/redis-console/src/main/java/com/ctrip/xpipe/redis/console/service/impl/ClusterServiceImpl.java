@@ -698,6 +698,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		ClusterTbl clusterTbl = find(clusterName);
 		if (null == clusterTbl) throw new BadRequestException("not exist cluster " + clusterName);
+		if (!needCheckClusterRouteInfo(clusterTbl.getClusterType())) return defaultRoutes;
 
 		List<String> dstDcNames = parseDstDcs(clusterTbl);
 		Map<String, RouteMeta> chooseRoutes = metaCache.chooseRoutes(clusterName, srcDcName, dstDcNames, (int)clusterTbl.getClusterOrgId(), null);
@@ -731,6 +732,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public List<RouteInfoModel> findClusterUsedRoutesBySrcDcNameAndClusterName(String srcDcName, String clusterName) {
+		ClusterTbl clusterTbl = find(clusterName);
+		if (!needCheckClusterRouteInfo(clusterTbl.getClusterType())) return Collections.emptyList();
+
 		Map<String, List<ProxyChain>> proxyChains = proxyService.getProxyChains(srcDcName, clusterName);
 
 		List<RouteInfoModel> allRoutes = routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
@@ -785,6 +789,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public List<RouteInfoModel> findClusterDesignateRoutesBySrcDcNameAndClusterName(String srcDcName, String clusterName) {
 		ClusterTbl clusterTbl = find(clusterName);
 		if (null == clusterTbl) throw new BadRequestException("not exist cluster " + clusterName);
+		if (!needCheckClusterRouteInfo(clusterTbl.getClusterType())) return Collections.emptyList();
 
 		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
 		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return Collections.emptyList();
@@ -864,10 +869,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+				if (!needCheckClusterRouteInfo(clusterMeta.getType())) continue;
+
 				checkClusterRouteUsageInfo(clusterMeta, dcMeta.getId(), dcMeta.getRoutes(), unexpectedRouteUsageInfoModel);
 			}
 		}
 		return unexpectedRouteUsageInfoModel;
+	}
+
+	private boolean needCheckClusterRouteInfo(String clusterType) {
+		return ClusterType.isSameClusterType(clusterType, ClusterType.BI_DIRECTION)
+				|| ClusterType.isSameClusterType(clusterType, ClusterType.ONE_WAY);
 	}
 
 	private void checkClusterRouteUsageInfo(ClusterMeta clusterMeta, String srcDcName, List<RouteMeta> allDcRoutes,
