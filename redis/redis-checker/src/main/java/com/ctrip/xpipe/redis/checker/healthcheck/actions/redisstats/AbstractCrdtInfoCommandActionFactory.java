@@ -6,15 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public abstract class AbstractInfoCommandActionFactory<T extends AbstractInfoListener, C extends AbstractInfoCommandAction> extends AbstractRedisLeaderAwareHealthCheckActionFactory {
-
+public abstract class AbstractCrdtInfoCommandActionFactory<T extends AbstractInfoListener, C extends AbstractInfoCommandAction> extends AbstractRedisLeaderAwareHealthCheckActionFactory {
     @Autowired
     private List<T> listeners;
+
+    @Autowired
+    private RedisStatsCheckController checkController;
 
     @Override
     public C create(RedisHealthCheckInstance instance) {
         C action = createAction(instance);
         action.addListeners(listeners);
+        action.addController(checkController);
         return action;
     }
     
