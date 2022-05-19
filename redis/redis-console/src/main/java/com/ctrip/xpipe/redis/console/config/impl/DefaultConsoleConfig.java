@@ -63,6 +63,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
 
+    private static final String KEY_NO_HEALTH_CHECK_MINUTES = "no.health.check.minutes";
+
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
     private static final String KEY_SENTINEL_REDUNDANT_REDIS_SENSITIVE = "console.health.sentinel.monitor.redundant.sensitive";
@@ -300,6 +302,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getNoAlarmMinutesForClusterUpdate() {
         return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE, 15);
+    }
+
+    @Override
+    public int getHealthCheckSuspendMinutes() {
+        return getIntProperty(KEY_NO_HEALTH_CHECK_MINUTES, 40);
     }
 
     @Override
