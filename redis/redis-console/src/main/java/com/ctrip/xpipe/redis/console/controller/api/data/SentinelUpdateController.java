@@ -4,6 +4,8 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -30,7 +32,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractController.CLUSTER_NAME_PATH_VARIABLE;
@@ -47,9 +51,6 @@ public class SentinelUpdateController {
 
     @Autowired
     private SentinelGroupService sentinelGroupService;
-
-    @Autowired
-    private SentinelService sentinelService;
 
     @Autowired
     public SentinelBalanceService sentinelBalanceService;
@@ -364,6 +365,102 @@ public class SentinelUpdateController {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
+
+    @RequestMapping(value = "add/shard/sentinels/{dcName}/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.POST)
+    public RetMessage addShardSentinels(@PathVariable String dcName, @PathVariable String clusterName, @PathVariable String shardName, @RequestBody HostPort master) {
+        logger.info("[addShardSentinels] begin to add sentinels to shard {}:{}:{}, master:{} ", dcName, clusterName, shardName, master.toString());
+        try {
+            if (master.getHost() == null)
+                return RetMessage.createFailMessage("master ip is null");
+
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if (clusterTbl == null) {
+                return RetMessage.createFailMessage(String.format("cluster %s not found", clusterName));
+            }
+
+            ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+            SentinelGroupModel sentinelGroup = getSentinelGroup(clusterType, dcName, clusterName, shardName);
+
+            String sentinelMonitorName = buildSentinelMonitorName(clusterType, dcName, clusterName, shardName);
+
+            addSentinels(sentinelGroup, sentinelMonitorName, master);
+            setSentinelsIfNeeded(clusterType, sentinelGroup, sentinelMonitorName);
+
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("addShardSentinels: {}:{}:{}, master:{}", dcName, clusterName, shardName, master.toString());
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    void addSentinels(SentinelGroupModel sentinelGroup, String sentinelMonitorName, HostPort master) throws InterruptedException, ExecutionException, TimeoutException {
+        ParallelCommandChain monitorChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        for (SentinelInstanceModel sentinelModel : sentinelGroup.getSentinels()) {
+            Sentinel sentinel = new Sentinel(String.format("%s:%d", sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort()), sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort());
+            monitorChain.add(sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum()));
+            CatEventMonitor.DEFAULT.logEvent("Sentinel.Api.SentinelAdd", String.format("%s, %s, %s", sentinel.getName(), sentinelMonitorName, master.toString()));
+        }
+        monitorChain.execute().get(1000, TimeUnit.MILLISECONDS);
+    }
+
+    void setSentinelsIfNeeded(ClusterType clusterType, SentinelGroupModel sentinelGroup, String sentinelMonitorName) throws InterruptedException, ExecutionException, TimeoutException {
+        Map<ClusterType, String[]> clusterTypeSentinelConfig = getClusterTypeSentinelConfig();
+        String[] sentinelConfigs = clusterTypeSentinelConfig.get(clusterType);
+
+        if (sentinelConfigs != null && sentinelConfigs.length != 0) {
+            ParallelCommandChain sentinelSetChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+            for (SentinelInstanceModel sentinelModel : sentinelGroup.getSentinels()) {
+                Sentinel sentinel = new Sentinel(String.format("%s:%d", sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort()), sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort());
+                sentinelSetChain.add(sentinelManager.sentinelSet(sentinel, sentinelMonitorName, sentinelConfigs));
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Api.SentinelSet", String.format("%s, %s", sentinel.getName(), sentinelMonitorName));
+            }
+            sentinelSetChain.execute().get(1000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    SentinelGroupModel getSentinelGroup(ClusterType clusterType, String dcName, String clusterName, String shardName) {
+        long sentinelGroupId;
+        if (clusterType.equals(ClusterType.CROSS_DC)) {
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardName);
+            if (dcClusterShardTbls == null || dcClusterShardTbls.isEmpty())
+                throw new XpipeRuntimeException(String.format("dc cluster shard not found by %s:%s:%s", dcName, clusterName, shardName));
+            sentinelGroupId = dcClusterShardTbls.get(0).getSetinelId();
+        } else {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcName, clusterName, shardName);
+            if (dcClusterShardTbl == null)
+                throw new XpipeRuntimeException(String.format("dc cluster shard not found by %s:%s:%s", dcName, clusterName, shardName));
+            sentinelGroupId = dcClusterShardTbl.getSetinelId();
+        }
+
+        if (sentinelGroupId == 0)
+            throw new XpipeRuntimeException(String.format("no sentinel config for dc cluster shard %s:%s:%s", dcName, clusterName, shardName));
+
+        SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(sentinelGroupId);
+        if (sentinelGroupModel == null) {
+            throw new XpipeRuntimeException(String.format("no sentinel group found by id:%d", sentinelGroupId));
+        }
+
+        return sentinelGroupModel;
+    }
+
+    String buildSentinelMonitorName(ClusterType clusterType, String dcName, String clusterName, String shardName) {
+        if (clusterType.equals(ClusterType.CROSS_DC)) {
+            return SentinelUtil.getSentinelMonitorName(clusterName, shardName, consoleConfig.crossDcSentinelMonitorNameSuffix());
+        } else {
+            return SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
+        }
+    }
+
+    Map<ClusterType, String[]> getClusterTypeSentinelConfig() {
+        Map<ClusterType, String[]> clusterTypeSentinelConfig = new HashMap<>();
+        Map<String, String> configMap = consoleConfig.sentinelMasterConfig();
+        configMap.forEach((k, v) -> {
+            String[] sentinelConfigs = v.split("\\s*,\\s*");
+            clusterTypeSentinelConfig.put(ClusterType.lookup(k), sentinelConfigs);
+        });
+        return clusterTypeSentinelConfig;
+    }
+
 
     private RetMessage updateShardSentinels(String dcName,ClusterTbl clusterTbl,String shardName,DcClusterShardTbl dcClusterShardTbl) throws DalException {
         String clusterType = clusterTbl.getClusterType();

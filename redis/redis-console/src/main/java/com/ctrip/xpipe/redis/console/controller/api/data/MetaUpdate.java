@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -71,6 +72,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
+
+    @Autowired
+    private ConsoleConfig config;
 
     private static final String TYPE = "MetaUpdate";
 
@@ -219,7 +223,9 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterTbl latterClusterTbl = null;
 
         try {
-           exchangeNameInfo.check();
+            exchangeNameInfo.check();
+            if (!exchangeNameInfo.getToken().equals(config.getOuterClientToken()))
+                return RetMessage.createFailMessage("token error");
 
             formerClusterTbl = clusterService.find(exchangeNameInfo.getFormerClusterName());
             if (formerClusterTbl == null) {
@@ -620,4 +626,8 @@ public class MetaUpdate extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
+    @VisibleForTesting
+    void setConfig(ConsoleConfig config) {
+        this.config = config;
+    }
 }

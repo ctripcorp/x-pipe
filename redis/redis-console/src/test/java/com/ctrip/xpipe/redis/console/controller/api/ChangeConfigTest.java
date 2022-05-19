@@ -41,7 +41,7 @@ public class ChangeConfigTest {
     public void setupChangeConfigTest() {
         Mockito.when(clusterService.find(clusterName)).thenReturn(new ClusterTbl());
         Mockito.when(consoleConfig.getConfigDefaultRestoreHours()).thenReturn(configDefaultRestoreHours);
-        Mockito.when(consoleConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(noAlarmMinutesForClusterUpdate);
+        Mockito.when(consoleConfig.getHealthCheckSuspendMinutes()).thenReturn(noAlarmMinutesForClusterUpdate);
     }
 
     @Test

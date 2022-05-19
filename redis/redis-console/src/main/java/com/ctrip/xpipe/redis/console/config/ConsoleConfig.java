@@ -86,6 +86,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getNoAlarmMinutesForClusterUpdate();
 
+	int getHealthCheckSuspendMinutes();
+
 	Set<String> getIgnoredHealthCheckDc();
 
 	Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
@@ -103,6 +105,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getOutterClientCheckInterval();
 
 	int getOuterClientSyncInterval();
+
+	String getOuterClientToken();
 
 	String filterOuterClusters();
 
