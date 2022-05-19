@@ -32,7 +32,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractController.CLUSTER_NAME_PATH_VARIABLE;
@@ -391,20 +393,17 @@ public class SentinelUpdateController {
         }
     }
 
-    void addSentinels(SentinelGroupModel sentinelGroup, String sentinelMonitorName, HostPort master) {
+    void addSentinels(SentinelGroupModel sentinelGroup, String sentinelMonitorName, HostPort master) throws InterruptedException, ExecutionException, TimeoutException {
         ParallelCommandChain monitorChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
         for (SentinelInstanceModel sentinelModel : sentinelGroup.getSentinels()) {
             Sentinel sentinel = new Sentinel(String.format("%s:%d", sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort()), sentinelModel.getSentinelIp(), sentinelModel.getSentinelPort());
             monitorChain.add(sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum()));
             CatEventMonitor.DEFAULT.logEvent("Sentinel.Api.SentinelAdd", String.format("%s, %s, %s", sentinel.getName(), sentinelMonitorName, master.toString()));
         }
-        monitorChain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
-            logger.error("monitorMaster failed, {}, {}", sentinelMonitorName, sentinelGroup, throwable);
-            return null;
-        });
+        monitorChain.execute().get(1000, TimeUnit.MILLISECONDS);
     }
 
-    void setSentinelsIfNeeded(ClusterType clusterType, SentinelGroupModel sentinelGroup, String sentinelMonitorName) {
+    void setSentinelsIfNeeded(ClusterType clusterType, SentinelGroupModel sentinelGroup, String sentinelMonitorName) throws InterruptedException, ExecutionException, TimeoutException {
         Map<ClusterType, String[]> clusterTypeSentinelConfig = getClusterTypeSentinelConfig();
         String[] sentinelConfigs = clusterTypeSentinelConfig.get(clusterType);
 
@@ -415,10 +414,7 @@ public class SentinelUpdateController {
                 sentinelSetChain.add(sentinelManager.sentinelSet(sentinel, sentinelMonitorName, sentinelConfigs));
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Api.SentinelSet", String.format("%s, %s", sentinel.getName(), sentinelMonitorName));
             }
-            sentinelSetChain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
-                logger.error("set sentinels failed, {}, {}", sentinelMonitorName, sentinelGroup, throwable);
-                return null;
-            });
+            sentinelSetChain.execute().get(1000, TimeUnit.MILLISECONDS);
         }
     }
 
