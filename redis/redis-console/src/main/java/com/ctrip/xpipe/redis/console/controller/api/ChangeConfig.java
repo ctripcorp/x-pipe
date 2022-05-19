@@ -104,7 +104,7 @@ public class ChangeConfig extends AbstractConsoleController{
             "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/stop"}, method = RequestMethod.POST)
     public RetMessage stopSentinelCheck(HttpServletRequest request, @PathVariable String clusterName,
                                         @PathVariable(required = false) Integer maintainMinutes) throws DalException {
-        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getNoAlarmMinutesForClusterUpdate();
+        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
         maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
 
         checkClusterName(clusterName);
@@ -141,7 +141,7 @@ public class ChangeConfig extends AbstractConsoleController{
             "/config/alert/" + CLUSTER_NAME_PATH_VARIABLE + "/stop"})
     public RetMessage stopClusterAlert(HttpServletRequest request, @PathVariable String clusterName,
                                         @PathVariable(required = false) Integer maintainMinutes) throws DalException {
-        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getNoAlarmMinutesForClusterUpdate();
+        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
         maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
 
         checkClusterName(clusterName);

@@ -51,6 +51,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTER_CLIENT_SYNC_INTERVAL = "console.outer.client.sync.interval";
 
+    private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
+
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
@@ -60,6 +62,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_OUTER_CLUSTER_TYPES = "console.outer.cluster.types";
 
     private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
+
+    private static final String KEY_NO_HEALTH_CHECK_MINUTES = "no.health.check.minutes";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
@@ -302,6 +306,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getHealthCheckSuspendMinutes() {
+        return getIntProperty(KEY_NO_HEALTH_CHECK_MINUTES, 40);
+    }
+
+    @Override
     public Set<String> getIgnoredHealthCheckDc() {
         return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
@@ -378,6 +387,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getOuterClientSyncInterval() {
         return getIntProperty(KEY_OUTER_CLIENT_SYNC_INTERVAL, 10 * 1000);
+    }
+
+    @Override
+    public String getOuterClientToken() {
+        return getProperty(KEY_OUTER_CLIENT_TOKEN, "");
     }
 
     @Override

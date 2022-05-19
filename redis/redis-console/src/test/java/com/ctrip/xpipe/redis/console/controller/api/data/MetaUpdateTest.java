@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
@@ -10,7 +11,10 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.mockito.Mockito.when;
 
 
 public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
@@ -20,6 +24,9 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private MetaUpdate clusterController;
+
+    @Mock
+    private ConsoleConfig config;
 
     @Test
     public void updateCluster() throws Exception {
@@ -120,6 +127,8 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testClusterExchangeName() throws Exception{
+        clusterController.setConfig(config);
+        when(config.getOuterClientToken()).thenReturn("xxxx");
         String FORMER_NAME = "cluster101", LATTER_NAME="cluster102";
         Long FORMER_ID = 101L, LATTER_ID = 102L;
         ClusterTbl clusterTbl = new ClusterTbl()
@@ -147,6 +156,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         exinfo.setFormerClusterName(FORMER_NAME);
         exinfo.setLatterClusterId(LATTER_ID);
         exinfo.setLatterClusterName(LATTER_NAME);
+        exinfo.setToken("xxxx");
         retMessage = clusterController.clusterExchangeName(exinfo);
         Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
 
