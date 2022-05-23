@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
@@ -20,7 +21,7 @@ public class ShardMetaVisitor implements MetaVisitor<ShardMeta> {
 
     @Override
     public void accept(ShardMeta shardMeta) {
-        if (ClusterType.lookup(shardMeta.parent().getType()).supportSingleActiveDC()
+        if (ClusterType.lookup(((ClusterMeta) shardMeta.parent()).getType()).supportSingleActiveDC()
                 && !shardMeta.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
             return;
         }

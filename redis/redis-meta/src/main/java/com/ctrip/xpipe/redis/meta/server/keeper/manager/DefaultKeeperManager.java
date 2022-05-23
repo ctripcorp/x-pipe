@@ -38,11 +38,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author wenchao.meng
@@ -118,7 +117,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
 
 		Long clusterDbId = clusterMeta.getDbId();
-		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
 				removeKeeper(clusterDbId, shardMeta.getDbId(), keeperMeta);
 			}
@@ -144,7 +143,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	@Override
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
 
-		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
 				addKeeper(clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
 			}
@@ -153,7 +152,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-		return Collections.singleton(ClusterType.ONE_WAY);
+	    return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
 	}
 
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
@@ -235,7 +234,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
-	protected class ShardComparatorVisitor implements MetaComparatorVisitor<Redis> {
+	protected class ShardComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
 
 		private Long clusterDbId;
 		private Long shardDbId;
@@ -246,7 +245,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 
 		@Override
-		public void visitAdded(Redis added) {
+		public void visitAdded(InstanceNode added) {
 
 			if (added instanceof KeeperMeta) {
 				addKeeper(clusterDbId, shardDbId, (KeeperMeta) added);
@@ -262,7 +261,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 
 		@Override
-		public void visitRemoved(Redis removed) {
+		public void visitRemoved(InstanceNode removed) {
 
 			if (removed instanceof KeeperMeta) {
 				removeKeeper(clusterDbId, shardDbId, (KeeperMeta) removed);
@@ -313,7 +312,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			for (Long clusterDbId : currentMetaManager.allClusters()) {
 				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterDbId);
 				if (!supportCluster(clusterMeta)) continue;
-				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+				for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 					doCheckShard(clusterMeta, shardMeta);
 				}
 			}
@@ -429,7 +428,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 

@@ -8,8 +8,10 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -20,11 +22,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -33,7 +35,6 @@ import static org.mockito.Mockito.*;
 public class DcMetaSynchronizerTest {
 
     @InjectMocks
-    @Spy
     private DcMetaSynchronizer dcMetaSynchronizer;
 
     @Mock
@@ -62,6 +63,9 @@ public class DcMetaSynchronizerTest {
 
     @Mock
     private SentinelBalanceService sentinelBalanceService;
+
+    @Mock
+    private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
@@ -231,7 +235,7 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void crossDcNotSupportedTest() throws Exception {
+    public void clusterExistedButNoShardsTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
                 new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
@@ -251,15 +255,15 @@ public class DcMetaSynchronizerTest {
         dcMetaSynchronizer.sync();
 
         verify(clusterService,times(1)).find(singleDcCacheCluster);
-        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, times(1)).bindDc(any(), any());
         verify(clusterService, never()).createCluster(any());
         verify(clusterService, never()).unbindDc(any(), any());
         verify(clusterService, never()).deleteCluster(any());
         verify(clusterService, never()).update(any());
 
-        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+        verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
 
-        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
     }
 
     @Test
@@ -294,6 +298,7 @@ public class DcMetaSynchronizerTest {
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
+        verify(clusterTypeUpdateEventFactory,times(1)).createClusterEvent(anyString(),any(ClusterTbl.class));
     }
 
     @Test
@@ -325,7 +330,7 @@ public class DcMetaSynchronizerTest {
         verify(clusterService, never()).update(any());
 
         verify(consoleConfig, times(1)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, never()).selectMultiDcSentinels();
+        verify(sentinelBalanceService, never()).selectMultiDcSentinels(ClusterType.ONE_WAY);
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
         verify(shardService, never()).deleteShard(any(), any());
 
@@ -337,7 +342,7 @@ public class DcMetaSynchronizerTest {
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         dcMetaSynchronizer.sync();
         verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels();
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(ClusterType.SINGLE_DC);
     }
 
     @Test
@@ -381,7 +386,7 @@ public class DcMetaSynchronizerTest {
 
         //        add redis
         OuterClientService.DcMeta credisDcMeta = credisDcMeta().setDcName(DcMetaSynchronizer.currentDcId);
-        credisDcMeta.getClusters().get(singleDcCacheCluster).getGroups().get("credis_test_cluster_1_1").getRedises().add(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(false));
+        credisDcMeta.getClusters().get(singleDcCacheCluster).getGroups().get("credis_test_cluster_1_1").getRedises().add(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(true));
 
         when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
         when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
@@ -389,6 +394,7 @@ public class DcMetaSynchronizerTest {
         when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
         when(clusterService.find(singleDcCacheCluster)).thenReturn(new ClusterTbl().setId(17730).setClusterName(singleDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.SINGLE_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(8));
         when(clusterService.find(localDcCacheCluster)).thenReturn(new ClusterTbl().setId(17728).setClusterName(localDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.LOCAL_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(9));
+        when(redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId,singleDcCacheCluster,"credis_test_cluster_1_1")).thenReturn(Lists.newArrayList(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(false)));
         dcMetaSynchronizer.sync();
 
         verify(clusterService, never()).bindDc(any(), any());
@@ -402,7 +408,7 @@ public class DcMetaSynchronizerTest {
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
-        verify(redisService, never()).updateBatchMaster(any());
+        verify(redisService, times(1)).updateBatchMaster(any());
     }
 
     @Test
@@ -481,18 +487,35 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void shouldFilterTest() {
+    public void shouldFilterOuterClusterTest() {
         when(consoleConfig.filterOuterClusters()).thenReturn(null);
         dcMetaSynchronizer.buildFilterPattern();
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+
+        OuterClientService.ClusterMeta clusterMeta = new OuterClientService.ClusterMeta().setName("testCluster").setOperating(false);
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
 
         when(consoleConfig.filterOuterClusters()).thenReturn("_[v|temp]+[0-9]{8,}?");
         dcMetaSynchronizer.buildFilterPattern();
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
+
+        clusterMeta.setOperating(true);
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
+
+    }
+
+    @Test
+    public void shouldFilterInnerClusterTest() {
+        Set<String> filteredOuterClusters = Sets.newHashSet("cluster1", "cluster2");
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster2"),filteredOuterClusters));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster1"),filteredOuterClusters));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster"),filteredOuterClusters));
     }
 
     OuterClientService.DcMeta credisDcMeta() {

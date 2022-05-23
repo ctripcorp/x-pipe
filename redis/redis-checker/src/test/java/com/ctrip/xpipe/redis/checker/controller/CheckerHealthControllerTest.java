@@ -46,9 +46,9 @@ public class CheckerHealthControllerTest extends AbstractCheckerTest {
     private String actionName = "test-action";
     private String listenerName = "test-listener";
     private String controllerName = "test-controller";
-    private String expectedResult = String.format("{\"info\":\"%s\",\"actions\":[{\"name\":\"%s\",\"listeners\":[\"%s\"],\"controllers\":[\"%s\"]}]}",
+    private String expectedResult = String.format("{\"info\":\"%s\",\"actions\":[{\"name\":\"%s\",\"listeners\":[\"%s\"],\"controllers\":[\"%s\"],\"redisCheckRules\":[]}]}",
             instanceName, actionName, listenerName, controllerName);
-    private String expectedClusterResult = String.format("{\"info\":\"%s\",\"actions\":[{\"name\":\"%s\",\"listeners\":[\"%s\"],\"controllers\":[\"%s\"]}]}",
+    private String expectedClusterResult = String.format("{\"info\":\"%s\",\"actions\":[{\"name\":\"%s\",\"listeners\":[\"%s\"],\"controllers\":[\"%s\"],\"redisCheckRules\":[]}]}",
             clusterName, actionName, listenerName, controllerName);
 
     @Before

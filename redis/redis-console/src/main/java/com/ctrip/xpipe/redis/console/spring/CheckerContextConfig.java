@@ -5,21 +5,19 @@ import com.ctrip.xpipe.redis.checker.*;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelShardBind;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
-import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
-import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
-import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
@@ -29,7 +27,6 @@ import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
@@ -41,10 +38,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 
 /**
@@ -52,8 +47,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  * date 2021/3/8
  */
 @Configuration
-@ComponentScan(excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {MigrationEventDao.class, MigrationClusterDao.class, MigrationShardDao.class}) },
-        basePackages = { "com.ctrip.xpipe.redis.console.dao", "com.ctrip.xpipe.redis.checker" })
+@ComponentScan(basePackages = { "com.ctrip.xpipe.redis.checker" })
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CHECKER)
 public class CheckerContextConfig {
 
@@ -71,6 +65,11 @@ public class CheckerContextConfig {
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public MetaCache metaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         return new CheckerMetaCache(checkerConfig, checkerConsoleService);
+    }
+
+    @Bean
+    public CheckerAllMetaCache checkerAllMetaCache() {
+        return new CheckerAllMetaCache();
     }
 
     @Bean
@@ -136,8 +135,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public BeaconMetaService beaconMetaService(MetaCache metaCache) {
-        return new BeaconMetaServiceImpl(metaCache);
+    public BeaconMetaService beaconMetaService(MetaCache metaCache, ConsoleConfig config) {
+        return new BeaconMetaServiceImpl(metaCache, config);
     }
 
     @Bean
@@ -153,11 +152,6 @@ public class CheckerContextConfig {
     @Bean
     public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
         return new DefaultRemoteCheckerManager(checkerConfig);
-    }
-
-    @Bean
-    public AlertEventService alertEventService() {
-        return new AlertEventService();
     }
 
     @Bean
@@ -189,13 +183,18 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(PersistenceCache persistenceCache,
+    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
                                                                      CheckerConfig config, 
-                                                                     FoundationService foundationService, 
-                                                                     CheckerConsoleService service, 
+                                                                     FoundationService foundationService,
                                                                      SentinelManager manager,
                                                                      AlertManager alertManager
                                                                      ) {
-        return new SentinelMonitorsCheckCrossDc(new CheckerAllMetaCache(config, service), persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+    }
+
+    @Bean
+    public SentinelShardBind sentinelShardBind(CheckerAllMetaCache metaCache, CheckerConfig checkerConfig, SentinelManager sentinelManager,
+                                               @Qualifier(GLOBAL_EXECUTOR) ExecutorService executor, CheckerConsoleService checkerConsoleService) {
+        return new SentinelShardBind(metaCache, checkerConfig, sentinelManager, executor, checkerConsoleService);
     }
 }

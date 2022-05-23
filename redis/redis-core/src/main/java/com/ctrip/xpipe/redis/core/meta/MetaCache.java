@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -38,11 +39,19 @@ public interface MetaCache {
 
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
 
+    List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard);
+
+    List<RedisMeta> getSlavesOfShard(String cluster, String shard);
+
+    List<RedisMeta> getAllInstancesOfShard(String cluster, String shard);
+
     String getDc(HostPort hostPort);
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 
     List<RouteMeta> getRoutes();
+
+    Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
     boolean isCrossRegion(String activeDc, String backupDc);
 
@@ -59,8 +68,4 @@ public interface MetaCache {
 
     boolean isMetaChain(HostPort src, HostPort dst);
 
-    void pauseUpdate();
-    
-    void continueUpdate();
-    
 }

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
@@ -9,9 +11,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -30,7 +33,7 @@ import java.util.Set;
 public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWaySupport {
 
     private static Logger logger = LoggerFactory.getLogger(SentinelCollector4Keeper.class);
-
+    private static final int SENTINEL_COMMAND_TIMEOUT = 1000;
     @Autowired
     private SentinelManager sentinelManager;
 
@@ -96,10 +99,17 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                logger.error("[doAction][MASTER_GOOD_MONITOR_BAD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
-                collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName());
+
+                collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName())
+                        .execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[removeSentinelMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), throwable.getMessage());
+                    return null;
+                });
+
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Collector.4Keeper.Remove", hello.toString());
                 collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
                         getMessage(collector.metaCache.getSentinelMonitorName(info.getClusterId(), info.getShardId()),
                                 hello.getMonitorName()));
@@ -114,19 +124,23 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                HostPort masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello),
-                        hello.getMonitorName());
-
+                SentinelMasterInstance sentinelMasterInstance = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello), hello.getMonitorName()).
+                        execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), throwable.getMessage());
+                    return null;
+                });
+                if (sentinelMasterInstance == null)
+                    return;
                 // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;
                 try {
                     HostPort expect = collector.metaCache.findMaster(info.getClusterId(), info.getShardId());
-                    checkAgain = ObjectUtils.equals(masterAddr, expect);
+                    checkAgain = ObjectUtils.equals(sentinelMasterInstance.getHostPort(), expect);
                     if(!checkAgain) {
                         collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
-                                getMessage(expect.toString(), masterAddr.toString()));
+                                getMessage(expect.toString(), sentinelMasterInstance.getHostPort().toString()));
                     } else {
-                        logger.warn("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                        logger.warn("[doAction][MASTER_BAD_MONITOR_GOOD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                                 info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
                     }
                 } catch (Exception e) {
@@ -144,7 +158,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                logger.error("[doAction][MASTER_BAD_MONITOR_BAD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
                 collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage(null, hello.toString()));
             }

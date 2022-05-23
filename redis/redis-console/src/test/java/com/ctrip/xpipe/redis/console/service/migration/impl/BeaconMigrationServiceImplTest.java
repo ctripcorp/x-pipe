@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
@@ -19,6 +20,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.junit.Assert.*;
 
 /**
  * @author lishanglin
@@ -121,4 +124,75 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         return request;
     }
 
+    private void assertArrayEqualsDespiteOrder(String[] expected, String[] result) {
+        assertEquals(expected.length, result.length);
+        for (String e : expected) {
+            boolean contains = false;
+            for (String r : result) {
+                if (e.equals(r)) {
+                    contains = true;
+                }
+            }
+            assertTrue(contains);
+        }
+    }
+
+    @Test
+    public void testExcludeChoiceNotInPriority() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A", "shaoy", false));
+        groups.add(buildSimpleGroup("B", "shajq", true));
+
+        assertArrayEqualsDespiteOrder(new String[]{"shajq"}, migrationService.decideExcludes(groups));
+    }
+
+    @Test
+    public void testExcludeChoiceInPriority() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A", "SHAFQ", false));
+        groups.add(buildSimpleGroup("B", "SHARB", false));
+        groups.add(buildSimpleGroup("C", "SHAXY", true));
+        groups.add(buildSimpleGroup("d", "SHAJQ", false));
+
+        assertArrayEqualsDespiteOrder(new String[]{"shafq", "shajq", "shaxy"}, migrationService.decideExcludes(groups));
+    }
+
+    @Test
+    public void testExcludeChoiceDespiteOfCase() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A", "SHAFQ", false));
+        groups.add(buildSimpleGroup("B", "sharb", false));
+        groups.add(buildSimpleGroup("C", "SHAXY", true));
+        groups.add(buildSimpleGroup("d", "shajq", false));
+
+        assertArrayEqualsDespiteOrder(new String[]{"shafq", "shajq", "shaxy"}, migrationService.decideExcludes(groups));
+    }
+
+    @Test (expected = XpipeRuntimeException.class)
+    public void testExcludeChoiceCannotMakeChoice() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A", "SHAFQ", true));
+        groups.add(buildSimpleGroup("B", "sharb", true));
+        groups.add(buildSimpleGroup("C", "shaXY", true));
+        groups.add(buildSimpleGroup("d", "shajq", true));
+
+        migrationService.decideExcludes(groups);
+    }
+
+    @Test
+    public void testExcludeMultiShard() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A","sharb", false));
+        groups.add(buildSimpleGroup("B","sharb", true));
+        groups.add(buildSimpleGroup("C","shaxy", false));
+        groups.add(buildSimpleGroup("d","shaxy", false));
+
+        assertArrayEqualsDespiteOrder(new String[]{"sharb"}, migrationService.decideExcludes(groups));
+    }
+
+    private MonitorGroupMeta buildSimpleGroup(String name, String idc, boolean isDown) {
+        MonitorGroupMeta group = new MonitorGroupMeta(name, idc, null, true);
+        group.setDown(isDown);
+        return group;
+    }
 }

@@ -4,7 +4,6 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -50,6 +49,26 @@ public class DefaultMultiDcService implements MultiDcService{
 
 		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
 		return metaServerMultiDcService.getPeerMaster(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getSids(String dcName, String srcDc, Long clusterDbId, Long shardDbId) {
+
+		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
+		if (null == metaServerMultiDcService) return null;
+
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		return metaServerMultiDcService.getSids(srcDc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public void sidsChange(String dcName, Long clusterDbId, Long shardDbId, String sids) {
+
+		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
+		if (null == metaServerMultiDcService) return;
+
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		metaServerMultiDcService.sidsChange(clusterShard.getKey(), clusterShard.getValue(), sids);
 	}
 
 	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {

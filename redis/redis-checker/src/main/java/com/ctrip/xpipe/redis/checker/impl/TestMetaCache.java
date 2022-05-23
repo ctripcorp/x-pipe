@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -87,6 +87,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+        return null;
+    }
+
+    @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
         return false;
     }
@@ -119,17 +124,22 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public void pauseUpdate() {
-        
-    }
-
-    @Override
-    public void continueUpdate() {
-
-    }
-
-    @Override
     public List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard) {
         return Collections.emptyList();
+    }
+
+    @Override
+    public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
+        return null;
+    }
+
+    @Override
+    public List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard) {
+        return null;
+    }
+
+    @Override
+    public List<RedisMeta> getAllInstancesOfShard(String cluster, String shard) {
+        return null;
     }
 }

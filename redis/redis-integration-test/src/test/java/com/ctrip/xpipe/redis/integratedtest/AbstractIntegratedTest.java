@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -336,7 +341,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
 
 		for (RedisKeeperServer server : redisKeeperServers.values()) {
-			String currentDc = server.getCurrentKeeperMeta().parent().parent().parent().getId();
+			String currentDc = ((ClusterMeta) server.getCurrentKeeperMeta().parent().parent()).parent().getId();
 			if (dc.equals(currentDc) && server.getRedisKeeperServerState().keeperState().isActive()) {
 				return server;
 			}
@@ -433,6 +438,27 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		if (casePath != null) {
 			executeCommands("cp", "-rf", casePath + "/.", getTestFileDir());
 		}
+	}
+
+	protected void waitSlaveOnline(String redisIp, int redisPort) throws Exception {
+		waitConditionUntilTimeOut(() -> {
+			try {
+				return infoRedis(redisIp, redisPort, InfoCommand.INFO_TYPE.REPLICATION, "master_link_status")
+						.equalsIgnoreCase("up");
+			} catch (Exception e) {
+				return false;
+			}
+		}, 5000, 1000);
+	}
+
+	protected String infoRedis(String redisIp, int redisPort, InfoCommand.INFO_TYPE infoType, String key) throws Exception {
+		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redisIp, redisPort));
+		InfoCommand cmd = new InfoCommand(keyPool, infoType, scheduled);
+		cmd.logRequest(false);
+		cmd.logResponse(false);
+		String info = cmd.execute().get();
+		InfoResultExtractor extractor = new InfoResultExtractor(info);
+		return extractor.extract(key);
 	}
 
 

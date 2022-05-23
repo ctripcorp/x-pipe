@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -14,6 +16,18 @@ import static org.junit.Assert.assertTrue;
  */
 public class DefaultSequenceControllerTest {
 
+    ApplierSequenceController controller = new DefaultSequenceController();
+
+    @Before
+    public void setUp() throws Exception {
+        controller.initialize();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        controller.dispose();
+    }
+
     @Test
     public void twoCommandsOnSameKey() throws ExecutionException, InterruptedException {
 
@@ -21,8 +35,6 @@ public class DefaultSequenceControllerTest {
         TestSetCommand second = new TestSetCommand(200, "SET", "Key", "V2");
 
         assertEquals(first.key(), second.key());
-
-        ApplierSequenceController controller = new DefaultSequenceController();
 
         controller.submit(first);
         controller.submit(second);

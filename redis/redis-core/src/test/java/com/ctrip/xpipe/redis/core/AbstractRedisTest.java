@@ -501,10 +501,15 @@ public abstract class AbstractRedisTest extends AbstractTest {
         }
     }
 
+
     protected ClusterMeta differentCluster(String dc) {
+        return differentCluster(dc, 0);
+    }
+
+    protected ClusterMeta differentCluster(String dc, int index) {
 
         DcMeta dcMeta = getDcMeta(dc);
-        ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[0]);
+        ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[index]);
         clusterMeta.setId(randomString(10));
         clusterMeta.setDbId(randomLong());
 
@@ -556,6 +561,32 @@ public abstract class AbstractRedisTest extends AbstractTest {
         return result;
     }
 
+    protected List<ApplierMeta> createRandomAppliers(int count) {
+
+        List<Integer> ports = new LinkedList<>(randomPorts(count));
+        List<ApplierMeta> result = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            ApplierMeta applierMeta = new ApplierMeta().setIp("localhost").setPort(ports.get(i));
+            if (i == 0) {
+                applierMeta.setActive(true);
+            } else {
+                applierMeta.setActive(false);
+            }
+            result.add(applierMeta);
+        }
+        return result;
+    }
+
+    protected List<RedisMeta> createRandomRedises(int count) {
+        List<Integer> ports = new LinkedList<>(randomPorts(count));
+        List<RedisMeta> result = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            RedisMeta redisMeta = new RedisMeta().setIp("localhost").setPort(ports.get(i));
+            result.add(redisMeta);
+        }
+        return result;
+    }
+
     protected RedisMeta newRandomFakeRedisMeta() {
         return newRandomFakeRedisMeta("127.0.0.1", 6379);
     }
@@ -563,7 +594,7 @@ public abstract class AbstractRedisTest extends AbstractTest {
     protected RedisMeta newRandomFakeRedisMeta(String ip, int port) {
         DcMeta dcMeta = new DcMeta("dc");
         ClusterMeta clusterMeta = new ClusterMeta("cluster");
-        clusterMeta.setActiveDc("dc").setType(ClusterType.ONE_WAY.toString());
+        clusterMeta.setActiveDc("dc").setType(ClusterType.ONE_WAY.toString()).setActiveRedisCheckRules("0,1");
         ShardMeta shardMeta = new ShardMeta("shard");
         RedisMeta redis = new RedisMeta().setIp(ip).setPort(port);
         shardMeta.addRedis(redis);

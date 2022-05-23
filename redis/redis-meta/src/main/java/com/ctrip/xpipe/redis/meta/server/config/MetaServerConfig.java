@@ -37,6 +37,8 @@ public interface MetaServerConfig extends CoreConfig {
 
 	int getKeeperInfoCheckInterval();
 
+	int getApplierInfoCheckInterval();
+
 	int getWaitForMetaSyncDelayMilli();
 
 	Set<String> getOwnClusterType();
@@ -44,4 +46,6 @@ public interface MetaServerConfig extends CoreConfig {
 	boolean shouldCorrectPeerMasterPeriodically();
 
 	long getNewMasterCacheTimeoutMilli();
+
+	String getChooseRouteStrategyType();
 }

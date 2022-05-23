@@ -12,6 +12,8 @@ public interface RedisService {
 	
 	RedisTbl find(long id);
 
+	RedisTbl findByIpPort(String ip, int port);
+
 	List<RedisTbl> findAllRedisWithSameIP(String ip);
 
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);

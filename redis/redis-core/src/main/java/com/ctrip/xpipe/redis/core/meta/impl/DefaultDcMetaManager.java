@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		this.buildClusterDbIdMap();
 	}
 
-	
 	public static DcMetaManager buildFromFile(String dcId, String fileName){
 		
 		return new DefaultDcMetaManager(dcId, DefaultXpipeMetaManager.buildFromFile(fileName));
@@ -77,6 +77,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public List<KeeperMeta> getKeepers(String clusterId, String shardId) {
 		return metaManager.getKeepers(currentDc, clusterId, shardId);
+	}
+
+	@Override
+	public List<ApplierMeta> getAppliers(String clusterId, String shardId) {
+		return metaManager.getAppliers(currentDc, clusterId, shardId);
 	}
 
 	@Override
@@ -125,19 +130,16 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.getDcClusters(currentDc);
 	}
 
-	@Override
-	public RouteMeta randomRoute(String clusterId) {
-
-		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
-		if(clusterMeta == null){
-			throw new IllegalArgumentException("clusterId not exist:" + clusterId);
-		}
-		return metaManager.metaRandomRoutes(currentDc, clusterMeta.getOrgId(), clusterMeta.getActiveDc());
-	}
 
 	@Override
 	public List<RouteMeta> getAllMetaRoutes() {
 		return metaManager.metaRoutes(currentDc);
+	}
+
+	@Override
+	public Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+											   Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+		return metaManager.chooseMetaRoutes(clusterName,currentDc, dstDcs, orgId, clusterPrioritizedRoutes, strategy);
 	}
 
 	@Override
@@ -150,7 +152,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return metaManager.getKeeperContainer(currentDc, keeperMeta);
 	}
-	
+
+	@Override
+	public ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta) {
+	    return metaManager.getApplierContainer(currentDc, applierMeta);
+	}
+
 	protected void update(DcMeta dcMeta) {
 		metaManager.update(dcMeta);
 	}
@@ -229,6 +236,22 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) {
+		return metaManager.getDownstreamDcs(dc, clusterId, shardId);
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, String clusterId, String shardId) {
+
+	    return metaManager.getUpstreamDc(dc, clusterId, shardId);
+	}
+
+	public String getSrcDc(String dc, String clusterId, String shardId) {
+
+		return metaManager.getSrcDc(dc, clusterId, shardId);
+	}
+
+	@Override
 	public Set<String> getRelatedDcs(String clusterId, String shardId) {
 		return metaManager.getRelatedDcs(clusterId, shardId);
 	}
@@ -267,7 +290,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		DcMeta dcMeta = this.metaManager.getDcMeta(currentDc);
 		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
 			ClusterSummary clusterSummary = new ClusterSummary(clusterMeta.getId());
-			for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+			for (ShardMeta shardMeta: clusterMeta.getAllShards().values()) {
 				clusterSummary.shards.put(shardMeta.getDbId(), shardMeta.getId());
 			}
 
@@ -307,16 +330,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterId);
-		if (null == clusterMeta || !clusterMeta.getShards().containsKey(shardId)) {
+		if (null == clusterMeta || !clusterMeta.getAllShards().containsKey(shardId)) {
 			throw new IllegalArgumentException(String.format("unknown clusterId shardId %s %s", clusterId, shardId));
 		}
-		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		ShardMeta shardMeta = clusterMeta.getAllShards().get(shardId);
 		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
-	}
-
-	@Override
-	public RouteMeta randomRoute(Long clusterDbId) {
-		return randomRoute(clusterDbId2Name(clusterDbId));
 	}
 
 	@Override
@@ -372,6 +390,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getKeepers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getAppliers(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
@@ -435,8 +459,25 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
+		return getBackupDcs(clusterDbId2Name(clusterDbId), null);
+	}
+
+	@Override
+	public Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getBackupDcs(clusterShard.getKey(), clusterShard.getValue());
+		return getDownstreamDcs(dc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getUpstreamDc(dc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getSrcDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getSrcDc(dc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override

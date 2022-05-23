@@ -13,7 +13,7 @@
         <dubbo.version>2.7.8</dubbo.version>
         <fastjson.version>1.2.71</fastjson.version>
         <qtracer.version>1.3.9</qtracer.version>
-        <fireman.version>2.0.13</fireman.version>
+        <fireman.version>2.0.15</fireman.version>
     </properties>
 
     <dependencyManagement>
@@ -84,22 +84,7 @@
         </dependency>
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
-            <artifactId>sso-client-qconfig</artifactId>
-            <version>1.0.7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>qunar.common</groupId>
-                    <artifactId>common-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-collections</groupId>
-                    <artifactId>commons-collections</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>fastjson</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>sso-client-new</artifactId>
         </dependency>
         <dependency>
             <groupId>net.razorvine</groupId>
@@ -148,6 +133,11 @@
                     <artifactId>framework-bom</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ctrip.credis</groupId>
+            <artifactId>credis</artifactId>
         </dependency>
 
         <dependency>

@@ -3,6 +3,7 @@ package com.ctrip.framework.xpipe.redis.instrument;
 
 import com.alibaba.arthas.deps.org.objectweb.asm.ClassReader;
 import com.alibaba.arthas.deps.org.objectweb.asm.ClassWriter;
+import com.ctrip.framework.xpipe.redis.instrument.adapter.InterruptibleChannelAdapter;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdapter;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdapter;
 
@@ -10,8 +11,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
-import static com.ctrip.framework.xpipe.redis.utils.Constants.NIO_SOCKET;
-import static com.ctrip.framework.xpipe.redis.utils.Constants.SOCKET;
+import static com.ctrip.framework.xpipe.redis.utils.Constants.*;
 
 public class ProxyAgent implements ClassFileTransformer {
 
@@ -28,6 +28,12 @@ public class ProxyAgent implements ClassFileTransformer {
             SocketChannelImplAdapter socketChannelImplAdapter = new SocketChannelImplAdapter(classWriter);
             ClassReader classReader = new ClassReader(classfileBuffer);
             classReader.accept(socketChannelImplAdapter, 0);
+            return classWriter.toByteArray();
+        } else if (ABSTRACT_NIO_SOCKET.equals(className)) {
+            ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+            InterruptibleChannelAdapter interruptibleChannelAdapter = new InterruptibleChannelAdapter(classWriter);
+            ClassReader classReader = new ClassReader(classfileBuffer);
+            classReader.accept(interruptibleChannelAdapter, 0);
             return classWriter.toByteArray();
         }
         return null;

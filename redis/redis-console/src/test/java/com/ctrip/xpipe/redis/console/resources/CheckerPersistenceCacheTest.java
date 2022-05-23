@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.google.common.collect.Lists;
 import okhttp3.mockwebserver.MockResponse;
@@ -31,10 +32,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
-import java.util.*;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.Set;
 
 import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_PERSISTENCE;
 import static org.mockito.Mockito.when;
@@ -189,15 +192,15 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
                 .setHeader("Content-Type", "application/json"));
 
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(1000);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.BI_DIRECTION);
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
         instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
-        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));
+        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(),buildCheckerConfig()));
         checkerPersistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.MASTER);
 
         RecordedRequest req = webServer.takeRequest();
@@ -218,8 +221,8 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
     @Test
     public void testDefaultRedisInstanceInfoJson() throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(1000);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.BI_DIRECTION);
         String json = Codec.DEFAULT.encode(info);
@@ -237,6 +240,25 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         String json = Codec.DEFAULT.encode(alertMessageEntity);
         AlertMessageEntity result = Codec.DEFAULT.decode(json, AlertMessageEntity.class);
         Assert.assertEquals(result.toString(), alertMessageEntity.toString());
+    }
+
+    @Test
+    public void testIsClusterOnMigration() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
+                .setHeader("Content-Type", "application/json"));
+
+        Set<String> migratingClusterList = checkerPersistenceCache.migratingClusterList();
+        // turn cluster list into low case for cluster searching with case ignore
+        Assert.assertEquals(Collections.singleton("Cluster1"), migratingClusterList);
+        Assert.assertTrue(checkerPersistenceCache.isClusterOnMigration("Cluster1"));
+        Assert.assertFalse(checkerPersistenceCache.isClusterOnMigration("Cluster2"));
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
     }
     
 }

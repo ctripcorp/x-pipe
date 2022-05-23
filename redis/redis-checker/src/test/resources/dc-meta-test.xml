@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
+    <redisCheckRule id = "1" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256'}"></redisCheckRule>
+    <redisCheckRule id = "2" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128'}"></redisCheckRule>
+    <redisCheckRule id = "3" checkType="info" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '232'}"></redisCheckRule>
     <dc id="jq" zone="SHA">
         <sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
         <sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
@@ -12,6 +15,12 @@
                 <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" />
                 <redis ip="127.0.0.1" port="8000" master=""/>
                 <redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000"  />
+            </shard>
+            <shard id="shard2" db-id="4" sentinelId="2" sentinelMonitorName="cluster1+shard2+jq">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:16379" ip="127.0.0.1" port="7000" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:7000" ip="127.0.0.1" port="7001" active="false" />
+                <redis ip="127.0.0.1" port="16379" master=""/>
+                <redis ip="127.0.0.1" port="17379" master="127.0.0.1:16379"  />
             </shard>
         </cluster>
         <cluster id="cluster2" db-id="2" active-dc="oy" phase = "1" type="one_way">
@@ -38,6 +47,12 @@
                 <redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
                 <redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
             </shard>
+            <shard id="shard2" db-id="4" sentinelId="2" sentinelMonitorName="cluster1+shard2+oy">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:7000" ip="127.0.0.1" port="7100" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:7100" ip="127.0.0.1" port="7101" active="false" />
+                <redis ip="127.0.0.1" port="16479" master="127.0.0.1:7100"/>
+                <redis ip="127.0.0.1" port="17479" master="127.0.0.1:7100"  />
+            </shard>
         </cluster>
         <cluster id="cluster2" db-id="2" active-dc="oy" phase = "1" type="one_way">
             <shard id="shard2" db-id="2" upstream="127.0.0.1:6000" sentinelId="2" sentinelMonitorName="cluster2+shard2+oy">
@@ -57,6 +72,10 @@
                 <redis ip="10.0.0.2" port="6479" master="true" />
             </shard>
         </cluster>
+        <routes>
+            <route id="1" org-id="0" tag="console" src-dc="oy" dst-dc="fra" isPulic="true" routeInfo="PROXYTCP://127.0.0.1:80"/>
+            <route id="2" org-id="0" tag="console" src-dc="oy" dst-dc="fra" isPulic="true" routeInfo="PROXYTCP://127.0.0.2:80"/>
+        </routes>
     </dc>
     <dc id="fra-aws" zone="FRA">
 

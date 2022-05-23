@@ -13,4 +13,8 @@ public interface UserInfoHolder extends Ordered {
 
   UserInfo getUser();
 
+  Object getContext();
+
+  void setContext(Object context);
+
 }

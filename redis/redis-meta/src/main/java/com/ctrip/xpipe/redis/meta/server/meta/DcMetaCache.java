@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,23 +32,39 @@ public interface DcMetaCache extends Observable {
 
 	ClusterType getClusterType(Long clusterDbId);
 
-	RouteMeta randomRoute(Long clusterDbId);
+	List<RouteMeta> getAllMetaRoutes();
 
-	List<RouteMeta> getAllRoutes();
+	Map<String, RouteMeta> chooseRoutes(long clusterDbId);
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
+
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
 
 	boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId);
 
 	boolean isCurrentDcPrimary(Long clusterDbId);
 
+	boolean isCurrentDcBackUp(Long clusterDbId, Long shardDbId);
+
+	boolean isCurrentDcBackUp(Long clusterDbId);
+
+	boolean isCurrentShardParentCluster(Long clusterDbId, Long shardDbId);
+
 	Set<String> getBakupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 
 	String getPrimaryDc(Long clusterDbId, Long shardDbId);
 
 	List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId);
+
+	List<ApplierMeta> getShardAppliers(Long clusterDbId, Long shardDbId);
 
 	List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId);
 

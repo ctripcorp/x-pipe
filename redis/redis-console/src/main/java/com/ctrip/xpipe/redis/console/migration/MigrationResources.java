@@ -37,6 +37,10 @@ public class MigrationResources {
 
     public static final int maxIOCallbackThreads = 100;
 
+    public static final String BI_DIRECTION_MIGRATION_EXECUTOR = "BI_DIRECTION_MIGRATION_EXECUTOR";
+
+    public static final int maxBiExecuteThreads = 64;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationResources.class);
 
     @Bean(name = MIGRATION_EXECUTOR)
@@ -100,6 +104,20 @@ public class MigrationResources {
                 .maxConnections(2000)
                 .pendingAcquireTimeout(Duration.ofMillis(1000))
                 .maxIdleTime(Duration.ofMillis(30000)).build();
+    }
+
+    @Bean(name = BI_DIRECTION_MIGRATION_EXECUTOR)
+    public ExecutorService getBiDirectionMigrationExecutor() {
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxBiExecuteThreads,
+                maxBiExecuteThreads,
+                120L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(maxBiExecuteThreads/2),
+                XpipeThreadFactory.create(BI_DIRECTION_MIGRATION_EXECUTOR),
+                new ThreadPoolExecutor.AbortPolicy());
+        poolExecutor.allowCoreThreadTimeOut(true);
+        return MoreExecutors.getExitingExecutorService(
+                poolExecutor,
+                AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
     }
 
 }

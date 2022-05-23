@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
@@ -75,6 +76,27 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CHECKER_ACK_TIMEOUT_MILLI = "checker.ack.timeout.milli";
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
+
+    private static final String KEY_SERVLET_METHOD_TIMEOUT_MILLI = "servlet.method.timeout.milli";
+
+    private static final String KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN = "cosnole.redis.config.check.open";
+
+    private static final String KEY_REDIS_CONFIG_CHECK_RULES = "console.redis.config.check.rules";
+    private static final String KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX = "checker.cross.dc.sentinel.monitor.name.suffix";
+
+    private static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
+
+    private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "checker.sentinel.bind.timeout.milli";
+
+    private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
+
+    private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
+    private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
+    private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
+
+    private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
+
+    private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
@@ -515,5 +537,73 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
-    
+
+    @Override
+    public long getServletMethodTimeoutMilli() {
+        return getLongProperty(KEY_SERVLET_METHOD_TIMEOUT_MILLI, 10000L);
+    }
+
+    public boolean isRedisConfigCheckMonitorOpen() {
+        return getBooleanProperty(KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN, false);
+    }
+
+    @Override
+    public String getRedisConfigCheckRules() {
+        return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
+    }
+
+    @Override
+    public String getBiDirectionMigrationDcPriority() {
+        return getProperty(KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY, "SHARB,SHAXY");
+    }
+
+    public String crossDcSentinelMonitorNameSuffix() {
+        return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
+    }
+
+    @Override
+    public boolean shouldBindOuterClusterShardAndSentinel() {
+        return getBooleanProperty(KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL, false);
+    }
+
+    @Override
+    public int sentinelBindTimeoutMilli() {
+        return getIntProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000);
+    }
+
+    @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return getIntProperty(KEY_NON_CORE_CHECK_INTERVAL, 3 * 60 * 60 * 1000);
+    }
+
+    @Override
+    public Map<String, String> sentinelMasterConfig() {
+        String property = getProperty(KEY_SENTINEL_MASTER_CONFIG, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
+    }
+
+    @Override
+    public long subscribeTimeoutMilli() {
+        return getLongProperty(KEY_SUBSCRIBE_TIMEOUT_MILLI, 5000L);
+    }
+
+    @Override
+    public Set<String> getClustersSupportBiMigration() {
+        String raw = getProperty(KEY_BI_MIGRATION_CLUSTERS, "");
+
+        return getSplitStringSet(raw);
+    }
+
+    @Override
+    public String getBeaconSupportZone() {
+        return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
+    }
+
+    @Override
+    public String getChooseRouteStrategyType() { return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);}
+
+    @Override
+    public String getClusterExcludedRegex() {
+        return getProperty(KEY_ALERT_CLUSTER_EXCLUDED_REGEX, "");
+    }
 }

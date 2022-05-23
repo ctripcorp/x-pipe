@@ -71,4 +71,13 @@ public class ProxyDaoTest extends AbstractConsoleIntegrationTest {
         Assert.assertNotNull(proto);
         Assert.assertEquals(newUri, proto.getUri());
     }
+
+    @Test
+    public void testGetActiveProxyTblsByDc() {
+        List<ProxyTbl> proxies = proxyDao.getActiveProxyTblsByDc(1L);
+        Assert.assertEquals(1, proxies.size());
+
+        proxies = proxyDao.getActiveProxyTblsByDc(2L);
+        Assert.assertEquals(0, proxies.size());
+    }
 }

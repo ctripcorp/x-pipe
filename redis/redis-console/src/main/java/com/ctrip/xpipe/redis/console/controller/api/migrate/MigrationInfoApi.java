@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationSystemStatus;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,11 +20,14 @@ import javax.annotation.PostConstruct;
  * date 2021/5/5
  */
 @RestController
-@RequestMapping("/api/migration/info")
+@RequestMapping("/api/migration")
 public class MigrationInfoApi extends AbstractConsoleController {
 
     @Autowired
     private MigrationService migrationService;
+
+    @Autowired
+    private MigrationSystemAvailableChecker migrationSystemAvailableChecker;
 
     @Autowired
     private ConsoleConfig config;
@@ -36,7 +41,18 @@ public class MigrationInfoApi extends AbstractConsoleController {
         cachedProgress = new TimeBoundCache<>(config::getCacheRefreshInterval, () -> migrationService.buildMigrationProgress(DEFAULT_HOURS));
     }
 
-    @GetMapping("/progress")
+    @GetMapping("/system/health")
+    public MigrationSystemStatus getMigrationSystemHealth() {
+        MigrationSystemAvailableChecker.MigrationSystemAvailability systemAvailability = migrationSystemAvailableChecker.getResult();
+
+        String status = systemAvailability.isAvaiable() ? "HEALTH" : systemAvailability.isWarning() ? "WARNING" : "UNHEALTH";
+        MigrationSystemStatus migrationSystemStatus = new MigrationSystemStatus(status, systemAvailability.getMessage(), systemAvailability.getTimestamp());
+        systemAvailability.getCheckResults().forEach((title, result) -> migrationSystemStatus.checkUseTimeMill.put(title, result.getCheckTimeMilli()));
+
+        return migrationSystemStatus;
+    }
+
+    @GetMapping("/info/progress")
     public MigrationProgress getCurrentMigrationProgress(@RequestParam(defaultValue = "false") Boolean disableCache,
                                                          @RequestParam(required = false) Integer hours) {
         if (null != hours && disableCache) {

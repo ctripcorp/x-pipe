@@ -7,24 +7,27 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.simpleserver.AbstractIoActionFactory;
-import com.ctrip.xpipe.simpleserver.IoAction;
-import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.google.common.collect.Lists;
 import org.junit.*;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
@@ -217,6 +220,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
         when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
+        when(currentMetaManager.getClusterMeta(clusterDbId)).thenReturn(new ClusterMeta().setActiveDc("jq"));
         when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
         when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
@@ -276,6 +280,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
         when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
+        when(currentMetaManager.getClusterMeta(clusterDbId)).thenReturn(new ClusterMeta().setActiveDc("jq"));
         when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
         when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),

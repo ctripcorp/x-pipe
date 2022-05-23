@@ -73,4 +73,9 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     public void enableLogging(org.codehaus.plexus.logging.Logger logger) {
         m_logger = logger;
     }
+
+    public DataSource getInnerDataSource() {
+        return m_delegate;
+    }
+
 }

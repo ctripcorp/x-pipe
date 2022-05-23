@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandRetryWrapper;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker.CheckResult;
 
 public class DefaultCheckMigrationCommandBuilder extends AbstractService implements CheckMigrationCommandBuilder {
 
@@ -48,7 +49,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
     }
 
     @Override
-    public Command<RetMessage> checkCommand(CHECK_MIGRATION_SYSTEM_STEP step) {
+    public Command<CheckResult> checkCommand(CHECK_MIGRATION_SYSTEM_STEP step) {
         Pair<String, String> clusterShard = consoleConfig.getClusterShardForMigrationSysCheck();
         String clusterName = clusterShard.getKey(), shardName = clusterShard.getValue();
         switch (step) {
@@ -63,7 +64,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         return null;
     }
 
-    private Command<RetMessage> checkDatabaseRetryCommand(String clusterName) {
+    private Command<CheckResult> checkDatabaseRetryCommand(String clusterName) {
         RetryCondition<RetMessage> retryCondition = new RetryCondition.AbstractRetryCondition<RetMessage>() {
             @Override
             public boolean isSatisfied(RetMessage retMessage) {
@@ -78,13 +79,16 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         return CommandRetryWrapper.buildCountRetry(3, retryCondition, new CheckDatabaseCommand(clusterName), scheduled);
     }
 
-    private abstract class AbstractCheckMigrationSystemCommand<T> extends AbstractCommand<RetMessage> {
+    private abstract class AbstractCheckMigrationSystemCommand<T> extends AbstractCommand<CheckResult> {
 
         @Override
         protected void doExecute() throws Exception {
             T response = null;
+            long checkTimeMilli = -1;
             try {
+                long startAt = System.currentTimeMillis();
                 response = getResponse();
+                checkTimeMilli = System.currentTimeMillis() - startAt;
             } catch (Exception e) {
                 future().setFailure(e);
                 return;
@@ -94,7 +98,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
                 return;
             }
             try {
-                future().setSuccess(validate(response));
+                future().setSuccess(validate(response, checkTimeMilli));
             } catch (Exception e) {
                 future().setFailure(e);
             }
@@ -112,7 +116,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
 
         protected abstract T getResponse() throws Exception;
 
-        protected abstract RetMessage validate(T response) throws Exception;
+        protected abstract CheckResult validate(T response, long checkTimeMilli) throws Exception;
 
     }
 
@@ -130,11 +134,11 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         }
 
         @Override
-        protected RetMessage validate(ClusterTbl response) throws Exception {
+        protected CheckResult validate(ClusterTbl response, long checkTimeMilli) throws Exception {
             if (response.getClusterName().equals(clusterName)) {
-                return RetMessage.createSuccessMessage();
+                return CheckResult.createSuccessResult(checkTimeMilli);
             }
-            return RetMessage.createFailMessage(String.format("cluster name not matched from database as: %s",
+            return CheckResult.createFailResult(String.format("cluster name not matched from database as: %s",
                     response.getClusterName()));
         }
     }
@@ -153,11 +157,11 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         }
 
         @Override
-        protected RetMessage validate(OuterClientService.ClusterInfo response) {
+        protected CheckResult validate(OuterClientService.ClusterInfo response, long checkTimeMilli) {
             if(clusterName.equals(response.getName())) {
-                return RetMessage.createSuccessMessage();
+                return CheckResult.createSuccessResult(checkTimeMilli);
             }
-            return RetMessage.createFailMessage(String.format("cluster name not matched from outer client as: %s",
+            return CheckResult.createFailResult(String.format("cluster name not matched from outer client as: %s",
                     response.getName()));
         }
     }
@@ -203,11 +207,11 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         }
 
         @Override
-        protected RetMessage validate(List<String> response) {
+        protected CheckResult validate(List<String> response, long checkTimeMilli) {
             if(response.size() == targetMetaServers.size()) {
-                return RetMessage.createSuccessMessage();
+                return CheckResult.createSuccessResult(checkTimeMilli);
             } else if(response.isEmpty()) {
-                return RetMessage.createFailMessage("All MetaServers Down");
+                return CheckResult.createFailResult("All MetaServers Down");
             }
             List<String> problemMetaServers = Lists.newArrayList(targetMetaServers);
 
@@ -216,7 +220,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
             for(String addr : problemMetaServers) {
                 sb.append(addr).append(",");
             }
-            return RetMessage.createWarningMessage(sb.toString());
+            return CheckResult.createWarningResult(sb.toString());
         }
 
     }

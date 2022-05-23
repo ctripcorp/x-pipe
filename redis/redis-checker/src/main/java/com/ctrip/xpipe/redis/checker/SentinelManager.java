@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 
 import java.util.List;
 
@@ -12,15 +14,20 @@ import java.util.List;
  */
 public interface SentinelManager {
 
-    void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName);
+    Command<String> removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName);
 
-    HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName);
+    Command<SentinelMasterInstance> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName);
 
-    String infoSentinel(Sentinel sentinel);
+    Command<String> infoSentinel(Sentinel sentinel);
 
-    void monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum);
+    Command<String> monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum);
 
-    List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName);
+    Command<List<HostPort>> slaves(Sentinel sentinel, String sentinelMonitorName);
 
-    void reset(Sentinel sentinel, String sentinelMonitorName);
+    Command<Long> reset(Sentinel sentinel, String sentinelMonitorName);
+
+    Command<String> sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs);
+
+    Command<String> sentinelConfigSet(Sentinel sentinel, String configName, String configValue);
+
 }

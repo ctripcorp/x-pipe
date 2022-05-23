@@ -16,11 +16,14 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -55,21 +58,35 @@ public class AlertManager {
     @Autowired
     private MetaCache metaCache;
 
-    private Set<String> alertClusterWhiteList;
+    private Set<String> alertClusterWhiteList = Collections.emptySet();
+
+    private AtomicReference<Pattern> excludedPatternRef = new AtomicReference<>(null);
 
     @PostConstruct
     public void postConstruct(){
 
-        scheduled.scheduleWithFixedDelay(this::refreshWhiteList, 0, 30, TimeUnit.SECONDS);
+        scheduled.scheduleWithFixedDelay(this::refreshClusterExcluded, 0, 30, TimeUnit.SECONDS);
 
     }
 
     @VisibleForTesting
-    protected void refreshWhiteList() {
+    protected void refreshClusterExcluded() {
         Set<String> whiteList = new HashSet<>();
         whiteList.addAll(alertDbConfig.clusterAlertWhiteList());
         whiteList.addAll(alertConfig.getAlertWhileList().stream().map(String::toLowerCase).collect(Collectors.toList()));
         this.alertClusterWhiteList = whiteList;
+
+        String clusterExcludedRegex = alertConfig.getClusterExcludedRegex();
+        if (StringUtil.isEmpty(clusterExcludedRegex)) {
+            if (null != excludedPatternRef.get()) {
+                logger.info("[refreshClusterExcluded] clear pattern");
+                excludedPatternRef.set(null);
+            }
+        } else if (null == excludedPatternRef.get() || !excludedPatternRef.get().pattern().equalsIgnoreCase(clusterExcludedRegex)) {
+            String originPattern = null == excludedPatternRef.get() ? null : excludedPatternRef.get().pattern();
+            logger.info("[refreshClusterExcluded] pattern:{} -> {}", originPattern, clusterExcludedRegex);
+            excludedPatternRef.set(Pattern.compile(clusterExcludedRegex, Pattern.CASE_INSENSITIVE));
+        }
     }
 
     private Date getClusterCreateTime(String clusterName) {
@@ -122,7 +139,10 @@ public class AlertManager {
         } catch (Exception e) {
             logger.warn("[shouldAlert]", e);
         }
-        return !alertClusterWhiteList.contains(cluster.toLowerCase());
+
+        Pattern excludedPattern = excludedPatternRef.get();
+        return !alertClusterWhiteList.contains(cluster.toLowerCase())
+                && (null == excludedPattern || !excludedPattern.matcher(cluster).matches());
     }
 
     private String findDc(HostPort hostPort) {

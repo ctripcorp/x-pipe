@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,14 +16,10 @@ import java.util.Set;
  */
 public interface DcMetaManager{
 
-	/**
-	 * if no route found return null
-	 * @param clusterId
-	 * @return
-	 */
-	RouteMeta randomRoute(String clusterId);
-
 	List<RouteMeta> getAllMetaRoutes();
+
+	Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+										Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc
@@ -51,6 +49,8 @@ public interface DcMetaManager{
 
 	List<KeeperMeta> getKeepers(String clusterId, String shardId);
 
+	List<ApplierMeta> getAppliers(String clusterId, String shardId);
+
 	List<RedisMeta> getRedises(String clusterId, String shardId);
 
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
@@ -70,6 +70,8 @@ public interface DcMetaManager{
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
+
 	DcMeta getDcMeta();
 	
 	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
@@ -88,6 +90,10 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
+	Set<String> getDownstreamDcs(String dc, String clusterId, String shardId);
+
+	String getUpstreamDc(String dc, String clusterId, String shardId);
+
 	Set<String> getRelatedDcs(String clusterId, String shardId);
 
 	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
@@ -101,8 +107,6 @@ public interface DcMetaManager{
 	Long clusterId2DbId(String clusterId);
 
 	Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId);
-
-	RouteMeta randomRoute(Long clusterDbId);
 
 	boolean hasCluster(Long clusterDbId);
 
@@ -121,6 +125,8 @@ public interface DcMetaManager{
 	ShardMeta getShardMeta(Long clusterDbId, Long shardDbId);
 
 	List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId);
+
+	List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId);
 
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
 
@@ -148,6 +154,12 @@ public interface DcMetaManager{
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers);
 
 	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 
