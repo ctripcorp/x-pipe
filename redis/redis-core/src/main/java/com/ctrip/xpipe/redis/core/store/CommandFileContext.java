@@ -19,6 +19,10 @@ public class CommandFileContext {
 	private ControllableFile controllableFile;
 
 	private File currentFile;
+
+	public CommandFileContext(CommandFile commandFile) throws IOException {
+		this(commandFile.getStartOffset(), commandFile.getFile());
+	}
 	
 	public CommandFileContext(long currentStartOffset, File currentFile) throws IOException {
 		this.currentFile = currentFile;
@@ -51,6 +55,10 @@ public class CommandFileContext {
 
 	public long getLastModified() {
 		return currentFile.lastModified();
+	}
+
+	public CommandFile getCommandFile() {
+		return new CommandFile(currentFile, currentStartOffset);
 	}
 	
 	@Override

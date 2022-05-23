@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import org.slf4j.Logger;
@@ -10,15 +11,18 @@ import java.io.IOException;
  * @author lishanglin
  * date 2022/4/17
  */
-public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFactory<OffsetReplicationProgress> {
+public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> {
 
     @Override
-    public CommandWriter createCmdWriter(CommandFileContext cmdFileContext, CommandStore<OffsetReplicationProgress> cmdStore, int maxFileSize, Logger delayTraceLogger) {
-        return new OffsetCommandWriter(cmdFileContext, cmdStore, maxFileSize, delayTraceLogger);
+    public CommandWriter createCmdWriter(CommandStore<OffsetReplicationProgress, ReferenceFileRegion> cmdStore,
+                                         int maxFileSize, Logger delayTraceLogger) {
+        return new OffsetCommandWriter(cmdStore, maxFileSize, delayTraceLogger);
     }
 
     @Override
-    public CommandReader createCmdReader(OffsetReplicationProgress replProgress, CommandStore<OffsetReplicationProgress> cmdStore, OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException {
+    public CommandReader<ReferenceFileRegion> createCmdReader(OffsetReplicationProgress replProgress,
+                                                              CommandStore<OffsetReplicationProgress, ReferenceFileRegion> cmdStore,
+                                                              OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException {
         long currentOffset = replProgress.getProgress();
         cmdStore.rotateFileIfNecessary();
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);

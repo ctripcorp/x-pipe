@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.gtid.GtidSet;
 import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
@@ -49,6 +50,16 @@ public class SimpleTest extends AbstractTest {
             delete(jedises, round);
             sleep(500);
         }
+    }
+
+    @Test
+    public void testGtidSetContain() {
+        GtidSet gtidSet1 = new GtidSet("a1:1-100");
+        GtidSet gtidSet2 = new GtidSet("a1:1-105");
+        logger.info("[contain] {}", gtidSet1.isContainedWithin(gtidSet2));
+        logger.info("[contain] {}", gtidSet2.isContainedWithin(gtidSet1));
+        logger.info("[subtract] {}", gtidSet2.subtract(gtidSet1));
+        logger.info("[subtract] {}", gtidSet1.subtract(gtidSet2));
     }
 
     private void assertEquals(Jedis[] jedises, Set<String> values, int round) {

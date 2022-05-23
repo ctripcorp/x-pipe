@@ -11,9 +11,11 @@ import java.io.IOException;
  */
 public interface CommandWriter extends Closeable {
 
-    void rotateFileIfNecessary() throws IOException;
+    void initialize() throws IOException;
 
     int write(ByteBuf byteBuf) throws IOException;
+
+    boolean rotateFileIfNecessary() throws IOException;
 
     long totalLength();
 

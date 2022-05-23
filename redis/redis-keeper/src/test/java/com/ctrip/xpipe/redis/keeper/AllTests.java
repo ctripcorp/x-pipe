@@ -16,6 +16,9 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListenerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandWriterTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
@@ -70,6 +73,10 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMasterStatsTest.class,
         PsyncForKeeperTest.class,
         PsyncKeeperServerStateObserverTest.class,
+
+        GtidCmdOneSegmentReaderTest.class,
+        GtidSetCommandReaderTest.class,
+        GtidSetCommandWriterTest.class,
 
         AllApplierTests.class,
 })

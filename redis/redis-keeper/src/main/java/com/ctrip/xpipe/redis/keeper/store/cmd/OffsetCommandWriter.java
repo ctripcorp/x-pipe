@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandFileContext;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +20,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class OffsetCommandWriter implements CommandWriter {
 
-    private AtomicReference<CommandFileContext> cmdFileCtxRef;
+    private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
 
-    private CommandStore cmdStore;
+    private CommandStore<?,?> cmdStore;
 
     private int maxFileSize;
 
@@ -29,16 +30,26 @@ public class OffsetCommandWriter implements CommandWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandWriter.class);
 
-    public OffsetCommandWriter(CommandFileContext cmdFileContext, CommandStore cmdStore, int maxFileSize,
+    public OffsetCommandWriter(CommandStore<?,?> cmdStore, int maxFileSize,
                                Logger delayTraceLogger) {
-        this.cmdFileCtxRef = new AtomicReference<>(cmdFileContext);
         this.cmdStore = cmdStore;
         this.maxFileSize = maxFileSize;
         this.delayTraceLogger = delayTraceLogger;
     }
 
     @Override
-    public void rotateFileIfNecessary() throws IOException {
+    public void initialize() throws IOException {
+        if (null != cmdFileCtxRef.get()) return;
+
+        CommandFile latestCommandFile = cmdStore.findLatestFile();
+        CommandFileContext cmdFileCtx = new CommandFileContext(latestCommandFile);
+        if (cmdFileCtxRef.compareAndSet(null, cmdFileCtx)) {
+            logger.info("[initialize] write to {}", latestCommandFile.getFile().getName());
+        }
+    }
+
+    @Override
+    public boolean rotateFileIfNecessary() throws IOException {
         CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
         if (curCmdFileCtx.fileLength() >= maxFileSize) {
             CommandFile newCommandFile = cmdStore.newCommandFile(totalLength());
@@ -52,8 +63,11 @@ public class OffsetCommandWriter implements CommandWriter {
                 cmdFileCtxRef.set(newCmdFileCtx);
 
                 curCmdFileCtx.close();
+                return true;
             }
         }
+
+        return false;
     }
 
     @Override
@@ -94,4 +108,18 @@ public class OffsetCommandWriter implements CommandWriter {
             cmdFileCtx.close();
         }
     }
+
+    protected CommandStore<?,?> getCommandStore() {
+        return cmdStore;
+    }
+
+    protected Pair<CommandFile, Long> getWritePosition() throws IOException {
+        CommandFileContext commandFileContext = cmdFileCtxRef.get();
+        return Pair.of(commandFileContext.getCommandFile(), commandFileContext.getChannel().position());
+    }
+
+    protected int getMaxFileSize() {
+        return maxFileSize;
+    }
+
 }

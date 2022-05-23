@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
  *
  *         Aug 9, 2016
  */
-public class DefaultCommandStore extends AbstractStore implements CommandStore<OffsetReplicationProgress> {
+public class DefaultCommandStore extends AbstractStore implements CommandStore<OffsetReplicationProgress, ReferenceFileRegion> {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 	
@@ -68,21 +69,21 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 
 	private ReentrantLock gcLock = new ReentrantLock();
 
-	private CommandReaderWriterFactory<OffsetReplicationProgress> cmdReaderWriterFactory;
+	private CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> cmdReaderWriterFactory;
 
 	private CommandWriter cmdWriter;
 
-	private List<CommandFileOffsetGtidIndex> cmdIndexList = new LinkedList<>();
+	private List<CommandFileOffsetGtidIndex> cmdIndexList = new CopyOnWriteArrayList<>();
 
 	private static final String INDEX_FILE_PREFIX = "idx_";
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory<OffsetReplicationProgress> cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
 		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-							   long commandReaderFlyingThreshold, CommandReaderWriterFactory<OffsetReplicationProgress> cmdReaderWriterFactory,
+							   long commandReaderFlyingThreshold, CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor) throws IOException {
 		
 		this.baseDir = file.getParentFile();
@@ -99,33 +100,34 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
 		allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
-		long currentStartOffset = findMaxStartOffset();
-		File currentFile = fileForStartOffset(currentStartOffset);
-		logger.info("Write to {}", currentFile.getName());
-		CommandFileContext cmdFileCtx = new CommandFileContext(currentStartOffset, currentFile);
-		cmdWriter = cmdReaderWriterFactory.createCmdWriter(cmdFileCtx, this, maxFileSize, delayTraceLogger);
+		cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
+		cmdWriter.initialize();
 
-		offsetNotifier = new OffsetNotifier(cmdFileCtx.totalLength() - 1);
+		offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
 		intiCmdFileIndex();
 	}
 
 	private void intiCmdFileIndex() {
 		File[] files = allIndexFiles();
+		List<CommandFileOffsetGtidIndex> localIndexList = new LinkedList<>();
 		for (File idxFile: files) {
 			String cmdFileName = idxFile.getName().substring(INDEX_FILE_PREFIX.length());
-			File cmdFile = new File(baseDir, cmdFileName);
-			if (!cmdFile.exists()) {
+			File file = new File(baseDir, cmdFileName);
+			if (!file.exists()) {
 				logger.info("[intiCmdFileIndex][{}] skip for no cmd file", idxFile);
 				continue;
 			}
 
+			long startOffset = extractStartOffset(file);
+			CommandFile commandFile = new CommandFile(file, startOffset);
 			FileUtils.readFileAsStringLineByLine(idxFile, idxStr -> {
-				CommandFileOffsetGtidIndex idx = CommandFileOffsetGtidIndex.createFromRawString(idxStr, cmdFile);
-				if (null != idx) this.cmdIndexList.add(idx);
+				CommandFileOffsetGtidIndex idx = CommandFileOffsetGtidIndex.createFromRawString(idxStr, commandFile);
+				if (null != idx) localIndexList.add(idx);
 			});
 		}
 
-		Collections.sort(cmdIndexList);
+		Collections.sort(localIndexList);
+		this.cmdIndexList.addAll(localIndexList);
 	}
 
 	private File fileForStartOffset(long startOffset) {
@@ -145,6 +147,17 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 			}
 		}
 		return maxStartOffset;
+	}
+
+	@Override
+	public File findIndexFile(CommandFile commandFile) {
+		if (!commandFile.getFile().exists()) throw new IllegalArgumentException("command file must exist " + commandFile);
+		return new File(baseDir, INDEX_FILE_PREFIX + commandFile.getFile().getName());
+	}
+
+	@Override
+	public void addIndex(CommandFileOffsetGtidIndex index) {
+		this.cmdIndexList.add(index);
 	}
 
 	private File[] allCmdFiles() {
@@ -177,10 +190,10 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 			if (!idxFile.delete()) {
 				logger.warn("[delCmdFile][{}] del idx file fail", idxFile);
 			}
-			// TODO: addLock
+
 			this.cmdIndexList = cmdIndexList.stream()
-					.filter(index -> !index.getFile().equals(cmdFile))
-					.collect(Collectors.toCollection(LinkedList::new));
+					.filter(index -> !index.getCommandFile().getFile().equals(cmdFile))
+					.collect(Collectors.toCollection(CopyOnWriteArrayList::new));
 		}
 
 		return cmdFile.delete();
@@ -214,13 +227,13 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		return cmdWriter.totalLength();
 	}
 
-	public CommandReader beginRead(OffsetReplicationProgress replicationProgress) throws IOException {
+	public CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress) throws IOException {
 
 		makeSureOpen();
 
-		CommandReader reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this, offsetNotifier, commandReaderFlyingThreshold);
+		CommandReader<ReferenceFileRegion> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this, offsetNotifier, commandReaderFlyingThreshold);
 		readers.put(reader, Boolean.TRUE);
-		return  reader;
+		return reader;
 	}
 
 	public void rotateFileIfNecessary() throws IOException {
@@ -245,6 +258,62 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 			}
 		}
 		return null;
+	}
+
+	@Override
+	public CommandFile findLatestFile() throws IOException {
+		long maxStartOffset = findMaxStartOffset();
+		return new CommandFile(fileForStartOffset(maxStartOffset), maxStartOffset);
+	}
+
+	@Override
+	public CommandFileSegment findLastFileSegment() {
+		if (this.cmdIndexList.isEmpty()) {
+			// TODO: return cmd_0 with rdb gtidset or do fsync
+			throw new IllegalArgumentException();
+		} else {
+			CommandFileOffsetGtidIndex lastIndex = this.cmdIndexList.get(cmdIndexList.size() - 1);
+			return new CommandFileSegment(lastIndex);
+		}
+	}
+
+	public CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) {
+		makeSureOpen();
+
+		if (cmdIndexList.isEmpty()) {
+			// TODO: return cmd_0 with rdb gtidset or do fsync
+			throw new IllegalArgumentException();
+		}
+
+		Set<String> interestedSrcIds = excludedGtidSet.getUUIDs();
+		Iterator<CommandFileOffsetGtidIndex> indexIterator = cmdIndexList.iterator();
+		CommandFileOffsetGtidIndex startIndex = indexIterator.next();
+		CommandFileOffsetGtidIndex endIndex = null;
+
+		GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
+		if (!storeExcludedGtidSet.isContainedWithin(excludedGtidSet)) {
+			// TODO: need handle fsync
+			throw new IllegalArgumentException();
+		}
+
+		while (indexIterator.hasNext()) {
+			CommandFileOffsetGtidIndex index = indexIterator.next();
+			GtidSet includedGtidSet = index.getExcludedGtidSet().filterGtid(interestedSrcIds)
+					.subtract(startIndex.getExcludedGtidSet());
+			if (!includedGtidSet.isContainedWithin(excludedGtidSet)) {
+				endIndex = index;
+				if (!indexIterator.hasNext()) {
+					// right bound open
+					endIndex = null;
+				}
+			} else if (null == endIndex) {
+				startIndex = index;
+			} else {
+				break;
+			}
+		}
+
+		return new CommandFileSegment(startIndex, endIndex);
 	}
 
 	public CommandFile findNextFile(File curFile) {
@@ -286,7 +355,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		makeSureOpen();
 		logger.info("[addCommandsListener][begin] from offset {}, {}", progress, listener);
 
-		CommandReader cmdReader = null;
+		CommandReader<ReferenceFileRegion> cmdReader = null;
 
 		try {
 			cmdReader = beginRead(progress);
@@ -312,7 +381,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 				ChannelFuture future = listener.onCommand(referenceFileRegion);
 						
 				if(future != null){
-					CommandReader finalCmdReader = cmdReader;
+					CommandReader<ReferenceFileRegion> finalCmdReader = cmdReader;
 					future.addListener(new ChannelFutureListener() {
 						@Override
 						public void operationComplete(ChannelFuture future) throws Exception {
