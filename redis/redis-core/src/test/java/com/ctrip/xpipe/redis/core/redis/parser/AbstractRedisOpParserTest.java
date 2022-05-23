@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.parser;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;

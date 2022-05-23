@@ -159,4 +159,11 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 	public boolean supportes(Class<?> clazz) {
 		return InOutPayload.class.isAssignableFrom(clazz);
 	}
+
+	@Override
+	public void reset() {
+		eofJudger = null;
+		bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
+		lfReader = null;
+	}
 }

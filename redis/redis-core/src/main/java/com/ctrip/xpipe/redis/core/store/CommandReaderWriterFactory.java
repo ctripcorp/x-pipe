@@ -9,10 +9,10 @@ import java.io.IOException;
  * @author lishanglin
  * date 2022/4/15
  */
-public interface CommandReaderWriterFactory<T extends ReplicationProgress<?,?>> {
+public interface CommandReaderWriterFactory<T extends ReplicationProgress<?,?>, R> {
 
-    CommandWriter createCmdWriter(CommandFileContext cmdFileContext, CommandStore<T> cmdStore, int maxFileSize, Logger delayTraceLogger) throws IOException;
+    CommandWriter createCmdWriter(CommandStore<T, R> cmdStore, int maxFileSize, Logger delayTraceLogger) throws IOException;
 
-    CommandReader createCmdReader(T replProgress, CommandStore<T> cmdStore, OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException;
+    CommandReader<R> createCmdReader(T replProgress, CommandStore<T, R> cmdStore, OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException;
 
 }

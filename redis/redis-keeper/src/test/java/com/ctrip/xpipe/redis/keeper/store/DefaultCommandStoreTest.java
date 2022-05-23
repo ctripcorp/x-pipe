@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.store.CommandFileOffsetGtidIndex;
 import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
