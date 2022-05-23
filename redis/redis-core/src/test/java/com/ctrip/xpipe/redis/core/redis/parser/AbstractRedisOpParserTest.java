@@ -26,6 +26,7 @@ public class AbstractRedisOpParserTest extends AbstractRedisTest {
         new RedisOpSelectParser(redisOpParserManager);
         new RedisOpPingParser(redisOpParserManager);
         new RedisOpPublishParser(redisOpParserManager);
+        new RedisOpMultiParser(redisOpParserManager);
     }
 
 }

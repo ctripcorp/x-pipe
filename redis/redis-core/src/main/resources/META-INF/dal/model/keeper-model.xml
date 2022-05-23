@@ -3,6 +3,12 @@
 	enable-sax-parser="true" class-suffix="Meta" parent="true">
 	<entity name="xpipe" implements="java.io.Serializable">
 		<entity-ref name="dc" type="map" />
+		<entity-ref name="redisCheckRule" type="map"/>
+	</entity>
+	<entity name="redisCheckRule" implements="java.io.Serializable">
+		<attribute name="id" key="true" value-type="Long" />
+		<attribute name="checkType" value-type="String"/>
+		<attribute name="param" value-type="String"/>
 	</entity>
 	<entity name="metaServer" implements="java.io.Serializable">
 	</entity>
@@ -16,6 +22,34 @@
 	<entity name="cluster" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Cluster">
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
+		<snippet>
+			public Map&lt;String, ShardMeta&gt; getAllShards() {
+				Map &lt;String, ShardMeta&gt; map = new LinkedHashMap&lt;&gt;();
+				map.putAll(m_shards);
+				for (SourceMeta sourceMeta : m_sources) {
+					map.putAll(sourceMeta.getShards());
+				}
+				return map;
+			}
+		</snippet>
+		<snippet>
+			public ShardMeta findFromAllShards(String id) {
+				ShardMeta result = findShard(id);
+				if (result != null) {
+					return result;
+				}
+				for (SourceMeta sourceMeta : m_sources) {
+					result = sourceMeta.findShard(id);
+					if (result != null) {
+						return result;
+					}
+				}
+				return null;
+            }
+		</snippet>
+	</entity>
+	<entity name="source" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Source">
+		<entity-ref name="shard" type="map" />
 	</entity>
 	<entity name="shard" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Shard">
 		<attribute name="id" key="true" />
@@ -26,6 +60,13 @@
 	</entity>
 	<entity name="keeperContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
+	</entity>
+	<entity name="applierContainer" implements="java.io.Serializable">
+		<attribute name="id" value-type="Long" />
+	</entity>
+	<entity name="applier" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Applier">
+		<attribute name="active" primitive="true" />
+		<attribute name="applierContainerId" value-type="Long" />
 	</entity>
 	<entity name="keeper" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Keeper">
 		<attribute name="active" primitive="true" />

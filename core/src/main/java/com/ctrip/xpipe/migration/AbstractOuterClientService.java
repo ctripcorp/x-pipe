@@ -62,4 +62,9 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	public ClusterInfo getClusterInfo(String clusterName) throws Exception {
 		return null;
 	}
+
+	@Override
+	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
+	    return false;
+	}
 }

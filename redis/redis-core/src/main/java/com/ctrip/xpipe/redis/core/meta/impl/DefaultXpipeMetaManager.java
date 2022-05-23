@@ -8,10 +8,12 @@ import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
@@ -118,6 +120,49 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public Set<String> doGetDownstreamDcs(String dc, String clusterId, String shardId) {
+
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+
+		if (clusterMeta == null) {
+			throw new MetaException("clusterId " + clusterId + " not found!");
+		}
+
+		return expandDcs(clusterMeta.getDownstreamDcs());
+	}
+
+	@Override
+	public String doGetUpstreamDc(String dc, String clusterId, String shardId) {
+
+		SourceMeta source = getSourceOrThrow(dc, clusterId, shardId);
+		return source.getUpstreamDc();
+	}
+
+	@Override
+	public String doGetSrcDc(String dc, String clusterId, String shardId) {
+
+	    SourceMeta source = getSourceOrThrow(dc, clusterId, shardId);
+	    return source.getSrcDc();
+	}
+
+	private SourceMeta getSourceOrThrow(String dc, String clusterId, String shardId) {
+
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+		if (clusterMeta == null) {
+			throw new MetaException("clusterId " + clusterId + " not found!");
+		}
+
+		ShardMeta shardMeta = clusterMeta.findFromAllShards(shardId);
+		if (shardMeta == null || !(shardMeta.parent() instanceof SourceMeta)) {
+			throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
+		}
+
+		return shardMeta.parent();
+	}
+
+	@Override
 	public Set<String> doGetRelatedDcs(String clusterId, String shardId) {
 		boolean found = false;
 
@@ -214,7 +259,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(clusterMeta == null){
 			return null;
 		}
-		return clusterMeta.getShards().get(shardId);
+		return clusterMeta.getAllShards().get(shardId);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -225,12 +270,28 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	protected List<KeeperMeta> getDirectKeepers(String dc, String clusterId, String shardId) {
-		
+
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
 		if(shardMeta == null){
 			return null;
 		}
 		return shardMeta.getKeepers();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<ApplierMeta> doGetAppliers(String dc, String clusterId, String shardId) {
+
+		return (List<ApplierMeta>) clone((Serializable) getDirectAppliers(dc, clusterId, shardId));
+	}
+
+	protected List<ApplierMeta> getDirectAppliers(String dc, String clusterId, String shardId) {
+
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		if(shardMeta == null){
+			return null;
+		}
+		return shardMeta.getAppliers();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -510,7 +571,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		
 		Integer phase = oldRedisMaster.parent().getPhase(); 
 		if(phase == null){
-			phase = oldRedisMaster.parent().parent().getPhase();
+			phase = ((ClusterMeta) oldRedisMaster.parent().parent()).getPhase();
 		}
 		if(phase == null){
 			phase = 1;
@@ -542,6 +603,17 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		}
 		throw new IllegalArgumentException(String.format("[getKeeperContainer][unfound keepercontainer]%s, %s", dc, keeperMeta));
 	}
+
+	@Override
+	public ApplierContainerMeta doGetApplierContainer(String dc, ApplierMeta applierMeta) {
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		for (ApplierContainerMeta applierContainerMeta : dcMeta.getApplierContainers()) {
+			if (applierContainerMeta.getId().equals(applierMeta.getApplierContainerId())) {
+				return clone(applierContainerMeta);
+			}
+		}
+		throw new IllegalArgumentException(String.format("[getApplierContainer][unfound appliercontainer]%s, %s", dc, applierMeta));
+    }
 
 	@Override
 	public void doUpdate(DcMeta dcMeta) {
@@ -663,46 +735,81 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc) {
+	public Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+					RouteChooseStrategy strategy, String tag, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+		Map<String, RouteMeta> chooseRoutes = new HashMap<>();
+		if (dstDcs == null || dstDcs.isEmpty()) return chooseRoutes;
 
-		logger.debug("[randomRoute]currentDc: {}, tag: {}, orgId: {}, dstDc: {}", currentDc, tag, orgId, dstDc);
-		List<RouteMeta> routes = routes(currentDc, tag);
-		if(routes == null || routes.isEmpty()){
-			return null;
+		Map<String, List<RouteMeta>> dstDcRouteMap = new HashMap<>();
+		routes(srcDc, tag).forEach((routeMeta -> {
+			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
+		}));
+		logger.debug("[doChooseRoute] begin to choose route for dstDcs:{} with orgId:{} from clusterPrioritizedRoutes:{} and routes:{}",
+						dstDcs, orgId, clusterPrioritizedRoutes, dstDcRouteMap);
+		if (dstDcRouteMap.isEmpty()) return chooseRoutes;
+
+		for (String dstDc : dstDcs) {
+			if (srcDc.equalsIgnoreCase(dstDc)) continue;
+
+			RouteMeta chooseRoute = chooseRoute(clusterName, dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()),
+					strategy, clusterPrioritizedRoutes);
+			logger.debug("[doChooseRoute] choose route {} for dstDc:{}", chooseRoute, dstDc);
+			if (chooseRoute != null) chooseRoutes.put(dstDc.toLowerCase(), chooseRoute);
 		}
-		logger.debug("[randomRoute]routes: {}", routes);
-		//for Same dstdc
-		List<RouteMeta> dstDcRoutes = new LinkedList<>();
+		return chooseRoutes;
+	}
+
+	private RouteMeta chooseRoute(String clusterName, String dstDc, int orgId, List<RouteMeta> routes, RouteChooseStrategy strategy,
+								  Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+		if (routes == null || routes.isEmpty()) return null;
+
+		List<RouteMeta> routeCandidates = findRouteCandidates(dstDc, orgId, routes, clusterPrioritizedRoutes);
+		return strategy.choose(routeCandidates, clusterName);
+	}
+
+	private List<RouteMeta> findRouteCandidates(String dstDc, int orgId, List<RouteMeta> routes,
+												Map<String, List<RouteMeta>> clusterPrioritizedRoutes){
+		List<RouteMeta> routeCandidates = clusterPrioritizedRoutes == null ?
+				null : findRouteCandidatesFromPrioritizedRoutes(routes, clusterPrioritizedRoutes.get(dstDc.toLowerCase()));
+		if (routeCandidates != null && !routeCandidates.isEmpty() ) return routeCandidates;
+
+		routeCandidates = findRouteCandidatesFromOrgDedicatedRoutes(routes, orgId);
+		if(!routeCandidates.isEmpty()) return routeCandidates;
+
+		return findRouteCandidatesFromCommonRoutes(routes);
+	}
+
+	private List<RouteMeta> findRouteCandidatesFromPrioritizedRoutes(List<RouteMeta> routes, List<RouteMeta> clusterPrioritizedRoutes) {
+		if (clusterPrioritizedRoutes == null || clusterPrioritizedRoutes.isEmpty() ) return null;
+
+		List<RouteMeta> routeCandidates = new ArrayList<>();
+		routes.forEach(route -> {
+			if (clusterPrioritizedRoutes.contains(route)) routeCandidates.add(route);
+		});
+
+		return routeCandidates;
+	}
+
+	private List<RouteMeta> findRouteCandidatesFromOrgDedicatedRoutes(List<RouteMeta> routes, int orgId) {
+		List<RouteMeta> routeCandidates = new ArrayList<>();
 		routes.forEach(routeMeta -> {
-			if(routeMeta.getDstDc().equalsIgnoreCase(dstDc)){
-				dstDcRoutes.add(routeMeta);
-			}
-		});
-		if(dstDcRoutes.isEmpty()){
-			logger.debug("[randomRoute]dst dc empty: {}", routes);
-			return null;
-		}
-
-		//for same org id
-		List<RouteMeta> resultsCandidates = new LinkedList<>();
-		dstDcRoutes.forEach(routeMeta -> {
-			if(ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
-				resultsCandidates.add(routeMeta);
+			if (routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
+				routeCandidates.add(routeMeta);
 			}
 		});
 
-		if(!resultsCandidates.isEmpty()){
-			return random(resultsCandidates);
-		}
+		return routeCandidates;
+	}
 
-
-		dstDcRoutes.forEach(routeMeta -> {
-			if(OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
-				resultsCandidates.add(routeMeta);
+	private List<RouteMeta> findRouteCandidatesFromCommonRoutes(List<RouteMeta> routes) {
+		List<RouteMeta> routeCandidates = new ArrayList<>();
+		routes.forEach(routeMeta -> {
+			if (routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
+				routeCandidates.add(routeMeta);
 			}
 		});
 
-		return random(resultsCandidates);
+		return routeCandidates;
 	}
 
 	@Override

@@ -1,15 +1,18 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.impl.RedisCheckRuleServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -19,12 +22,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DefaultMetaCacheTest extends AbstractRedisTest {
 
@@ -39,6 +42,12 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
 
     @Mock
     private XpipeMetaManager xpipeMetaManager;
+
+    @Mock
+    private RedisCheckRuleServiceImpl redisCheckRuleService;
+
+    @Mock
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     @InjectMocks
     private DefaultMetaCache metaCache = new DefaultMetaCache();
@@ -65,6 +74,18 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Map<String, DcMeta> dcs = getXpipeMeta().getDcs();
         Assert.assertFalse(dcs.get("jq").getZone().equalsIgnoreCase(dcs.get("fra-aws").getZone()));
     }
+
+    @Test
+    public void testGetAllRedisCheckRules() {
+        Map<Long, RedisCheckRuleMeta> redisCheckRules = getXpipeMeta().getRedisCheckRules();
+        redisCheckRules.values().forEach(redisCheckRuleMeta -> {
+            logger.info(redisCheckRuleMeta.getId() + ":" + redisCheckRuleMeta.getCheckType()
+                    + ":" + redisCheckRuleMeta.getParam());
+        });
+
+        Assert.assertEquals(3, redisCheckRules.values().size());
+    }
+
 
     @Test
     public void testGetAllActiveRedisOfDc() {
@@ -114,6 +135,66 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertEquals(Pair.of("cluster1", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameJQ));
     }
 
+    @Test
+    public void getMaxMasterCountDcTest() throws Exception {
+        when(consoleConfig.getConsoleAddress()).thenReturn("");
+        when(consoleConfig.getClustersPartIndex()).thenReturn(1);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+
+//          single dc trocks
+        ClusterMeta oyCluster = new ClusterMeta().setType(ClusterType.CROSS_DC.name()).setId("cluster").addShard(
+                new ShardMeta().setId("shard1").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+
+        DcMeta oyDcMeta = new DcMeta("oy");
+        oyDcMeta.addCluster(oyCluster);
+        xpipeMeta.addDc(oyDcMeta);
+        metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
+
+        Assert.assertEquals("oy", oyCluster.getActiveDc());
+
+//        multi dc trocks，single shard，oy master
+        ClusterMeta jqCluster = new ClusterMeta().setType(ClusterType.CROSS_DC.name()).setId("cluster").addShard(
+                new ShardMeta().setId("shard1").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+
+        DcMeta jqDcMeta = new DcMeta("jq");
+        jqDcMeta.addCluster(jqCluster);
+        xpipeMeta.addDc(jqDcMeta);
+        metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
+
+        Assert.assertEquals("oy", oyCluster.getActiveDc());
+        Assert.assertEquals("oy", jqCluster.getActiveDc());
+
+//        multi dc trocks，multi shards，oy master
+        oyCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        jqCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
+
+        Assert.assertEquals("oy", oyCluster.getActiveDc());
+        Assert.assertEquals("oy", jqCluster.getActiveDc());
+
+//        multi dc trocks，multi shards，one oy master，one jq master
+        oyCluster.removeShard("shard2");
+        jqCluster.removeShard("shard2");
+        oyCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        jqCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
+
+        Assert.assertEquals("jq", oyCluster.getActiveDc());
+        Assert.assertEquals("jq", jqCluster.getActiveDc());
+
+//        multidc trocks，multi shards，one oy master，two jq masters
+        oyCluster.addShard(new ShardMeta().setId("shard3").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        jqCluster.addShard(new ShardMeta().setId("shard3").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
+        metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
+        Assert.assertEquals("jq", oyCluster.getActiveDc());
+        Assert.assertEquals("jq", jqCluster.getActiveDc());
+    }
+
+    @Test
+    public void testChooseRoute() {
+        when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name());
+        metaCache.chooseRoutes("cluster1", "fra", Lists.newArrayList("jq"), 1, null);
+    }
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }

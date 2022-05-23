@@ -9,9 +9,6 @@ import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.AbstractMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ClusterChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardChange;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -176,7 +173,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         }
     }
 
-    class DcComparator extends AbstractMetaComparator<ClusterMeta, DcChange> {
+    class DcComparator extends AbstractMetaComparator<ClusterMeta> {
         DcMeta current, future;
 
         public DcComparator(DcMeta current, DcMeta future) {
@@ -218,7 +215,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         }
     }
 
-    class ClusterComparator extends AbstractMetaComparator<ShardMeta, ClusterChange> {
+    class ClusterComparator extends AbstractMetaComparator<ShardMeta> {
 
         private ClusterMeta current, future;
 
@@ -259,7 +256,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     }
 
 
-    public class ShardComparator extends AbstractMetaComparator<Redis, ShardChange>{
+    public class ShardComparator extends AbstractMetaComparator<Redis>{
 
         private ShardMeta current, future;
 
@@ -341,7 +338,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     public void beforeOptimizedDcMetaServiceTestForConcurrent() throws Exception {
         // put xpipe meta into database
         Set<String> clusters = new HashSet<>();
-        Map<String, Map<Long, SetinelTbl>> shardMap = Maps.newHashMap();
+        Map<String, Map<Long, SentinelGroupModel>> shardMap = Maps.newHashMap();
         long dcId;
         for(DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
             dcId = dcMeta.getId().equalsIgnoreCase("NTGXH") ? 1L : 2L;
@@ -359,13 +356,13 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
                 }
                 for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
                     String shardName = shardMeta.getId();
-                    Map<Long, SetinelTbl> sentinelMap = shardMap.get(shardName);
+                    Map<Long, SentinelGroupModel> sentinelMap = shardMap.get(shardName);
                     if(sentinelMap == null) {
                         sentinelMap = Maps.newHashMap();
-                        sentinelMap.put(dcId, new SetinelTbl().setSetinelId(shardMeta.getSentinelId()));
+                        sentinelMap.put(dcId, new SentinelGroupModel().setSentinelGroupId(shardMeta.getSentinelId()));
                         shardMap.put(shardName, sentinelMap);
                     } else {
-                        sentinelMap.put(dcId, new SetinelTbl().setSetinelId(shardMeta.getSentinelId()));
+                        sentinelMap.put(dcId, new SentinelGroupModel().setSentinelGroupId(shardMeta.getSentinelId()));
                         ShardTbl shardTbl = new ShardTbl().setShardName(shardName)
                                 .setSetinelMonitorName(shardMeta.getSentinelMonitorName());
 

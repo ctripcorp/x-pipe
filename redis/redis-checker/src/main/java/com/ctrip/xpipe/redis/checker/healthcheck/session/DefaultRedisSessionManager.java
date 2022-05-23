@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -56,8 +57,11 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
+	@Autowired
+	private CheckerConfig config;
+
 	@VisibleForTesting
-	public static long checkUnusedRedisDelaySeconds = 5;
+	public static long checkUnusedRedisDelaySeconds = 4;
 
 	@PostConstruct
 	public void postConstruct(){
@@ -89,7 +93,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			synchronized (this) {
 				session = sessions.get(endpoint);
 				if (session == null) {
-					session = new RedisSession(endpoint, scheduled, keyedObjectPool);
+					session = new RedisSession(endpoint, scheduled, keyedObjectPool, config);
 					sessions.put(endpoint, session);
 				}
 			}
@@ -195,5 +199,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	public DefaultRedisSessionManager setEndpointFactory(HealthCheckEndpointFactory endpointFactory) {
 		this.endpointFactory = endpointFactory;
 		return this;
+	}
+
+	public void setConfig(CheckerConfig config) {
+		this.config = config;
 	}
 }

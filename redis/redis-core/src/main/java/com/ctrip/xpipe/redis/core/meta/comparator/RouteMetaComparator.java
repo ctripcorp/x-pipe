@@ -2,11 +2,9 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 
-public class RouteMetaComparator extends AbstractMetaComparator<RouteMeta, RouteChange> {
+public class RouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
 
-    private RouteMeta current;
-
-    private RouteMeta future;
+    private RouteMeta current, future;
 
     public RouteMetaComparator(RouteMeta current, RouteMeta future) {
         this.current = current;

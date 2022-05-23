@@ -108,29 +108,35 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
+
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
+
                 // console monitors only cluster with active idc in current idc
-                if (clusterType.supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
+                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
                 }
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
                     continue;
                 }
-                // TODO: add cluster checker
-                for(ShardMeta shard : cluster.getShards().values()) {
-                    for(RedisMeta redis : shard.getRedises()) {
-                        instanceManager.getOrCreate(redis);
-                    }
-                }
-                instanceManager.getOrCreate(cluster);
+                generateHealthCheckInstances(cluster);
             }
         }
     }
+
+    void generateHealthCheckInstances(ClusterMeta clusterMeta){
+        for(ShardMeta shard : clusterMeta.getShards().values()) {
+            for(RedisMeta redis : shard.getRedises()) {
+                instanceManager.getOrCreate(redis);
+            }
+        }
+        instanceManager.getOrCreate(clusterMeta);
+    }
+
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
         return cluster.getActiveDc().equalsIgnoreCase(currentDcId);

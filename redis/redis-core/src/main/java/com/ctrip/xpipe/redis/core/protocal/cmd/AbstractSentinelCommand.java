@@ -1,15 +1,18 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
+import com.ctrip.xpipe.redis.core.protocal.pojo.DefaultSentinelMasterInstance;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,7 +191,7 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 	}
 
-	public static class SentinelMaster extends AbstractSentinelCommand<HostPort> {
+	public static class SentinelMaster extends AbstractSentinelCommand<SentinelMasterInstance> {
 
 		private static final Logger logger = LoggerFactory.getLogger(SentinelMaster.class);
 
@@ -204,14 +207,14 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 
 		@Override
-		public HostPort format(Object payload) {
+		public SentinelMasterInstance format(Object payload) {
 			if(!(payload instanceof Object[])){
 				throw new IllegalStateException("expected Object[], but:" + payload + "," + payload.getClass());
 			}
 			return doFormat((Object[])payload);
 		}
 
-		private HostPort doFormat(Object[] payload) {
+		private SentinelMasterInstance doFormat(Object[] payload) {
 			if(payload.length < 6) {
 				throw new IllegalStateException("expected arg len >=6, but:" + payload.length + ","
 						+ StringUtil.join(",", payload));
@@ -221,7 +224,7 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 				throw new IllegalMonitorStateException("expected monitor name: " + monitorName + ", but is: "
 						+ monitorNameFromSentinel);
 			}
-			return new HostPort(payloadToString(payload[3]), payloadToInteger(payload[5]));
+			return new DefaultSentinelMasterInstance(payloadToMap(payload));
 		}
 
 		@Override
@@ -359,6 +362,99 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		@Override
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, MONITOR, monitorName);
+		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
+	}
+
+	public static class SentinelSet extends AbstractSentinelCommand<String>{
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelMonitor.class);
+
+		public static String SET = "set";
+
+		private String monitorName;
+
+		private String[] masterConfig;
+
+		public SentinelSet(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+							   String monitorName, String[] masterConfig) {
+			super(clientPool, scheduled);
+			this.monitorName = monitorName;
+			this.masterConfig = masterConfig;
+		}
+
+		public SentinelSet(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+							   String monitorName, String[] masterConfig, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+			this.monitorName = monitorName;
+			this.masterConfig = masterConfig;
+		}
+
+		@Override
+		protected String format(Object payload) {
+			return payloadToString(payload);
+		}
+
+		@Override
+		public ByteBuf getRequest() {
+			String[] commandArray = new String[]{SENTINEL, SET, monitorName};
+			return new RequestStringParser(ArrayUtils.addAll(commandArray, masterConfig)).format();
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s %s %s", SENTINEL, SET, monitorName, StringUtils.join(masterConfig, " "));
+		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
+	}
+
+	public static class SentinelConfigSet extends AbstractSentinelCommand<String>{
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelMonitor.class);
+
+		public static String CONFIG = "CONFIG";
+
+		public static String SET = "SET";
+
+		private String configName;
+
+		private String configValue;
+
+		public SentinelConfigSet(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+				 String configName, String configValue) {
+			super(clientPool, scheduled);
+			this.configName = configName;
+			this.configValue = configValue;
+		}
+
+		public SentinelConfigSet(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+				 String configName, String configValue, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+			this.configName = configName;
+			this.configValue = configValue;
+		}
+
+		@Override
+		protected String format(Object payload) {
+			return payloadToString(payload);
+		}
+
+		@Override
+		public ByteBuf getRequest() {
+			return new RequestStringParser(SENTINEL, CONFIG, SET, configName, configValue).format();
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s %s %s %s", SENTINEL, CONFIG, SET, configName, configValue);
 		}
 
 		@Override

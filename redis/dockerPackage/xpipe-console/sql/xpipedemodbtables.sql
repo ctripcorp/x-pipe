@@ -81,6 +81,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
   `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
   `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
+  `cluster_designated_route_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT 'designated routeIds',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
 
   PRIMARY KEY (`id`),
@@ -100,6 +101,7 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
   `metaserver_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference metaserver id',
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
+  `active_redis_check_rules` varchar(128) COMMENT 'active redis check rules',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_id`),
@@ -311,8 +313,10 @@ CREATE TABLE `route_tbl` (
   `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
+  `is_public` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'public or not, public means all cluster can use',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
   `tag` varchar(128) NOT NULL DEFAULT '1' COMMENT 'tag for console or meta',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for route',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
@@ -347,3 +351,45 @@ CREATE TABLE `az_tbl` (
   UNIQUE KEY `idx_az_name` (`az_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone Info';
+
+-- redis_check_rule_tbl
+drop table if exists redis_check_rule_tbl;
+CREATE TABLE `redis_check_rule_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `check_type` varchar(128) NOT NULL DEFAULT '' COMMENT 'check type',
+  `param` varchar(256) NOT NULL DEFAULT '' COMMENT 'params for check',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for redis check rule',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='redis check rule';
+
+-- sentinel_group_tbl
+drop table if exists sentinel_group_tbl;
+CREATE TABLE `sentinel_group_tbl`
+(
+    `sentinel_group_id`   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '哨兵组id',
+    `cluster_type`        varchar(40)  NOT NULL DEFAULT '' COMMENT '该哨兵组适用的集群类型',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    `datachange_lasttime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP (3) COMMENT '更新时间',
+    `sentinel_description` varchar(100)  NOT NULL DEFAULT '',
+    PRIMARY KEY (`sentinel_group_id`),
+    KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵组表';
+
+-- sentinel_tbl
+drop table if exists sentinel_tbl;
+CREATE TABLE `sentinel_tbl`
+(
+    `sentinel_id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '哨兵id',
+    `dc_id`               bigint(20) NOT NULL DEFAULT '0' COMMENT '哨兵所在dc id',
+    `sentinel_group_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '哨兵所属group id',
+    `sentinel_ip`         varchar(40)  NOT NULL DEFAULT '0.0.0.0' COMMENT '哨兵ip',
+    `sentinel_port`       int(11) NOT NULL DEFAULT '0' COMMENT '哨兵port',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    `datachange_lasttime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP (3) COMMENT '更新时间',
+    PRIMARY KEY (`sentinel_id`),
+    UNIQUE KEY `unniqueKey` (`sentinel_ip`,`sentinel_port`,`deleted`),
+    KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵表';

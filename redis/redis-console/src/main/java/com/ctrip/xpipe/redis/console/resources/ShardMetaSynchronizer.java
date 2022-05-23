@@ -50,7 +50,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                 removed.forEach(shardMeta -> {
                     try {
                         logger.info("[ShardMetaSynchronizer][deleteShard]{}", shardMeta);
-                        shardService.deleteShard(shardMeta.parent().getId(), shardMeta.getId());
+                        shardService.deleteShard(((ClusterMeta) shardMeta.parent()).getId(), shardMeta.getId());
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[deleteShard]%s", shardMeta.getId()));
                     } catch (Exception e) {
                         logger.error("[ShardMetaSynchronizer][deleteShard]{}", shardMeta, e);
@@ -68,11 +68,11 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
                         ClusterMeta clusterMeta = shardMeta.parent();
-
-                        if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(clusterMeta.getType()), clusterMeta.getId())) {
-                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels());
+                        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                        if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterMeta.getId())) {
+                            shardService.findOrCreateShardIfNotExist(((ClusterMeta) shardMeta.parent()).getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels(clusterType));
                         } else {
-                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
+                            shardService.findOrCreateShardIfNotExist(((ClusterMeta) shardMeta.parent()).getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
                         }
 
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addShard]%s", shardMeta.getId()));

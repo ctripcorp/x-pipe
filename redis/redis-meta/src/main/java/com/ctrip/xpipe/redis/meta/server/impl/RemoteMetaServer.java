@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -32,6 +31,8 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String upstreamPeerChangePath;
 	private String getActiveKeeperPath;
 	private String getPeerMasterPath;
+	private String getSidsPath;
+	private String sidsChangePath;
 	private String getCurrentMasterPath;
 	private String changePrimaryDcCheckPath;
 	private String makeMasterReadonlyPath;
@@ -53,6 +54,8 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 			makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(getHttpHost());
 			changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(getHttpHost());
 			getPeerMasterPath = META_SERVER_SERVICE.GET_PEER_MASTER.getRealPath(getHttpHost());
+			getSidsPath = META_SERVER_SERVICE.GET_SIDS.getRealPath(getHttpHost());
+			sidsChangePath = META_SERVER_SERVICE.SIDS_CHANGE.getRealPath(getHttpHost());
 			getCurrentMasterPath = GET_CURRENT_MASTER.getRealPath(getHttpHost());
 		}
 	}
@@ -76,6 +79,26 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
 		ResponseEntity<RedisMeta> response = restTemplate.exchange(getPeerMasterPath, HttpMethod.GET, entity, RedisMeta.class, clusterId, shardId);
 		return response.getBody();
+	}
+
+	@Override
+	public String getSids(String srcDcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.debug("[getSids][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+		ResponseEntity<String> response = restTemplate.exchange(getSidsPath, HttpMethod.GET, entity, String.class, srcDcId, clusterId, shardId);
+		return response.getBody();
+	}
+
+	@Override
+	public void sidsChange(String clusterId, String shardId, String sids, ForwardInfo forwardInfo) {
+
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.SIDS_CHANGE.getForwardType());
+		logger.info("[updateUpstream][forward]{},{},{}--> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+		restTemplate.exchange(sidsChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId);
 	}
 
 	@Override

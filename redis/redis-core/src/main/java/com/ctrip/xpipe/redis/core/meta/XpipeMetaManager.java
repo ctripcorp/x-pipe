@@ -4,9 +4,11 @@ package com.ctrip.xpipe.redis.core.meta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -72,6 +74,9 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<KeeperMeta> getKeepers(String dc, String clusterId, String shardId) { return read(()->doGetKeepers(dc, clusterId, shardId)); }
 	List<KeeperMeta> doGetKeepers(String dc, String clusterId, String shardId);
 
+	default List<ApplierMeta> getAppliers(String dc, String clusterId, String shardId) { return read(()->doGetAppliers(dc, clusterId, shardId)); }
+	List<ApplierMeta> doGetAppliers(String dc, String clusterId, String shardId);
+
 	default List<RedisMeta> getRedises(String dc, String clusterId, String shardId) { return read(()->doGetRedises(dc, clusterId, shardId)); }
 	List<RedisMeta> doGetRedises(String dc, String clusterId, String shardId);
 
@@ -105,11 +110,23 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default Set<String> getBackupDcs(String clusterId, String shardId) { return read(()->doGetBackupDcs(clusterId, shardId)); }
 	Set<String> doGetBackupDcs(String clusterId, String shardId);
 
+	default Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) { return read(()->doGetDownstreamDcs(dc, clusterId, shardId)); }
+	Set<String> doGetDownstreamDcs(String dc, String clusterId, String shardId);
+
+	default String getUpstreamDc(String dc, String clusterId, String shardId){ return read(()->doGetUpstreamDc(dc, clusterId, shardId)); }
+	String doGetUpstreamDc(String dc, String clusterId, String shardId);
+
+	default String getSrcDc(String dc, String clusterId, String shardId){ return read(()->doGetSrcDc(dc, clusterId, shardId)); }
+	String doGetSrcDc(String dc, String clusterId, String shardId);
+
 	default Set<String> getRelatedDcs(String clusterId, String shardId) { return read(()->doGetRelatedDcs(clusterId, shardId)); }
 	Set<String> doGetRelatedDcs(String clusterId, String shardId);
 
 	default KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta) { return read(()->doGetKeeperContainer(dc, keeperMeta)); }
 	KeeperContainerMeta doGetKeeperContainer(String dc, KeeperMeta keeperMeta);
+
+	default ApplierContainerMeta getApplierContainer(String dc, ApplierMeta applierMeta) { return read(()->doGetApplierContainer(dc, applierMeta)); }
+	ApplierContainerMeta doGetApplierContainer(String dc, ApplierMeta applierMeta);
 
 	default DcMeta getDcMeta(String dc) { return read(()->doGetDcMeta(dc)); }
 	DcMeta doGetDcMeta(String dc);
@@ -129,20 +146,25 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<RouteMeta> routes(String currentDc, String tag) { return read(()->doGetRoutes(currentDc, tag)); }
 	List<RouteMeta> doGetRoutes(String currentDc, String tag);
 
-	default RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) { return read(()->doGetRandomRoute(currentDc, tag, orgId, dstDc)); }
-	RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc);
-
 	default List<RouteMeta>  metaRoutes(String currentDc){
 		return routes(currentDc, Route.TAG_META);
-	}
-
-	default RouteMeta metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
-		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
 	default List<RouteMeta> consoleRoutes(String currentDc) {
 		return routes(currentDc, Route.TAG_CONSOLE);
 	}
+
+	default Map<String, RouteMeta> chooseMetaRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+							Map<String, List<RouteMeta>> clusterPrioritizedRoutes, RouteChooseStrategy strategy) {
+		return chooseRoutes(clusterName, srcDc, dstDcs, orgId, Route.TAG_META, clusterPrioritizedRoutes, strategy);
+	}
+
+	default Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+					 String tag, Map<String, List<RouteMeta>>  clusterPrioritizedRoutes, RouteChooseStrategy strategy) {
+		return read(() -> doChooseRoutes(clusterName, srcDc, dstDcs, orgId, strategy, tag, clusterPrioritizedRoutes));
+	}
+	Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,RouteChooseStrategy strategy,
+										 String tag, Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 

@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.core.entity;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
+import java.io.Serializable;
+
 /**
  * @author wenchao.meng
  *         <p>
  *         Jul 17, 2016
  */
-public interface Redis {
+public interface Redis extends Serializable, InstanceNode {
 
     String getId();
 

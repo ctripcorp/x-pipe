@@ -40,7 +40,7 @@ public class ClusterShardCounter implements IVisitor{
     public void visitCluster(ClusterMeta cluster) {
 
         getOrCreate(cluster);
-        cluster.getShards().forEach((shardName, shardMeta) -> shardMeta.accept(this));
+        cluster.getAllShards().forEach((shardName, shardMeta) -> shardMeta.accept(this));
 
     }
 
@@ -82,6 +82,11 @@ public class ClusterShardCounter implements IVisitor{
     }
 
     @Override
+    public void visitRedisCheckRule(RedisCheckRuleMeta redisCheckRule) {
+
+    }
+
+    @Override
     public void visitRoute(RouteMeta route) {
 
     }
@@ -112,6 +117,21 @@ public class ClusterShardCounter implements IVisitor{
 
     @Override
     public void visitZkServer(ZkServerMeta zkServer) {
+
+    }
+
+    @Override
+    public void visitApplier(ApplierMeta applier) {
+
+    }
+
+    @Override
+    public void visitApplierContainer(ApplierContainerMeta applierContainer) {
+
+    }
+
+    @Override
+    public void visitSource(SourceMeta source) {
 
     }
 }

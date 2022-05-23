@@ -77,7 +77,8 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 		SERVER,
 		SENTINEL,
 		STATS,
-		PERSISTENCE;
+		PERSISTENCE,
+		GTID;
 
 		public String cmd(){
 			return toString().toLowerCase();

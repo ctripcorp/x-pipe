@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
+
+import java.util.List;
 
 /**
  * @author lishanglin
@@ -15,6 +18,8 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected ClusterType clusterType;
 
+    protected List<RedisCheckRule> redisCheckRules;
+
     public AbstractCheckInfo() {
 
     }
@@ -23,6 +28,11 @@ public abstract class AbstractCheckInfo implements CheckInfo {
         this.clusterId = clusterId;
         this.activeDc = activeDc;
         this.clusterType = clusterType;
+    }
+
+    public AbstractCheckInfo(String clusterId, String activeDc, ClusterType clusterType, List<RedisCheckRule> redisCheckRules) {
+        this(clusterId, activeDc, clusterType);
+        this.redisCheckRules = redisCheckRules;
     }
 
     @Override
@@ -51,5 +61,12 @@ public abstract class AbstractCheckInfo implements CheckInfo {
         this.clusterType = clusterType;
     }
 
+    @Override
+    public List<RedisCheckRule>  getRedisCheckRules() {
+        return redisCheckRules;
+    }
 
+    public void setRedisCheckRules(List<RedisCheckRule>  redisCheckRules) {
+        this.redisCheckRules = redisCheckRules;
+    }
 }

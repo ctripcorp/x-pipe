@@ -3,16 +3,17 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Sets;
 import org.unidal.tuple.Triple;
 
 import java.util.Set;
 
-public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta, RouteChange> {
-
-    private DcMeta current, future;
+public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
 
     private String routeTagFilter;
+
+    private DcMeta current, future;
 
     public DcRouteMetaComparator(DcMeta current, DcMeta future, String routeTagFilter) {
         this.current = current;
@@ -40,13 +41,14 @@ public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta, Rou
                 modified.add(new RouteMetaComparator(currentRouteMeta, futureRouteMeta));
                 continue;
             }
-            if(!currentRouteMeta.getRouteInfo().equalsIgnoreCase(futureRouteMeta.getRouteInfo())) {
+            if(!currentRouteMeta.getRouteInfo().equalsIgnoreCase(futureRouteMeta.getRouteInfo())
+                    || !ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())) {
                 modified.add(new RouteMetaComparator(currentRouteMeta, futureRouteMeta));
             }
         }
     }
 
-    private RouteMeta getRouteMeta(DcMeta dcMeta, Integer id) {
+    private RouteMeta getRouteMeta(DcMeta dcMeta, Long id) {
         for(RouteMeta routeMeta : dcMeta.getRoutes()) {
             if(routeMeta.getId().equals(id)) {
                 return routeMeta;

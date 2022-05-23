@@ -7,6 +7,8 @@ package com.ctrip.xpipe.redis.core.console;
 public class ConsoleCheckerPath {
 
     private ConsoleCheckerPath() {}
+
+    public static final String PATH_BIND_SHARD_SENTINEL = "/api/bind/shard/sentinels";
     
     public static final String PATH_GET_ALL_META = "/api/meta/divide";
 
@@ -27,6 +29,8 @@ public class ConsoleCheckerPath {
     public static final String PATH_GET_SENTINEL_CHECKER_WHITE_LIST = PATH_PERSISTENCE + "sentinelCheckerWhiteList";
     
     public static final String PATH_GET_CLUSTER_ALERT_WHITE_LIST = PATH_PERSISTENCE + "clusterAlertWhiteList";
+
+    public static final String PATH_GET_MIGRATING_CLUSTER_LIST = PATH_PERSISTENCE + "migratingClusterList";
 
     public static final String PATH_GET_IS_SENTINEL_AUTO_PROCESS = PATH_PERSISTENCE + "isSentinelAutoProcess";
 

@@ -205,7 +205,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 		List<RedisKeeperServer> result = new LinkedList<>();
 		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
 		for(RedisKeeperServer redisKeeperServer : redisKeeperServers.values()){
-			String currentDc = redisKeeperServer.getCurrentKeeperMeta().parent().parent().parent().getId();
+			String currentDc = ((ClusterMeta) redisKeeperServer.getCurrentKeeperMeta().parent().parent()).parent().getId();
 			if(dc.equals(currentDc)){
 				result.add(redisKeeperServer);
 			}

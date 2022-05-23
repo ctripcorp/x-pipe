@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author wenchao.meng
@@ -51,7 +53,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	private void observeLeader(final ClusterMeta cluster) {
 		logger.info("[observeLeader]{}", cluster.getDbId());
-		for (final ShardMeta shard : cluster.getShards().values()) {
+		for (final ShardMeta shard : cluster.getAllShards().values()) {
 			observerShardLeader(cluster.getDbId(), shard.getDbId());
 		}
 	}
@@ -60,7 +62,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		logger.info("[observerShardLeader]cluster_{},shard_{}", clusterDbId, shardDbId);
 
 		final CuratorFramework client = zkClient.get();
-		if(currentMetaManager.watchIfNotWatched(clusterDbId, shardDbId)){
+		if(currentMetaManager.watchKeeperIfNotWatched(clusterDbId, shardDbId)){
 			try {
                 List<PathChildrenCache> pathChildrenCaches = new ArrayList<>();
                 pathChildrenCaches.add(buildPathChildrenCacheByDbId(clusterDbId, shardDbId, client));
@@ -215,7 +217,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-		return Collections.singleton(ClusterType.ONE_WAY);
+		return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
 	}
 
 	public void setKeeperActiveElectAlgorithmManager(

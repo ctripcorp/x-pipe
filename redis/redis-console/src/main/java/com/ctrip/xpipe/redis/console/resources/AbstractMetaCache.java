@@ -19,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
@@ -66,14 +68,84 @@ public abstract class AbstractMetaCache implements MetaCache {
         lastUpdateTime = System.currentTimeMillis();
     }
 
-    protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas){
+    protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas, List<RedisCheckRuleMeta> redisCheckRuleMetas){
 
         XpipeMeta xpipeMeta = new XpipeMeta();
         for (DcMeta dcMeta : dcMetas) {
             xpipeMeta.addDc(dcMeta);
         }
+
+        setActiveDcForCrossDcClusters(xpipeMeta);
+
+        for(RedisCheckRuleMeta redisCheckRuleMeta : redisCheckRuleMetas) {
+            xpipeMeta.addRedisCheckRule(redisCheckRuleMeta);
+        }
+
         return xpipeMeta;
 
+    }
+
+    void setActiveDcForCrossDcClusters(XpipeMeta xpipeMeta) {
+        try {
+            Map<String, Map<String, ClusterMeta>> crossDcClusters = typeDcClusterMap(xpipeMeta, ClusterType.CROSS_DC);
+
+            if (crossDcClusters.isEmpty())
+                return;
+
+            crossDcClusters.values().forEach(dcClusters -> {
+                Map<String, Integer> dcMasterNums = countDcMaster(dcClusters);
+                String activeDc = maxMasterCountDc(dcMasterNums);
+                dcClusters.values().forEach(dcCluster -> dcCluster.setActiveDc(activeDc));
+            });
+
+        } catch (Throwable e) {
+            logger.error("[setActiveDcForCrossDcClusters]", e);
+        }
+    }
+
+    Map<String, Integer> countDcMaster(Map<String, ClusterMeta> dcClusters) {
+        Map<String, Integer> dcMasterCountMap = new HashMap<>();
+        dcClusters.forEach((dc, clusterMeta) -> {
+            dcMasterCountMap.put(dc, dcMasterCount(clusterMeta));
+        });
+        return dcMasterCountMap;
+    }
+
+    Map<String, Map<String, ClusterMeta>> typeDcClusterMap(XpipeMeta xpipeMeta, ClusterType clusterType) {
+        Map<String, Map<String, ClusterMeta>> typeDcClusterMetaMap = new HashMap<>();
+        xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
+            dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
+                if (ClusterType.lookup(clusterMeta.getType()).equals(clusterType)) {
+                    typeDcClusterMetaMap.putIfAbsent(clusterName, new HashMap<>());
+                    typeDcClusterMetaMap.get(clusterName).put(dc, clusterMeta.setActiveDc(""));
+                }
+            });
+        });
+        return typeDcClusterMetaMap;
+    }
+
+    String maxMasterCountDc(Map<String, Integer> dcMasterNumMap) {
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
+        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }
+        });
+        return entryList.get(0).getKey();
+    }
+
+    private int dcMasterCount(ClusterMeta dcCluster) {
+        Map<String, ShardMeta> shards = dcCluster.getShards();
+        AtomicInteger masterCount = new AtomicInteger();
+        shards.forEach((shardId, shardMeta) -> {
+            shardMeta.getRedises().forEach(redisMeta -> {
+                if (redisMeta.isMaster()) {
+                    masterCount.incrementAndGet();
+                }
+            });
+        });
+        return masterCount.get();
     }
 
     protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters) {
@@ -89,6 +161,8 @@ public abstract class AbstractMetaCache implements MetaCache {
             dcMeta.getRoutes().forEach(partDcMeta::addRoute);
             dcMeta.getMetaServers().forEach(partDcMeta::addMetaServer);
         }
+
+        full.getRedisCheckRules().values().forEach(redisCheckRuleMeta -> part.addRedisCheckRule(redisCheckRuleMeta));
 
         return part;
     }
@@ -165,6 +239,11 @@ public abstract class AbstractMetaCache implements MetaCache {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         return xpipeMetaManager
                 .consoleRoutes(CURRENT_IDC);
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+        return null;
     }
 
     @Override
@@ -265,6 +344,43 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+        if (null == shardMeta) return Collections.emptyList();
+        return shardMeta.getRedises().stream().filter(redisMeta -> !redisMeta.isMaster()).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
+        List<RedisMeta> slaves = new ArrayList<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                shardMeta.getRedises().forEach(redisMeta -> {
+                    if (!redisMeta.isMaster())
+                        slaves.add(redisMeta);
+                });
+            }
+        });
+        return slaves;
+    }
+
+    @Override
+    public List<RedisMeta> getAllInstancesOfShard(String cluster, String shard) {
+        List<RedisMeta> instances = new ArrayList<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                instances.addAll(shardMeta.getRedises());
+            }
+        });
+        return instances;
+    }
+
+    @Override
     public String getDc(HostPort hostPort) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
@@ -352,6 +468,7 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
         return false;
     }
+
     @VisibleForTesting
     public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;

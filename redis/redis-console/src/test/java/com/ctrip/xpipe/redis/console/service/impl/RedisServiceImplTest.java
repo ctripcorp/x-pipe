@@ -278,7 +278,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
-    public void testValidateKeepersInTheSameAvaialableZone() throws ResourceNotFoundException, IOException, ComponentLookupException, SQLException {
+    public void testValidateKeepersInTheSameAvailableZone() throws ResourceNotFoundException, IOException, ComponentLookupException, SQLException {
 
         executeSqlScript(FileUtils.readFileAsString("src/test/resources/keeper-in-same-avaialable-zone.sql"));
         List<RedisTbl> originKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);

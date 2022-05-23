@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -21,6 +22,10 @@ public interface MetaServerStateChangeHandler {
 	default void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {}
 
 	default void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {}
+
+	default void applierActiveElected(Long clusterDbId, Long shardDbId, ApplierMeta activeApplier, String sids) {}
+
+	default void applierMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster, String sids) {}
 
 	default void currentMasterChanged(Long clusterDbId, Long shardDbId) {}
 

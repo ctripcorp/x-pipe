@@ -1,0 +1,19 @@
+<modes version="1">
+    <mode name="ByPass">
+        <path url="*.js"/>
+        <path url="*.css"/>
+        <path url="*.woff"/>
+        <path url="*.ttf"/>
+        <path url="/images/*"/>
+        <path url="/vendor/*"/>
+        <path url="/api/*"/>
+        <path url="/health"/>
+        <path url="/fireman/*"/>
+        <path url="/webjars/*"/>
+    </mode>
+    <mode name="LoginCheck">
+        <path url="/" type="page"/>
+        <path url="/console/*" type="api"/>
+    </mode>
+</modes>
+

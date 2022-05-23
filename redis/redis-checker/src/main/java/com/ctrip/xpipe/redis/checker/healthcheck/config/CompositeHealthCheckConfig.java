@@ -79,6 +79,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return config.getNonCoreCheckIntervalMilli();
+    }
+
+    @Override
     public String getMinXRedisVersion() {
         return config.getMinXRedisVersion();
     }

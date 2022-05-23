@@ -58,7 +58,7 @@ public class BeaconMetaCheckActionTest extends AbstractCheckerTest {
     @Test
     public void testDoTask() {
         action.doTask();
-        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), orgId);
+        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId);
     }
 
 }

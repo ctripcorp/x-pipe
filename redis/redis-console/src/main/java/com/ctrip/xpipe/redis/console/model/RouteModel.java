@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.console.service.DcService;
-
 import java.util.Objects;
 
 /**
@@ -29,6 +26,10 @@ public class RouteModel {
     private String tag = "";
 
     private boolean active;
+
+    private boolean isPublic;
+
+    private String description = "";
 
     public long getId() {
         return id;
@@ -111,23 +112,41 @@ public class RouteModel {
         return this;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public RouteModel setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public RouteModel setPublic(boolean aPublic) {
+        isPublic = aPublic;
+        return this;
+    }
+
     public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcIdNameMapper mapper) {
         RouteModel model = new RouteModel();
-        model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds())
+        model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds()).setPublic(routeTbl.isIsPublic())
                 .setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
 
         model.setSrcDcName(mapper.getName(routeTbl.getSrcDcId()))
                 .setDstDcName(mapper.getName(routeTbl.getDstDcId()));
 
         model.setTag(routeTbl.getTag()).setOptionProxyIds(routeTbl.getOptionalProxyIds())
-                .setOrgId(routeTbl.getRouteOrgId());
+                .setOrgId(routeTbl.getRouteOrgId()).setDescription(routeTbl.getDescription());
         return model;
     }
 
     public RouteTbl toRouteTbl(DcIdNameMapper mapper) {
         RouteTbl proto = new RouteTbl();
         proto.setActive(active).setId(id).setOptionalProxyIds(optionProxyIds).setSrcProxyIds(srcProxyIds)
-                .setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId);
+                .setIsPublic(isPublic).setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId).setDescription(description);
         proto.setSrcDcId(mapper.getId(srcDcName)).setDstDcId(mapper.getId(dstDcName));
         return proto;
     }
@@ -145,18 +164,20 @@ public class RouteModel {
                 Objects.equals(optionProxyIds, that.optionProxyIds) &&
                 Objects.equals(srcDcName, that.srcDcName) &&
                 Objects.equals(dstDcName, that.dstDcName) &&
-                Objects.equals(tag, that.tag);
+                Objects.equals(tag, that.tag) &&
+                Objects.equals(isPublic, that.isPublic) &&
+                Objects.equals(description, that.description);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(id, orgId, srcProxyIds, dstProxyIds, optionProxyIds, srcDcName, dstDcName, tag, active);
+        return Objects.hash(id, orgId, srcProxyIds, dstProxyIds, optionProxyIds, srcDcName, dstDcName, tag, active, isPublic, description);
     }
 
     @Override
     public String toString() {
-        return String.format("RouteModel[id: %d, orgId: %d, srcProxyIds: %s, dstProxyIds: %s, srcDcName: %s, dstDcName: %s, tag: %s, active: %b]",
-                id, orgId, srcProxyIds, dstProxyIds, srcDcName, dstDcName, tag, active);
+        return String.format("RouteModel[id: %d, orgId: %d, srcProxyIds: %s, dstProxyIds: %s, srcDcName: %s, dstDcName: %s, tag: %s, active: %b, isPublic:%b, description: %s]",
+                id, orgId, srcProxyIds, dstProxyIds, srcDcName, dstDcName, tag, active, isPublic, description);
     }
 }

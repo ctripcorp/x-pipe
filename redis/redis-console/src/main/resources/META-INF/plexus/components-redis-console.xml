@@ -165,10 +165,37 @@
 		</component>
 		<component>
 			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>redis-check-rule-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>redis_check_rule_tbl</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
 			<role-hint>route-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
 				<physical-table-name>route_tbl</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>sentinel-group-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>SENTINEL_GROUP_TBL</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>sentinel-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>SENTINEL_TBL</physical-table-name>
 				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
@@ -335,8 +362,35 @@
 			</requirements>
 		</component>
 		<component>
+			<role>com.ctrip.xpipe.redis.console.model.RedisCheckRuleTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.RedisCheckRuleTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
 			<role>com.ctrip.xpipe.redis.console.model.RouteTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.RouteTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.SentinelGroupTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.SentinelGroupTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.SentinelTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.SentinelTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>

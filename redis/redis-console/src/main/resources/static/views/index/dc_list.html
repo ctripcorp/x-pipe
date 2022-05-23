@@ -6,7 +6,12 @@
                 <div class="col-md-6">
                     <span class="col-sm-2"> Dcs </span>
                 </div>
-
+                <div class="col-md-6 text-right">
+                    <label for="clusterType">集群类型：</label>
+                    <select id="clusterType" ng-model="clusterType" ng-change="showAllDcs()" style="font-size: 14px">
+                        <option ng-repeat="x in clusterTypes" value="{{x.id}}">{{x.title}}</option>
+                    </select>
+                </div>
             </div>
         </header>
 
@@ -16,15 +21,15 @@
 
                 </td>
                 <td data-title="'以该DC为主DC的cluster总数'">
-                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'activeDC'})">{{dc.clusterInActiveDcCount}}</a>
+                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'activeDC',clusterType:clusterType})">{{dc.clusterInActiveDcCount}}</a>
                 </td>
                 <td ng-if="true" data-title="'cluster总数'" >
-                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'bindDC'})">{{ dc.clusterCount }}</a>
+                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'bindDC',clusterType:clusterType})">{{ dc.clusterCount }}</a>
                 </td>
                 <td ng-if="true" data-title="'redis总数'" ng-bind="dc.redisCount | limitTo:50"></td>
                 <td ng-if="true" data-title="'keeperContainer总数'" ng-bind="dc.keeperContainerCount | limitTo:50"></td>
                 <td ng-if="true" data-title="'keeper总数'" ng-bind="dc.keeperCount | limitTo:50"></td>
-                </td>
+
             </tr>
         </table>
 

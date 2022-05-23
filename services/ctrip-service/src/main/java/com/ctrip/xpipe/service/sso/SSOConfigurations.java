@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.service.sso;
 
+import com.ctrip.infosec.sso.client.logout.Logout;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
+import java.util.ArrayList;
+import java.util.Collection;
 
 
 /**
@@ -19,50 +20,21 @@ public class SSOConfigurations {
     @Bean
     public FilterRegistrationBean ctripSSOFilter() {
         FilterRegistrationBean ctripSSOFilter = new FilterRegistrationBean();
-        ctripSSOFilter.setFilter(new CtripSSOFilter());
+        ctripSSOFilter.setFilter(new XPipeSSOFilter());
         ctripSSOFilter.addUrlPatterns("/*");
         return ctripSSOFilter;
     }
 
     @Bean
-    public FilterRegistrationBean assertionHolderFilter() {
-        FilterRegistrationBean assertionHolderFilter = new FilterRegistrationBean();
-        assertionHolderFilter.setFilter(filter("com.ctrip.infosec.sso.client.util.AssertionThreadLocalFilter"));
-        assertionHolderFilter.addUrlPatterns("/*");
-        return assertionHolderFilter;
-    }
+    public ServletRegistrationBean logoutServletRegistration() {
 
-    @Bean
-    public ServletRegistrationBean logoutServlet() {
-        ServletRegistrationBean logoutServlet = new ServletRegistrationBean();
-        logoutServlet.setServlet(servlet("com.ctrip.infosec.sso.client.logout.Logout"));
-        logoutServlet.addUrlMappings("/logout");
-        return logoutServlet;
-    }
-
-
-    private Filter filter(String className) {
-        Class clazz = null;
-        try {
-            clazz = Class.forName(className);
-            Object obj = clazz.newInstance();
-            return (Filter) obj;
-        } catch (Exception e) {
-            throw new RuntimeException("instance filter fail", e);
-        }
-
-    }
-
-    private Servlet servlet(String className) {
-        Class clazz = null;
-        try {
-            clazz = Class.forName(className);
-            Object obj = clazz.newInstance();
-            return (Servlet) obj;
-        } catch (Exception e) {
-            throw new RuntimeException("instance servlet fail", e);
-        }
-
+        ServletRegistrationBean registration = new ServletRegistrationBean();
+        registration.setServlet(new Logout());
+        Collection<String> urlMappings = new ArrayList<>();
+        urlMappings.add("/logout");
+        registration.setUrlMappings(urlMappings);
+        registration.setLoadOnStartup(2);
+        return registration;
     }
 
 }

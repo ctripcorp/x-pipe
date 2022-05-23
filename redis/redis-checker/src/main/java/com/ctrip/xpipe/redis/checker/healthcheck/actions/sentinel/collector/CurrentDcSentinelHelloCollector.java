@@ -3,17 +3,14 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
-import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollector {
@@ -43,12 +40,6 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
     }
 
     @Override
-    protected boolean isKeeperOrDead(HostPort hostPort) {
-        // no keeper for bi direction cluster
-        return false;
-    }
-
-    @Override
     protected HostPort getMaster(RedisInstanceInfo info) throws MasterNotFoundException {
         String dcId = info.getDcId();
         String clusterId = info.getClusterId();
@@ -65,12 +56,6 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
         return new HostPort(master.getIp(), master.getPort());
     }
 
-    @Override
-    protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
-        HostPort hostPort = hello.getMasterAddr();
-        String targetDc = metaCache.getDc(hostPort);
-        return !currentDc.equalsIgnoreCase(targetDc);
-    }
 
     private boolean checkDcClusterShardExist(String dcId, String clusterId, String shardId) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
@@ -80,4 +65,8 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
                 && xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId);
     }
 
+    @Override
+    protected List<HostPort> getShardInstances(RedisInstanceInfo info) {
+        return metaCache.getRedisOfDcClusterShard(info.getClusterId(),info.getShardId(),currentDc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
+    }
 }

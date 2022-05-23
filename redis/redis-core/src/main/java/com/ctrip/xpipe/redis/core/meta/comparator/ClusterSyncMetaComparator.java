@@ -8,9 +8,11 @@ import org.unidal.tuple.Triple;
 import java.util.Objects;
 import java.util.Set;
 
-public class ClusterSyncMetaComparator extends AbstractMetaComparator<ShardMeta, ClusterChange> {
+public class ClusterSyncMetaComparator extends AbstractMetaComparator<ShardMeta> {
 
-    private ClusterMeta current, future;
+    private ClusterMeta current;
+
+    private ClusterMeta future;
 
     public ClusterSyncMetaComparator(ClusterMeta current, ClusterMeta future) {
         this.current = current;

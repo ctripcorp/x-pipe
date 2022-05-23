@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
@@ -10,6 +12,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateContro
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcNotifier;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
 import com.ctrip.xpipe.redis.meta.server.redis.impl.DefaultRedisStateManager;
+import com.ctrip.xpipe.redis.meta.server.redis.impl.gtid.DefaultRedisGtidCollector;
+import com.ctrip.xpipe.redis.meta.server.redis.impl.gtid.RedisGtidCollector;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +55,12 @@ public class Production extends AbstractProfile{
 		
 		return new DefaultKeeperStateController();
 	}
+
+	@Bean
+	public ApplierStateController getApplierStateController(){
+
+		return new DefaultApplierStateController();
+	}
 	
 	@Bean
 	public MultiDcNotifier getMultiDcNotifier(){
@@ -60,5 +70,10 @@ public class Production extends AbstractProfile{
 	@Bean
 	public RedisStateManager getRedisStateManager(){
 		return new DefaultRedisStateManager();
+	}
+
+	@Bean
+	public RedisGtidCollector getRedisGtidCollector(){
+		return new DefaultRedisGtidCollector();
 	}
 }

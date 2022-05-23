@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.util;
 
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
-import org.unidal.tuple.Triple;
 
 public class SentinelUtil {
 
@@ -46,5 +44,10 @@ public class SentinelUtil {
         public String getIdc() {
             return idc;
         }
+
+        public boolean isAvailable() {
+            return !StringUtil.isEmpty(clusterName) && !StringUtil.isEmpty(shardName) && !StringUtil.isEmpty(idc);
+        }
+
     }
 }
