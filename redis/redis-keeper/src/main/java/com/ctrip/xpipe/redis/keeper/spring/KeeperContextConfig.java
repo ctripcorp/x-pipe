@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  *         May 26, 2016 6:23:55 PM
  */
 @Configuration
-@ComponentScan({"com.ctrip.xpipe.redis.keeper" })
+@ComponentScan({"com.ctrip.xpipe.redis.keeper", "com.ctrip.xpipe.redis.core.redis.operation.parser" })
 public class KeeperContextConfig extends AbstractRedisConfigContext{
 		
 	@Bean

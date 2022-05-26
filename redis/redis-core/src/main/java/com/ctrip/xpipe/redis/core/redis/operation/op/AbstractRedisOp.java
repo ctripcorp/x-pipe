@@ -1,8 +1,12 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 
 import java.util.List;
+
+import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
+import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.DOLLAR_BYTE;
 
 /**
  * @author lishanglin
@@ -17,6 +21,8 @@ public abstract class AbstractRedisOp implements RedisOp {
     private String gid;
 
     private List<String> rawArgs;
+
+    public AbstractRedisOp() {}
 
     public AbstractRedisOp(List<String> rawArgs) {
         this(rawArgs, null, null, null);
@@ -57,6 +63,18 @@ public abstract class AbstractRedisOp implements RedisOp {
         return rawArgs;
     }
 
+    @Override
+    public byte[] buildRESP() {
+        List<String> args = buildRawOpArgs();
+        StringBuilder sb = new StringBuilder(String.format("%c%d%s", ASTERISK_BYTE, args.size(), RedisClientProtocol.CRLF));
+        for (String arg: args) {
+            sb.append(String.format("%c%d%s", DOLLAR_BYTE, arg.length(), RedisClientProtocol.CRLF));
+            sb.append(arg + RedisClientProtocol.CRLF);
+        }
+
+        return sb.toString().getBytes();
+    }
+
     protected void setRawArgs(List<String> args) {
         this.rawArgs = args;
     }
@@ -64,6 +82,6 @@ public abstract class AbstractRedisOp implements RedisOp {
     @Override
     public String toString() {
         List<String> args = buildRawOpArgs();
-        return getClass().getSimpleName() + ":" + String.join(" ", args);
+        return String.join(" ", args);
     }
 }

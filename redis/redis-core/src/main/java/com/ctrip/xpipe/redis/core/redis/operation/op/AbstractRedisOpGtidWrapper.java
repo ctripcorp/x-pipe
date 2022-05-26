@@ -12,7 +12,7 @@ import static com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParse
  * @author lishanglin
  * date 2022/2/18
  */
-public abstract class AbstractRedisOpGtidWrapper implements RedisOp {
+public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp implements RedisOp {
 
     private String gtid;
 

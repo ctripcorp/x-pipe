@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import io.netty.channel.ChannelFuture;
 
 /**
@@ -13,6 +14,8 @@ public interface CommandsListener {
 	boolean isOpen();
 	
 	ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion);
+
+	ChannelFuture onCommand(RedisOp redisOp);
 	
 	void beforeCommand();
 

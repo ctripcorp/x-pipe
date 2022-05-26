@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -42,6 +44,8 @@ public class KeeperContainerService {
     private KeepersMonitorManager keepersMonitorManager;
     @Autowired
     private KeeperResourceManager resourceManager;
+    @Autowired
+    private GeneralRedisOpParser redisOpParser;
 
     private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
@@ -197,7 +201,11 @@ public class KeeperContainerService {
 
         File baseDir = getReplicationStoreDir(keeperMeta);
 
-        return createRedisKeeperServer(keeperMeta, baseDir);
+        if (keeperTransMeta.getKeeperReplType().supportGtidSet()) {
+            return createGtidRedisKeeperServer(keeperMeta, baseDir);
+        } else {
+            return createRedisKeeperServer(keeperMeta, baseDir);
+        }
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
@@ -207,6 +215,16 @@ public class KeeperContainerService {
         shardMeta.setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setParent(clusterMeta);
         keeperMeta.setParent(shardMeta);
+    }
+
+    private RedisKeeperServer createGtidRedisKeeperServer(KeeperMeta keeper,
+                                                          File baseDir) throws Exception {
+
+        RedisKeeperServer redisKeeperServer = new GtidRedisKeeperServer(keeper, keeperConfig,
+                baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, redisOpParser);
+
+        register(redisKeeperServer);
+        return redisKeeperServer;
     }
 
     private RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,

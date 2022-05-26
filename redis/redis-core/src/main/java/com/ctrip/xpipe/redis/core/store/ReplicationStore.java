@@ -7,7 +7,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -37,6 +36,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
 
+	void addCommandsListener(GtidSet excludedGtidSet, CommandsListener commandsListener) throws IOException;
+
 	// meta related
 	MetaStore getMetaStore();
 
@@ -45,6 +46,10 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long getEndOffset();
 	
 	long firstAvailableOffset();
+
+	GtidSet getBeginGtidSet() throws IOException;
+
+	GtidSet getEndGtidSet();
 
 	long beginOffsetWhenCreated();
 

@@ -289,6 +289,23 @@ public class GtidSet {
         return filterGtid(intersectionUuids);
     }
 
+    public GtidSet retainAll(GtidSet other) {
+        GtidSet intersection = new GtidSet("");
+        if (null == other || other.isEmpty()) return intersection;
+
+        Set<String> uuids = getUUIDs();
+        for (String uuid: uuids) {
+            UUIDSet oUuidSet = other.getUUIDSet(uuid);
+            if (null == oUuidSet || oUuidSet.isEmpty()) continue;
+
+            UUIDSet uuidSetIntersection = getUUIDSet(uuid).retainAll(oUuidSet);
+            if (!uuidSetIntersection.isEmpty()) {
+                intersection.map.put(uuid, uuidSetIntersection);
+            }
+        }
+        return intersection;
+    }
+
     /**
      * Determine if the GTIDs represented by this object are contained completely within the supplied set of GTIDs.
      * Note that if two {@link GtidSet}s are equal, then they both are subsets of the other.
@@ -309,6 +326,16 @@ public class GtidSet {
         for (UUIDSet uuidSet : map.values()) {
             UUIDSet thatSet = other.getUUIDSet(uuidSet.getUUID());
             if (!uuidSet.isContainedWithin(thatSet)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isEmpty() {
+         if (map.isEmpty()) return true;
+        for (UUIDSet uuidSet : map.values()) {
+            if (!uuidSet.isEmpty()) {
                 return false;
             }
         }
@@ -548,6 +575,47 @@ public class GtidSet {
             return true;
         }
 
+        public boolean isEmpty() {
+            return intervals.isEmpty();
+        }
+
+        public UUIDSet retainAll(UUIDSet other) {
+            UUIDSet intersection = new UUIDSet(uuid, new LinkedList<>());
+            if (!this.getUUID().equalsIgnoreCase(other.getUUID())) return intersection;
+            if (this.isEmpty() || other.isEmpty()) return intersection;
+
+            int mIndex = 0;
+            int oIndex = 0;
+            long lastIntervalRightBound = -2;
+            List<Interval> mIntervals = this.getIntervals();
+            List<Interval> oIntervals = other.getIntervals();
+            while (mIndex < mIntervals.size() && oIndex < oIntervals.size()) {
+                Interval mInterval = mIntervals.get(mIndex);
+                Interval oInterval = oIntervals.get(oIndex);
+                Interval intervalIntersection = mInterval.retainAll(oInterval);
+                if (null != intervalIntersection) {
+                    if (lastIntervalRightBound + 1 == intervalIntersection.getStart()
+                            || lastIntervalRightBound == intervalIntersection.getStart()) {
+                        intersection.intervals.get(intersection.intervals.size() - 1).end = intervalIntersection.end;
+                    } else {
+                        intersection.intervals.add(intervalIntersection);
+                    }
+                    lastIntervalRightBound = intervalIntersection.getEnd();
+                }
+
+                if (mInterval.getEnd() > oInterval.getEnd()) {
+                    oIndex++;
+                } else if (mInterval.getEnd() < oInterval.getEnd()) {
+                    mIndex++;
+                } else { // mInterval.getEnd() == oInterval.getEnd()
+                    mIndex++;
+                    oIndex++;
+                }
+            }
+
+            return intersection;
+        }
+
         @Override
         public int hashCode() {
             return uuid.hashCode();
@@ -630,6 +698,11 @@ public class GtidSet {
                 return false;
             }
             return this.getStart() >= other.getStart() && this.getEnd() <= other.getEnd();
+        }
+
+        public Interval retainAll(Interval other) {
+            if (other.getStart() > this.getEnd() || other.getEnd() < this.start) return null;
+            return new Interval(Math.max(this.getStart(), other.getStart()), Math.min(this.getEnd(), other.getEnd()));
         }
 
         @Override

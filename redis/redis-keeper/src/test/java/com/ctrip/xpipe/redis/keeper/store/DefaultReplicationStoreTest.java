@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -105,7 +106,12 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 							
 							return null;
 						}
-						
+
+						@Override
+						public ChannelFuture onCommand(RedisOp redisOp) {
+							return null;
+						}
+
 						@Override
 						public void beforeCommand() {
 							

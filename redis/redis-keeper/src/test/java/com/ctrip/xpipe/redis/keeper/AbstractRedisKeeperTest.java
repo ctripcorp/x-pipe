@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -231,6 +232,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 						return null;
 					}
 
+					@Override
+					public ChannelFuture onCommand(RedisOp redisOp) {
+						return null;
+					}
 				});
 			}
 		}.start();

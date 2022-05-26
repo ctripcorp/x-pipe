@@ -46,9 +46,13 @@ public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Clo
 
 	CommandFile findLatestFile() throws IOException;
 
-	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet);
+	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) throws IOException;
 
-	CommandFileSegment findLastFileSegment();
+	CommandFileSegment findLastFileSegment() throws IOException;
+
+	GtidSet getBeginGtidSet() throws IOException;
+
+	GtidSet getEndGtidSet();
 
 	String simpleDesc();
 
