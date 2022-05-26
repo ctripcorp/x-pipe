@@ -50,6 +50,13 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
         if (keeperMeta.equals(getKeeperActive())) {
             originActiveKeeperServer = keeperServer;
             spyActiveKeeperServer = spy(keeperServer);
+            try {
+                originActiveKeeperServer.initialize();
+                originActiveKeeperServer.start();
+            } catch (Exception e) {
+                logger.info("[createRedisKeeperServer] init fail", e);
+            }
+
             return spyActiveKeeperServer;
         }
 
