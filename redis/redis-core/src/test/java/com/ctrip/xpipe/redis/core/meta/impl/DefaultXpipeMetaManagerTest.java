@@ -62,7 +62,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testGetSpecificActiveDcClusters() {
 
 		List<ClusterMeta> specificActiveDcClusters1 = metaManager.getSpecificActiveDcClusters(dcBak2, dc);
-		Assert.assertEquals(2, specificActiveDcClusters1.size());
+		Assert.assertEquals(3, specificActiveDcClusters1.size());
 		Assert.assertEquals(clusterId1, specificActiveDcClusters1.get(0).getId());
 		Assert.assertEquals(clusterId2, specificActiveDcClusters1.get(1).getId());
 
