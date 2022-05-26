@@ -5,9 +5,11 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -22,6 +24,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -279,6 +282,26 @@ public class DefaultRedisSlave implements RedisSlave {
 		}
 	}
 
+	@Override
+	public void beginWriteCommands(GtidSet excludedGtidSet) {
+		closeState.makeSureOpen();
+
+		try {
+
+			if (writingCommands.compareAndSet(false, true)) {
+				if(partialState == PARTIAL_STATE.UNKNOWN){
+					partialState = PARTIAL_STATE.PARTIAL;
+				}
+				logger.info("[beginWriteCommands]{}, {}", this, excludedGtidSet);
+				slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+				getRedisKeeperServer().getReplicationStore().addCommandsListener(excludedGtidSet, this);
+			} else {
+				logger.warn("[beginWriteCommands][already writing]{}, {}", this, excludedGtidSet);
+			}
+		} catch (IOException e) {
+			throw new RedisKeeperRuntimeException("[beginWriteCommands]" + excludedGtidSet + "," + this, e);
+		}
+	}
 
 	protected void sendCommandForFullSync() {
 		
@@ -307,6 +330,16 @@ public class DefaultRedisSlave implements RedisSlave {
 		closeState.makeSureOpen();
 		logger.debug("[onCommand]{}, {}", this, referenceFileRegion);
 		return doWriteFile(referenceFileRegion);
+	}
+
+	@Override
+	public ChannelFuture onCommand(RedisOp redisOp) {
+		closeState.makeSureOpen();
+		logger.debug("[onCommand]{}, {}", this, redisOp);
+
+		ChannelFuture future = channel().writeAndFlush(Unpooled.wrappedBuffer(redisOp.buildRESP()));
+		future.addListener(writeExceptionListener);
+		return future;
 	}
 
 	@Override

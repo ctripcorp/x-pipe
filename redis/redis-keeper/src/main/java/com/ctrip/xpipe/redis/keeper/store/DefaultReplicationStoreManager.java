@@ -68,7 +68,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final KeeperMonitor keeperMonitor;
 
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
         super(MoreExecutors.directExecutor());
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -151,7 +152,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         recrodLatestStore(storeBaseDir.getName());
 
-        ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
+        ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
 
         closeCurrentStore();
 
@@ -159,6 +160,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         notifyObservers(new NodeAdded<ReplicationStore>(replicationStore));
         return currentStore.get();
+    }
+
+    protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
+                                                      KeeperMonitor keeperMonitor) throws IOException {
+        return new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -225,7 +231,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
                     if (latestStoreDir.isDirectory()) {
-                        currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
+                        currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
                     }
                 }
             }

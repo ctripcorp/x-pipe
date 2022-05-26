@@ -1,14 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
-import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
-import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -22,55 +18,9 @@ import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFS
  *
  * 2016年4月22日 上午11:49:02
  */
-public class PsyncHandler extends AbstractCommandHandler{
+public class PsyncHandler extends AbstractSyncCommandHandler {
 	
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
-	
-	@Override
-	protected void doHandle(final String[] args, final RedisClient redisClient) throws Exception {
-		// in non-psync executor
-		final RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-		
-		if(redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()){
-			redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
-			return;
-		}
-		
-		if(!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)){
-			return;
-		}
-		
-		final RedisSlave redisSlave  = redisClient.becomeSlave();
-		if(redisSlave == null){
-			logger.warn("[doHandle][psync client already slave]" + redisClient);
-			try {
-				redisClient.close();
-			} catch (IOException e) {
-				logger.error("[doHandle]" + redisClient, e);
-			}
-			return;
-		}
-		
-		// transfer to psync executor, which will do psync dedicatedly
-		redisSlave.processPsyncSequentially(new Runnable() {
-			
-			@Override
-			public void run() {
-				try{
-					innerDoHandle(args, redisSlave, redisKeeperServer);
-				}catch(Throwable th){
-					try {
-						logger.error("[run]" + redisClient, th);
-						if(redisSlave.isOpen()){
-							redisSlave.close();
-						}
-					} catch (IOException e) {
-						logger.error("[run][close]" + redisSlave, th);
-					}
-				}
-			}
-		});
-	}
 	
 	protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) {
 		
@@ -180,32 +130,6 @@ public class PsyncHandler extends AbstractCommandHandler{
 		redisSlave.partialSync();
 
 		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
-	}
-
-	protected void doFullSync(RedisSlave redisSlave) {
-
-		try {
-			if(logger.isInfoEnabled()){
-				logger.info("[doFullSync]" + redisSlave);
-			}
-
-			redisSlave.markPsyncProcessed();
-			RedisKeeperServer redisKeeperServer = redisSlave.getRedisKeeperServer();
-
-			//alert full sync
-			String alert = String.format("FULL(M)<-%s[%s,%s]", redisSlave.metaInfo(), redisKeeperServer.getClusterId(), redisKeeperServer.getShardId());
-			EventMonitor.DEFAULT.logAlertEvent(alert);
-
-			redisKeeperServer.fullSyncToSlave(redisSlave);
-			redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
-		} catch (IOException e) {
-			logger.error("[doFullSync][close client]" + redisSlave, e);
-			try {
-				redisSlave.close();
-			} catch (IOException e1) {
-				logger.error("[doFullSync]" + redisSlave, e1);
-			}
-		}
 	}
 
 	@Override

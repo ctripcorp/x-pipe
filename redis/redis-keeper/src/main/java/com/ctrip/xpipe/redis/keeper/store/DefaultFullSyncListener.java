@@ -4,6 +4,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -86,6 +87,11 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 		
 		return redisSlave.onCommand(referenceFileRegion);
+	}
+
+	@Override
+	public ChannelFuture onCommand(RedisOp redisOp) {
+		return redisSlave.onCommand(redisOp);
 	}
 
 	@Override

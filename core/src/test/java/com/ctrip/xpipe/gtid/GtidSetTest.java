@@ -489,4 +489,12 @@ public class GtidSetTest {
         res = big.union(small);
         Assert.assertEquals(res.toString(), "56027356-0d03-11ea-a2f0-c6a9fbf1c3fe:1-2172782,e7d82d84-036c-11ea-bb09-075284a09713:1-427,3f40568c-6364-11ea-98b4-fa163ec90ff6:1-3");
     }
+
+    @Test
+    public void testRetainAll() {
+        GtidSet current = new GtidSet("a1:1-10:15-25,b1:1-100");
+        GtidSet other = new GtidSet("a1:5-30,c1:1-100");
+        Assert.assertEquals(new GtidSet("a1:5-10:15-25"), current.retainAll(other));
+    }
+
 }

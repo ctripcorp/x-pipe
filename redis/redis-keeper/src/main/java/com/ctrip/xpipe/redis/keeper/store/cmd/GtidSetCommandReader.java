@@ -140,7 +140,8 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
     private void readNextFileIfNecessary() throws IOException {
         commandStore.makeSureOpen();
 
-        if (filePosition() >= controllableFile.size() && curBuf.readableBytes() <= 0) {
+        if (filePosition() >= controllableFile.size()
+                && null != curBuf && curBuf.readableBytes() <= 0) {
             CommandFile nextCommandFile = commandStore.findNextFile(curCmdFile.getFile());
             if (nextCommandFile != null) {
                 setCmdFile(nextCommandFile, 0, false);

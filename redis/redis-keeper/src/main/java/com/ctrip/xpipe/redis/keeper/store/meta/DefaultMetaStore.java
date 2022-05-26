@@ -70,6 +70,16 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public ReplicationStoreMeta setRdbGtidSet(String gtidSet) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			metaDup.setReplId(gtidSet);
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
 	public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();

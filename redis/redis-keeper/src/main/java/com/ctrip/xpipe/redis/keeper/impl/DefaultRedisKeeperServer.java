@@ -102,6 +102,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private final ClusterId clusterId;
 	private final ShardId shardId;
+	private final File baseDir;
 	
 	private volatile RedisKeeperServerState redisKeeperServerState;
 	private KeeperConfig keeperConfig; 
@@ -130,13 +131,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.currentKeeperMeta = currentKeeperMeta;
+		this.baseDir = baseDir;
 		this.keeperConfig = keeperConfig;
 		this.keepersMonitorManager = keepersMonitorManager;
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
-		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
-		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
+	}
+
+	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
+		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -151,6 +156,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
+		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId,
+				currentKeeperMeta, baseDir, keeperMonitor);
+		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
 		
 		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));

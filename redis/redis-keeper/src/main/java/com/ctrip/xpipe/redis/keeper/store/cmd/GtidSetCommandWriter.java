@@ -166,7 +166,7 @@ public class GtidSetCommandWriter extends OffsetCommandWriter implements Command
                 || curPosition + byteBeforeIndex >= lastPosition + bytesBetweenIndex;
     }
 
-    private synchronized void tryInsertIndex(CommandFileOffsetGtidIndex index) {
+    private synchronized void tryInsertIndex(CommandFileOffsetGtidIndex index) throws IOException {
         try {
             this.indexControllableFile.getFileChannel().write(ByteBuffer.wrap((index.buildIdxStr() + LINE_SEPARATOR).getBytes()));
         } catch (IOException ioException) {

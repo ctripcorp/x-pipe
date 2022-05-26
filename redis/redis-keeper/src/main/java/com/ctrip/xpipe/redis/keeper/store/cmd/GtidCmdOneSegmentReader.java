@@ -79,7 +79,8 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
     private void readNextFileIfNecessary() throws IOException {
         commandStore.makeSureOpen();
 
-        if (controllableFile.getFileChannel().position() >= controllableFile.size() && curBuf.readableBytes() <= 0) {
+        if (controllableFile.getFileChannel().position() >= controllableFile.size()
+                && null != curBuf && curBuf.readableBytes() <= 0) {
             CommandFile nextCommandFile = commandStore.findNextFile(curCmdFile.getFile());
             if (nextCommandFile != null) {
                 setCmdFile(nextCommandFile, 0);

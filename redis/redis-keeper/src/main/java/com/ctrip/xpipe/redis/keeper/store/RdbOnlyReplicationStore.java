@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import io.netty.buffer.ByteBuf;
@@ -101,6 +102,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public ReplicationStoreMeta setRdbGtidSet(String gtidSet) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -183,6 +189,21 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void addCommandsListener(GtidSet excludedGtidSet, CommandsListener commandsListener) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public GtidSet getBeginGtidSet() throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public GtidSet getEndGtidSet() {
 		throw new UnsupportedOperationException();
 	}
 

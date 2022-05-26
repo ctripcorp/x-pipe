@@ -18,4 +18,6 @@ public interface RedisOp {
 
     List<String> buildRawOpArgs();
 
+    byte[] buildRESP();
+
 }

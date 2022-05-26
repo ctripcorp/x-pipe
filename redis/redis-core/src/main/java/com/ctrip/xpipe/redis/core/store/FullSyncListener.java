@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.core.store;
 
 /**
