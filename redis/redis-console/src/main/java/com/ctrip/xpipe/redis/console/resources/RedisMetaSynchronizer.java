@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
-import com.ctrip.xpipe.redis.core.meta.comparator.RedisComparator;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,6 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
     public void sync() {
         remove();
         add();
-        update();
     }
 
     void remove() {
@@ -77,27 +75,6 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
-        }
-    }
-
-    void update() {
-        try {
-            if (modified == null || modified.isEmpty())
-                return;
-
-            String clusterId = "";
-            String shardId = "";
-            List<RedisMeta> futureList = new ArrayList<>();
-            for (MetaComparator metaComparator : modified) {
-                RedisMeta redisMeta = (RedisMeta) ((RedisComparator) metaComparator).getFuture();
-                futureList.add(redisMeta);
-                clusterId = redisMeta.parent().parent().getId();
-                shardId = redisMeta.parent().getId();
-            }
-            updateBatchMaster(futureList, clusterId, shardId);
-            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateBatchMaster]%s", futureList));
-        } catch (Exception e) {
-            logger.error("[RedisMetaSynchronizer][updateRedises]", e);
         }
     }
 
