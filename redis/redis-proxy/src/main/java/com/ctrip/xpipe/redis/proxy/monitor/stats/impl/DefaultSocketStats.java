@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
 import com.ctrip.xpipe.utils.AbstractScriptExecutor;
 import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -59,6 +61,8 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
         private static final String SS_TEMPLATE = "ss -itnm '( sport = :%d and dport = :%d )' | grep -v State";
 
+        private static Logger logger = LoggerFactory.getLogger(SocketStatsScriptExecutor.class);
+
         private int localPort;
 
         private int remotePort;
@@ -86,6 +90,11 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
         @Override
         public String getName() {
             return getClass().getSimpleName();
+        }
+
+        @Override
+        protected Logger getLogger() {
+            return logger;
         }
     }
 }
