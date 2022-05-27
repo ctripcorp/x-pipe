@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -25,7 +23,7 @@ import java.util.stream.Collectors;
  * date 2021/11/18
  */
 @Component
-public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport {
+public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
 
     @Autowired
     private MetaCache metaCache;
@@ -56,8 +54,9 @@ public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWay
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
         HostPort master = info.getHostPort();
+        ClusterType clusterType = info.getClusterType();
         List<HostPort> realSlaves = ((MasterRole) role).getSlaveHostPorts();
-        List<HostPort> expectedSlaves = findExpectedSlaves(dcId, clusterId, shardId);
+        List<HostPort> expectedSlaves = findExpectedSlaves(dcId, clusterId, shardId, clusterType);
 
         for (HostPort expectedSlave: expectedSlaves) {
             if (realSlaves.contains(expectedSlave)) continue;
@@ -71,8 +70,13 @@ public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWay
         }
     }
 
-    public List<HostPort> findExpectedSlaves(String dc, String cluster, String shard) {
-        List<RedisMeta> redisMetas = metaCache.getRedisOfDcClusterShard(dc, cluster, shard);
+    public List<HostPort> findExpectedSlaves(String dc, String cluster, String shard, ClusterType clusterType) {
+        List<RedisMeta> redisMetas;
+        if (clusterType.isCrossDc()) {
+            redisMetas = metaCache.getAllInstancesOfShard(cluster, shard);
+        } else {
+            redisMetas = metaCache.getRedisOfDcClusterShard(dc, cluster, shard);
+        }
         return redisMetas.stream()
                 .filter(redisMeta -> !redisMeta.isMaster())
                 .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
