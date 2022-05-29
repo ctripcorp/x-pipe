@@ -28,6 +28,10 @@ public interface RedisOpCommand<V> extends Command<V> {
 
     RedisOp redisOp();
 
+    default String gtid() {
+        return redisOp().getOpGtid();
+    }
+
     default RedisSingleKeyOp<V> redisOpAsSingle() {
         RedisOp op = redisOp();
         if (op instanceof RedisSingleKeyOp) {
