@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -66,6 +65,9 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
                 gtidSet, null, scheduled);
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
+
+        //USE CREDIS
+        //client = new CRedisAsyncClientFactory().getOrCreateClient("ApplierTest");
 
         client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest");
         sequenceController = new DefaultSequenceController();
