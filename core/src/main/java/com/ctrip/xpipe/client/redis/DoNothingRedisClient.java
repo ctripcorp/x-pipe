@@ -21,6 +21,11 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
+    public Object[] resources() {
+        return new Object[0];
+    }
+
+    @Override
     public Object select(Object key) {
         return new Object();
     }

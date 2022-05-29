@@ -84,6 +84,7 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
 
         runningCommands.put(key, current);
         forgetWhenSuccess(current, key);
+        mergeGtidWhenSuccess(current, command.gtid());
         current.execute();
     }
 
@@ -95,6 +96,7 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
             forgetWhenSuccess(current, key);
+            mergeGtidWhenSuccess(current, command.gtid());
         }
 
         current.execute();
@@ -105,6 +107,16 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
             if (f.isSuccess()) {
                 if (sequenceCommand == runningCommands.get(key)) {
                     runningCommands.remove(key);
+                }
+            }
+        });
+    }
+
+    private void mergeGtidWhenSuccess(SequenceCommand<?> sequenceCommand, String gtid) {
+        sequenceCommand.future().addListener((f)->{
+            if (f.isSuccess()) {
+                if (gtid != null) {
+                    
                 }
             }
         });
