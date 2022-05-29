@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  */
 public class DefaultApplierCommand extends AbstractCommand<Boolean> implements ApplierRedisOpCommand<Boolean> {
 
-    public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtId command is executed";
+    public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
     final AsyncRedisClient client;
 
