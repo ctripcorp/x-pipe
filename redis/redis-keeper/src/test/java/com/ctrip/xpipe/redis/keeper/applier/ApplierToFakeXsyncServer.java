@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * <p>
  * Mar 01, 2022 8:11 AM
  */
-public class ApplierTest extends AbstractRedisOpParserTest implements XsyncObserver {
+public class ApplierToFakeXsyncServer extends AbstractRedisOpParserTest implements XsyncObserver {
 
     private DefaultXsync xsync;
 
