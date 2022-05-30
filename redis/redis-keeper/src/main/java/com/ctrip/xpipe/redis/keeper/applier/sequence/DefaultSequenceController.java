@@ -24,19 +24,35 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
 
     private final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
+    private ApplierLwmManager lwmManager = new DefaultLwmManager(this);
+
     ExecutorService stateThread;
     ExecutorService workerThreads;
 
     @Override
     protected void doInitialize() throws Exception {
+        lwmManager.initialize();
+
         stateThread = Executors.newSingleThreadExecutor();
         workerThreads = Executors.newFixedThreadPool(8);
+    }
+
+    @Override
+    protected void doStart() throws Exception {
+        lwmManager.start();
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        lwmManager.stop();
     }
 
     @Override
     protected void doDispose() throws Exception {
         stateThread.shutdown();
         workerThreads.shutdown();
+
+        lwmManager.dispose();
     }
 
     @Override
@@ -84,6 +100,7 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
 
         runningCommands.put(key, current);
         forgetWhenSuccess(current, key);
+        mergeGtidWhenSuccess(current, command.gtid());
         current.execute();
     }
 
@@ -95,6 +112,7 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
             forgetWhenSuccess(current, key);
+            mergeGtidWhenSuccess(current, command.gtid());
         }
 
         current.execute();
@@ -105,6 +123,16 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
             if (f.isSuccess()) {
                 if (sequenceCommand == runningCommands.get(key)) {
                     runningCommands.remove(key);
+                }
+            }
+        });
+    }
+
+    private void mergeGtidWhenSuccess(SequenceCommand<?> sequenceCommand, String gtid) {
+        sequenceCommand.future().addListener((f)->{
+            if (f.isSuccess()) {
+                if (gtid != null) {
+                    lwmManager.submit(gtid);
                 }
             }
         });

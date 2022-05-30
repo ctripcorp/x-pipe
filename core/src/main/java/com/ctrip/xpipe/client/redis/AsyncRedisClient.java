@@ -12,6 +12,8 @@ import java.util.Map;
  */
 public interface AsyncRedisClient {
 
+    Object[] /* resources */ resources();
+
     Object /* resource */ select(Object key);
 
     Map<Object /* resource */, List<Object> /* keys */> selectMulti(List<Object> keys);
