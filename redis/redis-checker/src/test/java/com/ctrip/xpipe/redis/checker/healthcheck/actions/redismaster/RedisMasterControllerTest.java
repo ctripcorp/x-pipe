@@ -25,4 +25,11 @@ public class RedisMasterControllerTest extends AbstractCheckerTest {
         Assert.assertFalse(activeDcRedisMasterController.shouldCheck(newRandomRedisHealthCheckInstance(currentDc, "activeDc", 6379)));
     }
 
+    @Test
+    public void testCrossDcRedisMasterController() throws Exception {
+        CrossDcRedisMasterController crossDcRedisMasterController = new CrossDcRedisMasterController();
+        Assert.assertTrue(crossDcRedisMasterController.shouldCheck(newRandomRedisHealthCheckInstance("crossDc", ClusterType.CROSS_DC, 6379)));
+        Assert.assertTrue(crossDcRedisMasterController.shouldCheck(newRandomRedisHealthCheckInstance(currentDc, ClusterType.CROSS_DC, 6379)));
+    }
+
 }
