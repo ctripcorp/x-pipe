@@ -36,6 +36,12 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     @Override
+    public Object[] resources() {
+        /* not efficient */
+        return locator().getAllSession().values().toArray();
+    }
+
+    @Override
     public Object select(Object key) {
         return locator().getSessionForObject(key, true);
     }
