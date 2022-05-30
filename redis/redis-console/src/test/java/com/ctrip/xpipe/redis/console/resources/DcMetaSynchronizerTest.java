@@ -408,7 +408,7 @@ public class DcMetaSynchronizerTest {
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
-        verify(redisService, times(1)).updateBatchMaster(any());
+        verify(redisService, never()).updateBatchMaster(any());
     }
 
     @Test
@@ -483,7 +483,7 @@ public class DcMetaSynchronizerTest {
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
-        verify(redisService, times(1)).updateBatchMaster(any());
+        verify(redisService, never()).updateBatchMaster(any());
     }
 
     @Test

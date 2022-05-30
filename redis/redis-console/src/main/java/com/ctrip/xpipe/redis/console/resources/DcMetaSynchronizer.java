@@ -229,7 +229,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     }
 
     ClusterMeta newClusterMeta(ClusterMeta origin) {
-        ClusterMeta clusterMeta = new ClusterMeta(origin.getId()).setType(origin.getType()).setAdminEmails(origin.getAdminEmails()).setOrgId(origin.getOrgId()).setActiveDc(origin.getActiveDc());
+        ClusterMeta clusterMeta = new ClusterMeta(origin.getId()).setType(origin.getType()).setAdminEmails(origin.getAdminEmails()).setOrgId(origin.getOrgId());
+        if (!ClusterType.lookup(origin.getType()).isCrossDc())
+            clusterMeta.setActiveDc(origin.getActiveDc());
         Map<String, ShardMeta> groups = origin.getShards();
         for (ShardMeta shard : groups.values()) {
             clusterMeta.addShard(newShardMeta(shard).setParent(clusterMeta));

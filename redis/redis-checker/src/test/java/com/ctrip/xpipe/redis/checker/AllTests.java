@@ -134,6 +134,8 @@ import org.junit.runners.Suite;
         TombstoneSizeCheckActionTest.class,
         TombstoneSizeMetricListenerTest.class,
         DefaultRedisMasterActionListenerTest.class,
+        CrossDcRedisMasterActionListenerTest.class,
+        OutClientRedisMasterActionListenerTest.class,
 
         BeaconMetaCheckActionTest.class,
         BeaconActiveDcControllerTest.class,
