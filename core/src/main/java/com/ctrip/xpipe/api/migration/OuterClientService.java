@@ -226,8 +226,9 @@ public interface OuterClientService extends Ordered{
 			return groups;
 		}
 
-		public void setGroups(List<GroupInfo> groups) {
+		public ClusterInfo setGroups(List<GroupInfo> groups) {
 			this.groups = groups;
+			return this;
 		}
 
 	}
@@ -241,16 +242,18 @@ public interface OuterClientService extends Ordered{
 			return name;
 		}
 
-		public void setName(String name) {
+		public GroupInfo setName(String name) {
 			this.name = name;
+			return this;
 		}
 
 		public List<InstanceInfo> getInstances() {
 			return instances;
 		}
 
-		public void setInstances(List<InstanceInfo> instances) {
+		public GroupInfo setInstances(List<InstanceInfo> instances) {
 			this.instances = instances;
+			return this;
 		}
 
 		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
@@ -304,40 +307,45 @@ public interface OuterClientService extends Ordered{
 			return env;
 		}
 
-		public void setEnv(String env) {
+		public InstanceInfo setEnv(String env) {
 			this.env = env;
+			return this;
 		}
 
 		public String getIPAddress() {
 			return IPAddress;
 		}
 
-		public void setIPAddress(String IPAddress) {
+		public InstanceInfo setIPAddress(String IPAddress) {
 			this.IPAddress = IPAddress;
+			return this;
 		}
 
 		public boolean isMaster() {
 			return isMaster;
 		}
 
-		public void setIsMaster(boolean master) {
+		public InstanceInfo setIsMaster(boolean master) {
 			isMaster = master;
+			return this;
 		}
 
 		public int getPort() {
 			return port;
 		}
 
-		public void setPort(int port) {
+		public InstanceInfo setPort(int port) {
 			this.port = port;
+			return this;
 		}
 
 		public boolean isStatus() {
 			return status;
 		}
 
-		public void setStatus(boolean status) {
+		public InstanceInfo setStatus(boolean status) {
 			this.status = status;
+			return this;
 		}
 	}
 

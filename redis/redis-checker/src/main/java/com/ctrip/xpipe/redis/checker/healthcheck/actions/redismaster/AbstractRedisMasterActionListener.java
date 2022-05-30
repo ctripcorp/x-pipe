@@ -173,7 +173,7 @@ public abstract class AbstractRedisMasterActionListener implements RedisMasterAc
         }
     }
 
-    protected abstract RedisMeta finalMaster(String dcId, String clusterId, String shardId) throws Exception;
+    protected abstract RedisMeta finalMaster(String dcId, String clusterId, String shardId);
 
     protected abstract String getServerName();
 }

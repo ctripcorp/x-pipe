@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.monitor.CatEventMonitor;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -71,27 +69,9 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
             redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
-            updateBatchMaster(toUpdateMaster, clusterId, shardId);
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
-        }
-    }
-
-    void updateBatchMaster(List<RedisMeta> futureMetaList, String clusterId, String shardId) throws ResourceNotFoundException {
-        List<RedisTbl> currentTblList = redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId, clusterId, shardId);
-        List<RedisTbl> futureTblList = new ArrayList<>();
-        for (RedisMeta future : futureMetaList) {
-            for (RedisTbl current : currentTblList) {
-                if (current.getRedisIp().equals(future.getIp()) && current.getRedisPort() == future.getPort()) {
-                    futureTblList.add(current.setMaster(future.isMaster()));
-                    break;
-                }
-            }
-        }
-        if (!futureTblList.isEmpty()) {
-            logger.info("[RedisMetaSynchronizer][updateRedises]{}", futureTblList);
-            redisService.updateBatchMaster(futureTblList);
         }
     }
 
