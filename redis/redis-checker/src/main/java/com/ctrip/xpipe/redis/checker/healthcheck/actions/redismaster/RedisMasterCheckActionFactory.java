@@ -2,9 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
@@ -21,7 +19,7 @@ import java.util.Map;
  * Oct 09, 2018
  */
 @Component
-public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
+public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
 
     private Map<ClusterType, List<RedisMasterController>> controllersByClusterType;
 
