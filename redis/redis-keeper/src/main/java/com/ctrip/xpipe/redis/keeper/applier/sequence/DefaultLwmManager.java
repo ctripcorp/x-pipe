@@ -27,7 +27,7 @@ public class DefaultLwmManager extends AbstractLifecycle implements ApplierLwmMa
     }
 
     @Override
-    public void start() throws Exception {
+    public void doStart() throws Exception {
         scheduled = Executors.newSingleThreadScheduledExecutor();
 
         // periodically: sequence.submit(/* gtid.lwm [sourceId] [lwm] */);
