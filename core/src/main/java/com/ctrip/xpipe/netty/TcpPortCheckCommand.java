@@ -80,4 +80,9 @@ public class TcpPortCheckCommand extends AbstractCommand<Boolean> {
     protected void doReset() {
 
     }
+
+    @Override
+    protected Logger getLogger() {
+        return logger;
+    }
 }
