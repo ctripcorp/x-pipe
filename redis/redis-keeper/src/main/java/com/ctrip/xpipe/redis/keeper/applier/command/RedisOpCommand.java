@@ -59,7 +59,7 @@ public interface RedisOpCommand<V> extends Command<V> {
         if (op instanceof RedisOpExec) {
             return RedisOpCommandType.EXEC;
         }
-        if (op instanceof RedisOpPublish || op instanceof RedisOpLwm) {
+        if (op instanceof RedisOpLwm) {
             return RedisOpCommandType.BROADCAST;
         }
         if (op instanceof RedisSingleKeyOp) {

@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.BroadcastApplierCommand;
 import com.google.common.collect.Lists;
 
 import java.util.Map;
@@ -53,7 +53,12 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public void send(String sid, Long lwm) {
 
         RedisOp redisOp = new RedisOpLwm(Lists.newArrayList("gtid.lwm", sid, lwm.toString()));
-        sequence.submit(new DefaultApplierCommand(client, redisOp));
+
+        try {
+            new BroadcastApplierCommand(client, redisOp).execute().get();
+        } catch (Throwable t) {
+            EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
+        }
     }
 
     @Override
