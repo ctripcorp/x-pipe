@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.google.common.collect.Lists;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -43,7 +43,7 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
 
         client
                 .write(rc, rawArgs)
-                .addListener(f->{
+                .addListener(f -> {
                     if (f.isSuccess()) {
                         future().setSuccess(true);
                     } else {
@@ -65,7 +65,7 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
     public List<RedisOpCommand<Boolean>> sharding() {
         if (type().equals(RedisOpCommandType.MULTI_KEY)) {
             List<Object> keys = keys().stream().map(RedisKey::get).collect(Collectors.toList());
-            return client.selectMulti(keys).entrySet().stream().map(e->
+            return client.selectMulti(keys).entrySet().stream().map(e ->
                     new DefaultApplierCommand(client,
                             /* resource */ e.getKey(),
                             /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).collect(Collectors.toList());
