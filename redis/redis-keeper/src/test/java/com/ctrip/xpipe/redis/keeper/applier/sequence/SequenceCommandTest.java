@@ -63,4 +63,17 @@ public class SequenceCommandTest {
 
         assertTrue(tsc200.startTime >= tsc300.endTime && tsc200.startTime >= tsc100.endTime);
     }
+
+    @Test
+    public void waitForSame() throws ExecutionException, InterruptedException {
+        TestSleepCommand tsc100 = new TestSleepCommand(100);
+        SequenceCommand<String> sc300 = new SequenceCommand<>(tsc100, stateThread, workerThreads);
+        sc300.execute();
+
+        TestSleepCommand tsc200 = new TestSleepCommand(200);
+        SequenceCommand<String> wait = new SequenceCommand<>(Lists.newArrayList(sc300, sc300), tsc200, stateThread, workerThreads);
+        wait.execute().get();
+
+        assertTrue(tsc200.startTime >= tsc100.endTime);
+    }
 }

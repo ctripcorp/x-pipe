@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.applier;
 
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommandTest;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceControllerTest;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.SequenceCommandTest;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.StubbornCommandTest;
