@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 
 /**
  * @author Slight
@@ -9,5 +9,5 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
  */
 public interface RedisOpCommandSequenceController {
 
-    void submit(RedisOpCommand<?> command);
+    void submit(RedisOpDataCommand<?> command);
 }

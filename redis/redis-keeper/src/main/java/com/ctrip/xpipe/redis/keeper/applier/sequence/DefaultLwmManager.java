@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.BroadcastApplierCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
 import com.google.common.collect.Lists;
 
 import java.util.Map;
@@ -55,7 +55,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
         RedisOp redisOp = new RedisOpLwm(Lists.newArrayList("gtid.lwm", sid, lwm.toString()));
 
         try {
-            new BroadcastApplierCommand(client, redisOp).execute().get();
+            new DefaultBroadcastCommand(client, redisOp).execute().get();
         } catch (Throwable t) {
             EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
         }

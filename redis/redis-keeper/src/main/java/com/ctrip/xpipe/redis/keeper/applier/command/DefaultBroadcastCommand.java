@@ -9,13 +9,13 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
  * <p>
  * Jun 01, 2022 09:48
  */
-public class BroadcastApplierCommand extends AbstractCommand<Boolean> implements RedisOpCommand<Boolean> {
+public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements RedisOpBroadcastCommand<Boolean> {
 
     final AsyncRedisClient client;
 
     final RedisOp redisOp;
 
-    public BroadcastApplierCommand(AsyncRedisClient client, RedisOp redisOp) {
+    public DefaultBroadcastCommand(AsyncRedisClient client, RedisOp redisOp) {
         this.client = client;
         this.redisOp = redisOp;
     }

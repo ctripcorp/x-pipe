@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPublish;
 
 import java.util.List;
 
