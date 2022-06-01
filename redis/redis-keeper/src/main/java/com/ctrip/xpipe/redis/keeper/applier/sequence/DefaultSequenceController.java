@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
+import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
+import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
@@ -20,39 +22,26 @@ import java.util.stream.Collectors;
  * <p>
  * Jan 29, 2022 4:19 PM
  */
-public class DefaultSequenceController extends AbstractLifecycle implements ApplierSequenceController {
+public class DefaultSequenceController extends AbstractInstanceComponent implements ApplierSequenceController {
 
-    private final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
+    @InstanceDependency
+    public ApplierLwmManager lwmManager;
 
-    private ApplierLwmManager lwmManager = new DefaultLwmManager(this);
+    final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
     ExecutorService stateThread;
     ExecutorService workerThreads;
 
     @Override
     protected void doInitialize() throws Exception {
-        lwmManager.initialize();
-
         stateThread = Executors.newSingleThreadExecutor();
         workerThreads = Executors.newFixedThreadPool(8);
-    }
-
-    @Override
-    protected void doStart() throws Exception {
-        lwmManager.start();
-    }
-
-    @Override
-    protected void doStop() throws Exception {
-        lwmManager.stop();
     }
 
     @Override
     protected void doDispose() throws Exception {
         stateThread.shutdown();
         workerThreads.shutdown();
-
-        lwmManager.dispose();
     }
 
     @Override

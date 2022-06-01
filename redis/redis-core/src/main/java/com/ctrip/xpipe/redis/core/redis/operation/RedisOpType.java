@@ -27,6 +27,7 @@ public enum RedisOpType {
     // other
     SELECT(false, 2),
     PUBLISH(false, 3),
+    LWM(false, 3),
     PING(false, -1),
     MULTI(false, 1),
     EXEC(false, 1),
