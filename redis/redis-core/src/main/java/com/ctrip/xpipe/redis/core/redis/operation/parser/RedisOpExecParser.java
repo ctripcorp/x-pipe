@@ -8,14 +8,12 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * @author lishanglin
  * date 2022/2/19
  */
 @Component
-public class RedisOpExecParser implements RedisOpParser {
+public class RedisOpExecParser extends AbstractRedisOpParser implements RedisOpParser {
 
     @Autowired
     public RedisOpExecParser(RedisOpParserManager redisOpParserManager) {
@@ -23,7 +21,7 @@ public class RedisOpExecParser implements RedisOpParser {
     }
 
     @Override
-    public RedisOp parse(List<String> args) {
+    public RedisOp parse(byte[][] args) {
         return new RedisOpExec(args);
     }
 

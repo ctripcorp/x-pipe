@@ -77,7 +77,7 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         if (null == protocol) return null;
 
         Object[] payload = protocol.getPayload();
-        RedisOp redisOp = opParser.parse(Stream.of(payload).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = opParser.parse(payload);
         if (!StringUtil.isEmpty(redisOp.getOpGtid())) excludedGtidSet.add(redisOp.getOpGtid());
         this.protocolParser.reset();
         return redisOp;

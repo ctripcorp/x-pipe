@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
 import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.DOLLAR_BYTE;
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.CRLF;
 
 /**
  * @author lishanglin
@@ -20,23 +25,23 @@ public abstract class AbstractRedisOp implements RedisOp {
 
     private String gid;
 
-    private List<String> rawArgs;
+    private byte[][] rawArgs;
 
     public AbstractRedisOp() {}
 
-    public AbstractRedisOp(List<String> rawArgs) {
+    public AbstractRedisOp(byte[][] rawArgs) {
         this(rawArgs, null, null, null);
     }
 
-    public AbstractRedisOp(List<String> rawArgs, String gtid) {
+    public AbstractRedisOp(byte[][] rawArgs, String gtid) {
         this(rawArgs, gtid, null, null);
     }
 
-    public AbstractRedisOp(List<String> rawArgs, String gid, Long timestamp) {
+    public AbstractRedisOp(byte[][] rawArgs, String gid, Long timestamp) {
         this(rawArgs, null, gid, timestamp);
     }
 
-    public AbstractRedisOp(List<String> rawArgs, String gtid, String gid, Long timestamp) {
+    public AbstractRedisOp(byte[][] rawArgs, String gtid, String gid, Long timestamp) {
         this.rawArgs = rawArgs;
         this.gtid = gtid;
         this.gid = gid;
@@ -59,29 +64,34 @@ public abstract class AbstractRedisOp implements RedisOp {
     }
 
     @Override
-    public List<String> buildRawOpArgs() {
+    public byte[][] buildRawOpArgs() {
         return rawArgs;
     }
 
     @Override
-    public byte[] buildRESP() {
-        List<String> args = buildRawOpArgs();
-        StringBuilder sb = new StringBuilder(String.format("%c%d%s", ASTERISK_BYTE, args.size(), RedisClientProtocol.CRLF));
-        for (String arg: args) {
-            sb.append(String.format("%c%d%s", DOLLAR_BYTE, arg.length(), RedisClientProtocol.CRLF));
-            sb.append(arg + RedisClientProtocol.CRLF);
-        }
+    public ByteBuf buildRESP() {
+        byte[][] args = buildRawOpArgs();
+        CompositeByteBuf outByteBuf = Unpooled.compositeBuffer(args.length + 1);
+        String arrayLength = String.format("%c%d%s", ASTERISK_BYTE, args.length, CRLF);
+        outByteBuf.addComponent(true, Unpooled.wrappedBuffer(arrayLength.getBytes()));
 
-        return sb.toString().getBytes();
+        for (byte[] arg: args) outByteBuf.addComponent(buildArgRESP(arg));
+        return outByteBuf;
     }
 
-    protected void setRawArgs(List<String> args) {
+    protected ByteBuf buildArgRESP(byte[] arg) {
+        String argLength = String.format("%c%d%s", DOLLAR_BYTE, arg.length, CRLF);
+        return Unpooled.wrappedBuffer(argLength.getBytes(), arg, CRLF.getBytes());
+    }
+
+    protected void setRawArgs(byte[][] args) {
         this.rawArgs = args;
     }
 
     @Override
     public String toString() {
-        List<String> args = buildRawOpArgs();
-        return String.join(" ", args);
+        Object[] args = buildRawOpArgs();
+        List<String> rawStrs = Stream.of(args).map(Object::toString).collect(Collectors.toList());
+        return String.join(" ", rawStrs);
     }
 }

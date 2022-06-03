@@ -14,7 +14,7 @@ import java.util.List;
  * date 2022/2/19
  */
 @Component
-public class RedisOpDelParser implements RedisOpParser {
+public class RedisOpDelParser extends AbstractRedisOpParser implements RedisOpParser {
 
     @Autowired
     public RedisOpDelParser(RedisOpParserManager redisOpParserManager) {
@@ -22,11 +22,11 @@ public class RedisOpDelParser implements RedisOpParser {
     }
 
     @Override
-    public RedisOp parse(List<String> args) {
-        List<Pair<RedisKey, Void>> kvs = new ArrayList<>();
+    public RedisOp parse(byte[][] args) {
+        List<Pair<RedisKey, byte[]>> kvs = new ArrayList<>();
 
-        for (int i = 1; i < args.size(); i++) {
-            RedisKey key = new RedisKey(args.get(i));
+        for (int i = 1; i < args.length; i++) {
+            RedisKey key = new RedisKey(args[i]);
             kvs.add(Pair.of(key, null));
         }
 

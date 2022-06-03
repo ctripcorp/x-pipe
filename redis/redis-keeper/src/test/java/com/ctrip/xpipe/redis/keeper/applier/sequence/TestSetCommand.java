@@ -29,7 +29,7 @@ public class TestSetCommand extends TestSleepCommand implements RedisOpCommand<S
 
     @Override
     public RedisOp redisOp() {
-        return parser.parse(Lists.newArrayList(rawArgs));
+        return parser.parse(rawArgs);
     }
 
     @Override

@@ -90,8 +90,8 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
             if (null == redisOp) continue;
 
             Assert.assertEquals("a1:" + i, redisOp.getOpGtid());
-            Assert.assertEquals("k" + i, ((RedisSingleKeyOp<String>) redisOp).getKey().get());
-            Assert.assertEquals("v" + i, ((RedisSingleKeyOp<String>) redisOp).getValue());
+            Assert.assertArrayEquals(("k" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getKey().get());
+            Assert.assertArrayEquals(("v" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getValue());
             Mockito.verify(commandStore).findFirstFileSegment(any());
             logger.info("[testReadCrossFile] check round {} success", i);
             i++;
@@ -127,8 +127,8 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
             if (null == redisOp) continue;
 
             Assert.assertEquals("a1:" + i, redisOp.getOpGtid());
-            Assert.assertEquals("k" + i, ((RedisSingleKeyOp<String>) redisOp).getKey().get());
-            Assert.assertEquals("v" + i, ((RedisSingleKeyOp<String>) redisOp).getValue());
+            Assert.assertArrayEquals(("k" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getKey().get());
+            Assert.assertArrayEquals(("v" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getValue());
             logger.info("[testReadCrossFile] check round {} success", i);
             i++;
         }
@@ -152,8 +152,8 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
             if (null == redisOp) continue;
 
             Assert.assertEquals("a1:" + i, redisOp.getOpGtid());
-            Assert.assertEquals("k" + i, ((RedisSingleKeyOp<String>) redisOp).getKey().get());
-            Assert.assertEquals("v" + i, ((RedisSingleKeyOp<String>) redisOp).getValue());
+            Assert.assertArrayEquals(("k" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getKey().get());
+            Assert.assertArrayEquals(("v" + i).getBytes(), ((RedisSingleKeyOp) redisOp).getValue());
             logger.info("[testReadCrossFile] check round {} success", i);
             i++;
         }
