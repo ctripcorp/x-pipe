@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -13,14 +12,22 @@ import java.util.Set;
  * @author lishanglin
  * date 2022/2/17
  */
-public class RedisOpDel extends AbstractRedisMultiKeyOp<Void> implements RedisMultiKeyOp<Void> {
+public class RedisOpDel extends AbstractRedisMultiKeyOp implements RedisMultiKeyOp {
 
-    public RedisOpDel(List<String> rawArgs, List<Pair<RedisKey, Void>> redisKvs) {
+    public RedisOpDel(byte[][] rawArgs, List<Pair<RedisKey, byte[]>> redisKvs) {
         super(rawArgs, redisKvs);
     }
 
-    public RedisOpDel(List<String> rawArgs, List<Pair<RedisKey, Void>> redisKvs, String gtid) {
+    public RedisOpDel(byte[][] rawArgs, List<Pair<RedisKey, byte[]>> redisKvs, String gtid) {
         super(rawArgs, redisKvs, gtid);
+    }
+
+    public RedisOpDel(byte[] rawCmdArg, List<Pair<RedisKey, byte[]>> redisKvs) {
+        super(rawCmdArg, redisKvs);
+    }
+
+    public RedisOpDel(byte[] rawCmdArg, List<Pair<RedisKey, byte[]>> redisKvs, String gtid) {
+        super(rawCmdArg, redisKvs, gtid);
     }
 
     @Override
@@ -29,19 +36,19 @@ public class RedisOpDel extends AbstractRedisMultiKeyOp<Void> implements RedisMu
     }
 
     @Override
-    public RedisMultiKeyOp<Void> subOp(Set<Integer> needKeys) {
-        return new RedisOpDel(null, subKvs(needKeys), getOpGtid());
+    public RedisMultiKeyOp subOp(Set<Integer> needKeys) {
+        return new RedisOpDel(getRawCmdArg(), subKvs(needKeys), getOpGtid());
     }
 
     @Override
-    protected List<String> innerBuildRawOpArgs() {
+    protected byte[][] innerBuildRawOpArgs() {
         List<RedisKey> keys = getKeys();
-        List<String> args = new ArrayList<>(1 + keys.size());
-        args.add(getOpType().name());
-        for (RedisKey key: keys) {
-            args.add(key.get());
-        }
+        byte[][] args = new byte[1 + keys.size()][];
+        args[0] = getRawCmdArg();
 
+        for (int i = 0; i < keys.size(); i++) {
+            args[i + 1] = keys.get(i).get();
+        }
         return args;
     }
 }

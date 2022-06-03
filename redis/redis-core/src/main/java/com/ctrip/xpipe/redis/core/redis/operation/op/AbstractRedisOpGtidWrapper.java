@@ -3,22 +3,20 @@ package com.ctrip.xpipe.redis.core.redis.operation.op;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParser.KEY_GTID;
-
 /**
  * @author lishanglin
  * date 2022/2/18
  */
 public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp implements RedisOp {
 
+    private byte[][] rawGtidArgs;
+
     private String gtid;
 
     private RedisOp innerRedisOp;
 
-    public AbstractRedisOpGtidWrapper(String gtid, RedisOp innerRedisOp) {
+    public AbstractRedisOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisOp innerRedisOp) {
+        this.rawGtidArgs = rawGtidArgs;
         this.gtid = gtid;
         this.innerRedisOp = innerRedisOp;
     }
@@ -43,12 +41,16 @@ public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp impleme
         return innerRedisOp.getGid();
     }
 
+    protected byte[][] getRawGtidArgs() {
+        return rawGtidArgs;
+    }
+
     @Override
-    public List<String> buildRawOpArgs() {
-        List<String> wholeOpArgs = new ArrayList<>();
-        wholeOpArgs.add(KEY_GTID);
-        wholeOpArgs.add(gtid);
-        wholeOpArgs.addAll(innerRedisOp.buildRawOpArgs());
-        return wholeOpArgs;
+    public byte[][] buildRawOpArgs() {
+        byte[][] innerArgs = innerRedisOp.buildRawOpArgs();
+        byte[][] wholeArgs = new byte[rawGtidArgs.length + innerArgs.length][];
+        System.arraycopy(rawGtidArgs, 0, wholeArgs, 0, rawGtidArgs.length);
+        System.arraycopy(innerArgs, 0, wholeArgs, rawGtidArgs.length, innerArgs.length);
+        return wholeArgs;
     }
 }

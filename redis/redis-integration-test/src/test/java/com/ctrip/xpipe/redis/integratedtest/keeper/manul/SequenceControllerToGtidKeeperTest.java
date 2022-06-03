@@ -83,7 +83,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = parser.parse(rawCmdArgs);
         if (redisOp instanceof RedisOpPing || redisOp instanceof RedisOpSelect) {
             return;
         }

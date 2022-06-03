@@ -71,7 +71,7 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
         if (null == protocol) return null;
 
         Object[] payload = protocol.getPayload();
-        RedisOp redisOp = opParser.parse(Stream.of(payload).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = opParser.parse(payload);
         this.protocolParser.reset();
         return redisOp;
     }

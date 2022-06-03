@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -8,20 +9,24 @@ import java.util.Objects;
  */
 public class RedisKey {
 
-    private String key;
+    private byte[] key;
 
     private String vectorClock;
 
-    public RedisKey(String key) {
+    public RedisKey(byte[] key) {
         this(key, null);
     }
 
-    public RedisKey(String key, String vectorClock) {
+    public RedisKey(String key) {
+        this(key.getBytes(), null);
+    }
+
+    public RedisKey(byte[] key, String vectorClock) {
         this.key = key;
         this.vectorClock = vectorClock;
     }
 
-    public String get() {
+    public byte[] get() {
         return key;
     }
 
@@ -34,12 +39,14 @@ public class RedisKey {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RedisKey key1 = (RedisKey) o;
-        return key.equals(key1.key) &&
+        return Arrays.equals(key, key1.key) &&
                 Objects.equals(vectorClock, key1.vectorClock);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, vectorClock);
+        int result = Objects.hash(vectorClock);
+        result = 31 * result + Arrays.hashCode(key);
+        return result;
     }
 }

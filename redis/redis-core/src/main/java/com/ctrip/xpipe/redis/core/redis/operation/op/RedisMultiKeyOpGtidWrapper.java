@@ -11,12 +11,12 @@ import java.util.Set;
  * @author lishanglin
  * date 2022/2/18
  */
-public class RedisMultiKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper implements RedisMultiKeyOp<T> {
+public class RedisMultiKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper implements RedisMultiKeyOp {
 
-    private RedisMultiKeyOp<T> innerRedisMultiKeyOp;
+    private RedisMultiKeyOp innerRedisMultiKeyOp;
 
-    public RedisMultiKeyOpGtidWrapper(String gtid, RedisMultiKeyOp<T> innerRedisMultiKeyOp) {
-        super(gtid, innerRedisMultiKeyOp);
+    public RedisMultiKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisMultiKeyOp innerRedisMultiKeyOp) {
+        super(rawGtidArgs, gtid, innerRedisMultiKeyOp);
         this.innerRedisMultiKeyOp = innerRedisMultiKeyOp;
     }
 
@@ -26,18 +26,18 @@ public class RedisMultiKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper im
     }
 
     @Override
-    public Pair<RedisKey, T> getKeyValue(int idx) {
+    public Pair<RedisKey, byte[]> getKeyValue(int idx) {
         return innerRedisMultiKeyOp.getKeyValue(idx);
     }
 
     @Override
-    public List<Pair<RedisKey, T>> getAllKeyValues() {
+    public List<Pair<RedisKey, byte[]>> getAllKeyValues() {
         return innerRedisMultiKeyOp.getAllKeyValues();
     }
 
     @Override
-    public RedisMultiKeyOp<T> subOp(Set<Integer> needKeys) {
-        return new RedisMultiKeyOpGtidWrapper<>(getOpGtid(), innerRedisMultiKeyOp.subOp(needKeys));
+    public RedisMultiKeyOp subOp(Set<Integer> needKeys) {
+        return new RedisMultiKeyOpGtidWrapper(getRawGtidArgs(), getOpGtid(), innerRedisMultiKeyOp.subOp(needKeys));
     }
 
 }

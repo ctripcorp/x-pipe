@@ -6,12 +6,12 @@ import com.ctrip.xpipe.redis.core.redis.operation.*;
  * @author lishanglin
  * date 2022/2/18
  */
-public class RedisSingleKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper implements RedisSingleKeyOp<T> {
+public class RedisSingleKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper implements RedisSingleKeyOp {
 
-    private RedisSingleKeyOp<T> innerRedisSingleKeyOp;
+    private RedisSingleKeyOp innerRedisSingleKeyOp;
 
-    public RedisSingleKeyOpGtidWrapper(String gtid, RedisSingleKeyOp<T> innerRedisSingleKeyOp) {
-        super(gtid, innerRedisSingleKeyOp);
+    public RedisSingleKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisSingleKeyOp innerRedisSingleKeyOp) {
+        super(rawGtidArgs, gtid, innerRedisSingleKeyOp);
         this.innerRedisSingleKeyOp = innerRedisSingleKeyOp;
     }
 
@@ -21,7 +21,7 @@ public class RedisSingleKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper i
     }
 
     @Override
-    public T getValue() {
+    public byte[] getValue() {
         return innerRedisSingleKeyOp.getValue();
     }
 }

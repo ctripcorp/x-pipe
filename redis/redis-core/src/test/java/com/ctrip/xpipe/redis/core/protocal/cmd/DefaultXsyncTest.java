@@ -86,9 +86,12 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
         server.propagate("gtid a1:23 del k1 k2");
 
         waitConditionUntilTimeOut(() -> 3 == redisOps.size());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:21", "set", "k1", "v1"), redisOps.get(0).buildRawOpArgs());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:22", "mset", "k1", "v1", "k2", "v2"), redisOps.get(1).buildRawOpArgs());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:23", "del", "k1", "k2"), redisOps.get(2).buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:21", "set", "k1", "v1")),
+                redisOps.get(0).buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:22", "mset", "k1", "v1", "k2", "v2")),
+                redisOps.get(1).buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:23", "del", "k1", "k2")),
+                redisOps.get(2).buildRawOpArgs());
     }
 
     @Override
@@ -118,7 +121,7 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = parser.parse(rawCmdArgs);
         redisOps.add(redisOp);
     }
 }

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
-import java.util.List;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author lishanglin
@@ -16,8 +16,8 @@ public interface RedisOp {
 
     String getGid();
 
-    List<String> buildRawOpArgs();
+    byte[][] buildRawOpArgs();
 
-    byte[] buildRESP();
+    ByteBuf buildRESP();
 
 }

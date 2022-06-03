@@ -18,70 +18,74 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
 
     @Test
     public void testSetParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("SET", "k1", "v1"));
+        RedisOp redisOp = parser.parse(Arrays.asList("SET", "k1", "v1").toArray());
         Assert.assertEquals(RedisOpType.SET, redisOp.getOpType());
         Assert.assertNull(redisOp.getOpGtid());
-        Assert.assertEquals(Arrays.asList("SET", "k1", "v1"), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("SET", "k1", "v1")), redisOp.buildRawOpArgs());
 
-        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
-        Assert.assertEquals("k1", redisSingleKeyOp.getKey().get());
-        Assert.assertEquals("v1", redisSingleKeyOp.getValue());
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
+        Assert.assertArrayEquals("k1".getBytes(), redisSingleKeyOp.getKey().get());
+        Assert.assertArrayEquals("v1".getBytes(), redisSingleKeyOp.getValue());
     }
 
     @Test
     public void testGtidParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "set", "k1", "v1"));
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "set", "k1", "v1").toArray());
         Assert.assertEquals(RedisOpType.SET, redisOp.getOpType());
         Assert.assertEquals("a1:10", redisOp.getOpGtid());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:10", "set", "k1", "v1"), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "set", "k1", "v1")), redisOp.buildRawOpArgs());
 
-        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
-        Assert.assertEquals("k1", redisSingleKeyOp.getKey().get());
-        Assert.assertEquals("v1", redisSingleKeyOp.getValue());
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
+        Assert.assertArrayEquals("k1".getBytes(), redisSingleKeyOp.getKey().get());
+        Assert.assertArrayEquals("v1".getBytes(), redisSingleKeyOp.getValue());
     }
 
     @Test
     public void testMSetParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("MSET", "k1", "v1", "k2", "v2"));
+        RedisOp redisOp = parser.parse(Arrays.asList("MSET", "k1", "v1", "k2", "v2").toArray());
         Assert.assertEquals(RedisOpType.MSET, redisOp.getOpType());
         Assert.assertNull(redisOp.getOpGtid());
-        Assert.assertEquals(Arrays.asList("MSET", "k1", "v1", "k2", "v2"), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("MSET", "k1", "v1", "k2", "v2")), redisOp.buildRawOpArgs());
 
-        RedisMultiKeyOp<?> redisMultiKeyOp = (RedisMultiKeyOp<?>) redisOp;
+        RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
         Assert.assertEquals(2, redisMultiKeyOp.getKeys().size());
-        Assert.assertEquals(Pair.of(new RedisKey("k1"), "v1"), redisMultiKeyOp.getKeyValue(0));
-        Assert.assertEquals(Pair.of(new RedisKey("k2"), "v2"), redisMultiKeyOp.getKeyValue(1));
+        Assert.assertEquals(new RedisKey("k1"), redisMultiKeyOp.getKeyValue(0).getKey());
+        Assert.assertArrayEquals("v1".getBytes(), redisMultiKeyOp.getKeyValue(0).getValue());
+        Assert.assertEquals(new RedisKey("k2"), redisMultiKeyOp.getKeyValue(1).getKey());
+        Assert.assertArrayEquals("v2".getBytes(), redisMultiKeyOp.getKeyValue(1).getValue());
     }
 
     @Test
     public void testGtidMSetParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2"));
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2").toArray());
         Assert.assertEquals(RedisOpType.MSET, redisOp.getOpType());
         Assert.assertEquals("a1:10", redisOp.getOpGtid());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2"), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2")), redisOp.buildRawOpArgs());
 
-        RedisMultiKeyOp<?> redisMultiKeyOp = (RedisMultiKeyOp<?>) redisOp;
+        RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
         Assert.assertEquals(2, redisMultiKeyOp.getKeys().size());
-        Assert.assertEquals(Pair.of(new RedisKey("k1"), "v1"), redisMultiKeyOp.getKeyValue(0));
-        Assert.assertEquals(Pair.of(new RedisKey("k2"), "v2"), redisMultiKeyOp.getKeyValue(1));
+        Assert.assertEquals(new RedisKey("k1"), redisMultiKeyOp.getKeyValue(0).getKey());
+        Assert.assertArrayEquals("v1".getBytes(), redisMultiKeyOp.getKeyValue(0).getValue());
+        Assert.assertEquals(new RedisKey("k2"), redisMultiKeyOp.getKeyValue(1).getKey());
+        Assert.assertArrayEquals("v2".getBytes(), redisMultiKeyOp.getKeyValue(1).getValue());
     }
 
     @Test
     public void testSelectParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("SELECT", "0"));
+        RedisOp redisOp = parser.parse(Arrays.asList("SELECT", "0").toArray());
         Assert.assertEquals(RedisOpType.SELECT, redisOp.getOpType());
 
-        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
         Assert.assertNull(redisSingleKeyOp.getKey());
-        Assert.assertEquals(0L, redisSingleKeyOp.getValue());
+        Assert.assertArrayEquals("0".getBytes(), redisSingleKeyOp.getValue());
     }
 
     @Test
     public void testPingParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("PING", "TEST"));
+        RedisOp redisOp = parser.parse(Arrays.asList("PING", "TEST").toArray());
         Assert.assertEquals(RedisOpType.PING, redisOp.getOpType());
 
-        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
         Assert.assertNull(redisSingleKeyOp.getKey());
         Assert.assertNull(redisSingleKeyOp.getValue());
     }

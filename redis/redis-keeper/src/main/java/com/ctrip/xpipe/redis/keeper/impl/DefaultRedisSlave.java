@@ -337,7 +337,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		closeState.makeSureOpen();
 		logger.debug("[onCommand]{}, {}", this, redisOp);
 
-		ChannelFuture future = channel().writeAndFlush(Unpooled.wrappedBuffer(redisOp.buildRESP()));
+		ChannelFuture future = channel().writeAndFlush(redisOp.buildRESP());
 		future.addListener(writeExceptionListener);
 		return future;
 	}
