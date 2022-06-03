@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.sequence;
+package com.ctrip.xpipe.redis.keeper.applier.lwm;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 

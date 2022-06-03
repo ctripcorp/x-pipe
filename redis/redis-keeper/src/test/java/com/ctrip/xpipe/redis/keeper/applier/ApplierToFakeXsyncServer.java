@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
-import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisOpCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.junit.After;
@@ -21,8 +21,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Slight
@@ -112,15 +110,17 @@ public class ApplierToFakeXsyncServer extends AbstractRedisOpParserTest implemen
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
+
         RedisOp redisOp = parser.parse(rawCmdArgs);
-        ApplierRedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
+        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
+
         switch (command.type()) {
             case MULTI:
                 inTransaction = true;
             case EXEC:
                 inTransaction = false;
             default:
-                command.sharding().forEach(sequenceController::submit);
+                sequenceController.submit(command);
         }
     }
 }
