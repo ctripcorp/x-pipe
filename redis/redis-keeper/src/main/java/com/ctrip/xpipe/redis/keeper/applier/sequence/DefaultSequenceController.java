@@ -41,13 +41,13 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @Override
     public void submit(RedisOpDataCommand<?> command) {
 
-        if (command.type() == RedisOpCommand.RedisOpCommandType.SINGLE_KEY) {
+        if (command.type() == RedisOpCommandType.SINGLE_KEY) {
             stateThread.execute(()->{
                 submitSingleKeyCommand(command);
             });
         }
 
-        if (command.type() == RedisOpCommand.RedisOpCommandType.MULTI_KEY) {
+        if (command.type() == RedisOpCommandType.MULTI_KEY) {
             stateThread.execute(()->{
                 submitMultiKeyCommand(command);
             });
