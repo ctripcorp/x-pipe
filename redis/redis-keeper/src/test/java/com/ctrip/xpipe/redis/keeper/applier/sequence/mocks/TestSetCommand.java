@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.sequence;
+package com.ctrip.xpipe.redis.keeper.applier.sequence.mocks;
 
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;

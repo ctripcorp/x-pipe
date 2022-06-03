@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.keeper.applier.sequence;
+package com.ctrip.xpipe.redis.keeper.applier.sequence.mocks;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 
 /**
  * @author Slight
