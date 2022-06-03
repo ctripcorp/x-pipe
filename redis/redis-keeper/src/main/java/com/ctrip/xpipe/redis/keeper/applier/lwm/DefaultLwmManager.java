@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.sequence;
+package com.ctrip.xpipe.redis.keeper.applier.lwm;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.google.common.collect.Lists;
 
 import java.util.Map;
@@ -29,7 +30,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     @InstanceDependency
     public AsyncRedisClient client;
 
-    public Map<String, Long> lwms = new ConcurrentHashMap<>();
+    public Map<String, Bucket> lwms = new ConcurrentHashMap<>();
 
     public ScheduledExecutorService scheduled;
 
@@ -50,9 +51,10 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
         }
     }
 
-    public void send(String sid, Long lwm) {
+    public void send(String sid, Bucket bucket) {
 
-        RedisOp redisOp = new RedisOpLwm(Lists.newArrayList("gtid.lwm", sid, lwm.toString()));
+        RedisOp redisOp = new RedisOpLwm(Lists.newArrayList(
+                "gtid.lwm", sid, String.valueOf(bucket.lwm())));
 
         try {
             new DefaultBroadcastCommand(client, redisOp).execute().get();
@@ -72,11 +74,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
         String sourceId = split[0];
         long transactionId = Long.parseLong(split[1]);
 
-        Long current = lwms.get(sourceId);
-        long lwm = current == null ? 0L : current;
-
-        if (transactionId > lwm) {
-            lwms.put(sourceId, transactionId);
-        }
+        Bucket current = lwms.computeIfAbsent(sourceId, (ignore)->Bucket.create());
+        current.add(transactionId);
     }
 }

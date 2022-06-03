@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.AbstractThreadSwitchCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSleepCommand;
 import org.assertj.core.util.Lists;
 import org.junit.Test;
 

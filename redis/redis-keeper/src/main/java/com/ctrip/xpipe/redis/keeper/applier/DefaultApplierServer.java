@@ -2,9 +2,9 @@ package com.ctrip.xpipe.redis.keeper.applier;
 
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 
 /**

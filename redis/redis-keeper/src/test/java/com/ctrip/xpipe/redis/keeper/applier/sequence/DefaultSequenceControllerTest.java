@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMSetCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSetCommand;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;

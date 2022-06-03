@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
+import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
