@@ -4,19 +4,17 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 
-import java.util.List;
-
 /**
  * @author lishanglin
  * date 2022/2/19
  */
-public class RedisOpDecrBy extends AbstractRedisSingleKeyOp<Long> implements RedisSingleKeyOp<Long> {
+public class RedisOpDecrBy extends AbstractRedisSingleKeyOp implements RedisSingleKeyOp {
 
-    public RedisOpDecrBy(List<String> rawArgs, RedisKey redisKey, Long redisValue) {
+    public RedisOpDecrBy(byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
         super(rawArgs, redisKey, redisValue);
     }
 
-    public RedisOpDecrBy(List<String> rawArgs, RedisKey redisKey, Long redisValue, String gtid) {
+    public RedisOpDecrBy(byte[][] rawArgs, RedisKey redisKey, byte[] redisValue, String gtid) {
         super(rawArgs, redisKey, redisValue, gtid);
     }
 

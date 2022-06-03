@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
-import com.google.common.collect.Lists;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,8 +52,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
     public void send(String sid, Bucket bucket) {
 
-        RedisOp redisOp = new RedisOpLwm(Lists.newArrayList(
-                "gtid.lwm", sid, String.valueOf(bucket.lwm())));
+        RedisOp redisOp = new RedisOpLwm(sid, bucket.lwm());
 
         try {
             new DefaultBroadcastCommand(client, redisOp).execute().get();

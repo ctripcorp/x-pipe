@@ -69,7 +69,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = redisOpParser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = redisOpParser.parse(rawCmdArgs);
         logger.info("[onCommand] {}", redisOp);
     }
 

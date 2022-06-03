@@ -21,8 +21,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Slight
@@ -112,7 +110,8 @@ public class ApplierToFakeXsyncServer extends AbstractRedisOpParserTest implemen
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+
+        RedisOp redisOp = parser.parse(rawCmdArgs);
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
 
         switch (command.type()) {

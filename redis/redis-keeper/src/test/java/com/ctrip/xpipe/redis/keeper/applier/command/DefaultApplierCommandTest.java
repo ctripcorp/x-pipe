@@ -48,7 +48,7 @@ public class DefaultApplierCommandTest {
     }
 
     private RedisOp newSetOp(String... rawArgs) {
-        return parser.parse(Lists.newArrayList(rawArgs));
+        return parser.parse(rawArgs);
     }
 
     @Test

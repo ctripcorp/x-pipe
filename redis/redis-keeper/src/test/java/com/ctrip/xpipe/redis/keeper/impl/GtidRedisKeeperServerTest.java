@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -67,8 +68,8 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
         waitConditionUntilTimeOut(() -> MASTER_STATE.REDIS_REPL_CONNECTED.equals(keeperServer.getRedisMaster().getMasterState()));
 
         for (int i = 1; i < 6; i++) {
-            RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:"+i, "set", "k" + i, "v" + i));
-            fakeRedisServer.propagate(new String(redisOp.buildRESP()));
+            RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:"+i, "set", "k" + i, "v" + i).toArray());
+            fakeRedisServer.propagate(redisOp.buildRESP().toString(Codec.defaultCharset));
         }
         waitConditionUntilTimeOut(() -> replicationStore.getEndOffset() > 50);
         logger.info("[testPsyncAndXsync] {}", replicationStore.getEndGtidSet());
@@ -111,7 +112,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = parser.parse(rawCmdArgs);
         redisOps.add(redisOp);
     }
 

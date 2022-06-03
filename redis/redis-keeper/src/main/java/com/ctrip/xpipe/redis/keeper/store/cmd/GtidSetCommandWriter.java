@@ -98,7 +98,7 @@ public class GtidSetCommandWriter extends OffsetCommandWriter implements Command
             if (null == protocol) continue;
 
             Object[] payload = protocol.getPayload();
-            RedisOp redisOp = opParser.parse(Stream.of(payload).map(Object::toString).collect(Collectors.toList()));
+            RedisOp redisOp = opParser.parse(payload);
             protocolParser.reset();
 
             if (!StringUtil.isEmpty(redisOp.getOpGtid())) {

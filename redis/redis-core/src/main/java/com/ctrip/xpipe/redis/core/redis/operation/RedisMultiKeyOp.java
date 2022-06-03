@@ -9,14 +9,14 @@ import java.util.Set;
  * @author lishanglin
  * date 2022/2/17
  */
-public interface RedisMultiKeyOp<T> extends RedisOp {
+public interface RedisMultiKeyOp extends RedisOp {
 
     List<RedisKey> getKeys();
 
-    Pair<RedisKey, T> getKeyValue(int idx);
+    Pair<RedisKey, byte[]> getKeyValue(int idx);
 
-    List<Pair<RedisKey, T>> getAllKeyValues();
+    List<Pair<RedisKey, byte[]>> getAllKeyValues();
 
-    RedisMultiKeyOp<T> subOp(Set<Integer> needKeys);
+    RedisMultiKeyOp subOp(Set<Integer> needKeys);
 
 }

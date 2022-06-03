@@ -2,8 +2,6 @@ package com.ctrip.xpipe.payload;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import io.netty.buffer.ByteBuf;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
