@@ -7,8 +7,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 import static com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParser.KEY_GTID;
 
 /**
@@ -16,7 +14,7 @@ import static com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParse
  * date 2022/2/17
  */
 @Component
-public class GeneralRedisOpParser implements RedisOpParser {
+public class GeneralRedisOpParser extends AbstractRedisOpParser implements RedisOpParser {
 
     private RedisOpParserManager parserManager;
 
@@ -28,9 +26,10 @@ public class GeneralRedisOpParser implements RedisOpParser {
         this.gtidParser = new RedisOpGtidParser(redisOpParserManager);
     }
 
-    public RedisOp parse(List<String> args) {
-        if (args.isEmpty()) throw new IllegalArgumentException("illegal empty args");
-        String cmd = args.get(0);
+    @Override
+    public RedisOp parse(byte[][] args) {
+        if (0 == args.length) throw new IllegalArgumentException("illegal empty args");
+        String cmd = bytes2Str(args[0]);
         boolean attachGtid = KEY_GTID.equalsIgnoreCase(cmd);
 
         if (attachGtid) {

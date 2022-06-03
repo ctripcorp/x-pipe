@@ -32,18 +32,18 @@ public interface RedisOpCommand<V> extends Command<V> {
         return redisOp().getOpGtid();
     }
 
-    default RedisSingleKeyOp<V> redisOpAsSingle() {
+    default RedisSingleKeyOp redisOpAsSingle() {
         RedisOp op = redisOp();
         if (op instanceof RedisSingleKeyOp) {
-            return (RedisSingleKeyOp<V>) op;
+            return (RedisSingleKeyOp) op;
         }
         throw new XpipeRuntimeException("invalid type of RedisOp");
     }
 
-    default RedisMultiKeyOp<V> redisOpAsMulti() {
+    default RedisMultiKeyOp redisOpAsMulti() {
         RedisOp op = redisOp();
         if (op instanceof RedisMultiKeyOp) {
-            return (RedisMultiKeyOp<V>) op;
+            return (RedisMultiKeyOp) op;
         }
         throw new XpipeRuntimeException("invalid type of RedisOp");
     }
@@ -68,7 +68,7 @@ public interface RedisOpCommand<V> extends Command<V> {
     default RedisKey key() {
         RedisOp op = redisOp();
         if (op instanceof RedisSingleKeyOp) {
-            return ((RedisSingleKeyOp<?>) op).getKey();
+            return ((RedisSingleKeyOp) op).getKey();
         }
         if (op instanceof RedisMultiKeyOp) {
             return keys().get(0);
@@ -79,7 +79,7 @@ public interface RedisOpCommand<V> extends Command<V> {
     default List<RedisKey> keys() {
         RedisOp op = redisOp();
         if (op instanceof RedisMultiKeyOp) {
-            return ((RedisMultiKeyOp<?>) op).getKeys();
+            return ((RedisMultiKeyOp) op).getKeys();
         }
         throw new UnsupportedOperationException("keys() not on RedisMultiKeyOp");
     }

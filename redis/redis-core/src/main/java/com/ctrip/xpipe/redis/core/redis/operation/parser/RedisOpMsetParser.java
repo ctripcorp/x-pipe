@@ -14,7 +14,7 @@ import java.util.List;
  * date 2022/2/18
  */
 @Component
-public class RedisOpMsetParser implements RedisOpParser {
+public class RedisOpMsetParser extends AbstractRedisOpParser implements RedisOpParser {
 
     @Autowired
     public RedisOpMsetParser(RedisOpParserManager redisOpParserManager) {
@@ -22,13 +22,13 @@ public class RedisOpMsetParser implements RedisOpParser {
     }
 
     @Override
-    public RedisOp parse(List<String> args) {
-        if (0 == args.size() % 2) throw new IllegalArgumentException("wrong number of arguments for MSET");
-        List<Pair<RedisKey, String>> kvs = new ArrayList<>();
+    public RedisOp parse(byte[][] args) {
+        if (0 == args.length % 2) throw new IllegalArgumentException("wrong number of arguments for MSET");
+        List<Pair<RedisKey, byte[]>> kvs = new ArrayList<>();
 
-        for (int i = 1; i < args.size(); i+=2) {
-            RedisKey key = new RedisKey(args.get(i));
-            String value = args.get(i+1);
+        for (int i = 1; i < args.length; i+=2) {
+            RedisKey key = new RedisKey(args[i]);
+            byte[] value = args[i + 1];
             kvs.add(Pair.of(key, value));
         }
 

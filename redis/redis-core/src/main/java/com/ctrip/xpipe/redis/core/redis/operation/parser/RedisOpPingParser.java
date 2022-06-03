@@ -5,14 +5,12 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * @author lishanglin
  * date 2022/2/18
  */
 @Component
-public class RedisOpPingParser implements RedisOpParser {
+public class RedisOpPingParser extends AbstractRedisOpParser implements RedisOpParser {
 
     @Autowired
     public RedisOpPingParser(RedisOpParserManager redisOpParserManager) {
@@ -20,7 +18,7 @@ public class RedisOpPingParser implements RedisOpParser {
     }
 
     @Override
-    public RedisOp parse(List<String> args) {
+    public RedisOp parse(byte[][] args) {
         return new RedisOpPing(args);
     }
 

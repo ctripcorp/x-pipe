@@ -15,27 +15,33 @@ import java.util.stream.IntStream;
  * @author lishanglin
  * date 2022/2/17
  */
-public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp implements RedisMultiKeyOp<T> {
+public abstract class AbstractRedisMultiKeyOp extends AbstractRedisOp implements RedisMultiKeyOp {
 
-    private List<Pair<RedisKey, T>> kvs;
+    private byte[] rawCmdArg;
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs) {
+    private List<Pair<RedisKey, byte[]>> kvs;
+
+    public AbstractRedisMultiKeyOp(byte[][] rawArgs, List<Pair<RedisKey, byte[]>> redisKvs) {
         super(rawArgs);
+        this.rawCmdArg = rawArgs[0];
         this.kvs = redisKvs;
     }
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, String gtid) {
+    public AbstractRedisMultiKeyOp(byte[][] rawArgs, List<Pair<RedisKey, byte[]>> redisKvs, String gtid) {
         super(rawArgs, gtid);
+        this.rawCmdArg = rawArgs[0];
         this.kvs = redisKvs;
     }
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, String gid, Long timestamp) {
-        super(rawArgs, gid, timestamp);
+    public AbstractRedisMultiKeyOp(byte[] rawCmdArg, List<Pair<RedisKey, byte[]>> redisKvs) {
+        super(null);
+        this.rawCmdArg = rawCmdArg;
         this.kvs = redisKvs;
     }
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, String gtid, String gid, Long timestamp) {
-        super(rawArgs, gtid, gid, timestamp);
+    public AbstractRedisMultiKeyOp(byte[] rawCmdArg, List<Pair<RedisKey, byte[]>> redisKvs, String gtid) {
+        super(null, gtid);
+        this.rawCmdArg = rawCmdArg;
         this.kvs = redisKvs;
     }
 
@@ -45,18 +51,18 @@ public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp impleme
     }
 
     @Override
-    public Pair<RedisKey, T> getKeyValue(int idx) {
+    public Pair<RedisKey, byte[]> getKeyValue(int idx) {
         return kvs.get(idx);
     }
 
     @Override
-    public List<Pair<RedisKey, T>> getAllKeyValues() {
+    public List<Pair<RedisKey, byte[]>> getAllKeyValues() {
         return Collections.unmodifiableList(kvs);
     }
 
     @Override
-    public List<String> buildRawOpArgs() {
-        List<String> rawOpArgs = super.buildRawOpArgs();
+    public byte[][] buildRawOpArgs() {
+        byte[][] rawOpArgs = super.buildRawOpArgs();
         if (null != rawOpArgs) return rawOpArgs;
         synchronized (this) {
             rawOpArgs = super.buildRawOpArgs();
@@ -69,8 +75,12 @@ public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp impleme
         return rawOpArgs;
     }
 
-    protected List<Pair<RedisKey, T>> subKvs(Set<Integer> needKvs) {
-        List<Pair<RedisKey, T> > subKvs = new ArrayList<>(needKvs.size());
+    protected byte[] getRawCmdArg() {
+        return rawCmdArg;
+    }
+
+    protected List<Pair<RedisKey, byte[]>> subKvs(Set<Integer> needKvs) {
+        List<Pair<RedisKey, byte[]> > subKvs = new ArrayList<>(needKvs.size());
         IntStream.range(0, kvs.size()).forEach(idx -> {
             if (needKvs.contains(idx)) subKvs.add(kvs.get(idx));
         });
@@ -78,6 +88,6 @@ public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp impleme
         return subKvs;
     }
 
-    protected abstract List<String> innerBuildRawOpArgs();
+    protected abstract byte[][] innerBuildRawOpArgs();
 
 }

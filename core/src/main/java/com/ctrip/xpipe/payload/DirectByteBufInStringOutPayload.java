@@ -2,15 +2,11 @@ package com.ctrip.xpipe.payload;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.Charset;
 
 public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 

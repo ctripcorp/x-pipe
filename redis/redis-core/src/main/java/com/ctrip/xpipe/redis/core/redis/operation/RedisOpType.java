@@ -51,8 +51,8 @@ public enum RedisOpType {
         return arity;
     }
 
-    public boolean checkArgcNotStrictly(List<String> args) {
-        return args.size() >= Math.abs(arity);
+    public boolean checkArgcNotStrictly(Object[] args) {
+        return args.length >= Math.abs(arity);
     }
 
     public static RedisOpType lookup(String name) {

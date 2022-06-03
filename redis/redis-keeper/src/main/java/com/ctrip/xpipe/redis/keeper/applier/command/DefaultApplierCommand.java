@@ -39,7 +39,7 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
     protected void doExecute() throws Throwable {
 
         Object rc = resource != null ? resource : client.select(key().get());
-        Object[] rawArgs = redisOp.buildRawOpArgs().toArray();
+        Object[] rawArgs = redisOp.buildRawOpArgs();
 
         client
                 .write(rc, rawArgs)

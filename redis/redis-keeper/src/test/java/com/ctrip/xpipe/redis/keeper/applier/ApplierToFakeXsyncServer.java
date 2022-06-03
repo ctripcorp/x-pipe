@@ -112,7 +112,7 @@ public class ApplierToFakeXsyncServer extends AbstractRedisOpParserTest implemen
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
+        RedisOp redisOp = parser.parse(rawCmdArgs);
         ApplierRedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
         switch (command.type()) {
             case MULTI:

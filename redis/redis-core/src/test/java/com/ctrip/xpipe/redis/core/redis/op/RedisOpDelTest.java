@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.core.redis.op;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpDel;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpDelParser;
+import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,7 +17,7 @@ import java.util.Arrays;
  * @author lishanglin
  * date 2022/2/22
  */
-public class RedisOpDelTest extends AbstractTest {
+public class RedisOpDelTest extends AbstractRedisOpParserTest {
 
     private RedisOpParserManager manager;
 
@@ -32,7 +32,7 @@ public class RedisOpDelTest extends AbstractTest {
 
     @Test
     public void testDivideDelOp() {
-        RedisOp redisOp = parser.parse(Arrays.asList("del", "k1", "k2", "k3", "k4", "k5"));
+        RedisOp redisOp = parser.parse(Arrays.asList("del", "k1", "k2", "k3", "k4", "k5").toArray());
         Assert.assertEquals(RedisOpType.DEL, redisOp.getOpType());
         RedisOpDel redisOpDel = (RedisOpDel) redisOp;
 
@@ -41,23 +41,23 @@ public class RedisOpDelTest extends AbstractTest {
 
         Assert.assertEquals(RedisOpType.DEL, subOp1.getOpType());
         Assert.assertEquals(RedisOpType.DEL, subOp2.getOpType());
-        Assert.assertEquals(Arrays.asList("DEL", "k1", "k3", "k5"), subOp1.buildRawOpArgs());
-        Assert.assertEquals(Arrays.asList("DEL", "k2", "k4"), subOp2.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("del", "k1", "k3", "k5")), subOp1.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("del", "k2", "k4")), subOp2.buildRawOpArgs());
     }
 
     @Test
     public void testDivideGtidDelOp() {
-        RedisOp redisOp = parser.parse(Arrays.asList("gtid", "a1:100", "del", "k1", "k2", "k3", "k4", "k5"));
+        RedisOp redisOp = parser.parse(Arrays.asList("gtid", "a1:100", "del", "k1", "k2", "k3", "k4", "k5").toArray());
         Assert.assertEquals(RedisOpType.DEL, redisOp.getOpType());
-        RedisMultiKeyOp<?> redisOpDel = (RedisMultiKeyOp<?>) redisOp;
+        RedisMultiKeyOp redisOpDel = (RedisMultiKeyOp) redisOp;
 
-        RedisMultiKeyOp<?> subOp1 = redisOpDel.subOp(Sets.newHashSet(0, 2, 4));
-        RedisMultiKeyOp<?> subOp2 = redisOpDel.subOp(Sets.newHashSet(1, 3));
+        RedisMultiKeyOp subOp1 = redisOpDel.subOp(Sets.newHashSet(0, 2, 4));
+        RedisMultiKeyOp subOp2 = redisOpDel.subOp(Sets.newHashSet(1, 3));
 
         Assert.assertEquals(RedisOpType.DEL, subOp1.getOpType());
         Assert.assertEquals(RedisOpType.DEL, subOp2.getOpType());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:100", "DEL", "k1", "k3", "k5"), subOp1.buildRawOpArgs());
-        Assert.assertEquals(Arrays.asList("GTID", "a1:100", "DEL", "k2", "k4"), subOp2.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:100", "del", "k1", "k3", "k5")), subOp1.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:100", "del", "k2", "k4")), subOp2.buildRawOpArgs());
     }
 
 }
