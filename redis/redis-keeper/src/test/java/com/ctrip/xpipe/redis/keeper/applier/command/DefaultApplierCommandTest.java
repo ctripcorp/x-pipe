@@ -53,16 +53,16 @@ public class DefaultApplierCommandTest {
 
     @Test
     public void simple() throws Throwable {
-        RedisOpCommand command = new DefaultApplierCommand(client, newSetOp("SET", "K", "V10"));
+        RedisOpDataCommand command = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"));
         command.execute().get();
     }
 
     @Test
     public void cooperateWithSequenceController() throws InterruptedException {
-        RedisOpCommand c1 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V10"));
-        RedisOpCommand c2 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V12"));
-        RedisOpCommand c3 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V14"));
-        RedisOpCommand c4 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V16"));
+        RedisOpDataCommand c1 = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"));
+        RedisOpDataCommand c2 = new DefaultDataCommand(client, newSetOp("SET", "K", "V12"));
+        RedisOpDataCommand c3 = new DefaultDataCommand(client, newSetOp("SET", "K", "V14"));
+        RedisOpDataCommand c4 = new DefaultDataCommand(client, newSetOp("SET", "K", "V16"));
 
         controller.submit(c1);
         controller.submit(c2);
