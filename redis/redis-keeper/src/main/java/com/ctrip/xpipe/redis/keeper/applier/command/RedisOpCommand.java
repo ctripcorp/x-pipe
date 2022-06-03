@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPublish;
 
 import java.util.List;
 
@@ -23,6 +25,7 @@ public interface RedisOpCommand<V> extends Command<V> {
         MULTI_KEY,
         MULTI,
         EXEC,
+        BROADCAST,
         UNKNOWN,
     }
 
@@ -55,6 +58,9 @@ public interface RedisOpCommand<V> extends Command<V> {
         }
         if (op instanceof RedisOpExec) {
             return RedisOpCommandType.EXEC;
+        }
+        if (op instanceof RedisOpPublish || op instanceof RedisOpLwm) {
+            return RedisOpCommandType.BROADCAST;
         }
         if (op instanceof RedisSingleKeyOp) {
             return RedisOpCommandType.SINGLE_KEY;

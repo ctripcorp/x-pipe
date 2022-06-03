@@ -1,7 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
+import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
+import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
+import com.google.common.collect.Lists;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,23 +21,23 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * May 30, 2022 01:43
  */
-public class DefaultLwmManager extends AbstractLifecycle implements ApplierLwmManager {
+public class DefaultLwmManager extends AbstractInstanceComponent implements ApplierLwmManager {
+
+    @InstanceDependency
+    public ApplierSequenceController sequence;
+
+    @InstanceDependency
+    public AsyncRedisClient client;
 
     public Map<String, Long> lwms = new ConcurrentHashMap<>();
 
-    public ApplierSequenceController sequence;
-
     public ScheduledExecutorService scheduled;
 
-    public DefaultLwmManager(ApplierSequenceController sequence) {
-        this.sequence = sequence;
-    }
-
     @Override
-    public void start() throws Exception {
-        scheduled = Executors.newSingleThreadScheduledExecutor();
+    public void doStart() throws Exception {
 
-        // periodically: sequence.submit(/* gtid.lwm [sourceId] [lwm] */);
+        scheduled = Executors.newSingleThreadScheduledExecutor();
+        scheduled.scheduleAtFixedRate(()->lwms.forEach(this::send), 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -41,6 +48,12 @@ public class DefaultLwmManager extends AbstractLifecycle implements ApplierLwmMa
             /* PROBABLY program does not go here */
             scheduled.shutdownNow();
         }
+    }
+
+    public void send(String sid, Long lwm) {
+
+        RedisOp redisOp = new RedisOpLwm(Lists.newArrayList("gtid.lwm", sid, lwm.toString()));
+        sequence.submit(new DefaultApplierCommand(client, redisOp));
     }
 
     @Override
