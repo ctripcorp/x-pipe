@@ -19,15 +19,6 @@ import java.util.List;
  */
 public interface RedisOpCommand<V> extends Command<V> {
 
-    enum RedisOpCommandType {
-        SINGLE_KEY,
-        MULTI_KEY,
-        MULTI,
-        EXEC,
-        BROADCAST,
-        UNKNOWN,
-    }
-
     RedisOp redisOp();
 
     default String gtid() {
