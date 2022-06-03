@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -75,7 +76,7 @@ public abstract class AbstractRedisOp implements RedisOp {
         String arrayLength = String.format("%c%d%s", ASTERISK_BYTE, args.length, CRLF);
         outByteBuf.addComponent(true, Unpooled.wrappedBuffer(arrayLength.getBytes()));
 
-        for (byte[] arg: args) outByteBuf.addComponent(buildArgRESP(arg));
+        for (byte[] arg: args) outByteBuf.addComponent(true, buildArgRESP(arg));
         return outByteBuf;
     }
 
@@ -90,8 +91,8 @@ public abstract class AbstractRedisOp implements RedisOp {
 
     @Override
     public String toString() {
-        Object[] args = buildRawOpArgs();
-        List<String> rawStrs = Stream.of(args).map(Object::toString).collect(Collectors.toList());
+        byte[][] args = buildRawOpArgs();
+        List<String> rawStrs = Stream.of(args).map(bytes -> new String(bytes, Codec.defaultCharset)).collect(Collectors.toList());
         return String.join(" ", rawStrs);
     }
 }
