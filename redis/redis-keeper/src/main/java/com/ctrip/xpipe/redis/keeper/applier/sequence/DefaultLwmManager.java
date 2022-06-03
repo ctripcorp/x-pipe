@@ -52,7 +52,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
     public void send(String sid, Long lwm) {
 
-        RedisOp redisOp = new RedisOpLwm(Lists.newArrayList("gtid.lwm", sid, lwm.toString()));
+        RedisOp redisOp = new RedisOpLwm(sid, lwm);
         sequence.submit(new DefaultApplierCommand(client, redisOp));
     }
 
