@@ -24,7 +24,7 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
     protected void doExecute() throws Throwable {
 
         Object[] resources = client.resources();
-        Object[] rawArgs = redisOp.buildRawOpArgs().toArray();
+        Object[] rawArgs = redisOp.buildRawOpArgs();
 
         for (Object rc : resources) {
 

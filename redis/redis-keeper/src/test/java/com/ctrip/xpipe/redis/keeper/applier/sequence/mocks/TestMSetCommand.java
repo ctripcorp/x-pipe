@@ -29,7 +29,7 @@ public class TestMSetCommand extends TestSleepCommand implements RedisOpDataComm
 
     @Override
     public RedisOp redisOp() {
-        return parser.parse(Lists.newArrayList(rawArgs));
+        return parser.parse(Arrays.stream(rawArgs).map(String::getBytes).toArray());
     }
 
     @Override
