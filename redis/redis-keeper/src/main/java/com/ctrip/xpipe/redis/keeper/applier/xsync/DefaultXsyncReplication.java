@@ -4,9 +4,8 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
+import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 
 /**
  * @author Slight
@@ -15,24 +14,10 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
  */
 public class DefaultXsyncReplication extends AbstractInstanceComponent implements ApplierXsyncReplication {
 
-    protected RedisOpParserManager redisOpParserManager;
+    @InstanceDependency
+    public RedisOpParser parser;
 
-    protected RedisOpParser parser;
-
-    protected Xsync xsync;
-
-    @Override
-    protected void doInitialize() throws Exception {
-        redisOpParserManager = new DefaultRedisOpParserManager();
-        parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpSetParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpDelParser(redisOpParserManager);
-        new RedisOpSelectParser(redisOpParserManager);
-        new RedisOpPingParser(redisOpParserManager);
-        new RedisOpPublishParser(redisOpParserManager);
-        new RedisOpMultiParser(redisOpParserManager);
-    }
+//    protected Xsync xsync;
 
     @Override
     protected void doStart() throws Exception {

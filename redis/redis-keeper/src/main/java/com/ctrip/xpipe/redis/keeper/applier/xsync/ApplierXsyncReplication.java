@@ -10,5 +10,4 @@ import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
  */
 public interface ApplierXsyncReplication extends Lifecycle, XsyncObserver {
 
-
 }
