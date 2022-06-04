@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory;
  * @author lishanglin
  * date 2022/5/29
  */
-public class RdbAuxParser extends AbstractRdbParser implements RdbParser {
+public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implements RdbParser<Pair<String, String>> {
 
     private RdbParseContext parseContext;
 
@@ -25,8 +26,8 @@ public class RdbAuxParser extends AbstractRdbParser implements RdbParser {
     }
 
     @Override
-    public void read(ByteBuf byteBuf) {
-
+    public Pair<String, String> read(ByteBuf byteBuf) {
+        return null;
     }
 
     @Override
