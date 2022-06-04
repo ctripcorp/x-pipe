@@ -1,28 +1,27 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author lishanglin
  * date 2022/5/28
  */
-public class DefaultRdbParser extends AbstractRdbParser implements RdbParser {
+public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbParser<Void> {
 
     private RdbParseContext rdbParseContext;
 
     private STATE state = STATE.READ_MAGIC;
 
-    private CompositeByteBuf temp;
+    private ByteBuf temp;
 
     private byte magicReadIndex;
 
@@ -50,7 +49,7 @@ public class DefaultRdbParser extends AbstractRdbParser implements RdbParser {
     }
 
     @Override
-    public void read(ByteBuf byteBuf) {
+    public Void read(ByteBuf byteBuf) {
 
         while (byteBuf.readableBytes() > 0) {
 
@@ -70,29 +69,21 @@ public class DefaultRdbParser extends AbstractRdbParser implements RdbParser {
                     break;
 
                 case READ_VERSION:
-                    if (null == temp && byteBuf.readableBytes() >= 4) {
-                        rdbVersion = Short.parseShort(byteBuf.toString(byteBuf.readerIndex(), 4, Codec.defaultCharset));
+                    temp = readUntilBytesEnough(byteBuf, temp, 4);
+                    if (temp.readableBytes() == 4) {
+                        rdbVersion = Short.parseShort(temp.toString(StandardCharsets.US_ASCII));
+                        temp.release();
+                        temp = null;
                         state = STATE.READ_TYPE;
-                    } else if (null == temp) {
-                        temp = PooledByteBufAllocator.DEFAULT.compositeDirectBuffer(4);
-                        temp.addComponent(true, byteBuf.readBytes(byteBuf.readableBytes()));
-                    } else {
-                        int readCnt = Math.min(byteBuf.readableBytes(), 4 - temp.readableBytes());
-                        temp.addComponent(true, byteBuf.readBytes(readCnt));
-                        if (temp.readableBytes() == 4) {
-                            rdbVersion = Short.parseShort(temp.toString(Codec.defaultCharset));
-                            temp = null;
-                            state = STATE.READ_VERSION;
-                        }
                     }
                     break;
 
                 case READ_TYPE:
                     if (0 == byteBuf.readableBytes()) break;
-                    char type = byteBuf.readChar();
+                    short type = byteBuf.readUnsignedByte();
                     currentType = RdbParseContext.RdbType.findByCode(type);
                     if (null == currentType) {
-                        throw new XpipeRuntimeException("unknown " + (short)type);
+                        throw new XpipeRuntimeException("unknown rdb type:" + type);
                     } else if (currentType.equals(RdbParseContext.RdbType.EOF)) {
                         state = STATE.READ_END;
                         notifyFinish();
@@ -119,12 +110,14 @@ public class DefaultRdbParser extends AbstractRdbParser implements RdbParser {
                     // do nothing
             }
         }
+
+        return null;
     }
 
     private int checkMagic(ByteBuf byteBuf, int checkIdx) {
         int readCnt = 0;
         while (checkIdx < RdbConstant.REDIS_RDB_MAGIC.length && byteBuf.readableBytes() > 0) {
-            char current = byteBuf.readChar();
+            char current = (char)byteBuf.readByte(); // ascii to char
             if (RdbConstant.REDIS_RDB_MAGIC[checkIdx + readCnt] != current) {
                 throw new XpipeRuntimeException("unexpected rdb magic " + current + " at " + checkIdx + readCnt);
             }

@@ -46,22 +46,22 @@ public interface RdbParseContext {
 //        SELECTDB(RdbConstant.REDIS_RDB_OP_CODE_SELECTDB),
         EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, null);
 
-        private char code;
+        private short code;
 
         private Function<RdbParseContext, RdbParser> parserConstructor;
 
-        private static final Map<Character, RdbType> types = new HashMap<>();
+        private static final Map<Short, RdbType> types = new HashMap<>();
 
-        RdbType(char code, Function<RdbParseContext, RdbParser> parserConstructor) {
+        RdbType(short code, Function<RdbParseContext, RdbParser> parserConstructor) {
             this.code = code;
             this.parserConstructor = parserConstructor;
         }
 
-        public char getCode() {
+        public short getCode() {
             return code;
         }
 
-        public RdbParser makeParser(RdbParseContext parserManager) {
+        public RdbParser<?> makeParser(RdbParseContext parserManager) {
             return parserConstructor.apply(parserManager);
         }
 
@@ -71,7 +71,7 @@ public interface RdbParseContext {
             }
         }
 
-        public static RdbType findByCode(char code) {
+        public static RdbType findByCode(short code) {
             return types.get(code);
         }
 
