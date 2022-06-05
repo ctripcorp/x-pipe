@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPSetEx;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSet;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.util.RedisLzfUtil;
-import com.ning.compress.lzf.LZFDecoder;
-import com.ning.compress.lzf.LZFException;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.*;
  */
 public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbParser<byte[]> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RdbStringParser.class);
+    private RdbParseContext context;
 
     private STATE state = STATE.READ_INIT;
 
@@ -39,6 +39,8 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
     private byte[] lzfContent;
 
     private byte[] redisString;
+
+    private static final Logger logger = LoggerFactory.getLogger(RdbStringParser.class);
 
     enum STATE {
         READ_INIT,
@@ -92,11 +94,8 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
 
     }
 
-    public RdbStringParser() {
-
-    }
-
     public RdbStringParser(RdbParseContext parseContext) {
+        this.context = parseContext;
     }
 
     @Override
@@ -138,6 +137,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         temp.readBytes(redisString);
                         temp.release();
                         temp = null;
+                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -151,6 +151,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         redisString = String.valueOf(val).getBytes();
                         temp.release();
                         temp = null;
+                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -187,6 +188,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                     if (RedisLzfUtil.decode(lzfContent, redisString) != len.getLenValue()) {
                         throw new XpipeRuntimeException("invalid LZF compressed string");
                     }
+                    propagateCmdIfNeed();
                     state = STATE.READ_END;
                     break;
 
@@ -199,9 +201,19 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
         return redisString;
     }
 
+    private void propagateCmdIfNeed() {
+        if (null == redisString) return;
+
+        if (null != context.getKey() && context.getExpireMilli() > 0) {
+            notifyRedisOp(new RedisOpPSetEx(context.getKey(), redisString, context.getExpireMilli()));
+        } else if (null != context.getKey()) {
+            notifyRedisOp(new RedisOpSet(context.getKey(), redisString));
+        }
+    }
+
     @Override
     public boolean isFinish() {
-        return false;
+        return STATE.READ_END.equals(state);
     }
 
     @Override
