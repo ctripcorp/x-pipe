@@ -6,11 +6,13 @@ import io.netty.buffer.ByteBuf;
  * @author lishanglin
  * date 2022/5/28
  */
-public interface RdbParser {
+public interface RdbParser<T> {
 
     void skip(boolean skip);
 
-    void read(ByteBuf byteBuf);
+    void needFinishNotify(boolean need);
+
+    T read(ByteBuf byteBuf);
 
     boolean isFinish();
 

@@ -12,6 +12,6 @@ public interface RdbParseListener {
 
     void onAux(String key, String value);
 
-    void onFinish(RdbParser parser);
+    void onFinish(RdbParser<?> parser);
 
 }

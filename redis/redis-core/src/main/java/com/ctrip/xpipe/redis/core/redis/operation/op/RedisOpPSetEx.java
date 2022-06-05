@@ -10,6 +10,12 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
  */
 public class RedisOpPSetEx extends AbstractRedisSingleKeyOp implements RedisSingleKeyOp {
 
+    public RedisOpPSetEx(RedisKey redisKey, byte[] redisValue, long expireMilli) {
+        super(new byte[][] {RedisOpType.PSETEX.name().getBytes(),
+                redisKey.get(), String.valueOf(expireMilli).getBytes(), redisValue},
+                redisKey, redisValue);
+    }
+
     public RedisOpPSetEx(byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
         super(rawArgs, redisKey, redisValue);
     }
