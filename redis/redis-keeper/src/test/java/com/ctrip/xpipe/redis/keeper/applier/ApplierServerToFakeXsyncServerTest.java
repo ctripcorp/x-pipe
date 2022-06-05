@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Slight
@@ -29,7 +30,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         applier = new DefaultApplierServer(
                 "ApplierTest",
                 new DefaultEndPoint("127.0.0.1", server.getPort()),
-                new GtidSet(""),
+                new GtidSet("a1:1-10:15-20,b1:1-8"),
                 getXpipeNettyClientKeyedObjectPool(),
                 parser,
                 Executors.newScheduledThreadPool(
@@ -40,7 +41,9 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     }
 
     @Test
-    public void test() {
+    public void test() throws TimeoutException {
+
+        waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
         server.propagate("gtid a1:21 set k1 v1");
         server.propagate("gtid a1:22 mset k1 v1 k2 v2");

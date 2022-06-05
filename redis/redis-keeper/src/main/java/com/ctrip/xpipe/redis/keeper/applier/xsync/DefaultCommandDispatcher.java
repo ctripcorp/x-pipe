@@ -60,6 +60,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         if (redisOp instanceof RedisOpPing || redisOp instanceof RedisOpSelect) {
             return;
         }
+
+        /* TODO: deal with leaping gtid when keeper filter data */
+
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
         switch (command.type()) {
             case MULTI:
