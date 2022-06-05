@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.tuple.Pair;
@@ -13,7 +14,11 @@ import org.slf4j.LoggerFactory;
  */
 public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implements RdbParser<Pair<String, String>> {
 
-    private RdbParseContext parseContext;
+    private RdbParseContext context;
+
+    private RdbParser<?> rdbStringParser;
+
+    private STATE state = STATE.READ_INIT;
 
     private String key;
 
@@ -21,27 +26,79 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
 
     private static final Logger logger = LoggerFactory.getLogger(RdbAuxParser.class);
 
+    enum STATE {
+        READ_INIT,
+        READ_KEY,
+        READ_VALUE,
+        READ_END,
+    }
+
     public RdbAuxParser(RdbParseContext parseContext) {
-        this.parseContext = parseContext;
+        this.context = parseContext;
+        this.rdbStringParser = parseContext.getOrCreateParser(RdbParseContext.RdbType.STRING);
     }
 
     @Override
     public Pair<String, String> read(ByteBuf byteBuf) {
+
+        PARSE:
+        while (byteBuf.readableBytes() > 0) {
+
+            switch (state) {
+                case READ_INIT:
+                    key = null;
+                    value = null;
+                    state = STATE.READ_KEY;
+                    break;
+
+                case READ_KEY:
+                    Object rawKey = rdbStringParser.read(byteBuf);
+                    if (null != rawKey) {
+                        key = decodeRawStr(rawKey);
+                        rdbStringParser.reset();
+                        state = STATE.READ_VALUE;
+                    }
+                    break;
+
+                case READ_VALUE:
+                    Object rawValue = rdbStringParser.read(byteBuf);
+                    if (null != rawValue) {
+                        value = decodeRawStr(rawValue);
+                        rdbStringParser.reset();
+                        context.setAux(key, value);
+                        notifyAux(key, value);
+                        state = STATE.READ_END;
+                    }
+                    break;
+
+                case READ_END:
+                default:
+                    break PARSE;
+            }
+        }
+
+        if (isFinish()) return Pair.of(key, value);
         return null;
+    }
+
+    private String decodeRawStr(Object rawStr) {
+        if (rawStr instanceof byte[]) {
+            return new String((byte[]) rawStr, Codec.defaultCharset);
+        } else return rawStr.toString();
     }
 
     @Override
     public boolean isFinish() {
-        return false;
+        return STATE.READ_END.equals(state);
     }
 
     @Override
     public void reset() {
-
+        this.state = STATE.READ_INIT;
     }
 
     @Override
     protected Logger getLogger() {
-        return getLogger();
+        return logger;
     }
 }

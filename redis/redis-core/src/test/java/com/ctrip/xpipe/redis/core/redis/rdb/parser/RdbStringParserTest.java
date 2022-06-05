@@ -25,7 +25,7 @@ public class RdbStringParserTest extends AbstractTest {
 
     @Before
     public void setupRdbStringParserTest() {
-        this.rdbStringParser = new RdbStringParser();
+        this.rdbStringParser = new RdbStringParser(new DefaultRdbParseContext());
     }
 
     @Test

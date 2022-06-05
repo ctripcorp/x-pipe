@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -36,7 +37,9 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         READ_MAGIC,
         READ_VERSION,
         READ_TYPE,
-        READ_CONTENT,
+        READ_OP,
+        READ_KEY,
+        READ_VAL_CONTENT,
         READ_END
     }
 
@@ -51,6 +54,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
     @Override
     public Void read(ByteBuf byteBuf) {
 
+        PARSE:
         while (byteBuf.readableBytes() > 0) {
 
             switch (state) {
@@ -79,35 +83,63 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     break;
 
                 case READ_TYPE:
-                    if (0 == byteBuf.readableBytes()) break;
                     short type = byteBuf.readUnsignedByte();
                     currentType = RdbParseContext.RdbType.findByCode(type);
+
+                    logger.debug("[read][type] {}", currentType);
                     if (null == currentType) {
                         throw new XpipeRuntimeException("unknown rdb type:" + type);
                     } else if (currentType.equals(RdbParseContext.RdbType.EOF)) {
                         state = STATE.READ_END;
                         notifyFinish();
+                    } else if (currentType.isRdbOp()) {
+                        state = STATE.READ_OP;
                     } else {
-                        state = STATE.READ_CONTENT;
+                        state = STATE.READ_KEY;
                     }
                     break;
 
-                case READ_CONTENT:
-                    RdbParser subParser = rdbParseContext.getOrCreateParser(currentType);
-                    if (null == subParser) {
+                case READ_OP:
+                    RdbParser<?> subOpParser = rdbParseContext.getOrCreateParser(currentType);
+                    if (null == subOpParser) {
                         throw new XpipeRuntimeException("no parser for type " + currentType);
                     }
-                    subParser.read(byteBuf);
-                    if (subParser.isFinish()) {
-                        subParser.reset();
+                    subOpParser.read(byteBuf);
+                    if (subOpParser.isFinish()) {
+                        subOpParser.reset();
                         state = STATE.READ_TYPE;
-                        currentType = null;
+                    }
+                    break;
+
+                case READ_KEY:
+                    RdbParser<byte[]> subKeyParser = (RdbParser<byte[]>) rdbParseContext.getOrCreateParser(currentType);
+                    if (null == subKeyParser) {
+                        throw new XpipeRuntimeException("no parser for type " + currentType);
+                    }
+                    byte[] key = subKeyParser.read(byteBuf);
+                    if (null != key) {
+                        subKeyParser.reset();
+                        rdbParseContext.setKey(new RedisKey(key));
+                        state = STATE.READ_VAL_CONTENT;
+                    }
+                    break;
+
+                case READ_VAL_CONTENT:
+                    RdbParser<?> subValParser = rdbParseContext.getOrCreateParser(currentType);
+                    if (null == subValParser) {
+                        throw new XpipeRuntimeException("no parser for type " + currentType);
+                    }
+                    subValParser.read(byteBuf);
+                    if (subValParser.isFinish()) {
+                        subValParser.reset();
+                        rdbParseContext.clearKvContext();
+                        state = STATE.READ_TYPE;
                     }
                     break;
 
                 case READ_END:
                 default:
-                    // do nothing
+                    break PARSE;
             }
         }
 
@@ -116,7 +148,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     private int checkMagic(ByteBuf byteBuf, int checkIdx) {
         int readCnt = 0;
-        while (checkIdx < RdbConstant.REDIS_RDB_MAGIC.length && byteBuf.readableBytes() > 0) {
+        while (checkIdx + readCnt < RdbConstant.REDIS_RDB_MAGIC.length && byteBuf.readableBytes() > 0) {
             char current = (char)byteBuf.readByte(); // ascii to char
             if (RdbConstant.REDIS_RDB_MAGIC[checkIdx + readCnt] != current) {
                 throw new XpipeRuntimeException("unexpected rdb magic " + current + " at " + checkIdx + readCnt);
@@ -133,11 +165,13 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     @Override
     public void registerListener(RdbParseListener listener) {
+        super.registerListener(listener);
         rdbParseContext.registerListener(listener);
     }
 
     @Override
     public void unregisterListener(RdbParseListener listener) {
+        super.unregisterListener(listener);
         rdbParseContext.unregisterListener(listener);
     }
 

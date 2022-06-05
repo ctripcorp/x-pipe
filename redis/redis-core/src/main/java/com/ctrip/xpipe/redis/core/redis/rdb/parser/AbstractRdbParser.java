@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.primitives.UnsignedLong;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -116,6 +117,7 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
             int unsignedByte = byteBuf.readUnsignedByte();
             if (!hasSkipTypeBits) {
                 unsignedByte = 0x3f & unsignedByte;
+                hasSkipTypeBits = true;
             }
             rawLong = (rawLong << 8) | unsignedByte;
         }
@@ -127,16 +129,31 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
     }
 
     protected void notifyRedisOp(RedisOp redisOp) {
-
+        getLogger().debug("[notifyRedisOp] {}", redisOp);
+        for (RdbParseListener listener: listeners) {
+            try {
+                listener.onRedisOp(redisOp);
+            } catch (Throwable th) {
+                getLogger().info("[notifyRedisOp][fail][{}] {}", listener, redisOp, th);
+            }
+        }
     }
 
     protected void notifyAux(String key, String value) {
-
+        getLogger().debug("[notifyAux] {} {}", key, value);
+        for (RdbParseListener listener: listeners) {
+            try {
+                listener.onAux(key, value);
+            } catch (Throwable th) {
+                getLogger().info("[notifyAux][fail][{}] {} {}", listener, key, value, th);
+            }
+        }
     }
 
     protected void notifyFinish() {
         if (!needFinishNotify) return;
 
+        getLogger().debug("[notifyFinish]");
         for (RdbParseListener listener: listeners) {
             try {
                 listener.onFinish(this);
