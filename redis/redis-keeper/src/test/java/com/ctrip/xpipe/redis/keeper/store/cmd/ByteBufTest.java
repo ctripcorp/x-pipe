@@ -7,9 +7,9 @@ import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
+import com.google.common.primitives.UnsignedLong;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -26,6 +26,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author lishanglin
@@ -121,6 +122,7 @@ public class ByteBufTest extends AbstractTest {
     @Ignore
     public void manualTestNettyByteBufRelease() throws Exception {
         Server server = startServer("+PONG\r\n");
+        AtomicReference<ByteBuf> subByteBufRef = new AtomicReference<>();
 
         EventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("manualTestNettyByteBufRelease-"));
         Bootstrap b = new Bootstrap();
@@ -140,11 +142,12 @@ public class ByteBufTest extends AbstractTest {
         NettyClient nettyClient = new DefaultNettyClient(channel);
         channel.attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
         CompositeByteBuf compositeByteBuf = PooledByteBufAllocator.DEFAULT.compositeDirectBuffer(4);
-        nettyClient.sendRequest(Unpooled.wrappedBuffer(new byte[] {'P', 'I', 'N', 'G', '\r', '\n'}), new ByteBufReceiver() {
+        nettyClient.sendRequest(Unpooled.wrappedBuffer(new byte[]{'P', 'I', 'N', 'G', '\r', '\n'}), new ByteBufReceiver() {
             @Override
             public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
 //                compositeByteBuf.addComponent(true, byteBuf); // inner byteBuf has been already released, and will throw IllegalReferenceCountException
                 compositeByteBuf.addComponent(true, byteBuf.retainedSlice()); // retain and should be released later
+                subByteBufRef.set(byteBuf.readBytes(byteBuf.readableBytes()));
                 return RECEIVER_RESULT.SUCCESS;
             }
 
@@ -161,6 +164,64 @@ public class ByteBufTest extends AbstractTest {
 
         sleep(10000);
         compositeByteBuf.readByte();
+        subByteBufRef.get().readByte();
+    }
+
+    public void testReadUnsignedByte() {
+        ByteBuf byteBuf = Unpooled.directBuffer(1024);
+        byteBuf.writeByte(0x80);
+        byte signedByte = byteBuf.readByte();
+        Assert.assertEquals(-128, signedByte);
+
+        byteBuf.writeByte(0x80);
+        short unsignedByte = byteBuf.readUnsignedByte();
+        Assert.assertEquals(0x80, unsignedByte);
+    }
+
+    @Test
+    public void testReadAscii() {
+        ByteBuf byteBuf = Unpooled.directBuffer(1024);
+        byteBuf.writeByte(97); // ascii a
+        char unicodeChar = (char) byteBuf.readByte();
+        Assert.assertEquals('a', unicodeChar);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadUnicode() {
+        ByteBuf byteBuf = Unpooled.directBuffer(1024);
+        byteBuf.writeByte(97); // ascii a
+        byteBuf.readChar();
+    }
+
+    @Test
+    public void testByteBufToString() {
+        ByteBuf byteBuf = Unpooled.directBuffer(1024);
+        byte[] asciiBytes = new byte[] {0x52, 0x45, 0x44, 0x49, 0x53, 0x30, 0x30, 0x30, 0x39};
+        byteBuf.writeBytes(asciiBytes);
+        Assert.assertEquals("REDIS0009", byteBuf.toString(StandardCharsets.US_ASCII));
+    }
+
+    @Test
+    public void testReadUnsignedLong() {
+        ByteBuf byteBuf = Unpooled.directBuffer(1024);
+        byteBuf.writeByte(0x80);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+        byteBuf.writeByte(0x00);
+
+        long rawLong = 0;
+        while (byteBuf.readableBytes() > 0) {
+            int unsignedByte = byteBuf.readUnsignedByte();
+            rawLong = (rawLong << 8) | unsignedByte;
+        }
+
+        UnsignedLong unsignedLong = UnsignedLong.fromLongBits(rawLong);
+        logger.info("[testReadUnsignedByte] {}", unsignedLong);
+        logger.info("[testReadUnsignedByte] {}", unsignedLong.longValue());
     }
 
     private void writeRandomStrToByteBuf(ByteBuf byteBuf, int len) {

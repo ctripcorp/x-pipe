@@ -1,12 +1,18 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
+import com.google.common.collect.Maps;
 
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author lishanglin
@@ -17,6 +23,14 @@ public class DefaultRdbParseContext implements RdbParseContext {
     private EnumMap<RdbType, RdbParser> parsers = new EnumMap<>(RdbType.class);
 
     private Set<RdbParseListener> listeners = new HashSet<>();
+
+    private AtomicInteger dbId = new AtomicInteger();
+
+    private Map<String, String> auxMap = Maps.newConcurrentMap();
+
+    private AtomicReference<RedisKey> redisKey = new AtomicReference<>();
+
+    private AtomicLong expireMilli = new AtomicLong();
 
     @Override
     public RdbParser getOrCreateParser(RdbType rdbType) {
@@ -52,5 +66,55 @@ public class DefaultRdbParseContext implements RdbParseContext {
                 parsers.values().forEach(parser -> parser.unregisterListener(listener));
             }
         }
+    }
+
+    @Override
+    public RdbParseContext setDbId(int dbId) {
+        this.dbId.set(dbId);
+        return this;
+    }
+
+    @Override
+    public int getDbId() {
+        return this.dbId.get();
+    }
+
+    @Override
+    public RdbParseContext setAux(String key, String value) {
+        this.auxMap.put(key, value);
+        return this;
+    }
+
+    @Override
+    public String getAux(String key) {
+        return auxMap.get(key);
+    }
+
+    @Override
+    public RdbParseContext setKey(RedisKey key) {
+        this.redisKey.set(key);
+        return this;
+    }
+
+    @Override
+    public RedisKey getKey() {
+        return this.redisKey.get();
+    }
+
+    @Override
+    public RdbParseContext setExpireMilli(long expireMilli) {
+        this.expireMilli.set(expireMilli);
+        return this;
+    }
+
+    @Override
+    public long getExpireMilli() {
+        return this.expireMilli.get();
+    }
+
+    @Override
+    public void clearKvContext() {
+        this.redisKey.set(null);
+        this.expireMilli.set(0);
     }
 }

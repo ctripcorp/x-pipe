@@ -10,6 +10,10 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
  */
 public class RedisOpSet extends AbstractRedisSingleKeyOp implements RedisSingleKeyOp {
 
+    public RedisOpSet(RedisKey key, byte[] value) {
+        super(new byte[][] {RedisOpType.SET.name().getBytes(), key.get(), value}, key, value);
+    }
+
     public RedisOpSet(byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
         super(rawArgs, redisKey, redisValue);
     }
