@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
+import com.ctrip.xpipe.api.command.Command;
+
 /**
  * @author lishanglin
  * date 2022/2/23
  */
-public interface Xsync {
+public interface Xsync extends Command<Object> /*, Closeable */ {
 
     String FULL_SYNC = "FULLRESYNC";
 
