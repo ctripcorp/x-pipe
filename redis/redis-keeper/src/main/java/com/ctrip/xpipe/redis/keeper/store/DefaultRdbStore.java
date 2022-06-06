@@ -37,7 +37,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected File file;
 
-	private FileChannel channel;
+	protected FileChannel channel;
 
 	protected EofType eofType;
 
@@ -76,7 +76,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public void truncateEndRdb(int reduceLen) throws IOException {
 		
-		logger.info("[truncateEndRdb]{}, {}", this, reduceLen);
+		getLogger().info("[truncateEndRdb]{}, {}", this, reduceLen);
 		
 		synchronized (truncateLock) {
 			channel.truncate(channel.size() - reduceLen);
@@ -88,7 +88,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	public void endRdb() {
 		
 		if(status.get() != Status.Writing){
-			logger.info("[endRdb][already ended]{}, {}, {}", this, file, status);
+			getLogger().info("[endRdb][already ended]{}, {}, {}", this, file, status);
 			return;
 		}
 		
@@ -99,18 +99,29 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			try {
 				writeFile.close();
 			} catch (IOException e) {
-				logger.error("[endRdb]" + this, e);
+				getLogger().error("[endRdb]" + this, e);
 			}
 		}
 	}
 
-	private void notifyListenersEndRdb() {
+	protected void notifyListenersRdbGtidSet(String rdbGtidSet) {
+
+		for(RdbStoreListener listener : rdbStoreListeners){
+			try{
+				listener.onRdbGtidSet(rdbGtidSet);
+			}catch(Throwable th){
+				getLogger().error("[notifyListenersEndRdb]" + this, th);
+			}
+		}
+	}
+
+	protected void notifyListenersEndRdb() {
 		
 		for(RdbStoreListener listener : rdbStoreListeners){
 			try{
 				listener.onEndRdb();
 			}catch(Throwable th){
-				logger.error("[notifyListenersEndRdb]" + this, th);
+				getLogger().error("[notifyListenersEndRdb]" + this, th);
 			}
 		}
 	}
@@ -118,7 +129,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public void failRdb(Throwable throwable) {
 		
-		logger.info("[failRdb]" + this, throwable);
+		getLogger().info("[failRdb]" + this, throwable);
 		
 		if(status.get() != Status.Writing){
 			throw new IllegalStateException("already finished with final state:" + status.get());
@@ -129,7 +140,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		try {
 			writeFile.close();
 		} catch (IOException e1) {
-			logger.error("[failRdb]" + this, e1);
+			getLogger().error("[failRdb]" + this, e1);
 		}
 	}
 
@@ -147,11 +158,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		//TODO check file format
 		if(eofType.fileOk(file)){
 			status.set(Status.Success);
-			logger.info("[checkAndSetRdbState]{}, {}", this, status);
+			getLogger().info("[checkAndSetRdbState]{}, {}", this, status);
 		} else {
 			status.set(Status.Fail);
 			long actualFileLen = file.length();
-			logger.error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
+			getLogger().error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
 		}
 	}
 
@@ -166,7 +177,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
-			logger.error("[readRdbFile]Error read rdb file" + file, e);
+			getLogger().error("[readRdbFile]Error read rdb file" + file, e);
 		}finally{
 			refCount.decrementAndGet();
 		}
@@ -187,18 +198,18 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 					Thread.sleep(1);
 					long currentTime = System.currentTimeMillis();
 					if (currentTime - lastLogTime > 10000) {
-						logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}",
+						getLogger().info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}",
 								status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
 						lastLogTime = currentTime;
 					}
 				} catch (InterruptedException e) {
-					logger.error("[doReadRdbFile]" + rdbFileListener, e);
+					getLogger().error("[doReadRdbFile]" + rdbFileListener, e);
 					Thread.currentThread().interrupt();
 				}
 			}
 		}
 
-		logger.info("[doReadRdbFile] done with status {}", status.get());
+		getLogger().info("[doReadRdbFile] done with status {}", status.get());
 
 		switch (status.get()) {
 			case Success:
@@ -249,7 +260,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public void destroy() throws Exception {
 		
-		logger.info("[destroy][delete file]{}", file);
+		getLogger().info("[destroy][delete file]{}", file);
 		file.delete();
 	}
 
@@ -257,12 +268,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	public void close() throws IOException {
 		
 		if(cmpAndSetClosed()){
-			logger.info("[close]{}", file);
+			getLogger().info("[close]{}", file);
 			if(writeFile != null){
 				writeFile.close();
 			}
 		}else{
-			logger.warn("[close][already closed]{}", this);
+			getLogger().warn("[close][already closed]{}", this);
 		}
 	}
 
@@ -295,7 +306,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 					if(status.get() == Status.Writing){
 						
 						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
-						logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
+						getLogger().debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
 						return ret < 0 ? 0 : ret;
 					}
 					return realSize;
@@ -333,6 +344,10 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public long getRdbFileLastModified() {
 		return file.lastModified();
+	}
+	
+	protected Logger getLogger() {
+		return logger;
 	}
 
 }

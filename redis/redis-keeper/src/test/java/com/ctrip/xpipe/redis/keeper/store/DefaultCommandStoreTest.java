@@ -53,11 +53,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	private OffsetCommandReaderWriterFactory commandReaderWriterFactory = new OffsetCommandReaderWriterFactory();
 
 	@Before
-	public void beforeDefaultCommandStoreTest() throws IOException {
+	public void beforeDefaultCommandStoreTest() throws Exception	 {
 
 		String testDir = getTestFileDir();
 		commandTemplate = new File(testDir, getTestName());
 		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 	}
 
 
@@ -423,6 +424,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, maxSecondsKeepCmdFile::get, 0,
 				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 		appendCommandsToStore(10, 100);
 
 		commandStore.gc();
@@ -441,6 +443,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
 		commandStore.gc();
@@ -471,6 +474,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 1, () -> true, () -> 0));
@@ -486,6 +490,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> false, () -> 0));
@@ -501,6 +506,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> true, () -> 10));

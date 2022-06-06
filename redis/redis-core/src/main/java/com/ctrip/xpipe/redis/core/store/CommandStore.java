@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import io.netty.buffer.ByteBuf;
 
@@ -8,7 +9,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Closeable, Destroyable{
+public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Initializable, Closeable, Destroyable {
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
