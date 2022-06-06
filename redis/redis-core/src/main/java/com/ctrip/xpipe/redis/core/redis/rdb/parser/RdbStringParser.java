@@ -101,8 +101,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
     @Override
     public byte[] read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -137,7 +136,6 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         temp.readBytes(redisString);
                         temp.release();
                         temp = null;
-                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -151,7 +149,6 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         redisString = String.valueOf(val).getBytes();
                         temp.release();
                         temp = null;
-                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -188,13 +185,15 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                     if (RedisLzfUtil.decode(lzfContent, redisString) != len.getLenValue()) {
                         throw new XpipeRuntimeException("invalid LZF compressed string");
                     }
-                    propagateCmdIfNeed();
                     state = STATE.READ_END;
                     break;
 
                 case READ_END:
                 default:
-                    break PARSE;
+            }
+
+            if (isFinish()) {
+                propagateCmdIfNeed();
             }
         }
 

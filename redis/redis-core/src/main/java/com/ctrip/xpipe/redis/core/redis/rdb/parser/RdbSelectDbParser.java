@@ -35,8 +35,7 @@ public class RdbSelectDbParser extends AbstractRdbParser<Integer> implements Rdb
     @Override
     public Integer read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
 
@@ -56,7 +55,6 @@ public class RdbSelectDbParser extends AbstractRdbParser<Integer> implements Rdb
 
                 case READ_END:
                 default:
-                    break PARSE;
             }
 
         }

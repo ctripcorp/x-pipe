@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
@@ -83,7 +84,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
+				rdbStoreRef.set(createRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
 			}
 		}
 		if (null != meta && null != meta.getCmdFilePrefix()) {
@@ -93,7 +94,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		removeUnusedRdbFiles();
 	}
 
-	private EofType initEofType(ReplicationStoreMeta meta) {
+	protected EofType initEofType(ReplicationStoreMeta meta) {
 
 		// must has length field
 		getLogger().info("[initEofType][leneof]{}", meta);
@@ -127,9 +128,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				cmdFilePrefix);
 
 		// beginOffset - 1 == masteroffset
-		RdbStore rdbStore = new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()),
+		RdbStore rdbStore = createRdbStore(new File(baseDir, newMeta.getRdbFile()),
 				newMeta.getBeginOffset() - 1, eofType);
-		rdbStore.addListener(new ReplicationStoreRdbFileListener(rdbStore));
+		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		rdbStoreRef.set(rdbStore);
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 
@@ -152,12 +153,28 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor) throws IOException {
-		return new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+		DefaultCommandStore cmdStore = new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
 				cmdReaderWriterFactory, keeperMonitor);
+		try {
+			cmdStore.initialize();
+		} catch (Exception e) {
+			logger.info("[createCommandStore] init fail", e);
+			throw new XpipeRuntimeException("cmdStore init fail", e);
+		}
+
+		return cmdStore;
+	}
+
+	protected RdbStore createRdbStore(File rdb, long rdbOffset, EofType eofType) throws IOException {
+		return new DefaultRdbStore(rdb, rdbOffset, eofType);
+	}
+
+	protected RdbStoreListener createRdbStoreListener(RdbStore rdbStore) {
+		return new ReplicationStoreRdbFileListener(rdbStore);
 	}
 
 	@Override
@@ -187,7 +204,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			@SuppressWarnings("unused")
 			ReplicationStoreMeta metaDup = metaStore.checkReplIdAndUpdateRdbInfo(dumpedRdbFile.getName(), eofType, rdbOffset, expectedReplId);
 
-			dumpedRdbStore.addListener(new ReplicationStoreRdbFileListener(dumpedRdbStore));
+			dumpedRdbStore.addListener(createRdbStoreListener(dumpedRdbStore));
 
 			getLogger().info("[rdbUpdated] new file {}, eofType {}, rdbOffset {}", dumpedRdbFile, eofType, rdbOffset);
 			RdbStore oldRdbStore = rdbStoreRef.get();
@@ -196,7 +213,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-	// fot teset only
 	public CommandStore getCommandStore() {
 		return cmdStore;
 	}
@@ -310,7 +326,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-	private String newRdbFileName() {
+	protected String newRdbFileName() {
 		return "rdb_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString();
 	}
 
@@ -402,10 +418,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	public class ReplicationStoreRdbFileListener implements RdbStoreListener {
 
-		private RdbStore rdbStore;
+		protected RdbStore rdbStore;
 
 		public ReplicationStoreRdbFileListener(RdbStore rdbStore) {
 			this.rdbStore = rdbStore;
+		}
+
+		@Override
+		public void onRdbGtidSet(String gtidSet) {
+
 		}
 
 		@Override

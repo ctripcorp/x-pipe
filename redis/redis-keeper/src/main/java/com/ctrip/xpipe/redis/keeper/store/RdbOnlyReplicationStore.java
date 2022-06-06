@@ -102,7 +102,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public ReplicationStoreMeta setRdbGtidSet(String gtidSet) throws IOException {
+			public boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 

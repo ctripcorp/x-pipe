@@ -56,7 +56,7 @@ public interface MetaStore {
 	
 	ReplicationStoreMeta rdbBegun(String replId, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
 
-	ReplicationStoreMeta setRdbGtidSet(String gtidSet) throws IOException;
+	boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException;
 
 	ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException;
 

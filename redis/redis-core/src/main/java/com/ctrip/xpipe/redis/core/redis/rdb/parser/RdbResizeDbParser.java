@@ -36,8 +36,7 @@ public class RdbResizeDbParser extends AbstractRdbParser<Pair<Integer, Integer>>
     @Override
     public Pair<Integer, Integer> read(ByteBuf byteBuf) {
 
-        PARSE:
-        while(byteBuf.readableBytes() > 0) {
+        while(!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -58,7 +57,6 @@ public class RdbResizeDbParser extends AbstractRdbParser<Pair<Integer, Integer>>
 
                 case READ_END:
                 default:
-                    break PARSE;
             }
 
         }
