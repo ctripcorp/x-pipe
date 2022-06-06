@@ -4,8 +4,9 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSetParser;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKVParser;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.assertj.core.util.Lists;
@@ -20,7 +21,7 @@ public class DefaultApplierCommandTest {
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
-    private RedisOpSetParser parser = new RedisOpSetParser(parserManager);
+    private RedisOpSingleKVParser parser = new RedisOpSingleKVParser(RedisOpType.SET, 1, 2);
 
     private static AsyncRedisClient client;
 
