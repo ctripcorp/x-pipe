@@ -41,7 +41,7 @@ public class DefaultApplierServer extends AbstractInstanceNode {
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
 
-    /* identity */
+    /* cardinal info */
 
     @InstanceDependency
     public AsyncRedisClient client;
