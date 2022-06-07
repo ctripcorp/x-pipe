@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.core.redis.rdb;
 
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbAuxParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbSelectDbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbResizeDbParser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,15 +16,33 @@ import java.util.function.Function;
  */
 public interface RdbParseContext {
 
-    RdbParser getOrCreateParser(RdbType rdbType);
+    RdbParser<?> getOrCreateParser(RdbType rdbType);
 
     void registerListener(RdbParseListener listener);
 
     void unregisterListener(RdbParseListener listener);
 
+    RdbParseContext setDbId(int dbId);
+
+    int getDbId();
+
+    RdbParseContext setAux(String key, String value);
+
+    String getAux(String key);
+
+    RdbParseContext setKey(RedisKey key);
+
+    RedisKey getKey();
+
+    RdbParseContext setExpireMilli(long expireMilli);
+
+    long getExpireMilli();
+
+    void clearKvContext();
+
     enum RdbType {
 
-        STRING(RdbConstant.REDIS_RDB_TYPE_STRING, RdbStringParser::new),
+        STRING(RdbConstant.REDIS_RDB_TYPE_STRING, false, RdbStringParser::new),
 //        LIST(RdbConstant.REDIS_RDB_TYPE_LIST),
 //        SET(RdbConstant.REDIS_RDB_TYPE_SET),
 //        ZSET(RdbConstant.REDIS_RDB_TYPE_ZSET),
@@ -39,29 +60,37 @@ public interface RdbParseContext {
 //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
 //        IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE),
 //        FREQ(RdbConstant.REDIS_RDB_OP_CODE_FREQ),
-        AUX(RdbConstant.REDIS_RDB_OP_CODE_AUX, RdbAuxParser::new),
-//        RESIZEDB(RdbConstant.REDIS_RDB_OP_CODE_RESIZEDB),
+        AUX(RdbConstant.REDIS_RDB_OP_CODE_AUX, true, RdbAuxParser::new),
+        RESIZEDB(RdbConstant.REDIS_RDB_OP_CODE_RESIZEDB, true, RdbResizeDbParser::new),
 //        EXPIRETIME_MS(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME_MS),
 //        EXPIRETIME(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME),
-//        SELECTDB(RdbConstant.REDIS_RDB_OP_CODE_SELECTDB),
-        EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, null);
+        SELECTDB(RdbConstant.REDIS_RDB_OP_CODE_SELECTDB, true, RdbSelectDbParser::new),
+        EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, true, null);
 
-        private char code;
+        private short code;
+
+        private boolean rdbOp;
 
         private Function<RdbParseContext, RdbParser> parserConstructor;
 
-        private static final Map<Character, RdbType> types = new HashMap<>();
+        private static final Map<Short, RdbType> types = new HashMap<>();
 
-        RdbType(char code, Function<RdbParseContext, RdbParser> parserConstructor) {
+        RdbType(short code, boolean rdbOp, Function<RdbParseContext, RdbParser> parserConstructor) {
             this.code = code;
+            this.rdbOp = rdbOp;
             this.parserConstructor = parserConstructor;
         }
 
-        public char getCode() {
+        public short getCode() {
             return code;
         }
 
-        public RdbParser makeParser(RdbParseContext parserManager) {
+        public boolean isRdbOp() {
+            return rdbOp;
+        }
+
+        public RdbParser<?> makeParser(RdbParseContext parserManager) {
+            if (null == parserConstructor) throw new UnsupportedOperationException("no parser for " + this.name());
             return parserConstructor.apply(parserManager);
         }
 
@@ -71,7 +100,7 @@ public interface RdbParseContext {
             }
         }
 
-        public static RdbType findByCode(char code) {
+        public static RdbType findByCode(short code) {
             return types.get(code);
         }
 

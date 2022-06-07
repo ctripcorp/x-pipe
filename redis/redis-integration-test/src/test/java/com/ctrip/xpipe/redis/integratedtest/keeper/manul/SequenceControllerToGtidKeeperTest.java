@@ -8,8 +8,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
-import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisOpCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.junit.After;
@@ -79,14 +79,14 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         if (redisOp.getOpType().equals(RedisOpType.PING) || redisOp.getOpType().equals(RedisOpType.SELECT)) {
             return;
         }
-        ApplierRedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
+        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
         switch (command.type()) {
             case MULTI:
                 inTransaction = true;
             case EXEC:
                 inTransaction = false;
             default:
-                command.sharding().forEach(sequenceController::submit);
+                sequenceController.submit(command);
         }
     }
 }

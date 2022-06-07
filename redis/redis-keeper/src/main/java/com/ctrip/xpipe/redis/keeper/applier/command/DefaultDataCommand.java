@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.google.common.collect.Lists;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * <p>
  * Feb 26, 2022 3:13 PM
  */
-public class DefaultApplierCommand extends AbstractCommand<Boolean> implements ApplierRedisOpCommand<Boolean> {
+public class DefaultDataCommand extends AbstractCommand<Boolean> implements RedisOpDataCommand<Boolean> {
 
     public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
@@ -24,11 +24,11 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
 
     final RedisOp redisOp;
 
-    public DefaultApplierCommand(AsyncRedisClient client, RedisOp redisOp) {
+    public DefaultDataCommand(AsyncRedisClient client, RedisOp redisOp) {
         this(client, null, redisOp);
     }
 
-    public DefaultApplierCommand(AsyncRedisClient client, Object resource, RedisOp redisOp) {
+    public DefaultDataCommand(AsyncRedisClient client, Object resource, RedisOp redisOp) {
 
         this.client = client;
         this.resource = resource;
@@ -43,7 +43,7 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
 
         client
                 .write(rc, rawArgs)
-                .addListener(f->{
+                .addListener(f -> {
                     if (f.isSuccess()) {
                         future().setSuccess(true);
                     } else {
@@ -65,8 +65,8 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
     public List<RedisOpCommand<Boolean>> sharding() {
         if (type().equals(RedisOpCommandType.MULTI_KEY)) {
             List<Object> keys = keys().stream().map(RedisKey::get).collect(Collectors.toList());
-            return client.selectMulti(keys).entrySet().stream().map(e->
-                    new DefaultApplierCommand(client,
+            return client.selectMulti(keys).entrySet().stream().map(e ->
+                    new DefaultDataCommand(client,
                             /* resource */ e.getKey(),
                             /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).collect(Collectors.toList());
         }
