@@ -23,7 +23,7 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
     @Override
     protected void doExecute() throws Throwable {
 
-        Object[] resources = client.resources();
+        Object[] resources = client.broadcast();
         Object[] rawArgs = redisOp.buildRawOpArgs();
 
         for (Object rc : resources) {
