@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMset;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpDelParser;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMsetParser;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKVEnum;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKVParser;
 
@@ -20,6 +23,7 @@ public class RedisOpParserFactory {
 
     public void registerParsers(RedisOpParserManager redisOpParserManager) {
         registerSingleKV(redisOpParserManager);
+        registerMultiKV(redisOpParserManager);
     }
 
     public void registerSingleKV(RedisOpParserManager redisOpParserManager) {
@@ -28,5 +32,10 @@ public class RedisOpParserFactory {
                     cmd.getRedisOpType(),
                     new RedisOpSingleKVParser(cmd.getRedisOpType(), cmd.getKeyIndex(),cmd.getValueIndex()));
         }
+    }
+
+    public void registerMultiKV(RedisOpParserManager redisOpParserManager) {
+        redisOpParserManager.registerParser(RedisOpType.MSET, new RedisOpMsetParser(redisOpParserManager));
+        redisOpParserManager.registerParser(RedisOpType.DEL, new RedisOpDelParser(redisOpParserManager));
     }
 }
