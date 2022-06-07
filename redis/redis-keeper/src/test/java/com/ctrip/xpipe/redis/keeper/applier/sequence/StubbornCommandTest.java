@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSupplierCommand;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

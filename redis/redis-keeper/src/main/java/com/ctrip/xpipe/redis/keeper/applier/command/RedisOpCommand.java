@@ -13,15 +13,6 @@ import java.util.List;
  */
 public interface RedisOpCommand<V> extends Command<V> {
 
-    enum RedisOpCommandType {
-        SINGLE_KEY,
-        MULTI_KEY,
-        MULTI,
-        EXEC,
-        BROADCAST,
-        UNKNOWN,
-    }
-
     RedisOp redisOp();
 
     default String gtid() {
@@ -52,7 +43,7 @@ public interface RedisOpCommand<V> extends Command<V> {
         if (RedisOpType.EXEC.equals(op.getOpType())) {
             return RedisOpCommandType.EXEC;
         }
-        if (RedisOpType.PUBLISH.equals(op.getOpType()) || RedisOpType.LWM.equals(op.getOpType())) {
+        if (RedisOpType.LWM.equals(op.getOpType())) {
             return RedisOpCommandType.BROADCAST;
         }
         if (op instanceof RedisSingleKeyOp) {
