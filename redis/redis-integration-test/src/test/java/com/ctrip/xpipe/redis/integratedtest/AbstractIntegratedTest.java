@@ -162,8 +162,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		RedisOpParser parser = new GeneralRedisOpParser(redisOpParserManager);
-		new RedisOpMsetParser(redisOpParserManager);
-		new RedisOpDelParser(redisOpParserManager);
 		return parser;
 	}
 

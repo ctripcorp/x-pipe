@@ -49,8 +49,6 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpDelParser(redisOpParserManager);
 
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
