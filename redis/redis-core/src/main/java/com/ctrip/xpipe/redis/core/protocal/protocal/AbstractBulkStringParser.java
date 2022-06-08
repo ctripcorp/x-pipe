@@ -69,15 +69,9 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 
 				int readerIndex = byteBuf.readerIndex();
 				JudgeResult result = eofJudger.end(byteBuf.slice());
-				int length = 0;
-				try {
-					length = payload.in(byteBuf.slice(readerIndex, result.getReadLen()));
-					if (length != result.getReadLen()) {
-						throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));
-					}
-				} catch (IOException e) {
-					getLogger().error("[read][exception]" + payload, e);
-					throw new RedisRuntimeException("[write to payload exception]" + payload, e);
+				int length = readContent(byteBuf.slice(readerIndex, result.getReadLen()));
+				if (length != result.getReadLen()) {
+					throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));
 				}
 				byteBuf.readerIndex(readerIndex + length);
 
@@ -100,6 +94,15 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 				return readEnd(byteBuf);
 			default:
 				return null;
+		}
+	}
+
+	protected int readContent(ByteBuf byteBuf) {
+		try {
+			return payload.in(byteBuf);
+		} catch (IOException e) {
+			getLogger().error("[read][exception]" + payload, e);
+			throw new RedisRuntimeException("[write to payload exception]" + payload, e);
 		}
 	}
 

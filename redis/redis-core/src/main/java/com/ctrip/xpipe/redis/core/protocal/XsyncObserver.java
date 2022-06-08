@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author lishanglin
@@ -13,7 +14,7 @@ public interface XsyncObserver {
 
     void beginReadRdb(EofType eofType, GtidSet rdbGtidSet);
 
-    void onRdbData(Object rdbData); // TODO: define rdb data format
+    void onRdbData(ByteBuf rdbData);
 
     void endReadRdb(EofType eofType, GtidSet rdbGtidSet);
 

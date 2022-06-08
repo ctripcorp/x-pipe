@@ -13,7 +13,7 @@ import java.io.IOException;
 public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
 
     public DumpedGtidRdbStore(File file) throws IOException {
-        super(file, -1, null);
+        super(file, -1, null, null);
     }
 
     @Override

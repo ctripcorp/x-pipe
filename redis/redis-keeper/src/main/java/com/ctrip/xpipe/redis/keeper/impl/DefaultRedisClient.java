@@ -250,6 +250,24 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 	}
 
 	@Override
+	public RedisSlave becomeXSlave() {
+		RedisSlave redisSlave = null;
+		switch(clientRole){
+			case NORMAL:
+				logger.info("[becomeXSlave]" + this);
+				redisSlave = new XsyncRedisSlave(this);
+				notifyObservers(redisSlave);
+				break;
+			case SLAVE:
+				logger.info("[becomeXSlave][already slave]" + this);
+				break;
+			default:
+				throw new IllegalStateException("unknown state:" + clientRole);
+		}
+		return redisSlave;
+	}
+
+	@Override
 	public Channel channel() {
 		return channel;
 	}

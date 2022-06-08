@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
+import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,7 +93,7 @@ public class ApplierToFakeXsyncServer extends AbstractRedisOpParserTest implemen
     }
 
     @Override
-    public void onRdbData(Object rdbData) {
+    public void onRdbData(ByteBuf rdbData) {
 
     }
 

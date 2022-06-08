@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,6 +29,24 @@ public class OffsetReplicationProgress implements ReplicationProgress<Long, Long
         while (!offset.compareAndSet(currentOffset, currentOffset + repl)) {
             currentOffset = offset.get();
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        OffsetReplicationProgress that = (OffsetReplicationProgress) o;
+        return Objects.equals(offset, that.offset);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(offset);
+    }
+
+    @Override
+    public TYPE getType() {
+        return TYPE.OFFSET;
     }
 
     @Override

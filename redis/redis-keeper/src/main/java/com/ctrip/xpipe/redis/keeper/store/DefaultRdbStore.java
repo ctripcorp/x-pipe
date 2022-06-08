@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -47,7 +49,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
-	private List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
+	protected List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
 	
 	private Object truncateLock = new Object();
 	
@@ -104,17 +106,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		}
 	}
 
-	protected void notifyListenersRdbGtidSet(String rdbGtidSet) {
-
-		for(RdbStoreListener listener : rdbStoreListeners){
-			try{
-				listener.onRdbGtidSet(rdbGtidSet);
-			}catch(Throwable th){
-				getLogger().error("[notifyListenersEndRdb]" + this, th);
-			}
-		}
-	}
-
 	protected void notifyListenersEndRdb() {
 		
 		for(RdbStoreListener listener : rdbStoreListeners){
@@ -167,6 +158,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
+	public boolean updateRdbGtidSet(String gtidSet) {
+		throw new UnsupportedOperationException("rdb.gtidset unsupported");
+	}
+
+	@Override
 	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
 		
 		makeSureOpen();
@@ -175,17 +171,24 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		refCount.incrementAndGet();
 
 		try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
+			doReadRdbFileInfo(rdbFileListener);
 			doReadRdbFile(rdbFileListener, channel);
 		} catch (Exception e) {
 			getLogger().error("[readRdbFile]Error read rdb file" + file, e);
+			rdbFileListener.exception(e);
 		}finally{
 			refCount.decrementAndGet();
 		}
 	}
 
-	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
-		
-		rdbFileListener.setRdbFileInfo(eofType, rdbOffset);
+	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
+		if (!rdbFileListener.supportProgress(ReplicationProgress.TYPE.OFFSET)) {
+			throw new UnsupportedOperationException("offset progress not support");
+		}
+		rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
+	}
+
+	protected void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 
 		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {

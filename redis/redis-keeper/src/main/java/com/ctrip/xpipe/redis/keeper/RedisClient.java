@@ -23,6 +23,9 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	}
 	
 	RedisSlave becomeSlave();
+
+	// for xsync
+	RedisSlave becomeXSlave();
 	
 	RedisKeeperServer getRedisKeeperServer();
 

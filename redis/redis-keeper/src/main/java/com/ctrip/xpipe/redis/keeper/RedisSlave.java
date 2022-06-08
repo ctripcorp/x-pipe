@@ -5,6 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import io.netty.channel.ChannelFuture;
 
 
@@ -16,6 +17,8 @@ import io.netty.channel.ChannelFuture;
 public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	
 	void waitForRdbDumping();
+
+	void waitForGtidParse();
 	
 	SLAVE_STATE getSlaveState();
 
@@ -24,13 +27,11 @@ public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	Long getAck();
 	
 	Long getAckTime();
-	
-	void beginWriteCommands(long beginOffset);
 
-	void beginWriteCommands(GtidSet excludedGtidSet);
-	
-	void beginWriteRdb(EofType eofType, long rdbFileOffset);
-	
+	void beginWriteCommands(ReplicationProgress<?,?> progress);
+
+	void beginWriteRdb(EofType eofType, ReplicationProgress<?,?> rdbProgress);
+
 	ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion);
 
 	void rdbWriteComplete();
@@ -45,5 +46,7 @@ public interface RedisSlave extends RedisClient, PartialAware, CommandsListener{
 	void markPsyncProcessed();
 
 	String metaInfo();
+
+	boolean supportProgress(ReplicationProgress.TYPE type);
 
 }
