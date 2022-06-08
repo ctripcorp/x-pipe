@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -21,6 +22,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @InstanceDependency
     public ApplierLwmManager lwmManager;
 
+    @InstanceDependency
+    public GtidSet gtidSet;
+
     final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
     ExecutorService stateThread;
@@ -41,37 +45,18 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @Override
     public void submit(RedisOpDataCommand<?> command) {
 
-        if (command.type() == RedisOpCommand.RedisOpCommandType.SINGLE_KEY) {
+        if (command.type() == RedisOpCommandType.SINGLE_KEY) {
             stateThread.execute(()->{
                 submitSingleKeyCommand(command);
             });
         }
 
-        if (command.type() == RedisOpCommand.RedisOpCommandType.MULTI_KEY) {
+        if (command.type() == RedisOpCommandType.MULTI_KEY) {
             stateThread.execute(()->{
                 submitMultiKeyCommand(command);
             });
         }
 
-        //List<RedisKey> keys = command.keys();
-        //List<SequenceCommand<?>> pasts = keys.stream().map(runningCommands::get).collect(Collectors.toList());
-        //SequenceCommand<?> sequenceCommand = new SequenceCommand<>(pasts, new StubbornCommand<>(command), stateThread, workerThreads);
-
-        //CommandFuture<?> current = runningCommands.get(key);
-
-        //if (current == null) {
-        //    runningCommands.put(key, sequenceCommand.execute());
-        //    return;
-        //}
-
-        //if (current.isDone()) {
-        //    if (current.isSuccess()) {
-        //        runningCommands.put(key, sequenceCommand.execute());
-        //    } else {
-        //        current.command().reset();
-        //        current = current.command().execute();
-        //    }
-        //}
     }
 
     private void submitSingleKeyCommand(RedisOpDataCommand<?> command) {
@@ -128,6 +113,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         sequenceCommand.future().addListener((f)->{
             if (f.isSuccess()) {
                 if (gtid != null) {
+                    if (gtidSet != null) {
+                        gtidSet.add(gtid);
+                    }
                     if (lwmManager != null) {
                         lwmManager.submit(gtid);
                     }
