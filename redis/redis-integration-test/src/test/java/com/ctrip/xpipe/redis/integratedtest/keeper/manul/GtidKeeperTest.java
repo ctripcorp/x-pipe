@@ -42,6 +42,8 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
 
     private RdbParser<?> rdbParser;
 
+    private String reqUuid = "1a82e1f0a716d32c34936e82df70d3dcdf50a5d8";
+
     @Before
     public void setupGtidKeeperTest() throws Exception {
         startZkServer(getDcMeta("jq").getZkServer());
@@ -68,7 +70,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
         setKeeperState(keeperMeta, KeeperState.ACTIVE, "127.0.0.1", 6379);
         waitConditionUntilTimeOut(() -> MASTER_STATE.REDIS_REPL_CONNECTED.equals(gtidKeeperServer.getRedisMaster().getMasterState()));
 
-        DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet("1a82e1f0a716d32c34936e82df70d3dcdf50a5d8:0"), null, scheduled);
+        DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet(reqUuid + ":0"), null, scheduled);
         xsync.addXsyncObserver(this);
         xsync.execute(executors);
 

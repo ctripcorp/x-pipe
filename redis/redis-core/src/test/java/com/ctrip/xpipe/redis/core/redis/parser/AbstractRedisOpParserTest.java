@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.parser;
 
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import org.junit.Before;
@@ -21,14 +22,8 @@ public class AbstractRedisOpParserTest extends AbstractRedisTest {
     @Before
     public void setupAbstractRedisOpParserTest() {
         redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpSetParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpDelParser(redisOpParserManager);
-        new RedisOpSelectParser(redisOpParserManager);
-        new RedisOpPingParser(redisOpParserManager);
-        new RedisOpPublishParser(redisOpParserManager);
-        new RedisOpMultiParser(redisOpParserManager);
     }
 
     protected byte[][] strList2bytesArray(List<String> strList) {
