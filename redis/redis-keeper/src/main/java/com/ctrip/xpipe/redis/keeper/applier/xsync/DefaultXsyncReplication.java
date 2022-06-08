@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author Slight
@@ -38,7 +39,7 @@ public class DefaultXsyncReplication extends AbstractInstanceComponent implement
     }
 
     @Override
-    public void onRdbData(Object rdbData) {
+    public void onRdbData(ByteBuf rdbData) {
 
     }
 

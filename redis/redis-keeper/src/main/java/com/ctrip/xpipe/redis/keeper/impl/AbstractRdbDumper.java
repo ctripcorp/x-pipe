@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.RdbDumpState;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -81,28 +80,42 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
 			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING) {
 				getLogger().info("[doWhenDumping][slave waiting for rdb, resume]{}", redisSlave);
-				try {
-					redisSlave.processPsyncSequentially(new Runnable() {
-						@Override
-						public void run() {
-							try {
-								redisKeeperServer.fullSyncToSlave(redisSlave);
-							} catch (Throwable th) {
-								try {
-									getLogger().error(String.format("fullsync to slave:%s", redisSlave), th);
-									if(redisSlave.isOpen()){
-										redisSlave.close();
-									}
-								} catch (IOException e) {
-									getLogger().error("[run][close]" + redisSlave, th);
-								}
-							}
-						}
-					});
-				} catch (Throwable th) {
-					getLogger().info("[doWhenDumping][fail]{}", redisSlave, th);
-				}
+				continueSlaveFsync(redisSlave);
 			}
+		}
+	}
+
+	@Override
+	public void rdbGtidSetParsed() {
+		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
+			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_GTIDSET) {
+				getLogger().info("[doWhenDumping][slave waiting for rdb, resume]{}", redisSlave);
+				continueSlaveFsync(redisSlave);
+			}
+		}
+	}
+
+	private void continueSlaveFsync(final RedisSlave redisSlave) {
+		try {
+			redisSlave.processPsyncSequentially(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						redisKeeperServer.fullSyncToSlave(redisSlave);
+					} catch (Throwable th) {
+						try {
+							getLogger().error(String.format("fullsync to slave:%s", redisSlave), th);
+							if(redisSlave.isOpen()){
+								redisSlave.close();
+							}
+						} catch (IOException e) {
+							getLogger().error("[run][close]" + redisSlave, th);
+						}
+					}
+				}
+			});
+		} catch (Throwable th) {
+			getLogger().info("[continueSlaveFsync][fail]{}", redisSlave, th);
 		}
 	}
 
@@ -136,7 +149,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 	@VisibleForTesting void doFullSyncOrGiveUp(RedisSlave redisSlave) throws IOException {
 		FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-		if (!redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener)) {
+		FULLSYNC_FAIL_CAUSE failCause = redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener);
+		if (null != failCause) {
 			throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full sync]");
 		}
 	}

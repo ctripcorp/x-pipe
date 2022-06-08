@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 
 /**
@@ -13,8 +14,11 @@ public class FullSyncContext {
 
 	private RdbStore rdbStore;
 
-	public FullSyncContext(boolean fullSyncPossible) {
+	private FULLSYNC_FAIL_CAUSE cause;
+
+	public FullSyncContext(boolean fullSyncPossible, FULLSYNC_FAIL_CAUSE cause) {
 		this.fullSyncPossible = fullSyncPossible;
+		this.cause = cause;
 	}
 
 	public FullSyncContext(boolean fullSyncPossible, RdbStore rdbStore) {
@@ -29,4 +33,9 @@ public class FullSyncContext {
 	public RdbStore getRdbStore() {
 		return rdbStore;
 	}
+
+	public FULLSYNC_FAIL_CAUSE getCause() {
+		return cause;
+	}
+
 }

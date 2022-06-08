@@ -10,4 +10,11 @@ public interface ReplicationProgress<T, R> {
 
     void makeProgress(R repl);
 
+    TYPE getType();
+
+    enum TYPE {
+        OFFSET,
+        GTIDSET
+    }
+
 }

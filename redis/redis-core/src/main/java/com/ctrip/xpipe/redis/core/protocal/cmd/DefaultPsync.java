@@ -25,13 +25,13 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 
 	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool,
 						Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
-		this(clientPool, masterEndPoint, replicationStoreManager, false, scheduled);
+		this(clientPool, masterEndPoint, replicationStoreManager, false, false, scheduled);
 	}
 	
 	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool, 
 			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager,
-						boolean allowKeeperPsync, ScheduledExecutorService scheduled) {
-		super(clientPool, true, scheduled);
+						boolean allowKeeperPsync, boolean supporetGtid, ScheduledExecutorService scheduled) {
+		super(clientPool, true, supporetGtid, scheduled);
 		this.masterEndPoint = masterEndPoint;
 		this.allowKeeperPsync = allowKeeperPsync;
 		this.replicationStoreManager = replicationStoreManager;
