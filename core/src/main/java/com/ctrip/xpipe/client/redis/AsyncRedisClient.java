@@ -22,5 +22,5 @@ public interface AsyncRedisClient {
 
     CommandFuture<Object> multi();
 
-    CommandFuture<Object> exec();
+    CommandFuture<Object> exec(Object... rawArgs);
 }

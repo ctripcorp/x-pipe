@@ -18,13 +18,13 @@ import credis.java.client.transaction.RedisTransactionClient;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
+import redis.clients.jedis.exceptions.JedisDataException;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static credis.java.client.async.impl.TypeConverter.OBJECT_LIST_TO_BYTE_LIST;
 
 /**
  * @author Slight
@@ -58,7 +58,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Object select(Object key) {
         if (isInMulti) {
-            RedisClient client = txnProvider.getClient((byte[]) key, new ArrayList<>(clients2TxnClients.keySet()));
+            RedisClient client = txnProvider.getClient(key, clients2TxnClients.keySet());
             if (!client.isInMulti()) {
                 RedisTransactionClient txnClient = client.multi();
                 clients2TxnClients.put(client, txnClient);
@@ -71,23 +71,24 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Map<Object, List<Object>> selectMulti(List<Object> keys) {
         if (isInMulti) {
-            Map<RedisClient, List<byte[]>> clients = txnProvider.getClients(OBJECT_LIST_TO_BYTE_LIST.apply(keys), new ArrayList<>(clients2TxnClients.keySet()));
+            Map<RedisClient, List<Object>> clients = txnProvider.getClients(keys, clients2TxnClients.keySet());
             for (RedisClient client : clients.keySet()) {
                 if (!client.isInMulti()) {
                     RedisTransactionClient txnClient = client.multi();
                     clients2TxnClients.put(client, txnClient);
                 }
             }
-            return clients;
+            return new TMapWrapper<>(clients);
         }
-        return new CRedisSessionChannelMapWrapper(locator().getSessionForList(true, keys.toArray()));
+        return new TMapWrapper<>(locator().getSessionForList(true, keys.toArray()));
     }
 
     @Override
     public CommandFuture<Object> write(Object resource, Object... rawArgs) {
         if (isInMulti) {
             try {
-                RedisTransactionClient txnClient = (RedisTransactionClient) resource;
+                RedisClient client = (RedisClient) resource;
+                RedisTransactionClient txnClient = clients2TxnClients.get(client);
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
             } catch (Throwable t) {
@@ -125,15 +126,20 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     @Override
-    public CommandFuture<Object> exec() {
-        if (txnProvider.isValid(new ArrayList<>(clients2TxnClients.keySet()))) {
+    public CommandFuture<Object> exec(Object... rawArgs) {
+        if (txnProvider.isValid(clients2TxnClients.keySet())) {
             try {
                 for (RedisTransactionClient txnClient : clients2TxnClients.values()) {
-                    txnClient.exec();
+                    List<Object> results = txnClient.exec(rawArgs);
+                    for (Object result : results) {
+                        if (result instanceof Throwable) {
+                            return errorFuture("one of txnClients.exec() failed", (Throwable) result);
+                        }
+                    }
                 }
                 return resultFuture("OK");
             } catch (Throwable t) {
-                return errorFuture("one of txnClients.exec() failed");
+                return errorFuture("one of txnClients.exec() failed", t);
             }
         } else {
             return errorFuture("txnClients not valid when exec() called");
@@ -159,6 +165,12 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     private CommandFuture<Object> errorFuture(String message) {
         CommandFuture<Object> future = new DefaultCommandFuture<>();
         future.setFailure(new XpipeRuntimeException(message));
+        return future;
+    }
+
+    private CommandFuture<Object> errorFuture(String message, Throwable cause) {
+        CommandFuture<Object> future = new DefaultCommandFuture<>();
+        future.setFailure(new XpipeRuntimeException(message, cause));
         return future;
     }
 }

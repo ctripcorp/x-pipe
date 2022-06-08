@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.service.client.redis;
 
-import credis.java.client.async.qclient.network.CRedisSessionChannel;
-
 import java.util.*;
 
 /**
@@ -9,11 +7,11 @@ import java.util.*;
  * <p>
  * Feb 26, 2022 5:14 PM
  */
-public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>> {
+public class TMapWrapper<T> implements Map<Object, List<Object>> {
 
-    public final Map<CRedisSessionChannel, List<Object>> inner;
+    public final Map<T, List<Object>> inner;
 
-    public CRedisSessionChannelMapWrapper(Map<CRedisSessionChannel, List<Object>> inner) {
+    public TMapWrapper(Map<T, List<Object>> inner) {
 
         this.inner = inner;
     }
@@ -45,7 +43,7 @@ public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>>
 
     @Override
     public List<Object> put(Object key, List<Object> value) {
-        return inner.put((CRedisSessionChannel) key, value);
+        return inner.put((T) key, value);
     }
 
     @Override
@@ -78,11 +76,11 @@ public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>>
         return new EntrySetWrapper(inner.entrySet());
     }
 
-    public static class EntrySetWrapper implements Set<Entry<Object, List<Object>>> {
+    public class EntrySetWrapper implements Set<Entry<Object, List<Object>>> {
 
-        private final Set<Entry<CRedisSessionChannel, List<Object>>> inner;
+        private final Set<Entry<T, List<Object>>> inner;
 
-        public EntrySetWrapper(Set<Entry<CRedisSessionChannel, List<Object>>> inner) {
+        public EntrySetWrapper(Set<Entry<T, List<Object>>> inner) {
 
             this.inner = inner;
         }
@@ -153,11 +151,11 @@ public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>>
         }
     }
 
-    public static class IteratorWrapper implements Iterator<Entry<Object, List<Object>>> {
+    public class IteratorWrapper implements Iterator<Entry<Object, List<Object>>> {
 
-        private final Iterator<Entry<CRedisSessionChannel, List<Object>>> inner;
+        private final Iterator<Entry<T, List<Object>>> inner;
 
-        public IteratorWrapper(Iterator<Entry<CRedisSessionChannel, List<Object>>> inner) {
+        public IteratorWrapper(Iterator<Entry<T, List<Object>>> inner) {
             this.inner = inner;
         }
 
@@ -172,11 +170,11 @@ public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>>
         }
     }
 
-    public static class EntryWrapper implements Entry<Object, List<Object>> {
+    public class EntryWrapper implements Entry<Object, List<Object>> {
 
-        private final Entry<CRedisSessionChannel, List<Object>> inner;
+        private final Entry<T, List<Object>> inner;
 
-        public EntryWrapper(Entry<CRedisSessionChannel, List<Object>> inner) {
+        public EntryWrapper(Entry<T, List<Object>> inner) {
             this.inner = inner;
         }
 
@@ -195,6 +193,4 @@ public class CRedisSessionChannelMapWrapper implements Map<Object, List<Object>>
             return inner.setValue(value);
         }
     }
-
-
 }
