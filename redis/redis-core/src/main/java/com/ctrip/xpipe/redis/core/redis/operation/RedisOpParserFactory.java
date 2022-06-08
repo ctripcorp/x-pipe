@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMset;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpDelParser;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMsetParser;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKVEnum;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKVParser;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 
 /**
  * @author ayq
@@ -26,7 +22,7 @@ public class RedisOpParserFactory {
         registerMultiKV(redisOpParserManager);
     }
 
-    public void registerSingleKV(RedisOpParserManager redisOpParserManager) {
+    private void registerSingleKV(RedisOpParserManager redisOpParserManager) {
         for (RedisOpSingleKVEnum cmd : RedisOpSingleKVEnum.values()) {
             redisOpParserManager.registerParser(
                     cmd.getRedisOpType(),
@@ -34,8 +30,11 @@ public class RedisOpParserFactory {
         }
     }
 
-    public void registerMultiKV(RedisOpParserManager redisOpParserManager) {
-        redisOpParserManager.registerParser(RedisOpType.MSET, new RedisOpMsetParser(redisOpParserManager));
-        redisOpParserManager.registerParser(RedisOpType.DEL, new RedisOpDelParser(redisOpParserManager));
+    private void registerMultiKV(RedisOpParserManager redisOpParserManager) {
+        for (RedisOpMultiKVEnum cmd : RedisOpMultiKVEnum.values()) {
+            redisOpParserManager.registerParser(
+                    cmd.getRedisOpType(),
+                    new RedisOpMultiKVParser(cmd.getRedisOpType(), cmd.getKeyStartIndex(), cmd.getKvNum()));
+        }
     }
 }

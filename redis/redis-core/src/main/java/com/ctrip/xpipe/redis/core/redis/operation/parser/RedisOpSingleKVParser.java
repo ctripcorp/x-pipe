@@ -10,9 +10,9 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKV;
  */
 public class RedisOpSingleKVParser extends AbstractRedisOpParser implements RedisOpParser {
 
+    private RedisOpType redisOpType;
     private Integer keyIndex;
     private Integer valueIndex;
-    private RedisOpType redisOpType;
 
     public RedisOpSingleKVParser(RedisOpType redisOpType, Integer keyIndex, Integer valueIndex) {
         this.keyIndex = keyIndex;

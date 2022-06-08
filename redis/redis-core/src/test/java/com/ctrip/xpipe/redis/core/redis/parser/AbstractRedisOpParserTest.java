@@ -24,8 +24,6 @@ public class AbstractRedisOpParserTest extends AbstractRedisTest {
         redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpDelParser(redisOpParserManager);
     }
 
     protected byte[][] strList2bytesArray(List<String> strList) {
