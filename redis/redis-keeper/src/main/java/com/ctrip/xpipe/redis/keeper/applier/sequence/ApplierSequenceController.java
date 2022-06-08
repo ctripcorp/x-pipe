@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 
 /**
  * @author Slight
@@ -10,5 +10,5 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
  */
 public interface ApplierSequenceController extends Lifecycle {
 
-    void submit(RedisOpDataCommand<?> command);
+    void submit(RedisOpCommand<?> command);
 }

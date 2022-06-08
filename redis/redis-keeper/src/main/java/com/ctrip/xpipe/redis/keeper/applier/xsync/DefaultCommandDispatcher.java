@@ -5,11 +5,15 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPing;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSelect;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 
@@ -63,14 +67,12 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         /* TODO: deal with leaping gtid when keeper filter data */
 
-        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
-        switch (command.type()) {
-            case MULTI:
-//                inTransaction = true;
-            case EXEC:
-//                inTransaction = false;
-            default:
-                sequenceController.submit(command);
+        if (redisOp instanceof RedisOpMulti) {
+            sequenceController.submit(new DefaultMultiCommand(client, redisOp));
+        } else if (redisOp instanceof RedisOpExec) {
+            sequenceController.submit(new DefaultExecCommand(client, redisOp));
+        } else {
+            sequenceController.submit(new DefaultDataCommand(client, redisOp));
         }
     }
 }
