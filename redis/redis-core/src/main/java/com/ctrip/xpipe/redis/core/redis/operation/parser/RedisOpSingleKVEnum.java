@@ -43,7 +43,7 @@ public enum RedisOpSingleKVEnum {
     PSETEX(RedisOpType.PSETEX, 1, 3),
     INCR(RedisOpType.INCR, 1, null),
     DECR(RedisOpType.DECR, 1, null),
-    SELECT(RedisOpType.SELECT, 1, null),
+    SELECT(RedisOpType.SELECT, null, 1),
     PING(RedisOpType.PING, null, null),
     MULT(RedisOpType.MULTI, null, null),
     EXEC(RedisOpType.EXEC, null, null),
