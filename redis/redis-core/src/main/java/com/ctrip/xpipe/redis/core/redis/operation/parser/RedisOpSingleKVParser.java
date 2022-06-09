@@ -22,7 +22,9 @@ public class RedisOpSingleKVParser extends AbstractRedisOpParser implements Redi
 
     @Override
     public RedisOp parse(byte[][] args) {
-        return new RedisOpSingleKV(redisOpType, args, new RedisKey(args[keyIndex]), args[valueIndex]);
+        RedisKey redisKey = keyIndex == null? null: new RedisKey(args[keyIndex]);
+        byte[] redisValue = valueIndex == null? null: args[valueIndex];
+        return new RedisOpSingleKV(redisOpType, args, redisKey, redisValue);
     }
 
     @Override
