@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -116,12 +117,17 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						public void beforeCommand() {
 							
 						}
-						
+
 						@Override
-						public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
-							
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?, ?> rdbProgress) {
+
 						}
-						
+
+						@Override
+						public boolean supportProgress(ReplicationProgress.TYPE type) {
+							return true;
+						}
+
 						@Override
 						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 							sleep(10);

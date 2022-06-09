@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
@@ -50,7 +51,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private KeeperConfig config;
 
-	private Object lock = new Object();
+	protected Object lock = new Object();
 
 	private AtomicInteger rdbUpdateCount = new AtomicInteger();
 
@@ -58,7 +59,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	public static final String KEY_CMD_RETAIN_TIMEOUT_MILLI = "commandsRetainTimeoutMilli";
 
-	private int commandsRetainTimeoutMilli = Integer.parseInt(System.getProperty(KEY_CMD_RETAIN_TIMEOUT_MILLI, "1800000"));
+	protected int commandsRetainTimeoutMilli = Integer.parseInt(System.getProperty(KEY_CMD_RETAIN_TIMEOUT_MILLI, "1800000"));
 
 	private CommandReaderWriterFactory cmdReaderWriterFactory;
 
@@ -83,17 +84,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
+				rdbStoreRef.set(createRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
 			}
 		}
 		if (null != meta && null != meta.getCmdFilePrefix()) {
-			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, rdbStoreRef.get());
 		}
 
 		removeUnusedRdbFiles();
 	}
 
-	private EofType initEofType(ReplicationStoreMeta meta) {
+	protected EofType initEofType(ReplicationStoreMeta meta) {
 
 		// must has length field
 		getLogger().info("[initEofType][leneof]{}", meta);
@@ -127,11 +128,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				cmdFilePrefix);
 
 		// beginOffset - 1 == masteroffset
-		RdbStore rdbStore = new DefaultRdbStore(new File(baseDir, newMeta.getRdbFile()),
+		RdbStore rdbStore = createRdbStore(new File(baseDir, newMeta.getRdbFile()),
 				newMeta.getBeginOffset() - 1, eofType);
-		rdbStore.addListener(new ReplicationStoreRdbFileListener(rdbStore));
+		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		rdbStoreRef.set(rdbStore);
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, rdbStore);
 
 		return rdbStoreRef.get();
 	}
@@ -146,18 +147,34 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
 
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, null);
 	}
 
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
-											  KeeperMonitor keeperMonitor) throws IOException {
-		return new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+											  KeeperMonitor keeperMonitor, RdbStore rdbStore) throws IOException {
+		DefaultCommandStore cmdStore = new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
 				cmdReaderWriterFactory, keeperMonitor);
+		try {
+			cmdStore.initialize();
+		} catch (Exception e) {
+			logger.info("[createCommandStore] init fail", e);
+			throw new XpipeRuntimeException("cmdStore init fail", e);
+		}
+
+		return cmdStore;
+	}
+
+	protected RdbStore createRdbStore(File rdb, long rdbOffset, EofType eofType) throws IOException {
+		return new DefaultRdbStore(rdb, rdbOffset, eofType);
+	}
+
+	protected RdbStoreListener createRdbStoreListener(RdbStore rdbStore) {
+		return new ReplicationStoreRdbFileListener(rdbStore);
 	}
 
 	@Override
@@ -187,7 +204,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			@SuppressWarnings("unused")
 			ReplicationStoreMeta metaDup = metaStore.checkReplIdAndUpdateRdbInfo(dumpedRdbFile.getName(), eofType, rdbOffset, expectedReplId);
 
-			dumpedRdbStore.addListener(new ReplicationStoreRdbFileListener(dumpedRdbStore));
+			dumpedRdbStore.addListener(createRdbStoreListener(dumpedRdbStore));
 
 			getLogger().info("[rdbUpdated] new file {}, eofType {}, rdbOffset {}", dumpedRdbFile, eofType, rdbOffset);
 			RdbStore oldRdbStore = rdbStoreRef.get();
@@ -196,7 +213,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-	// fot teset only
+	@Override
+	public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
+		throw new UnsupportedOperationException("rdb gtidset unsupported");
+	}
+
 	public CommandStore getCommandStore() {
 		return cmdStore;
 	}
@@ -229,7 +250,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-	private long beginOffset() {
+	protected long beginOffset() {
 		return metaStore == null? ReplicationStoreMeta.DEFAULT_BEGIN_OFFSET : metaStore.beginOffset();
 	}
 
@@ -276,13 +297,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return rdbFiles != null ? rdbFiles : new File[0];
 	}
 
-	private FullSyncContext lockAndCheckIfFullSyncPossible() {
+	protected FullSyncContext lockAndCheckIfFullSyncPossible() {
 
 		synchronized (lock) {
 			RdbStore rdbStore = rdbStoreRef.get();
 			if (rdbStore == null || !rdbStore.checkOk()) {
 				getLogger().info("[lockAndCheckIfFullSyncPossible][false]{}", rdbStore);
-				return new FullSyncContext(false);
+				return new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.RDB_NOT_OK);
 			}
 
 			rdbStore.incrementRefCount();
@@ -294,65 +315,77 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			 * rdb and cmd is continuous AND not so much cmd after rdb
 			 */
 			long cmdAfterRdbThreshold = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
-			boolean fullSyncPossible = minOffset <= rdbOffset + 1
-					&& (maxOffset - rdbOffset <= cmdAfterRdbThreshold);
-
-			getLogger().info("minOffset <= rdbOffset + 1 && maxOffset - rdbOffset <= cmdAfterRdbThreshold");
-			getLogger().info("[isFullSyncPossible] {}, {} <= {} + 1 && {} - {} <= {}", //
-					fullSyncPossible, minOffset, rdbOffset, maxOffset, rdbOffset, cmdAfterRdbThreshold);
-
-			if (fullSyncPossible) {
-				return new FullSyncContext(true, rdbStore);
+			FullSyncContext context;
+			if (minOffset > rdbOffset + 1) {
+				getLogger().info("minOffset > rdbOffset + 1");
+				getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} <= {} + 1", minOffset, rdbOffset);
+				context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB);
+			} else if (maxOffset - rdbOffset > cmdAfterRdbThreshold) {
+				getLogger().info("maxOffset - rdbOffset > cmdAfterRdbThreshold");
+				getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} <= {}",
+						maxOffset, rdbOffset, cmdAfterRdbThreshold);
+				context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.TOO_MUCH_CMD_AFTER_RDB);
 			} else {
-				rdbStore.decrementRefCount();
-				return new FullSyncContext(false);
+				getLogger().info("minOffset <= rdbOffset + 1 && maxOffset - rdbOffset <= cmdAfterRdbThreshold");
+				getLogger().info("[isFullSyncPossible][true] {} <= {} + 1 && {} - {} <= {}",
+						minOffset, rdbOffset, maxOffset, rdbOffset, cmdAfterRdbThreshold);
+				context = new FullSyncContext(true, rdbStore);
 			}
+
+			if (!context.isFullSyncPossible()) rdbStore.decrementRefCount();
+			return context;
 		}
 	}
 
-	private String newRdbFileName() {
+	protected String newRdbFileName() {
 		return "rdb_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString();
 	}
 
 	@Override
-	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
+	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		makeSureOpen();
+
+		if (!fullSyncListener.supportProgress(ReplicationProgress.TYPE.OFFSET)) {
+			throw new UnsupportedOperationException("listener not support offset progress");
+		}
 
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
 		if (ctx.isFullSyncPossible()) {
-			RdbStore rdbStore = ctx.getRdbStore();
-			if (null != cmdStore && !cmdStore.retainCommands(
-					new DefaultCommandsGuarantee(fullSyncListener, beginOffset(), rdbStore.rdbOffset() + 1, commandsRetainTimeoutMilli))) {
-				getLogger().info("[fullSyncToSlave][cmd file deleted and terminate]{}", fullSyncListener);
-				rdbStore.decrementRefCount();
-				return false;
-			}
-
-			try {
-				getLogger().info("[fullSyncToSlave][reuse current rdb to full sync]{}", fullSyncListener);
-				// after rdb send over, command will be sent automatically
-				rdbStore.readRdbFile(fullSyncListener);
-			} finally {
-				rdbStore.decrementRefCount();
-			}
-			return true;
+			return tryDoFullSync(ctx, fullSyncListener);
 		} else {
-			return false;
+			return ctx.getCause();
 		}
 	}
 
-	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
-		
-		makeSureOpen();
+	protected FULLSYNC_FAIL_CAUSE tryDoFullSync(FullSyncContext ctx, FullSyncListener fullSyncListener) throws IOException {
+		RdbStore rdbStore = ctx.getRdbStore();
+		if (null != cmdStore && !cmdStore.retainCommands(
+				new DefaultCommandsGuarantee(fullSyncListener, beginOffset(), rdbStore.rdbOffset() + 1, commandsRetainTimeoutMilli))) {
+			getLogger().info("[fullSyncToSlave][cmd file deleted and terminate]{}", fullSyncListener);
+			rdbStore.decrementRefCount();
+			return FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB;
+		}
 
-		long realOffset = offset - metaStore.beginOffset();
-		getCommandStore().addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
+		try {
+			getLogger().info("[fullSyncToSlave][reuse current rdb to full sync]{}", fullSyncListener);
+			// after rdb send over, command will be sent automatically
+			rdbStore.readRdbFile(fullSyncListener);
+		} finally {
+			rdbStore.decrementRefCount();
+		}
+		return null;
 	}
 
-	@Override
-	public void addCommandsListener(GtidSet excludedGtidSet, CommandsListener commandsListener) throws IOException {
-		throw new UnsupportedOperationException();
+	public void addCommandsListener(ReplicationProgress<?,?> progress, CommandsListener commandsListener) throws IOException {
+
+		makeSureOpen();
+
+		if (progress instanceof OffsetReplicationProgress) {
+			long realOffset = ((OffsetReplicationProgress) progress).getProgress() - metaStore.beginOffset();
+			getCommandStore().addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
+		} else {
+			getCommandStore().addCommandsListener(progress, commandsListener);
+		}
 	}
 
 	@Override
@@ -402,10 +435,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	public class ReplicationStoreRdbFileListener implements RdbStoreListener {
 
-		private RdbStore rdbStore;
+		protected RdbStore rdbStore;
 
 		public ReplicationStoreRdbFileListener(RdbStore rdbStore) {
 			this.rdbStore = rdbStore;
+		}
+
+		@Override
+		public void onRdbGtidSet(String gtidSet) {
+
 		}
 
 		@Override

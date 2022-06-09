@@ -22,6 +22,7 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -60,6 +61,8 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
 
 /**
  * @author wenchao.meng
@@ -492,6 +495,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public KeeperTransMeta.KeeperReplType getKeeperReplType() {
+		return KeeperTransMeta.KeeperReplType.REPL_DEFAULT;
+	}
+
+	@Override
 	public void beginWriteRdb(EofType eofType, String replId, long offset) {
 	}
 
@@ -511,6 +519,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		//alert full sync
 		String alert = String.format("FULL(S)->%s[%s,%s]", getRedisMaster().metaInfo(), getClusterId(), getShardId());
 		EventMonitor.DEFAULT.logAlertEvent(alert);
+
+	}
+
+	@Override
+	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 
 	}
 
@@ -629,11 +642,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if(rdbDumper.get() == null){
 			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-			if(!getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener)){
+			FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener);
+			if(null != failCause){
 				//go dump rdb
 				try{
-					dumpNewRdb();
-					redisSlave.waitForRdbDumping();
+					if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
+						redisSlave.waitForGtidParse();
+					} else {
+						dumpNewRdb();
+						redisSlave.waitForRdbDumping();
+					}
 				}catch(AbstractRdbDumperException e){
 					logger.error("[fullSyncToSlave]", e);
 					if(e.isCancelSlave()){

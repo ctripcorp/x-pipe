@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.utils;
 
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.google.common.util.concurrent.SettableFuture;
 
 import java.io.IOException;
@@ -26,6 +27,11 @@ public class SimplePsyncObserver implements PsyncObserver {
 
     @Override
     public void beginWriteRdb(EofType eofType, String repelId, long masterRdbOffset) throws IOException {
+
+    }
+
+    @Override
+    public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 
     }
 

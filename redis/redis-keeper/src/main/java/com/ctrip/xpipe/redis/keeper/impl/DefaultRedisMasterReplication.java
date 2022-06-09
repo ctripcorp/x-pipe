@@ -188,7 +188,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected Psync createPsync() {
 
 		boolean allowKeeperPsync = redisKeeperServer.getTryConnectMasterCnt() <= 1;
-		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), allowKeeperPsync, scheduled);
+		boolean supportGtid = redisKeeperServer.getKeeperReplType().supportGtidSet();
+		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(),
+				allowKeeperPsync, supportGtid, scheduled);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 

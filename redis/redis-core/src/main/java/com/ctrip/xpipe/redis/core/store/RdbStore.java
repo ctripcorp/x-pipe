@@ -13,6 +13,8 @@ public interface RdbStore extends Destroyable, Closeable{
 		Writing, Success, Fail
 	};
 
+	boolean updateRdbGtidSet(String gtidSet);
+
 	int writeRdb(ByteBuf buf) throws IOException;
 
 	void truncateEndRdb(int reduceLen) throws IOException;

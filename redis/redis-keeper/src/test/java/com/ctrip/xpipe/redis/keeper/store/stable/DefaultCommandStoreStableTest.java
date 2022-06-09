@@ -39,11 +39,12 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 	private OffsetCommandReaderWriterFactory commandReaderWriterFactory = new OffsetCommandReaderWriterFactory();
 
 	@Before
-	public void beforeDefaultCommandStoreTest() throws IOException {
+	public void beforeDefaultCommandStoreTest() throws IOException, Exception {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
 		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
+		commandStore.initialize();
 	}
 
 	@Test
