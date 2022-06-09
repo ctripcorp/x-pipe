@@ -5,11 +5,7 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPing;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSelect;
+import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
@@ -51,14 +47,8 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
     public void setup() throws Exception {
 
         redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpSetParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpDelParser(redisOpParserManager);
-        new RedisOpSelectParser(redisOpParserManager);
-        new RedisOpPingParser(redisOpParserManager);
-        new RedisOpPublishParser(redisOpParserManager);
-        new RedisOpMultiParser(redisOpParserManager);
 
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
@@ -84,7 +74,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
-        if (redisOp instanceof RedisOpPing || redisOp instanceof RedisOpSelect) {
+        if (redisOp.getOpType().equals(RedisOpType.PING) || redisOp.getOpType().equals(RedisOpType.SELECT)) {
             return;
         }
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);

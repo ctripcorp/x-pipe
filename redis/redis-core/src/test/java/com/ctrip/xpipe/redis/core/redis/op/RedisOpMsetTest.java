@@ -1,13 +1,9 @@
 package com.ctrip.xpipe.redis.core.redis.op;
 
 import com.ctrip.xpipe.redis.core.redis.operation.*;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMsetParser;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -17,17 +13,6 @@ import java.util.Arrays;
  * date 2022/2/22
  */
 public class RedisOpMsetTest extends AbstractRedisOpParserTest {
-
-    private RedisOpParserManager manager;
-
-    private RedisOpParser parser;
-
-    @Before
-    public void setupRedisOpDelTest() {
-        manager = new DefaultRedisOpParserManager();
-        parser = new GeneralRedisOpParser(manager);
-        new RedisOpMsetParser(manager);
-    }
 
     @Test
     public void testDivideMsetTest() {

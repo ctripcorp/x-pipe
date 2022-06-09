@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -96,7 +97,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     }
 
     @Override
-    public void onRdbData(Object rdbData) {
+    public void onRdbData(ByteBuf rdbData) {
 
     }
 

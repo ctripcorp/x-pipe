@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -106,7 +107,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("localhost", redisServer.getPort());
-		defaultPsync = new DefaultPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, true, scheduled);
+		defaultPsync = new DefaultPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, true, false, scheduled);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 
@@ -130,6 +131,9 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			@Override
 			public void onKeeperContinue(String replId, long beginOffset) {
 				latch.countDown();
+			}
+			@Override
+			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 			}
 		});
 		defaultPsync.execute().addListener(new CommandFutureListener<Object>() {

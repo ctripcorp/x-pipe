@@ -5,9 +5,11 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 
 import java.io.IOException;
 
@@ -21,7 +23,12 @@ import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFS
 public class PsyncHandler extends AbstractSyncCommandHandler {
 	
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
-	
+
+	@Override
+	protected RedisSlave becomeSlave(RedisClient redisClient) {
+		return redisClient.becomeSlave();
+	}
+
 	protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) {
 		
 		KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
@@ -113,7 +120,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.markPsyncProcessed();
 
-		redisSlave.beginWriteCommands(offset);
+		redisSlave.beginWriteCommands(new OffsetReplicationProgress(offset));
 		redisSlave.partialSync();
 
 		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
@@ -126,7 +133,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.markPsyncProcessed();
 
-		redisSlave.beginWriteCommands(continueOffset);
+		redisSlave.beginWriteCommands(new OffsetReplicationProgress(continueOffset));
 		redisSlave.partialSync();
 
 		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();

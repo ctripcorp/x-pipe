@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -159,15 +160,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected RedisOpParser createRedisOpParser() {
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		RedisOpParser parser = new GeneralRedisOpParser(redisOpParserManager);
-		new RedisOpSetParser(redisOpParserManager);
-		new RedisOpMsetParser(redisOpParserManager);
-		new RedisOpDelParser(redisOpParserManager);
-		new RedisOpSelectParser(redisOpParserManager);
-		new RedisOpPingParser(redisOpParserManager);
-		new RedisOpPublishParser(redisOpParserManager);
-		new RedisOpMultiParser(redisOpParserManager);
-		new RedisOpExecParser(redisOpParserManager);
 		return parser;
 	}
 

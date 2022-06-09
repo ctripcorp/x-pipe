@@ -17,6 +17,8 @@ public interface RdbDumper extends Command<Void>{
 	DumpedRdbStore prepareRdbStore() throws IOException;
 
 	void beginReceiveRdbData(String replId, long masterOffset);
+
+	void rdbGtidSetParsed();
 	
 	void dumpFinished();
 

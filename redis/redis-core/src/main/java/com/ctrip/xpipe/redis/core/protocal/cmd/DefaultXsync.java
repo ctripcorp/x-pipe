@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.*;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -14,6 +16,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,13 +27,15 @@ import static com.ctrip.xpipe.redis.core.protocal.Xsync.XSYNC_STATE.READING_COMM
  * @author lishanglin
  * date 2022/2/23
  */
-public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync, AbstractBulkStringParser.BulkStringParserListener {
+public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync, AbstractBulkStringParser.BulkStringParserListener, InOutPayload {
 
     private GtidSet gitdSetExcluded;
 
     private Object vectorClockExcluded;
 
     private EofType eofType;
+
+    private RdbBulkStringParser rdbReader;
 
     private GtidSet rdbDataGtidSet;
 
@@ -82,14 +87,27 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                     break;
 
                 case READING_RDB:
+                    if (null == rdbReader) {
+                        rdbReader = new RdbBulkStringParser(this);
+                        rdbReader.setBulkStringParserListener(this);
+                    }
+
+                    RedisClientProtocol<InOutPayload> rdbPayload = rdbReader.read(byteBuf);
+                    if (rdbPayload != null) {
+                        xsyncState = READING_COMMANDS;
+                        endReadRdb();
+                        break;
+                    } else {
+                        break;
+                    }
                     // TODO: parse RDB data
                 case READING_COMMANDS:
-                    Object payload = super.doReceiveResponse(channel, byteBuf);
-                    if (payload instanceof Object[]) {
-                        doOnCommand((Object[]) payload);
+                    Object cmdPayload = super.doReceiveResponse(channel, byteBuf);
+                    if (cmdPayload instanceof Object[]) {
+                        doOnCommand((Object[]) cmdPayload);
                     } else {
-                        getLogger().info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, payload);
-                        throw new RedisRuntimeException("unknown payload:" + payload);
+                        getLogger().info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, cmdPayload);
+                        throw new RedisRuntimeException("unknown payload:" + cmdPayload);
                     }
 
                     break;
@@ -171,6 +189,39 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         resetClient();
     }
 
+    private void beginReadRdb() {
+        getLogger().debug("[beginReadRdb]");
+        for (XsyncObserver observer: observers) {
+            try {
+                observer.beginReadRdb(eofType, rdbDataGtidSet);
+            } catch (Throwable th) {
+                getLogger().debug("[beginReadRdb][fail] {}", observer, th);
+            }
+        }
+    }
+
+    private void onRdbData(ByteBuf byteBuf) {
+        getLogger().debug("[notifyRdbData]");
+        for (XsyncObserver observer: observers) {
+            try {
+                observer.onRdbData(byteBuf.slice());
+            } catch (Throwable th) {
+                getLogger().debug("[notifyRdbData][fail] {}", observer, th);
+            }
+        }
+    }
+
+    private void endReadRdb() {
+        getLogger().debug("[endReadRdb]");
+        for (XsyncObserver observer: observers) {
+            try {
+                observer.endReadRdb(eofType, rdbDataGtidSet);
+            } catch (Throwable th) {
+                getLogger().debug("[notifyRdbData][fail] {}", observer, th);
+            }
+        }
+    }
+
     @Override
     protected Object format(Object payload) {
         return payload;
@@ -179,6 +230,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
     @Override
     public void onEofType(EofType eofType) {
         this.eofType = eofType;
+        beginReadRdb();
     }
 
     @Override
@@ -191,4 +243,51 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         return 0;
     }
 
+    // implementation of InOutPayload
+    @Override
+    public void startInput() {
+
+    }
+
+    @Override
+    public long inputSize() {
+        return 0;
+    }
+
+    @Override
+    public int in(ByteBuf byteBuf) throws IOException {
+        getLogger().debug("[in]");
+        onRdbData(byteBuf);
+        return byteBuf.readableBytes();
+    }
+
+    @Override
+    public void endInput() throws IOException {
+
+    }
+
+    @Override
+    public void endInputTruncate(int reduceLen) throws IOException {
+
+    }
+
+    @Override
+    public void startOutput() throws IOException {
+
+    }
+
+    @Override
+    public long outSize() {
+        return 0;
+    }
+
+    @Override
+    public long out(WritableByteChannel writableByteChannel) throws IOException {
+        return 0;
+    }
+
+    @Override
+    public void endOutput() {
+
+    }
 }

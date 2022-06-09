@@ -5,17 +5,14 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPing;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSelect;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author Slight
@@ -44,7 +41,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void onRdbData(Object rdbData) {
+    public void onRdbData(ByteBuf rdbData) {
 
     }
 
@@ -61,15 +58,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
-        if (redisOp instanceof RedisOpPing || redisOp instanceof RedisOpSelect) {
+        if (RedisOpType.PING.equals(redisOp.getOpType()) || RedisOpType.SELECT.equals(redisOp.getOpType())) {
             return;
         }
 
         /* TODO: deal with leaping gtid when keeper filter data */
 
-        if (redisOp instanceof RedisOpMulti) {
+        if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
-        } else if (redisOp instanceof RedisOpExec) {
+        } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
             sequenceController.submit(new DefaultExecCommand(client, redisOp));
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));

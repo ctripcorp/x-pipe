@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSelect;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKV;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -35,8 +36,7 @@ public class RdbSelectDbParser extends AbstractRdbParser<Integer> implements Rdb
     @Override
     public Integer read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
 
@@ -49,14 +49,17 @@ public class RdbSelectDbParser extends AbstractRdbParser<Integer> implements Rdb
                     dbId = parseRdbLength(byteBuf);
                     if (null != dbId) {
                         this.context.setDbId(dbId.getLenValue());
-                        notifyRedisOp(new RedisOpSelect(dbId.getLenValue()));
+                        notifyRedisOp(new RedisOpSingleKV(
+                                RedisOpType.SELECT,
+                                new byte[][] {RedisOpType.SELECT.name().getBytes(), String.valueOf(dbId.getLenValue()).getBytes()},
+                                null,
+                                null));
                         state = STATE.READ_END;
                     }
                     break;
 
                 case READ_END:
                 default:
-                    break PARSE;
             }
 
         }
