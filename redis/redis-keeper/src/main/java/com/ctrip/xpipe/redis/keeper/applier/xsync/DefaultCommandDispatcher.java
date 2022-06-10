@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
@@ -13,6 +15,8 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import io.netty.buffer.ByteBuf;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Slight
@@ -30,6 +34,16 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public RedisOpParser parser;
 
+    @InstanceDependency
+    public AtomicReference<GtidSet> gtidSet;
+
+    private RdbParser<?> rdbParser;
+
+    public DefaultCommandDispatcher() {
+        this.rdbParser = new DefaultRdbParser();
+        this.rdbParser.registerListener(this);
+    }
+
     @Override
     public void onFullSync(GtidSet rdbGtidSet) {
 
@@ -37,17 +51,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
-
+        //merge.start
     }
 
     @Override
     public void onRdbData(ByteBuf rdbData) {
-
+        rdbParser.read(rdbData);
     }
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
-
+        //merge.end [gtid]
+        this.gtidSet.set(rdbGtidSet);
     }
 
     @Override
@@ -71,5 +86,23 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));
         }
+    }
+
+    @Override
+    public void onRedisOp(RedisOp redisOp) {
+        if (RedisOpType.PING.equals(redisOp.getOpType()) || RedisOpType.SELECT.equals(redisOp.getOpType())) {
+            return;
+        }
+        sequenceController.submit(new DefaultDataCommand(client, redisOp));
+    }
+
+    @Override
+    public void onAux(String key, String value) {
+
+    }
+
+    @Override
+    public void onFinish(RdbParser<?> parser) {
+
     }
 }

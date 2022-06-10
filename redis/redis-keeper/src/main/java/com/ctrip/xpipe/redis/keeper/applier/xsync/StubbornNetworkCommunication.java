@@ -27,9 +27,9 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
     /* API */
 
     @Override
-    default void connect(Endpoint endpoint) {
+    default void connect(Endpoint endpoint, Object... states) {
 
-        changeTarget(endpoint);
+        changeTarget(endpoint, states);
 
         try {
             Command<Object> command = connectCommand();

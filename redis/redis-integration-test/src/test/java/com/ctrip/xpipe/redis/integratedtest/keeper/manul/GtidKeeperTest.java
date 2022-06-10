@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -15,6 +16,8 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
+import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
 import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
@@ -43,6 +46,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
     private RdbParser<?> rdbParser;
 
     private String reqUuid = "1a82e1f0a716d32c34936e82df70d3dcdf50a5d8";
+    //private String reqUuid = "62c5e563967583b617f0742bdbd08abc8254cd48";
 
     @Before
     public void setupGtidKeeperTest() throws Exception {
@@ -73,6 +77,17 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
         DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet(reqUuid + ":0"), null, scheduled);
         xsync.addXsyncObserver(this);
         xsync.execute(executors);
+
+//        ApplierServer server = new DefaultApplierServer(
+//                "ApplierTest",
+//                getXpipeNettyClientKeyedObjectPool(),
+//                redisOpParser,
+//                scheduled);
+//
+//        server.initialize();
+//        server.start();
+//
+//        server.setState(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"));
 
         waitForAnyKeyToExit();
     }

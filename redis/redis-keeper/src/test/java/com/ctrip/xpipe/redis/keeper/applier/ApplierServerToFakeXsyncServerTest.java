@@ -29,8 +29,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         applier = new DefaultApplierServer(
                 "ApplierTest",
-                new DefaultEndPoint("127.0.0.1", server.getPort()),
-                new GtidSet("a1:1-10:15-20,b1:1-8"),
                 getXpipeNettyClientKeyedObjectPool(),
                 parser,
                 Executors.newScheduledThreadPool(
@@ -38,6 +36,8 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         );
         applier.initialize();
         applier.start();
+
+        applier.setState(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"));
     }
 
     @Test

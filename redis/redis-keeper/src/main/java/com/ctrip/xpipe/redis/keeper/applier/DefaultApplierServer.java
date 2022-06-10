@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.applier;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
-import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -14,15 +13,17 @@ import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
+import com.ctrip.xpipe.service.client.redis.CRedisAsyncClientFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Slight
  * <p>
  * Jun 01, 2022 08:16
  */
-public class DefaultApplierServer extends AbstractInstanceNode {
+public class DefaultApplierServer extends AbstractInstanceNode implements ApplierServer {
 
     /* component */
 
@@ -44,10 +45,8 @@ public class DefaultApplierServer extends AbstractInstanceNode {
     public AsyncRedisClient client;
 
     @InstanceDependency
-    public Endpoint endpoint;
-
-    @InstanceDependency
-    public GtidSet gtidSet;
+    //TODO: distinguish gtid_received, gtid_executed, gtid_in_request
+    public AtomicReference<GtidSet> gtidSet;
 
     /* utility */
 
@@ -60,7 +59,7 @@ public class DefaultApplierServer extends AbstractInstanceNode {
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
-    public DefaultApplierServer(String clusterName, Endpoint endpoint, GtidSet gtidSet,
+    public DefaultApplierServer(String clusterName,
                                 XpipeNettyClientKeyedObjectPool pool,
                                 RedisOpParser parser,
                                 ScheduledExecutorService scheduled) throws Exception {
@@ -70,13 +69,18 @@ public class DefaultApplierServer extends AbstractInstanceNode {
         this.replication = new DefaultXsyncReplication();
         this.dispatcher = new DefaultCommandDispatcher();
 
-        this.client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient(clusterName);
-        this.endpoint = endpoint;
-        this.gtidSet = gtidSet.clone();
+        this.client = new CRedisAsyncClientFactory().getOrCreateClient(clusterName);
+//        this.client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient(clusterName);
+        this.gtidSet = new AtomicReference<>();
 
         this.pool = pool;
         this.parser = parser;
         this.scheduled = scheduled;
+    }
+
+    @Override
+    public void setState(Endpoint endpoint, GtidSet gtidSet) {
+        replication.connect(endpoint, gtidSet);
     }
 
     @Override
