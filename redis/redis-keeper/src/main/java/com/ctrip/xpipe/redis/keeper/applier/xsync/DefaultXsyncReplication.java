@@ -35,7 +35,7 @@ public class DefaultXsyncReplication
     public ScheduledExecutorService scheduled;
 
     //all below are definition to invoke StubbornNetworkCommunication functionality
-    //see StubbornNetworkCommunication API: connect(Endpoint, Object...), disconnect(), scheduleReconnect()
+    //see StubbornNetworkCommunication API: connect(Endpoint, Object...), disconnect()
 
     public Endpoint endpoint;
 
