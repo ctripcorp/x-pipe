@@ -100,7 +100,6 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                     } else {
                         break;
                     }
-                    // TODO: parse RDB data
                 case READING_COMMANDS:
                     Object cmdPayload = super.doReceiveResponse(channel, byteBuf);
                     if (cmdPayload instanceof Object[]) {

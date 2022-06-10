@@ -1,39 +1,63 @@
 package com.ctrip.xpipe.redis.keeper.applier;
 
+import com.ctrip.xpipe.api.cluster.LeaderElector;
+import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Slight
  * <p>
  * Jun 05, 2022 21:05
  */
+@RunWith(MockitoJUnitRunner.class)
 public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTest {
 
     private FakeXsyncServer server;
 
     private DefaultApplierServer applier;
 
+    private ApplierMeta applierMeta;
+
+    @Mock
+    private LeaderElectorManager leaderElectorManager;
+
+    @Mock
+    private LeaderElector leaderElector;
+
     @Before
     public void setUp() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
+        applierMeta = new ApplierMeta();
+        applierMeta.setPort(randomPort());
+        leaderElectorManager = Mockito.mock(LeaderElectorManager.class);
+        leaderElector = Mockito.mock(LeaderElector.class);
+        when(leaderElectorManager.createLeaderElector(any())).thenReturn(leaderElector);
 
         applier = new DefaultApplierServer(
                 "ApplierTest",
-                getXpipeNettyClientKeyedObjectPool(),
-                parser,
-                Executors.newScheduledThreadPool(
-                        OsUtils.getCpuCount(), XpipeThreadFactory.create("reconnect-scheduler"))
-        );
+                ClusterId.from(1L), ShardId.from(1L),
+                applierMeta, leaderElectorManager, parser);
         applier.initialize();
         applier.start();
 

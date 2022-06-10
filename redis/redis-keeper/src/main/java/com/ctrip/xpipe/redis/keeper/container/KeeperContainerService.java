@@ -18,7 +18,6 @@ import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,7 +25,6 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -45,9 +43,10 @@ public class KeeperContainerService {
     @Autowired
     private KeeperResourceManager resourceManager;
     @Autowired
+    private ContainerResourceManager containerResourceManager;
+    @Autowired
     private GeneralRedisOpParser redisOpParser;
 
-    private Set<Integer> runningPorts = Sets.newConcurrentHashSet();
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {
@@ -58,18 +57,23 @@ public class KeeperContainerService {
         if (!redisKeeperServers.containsKey(keeperServerKey)) {
             synchronized (this) {
                 if (!redisKeeperServers.containsKey(keeperServerKey)) {
-                    if (runningPorts.contains(keeperMeta.getPort())) {
+                    if (!containerResourceManager.applyPort(keeperMeta.getPort())) {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
                                         String.format("Add keeper for cluster %d shard %d failed since port %d is already used",
-                                        keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperMeta.getPort())),
+                                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperMeta.getPort())),
                                 null);
                     }
+
                     try {
                         RedisKeeperServer redisKeeperServer = doAdd(keeperTransMeta, keeperMeta);
-                        cacheKeeper(keeperServerKey, redisKeeperServer);
+                        redisKeeperServers.put(keeperServerKey, redisKeeperServer);
                         return redisKeeperServer;
                     } catch (Throwable ex) {
+                        if (!redisKeeperServers.containsKey(keeperServerKey)) {
+                            containerResourceManager.releasePort(keeperMeta.getPort());
+                        }
+
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                                         String.format("Add keeper for cluster %d shard %d failed",
@@ -185,15 +189,10 @@ public class KeeperContainerService {
         }
     }
 
-    private void cacheKeeper(String keeperServerKey, RedisKeeperServer redisKeeperServer) {
-        redisKeeperServers.put(keeperServerKey, redisKeeperServer);
-        runningPorts.add(redisKeeperServer.getListeningPort());
-    }
-
     private void removeKeeperCache(String keeperServerKey) {
         RedisKeeperServer redisKeeperServer = redisKeeperServers.remove(keeperServerKey);
         if (redisKeeperServer != null) {
-            runningPorts.remove(redisKeeperServer.getListeningPort());
+            containerResourceManager.releasePort(redisKeeperServer.getListeningPort());
         }
     }
 
