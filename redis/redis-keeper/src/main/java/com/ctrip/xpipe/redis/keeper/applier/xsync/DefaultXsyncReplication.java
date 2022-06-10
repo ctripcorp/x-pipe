@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Slight
@@ -25,10 +26,7 @@ public class DefaultXsyncReplication
     public ApplierCommandDispatcher dispatcher;
 
     @InstanceDependency
-    public GtidSet gtidSet;
-
-    @InstanceDependency
-    public Endpoint endpoint;
+    public AtomicReference<GtidSet> gtidSet;
 
     @InstanceDependency
     public XpipeNettyClientKeyedObjectPool pool;
@@ -36,13 +34,10 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
-    @Override
-    protected void doStart() throws Exception {
-        connect(endpoint);
-    }
-
     //all below are definition to invoke StubbornNetworkCommunication functionality
     //see StubbornNetworkCommunication API: connect(Endpoint), disconnect(), scheduleReconnect()
+
+    public Endpoint endpoint;
 
     public Xsync xsync;
 
@@ -52,7 +47,7 @@ public class DefaultXsyncReplication
         /* simple implementation */
 
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
-        Xsync xsync = new DefaultXsync(objectPool, gtidSet, null, scheduled);
+        Xsync xsync = new DefaultXsync(objectPool, gtidSet.get(), null, scheduled);
         xsync.addXsyncObserver(dispatcher);
         return xsync;
     }
@@ -73,8 +68,9 @@ public class DefaultXsyncReplication
     }
 
     @Override
-    public void setHostPort(Endpoint endpoint) {
+    public void initState(Endpoint endpoint, Object... states) {
         this.endpoint = endpoint;
+        this.gtidSet.set((GtidSet) states[0]);
     }
 
     @Override
@@ -84,10 +80,6 @@ public class DefaultXsyncReplication
 
     @Override
     public long reconnectDelayMillis() {
-
-//        long delayMillis = Math.max(0L,
-//                reconnectDelayMillis() - (System.currentTimeMillis() - lastConnectedTimeMillis()));
-
         return 2000;
     }
 

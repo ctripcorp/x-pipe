@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
+import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Test;
@@ -26,8 +27,6 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
 
         DefaultApplierServer server = new DefaultApplierServer(
                 "ApplierTest",
-                new DefaultEndPoint("127.0.0.1", 6000),
-                new GtidSet(""),
                 getXpipeNettyClientKeyedObjectPool(),
                 parser,
                 Executors.newScheduledThreadPool(
@@ -46,6 +45,10 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.sequence, ((DefaultLwmManager) server.lwmManager).sequence);
         assertEquals(server.lwmManager, ((DefaultSequenceController) server.sequence).lwmManager);
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
+
+        assertEquals(server.gtidSet, ((DefaultXsyncReplication) server.replication).gtidSet);
+        assertEquals(server.gtidSet, ((DefaultCommandDispatcher) server.dispatcher).gtidSet);
+        assertEquals(server.gtidSet, ((DefaultSequenceController) server.sequence).gtidSet);
 
         //server.client.close()
     }
