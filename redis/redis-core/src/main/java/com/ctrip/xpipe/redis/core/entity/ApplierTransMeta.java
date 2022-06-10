@@ -9,6 +9,8 @@ import java.util.Objects;
  */
 public class ApplierTransMeta {
 
+    private String clusterName;
+
     private Long clusterDbId;
 
     private Long shardDbId;
@@ -46,6 +48,14 @@ public class ApplierTransMeta {
 
     public void setShardDbId(Long shardDbId) {
         this.shardDbId = shardDbId;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
     }
 
     @Override
