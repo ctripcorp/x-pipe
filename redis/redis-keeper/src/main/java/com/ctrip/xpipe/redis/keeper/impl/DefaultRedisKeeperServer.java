@@ -98,7 +98,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
     private NioEventLoopGroup masterEventLoopGroup;
 	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
-	private final Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
+	private final Map<Channel, RedisClient<RedisKeeperServer>>  redisClients = new ConcurrentHashMap<>();
 	
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
@@ -272,8 +272,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	private void clearClients() {
-		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
-			RedisClient client = entry.getValue();
+		for (Entry<Channel, RedisClient<RedisKeeperServer>> entry : redisClients.entrySet()) {
+			RedisClient<RedisKeeperServer> client = entry.getValue();
 			try {
 				logger.info("[clearClients]close:{}", client);
 				client.close();
@@ -376,9 +376,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 
 	@Override
-	public RedisClient clientConnected(Channel channel) {
+	public RedisClient<RedisKeeperServer> clientConnected(Channel channel) {
 		
-		RedisClient redisClient = new DefaultRedisClient(channel, this);
+		RedisClient<RedisKeeperServer> redisClient = new DefaultRedisClient(channel, this);
 		redisClients.put(channel, redisClient);
 		
 		redisClient.addObserver(new Observer() {
@@ -387,7 +387,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void update(Object args, Observable observable) {
 				
 				if(args instanceof RedisSlave){
-					becomeSlave(((RedisClient)observable).channel(), (RedisSlave)args);
+					becomeSlave(((RedisClient<?>)observable).channel(), (RedisSlave<RedisKeeperServer>)args);
 				}
 			}
 		});
@@ -395,7 +395,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return redisClient;
 	}
 
-	protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
+	protected void becomeSlave(Channel channel, RedisSlave<RedisKeeperServer> redisSlave) {
 
 		logger.info("[update][redis client become slave]{}", channel);
 
@@ -471,13 +471,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Set<RedisSlave> slaves() {
+	public Set<RedisSlave<RedisKeeperServer>> slaves() {
 
-		Set<RedisSlave> slaves = new HashSet<>();
+		Set<RedisSlave<RedisKeeperServer>> slaves = new HashSet<>();
 
-		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
+		for (Entry<Channel, RedisClient<RedisKeeperServer>> entry : redisClients.entrySet()) {
 
-			RedisClient redisClient = entry.getValue();
+			RedisClient<RedisKeeperServer> redisClient = entry.getValue();
 			if(redisClient instanceof RedisSlave){
 				slaves.add((RedisSlave)redisClient);
 			}
