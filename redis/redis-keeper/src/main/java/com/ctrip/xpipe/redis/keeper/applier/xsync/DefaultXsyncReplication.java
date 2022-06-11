@@ -34,8 +34,21 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
+    @Override
+    protected void doStart() throws Exception {
+        //do nothing
+        //call replication.connect(Endpoint, Object...) to trigger/update xsync replication
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        if (isConnected()) {
+            disconnect();
+        }
+    }
+
     //all below are definition to invoke StubbornNetworkCommunication functionality
-    //see StubbornNetworkCommunication API: connect(Endpoint), disconnect(), scheduleReconnect()
+    //see StubbornNetworkCommunication API: connect(Endpoint, Object...), disconnect()
 
     public Endpoint endpoint;
 
