@@ -32,7 +32,7 @@ public class SlaveOfCommandHandlerTest extends AbstractRedisKeeperTest{
     @Before
     public void beforeSlaveOfCommandHandlerTest(){
 
-        when(redisClient.getRedisKeeperServer()).thenReturn(redisKeeperServer);
+        when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
         slaveOfCommandHandler = new SlaveOfCommandHandler();
 
     }

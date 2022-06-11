@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -20,7 +22,7 @@ public class ReplconfHandler extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		
 		if(args.length == 0){
 			throw new IllegalArgumentException("argument error length 0");
@@ -37,7 +39,7 @@ public class ReplconfHandler extends AbstractCommandHandler{
 		}else if("ack".equalsIgnoreCase(option)){
 			
 			if(redisClient instanceof RedisSlave){
-				((RedisSlave)redisClient).ack(Long.valueOf(args[1]));
+				((RedisSlave<?>)redisClient).ack(Long.valueOf(args[1]));
 			}else{
 				logger.warn("[replconf ack received, but client is not slave]" + redisClient + "," + StringUtil.join(" ", args));
 			}
@@ -63,4 +65,10 @@ public class ReplconfHandler extends AbstractCommandHandler{
 		}
 		return true;
 	}
+
+	@Override
+	public boolean support(RedisServer server) {
+		return server instanceof RedisKeeperServer;
+	}
+
 }

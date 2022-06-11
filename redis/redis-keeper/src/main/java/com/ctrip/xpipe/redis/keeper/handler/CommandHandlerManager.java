@@ -16,9 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * 2016年4月22日 上午11:47:11
  */
-public class CommandHandlerManager extends AbstractCommandHandler{
+public class CommandHandlerManager extends AbstractCommandHandler {
 
-	private Map<String, CommandHandler>  handlers = new ConcurrentHashMap<String, CommandHandler>();
+	private Map<String, CommandHandler> handlers = new ConcurrentHashMap<>();
 
 	public CommandHandlerManager() {
 		initCommands();
@@ -40,6 +40,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		putHandler(new ClientCommandHandler());
 		putHandler(new RoleCommandHandler());
 		putHandler(new ProxyCommandHandler());
+		putHandler(new ApplierCommandHandler());
 	}
 
 	private void putHandler(CommandHandler handler) {
@@ -56,14 +57,14 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(final String[] args, final RedisClient redisClient) {
+	protected void doHandle(final String[] args, final RedisClient<?> redisClient) {
 		if (args.length == 0) {
 			logger.error("[doHandle][arg length]{}", redisClient);
 			return;
 		}
 
 
-		redisClient.getRedisKeeperServer().processCommandSequentially(new Runnable() {
+		redisClient.getRedisServer().processCommandSequentially(new Runnable() {
 
 			@Override
 			public void run() {
@@ -71,6 +72,11 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 					CommandHandler handler = handlers.get(args[0].toLowerCase());
 					if (handler == null) {
 						logger.error("[doHandler][no handler found]{}, {}", redisClient, StringUtil.join(" ", args));
+						redisClient.sendMessage(new RedisErrorParser("unsupported command:" + args[0]).format());
+						return;
+					}
+					if (!handler.support(redisClient.getRedisServer())) {
+						logger.error("[doHandler][server not support]{}, {}", redisClient, StringUtil.join(" ", args));
 						redisClient.sendMessage(new RedisErrorParser("unsupported command:" + args[0]).format());
 						return;
 					}
@@ -88,7 +94,7 @@ public class CommandHandlerManager extends AbstractCommandHandler{
 		});
 	}
 	
-	private void innerDoHandle(String[] args, RedisClient redisClient, CommandHandler handler) throws Exception {
+	private void innerDoHandle(String[] args, RedisClient<?> redisClient, CommandHandler handler) throws Exception {
 		String[] newArgs = new String[args.length - 1];
 		System.arraycopy(args, 1, newArgs, 0, args.length - 1);
 		if(handler.isLog(newArgs)){

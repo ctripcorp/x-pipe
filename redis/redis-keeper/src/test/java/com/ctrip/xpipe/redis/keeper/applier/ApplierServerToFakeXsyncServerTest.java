@@ -5,13 +5,10 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
-import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
-import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -61,7 +57,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         applier.initialize();
         applier.start();
 
-        applier.setState(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"));
+        applier.setStateActive(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"));
     }
 
     @Test

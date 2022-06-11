@@ -55,7 +55,7 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 		host = "localhost";
 		port  = randomPort();
 		
-		when(redisClient.getRedisKeeperServer()).thenReturn(redisKeeperServer);
+		when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
 		when(redisKeeperServer.getRedisMaster()).thenReturn(redisMaster);
 		when(redisKeeperServer.role()).thenReturn(SERVER_ROLE.KEEPER);
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint(host, port));

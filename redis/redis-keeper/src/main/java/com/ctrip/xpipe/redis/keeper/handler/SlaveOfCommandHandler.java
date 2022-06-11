@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -32,7 +33,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 				
 		if (validateArgs(args)) {
 			
@@ -51,14 +52,14 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		redisClient.sendMessage(new RedisErrorParser("wrong format").format());	
 	}
 
-	private void handleForwarding(String[] args, RedisClient redisClient) {
+	private void handleForwarding(String[] args, RedisClient<?> redisClient) {
 		
 		if(args[0].equalsIgnoreCase(NO)){
 			String ip = args[2];
 			int port = Integer.parseInt(args[3]); // already validated
 			
 			try {
-				redisClient.getRedisKeeperServer().promoteSlave(ip, port);
+				((RedisKeeperServer)redisClient.getRedisServer()).promoteSlave(ip, port);
 				redisClient.sendMessage(new CommandBulkStringParser(RedisProtocol.OK).format());
 				return;
 			} catch (RedisSlavePromotionException e) {
@@ -68,7 +69,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		}
 	}
 
-	protected void handleSlaveOf(String[] args, RedisClient redisClient) {
+	protected void handleSlaveOf(String[] args, RedisClient<?> redisClient) {
 	    if (args[0].equalsIgnoreCase(NO)) {
 			/**
 			 * if reply OK to slaveof no one, then sentinel is found crash
@@ -77,12 +78,12 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			redisClient.sendMessage(new RedisErrorParser("Keeper not allowed to process slaveof command").format());
 		} else {
 
-			RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+			RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 			String host = args[0];
 			int port = Integer.parseInt(args[1]);
 	    	if(redisKeeperServer.getRedisKeeperServerState().handleSlaveOf()){
 				logger.info("[handleSlaveOf][slaveof]{}:{} {}", host, port, redisClient);
-				redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(
+				((RedisKeeperServer)redisClient.getRedisServer()).getRedisKeeperServerState().setMasterAddress(
 						new DefaultEndPoint(host, port));
 			}else{
 				logger.info("[handleSlaveOf][slaveof, ignore]{},{}:{} {}", redisKeeperServer.getRedisKeeperServerState(), host, port, redisClient);
@@ -96,10 +97,10 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 		
 		if(args[0].equalsIgnoreCase(NO)){//
 			logger.info("[handleSelf][promote self to master]");
-			redisClient.getRedisKeeperServer().stopAndDisposeMaster();
+			((RedisKeeperServer)redisClient.getRedisServer()).stopAndDisposeMaster();
 		}else{
 			logger.info("[handleSelf][slaveof]{}", StringUtil.join(" ", args));
-			redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(new DefaultEndPoint(args[0], Integer.parseInt(args[1])));
+			((RedisKeeperServer)redisClient.getRedisServer()).getRedisKeeperServerState().setMasterAddress(new DefaultEndPoint(args[0], Integer.parseInt(args[1])));
 		}
 		redisClient.sendMessage(new CommandBulkStringParser(RedisProtocol.OK).format());
 	}
@@ -116,6 +117,11 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			// ignore
 		}
 		return false;
+	}
+
+	@Override
+	public boolean support(RedisServer server) {
+		return server instanceof RedisKeeperServer;
 	}
 
 }

@@ -15,7 +15,7 @@ public class PingCommandHandler extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		logger.debug("[doHandle]{},{}", redisClient, args);
 		redisClient.sendMessage("+PONG\r\n".getBytes());
 	}

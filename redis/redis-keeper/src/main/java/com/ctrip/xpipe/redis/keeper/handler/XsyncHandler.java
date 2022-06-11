@@ -21,12 +21,12 @@ import java.util.Set;
 public class XsyncHandler extends AbstractSyncCommandHandler {
 
     @Override
-    protected RedisSlave becomeSlave(RedisClient redisClient) {
+    protected RedisSlave<?> becomeSlave(RedisClient<?> redisClient) {
         return redisClient.becomeXSlave();
     }
 
     // xsync <sidno interested> <gtid.set excluded> [vc excluded]
-    protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
+    protected void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
         Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
@@ -41,7 +41,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         if (!missingGtidSet.isEmpty()) {
             logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
                     reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
-            redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+            ((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
             doFullSync(redisSlave);
         } else if (localEndGtidSet.isContainedWithin(reqExcludedGtidSet)) {
             logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
@@ -57,7 +57,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
     }
 
     // +CONTINUE
-    protected void doPartialSync(RedisSlave redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet) {
+    protected void doPartialSync(RedisSlave<?> redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet) {
         logger.info("[doPartialSync] {}", redisSlave);
         SimpleStringParser simpleStringParser = new SimpleStringParser(Xsync.PARTIAL_SYNC);
 
@@ -67,7 +67,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         redisSlave.beginWriteCommands(new GtidSetReplicationProgress(excludedGtidSet.filterGtid(interestedSid)));
         redisSlave.partialSync();
 
-        redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
+        ((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSync();
     }
 
     @Override

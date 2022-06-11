@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 
 /**
  * @author wenchao.meng
@@ -22,9 +23,9 @@ public class RoleCommandHandler extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		
-		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 		RedisMaster redisMaster = redisKeeperServer.getRedisMaster();
 		Endpoint    masterEndPoint = null;
@@ -41,4 +42,10 @@ public class RoleCommandHandler extends AbstractCommandHandler{
 		result[4] = replicationStore == null ? -1L: replicationStore.getEndOffset();
 		redisClient.sendMessage(ParserManager.parse(result));
 	}
+
+	@Override
+	public boolean support(RedisServer server) {
+		return server instanceof RedisKeeperServer;
+	}
+
 }

@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * May 20, 2016 4:34:09 PM
  */
-public class DefaultRedisSlave implements RedisSlave {
+public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 	
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
 	
@@ -72,7 +72,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	private ExecutorService psyncExecutor;
 
-	private RedisClient redisClient;
+	private RedisClient<RedisKeeperServer> redisClient;
 
 	private AtomicBoolean writingCommands = new AtomicBoolean(false);
 
@@ -96,7 +96,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	private CloseState closeState = new CloseState();
 	private SettableFuture<Boolean> psyncProcessed = SettableFuture.create();
 
-	public DefaultRedisSlave(RedisClient redisClient){
+	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient){
 		this.redisClient = redisClient;
 		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
 		this.redisClient.addChannelCloseReleaseResources(this);
@@ -107,8 +107,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		String threadPrefix = "RedisClientPsync-" + getRemoteIpLocalPort;
-		ClusterId clusterId = redisClient.getRedisKeeperServer().getClusterId();
-		ShardId shardId = redisClient.getRedisKeeperServer().getShardId();
+		ClusterId clusterId = redisClient.getRedisServer().getClusterId();
+		ShardId shardId = redisClient.getRedisServer().getShardId();
 		psyncExecutor = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
 		scheduled = Executors.newScheduledThreadPool(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
 	}
@@ -220,7 +220,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	protected String buildMarkBeforeFsync(ReplicationProgress<?, ?> rdbProgress) {
-		return StringUtil.join(" ", DefaultPsync.FULL_SYNC, getRedisKeeperServer().getKeeperRepl().replId(),
+		return StringUtil.join(" ", DefaultPsync.FULL_SYNC, getRedisServer().getKeeperRepl().replId(),
 				rdbProgress.getProgress().toString());
 	}
 	
@@ -305,7 +305,7 @@ public class DefaultRedisSlave implements RedisSlave {
 				}
 				logger.info("[beginWriteCommands]{}, {}", this, progress);
 				slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-				getRedisKeeperServer().getReplicationStore().addCommandsListener(progress, this);
+				getRedisServer().getReplicationStore().addCommandsListener(progress, this);
 			} else {
 				logger.warn("[beginWriteCommands][already writing]{}, {}", this, progress);
 			}
@@ -494,8 +494,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		return redisClient.becomeSlave();
 	}
 
-	public RedisKeeperServer getRedisKeeperServer() {
-		return redisClient.getRedisKeeperServer();
+	public RedisKeeperServer getRedisServer() {
+		return redisClient.getRedisServer();
 	}
 
 	public void setSlaveListeningPort(int port) {
