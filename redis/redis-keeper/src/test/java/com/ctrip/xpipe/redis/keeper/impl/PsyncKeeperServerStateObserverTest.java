@@ -46,7 +46,7 @@ public class PsyncKeeperServerStateObserverTest extends AbstractRedisKeeperTest 
                 new LinkedBlockingQueue<Runnable>(), XpipeThreadFactory.create("single-thread-test-executors"));
 
         observer = Mockito.spy(new RedisKeeperServerStateBackup.PsyncKeeperServerStateObserver(new String[]{"?", "-1"}, redisClient));
-        when(redisClient.getRedisKeeperServer()).thenReturn(redisKeeperServer);
+        when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.isFresh()).thenReturn(true);
         doAnswer(invocation -> {

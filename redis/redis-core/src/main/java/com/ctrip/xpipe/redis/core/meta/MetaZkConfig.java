@@ -49,6 +49,10 @@ public class MetaZkConfig {
 		return path;
 	}
 
+	public static String getApplierLeaderLatchPath(ClusterId clusterId, ShardId shardId){
+		return getApplierLeaderLatchPath(clusterId.toString(), shardId.toString());
+	}
+
 	public static String getApplierLeaderLatchPath(String clusterId, String shardId){
 
 		String path = String.format("%s/%s/%s", getApplierZkLeaderLatchRootPath(), clusterId, shardId);

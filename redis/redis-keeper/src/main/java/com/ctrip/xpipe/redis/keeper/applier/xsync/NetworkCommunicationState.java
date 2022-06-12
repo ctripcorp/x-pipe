@@ -12,5 +12,5 @@ public interface NetworkCommunicationState {
     Endpoint endpoint();
     boolean isConnected();
 
-    void setHostPort(Endpoint endpoint);
+    void initState(Endpoint endpoint, Object... states);
 }

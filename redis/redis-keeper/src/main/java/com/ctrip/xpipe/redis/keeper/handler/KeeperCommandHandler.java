@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
@@ -38,7 +39,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 			
 			if(args[0].equalsIgnoreCase(AbstractKeeperCommand.GET_STATE)){
 				
-				KeeperState keeperState = redisClient.getRedisKeeperServer().getRedisKeeperServerState().keeperState();
+				KeeperState keeperState = ((RedisKeeperServer)redisClient.getRedisServer()).getRedisKeeperServerState().keeperState();
 				redisClient.sendMessage(new SimpleStringParser(keeperState.toString()).format());
 			}else if(args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_STATE)){
 				
@@ -55,9 +56,9 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		}
 	}
 
-	private void doSetKeeperState(RedisClient redisClient, KeeperState keeperState, Endpoint masterAddress) {
+	private void doSetKeeperState(RedisClient<?> redisClient, KeeperState keeperState, Endpoint masterAddress) {
 
-		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 
 		RedisKeeperServerState currentState = redisKeeperServer.getRedisKeeperServerState();
 		try{
@@ -104,4 +105,10 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		logger.info("[getProxyProtocol] protocol: {}", protocol);
 		return new DefaultProxyConnectProtocolParser().read(protocol);
 	}
+
+	@Override
+	public boolean support(RedisServer server) {
+		return server instanceof RedisKeeperServer;
+	}
+
 }

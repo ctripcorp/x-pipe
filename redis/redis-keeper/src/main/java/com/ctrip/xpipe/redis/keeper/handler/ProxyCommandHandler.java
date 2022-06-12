@@ -7,6 +7,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 
 import java.net.InetSocketAddress;
 
@@ -20,7 +22,7 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
     private static final String WHITE_SPACE = " ";
 
     @Override
-    protected void doHandle(String[] args, RedisClient redisClient) {
+    protected void doHandle(String[] args, RedisClient<?> redisClient) {
         String proxyProtocol = restructCommand(args);
         logger.info("[doHandle]receive proxy protocol: {}", proxyProtocol);
 
@@ -56,5 +58,9 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
         return new String[]{"proxy"};
     }
 
+    @Override
+    public boolean support(RedisServer server) {
+        return server instanceof RedisKeeperServer;
+    }
 
 }

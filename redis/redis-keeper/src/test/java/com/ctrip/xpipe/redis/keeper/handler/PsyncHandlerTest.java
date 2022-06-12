@@ -54,7 +54,7 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 	@Before
 	public void beforePsyncHandlerTest(){
 
-		when(redisSlave.getRedisKeeperServer()).thenReturn(redisKeeperServer);
+		when(redisSlave.getRedisServer()).thenReturn(redisKeeperServer);
 		when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
 		when(redisKeeperServer.getShardId()).thenReturn(getShardId());
 		DefaultKeeperMonitor monitor = new DefaultKeeperMonitor(redisKeeperServer, scheduled);

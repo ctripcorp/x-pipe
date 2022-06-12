@@ -50,10 +50,10 @@ public class InfoHandler extends AbstractCommandHandler{
 	}
 
 	@Override
-	protected void doHandle(String[] args, RedisClient redisClient) {
+	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
 
-		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+		RedisKeeperServer redisKeeperServer = (RedisKeeperServer)redisClient.getRedisServer();
 		String result;
 		if(args.length == 0){
 			result = new DefaultInfoSections().getInfo(redisKeeperServer);
@@ -254,7 +254,7 @@ public class InfoHandler extends AbstractCommandHandler{
 			sb.append("slave_repl_offset:" + slaveReplOffset + RedisProtocol.CRLF);
 			sb.append("slave_priority:0" + RedisProtocol.CRLF);
 
-			Set<RedisSlave> slaves = redisKeeperServer.slaves();
+			Set<RedisSlave<RedisKeeperServer>> slaves = redisKeeperServer.slaves();
 			sb.append("connected_slaves:" + slaves.size() + RedisProtocol.CRLF);
 			int slaveIndex = 0;
 			for(RedisSlave slave : slaves){
@@ -298,5 +298,10 @@ public class InfoHandler extends AbstractCommandHandler{
 		public String name() {
 			return "Replication";
 		}
+	}
+
+	@Override
+	public boolean support(RedisServer server) {
+		return server instanceof RedisKeeperServer;
 	}
 }
