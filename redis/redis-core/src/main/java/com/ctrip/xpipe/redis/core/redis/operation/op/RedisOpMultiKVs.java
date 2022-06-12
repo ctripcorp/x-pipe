@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.op;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMultiKVEnum;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMultiKeysEnum;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -51,7 +51,7 @@ public class RedisOpMultiKVs extends AbstractRedisMultiKeyOp implements RedisMul
     @Override
     protected byte[][] innerBuildRawOpArgs() {
         List<Pair<RedisKey, byte[]>> kvs = getAllKeyValues();
-        int length = 1 + RedisOpMultiKVEnum.findByRedisOpType(redisOpType).getKvNum() * kvs.size();
+        int length = 1 + RedisOpMultiKeysEnum.findByRedisOpType(redisOpType).getKvNum() * kvs.size();
         byte[][] args = new byte[length][];
         args[0] = getRawCmdArg();
 

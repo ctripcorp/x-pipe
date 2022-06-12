@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKV;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -204,13 +204,13 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
         if (null == redisString) return;
 
         if (null != context.getKey() && context.getExpireMilli() > 0) {
-            notifyRedisOp(new RedisOpSingleKV(
+            notifyRedisOp(new RedisOpSingleKey(
                     RedisOpType.PSETEX,
                     new byte[][] {RedisOpType.PSETEX.name().getBytes(), context.getKey().get(), String.valueOf(context.getExpireMilli()).getBytes(), redisString},
                     context.getKey(),
                     redisString));
         } else if (null != context.getKey()) {
-            notifyRedisOp(new RedisOpSingleKV(
+            notifyRedisOp(new RedisOpSingleKey(
                     RedisOpType.SET,
                     new byte[][] {RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
                     context.getKey(),
