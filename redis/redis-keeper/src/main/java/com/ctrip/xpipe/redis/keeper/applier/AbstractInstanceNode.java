@@ -26,7 +26,12 @@ public abstract class AbstractInstanceNode extends AbstractServer {
         for (Field field : this.getClass().getFields()) {
 
             if (field.isAnnotationPresent(InstanceDependency.class)) {
-                dependencies.add(field.get(this));
+                Object dependency = field.get(this);
+                if (dependency instanceof InstanceComponentWrapper) {
+                    dependencies.add(((InstanceComponentWrapper<?>) dependency).getInner());
+                } else {
+                    dependencies.add(dependency);
+                }
             }
 
             Object value = field.get(this);

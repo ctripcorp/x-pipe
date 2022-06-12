@@ -30,9 +30,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	KeeperRepl getKeeperRepl();
 
 	KeeperTransMeta.KeeperReplType getKeeperReplType();
-	
-	RedisClient clientConnected(Channel channel);
-	
+
 	void clientDisconnected(Channel channel);
 	
 	String getKeeperRunid();
@@ -43,7 +41,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	 */
 	Set<RedisClient> allClients();
 	
-	Set<RedisSlave> slaves();
+	Set<RedisSlave<RedisKeeperServer>> slaves();
 		
 	ReplicationStore getReplicationStore();
 		
@@ -93,8 +91,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	RdbDumper rdbDumper();
 	
 	KeeperMonitor getKeeperMonitor();
-
-	void processCommandSequentially(Runnable runnable);
 
 	void tryConnectMaster();
 
