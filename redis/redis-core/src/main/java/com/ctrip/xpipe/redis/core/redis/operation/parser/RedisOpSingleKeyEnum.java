@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
  * <p>
  * 2022/6/7 12:02
  */
-public enum RedisOpSingleKVEnum {
+public enum RedisOpSingleKeyEnum {
     SET(RedisOpType.SET, 1, 2),
     SETNX(RedisOpType.SETNX, 1, 2),
     SETEX(RedisOpType.SETEX, 1, 2),
@@ -33,6 +33,11 @@ public enum RedisOpSingleKVEnum {
     LPUSHX(RedisOpType.LPUSHX, 1, 2),
     RPUSH(RedisOpType.RPUSH, 1, 2),
     RPUSHX(RedisOpType.RPUSHX, 1, 2),
+    SADD(RedisOpType.SADD, 1, 2),
+    SETBIT(RedisOpType.SETBIT, 1, 3),
+    SETRANGE(RedisOpType.SETRANGE, 1, 3),
+    SPOP(RedisOpType.SPOP, 1, 2),
+    SREM(RedisOpType.SREM, 1, 2),
     LREM(RedisOpType.LREM, 1, 3),
     LSET(RedisOpType.LSET, 1, 3),
     LTRIM(RedisOpType.LTRIM, 1, null),
@@ -42,18 +47,9 @@ public enum RedisOpSingleKVEnum {
     RPOP(RedisOpType.RPOP, 1, null),
     PSETEX(RedisOpType.PSETEX, 1, 3),
     INCR(RedisOpType.INCR, 1, null),
-    DECR(RedisOpType.DECR, 1, null),
-    SELECT(RedisOpType.SELECT, null, 1),
-    PING(RedisOpType.PING, null, null),
-    MULT(RedisOpType.MULTI, null, null),
-    EXEC(RedisOpType.EXEC, null, null),
+    DECR(RedisOpType.DECR, 1, null);
 
-    //CRedis not supported but can be in backlog
-    FLUSHALL(RedisOpType.FLUSHALL, null, null),
-    FLUSHDB(RedisOpType.FLUSHDB, null, null),
-    ;
-
-    RedisOpSingleKVEnum(RedisOpType redisOpType, Integer keyIndex, Integer valueIndex) {
+    RedisOpSingleKeyEnum(RedisOpType redisOpType, Integer keyIndex, Integer valueIndex) {
         this.redisOpType = redisOpType;
         this.keyIndex = keyIndex;
         this.valueIndex = valueIndex;

@@ -18,23 +18,32 @@ public class RedisOpParserFactory {
     private RedisOpParserFactory() {}
 
     public void registerParsers(RedisOpParserManager redisOpParserManager) {
-        registerSingleKV(redisOpParserManager);
-        registerMultiKV(redisOpParserManager);
+        registerNoneKey(redisOpParserManager);
+        registerSingleKey(redisOpParserManager);
+        registerMultiKeys(redisOpParserManager);
     }
 
-    private void registerSingleKV(RedisOpParserManager redisOpParserManager) {
-        for (RedisOpSingleKVEnum cmd : RedisOpSingleKVEnum.values()) {
+    private void registerNoneKey(RedisOpParserManager redisOpParserManager) {
+        for (RedisOpNoneKeyEnum cmd : RedisOpNoneKeyEnum.values()) {
             redisOpParserManager.registerParser(
                     cmd.getRedisOpType(),
-                    new RedisOpSingleKVParser(cmd.getRedisOpType(), cmd.getKeyIndex(),cmd.getValueIndex()));
+                    new RedisOpNoneKeyParser(cmd.getRedisOpType()));
         }
     }
 
-    private void registerMultiKV(RedisOpParserManager redisOpParserManager) {
-        for (RedisOpMultiKVEnum cmd : RedisOpMultiKVEnum.values()) {
+    private void registerSingleKey(RedisOpParserManager redisOpParserManager) {
+        for (RedisOpSingleKeyEnum cmd : RedisOpSingleKeyEnum.values()) {
             redisOpParserManager.registerParser(
                     cmd.getRedisOpType(),
-                    new RedisOpMultiKVParser(cmd.getRedisOpType(), cmd.getKeyStartIndex(), cmd.getKvNum()));
+                    new RedisOpSingleKeyParser(cmd.getRedisOpType(), cmd.getKeyIndex(),cmd.getValueIndex()));
+        }
+    }
+
+    private void registerMultiKeys(RedisOpParserManager redisOpParserManager) {
+        for (RedisOpMultiKeysEnum cmd : RedisOpMultiKeysEnum.values()) {
+            redisOpParserManager.registerParser(
+                    cmd.getRedisOpType(),
+                    new RedisOpMultiKeysParser(cmd.getRedisOpType(), cmd.getKeyStartIndex(), cmd.getKvNum()));
         }
     }
 }

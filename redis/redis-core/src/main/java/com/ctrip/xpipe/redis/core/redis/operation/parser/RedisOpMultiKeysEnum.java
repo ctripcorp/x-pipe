@@ -7,19 +7,19 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
  * <p>
  * 2022/6/8 15:21
  */
-public enum RedisOpMultiKVEnum {
+public enum RedisOpMultiKeysEnum {
     MSET(RedisOpType.MSET, 1, 2),
     MSETNX(RedisOpType.MSETNX, 1, 2),
     DEL(RedisOpType.DEL, 1, 1);
 
-    RedisOpMultiKVEnum(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
+    RedisOpMultiKeysEnum(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
         this.redisOpType = redisOpType;
         this.keyStartIndex = keyStartIndex;
         this.kvNum = kvNum;
     }
 
-    public static RedisOpMultiKVEnum findByRedisOpType(RedisOpType redisOpType) {
-        for (RedisOpMultiKVEnum multiKVEnum: RedisOpMultiKVEnum.values()) {
+    public static RedisOpMultiKeysEnum findByRedisOpType(RedisOpType redisOpType) {
+        for (RedisOpMultiKeysEnum multiKVEnum: RedisOpMultiKeysEnum.values()) {
             if (multiKVEnum.getRedisOpType().equals(redisOpType)) {
                 return multiKVEnum;
             }

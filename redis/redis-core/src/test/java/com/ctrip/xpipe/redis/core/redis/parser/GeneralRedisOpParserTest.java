@@ -74,10 +74,6 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
     public void testSelectParse() {
         RedisOp redisOp = parser.parse(Arrays.asList("SELECT", "0").toArray());
         Assert.assertEquals(RedisOpType.SELECT, redisOp.getOpType());
-
-        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
-        Assert.assertNull(redisSingleKeyOp.getKey());
-        Assert.assertArrayEquals("0".getBytes(), redisSingleKeyOp.getValue());
     }
 
     @Test

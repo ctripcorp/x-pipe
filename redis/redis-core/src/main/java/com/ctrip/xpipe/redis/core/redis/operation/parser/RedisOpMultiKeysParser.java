@@ -15,13 +15,13 @@ import java.util.List;
  * <p>
  * 2022/6/8 15:27
  */
-public class RedisOpMultiKVParser extends AbstractRedisOpParser implements RedisOpParser {
+public class RedisOpMultiKeysParser extends AbstractRedisOpParser implements RedisOpParser {
 
     private RedisOpType redisOpType;
     private Integer keyStartIndex;
     private Integer kvNum;
 
-    public RedisOpMultiKVParser(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
+    public RedisOpMultiKeysParser(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
         this.redisOpType = redisOpType;
         this.keyStartIndex = keyStartIndex;
         this.kvNum = kvNum;
