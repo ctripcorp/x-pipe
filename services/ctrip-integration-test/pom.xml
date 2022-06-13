@@ -39,6 +39,13 @@
         </dependency>
         <dependency>
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
+            <artifactId>redis-integration-test</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-console</artifactId>
             <type>test-jar</type>
             <version>${project.version}</version>

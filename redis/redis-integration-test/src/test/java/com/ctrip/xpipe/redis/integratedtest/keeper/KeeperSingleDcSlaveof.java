@@ -37,7 +37,7 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 
 		//test backupKeeper partial sync
 		RedisKeeperServer backupKeeperServer = getRedisKeeperServer(backupKeeper);
-		Set<RedisSlave> currentSlaves = backupKeeperServer.slaves();
+		Set<RedisSlave<RedisKeeperServer>> currentSlaves = backupKeeperServer.slaves();
 		Assert.assertEquals(0, currentSlaves.size());
 
 		logger.info(remarkableMessage("make slave slaves slaveof backup keeper"));
@@ -74,7 +74,7 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 		}
 
 		sleep(2000);
-		Set<RedisSlave> slaves = backupKeeperServer.slaves();
+		Set<RedisSlave<RedisKeeperServer>> slaves = backupKeeperServer.slaves();
 		Assert.assertEquals(4, slaves.size());
 		for (RedisSlave redisSlave : slaves) {
 

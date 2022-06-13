@@ -1,8 +1,9 @@
-package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
+package com.ctrip.xpipe.redis.ctrip.integratedtest.console.replication.manual;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -15,6 +16,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
@@ -25,15 +28,15 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author lishanglin
- * date 2022/5/26
- * start xredis 127.0.0.1:6379 with "gtid-enabled yes" before test
+ * date 2022/6/12
+ * 1、start XRedis 127.0.0.1:6379, 127.0.0.1:6380 with "gtid-enabled yes"
+ * 2、mkdir -p /opt/config/100004374/credis
+ * 3、echo 'group.master=127.0.0.1:6380' > /opt/config/100004374/credis/ApplierTest.properties
  */
-public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
+public class GtidReplicationManualTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
 
     private GtidRedisKeeperServer gtidKeeperServer;
 
@@ -45,7 +48,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
 
     private RdbParser<?> rdbParser;
 
-    private String reqUuid = "1a82e1f0a716d32c34936e82df70d3dcdf50a5d8";
+    private String reqUuid = "a65661da334cdeac39e3f68e20a88d7e2d3f47fd";
 
     @Before
     public void setupGtidKeeperTest() throws Exception {
@@ -60,7 +63,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
 
     @Override
     protected String getXpipeMetaConfigFile() {
-        return "one_keeper.xml";
+        return "gtid_repl.xml";
     }
 
     @Override
@@ -76,6 +79,17 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
         DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet(reqUuid + ":0"), null, scheduled);
         xsync.addXsyncObserver(this);
         xsync.execute(executors);
+
+        ApplierMeta applierMeta = new ApplierMeta();
+        applierMeta.setId("test-applier");
+        applierMeta.setPort(7080);
+        ApplierServer applierServer = new DefaultApplierServer("ApplierTest",
+                ClusterId.from(1L), ShardId.from(1L), applierMeta, leaderElectorManager, redisOpParser);
+
+        applierServer.initialize();
+        applierServer.start();
+
+        applierServer.setStateActive(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"));
 
         waitForAnyKeyToExit();
     }
