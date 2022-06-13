@@ -8,14 +8,12 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
  * 2022/6/12 14:17
  */
 public enum RedisOpNoneKeyEnum {
+
     SELECT(RedisOpType.SELECT),
     PING(RedisOpType.PING),
     MULT(RedisOpType.MULTI),
     EXEC(RedisOpType.EXEC),
-
-    //CRedis not supported but can be in backlog
-    FLUSHALL(RedisOpType.FLUSHALL),
-    FLUSHDB(RedisOpType.FLUSHDB);
+    SCRIPT(RedisOpType.SCRIPT);
 
     private RedisOpType redisOpType;
 
