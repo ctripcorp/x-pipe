@@ -133,7 +133,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.replication = new DefaultXsyncReplication();
         this.dispatcher = new DefaultCommandDispatcher();
 
-//        this.client = new CRedisAsyncClientFactory().getOrCreateClient(clusterName);
         this.client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient(clusterName);
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
