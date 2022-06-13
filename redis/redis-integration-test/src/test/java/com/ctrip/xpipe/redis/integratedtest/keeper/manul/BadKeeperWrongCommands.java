@@ -48,7 +48,7 @@ public class BadKeeperWrongCommands extends AbstractKeeperIntegratedSingleDc {
 		
 		replicationStore = active.getReplicationStore();
 		
-		Set<RedisSlave> slaves = active.slaves();
+		Set<RedisSlave<RedisKeeperServer>> slaves = active.slaves();
 
 		
 		replicationStore.appendCommands(Unpooled.wrappedBuffer("*3\r\n$3\r\nset\r\n$1\r\na\r\n$5\r\n12 34\r\n\r\n".getBytes()));
@@ -80,7 +80,7 @@ public class BadKeeperWrongCommands extends AbstractKeeperIntegratedSingleDc {
 		waitForAnyKeyToExit();
 	}
 
-	private void printSlaves(Set<RedisSlave> slaves) {
+	private void printSlaves(Set<RedisSlave<RedisKeeperServer>> slaves) {
 		
 		for(RedisSlave redisSlave : slaves){
 			logger.info("{}", redisSlave.info());
