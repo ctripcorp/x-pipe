@@ -9,16 +9,16 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
  * <p>
  * 2022/6/6 15:08
  */
-public class RedisOpSingleKV extends AbstractRedisSingleKeyOp implements RedisSingleKeyOp {
+public class RedisOpSingleKey extends AbstractRedisSingleKeyOp implements RedisSingleKeyOp {
 
     private RedisOpType redisOpType;
 
-    public RedisOpSingleKV(RedisOpType redisOpType, byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
+    public RedisOpSingleKey(RedisOpType redisOpType, byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
         super(rawArgs, redisKey, redisValue);
         this.redisOpType = redisOpType;
     }
 
-    public RedisOpSingleKV(RedisOpType redisOpType, byte[][] rawArgs, RedisKey redisKey, byte[] redisValue, String gtid) {
+    public RedisOpSingleKey(RedisOpType redisOpType, byte[][] rawArgs, RedisKey redisKey, byte[] redisValue, String gtid) {
         super(rawArgs, redisKey, redisValue, gtid);
         this.redisOpType = redisOpType;
     }
