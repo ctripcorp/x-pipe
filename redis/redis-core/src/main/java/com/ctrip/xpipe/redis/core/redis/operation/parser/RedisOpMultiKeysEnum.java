@@ -8,9 +8,11 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
  * 2022/6/8 15:21
  */
 public enum RedisOpMultiKeysEnum {
+
     MSET(RedisOpType.MSET, 1, 2),
     MSETNX(RedisOpType.MSETNX, 1, 2),
-    DEL(RedisOpType.DEL, 1, 1);
+    DEL(RedisOpType.DEL, 1, 1),
+    UNLINK(RedisOpType.UNLINK, 1, 1);
 
     RedisOpMultiKeysEnum(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
         this.redisOpType = redisOpType;
