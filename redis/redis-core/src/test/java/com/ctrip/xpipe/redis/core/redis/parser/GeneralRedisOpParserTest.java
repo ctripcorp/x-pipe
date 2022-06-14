@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.core.redis.parser;
 
 import com.ctrip.xpipe.redis.core.redis.operation.*;
-import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author lishanglin
@@ -86,4 +87,82 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
         Assert.assertNull(redisSingleKeyOp.getValue());
     }
 
+    @Test(expected = UnsupportedOperationException.class)
+    public void testNoneExistsCmdParse() {
+        RedisOp redisOp = parser.parse(Arrays.asList("EMPTY", "0").toArray());
+        Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
+    }
+
+    @Test
+    public void testParseAllCmds() {
+        List<String> cmdList = Arrays.asList(
+                "append",
+                "decr",
+                "decrby",
+                "del",
+                "expire",
+                "expireat",
+                "geoadd",
+                "georadius",
+                "getset",
+                "hdel",
+                "hincrby",
+                "hincrbyfloat",
+                "hmset",
+                "hset",
+                "hsetnx",
+                "incr",
+                "incrby",
+                "linsert",
+                "lpop",
+                "lpush",
+                "lpushx",
+                "lrem",
+                "lset",
+                "ltrim",
+                "move",
+                "mset",
+                "msetnx",
+                "persist",
+                "pexpire",
+                "pexpireat",
+                "psetex",
+                "rpop",
+                "rpush",
+                "rpushx",
+                "sadd",
+                "set",
+                "setbit",
+                "setex",
+                "setnx",
+                "setrange",
+                "spop",
+                "srem",
+                "unlink",
+                "zadd",
+                "zincrby",
+                "zrem",
+                "zremrangebylex",
+                "zremrangebyrank",
+                "zremrangebyscore",
+                "incrbyfloat",
+                "publish",
+                "ping",
+                "select",
+                "exec",
+                "script",
+                "multi"
+        );
+
+        for (String cmd : cmdList) {
+            RedisOpType redisOpType = RedisOpType.lookup(cmd);
+            List<String> parserList = new ArrayList<>();
+            System.out.println(cmd);
+            parserList.add(cmd);
+            for (int i = 0; i < Math.abs(redisOpType.getArity()) - 1; i++) {
+                parserList.add("0");
+            }
+            parser.parse(parserList.toArray());
+        }
+    }
 }
