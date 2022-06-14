@@ -8,6 +8,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.*;
@@ -45,6 +46,8 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
     private RdbBulkStringParser rdbReader;
 
     private GtidSet rdbDataGtidSet;
+
+    private NettyClient nettyClient;
 
     private List<XsyncObserver> observers = new LinkedList<>();
 
@@ -219,6 +222,16 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     private void endReadRdb() {
         getLogger().debug("[endReadRdb] {}", this);
+        if (eofType.putOnLineOnAck()) {
+            Replconf replconf = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, "1");
+            replconf.execute().addListener(commandFuture -> {
+                if (!commandFuture.isSuccess()) {
+                    getLogger().info("[endReadRdb][ack] fail", commandFuture.cause());
+                    future().setFailure(new XpipeRuntimeException("ack after rdb fail", commandFuture.cause()));
+                }
+            });
+        }
+
         for (XsyncObserver observer: observers) {
             try {
                 observer.endReadRdb(eofType, rdbDataGtidSet);
@@ -232,6 +245,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
     protected void afterCommandExecute(NettyClient nettyClient) {
         // temporary solution, handle channel evicted by channel pool
 
+        this.nettyClient = nettyClient;
         nettyClient.channel().closeFuture().addListener(closeFuture -> {
             if (!future().isDone()) {
                 future().setFailure(new XpipeRuntimeException("channel closed"));
