@@ -13,7 +13,6 @@ public class AuxOnlyRdbParser extends DefaultRdbParser {
     private Logger logger = LoggerFactory.getLogger(AuxOnlyRdbParser.class);
 
     public AuxOnlyRdbParser() {
-        this(new DefaultRdbParseContext());
     }
 
     public AuxOnlyRdbParser(RdbParseContext parserManager) {

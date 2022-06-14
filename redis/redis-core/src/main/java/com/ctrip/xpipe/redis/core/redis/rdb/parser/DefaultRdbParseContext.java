@@ -32,6 +32,15 @@ public class DefaultRdbParseContext implements RdbParseContext {
 
     private AtomicLong expireMilli = new AtomicLong();
 
+    private AtomicLong lruIdle = new AtomicLong(-1);
+
+    private AtomicInteger lfuFreq = new AtomicInteger(-1);
+
+    @Override
+    public void bindRdbParser(RdbParser<?> parser) {
+        listeners.forEach(parser::registerListener);
+    }
+
     @Override
     public RdbParser getOrCreateParser(RdbType rdbType) {
         RdbParser parser = parsers.get(rdbType);
@@ -113,8 +122,32 @@ public class DefaultRdbParseContext implements RdbParseContext {
     }
 
     @Override
+    public RdbParseContext setLruIdle(long idle) {
+        this.lruIdle.set(idle);
+        return this;
+    }
+
+    @Override
+    public long getLruIdle() {
+        return this.lruIdle.get();
+    }
+
+    @Override
+    public RdbParseContext setLfuFreq(int freq) {
+        this.lfuFreq.set(freq);
+        return this;
+    }
+
+    @Override
+    public int getLfuFreq() {
+        return this.lfuFreq.get();
+    }
+
+    @Override
     public void clearKvContext() {
         this.redisKey.set(null);
         this.expireMilli.set(0);
+        this.lruIdle.set(-1);
+        this.lfuFreq.set(-1);
     }
 }

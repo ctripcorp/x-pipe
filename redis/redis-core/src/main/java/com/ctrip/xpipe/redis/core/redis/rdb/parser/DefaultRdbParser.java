@@ -20,7 +20,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     private RdbParseContext rdbParseContext;
 
-    protected STATE state = STATE.READ_MAGIC;
+    protected STATE state = STATE.READ_INIT;
 
     private ByteBuf temp;
 
@@ -49,6 +49,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     public DefaultRdbParser(RdbParseContext parserManager) {
         this.rdbParseContext = parserManager;
+        this.rdbParseContext.bindRdbParser(this);
     }
 
     @Override
