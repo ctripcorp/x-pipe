@@ -46,7 +46,7 @@ public enum RedisOpSingleKeyEnum {
 
     // Set
     SADD(RedisOpType.SADD, 1, 2),
-    SPOP(RedisOpType.SPOP, 1, 2),
+    SPOP(RedisOpType.SPOP, 1, null),
     SREM(RedisOpType.SREM, 1, 2),
 
     // ZSet
