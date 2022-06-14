@@ -92,7 +92,7 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
-        this.baseGtidSet = baseGtidSet;
+        this.baseGtidSet = baseGtidSet.clone();
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -323,8 +323,8 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
         GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
         if (!storeExcludedGtidSet.isContainedWithin(excludedGtidSet)) {
-            // TODO: need handle fsync
-            throw new IllegalArgumentException();
+            // TODO: strictly
+            throw new IllegalArgumentException("req cmd miss storeExcluded:" + storeExcludedGtidSet + " reqExcluded:" + excludedGtidSet);
         }
 
         while (indexIterator.hasNext()) {

@@ -40,9 +40,9 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
                 if(args.length >= 2 && args[1].equalsIgnoreCase(STATE_BACKUP)) {
                     ((ApplierServer)redisClient.getRedisServer()).setStateBackup();
                     redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
-                } else if (args.length >= 4 && args[1].equalsIgnoreCase(STATE_ACTIVE)) {
-                    Endpoint upstreamEndpoint = new DefaultEndPoint(args[2]);
-                    GtidSet gtidSet = new GtidSet(args[3]);
+                } else if (args.length >= 5 && args[1].equalsIgnoreCase(STATE_ACTIVE)) {
+                    Endpoint upstreamEndpoint = new DefaultEndPoint(args[2], Integer.parseInt(args[3]));
+                    GtidSet gtidSet = new GtidSet(args[4]);
                     ((ApplierServer)redisClient.getRedisServer()).setStateActive(upstreamEndpoint, gtidSet);
                     redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
                 } else{
