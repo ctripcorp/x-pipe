@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.primitives.UnsignedLong;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
