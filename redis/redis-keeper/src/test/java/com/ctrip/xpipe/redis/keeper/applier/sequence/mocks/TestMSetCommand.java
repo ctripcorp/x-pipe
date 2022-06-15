@@ -2,10 +2,11 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence.mocks;
 
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMsetParser;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMultiKeysEnum;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpMultiKeysParser;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
-import org.assertj.core.util.Lists;
 
 import java.util.Arrays;
 
@@ -18,7 +19,8 @@ public class TestMSetCommand extends TestSleepCommand implements RedisOpDataComm
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
-    private RedisOpMsetParser parser = new RedisOpMsetParser(parserManager);
+    private RedisOpMultiKeysParser parser = new RedisOpMultiKeysParser(RedisOpType.MSET,
+            RedisOpMultiKeysEnum.MSET.getKeyStartIndex(), RedisOpMultiKeysEnum.MSET.getKvNum());
 
     private final String[] rawArgs;
 

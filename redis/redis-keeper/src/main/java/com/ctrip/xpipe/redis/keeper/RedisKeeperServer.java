@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -27,9 +28,9 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	int getListeningPort();
 	
 	KeeperRepl getKeeperRepl();
-	
-	RedisClient clientConnected(Channel channel);
-	
+
+	KeeperTransMeta.KeeperReplType getKeeperReplType();
+
 	void clientDisconnected(Channel channel);
 	
 	String getKeeperRunid();
@@ -40,7 +41,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	 */
 	Set<RedisClient> allClients();
 	
-	Set<RedisSlave> slaves();
+	Set<RedisSlave<RedisKeeperServer>> slaves();
 		
 	ReplicationStore getReplicationStore();
 		
@@ -90,8 +91,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	RdbDumper rdbDumper();
 	
 	KeeperMonitor getKeeperMonitor();
-
-	void processCommandSequentially(Runnable runnable);
 
 	void tryConnectMaster();
 

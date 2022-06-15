@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
+import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -105,7 +106,7 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
     }
 
     @Override
-    public void onRdbData(Object rdbData) {
+    public void onRdbData(ByteBuf rdbData) {
 
     }
 

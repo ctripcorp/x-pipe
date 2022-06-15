@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
@@ -140,6 +141,11 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     @Override
     public void onFullSync(long masterRdbOffset) {
         setPsyncSucceed();
+    }
+
+    @Override
+    public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
+
     }
 
     @Override

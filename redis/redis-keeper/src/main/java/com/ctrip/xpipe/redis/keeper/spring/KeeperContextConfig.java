@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.keeper.spring;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -25,4 +28,10 @@ public class KeeperContextConfig extends AbstractRedisConfigContext{
 		return new DefaultLeaderElectorManager(zkClient);
 	}
 
+	@Bean
+	public GeneralRedisOpParser GeneralRedisOpParser (RedisOpParserManager redisOpParserManager) {
+
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		return new GeneralRedisOpParser(redisOpParserManager);
+	}
 }

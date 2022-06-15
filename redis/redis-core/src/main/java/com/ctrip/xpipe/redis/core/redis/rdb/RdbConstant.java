@@ -51,4 +51,6 @@ public class RdbConstant {
     public static final short REDIS_RDB_OP_CODE_SELECTDB = 254;
     public static final short REDIS_RDB_OP_CODE_EOF = 255;
 
+    public static final String REDIS_RDB_AUX_KEY_GTID = "gtid";
+
 }

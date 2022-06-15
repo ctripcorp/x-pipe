@@ -62,7 +62,7 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     }
 
     @Override
-    public List<RedisOpCommand<Boolean>> sharding() {
+    public List<RedisOpDataCommand<Boolean>> sharding() {
         if (type().equals(RedisOpCommandType.MULTI_KEY)) {
             List<Object> keys = keys().stream().map(RedisKey::get).collect(Collectors.toList());
             return client.selectMulti(keys).entrySet().stream().map(e ->

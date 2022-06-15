@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.google.common.collect.Lists;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -16,7 +17,7 @@ import java.util.concurrent.Executor;
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private final List<SequenceCommand<?>> pasts;
+    private final Collection<SequenceCommand<?>> pasts;
 
     private int complete = 0;
 
@@ -34,7 +35,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
         this(Lists.newArrayList(past), inner, stateThread, workerThreads);
     }
 
-    public SequenceCommand(List<SequenceCommand<?>> pasts, Command<V> inner, Executor stateThread, Executor workerThreads) {
+    public SequenceCommand(Collection<SequenceCommand<?>> pasts, Command<V> inner, Executor stateThread, Executor workerThreads) {
         this.pasts = pasts;
         this.inner = inner;
         this.stateThread = stateThread;
@@ -61,7 +62,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
         });
     }
 
-    private void nextAfter(List<SequenceCommand<?>> pasts) {
+    private void nextAfter(Collection<SequenceCommand<?>> pasts) {
         for (SequenceCommand<?> past : pasts) {
             past.future().addListener((f)->{
                 if (f.isSuccess()) {

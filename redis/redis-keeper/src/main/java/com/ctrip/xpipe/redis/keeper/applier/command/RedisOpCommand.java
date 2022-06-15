@@ -2,13 +2,7 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
+import com.ctrip.xpipe.redis.core.redis.operation.*;
 
 import java.util.List;
 
@@ -43,13 +37,13 @@ public interface RedisOpCommand<V> extends Command<V> {
 
     default RedisOpCommandType type() {
         RedisOp op = redisOp();
-        if (op instanceof RedisOpMulti) {
+        if (RedisOpType.MULTI.equals(op.getOpType())) {
             return RedisOpCommandType.MULTI;
         }
-        if (op instanceof RedisOpExec) {
+        if (RedisOpType.EXEC.equals(op.getOpType())) {
             return RedisOpCommandType.EXEC;
         }
-        if (op instanceof RedisOpLwm) {
+        if (RedisOpType.LWM.equals(op.getOpType())) {
             return RedisOpCommandType.BROADCAST;
         }
         if (op instanceof RedisSingleKeyOp) {

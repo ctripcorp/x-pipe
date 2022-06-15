@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
@@ -52,7 +53,7 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
     private final ConcurrentMap<CommandReader<R>, Boolean> readers = new ConcurrentHashMap<>();
 
-    private final OffsetNotifier offsetNotifier;
+    private OffsetNotifier offsetNotifier;
 
     private final long commandReaderFlyingThreshold;
 
@@ -68,9 +69,11 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
     private List<CommandFileOffsetGtidIndex> cmdIndexList = new CopyOnWriteArrayList<>();
 
-    private GtidSet baseGtidSet;
+    protected GtidSet baseGtidSet;
 
     private static final String INDEX_FILE_PREFIX = "idx_";
+
+    private AtomicBoolean initialized = new AtomicBoolean(false);
     
     public abstract Logger getLogger();
 
@@ -89,7 +92,7 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
-        this.baseGtidSet = baseGtidSet;
+        this.baseGtidSet = baseGtidSet.clone();
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -97,9 +100,23 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        cmdWriter.initialize();
+    }
 
-        offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+    @Override
+    public void initialize() throws Exception {
+        if (initialized.compareAndSet(false, true)) {
+            cmdWriter.initialize();
+            offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+        }
+    }
+
+
+    @Override
+    public void makeSureOpen() {
+        super.makeSureOpen();
+        if (!initialized.get()) {
+            throw new IllegalStateException("[makeSureOpen][uninitialized]" + this);
+        }
     }
 
     protected void intiCmdFileIndex() {
@@ -306,8 +323,8 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
         GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
         if (!storeExcludedGtidSet.isContainedWithin(excludedGtidSet)) {
-            // TODO: need handle fsync
-            throw new IllegalArgumentException();
+            // TODO: strictly
+            throw new IllegalArgumentException("req cmd miss storeExcluded:" + storeExcludedGtidSet + " reqExcluded:" + excludedGtidSet);
         }
 
         while (indexIterator.hasNext()) {

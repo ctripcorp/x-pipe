@@ -18,8 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.ctrip.xpipe.utils.OsUtils.LINE_SEPARATOR;
 

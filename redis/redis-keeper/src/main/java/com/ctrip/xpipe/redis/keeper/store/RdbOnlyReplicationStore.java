@@ -102,7 +102,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public ReplicationStoreMeta setRdbGtidSet(String gtidSet) throws IOException {
+			public boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -168,7 +168,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
+	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -184,16 +184,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void addCommandsListener(GtidSet excludedGtidSet, CommandsListener commandsListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -214,6 +204,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void addCommandsListener(ReplicationProgress<?,?> progress, CommandsListener commandsListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

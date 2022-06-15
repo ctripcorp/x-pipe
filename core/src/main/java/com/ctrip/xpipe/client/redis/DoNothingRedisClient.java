@@ -21,7 +21,7 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
-    public Object[] resources() {
+    public Object[] broadcast() {
         return new Object[0];
     }
 
@@ -37,7 +37,16 @@ public class DoNothingRedisClient implements AsyncRedisClient {
 
     @Override
     public CommandFuture<Object> write(Object resource, Object... rawArgs) {
-        //in most cases, return OK
+        return resultFuture("OK");
+    }
+
+    @Override
+    public CommandFuture<Object> multi() {
+        return resultFuture("OK");
+    }
+
+    @Override
+    public CommandFuture<Object> exec(Object... rawArgs) {
         return resultFuture("OK");
     }
 }

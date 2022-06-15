@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -26,4 +28,10 @@ public class PublishCommandHandler extends AbstractCommandHandler {
         // PUBLISH command is called by sentinel very frequently, so we need to hide the log
         return false;
     }
+
+    @Override
+    public boolean support(RedisServer server) {
+        return server instanceof RedisKeeperServer;
+    }
+
 }

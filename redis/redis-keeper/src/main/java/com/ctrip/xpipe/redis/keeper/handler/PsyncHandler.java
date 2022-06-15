@@ -5,9 +5,11 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 
 import java.io.IOException;
 
@@ -21,8 +23,13 @@ import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFS
 public class PsyncHandler extends AbstractSyncCommandHandler {
 	
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
-	
-	protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) {
+
+	@Override
+	protected RedisSlave<?> becomeSlave(RedisClient<?> redisClient) {
+		return redisClient.becomeSlave();
+	}
+
+	protected void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) {
 		
 		KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 		KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
@@ -45,7 +52,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 			
 			if(offsetRequest < beginOffset){
 				logger.info("[innerDoHandle][offset < beginOffset][begin, end, request]{}, {}, {}" , beginOffset , endOffset, offsetRequest);
-				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+				((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 				doFullSync(redisSlave);
 			}else if(offsetRequest > endOffset +1){
 				logger.info("[innerDoHandle][wait for offset]{}, {} > {} + 1", redisSlave, offsetRequest, endOffset);
@@ -56,27 +63,27 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 					doPartialSync(redisSlave, keeperRepl.replId(), offsetRequest);
 				} else {
 					logger.info("[innerDoHandle][too much commands to transfer]{} - {} < {}", endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
-					redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+					((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 					doFullSync(redisSlave);
 				}
 			}
 		}else{
 			logger.info("current repl info: {}", keeperRepl);
-			redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+			((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 			doFullSync(redisSlave);
 		}
 	}
 
-	protected void waitForoffset(final String[] args, final RedisSlave redisSlave, String replId, final Long offsetRequest) {
+	protected void waitForoffset(final String[] args, final RedisSlave<?> redisSlave, String replId, final Long offsetRequest) {
 
 		try {
-			ReplicationStore replicationStore = redisSlave.getRedisKeeperServer().getReplicationStore();
+			ReplicationStore replicationStore = ((RedisKeeperServer)redisSlave.getRedisServer()).getReplicationStore();
 
 			logger.info("[waitForoffset][begin wait]{}", redisSlave);
 			boolean result = replicationStore.awaitCommandsOffset(offsetRequest - replicationStore.beginOffsetWhenCreated() - 1, WAIT_OFFSET_TIME_MILLI);
 			if(result){
 				logger.info("[waitForoffset][wait succeed]{}", redisSlave);
-				redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increaseWaitOffsetSucceed();
+				((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increaseWaitOffsetSucceed();
 				doPartialSync(redisSlave, replId, offsetRequest);
 				return;
 			}
@@ -92,12 +99,12 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 			return;
 		}
 		logger.info("[run][offset wait failed]{}", redisSlave);
-		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increasWaitOffsetFail();
-		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+		((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increasWaitOffsetFail();
+		((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 		doFullSync(redisSlave);
 	}
 
-	protected void doPartialSync(RedisSlave redisSlave, String replId, Long offset) {
+	protected void doPartialSync(RedisSlave<?> redisSlave, String replId, Long offset) {
 		
 		if(logger.isInfoEnabled()){
 			logger.info("[doPartialSync]" + redisSlave);
@@ -113,23 +120,23 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.markPsyncProcessed();
 
-		redisSlave.beginWriteCommands(offset);
+		redisSlave.beginWriteCommands(new OffsetReplicationProgress(offset));
 		redisSlave.partialSync();
 
-		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
+		((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSync();
 	}
 
-	protected void doKeeperPartialSync(RedisSlave redisSlave, String replId, long continueOffset) {
+	protected void doKeeperPartialSync(RedisSlave<?> redisSlave, String replId, long continueOffset) {
 		SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %s %d",
 				DefaultPsync.PARTIAL_SYNC, replId, continueOffset));
 
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.markPsyncProcessed();
 
-		redisSlave.beginWriteCommands(continueOffset);
+		redisSlave.beginWriteCommands(new OffsetReplicationProgress(continueOffset));
 		redisSlave.partialSync();
 
-		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
+		((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSync();
 	}
 
 	@Override

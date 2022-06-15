@@ -67,7 +67,7 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 			}
 		}));
 
-		doReturn(redisKeeperServer).when(redisClient).getRedisKeeperServer();
+		doReturn(redisKeeperServer).when(redisClient).getRedisServer();
 
 		doNothing().when(redisKeeperServer).processCommandSequentially(argThat(new ArgumentMatcher<Runnable>() {
 

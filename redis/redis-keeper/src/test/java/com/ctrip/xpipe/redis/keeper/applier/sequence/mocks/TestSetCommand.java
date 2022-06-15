@@ -2,10 +2,10 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence.mocks;
 
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSetParser;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
-import org.assertj.core.util.Lists;
 
 import java.util.Arrays;
 
@@ -18,7 +18,7 @@ public class TestSetCommand extends TestSleepCommand implements RedisOpDataComma
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
-    private RedisOpSetParser parser = new RedisOpSetParser(parserManager);
+    private RedisOpSingleKeyParser parser = new RedisOpSingleKeyParser(RedisOpType.SET, 1, 2);
 
     private final String[] rawArgs;
 

@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LongParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -32,4 +34,10 @@ public class SubscribeCommandHandler extends AbstractCommandHandler {
     public boolean isLog(String[] args) {
         return false;
     }
+
+    @Override
+    public boolean support(RedisServer server) {
+        return server instanceof RedisKeeperServer;
+    }
+
 }

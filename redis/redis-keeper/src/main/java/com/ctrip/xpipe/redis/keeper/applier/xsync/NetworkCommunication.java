@@ -18,7 +18,7 @@ public interface NetworkCommunication extends NetworkCommunicationState {
 
     void doDisconnect() throws Exception;
 
-    default void changeTarget(Endpoint endpoint) {
+    default void changeTarget(Endpoint endpoint, Object... states) {
         if (isConnected()) {
             if (endpoint().equals(endpoint)) {
                 return;
@@ -27,14 +27,14 @@ public interface NetworkCommunication extends NetworkCommunicationState {
             }
         }
 
-        setHostPort(endpoint());
+        initState(endpoint, states);
     }
 
     /* API */
 
-    default void connect(Endpoint endpoint) {
+    default void connect(Endpoint endpoint, Object... states) {
 
-        changeTarget(endpoint);
+        changeTarget(endpoint, states);
 
         try {
             connectCommand().execute();

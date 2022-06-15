@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -23,9 +25,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ApplierLwmManager lwmManager;
 
     @InstanceDependency
-    public GtidSet gtidSet;
+    public AtomicReference<GtidSet> gtidSet;
 
-    final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
+    Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
+
+    SequenceCommand<?> obstacle;
 
     ExecutorService stateThread;
     ExecutorService workerThreads;
@@ -43,32 +47,55 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     @Override
-    public void submit(RedisOpDataCommand<?> command) {
+    public void submit(RedisOpCommand<?> command) {
 
-        if (command.type() == RedisOpCommandType.SINGLE_KEY) {
-            stateThread.execute(()->{
-                submitSingleKeyCommand(command);
-            });
-        }
-
-        if (command.type() == RedisOpCommandType.MULTI_KEY) {
-            stateThread.execute(()->{
-                submitMultiKeyCommand(command);
-            });
-        }
-
+        stateThread.execute(()->{
+            switch (command.type()) {
+                case SINGLE_KEY:
+                    submitSingleKeyCommand((RedisOpDataCommand<?>) command);
+                    break;
+                case MULTI_KEY:
+                    submitMultiKeyCommand((RedisOpDataCommand<?>) command);
+                    break;
+                case MULTI:
+                case EXEC:
+                    submitObstacle(command);
+                    break;
+            }
+        });
     }
 
     private void submitSingleKeyCommand(RedisOpDataCommand<?> command) {
+
+        /* find dependencies */
+
+        List<SequenceCommand<?>> dependencies = new ArrayList<>();
+
         RedisKey key = command.key();
-        SequenceCommand<?> running = runningCommands.get(key);
-        SequenceCommand<?> current = running == null ?
-                new SequenceCommand<>(new StubbornCommand<>(command), stateThread, workerThreads) :
-                new SequenceCommand<>(running, new StubbornCommand<>(command), stateThread, workerThreads);
+        SequenceCommand<?> lastSameKey = runningCommands.get(key);
+        if (lastSameKey != null) {
+            dependencies.add(lastSameKey);
+        }
+
+        if (obstacle != null) {
+            dependencies.add(obstacle);
+        }
+
+        /* make command */
+
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command), stateThread, workerThreads);
+
+        /* make self a dependency */
 
         runningCommands.put(key, current);
         forgetWhenSuccess(current, key);
+
+        /* do some stuff when finish */
+
         mergeGtidWhenSuccess(current, command.gtid());
+
+        /* run self */
+
         current.execute();
     }
 
@@ -77,9 +104,20 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         List<SequenceCommand<?>> currents = new ArrayList<>();
 
         for (RedisOpCommand<?> subCommand : command.sharding()) {
+
+            /* find dependencies */
+
             List<RedisKey> keys = subCommand.keys();
-            List<SequenceCommand<?>> running = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
-            SequenceCommand<?> current = new SequenceCommand<>(running, new StubbornCommand<>(subCommand), stateThread, workerThreads);
+            List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
+            if (obstacle != null) {
+                dependencies.add(obstacle);
+            }
+
+            /* make command */
+
+            SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(subCommand), stateThread, workerThreads);
+
+            /* make self a dependency */
 
             for (RedisKey key : keys) {
                 runningCommands.put(key, current);
@@ -89,14 +127,57 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             currents.add(current);
         }
 
+        /* run self */
+
         for (SequenceCommand<?> current : currents) {
             current.execute();
         }
+
+        /* do some stuff when finish */
 
         SequenceCommand<?> success = new SuccessSequenceCommand(currents, stateThread, workerThreads);
         mergeGtidWhenSuccess(success, command.gtid());
 
         success.execute();
+    }
+
+    private void submitObstacle(RedisOpCommand<?> command) {
+
+        /* find dependencies */
+
+        List<SequenceCommand<?>> dependencies = new ArrayList<>(runningCommands.values());
+        if (obstacle != null) {
+            dependencies.add(obstacle);
+        }
+
+        /* make command */
+
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command), stateThread, workerThreads);
+
+        /* make self a dependency */
+
+        runningCommands = new HashMap<>();
+        obstacle = current;
+
+        forgetObstacleWhenSuccess(current);
+
+        /* do some stuff when finish */
+
+        mergeGtidWhenSuccess(current, command.gtid());
+
+        /* run self */
+
+        current.execute();
+    }
+
+    private void forgetObstacleWhenSuccess(SequenceCommand<?> sequenceCommand) {
+        sequenceCommand.future().addListener((f)->{
+            if (f.isSuccess()) {
+                if (sequenceCommand == obstacle) {
+                    obstacle = null;
+                }
+            }
+        });
     }
 
     private void forgetWhenSuccess(SequenceCommand<?> sequenceCommand, RedisKey key) {
@@ -114,7 +195,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             if (f.isSuccess()) {
                 if (gtid != null) {
                     if (gtidSet != null) {
-                        gtidSet.add(gtid);
+                        gtidSet.get().add(gtid);
                     }
                     if (lwmManager != null) {
                         lwmManager.submit(gtid);
