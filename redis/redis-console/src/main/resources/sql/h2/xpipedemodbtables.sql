@@ -84,6 +84,8 @@ create table DC_CLUSTER_TBL
 	metaserver_id bigint unsigned not null,
     dc_cluster_phase int not null default 1,
     active_redis_check_rules varchar(128),
+    group_name varchar(20),
+    group_type tinyint(1) NOT NULL DEFAULT 1,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
@@ -312,3 +314,45 @@ CREATE TABLE `sentinel_tbl`
     `deleted`             tinyint(4) NOT NULL DEFAULT '0',
     `datachange_lasttime` timestamp default CURRENT_TIMESTAMP,
 ) ;
+
+
+-- repl_direction_tbl
+drop table if exists repl_direction_tbl;
+CREATE TABLE `repl_direction_tbl` (
+  id bigint(20) NOT NULL AUTO_INCREMENT primary key,
+  cluster_id bigint(20) NOT NULL DEFAULT 0,
+  src_dc_id bigint(20) NOT NULL DEFAULT 0,
+  from_dc_id bigint(20) NOT NULL DEFAULT 0,
+  to_dc_id bigint(20) NOT NULL DEFAULT 0,
+  DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+  deleted tinyint(1) NOT NULL DEFAULT 0,
+) ;
+
+-- appliercontainer_tbl
+drop table if exists appliercontainer_tbl;
+CREATE TABLE `appliercontainer_tbl` (
+  appliercontainer_id bigint(20) NOT NULL AUTO_INCREMENT primary key,
+  appliercontainer_dc bigint(20)  NOT NULL DEFAULT 0,
+  appliercontainer_az bigint(20)  NOT NULL DEFAULT 0,
+  appliercontainer_ip varchar(40) NOT NULL DEFAULT '0.0.0.0',
+  appliercontainer_port int(11) NOT NULL DEFAULT 0,
+  appliercontainer_active tinyint(1) NOT NULL DEFAULT 1,
+  appliercontainer_org bigint(20)  NOT NULL DEFAULT 0,
+  DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+  deleted tinyint(1) NOT NULL DEFAULT 0,
+);
+
+-- applier_tbl
+drop table if exists applier_tbl;
+CREATE TABLE `applier_tbl` (
+  id bigint(20) NOT NULL AUTO_INCREMENT primary key,
+  shard_id bigint(20) NOT NULL DEFAULT 0,
+  repl_direction_id bigint(20) NOT NULL DEFAULT 0,
+  ip varchar(40) NOT NULL DEFAULT '0.0.0.0',
+  port int(11) NOT NULL DEFAULT 0,
+  active tinyint(1) NOT NULL DEFAULT 0,
+  container_id bigint(20) NOT NULL DEFAULT 0,
+  DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+  deleted tinyint(1) NOT NULL DEFAULT 0,
+  deleted_at int NOT NULL DEFAULT 0,
+);

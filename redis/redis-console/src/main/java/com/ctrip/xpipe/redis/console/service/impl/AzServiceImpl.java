@@ -3,10 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.AzDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
-import com.ctrip.xpipe.redis.console.model.AzTblDao;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.AzService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -16,7 +13,9 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -95,7 +94,6 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         return azDao.findAvailableZonesByDc(dcTbl.getId());
     }
 
-
     @Override
     public List<AzCreateInfo> getDcAvailableZoneInfos(String dcName) {
 
@@ -145,7 +143,6 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         azDao.deleteAvailableZone(proto);
     }
 
-
     @Override
     public AzTbl getAvailableZoneTblByAzName(String azName) {
         return azDao.findAvailableZoneByAz(azName);
@@ -160,5 +157,32 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     boolean availableZoneIsExist(AzCreateInfo createInfo) {
         AzTbl exist = getAvailableZoneTblByAzName(createInfo.getAzName());
         return exist != null;
+    }
+
+    @Override
+    public List<AzInfoModel> getAllAvailableZoneIndoModelsByDc(long dcId) {
+        List<AzTbl> azTbls = azDao.findActiveAvailableZonesByDc(dcId);
+        Map<Long, String> dcNameMap = dcService.dcNameMap();
+        return Lists.newArrayList(Lists.transform(azTbls, new Function<AzTbl, AzInfoModel>() {
+            @Override
+            public AzInfoModel apply(AzTbl azTbl) {
+                AzInfoModel azInfoModel = new AzInfoModel()
+                        .setDcName(dcNameMap.get(azTbl.getId()))
+                        .setAzName(azTbl.getAzName())
+                        .setActive(azTbl.isActive())
+                        .setDescription(azTbl.getDescription());
+
+                return azInfoModel;
+            }
+        }));
+    }
+
+    @Override
+    public Map<Long, String> azNameMap() {
+        List<AzTbl> allAzs = azDao.findAllAvailableZones();
+        Map<Long, String> result = new HashMap<>();
+
+        allAzs.forEach(azTbl -> result.put(azTbl.getId(), azTbl.getAzName()));
+        return result;
     }
 }
