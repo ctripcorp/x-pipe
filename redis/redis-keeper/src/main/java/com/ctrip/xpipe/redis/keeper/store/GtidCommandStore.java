@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandWriter;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
@@ -19,14 +18,13 @@ import java.util.function.IntSupplier;
  * @author lishanglin
  * date 2022/5/24
  */
-public class GtidCommandStore extends AbstractCommandStore<GtidSetReplicationProgress, RedisOp>
-        implements CommandStore<GtidSetReplicationProgress, RedisOp> {
+public class GtidCommandStore extends DefaultCommandStore implements CommandStore {
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
     public GtidCommandStore(File file, int maxFileSize, GtidSet baseGtidSet, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-                            CommandReaderWriterFactory<GtidSetReplicationProgress, RedisOp> cmdReaderWriterFactory,
+                            CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor) throws IOException {
         super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
                 commandReaderFlyingThreshold, baseGtidSet, cmdReaderWriterFactory, keeperMonitor);
@@ -37,15 +35,32 @@ public class GtidCommandStore extends AbstractCommandStore<GtidSetReplicationPro
         return logger;
     }
 
+    private CommandReader<RedisOp> beginRead(GtidSetReplicationProgress replicationProgress) throws IOException {
+
+        makeSureOpen();
+
+        CommandReader<RedisOp> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this,
+                offsetNotifier, commandReaderFlyingThreshold);
+        addReader(reader);
+        return reader;
+    }
+
     @Override
-    public void addCommandsListener(GtidSetReplicationProgress progress, CommandsListener listener) throws IOException {
+    public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener listener) throws IOException {
+
+        if (!(progress instanceof GtidSetReplicationProgress)) {
+            super.addCommandsListener(progress, listener);
+            return;
+        }
+
         makeSureOpen();
         logger.info("[addCommandsListener][begin] from gtidset {}, {}", progress, listener);
+
 
         CommandReader<RedisOp> cmdReader = null;
 
         try {
-            cmdReader = beginRead(progress);
+            cmdReader = beginRead((GtidSetReplicationProgress) progress);
         } finally {
             // ensure beforeCommand() is always called
             listener.beforeCommand();
@@ -62,11 +77,6 @@ public class GtidCommandStore extends AbstractCommandStore<GtidSetReplicationPro
                 logger.debug("[addCommandsListener] {}", redisOp);
 
                 // TODO: monitor send delay
-//                if(getDelayTraceLogger().isDebugEnabled()){
-//                    getDelayTraceLogger().debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
-//                }
-//                getCommandStoreDelay().beginSend(listener, referenceFileRegion.getTotalPos());
-
                 ChannelFuture future = listener.onCommand(redisOp);
 
                 if(future != null){
@@ -74,12 +84,7 @@ public class GtidCommandStore extends AbstractCommandStore<GtidSetReplicationPro
                     future.addListener(new ChannelFutureListener() {
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
-
                             finalCmdReader.flushed(redisOp);
-//                            getCommandStoreDelay().flushSucceed(listener, referenceFileRegion.getTotalPos());
-//                            if(logger.isDebugEnabled()){
-//                                getDelayTraceLogger().debug("[write][ end ]{}, {}", listener, referenceFileRegion.getTotalPos());
-//                            }
                         }
                     });
                 }

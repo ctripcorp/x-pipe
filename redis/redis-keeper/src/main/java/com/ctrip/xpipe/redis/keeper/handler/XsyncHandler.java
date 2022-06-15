@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,12 +21,12 @@ import java.util.Set;
 public class XsyncHandler extends AbstractSyncCommandHandler {
 
     @Override
-    protected RedisSlave<?> becomeSlave(RedisClient<?> redisClient) {
+    protected RedisSlave becomeSlave(RedisClient<?> redisClient) {
         return redisClient.becomeXSlave();
     }
 
     // xsync <sidno interested> <gtid.set excluded> [vc excluded]
-    protected void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
+    protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
         Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
@@ -57,7 +57,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
     }
 
     // +CONTINUE
-    protected void doPartialSync(RedisSlave<?> redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet) {
+    protected void doPartialSync(RedisSlave redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet) {
         logger.info("[doPartialSync] {}", redisSlave);
         SimpleStringParser simpleStringParser = new SimpleStringParser(Xsync.PARTIAL_SYNC);
 

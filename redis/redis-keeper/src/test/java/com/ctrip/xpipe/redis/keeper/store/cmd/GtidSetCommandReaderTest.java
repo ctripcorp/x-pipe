@@ -35,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
 
     @Mock
-    private CommandStore<?, RedisOp> commandStore;
+    private CommandStore commandStore;
 
     @Mock
     private OffsetNotifier notifier;

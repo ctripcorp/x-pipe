@@ -1,7 +1,6 @@
-package com.ctrip.xpipe.redis.keeper.store.cmd;
+package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 
 import java.util.Objects;
 
@@ -9,7 +8,7 @@ import java.util.Objects;
  * @author lishanglin
  * date 2022/4/18
  */
-public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet, String> {
+public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet> {
 
     private GtidSet gtidSet;
 
@@ -20,16 +19,6 @@ public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet, 
     @Override
     public GtidSet getProgress() {
         return gtidSet;
-    }
-
-    @Override
-    public void makeProgress(String gtid) {
-        gtidSet.add(gtid);
-    }
-
-    @Override
-    public TYPE getType() {
-        return TYPE.GTIDSET;
     }
 
     @Override

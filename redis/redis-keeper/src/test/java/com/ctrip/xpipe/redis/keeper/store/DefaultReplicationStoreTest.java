@@ -103,13 +103,8 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 					store.fullSyncIfPossible(new FullSyncListener() {
 						
 						@Override
-						public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+						public ChannelFuture onCommand(Object cmd) {
 							
-							return null;
-						}
-
-						@Override
-						public ChannelFuture onCommand(RedisOp redisOp) {
 							return null;
 						}
 
@@ -119,12 +114,12 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?, ?> rdbProgress) {
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
 
 						}
 
 						@Override
-						public boolean supportProgress(ReplicationProgress.TYPE type) {
+						public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
 							return true;
 						}
 

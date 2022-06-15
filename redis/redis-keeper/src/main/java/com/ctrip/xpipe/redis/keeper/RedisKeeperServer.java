@@ -41,7 +41,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	 */
 	Set<RedisClient> allClients();
 	
-	Set<RedisSlave<RedisKeeperServer>> slaves();
+	Set<RedisSlave> slaves();
 		
 	ReplicationStore getReplicationStore();
 		

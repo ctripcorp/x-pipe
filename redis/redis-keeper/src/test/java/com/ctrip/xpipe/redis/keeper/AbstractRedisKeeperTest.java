@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 
 import java.io.ByteArrayOutputStream;
@@ -154,12 +154,12 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		rdbStore.readRdbFile(new RdbFileListener() {
 
 			@Override
-			public void setRdbFileInfo(EofType eofType, ReplicationProgress<?, ?> rdbProgress) {
+			public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
 
 			}
 
 			@Override
-			public boolean supportProgress(ReplicationProgress.TYPE type) {
+			public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
 				return true;
 			}
 
@@ -227,21 +227,17 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes(referenceFileRegion);
+							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
-							logger.error("[onCommand]" + referenceFileRegion, e);
+							logger.error("[onCommand]" + cmd, e);
 						}
 						return null;
 					}
 
-					@Override
-					public ChannelFuture onCommand(RedisOp redisOp) {
-						return null;
-					}
 				});
 			}
 		}.start();
