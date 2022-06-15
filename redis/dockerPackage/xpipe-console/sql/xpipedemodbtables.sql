@@ -102,6 +102,8 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `metaserver_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference metaserver id',
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
   `active_redis_check_rules` varchar(128) COMMENT 'active redis check rules',
+  `group_name` varchar(20) COMMENT 'reference group name, null means same as dc name ',
+  `group_type` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'reference group type, 1 means DRMaster and 0 means Master',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_id`),
@@ -393,3 +395,56 @@ CREATE TABLE `sentinel_tbl`
     UNIQUE KEY `unniqueKey` (`sentinel_ip`,`sentinel_port`,`deleted`),
     KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵表';
+
+-- repl_direction_tbl
+drop table if exists repl_direction_tbl;
+CREATE TABLE `repl_direction_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
+  `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'source dc id of reference cluster',
+  `from_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'from dc id of this direction',
+  `to_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'to dc id of this direction',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `cluster_id` (`cluster_id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='replication direction info';
+
+-- appliercontainer_tbl
+drop table if exists appliercontainer_tbl;
+CREATE TABLE `appliercontainer_tbl` (
+  `appliercontainer_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `appliercontainer_dc` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference dc',
+  `appliercontainer_az` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference available zone',
+  `appliercontainer_ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'appliercontainer ip',
+  `appliercontainer_port` int(11) NOT NULL DEFAULT '0' COMMENT 'appliercontainer port',
+  `appliercontainer_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'appliercontainer active status',
+  `appliercontainer_org` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference organization',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`appliercontainer_id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  KEY `appliercontainer_dc` (`appliercontainer_dc`)
+) DEFAULT CHARSET=utf8 COMMENT='appliercontainer base info';
+
+-- applier_tbl
+drop table if exists applier_tbl;
+CREATE TABLE `applier_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `shard_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference shard id',
+  `repl_direction_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference repl direction',
+  `container_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference container id',
+  `ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'ip',
+  `port` int(11) NOT NULL DEFAULT '0' COMMENT 'port',
+  `active` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'applier active status',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ip_port_deleted_at` (`ip`,`port`,`deleted_at`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  KEY `shard_id` (`shard_id`),
+  KEY `active` (`active`),
+  KEY `shard_id_deleted` (`shard_id`,`deleted`)
+) DEFAULT CHARSET=utf8 COMMENT='applier base info';
