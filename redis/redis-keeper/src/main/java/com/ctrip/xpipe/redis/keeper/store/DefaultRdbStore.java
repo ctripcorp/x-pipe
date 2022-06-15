@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -182,7 +182,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
-		if (!rdbFileListener.supportProgress(ReplicationProgress.TYPE.OFFSET)) {
+		if (!rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
 			throw new UnsupportedOperationException("offset progress not support");
 		}
 		rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));

@@ -13,7 +13,7 @@ import io.netty.channel.ChannelFuture;
  *
  * May 20, 2016 3:55:37 PM
  */
-public interface RedisSlave<T extends RedisServer> extends RedisClient<T>, PartialAware, CommandsListener{
+public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware, CommandsListener{
 	
 	void waitForRdbDumping();
 
@@ -27,9 +27,9 @@ public interface RedisSlave<T extends RedisServer> extends RedisClient<T>, Parti
 	
 	Long getAckTime();
 
-	void beginWriteCommands(ReplicationProgress<?,?> progress);
+	void beginWriteCommands(ReplicationProgress<?> progress);
 
-	void beginWriteRdb(EofType eofType, ReplicationProgress<?,?> rdbProgress);
+	void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress);
 
 	ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion);
 
@@ -46,6 +46,6 @@ public interface RedisSlave<T extends RedisServer> extends RedisClient<T>, Parti
 
 	String metaInfo();
 
-	boolean supportProgress(ReplicationProgress.TYPE type);
+	boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz);
 
 }

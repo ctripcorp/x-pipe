@@ -52,7 +52,7 @@ public class RedisPromotor {
 	public void promote() throws RedisSlavePromotionException{
 		
 
-		final RedisSlave<RedisKeeperServer> redisSlave = findSlave(this.redisKeeperServer, this.promoteServerIp, this.promoteServerPort);
+		final RedisSlave redisSlave = findSlave(this.redisKeeperServer, this.promoteServerIp, this.promoteServerPort);
 		if(redisSlave == null){
 			String msg = String.format("%s:%s is not a connected slave", promoteServerIp, promoteServerPort);
 			throw new RedisSlavePromotionException(msg);
@@ -70,7 +70,7 @@ public class RedisPromotor {
 		}.start();
 	}
 
-	private void promoteSlaveToMaster(RedisSlave<RedisKeeperServer> redisSlave) throws Exception {
+	private void promoteSlaveToMaster(RedisSlave redisSlave) throws Exception {
 
 		SimpleObjectPool<NettyClient> fsyncPool = null;
 		SimpleObjectPool<NettyClient> clientPool = null;
@@ -149,7 +149,7 @@ public class RedisPromotor {
 		redisKeeperServer.getRedisKeeperServerState().setPromotionState(PROMOTION_STATE.SLAVE_PROMTED, new InetSocketAddress(promoteServerIp, promoteServerPort));
 	}
 
-	private void waitUntilSlaveSync(RedisSlave<RedisKeeperServer> redisSlave, String ip, int port, int timeoutMilli) {
+	private void waitUntilSlaveSync(RedisSlave redisSlave, String ip, int port, int timeoutMilli) {
 
 		logger.info("[waitUntilSlaveSync]{}, {}, {}, {}", redisSlave, ip, port,timeoutMilli);
 		
@@ -178,9 +178,9 @@ public class RedisPromotor {
 		}
 	}
 
-	private RedisSlave<RedisKeeperServer> findSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
-		Set<RedisSlave<RedisKeeperServer>> slaves = keeper.slaves();
-		for (RedisSlave<RedisKeeperServer> redisSlave : slaves) {
+	private RedisSlave findSlave(RedisKeeperServer keeper, String actualIp, int actualPort) {
+		Set<RedisSlave> slaves = keeper.slaves();
+		for (RedisSlave redisSlave : slaves) {
 			
 			InetSocketAddress slaveAddr = (InetSocketAddress) redisSlave.channel().remoteAddress();
 			String expectedIp = slaveAddr.getAddress().getHostAddress();

@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<RedisOp> implements CommandReader<RedisOp> {
 
-    private CommandStore<?, RedisOp> commandStore;
+    private CommandStore commandStore;
 
     private CommandFile curCmdFile;
 
@@ -49,7 +49,7 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
 
     private static final int FILE_BUFFER_SIZE = Integer.parseInt(System.getProperty("CMD_FILE_BUFFER_SIZE", "4096"));
 
-    public GtidSetCommandReader(CommandStore<?, RedisOp> commandStore, GtidSet excludedGtidSet,
+    public GtidSetCommandReader(CommandStore commandStore, GtidSet excludedGtidSet,
                                 RedisClientProtocol<Object[]> protocolParser, RedisOpParser opParser,
                                 OffsetNotifier offsetNotifier, long flyingThreshold) throws IOException {
         super(commandStore, flyingThreshold);
