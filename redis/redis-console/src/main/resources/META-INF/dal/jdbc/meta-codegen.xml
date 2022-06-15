@@ -106,6 +106,8 @@
     <member name="metaserver-id" field="metaserver_id" value-type="long" length="20" nullable="false" />
     <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" nullable="false" />
     <member name="active-redis-check-rules" field="active_redis_check_rules" value-type="String" length="128" />
+    <member name="group-name" field="group_name" value-type="String" length="20" />
+    <member name="group-type" field="group_type" value-type="boolean" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-id" value-type="long" key-member="dc-cluster-id" />
@@ -451,7 +453,99 @@
       </query>
     </query-defs>
   </entity>
-  <entity name="az-tbl" table="az_tbl" alias="at">
+  <entity name="applier-tbl" table="applier_tbl" alias="at">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
+    <member name="repl-direction-id" field="repl_direction_id" value-type="long" length="20" nullable="false" />
+    <member name="container-id" field="container_id" value-type="long" length="20" nullable="false" />
+    <member name="ip" field="ip" value-type="String" length="40" nullable="false" />
+    <member name="port" field="port" value-type="int" length="10" nullable="false" />
+    <member name="active" field="active" value-type="boolean" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <member name="deleted-at" field="deleted_at" value-type="int" length="10" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="ip_port_deleted_at" unique="true" members="ip ASC, port ASC, deleted_at ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="shard_id" members="shard_id ASC" />
+    <index name="active" members="active ASC" />
+    <index name="shard_id_deleted" members="shard_id ASC, deleted ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="appliercontainer-tbl" table="appliercontainer_tbl" alias="at2">
+    <member name="appliercontainer-id" field="appliercontainer_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="appliercontainer-dc" field="appliercontainer_dc" value-type="long" length="20" nullable="false" />
+    <member name="appliercontainer-az" field="appliercontainer_az" value-type="long" length="20" nullable="false" />
+    <member name="appliercontainer-org" field="appliercontainer_org" value-type="long" length="20" nullable="false" />
+    <member name="appliercontainer-ip" field="appliercontainer_ip" value-type="String" length="40" nullable="false" />
+    <member name="appliercontainer-port" field="appliercontainer_port" value-type="int" length="10" nullable="false" />
+    <member name="appliercontainer-active" field="appliercontainer_active" value-type="boolean" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <var name="key-appliercontainer-id" value-type="long" key-member="appliercontainer-id" />
+    <primary-key name="PRIMARY" members="appliercontainer_id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="appliercontainer_dc" members="appliercontainer_dc ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-appliercontainer-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='appliercontainer-id'/> = ${key-appliercontainer-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-appliercontainer-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='appliercontainer-id'/> = ${key-appliercontainer-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-appliercontainer-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='appliercontainer-id'/> = ${key-appliercontainer-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="az-tbl" table="az_tbl" alias="at3">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
@@ -801,6 +895,48 @@
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="repl-direction-tbl" table="repl_direction_tbl" alias="rdt">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
+    <member name="src-dc-id" field="src_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="from-dc-id" field="from_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="to-dc-id" field="to_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="cluster_id" members="cluster_id ASC" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
