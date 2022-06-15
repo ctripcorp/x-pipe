@@ -41,8 +41,7 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
     @Override
     public Pair<String, String> read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -73,7 +72,6 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
 
                 case READ_END:
                 default:
-                    break PARSE;
             }
         }
 

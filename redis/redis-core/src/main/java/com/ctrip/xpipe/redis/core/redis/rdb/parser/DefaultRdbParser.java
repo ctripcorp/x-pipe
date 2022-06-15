@@ -20,7 +20,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     private RdbParseContext rdbParseContext;
 
-    private STATE state = STATE.READ_MAGIC;
+    protected STATE state = STATE.READ_INIT;
 
     private ByteBuf temp;
 
@@ -32,7 +32,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRdbParser.class);
 
-    enum STATE {
+    protected enum STATE {
         READ_INIT,
         READ_MAGIC,
         READ_VERSION,
@@ -49,13 +49,13 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     public DefaultRdbParser(RdbParseContext parserManager) {
         this.rdbParseContext = parserManager;
+        this.rdbParseContext.bindRdbParser(this);
     }
 
     @Override
     public Void read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -86,12 +86,11 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     short type = byteBuf.readUnsignedByte();
                     currentType = RdbParseContext.RdbType.findByCode(type);
 
-                    logger.debug("[read][type] {}", currentType);
+                    getLogger().debug("[read][type] {}", currentType);
                     if (null == currentType) {
                         throw new XpipeRuntimeException("unknown rdb type:" + type);
                     } else if (currentType.equals(RdbParseContext.RdbType.EOF)) {
                         state = STATE.READ_END;
-                        notifyFinish();
                     } else if (currentType.isRdbOp()) {
                         state = STATE.READ_OP;
                     } else {
@@ -139,7 +138,10 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
                 case READ_END:
                 default:
-                    break PARSE;
+            }
+
+            if (isFinish()) {
+                notifyFinish();
             }
         }
 

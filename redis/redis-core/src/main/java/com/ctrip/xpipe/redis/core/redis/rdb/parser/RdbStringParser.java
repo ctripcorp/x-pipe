@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpPSetEx;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSet;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -101,8 +101,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
     @Override
     public byte[] read(ByteBuf byteBuf) {
 
-        PARSE:
-        while (byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -137,7 +136,6 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         temp.readBytes(redisString);
                         temp.release();
                         temp = null;
-                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -151,7 +149,6 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                         redisString = String.valueOf(val).getBytes();
                         temp.release();
                         temp = null;
-                        propagateCmdIfNeed();
                         state = STATE.READ_END;
                     }
                     break;
@@ -188,13 +185,15 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
                     if (RedisLzfUtil.decode(lzfContent, redisString) != len.getLenValue()) {
                         throw new XpipeRuntimeException("invalid LZF compressed string");
                     }
-                    propagateCmdIfNeed();
                     state = STATE.READ_END;
                     break;
 
                 case READ_END:
                 default:
-                    break PARSE;
+            }
+
+            if (isFinish()) {
+                propagateCmdIfNeed();
             }
         }
 
@@ -205,9 +204,17 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
         if (null == redisString) return;
 
         if (null != context.getKey() && context.getExpireMilli() > 0) {
-            notifyRedisOp(new RedisOpPSetEx(context.getKey(), redisString, context.getExpireMilli()));
+            notifyRedisOp(new RedisOpSingleKey(
+                    RedisOpType.PSETEX,
+                    new byte[][] {RedisOpType.PSETEX.name().getBytes(), context.getKey().get(), String.valueOf(context.getExpireMilli()).getBytes(), redisString},
+                    context.getKey(),
+                    redisString));
         } else if (null != context.getKey()) {
-            notifyRedisOp(new RedisOpSet(context.getKey(), redisString));
+            notifyRedisOp(new RedisOpSingleKey(
+                    RedisOpType.SET,
+                    new byte[][] {RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
+                    context.getKey(),
+                    redisString));
         }
     }
 

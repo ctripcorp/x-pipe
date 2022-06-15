@@ -92,8 +92,13 @@ public class GtidCommandStore extends AbstractCommandStore<GtidSetReplicationPro
         logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
     }
 
+    public void setBaseGtidSet(String baseGtidSet) {
+        this.baseGtidSet = new GtidSet(baseGtidSet);
+    }
+
     @Override
     public GtidSet getEndGtidSet() {
+        makeSureOpen();
         return ((GtidSetCommandWriter)getCmdWriter()).getGtidSetContain();
     }
 }

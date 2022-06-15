@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info" monitorInterval="5"   packages="com.ctrip.xpipe.utils.log">
+
+    <appenders>
+        <console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{yyyy-MM-dd}][%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+        </console>
+
+        <RollingFile name="RollingFileInfo" fileName="target/applogs/xpipe-test.log"
+                     filePattern="target/applogs/xpipe-test-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx{filters(org.junit,org.eclipse.jdt.internal,org.apache.maven.surefire,org.mockito,org.apache.catalina,org.springframework.web,com.dianping.cat)}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="1000 MB"/>
+            </Policies>
+        </RollingFile>
+
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
+        <logger name="org.apache" level="WARN"/>
+
+
+        <logger name="io.netty.handler.logging.LoggingHandler" level="INFO"/>
+        <logger name="com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay" level="INFO"/>
+        <logger name="com.ctrip.xpipe.redis.integratedtest.stability.DelayManager" level="INFO"/>
+
+        <root level="DEBUG">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="RollingFileInfo"/>
+        </root>
+    </loggers>
+
+</configuration >

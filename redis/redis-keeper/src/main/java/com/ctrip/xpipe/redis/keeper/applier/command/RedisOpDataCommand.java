@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface RedisOpDataCommand<V> extends RedisOpCommand<V> {
 
-    default List<RedisOpCommand<V>> sharding() {
+    default List<RedisOpDataCommand<V>> sharding() {
         return Lists.newArrayList(this);
     }
 }

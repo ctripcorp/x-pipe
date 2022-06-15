@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 
 import java.io.IOException;
@@ -18,9 +19,9 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
     public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
 
     @Override
-    protected void doHandle(final String[] args, final RedisClient redisClient) throws Exception {
+    protected void doHandle(final String[] args, final RedisClient<?> redisClient) throws Exception {
         // in non-psync executor
-        final RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
+        final RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 
         if(redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()){
             redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
@@ -31,7 +32,7 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
             return;
         }
 
-        final RedisSlave redisSlave  = redisClient.becomeSlave();
+        final RedisSlave<?> redisSlave  = becomeSlave(redisClient);
         if(redisSlave == null){
             logger.warn("[doHandle][client already slave] {}", redisClient);
             try {
@@ -63,9 +64,11 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
         });
     }
 
-    protected abstract void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException;
+    protected abstract RedisSlave<?> becomeSlave(RedisClient<?> redisClient);
 
-    protected void doFullSync(RedisSlave redisSlave) {
+    protected abstract void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) throws IOException;
+
+    protected void doFullSync(RedisSlave<?> redisSlave) {
 
         try {
             if(logger.isInfoEnabled()){
@@ -73,7 +76,7 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
             }
 
             redisSlave.markPsyncProcessed();
-            RedisKeeperServer redisKeeperServer = redisSlave.getRedisKeeperServer();
+            RedisKeeperServer redisKeeperServer = (RedisKeeperServer)redisSlave.getRedisServer();
 
             //alert full sync
             String alert = String.format("FULL(M)<-%s[%s,%s]", redisSlave.metaInfo(), redisKeeperServer.getClusterId(), redisKeeperServer.getShardId());
@@ -91,5 +94,9 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
         }
     }
 
+    @Override
+    public boolean support(RedisServer server) {
+        return server instanceof RedisKeeperServer;
+    }
 }
 

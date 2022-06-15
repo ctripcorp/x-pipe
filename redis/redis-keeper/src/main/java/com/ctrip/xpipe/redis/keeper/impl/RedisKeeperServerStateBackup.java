@@ -109,7 +109,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 
 			if(updateArgs instanceof KeeperServerStateChanged){
 
-				redisClient.getRedisKeeperServer().processCommandSequentially(()-> {
+				redisClient.getRedisServer().processCommandSequentially(()-> {
 					if (released) {
 						logger.info("[update][{}] update but released", redisClient);
 						return;
@@ -139,7 +139,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		public void release() throws Exception {
 			logger.info("[release]{}", this);
 			released = true;
-			this.redisClient.getRedisKeeperServer().removeObserver(this);
+			this.redisClient.getRedisServer().removeObserver(this);
 		}
 	}
 

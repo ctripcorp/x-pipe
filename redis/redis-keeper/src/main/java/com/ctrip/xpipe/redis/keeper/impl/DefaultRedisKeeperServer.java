@@ -22,6 +22,7 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -61,6 +62,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
+
 /**
  * @author wenchao.meng
  *
@@ -95,7 +98,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
     private NioEventLoopGroup masterEventLoopGroup;
 	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
-	private final Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
+	private final Map<Channel, RedisClient<RedisKeeperServer>>  redisClients = new ConcurrentHashMap<>();
 	
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
@@ -269,8 +272,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	private void clearClients() {
-		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
-			RedisClient client = entry.getValue();
+		for (Entry<Channel, RedisClient<RedisKeeperServer>> entry : redisClients.entrySet()) {
+			RedisClient<RedisKeeperServer> client = entry.getValue();
 			try {
 				logger.info("[clearClients]close:{}", client);
 				client.close();
@@ -373,9 +376,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 
 	@Override
-	public RedisClient clientConnected(Channel channel) {
+	public RedisClient<RedisKeeperServer> clientConnected(Channel channel) {
 		
-		RedisClient redisClient = new DefaultRedisClient(channel, this);
+		RedisClient<RedisKeeperServer> redisClient = new DefaultRedisClient(channel, this);
 		redisClients.put(channel, redisClient);
 		
 		redisClient.addObserver(new Observer() {
@@ -384,7 +387,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void update(Object args, Observable observable) {
 				
 				if(args instanceof RedisSlave){
-					becomeSlave(((RedisClient)observable).channel(), (RedisSlave)args);
+					becomeSlave(((RedisClient<?>)observable).channel(), (RedisSlave<RedisKeeperServer>)args);
 				}
 			}
 		});
@@ -392,7 +395,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return redisClient;
 	}
 
-	protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
+	protected void becomeSlave(Channel channel, RedisSlave<RedisKeeperServer> redisSlave) {
 
 		logger.info("[update][redis client become slave]{}", channel);
 
@@ -468,13 +471,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Set<RedisSlave> slaves() {
+	public Set<RedisSlave<RedisKeeperServer>> slaves() {
 
-		Set<RedisSlave> slaves = new HashSet<>();
+		Set<RedisSlave<RedisKeeperServer>> slaves = new HashSet<>();
 
-		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
+		for (Entry<Channel, RedisClient<RedisKeeperServer>> entry : redisClients.entrySet()) {
 
-			RedisClient redisClient = entry.getValue();
+			RedisClient<RedisKeeperServer> redisClient = entry.getValue();
 			if(redisClient instanceof RedisSlave){
 				slaves.add((RedisSlave)redisClient);
 			}
@@ -489,6 +492,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public int getListeningPort() {
 		return currentKeeperMeta.getPort();
+	}
+
+	@Override
+	public KeeperTransMeta.KeeperReplType getKeeperReplType() {
+		return KeeperTransMeta.KeeperReplType.REPL_DEFAULT;
 	}
 
 	@Override
@@ -511,6 +519,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		//alert full sync
 		String alert = String.format("FULL(S)->%s[%s,%s]", getRedisMaster().metaInfo(), getClusterId(), getShardId());
 		EventMonitor.DEFAULT.logAlertEvent(alert);
+
+	}
+
+	@Override
+	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 
 	}
 
@@ -629,11 +642,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if(rdbDumper.get() == null){
 			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-			if(!getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener)){
+			FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener);
+			if(null != failCause){
 				//go dump rdb
 				try{
-					dumpNewRdb();
-					redisSlave.waitForRdbDumping();
+					if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
+						redisSlave.waitForGtidParse();
+					} else {
+						dumpNewRdb();
+						redisSlave.waitForRdbDumping();
+					}
 				}catch(AbstractRdbDumperException e){
 					logger.error("[fullSyncToSlave]", e);
 					if(e.isCancelSlave()){

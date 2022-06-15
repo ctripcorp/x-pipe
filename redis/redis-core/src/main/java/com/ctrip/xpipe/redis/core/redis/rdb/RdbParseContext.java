@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.rdb;
 
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbAuxParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbSelectDbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbResizeDbParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +12,8 @@ import java.util.function.Function;
  * date 2022/5/29
  */
 public interface RdbParseContext {
+
+    void bindRdbParser(RdbParser<?> parser);
 
     RdbParser<?> getOrCreateParser(RdbType rdbType);
 
@@ -38,6 +37,14 @@ public interface RdbParseContext {
 
     long getExpireMilli();
 
+    RdbParseContext setLruIdle(long idle);
+
+    long getLruIdle();
+
+    RdbParseContext setLfuFreq(int freq);
+
+    int getLfuFreq();
+
     void clearKvContext();
 
     enum RdbType {
@@ -58,8 +65,8 @@ public interface RdbParseContext {
 //        LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST),
 //        STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS),
 //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
-//        IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE),
-//        FREQ(RdbConstant.REDIS_RDB_OP_CODE_FREQ),
+        IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),
+        FREQ(RdbConstant.REDIS_RDB_OP_CODE_FREQ, true, RdbFreqParser::new),
         AUX(RdbConstant.REDIS_RDB_OP_CODE_AUX, true, RdbAuxParser::new),
         RESIZEDB(RdbConstant.REDIS_RDB_OP_CODE_RESIZEDB, true, RdbResizeDbParser::new),
 //        EXPIRETIME_MS(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME_MS),
