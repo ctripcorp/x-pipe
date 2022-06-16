@@ -82,9 +82,6 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);
         KeeperResourceManager proxyEndpointManager = getRegistry().getComponent(KeeperResourceManager.class);
-        ProxyEndpointSelector selector = mock(ProxyEndpointSelector.class);
-        when(proxyEndpointManager.createProxyEndpointSelector(any())).thenReturn(selector);
-        when(selector.nextHop()).thenReturn(protocol.nextEndpoints().get(0));
 
         String origin_timeout = System.getProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI);
         System.setProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, "5");

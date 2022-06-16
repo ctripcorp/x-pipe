@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetSt
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;

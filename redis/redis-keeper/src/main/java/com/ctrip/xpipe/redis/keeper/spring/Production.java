@@ -3,10 +3,6 @@ package com.ctrip.xpipe.redis.keeper.spring;
 
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerKeeperService;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
@@ -56,10 +52,7 @@ public class Production extends AbstractProfile{
 	@Bean
 	public KeeperResourceManager getKeeperResourceManager(LeakyBucket leakyBucket) {
 
-	    /* TODO: useless in the future ?  */
-		ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
-		NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
-		return new DefaultKeeperResourceManager(endpointManager, algorithm, leakyBucket);
+		return new DefaultKeeperResourceManager(leakyBucket);
 	}
 
 	@Bean(initMethod = "start", destroyMethod = "stop")
