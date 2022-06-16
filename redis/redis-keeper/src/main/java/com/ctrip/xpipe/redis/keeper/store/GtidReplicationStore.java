@@ -95,7 +95,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
         makeSureOpen();
 
-        if (!fullSyncListener.supportProgress(ReplicationProgress.TYPE.GTIDSET)) {
+        if (!fullSyncListener.supportProgress(GtidSetReplicationProgress.class)) {
             return super.fullSyncIfPossible(fullSyncListener);
         }
 

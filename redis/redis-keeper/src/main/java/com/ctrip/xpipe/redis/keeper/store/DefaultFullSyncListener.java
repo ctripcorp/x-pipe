@@ -45,7 +45,7 @@ public class DefaultFullSyncListener implements FullSyncListener {
 		redisSlave.writeFile(referenceFileRegion);
 	}
 
-	public void setRdbFileInfo(EofType eofType, ReplicationProgress<?, ?> progress) {
+	public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> progress) {
 		if (logger.isInfoEnabled()) {
 			logger.info("[setRdbFileInfo]eofType:" + eofType + ",progress:" + progress);
 		}
@@ -54,8 +54,8 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public boolean supportProgress(ReplicationProgress.TYPE type) {
-		return redisSlave.supportProgress(type);
+	public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+		return redisSlave.supportProgress(clazz);
 	}
 
 	@Override
@@ -79,14 +79,8 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
-		
-		return redisSlave.onCommand(referenceFileRegion);
-	}
-
-	@Override
-	public ChannelFuture onCommand(RedisOp redisOp) {
-		return redisSlave.onCommand(redisOp);
+	public ChannelFuture onCommand(Object cmd) {
+		return redisSlave.onCommand(cmd);
 	}
 
 	@Override

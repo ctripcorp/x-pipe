@@ -94,6 +94,15 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<AzTbl> findAllActiveAvailableZones() {
+        return queryHandler.handleQuery(new DalQuery<List<AzTbl>>() {
+            @Override
+            public List<AzTbl> doQuery() throws DalException {
+                return azTblDao.findAllActiveAvailableZone(AzTblEntity.READSET_FULL);
+            }
+        });
+    }
+
     public AzTbl findAvailableZoneByAz(String azName) {
         return queryHandler.handleQuery(new DalQuery<AzTbl>() {
             @Override

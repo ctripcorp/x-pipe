@@ -28,7 +28,7 @@ import java.util.List;
 public class GtidCmdOneSegmentReaderTest extends AbstractRedisOpParserTest {
 
     @Mock
-    private CommandStore<?, RedisOp> commandStore;
+    private CommandStore commandStore;
 
     @Test
     public void testReadRightBoundClosedSegment() throws Exception {
