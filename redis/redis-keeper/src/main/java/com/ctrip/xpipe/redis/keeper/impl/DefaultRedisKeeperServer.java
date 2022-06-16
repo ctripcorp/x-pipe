@@ -387,7 +387,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			public void update(Object args, Observable observable) {
 				
 				if(args instanceof RedisSlave){
-					becomeSlave(((RedisClient<?>)observable).channel(), (RedisSlave<RedisKeeperServer>)args);
+					becomeSlave(((RedisClient<?>)observable).channel(), (RedisSlave)args);
 				}
 			}
 		});
@@ -395,7 +395,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return redisClient;
 	}
 
-	protected void becomeSlave(Channel channel, RedisSlave<RedisKeeperServer> redisSlave) {
+	protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
 
 		logger.info("[update][redis client become slave]{}", channel);
 
@@ -471,9 +471,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public Set<RedisSlave<RedisKeeperServer>> slaves() {
+	public Set<RedisSlave> slaves() {
 
-		Set<RedisSlave<RedisKeeperServer>> slaves = new HashSet<>();
+		Set<RedisSlave> slaves = new HashSet<>();
 
 		for (Entry<Channel, RedisClient<RedisKeeperServer>> entry : redisClients.entrySet()) {
 

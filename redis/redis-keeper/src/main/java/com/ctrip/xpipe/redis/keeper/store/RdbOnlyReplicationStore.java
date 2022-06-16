@@ -213,7 +213,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void addCommandsListener(ReplicationProgress<?,?> progress, CommandsListener commandsListener) throws IOException {
+	public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

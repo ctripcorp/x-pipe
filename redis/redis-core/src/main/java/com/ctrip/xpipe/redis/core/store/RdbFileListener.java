@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 public interface RdbFileListener {
 
-	void setRdbFileInfo(EofType eofType, ReplicationProgress<?,?> rdbProgress);
+	void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress);
 
 	/**
 	 * 
@@ -39,6 +39,6 @@ public interface RdbFileListener {
     */
    void beforeFileData();
 
-   boolean supportProgress(ReplicationProgress.TYPE type);
-   
+   default boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {return false;};
+
 }

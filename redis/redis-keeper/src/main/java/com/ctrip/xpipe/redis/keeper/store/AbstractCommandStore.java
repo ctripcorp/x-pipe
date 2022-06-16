@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * @author lishanglin
  * date 2022/5/24
  */
-public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R> extends AbstractStore implements CommandStore<P,R> {
+public abstract class AbstractCommandStore extends AbstractStore implements CommandStore {
 
     private final static Logger delayTraceLogger = KeeperLogger.getDelayTraceLog();
 
@@ -51,25 +51,25 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
 
     private final FilenameFilter allFileFilter;
 
-    private final ConcurrentMap<CommandReader<R>, Boolean> readers = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CommandReader<?>, Boolean> readers = new ConcurrentHashMap<>();
 
-    private OffsetNotifier offsetNotifier;
+    protected OffsetNotifier offsetNotifier;
 
-    private final long commandReaderFlyingThreshold;
+    protected final long commandReaderFlyingThreshold;
 
-    private CommandStoreDelay commandStoreDelay;
+    protected CommandStoreDelay commandStoreDelay;
 
-    private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
-
-    private ReentrantLock gcLock = new ReentrantLock();
-
-    private CommandReaderWriterFactory<P, R> cmdReaderWriterFactory;
+    protected CommandReaderWriterFactory cmdReaderWriterFactory;
 
     private CommandWriter cmdWriter;
 
     private List<CommandFileOffsetGtidIndex> cmdIndexList = new CopyOnWriteArrayList<>();
 
     protected GtidSet baseGtidSet;
+
+    private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
+
+    private ReentrantLock gcLock = new ReentrantLock();
 
     private static final String INDEX_FILE_PREFIX = "idx_";
 
@@ -80,7 +80,7 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
     public AbstractCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                long commandReaderFlyingThreshold, GtidSet baseGtidSet,
-                               CommandReaderWriterFactory<P, R> cmdReaderWriterFactory,
+                               CommandReaderWriterFactory cmdReaderWriterFactory,
                                KeeperMonitor keeperMonitor) throws IOException {
 
         this.baseDir = file.getParentFile();
@@ -259,16 +259,6 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
         return cmdWriter.totalLength();
     }
 
-    public CommandReader<R> beginRead(P replicationProgress) throws IOException {
-
-        makeSureOpen();
-
-        CommandReader<R> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this,
-                offsetNotifier, commandReaderFlyingThreshold);
-        readers.put(reader, Boolean.TRUE);
-        return reader;
-    }
-
     public void rotateFileIfNecessary() throws IOException {
         cmdWriter.rotateFileIfNecessary();
     }
@@ -410,12 +400,12 @@ public abstract class AbstractCommandStore<P extends ReplicationProgress<?,?>,R>
     }
 
     @Override
-    public void addReader(CommandReader reader) {
+    public void addReader(CommandReader<?> reader) {
         this.readers.put(reader, Boolean.TRUE);
     }
 
     @Override
-    public void removeReader(CommandReader reader) {
+    public void removeReader(CommandReader<?> reader) {
         this.readers.remove(reader);
     }
 

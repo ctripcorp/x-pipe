@@ -77,12 +77,12 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 				try {
 					rdbStore.readRdbFile(new RdbFileListener() {
 						@Override
-						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?, ?> rdbProgress) {
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
 							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbProgress);
 						}
 
 						@Override
-						public boolean supportProgress(ReplicationProgress.TYPE type) {
+						public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
 							return true;
 						}
 

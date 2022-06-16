@@ -36,7 +36,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	// full sync
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
-	void addCommandsListener(ReplicationProgress<?,?> progress, CommandsListener commandsListener) throws IOException;
+	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 
 	// meta related
 	MetaStore getMetaStore();
