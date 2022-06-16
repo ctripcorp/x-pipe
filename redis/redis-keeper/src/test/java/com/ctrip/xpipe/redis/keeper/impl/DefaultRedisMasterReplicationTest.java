@@ -186,8 +186,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		Server server = startEmptyServer();
 		DefaultEndPoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
-		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
+		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(new DefaultLeakyBucket(4));
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
 				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager);
