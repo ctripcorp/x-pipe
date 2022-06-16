@@ -26,9 +26,6 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int minTimeMilliToGcAfterCreate = 2000;
 
-	protected ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(
-			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm());
-
 	protected KeeperMeta getKeeperActive(RedisMeta redisMeta) {
 		
 		for(KeeperMeta keeper : redisMeta.parent().getKeepers()){

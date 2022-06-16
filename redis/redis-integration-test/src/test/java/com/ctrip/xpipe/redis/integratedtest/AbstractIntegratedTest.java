@@ -63,8 +63,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
-	protected KeeperResourceManager resourceManager = new DefaultKeeperResourceManager(
-			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(100));
+	protected KeeperResourceManager resourceManager = new DefaultKeeperResourceManager(new DefaultLeakyBucket(100));
 
 	@BeforeClass
 	public static void beforereAbstractIntegratedTestClass(){
