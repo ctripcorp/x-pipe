@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
+import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -81,10 +82,16 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	}
 
 	private Endpoint getMasterAddress(String[] args) {
+		String ip = args[2];
+		int port = Integer.parseInt(args[3]);
+
 		if(containsProxyProtocol(args)) {
-			return new ProxyEnabledEndpoint(args[2], Integer.parseInt(args[3]), getProxyProtocol(args));
+			ProxyConnectProtocol protocol = getProxyProtocol(args);
+			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo() + " TCP" /* and scheme */);
+			return new ProxyEnabledEndpoint(ip, port, protocol);
 		} else {
-			return new DefaultEndPoint(args[2], Integer.parseInt(args[3]));
+			ProxyRegistry.unregisterProxy(ip, port);
+			return new DefaultEndPoint(ip, port);
 		}
 	}
 

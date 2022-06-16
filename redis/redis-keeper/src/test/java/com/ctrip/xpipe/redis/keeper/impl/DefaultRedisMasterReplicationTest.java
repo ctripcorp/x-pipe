@@ -184,16 +184,11 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void testReconnectAfterTryConnectThroughException() throws Exception {
 		System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
 		Server server = startEmptyServer();
-		ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
-		ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
-
+		DefaultEndPoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
 		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
 
-		// first time empty list, sec time return endpoint
-		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
-				.thenReturn(protocol.nextEndpoints());
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
 				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager);
 

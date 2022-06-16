@@ -37,7 +37,7 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
 
     @Override
     public String toString() {
-        return super.toString();
+        return String.format("endpoint: %s, proxy info: %s", super.toString(), getProxyProtocol());
     }
 
     @Override
