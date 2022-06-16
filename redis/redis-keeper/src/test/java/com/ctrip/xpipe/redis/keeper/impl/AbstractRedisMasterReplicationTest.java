@@ -5,17 +5,13 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.command.CommandTimeoutException;
-import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -32,8 +28,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
-
+import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI;
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
 import static org.mockito.Mockito.*;
 
@@ -91,7 +86,8 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
         when(proxyEndpointManager.createProxyEndpointSelector(any())).thenReturn(selector);
         when(selector.nextHop()).thenReturn(protocol.nextEndpoints().get(0));
 
-        DefaultRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI = 5;
+        String origin_timeout = System.getProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI);
+        System.setProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, "5");
         redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
                 scheduled, replTimeoutMilli, proxyEndpointManager);
 
@@ -101,6 +97,8 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
 
         verify(redisMasterReplication, timeout(500).atLeast(2)).connectWithMaster();
+
+        System.setProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, origin_timeout);
     }
 
     @Test

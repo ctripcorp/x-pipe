@@ -65,19 +65,6 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
     }
 
     @Test
-    public void testProxiedMasterTimeoutMilli() throws CreateRdbDumperException {
-        target = new ProxyEnabledEndpoint("localhost", randomPort(), new DefaultProxyConnectProtocol(null));
-        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, masterEventLoopGroup, rdbEventLoopGroup, replicationStoreManager, scheduled, getRegistry().getComponent(KeeperResourceManager.class));
-        keeperRedisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
-        RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper();
-        RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, masterEventLoopGroup, scheduled, dumper, mock(KeeperResourceManager.class));
-
-        int time = rdbonlyRedisMasterReplication.commandTimeoutMilli();
-        Assert.assertEquals(AbstractRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI, time);
-    }
-
-    @Test
     public void releaseRdbFileWhenCannotPsync() throws Exception {
         DumpedRdbStore rdbStore = mock(DumpedRdbStore.class);
 

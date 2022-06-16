@@ -55,6 +55,8 @@ public class Production extends AbstractProfile{
 
 	@Bean
 	public KeeperResourceManager getKeeperResourceManager(LeakyBucket leakyBucket) {
+
+	    /* TODO: useless in the future ?  */
 		ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
 		NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 		return new DefaultKeeperResourceManager(endpointManager, algorithm, leakyBucket);
