@@ -86,6 +86,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		if(ObjectUtils.equals(this.masterAddress, masterAddress)){
 
+			/* TODO: remove ProxyEnabled */
 			if(this.masterAddress instanceof ProxyEnabled) {
 				ProxyEnabled current = (ProxyEnabled) this.masterAddress;
 				ProxyEnabled future = (ProxyEnabled) masterAddress;
