@@ -39,7 +39,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         READ_TYPE,
         READ_OP,
         READ_KEY,
-        READ_VAL_CONTENT,
+        READ_VAL,
         READ_END
     }
 
@@ -78,6 +78,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                         rdbVersion = Short.parseShort(temp.toString(StandardCharsets.US_ASCII));
                         temp.release();
                         temp = null;
+                        rdbParseContext.setRdbVersion(rdbVersion);
                         state = STATE.READ_TYPE;
                     }
                     break;
@@ -94,6 +95,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     } else if (currentType.isRdbOp()) {
                         state = STATE.READ_OP;
                     } else {
+                        this.rdbParseContext.setCurrentType(currentType);
                         state = STATE.READ_KEY;
                     }
                     break;
@@ -111,7 +113,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     break;
 
                 case READ_KEY:
-                    RdbParser<byte[]> subKeyParser = (RdbParser<byte[]>) rdbParseContext.getOrCreateParser(currentType);
+                    RdbParser<byte[]> subKeyParser = (RdbParser<byte[]>) rdbParseContext.getOrCreateParser(RdbParseContext.RdbType.STRING);
                     if (null == subKeyParser) {
                         throw new XpipeRuntimeException("no parser for type " + currentType);
                     }
@@ -119,11 +121,11 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     if (null != key) {
                         subKeyParser.reset();
                         rdbParseContext.setKey(new RedisKey(key));
-                        state = STATE.READ_VAL_CONTENT;
+                        state = STATE.READ_VAL;
                     }
                     break;
 
-                case READ_VAL_CONTENT:
+                case READ_VAL:
                     RdbParser<?> subValParser = rdbParseContext.getOrCreateParser(currentType);
                     if (null == subValParser) {
                         throw new XpipeRuntimeException("no parser for type " + currentType);

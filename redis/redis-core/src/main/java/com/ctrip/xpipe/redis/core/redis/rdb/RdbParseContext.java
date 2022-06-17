@@ -25,6 +25,14 @@ public interface RdbParseContext {
 
     int getDbId();
 
+    RdbParseContext setRdbVersion(int version);
+
+    int getRdbVersion();
+
+    RdbParseContext setCurrentType(RdbType rdbType);
+
+    RdbType getCurrentType();
+
     RdbParseContext setAux(String key, String value);
 
     String getAux(String key);
@@ -53,7 +61,7 @@ public interface RdbParseContext {
 //        LIST(RdbConstant.REDIS_RDB_TYPE_LIST),
 //        SET(RdbConstant.REDIS_RDB_TYPE_SET),
 //        ZSET(RdbConstant.REDIS_RDB_TYPE_ZSET),
-//        HASH(RdbConstant.REDIS_RDB_TYPE_HASH),
+        HASH(RdbConstant.REDIS_RDB_TYPE_HASH, false, RdbHashParser::new),
 //        ZSET2(RdbConstant.REDIS_RDB_TYPE_ZSET2),
 //        MODULE(RdbConstant.REDIS_RDB_TYPE_MODULE),
 //        MODULE2(RdbConstant.REDIS_RDB_TYPE_MODULE2),
@@ -61,16 +69,16 @@ public interface RdbParseContext {
 //        LIST_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_LIST_ZIPLIST),
 //        SET_INTSET(RdbConstant.REDIS_RDB_TYPE_SET_INTSET),
 //        ZSET_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_ZSET_ZIPLIST),
-//        HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST),
-//        LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST),
+        HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST, false, RdbHashZipListParser::new),
+        LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST, false, RdbQuickListParser::new),
 //        STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS),
 //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
         IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),
         FREQ(RdbConstant.REDIS_RDB_OP_CODE_FREQ, true, RdbFreqParser::new),
         AUX(RdbConstant.REDIS_RDB_OP_CODE_AUX, true, RdbAuxParser::new),
         RESIZEDB(RdbConstant.REDIS_RDB_OP_CODE_RESIZEDB, true, RdbResizeDbParser::new),
-//        EXPIRETIME_MS(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME_MS),
-//        EXPIRETIME(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME),
+        EXPIRETIME_MS(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME_MS, true, RdbExpiretimeMsParser::new),
+        EXPIRETIME(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME, true, RdbExpiretimeParser::new),
         SELECTDB(RdbConstant.REDIS_RDB_OP_CODE_SELECTDB, true, RdbSelectDbParser::new),
         EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, true, null);
 
