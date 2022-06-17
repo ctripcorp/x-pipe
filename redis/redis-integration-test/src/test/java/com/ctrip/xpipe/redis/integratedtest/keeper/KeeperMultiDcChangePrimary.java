@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
@@ -22,6 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.List;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -65,7 +67,11 @@ public class KeeperMultiDcChangePrimary extends AbstractKeeperIntegratedMultiDc{
 		
 		when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(getDcRedises(backupDc, getClusterId(), getShardId()));
 		when(currentMetaManager.getSurviveKeepers(getClusterDbId(), getShardDbId())).thenReturn(getDcKeepers(backupDc, getClusterId(), getShardId()));
-		
+
+		ClusterMeta clusterMeta = mock(ClusterMeta.class);
+		when(clusterMeta.getActiveDc()).thenReturn(primaryDc);
+		when(currentMetaManager.getClusterMeta(getClusterDbId())).thenReturn(clusterMeta);
+
 		logger.info(remarkableMessage("[make dc primary]change dc primary to:" + backupDc));
 		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(getClusterDbId(), getShardDbId(), dcMetaCache,
 				currentMetaManager, sentinelManager, offsetWaiter, new ExecutionLog(currentTestName()),
