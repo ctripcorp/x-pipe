@@ -25,4 +25,16 @@ public class ProxyRegistryTest {
         Assert.assertNotNull(ProxyRegistry.unregisterProxy(ip, port));
     }
 
+    @Test
+    public void testProxyRegistry2() throws Exception {
+        String ip = "127.0.1.2";
+        int port = new Random().nextInt(1000) + 1;
+        Assert.assertNull(ProxyRegistry.unregisterProxy(ip, port));
+
+        Assert.assertFalse(ProxyRegistry.registerProxy(ip, port, null));
+
+        Assert.assertTrue(ProxyRegistry.registerProxy(ip, port, EXPECT_PROTOCOL + "://" + ip + ":" + port));
+        Assert.assertNotNull(ProxyRegistry.unregisterProxy(ip, port));
+    }
+
 }

@@ -87,7 +87,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 
 		if(containsProxyProtocol(args)) {
 			ProxyConnectProtocol protocol = getProxyProtocol(args);
-			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo() + " TCP" /* and scheme */);
+			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo());
 			return new ProxyEnabledEndpoint(ip, port, protocol);
 		} else {
 			ProxyRegistry.unregisterProxy(ip, port);
@@ -98,7 +98,6 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	private boolean containsProxyProtocol(String[] args) {
 		return args.length > 4 && "proxy".equalsIgnoreCase(args[4]);
 	}
-
 
 	// setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2;80 TCP
 	@VisibleForTesting

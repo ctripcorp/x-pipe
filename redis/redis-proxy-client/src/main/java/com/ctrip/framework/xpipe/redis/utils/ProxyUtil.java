@@ -26,12 +26,12 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         return ProxyResourceHolder.INSTANCE;
     }
 
-    public synchronized void registerProxy(String ip, int port, String routeInfoAndScheme) {
+    public synchronized void registerProxy(String ip, int port, String routeInfo) {
         InetSocketAddress address = new InetSocketAddress(ip, port);
         if(get(address) != null) {
             unregisterProxy(ip, port);
         }
-        put(address, getProxyProtocol(ip, port, routeInfoAndScheme));
+        put(address, getProxyProtocol(ip, port, routeInfo));
     }
 
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
@@ -66,8 +66,17 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         return socketAddressMap.remove(o);
     }
 
-    private ProxyResourceManager getProxyProtocol(String ip, int port, String routeInfoAndScheme) {
-        String protocol = String.format("%s://%s:%s", routeInfoAndScheme.trim(), ip, port);
+    private String appendIpPortIfAbsent(String routeInfo, String ip, int port) {
+        String[] splits = routeInfo.trim().split(" ");
+        String dest = splits[splits.length - 1];
+        if (!dest.contains(":") && !dest.contains("/")) {
+            return String.format("%s://%s:%s", routeInfo.trim(), ip, port);
+        }
+        return routeInfo;
+    }
+
+    private ProxyResourceManager getProxyProtocol(String ip, int port, String routeInfo) {
+        String protocol = appendIpPortIfAbsent(routeInfo.trim(), ip, port);
         ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(protocol);
         List<InetSocketAddress> endpoints = proxyConnectProtocol.nextEndpoints();
         List<ProxyInetSocketAddress> next = new ArrayList<>();

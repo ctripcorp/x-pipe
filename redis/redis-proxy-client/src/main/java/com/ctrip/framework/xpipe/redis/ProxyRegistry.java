@@ -14,9 +14,9 @@ import static com.ctrip.framework.xpipe.redis.utils.Constants.PROXY_KEY_WORD;
 
 public class ProxyRegistry {
 
-    public static boolean registerProxy(String ip, int port, String routeInfoAndScheme) {
-        if (routeInfoAndScheme != null && routeInfoAndScheme.startsWith(PROXY_KEY_WORD)) {
-            ProxyUtil.getInstance().registerProxy(ip, port, routeInfoAndScheme);
+    public static boolean registerProxy(String ip, int port, String routeInfo) {
+        if (routeInfo != null && routeInfo.startsWith(PROXY_KEY_WORD)) {
+            ProxyUtil.getInstance().registerProxy(ip, port, routeInfo);
             return true;
         }
         return false;
