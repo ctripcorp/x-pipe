@@ -50,7 +50,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Object[] broadcast() {
         /* not efficient */
-        return locator().getAllSession().values().toArray();
+        return locator().getAllSession(true).toArray();
     }
 
     public Map<RedisClient, RedisTransactionClient> clients2TxnClients = new HashMap<>();
