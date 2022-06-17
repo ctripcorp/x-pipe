@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.core.redis.rdb;
 
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbAuxParserTest;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbSelectDbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParserTest;
+import com.ctrip.xpipe.redis.core.redis.rdb.ziplist.ZiplistTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -15,8 +15,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         DefaultRdbParserTest.class,
         RdbAuxParserTest.class,
-        RdbSelectDbParserTest.class,
-        RdbStringParserTest.class
+        RdbStringParserTest.class,
+        ZiplistTest.class
 })
 public class AllRdbTests {
 }
