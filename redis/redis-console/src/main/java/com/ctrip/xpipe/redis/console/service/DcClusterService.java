@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.model.DcClusterModel;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 
 import java.util.List;
@@ -18,4 +19,5 @@ public interface DcClusterService {
 	List<DcClusterTbl> findClusterRelated(long clusterId);
 	List<DcClusterCreateInfo> findClusterRelated(String clusterName);
 
+	DcClusterModel findDcClusterModel(String clusterName, String dcName);
 }

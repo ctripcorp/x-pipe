@@ -9,14 +9,14 @@ import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.LinkedList;
 import java.util.List;
 
 @Service
@@ -24,8 +24,15 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	
 	@Autowired
 	private DcService dcService;
+
 	@Autowired
 	private ClusterService clusterService;
+
+	@Autowired
+	private ShardModelService shardModelService;
+
+	@Autowired
+	private SourceModelService sourceModelService;
 	
 	@Override
 	public DcClusterTbl find(final long dcId, final long clusterId) {
@@ -169,4 +176,25 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		}));
 	}
 
+	@Override
+	public DcClusterModel findDcClusterModel(String clusterName, String dcName) {
+		DcClusterModel result = new DcClusterModel();
+		DcModel dcModel = dcService.findDcModel(dcName);
+		if (dcModel == null) {
+			throw new BadRequestException(String.format("dc %s does not exist", dcName));
+		}
+		result.setDc(dcModel);
+
+		DcClusterTbl dcClusterTbl = find(dcName, clusterName);
+		if (dcClusterTbl == null) {
+			throw new BadRequestException(String.format("cluster %s does not have dc %s", clusterName, dcName));
+		}
+		result.setDcCluster(find(dcName, clusterName));
+
+		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
+		if (!dcClusterTbl.isGroupType()) {
+			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
+		}
+		return result;
+	}
 }

@@ -36,7 +36,13 @@ public class ShardController extends AbstractConsoleController {
 
     @RequestMapping("/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}/shards/" + SHARD_NAME_PATH_VARIABLE)
     public ShardModel findShardModel(@PathVariable String clusterName, @PathVariable String dcName, @PathVariable String shardName) {
-        return shardModelService.getShardModel(dcName, clusterName, shardName);
+        return shardModelService.getShardModel(dcName, clusterName, shardName, false, null);
+    }
+
+    @RequestMapping("/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/src-dc/{srcDcName}/to-dc/{toDcName}/shards/" + SHARD_NAME_PATH_VARIABLE)
+    public ShardModel findSourceShardModel(@PathVariable String clusterName, @PathVariable String srcDcName,
+                                           @PathVariable String toDcName, @PathVariable String shardName) {
+        return shardModelService.getSourceShardModel(clusterName, srcDcName, toDcName, shardName);
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards", method = RequestMethod.POST)

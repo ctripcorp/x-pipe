@@ -30,7 +30,7 @@ public interface AzService {
 
     void deleteAvailableZoneByName(String azName);
 
-    List<AzInfoModel> getAllAvailableZoneIndoModelsByDc(long dcId);
+    List<AzInfoModel> getAllAvailableZoneInfoModelsByDc(long dcId);
 
     Map<Long, String> azNameMap();
 }
