@@ -7,12 +7,12 @@ import com.ctrip.xpipe.redis.console.model.AppliercontainerTbl;
 import java.util.List;
 
 public interface AppliercontainerService {
-    AppliercontainerTbl find(long id);
-    List<AppliercontainerTbl> findAllByDc(String dcName);
-    List<AppliercontainerTbl> findAllActiveByDc(String dcName);
+    AppliercontainerTbl findAppliercontainerTblById(long id);
+    List<AppliercontainerTbl> findAllAppliercontainerTblsByDc(String dcName);
+    List<AppliercontainerTbl> findAllActiveAppliercontainersByDc(String dcName);
     List<AppliercontainerTbl> findApplierCount(String dcName);
-    List<AppliercontainerTbl> findBestApplierContainersByDcCluster(String dcName, String clusterName);
-    List<AppliercontainerTbl> findByAz(long azId);
+    List<AppliercontainerTbl> findBestAppliercontainersByDcCluster(String dcName, String clusterName);
+    List<AppliercontainerTbl> findAllAppliercontainersByAz(long azId);
     AppliercontainerTbl findByIpPort(String ip, int port);
 
     List<AppliercontainerCreateInfo> findAllAppliercontainers();

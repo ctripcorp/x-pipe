@@ -30,7 +30,5 @@ public class RedisController extends AbstractConsoleController {
             logger.error("[Update Redises][failed]{},{},{},{}", clusterName, dcName, shardName, shardModel);
             throw e;
         }
-
     }
-
 }
