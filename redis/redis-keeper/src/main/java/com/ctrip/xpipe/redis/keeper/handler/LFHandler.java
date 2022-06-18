@@ -23,7 +23,7 @@ public class LFHandler extends AbstractCommandHandler{
 			if(logger.isDebugEnabled()){
 				logger.debug("[doHandle][\\n get]" + redisClient);
 			}
-			RedisSlave<?> redisSlave = (RedisSlave<?>) redisClient;
+			RedisSlave redisSlave = (RedisSlave) redisClient;
 			redisSlave.ack(null);
 		}
 	}

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class GtidSetCommandWriterTest extends AbstractRedisOpParserTest {
 
     @Mock
-    private CommandStore<?,?> commandStore;
+    private CommandStore commandStore;
 
     @Mock
     private Logger delayTraceLogger;

@@ -24,12 +24,12 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
     }
 
     @Override
-    public RedisSlave<ApplierServer> becomeSlave() {
+    public RedisSlave becomeSlave() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RedisSlave<ApplierServer> becomeXSlave() {
+    public RedisSlave becomeXSlave() {
         throw new UnsupportedOperationException();
     }
 

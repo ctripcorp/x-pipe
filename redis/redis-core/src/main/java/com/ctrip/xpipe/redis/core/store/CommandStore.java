@@ -9,11 +9,9 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Initializable, Closeable, Destroyable {
+public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
-
-	CommandReader<R> beginRead(P replicationProgress) throws IOException;
 
 	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
 	
@@ -27,7 +25,7 @@ public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Ini
 	 */
 	long lowestReadingOffset();
 
-	void addCommandsListener(P replicationProgress, CommandsListener commandsListener) throws IOException;
+	void addCommandsListener(ReplicationProgress<?> replicationProgress, CommandsListener commandsListener) throws IOException;
 
 	boolean retainCommands(CommandsGuarantee commandsGuarantee);
 
@@ -57,9 +55,9 @@ public interface CommandStore<P extends ReplicationProgress<?,?>, R> extends Ini
 
 	String simpleDesc();
 
-	void addReader(CommandReader<R> reader);
+	void addReader(CommandReader<?> reader);
 
-	void removeReader(CommandReader<R> reader);
+	void removeReader(CommandReader<?> reader);
 
 	CommandFile findNextFile(File file);
 

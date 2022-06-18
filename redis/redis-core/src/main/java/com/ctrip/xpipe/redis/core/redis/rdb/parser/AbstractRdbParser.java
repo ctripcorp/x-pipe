@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
@@ -107,6 +110,16 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
                 return newByteBuf;
             }
         }
+    }
+
+    protected void propagateExpireAtIfNeed(RedisKey redisKey, long expireTimeMilli) {
+        if (null == redisKey || expireTimeMilli <= 0) return;
+
+        byte[] expireAt = String.valueOf(expireTimeMilli).getBytes();
+        notifyRedisOp(new RedisOpSingleKey(
+                RedisOpType.PEXPIREAT, new byte[][] {
+                RedisOpType.PEXPIREAT.name().getBytes(), redisKey.get(), expireAt},
+                redisKey, expireAt));
     }
 
     private int parseUnsignedLong(ByteBuf byteBuf, RdbLenType lenType) {

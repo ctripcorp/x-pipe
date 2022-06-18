@@ -32,7 +32,7 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
             return;
         }
 
-        final RedisSlave<?> redisSlave  = becomeSlave(redisClient);
+        final RedisSlave redisSlave  = becomeSlave(redisClient);
         if(redisSlave == null){
             logger.warn("[doHandle][client already slave] {}", redisClient);
             try {
@@ -64,11 +64,11 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
         });
     }
 
-    protected abstract RedisSlave<?> becomeSlave(RedisClient<?> redisClient);
+    protected abstract RedisSlave becomeSlave(RedisClient<?> redisClient);
 
-    protected abstract void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) throws IOException;
+    protected abstract void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException;
 
-    protected void doFullSync(RedisSlave<?> redisSlave) {
+    protected void doFullSync(RedisSlave redisSlave) {
 
         try {
             if(logger.isInfoEnabled()){

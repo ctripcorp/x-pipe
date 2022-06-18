@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.utils.FileUtils;
 import io.netty.buffer.ByteBuf;
@@ -43,7 +43,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
-	private CommandStore<?,?> cmdStore;
+	private CommandStore cmdStore;
 
 	private MetaStore metaStore;
 
@@ -345,7 +345,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		makeSureOpen();
 
-		if (!fullSyncListener.supportProgress(ReplicationProgress.TYPE.OFFSET)) {
+		if (!fullSyncListener.supportProgress(OffsetReplicationProgress.class)) {
 			throw new UnsupportedOperationException("listener not support offset progress");
 		}
 
@@ -376,7 +376,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return null;
 	}
 
-	public void addCommandsListener(ReplicationProgress<?,?> progress, CommandsListener commandsListener) throws IOException {
+	public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException {
 
 		makeSureOpen();
 
