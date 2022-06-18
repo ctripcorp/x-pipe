@@ -46,12 +46,12 @@ public class GtidSetCommandWriter extends OffsetCommandWriter implements Command
     private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024; // 50MB
 
     public GtidSetCommandWriter(RedisClientProtocol<Object[]> protocolParser, RedisOpParser opParser,
-                                CommandStore<?,?> cmdStore, int maxFileSize, Logger delayTraceLogger) {
+                                CommandStore cmdStore, int maxFileSize, Logger delayTraceLogger) {
         this(protocolParser, opParser, cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, maxFileSize, delayTraceLogger);
     }
 
     public GtidSetCommandWriter(RedisClientProtocol<Object[]> protocolParser, RedisOpParser opParser,
-                                CommandStore<?,?> cmdStore, int bytesBetweenIndex, int maxFileSize, Logger delayTraceLogger) {
+                                CommandStore cmdStore, int bytesBetweenIndex, int maxFileSize, Logger delayTraceLogger) {
         super(cmdStore, maxFileSize, delayTraceLogger);
         this.protocolParser = protocolParser;
         this.opParser = opParser;

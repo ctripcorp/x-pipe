@@ -22,7 +22,7 @@ public class OffsetCommandWriter implements CommandWriter {
 
     private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
 
-    private CommandStore<?,?> cmdStore;
+    private CommandStore cmdStore;
 
     private int maxFileSize;
 
@@ -30,7 +30,7 @@ public class OffsetCommandWriter implements CommandWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandWriter.class);
 
-    public OffsetCommandWriter(CommandStore<?,?> cmdStore, int maxFileSize,
+    public OffsetCommandWriter(CommandStore cmdStore, int maxFileSize,
                                Logger delayTraceLogger) {
         this.cmdStore = cmdStore;
         this.maxFileSize = maxFileSize;
@@ -109,7 +109,7 @@ public class OffsetCommandWriter implements CommandWriter {
         }
     }
 
-    protected CommandStore<?,?> getCommandStore() {
+    protected CommandStore getCommandStore() {
         return cmdStore;
     }
 

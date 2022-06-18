@@ -39,7 +39,7 @@ public class KeeperSingleDcWaitForOffset extends AbstractKeeperIntegratedSingleD
         setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
 
         sleep(2000);
-        Set<RedisSlave<RedisKeeperServer>> slaves = redisKeeperServer.slaves();
+        Set<RedisSlave> slaves = redisKeeperServer.slaves();
         Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
         slaves.forEach(redisSlave -> Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisSlave.partialState()));
         Assert.assertEquals(slaves.size(), redisKeeperServer.getKeeperMonitor().getKeeperStats().getWaitOffsetSucceed());
