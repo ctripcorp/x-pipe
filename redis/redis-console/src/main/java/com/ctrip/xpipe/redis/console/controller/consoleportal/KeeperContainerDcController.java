@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +25,7 @@ import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFA
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class KeepercontainerDcController extends AbstractConsoleController {
+public class KeeperContainerDcController extends AbstractConsoleController {
 
   @Autowired
   private KeeperContainerService keeperContainerService;

@@ -16,8 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author lishanglin
@@ -33,7 +31,7 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
 
     private ControllableFile controllableFile;
 
-    private CommandStore<?,?> commandStore;
+    private CommandStore commandStore;
 
     private CommandFileSegment segment;
 
@@ -47,7 +45,7 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
 
     private static final int FILE_BUFFER_SIZE = 4096;
 
-    public GtidCmdOneSegmentReader(CommandStore<?,?> commandStore, CommandFileSegment segment,
+    public GtidCmdOneSegmentReader(CommandStore commandStore, CommandFileSegment segment,
                                    RedisClientProtocol<Object[]> protocolParser, RedisOpParser opParser) throws IOException {
         this.commandStore = commandStore;
         this.segment = segment;

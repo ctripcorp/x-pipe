@@ -6,14 +6,15 @@ import com.ctrip.xpipe.redis.console.model.ReplDirectionTbl;
 import java.util.List;
 
 public interface ReplDirectionService {
-    ReplDirectionTbl find(long id);
 
-    List<ReplDirectionTbl> findAllReplDirectionByCluster(long clusterId);
+    ReplDirectionTbl findReplDirectionTblById(long id);
 
     List<ReplDirectionTbl> findAllReplDirection();
 
-    List<ReplDirectionInfoModel> findReplDirectionInfoModelByClusterAndToDc(String cluterName, String toDcName);
+    List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId);
 
-    void updateReplDirection(ReplDirectionInfoModel model);
+    ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName,
+                                                                         String srcDcName, String toDcName);
 
+    List<ReplDirectionInfoModel> findReplDirectionInfoModelsByClusterAndToDc(String cluterName, String toDcName);
 }

@@ -22,10 +22,10 @@ public interface RedisClient<T extends RedisServer> extends Observable, Infoable
 		SLAVE
 	}
 	
-	RedisSlave<T> becomeSlave();
+	RedisSlave becomeSlave();
 
 	// for xsync
-	RedisSlave<T> becomeXSlave();
+	RedisSlave becomeXSlave();
 	
 	T getRedisServer();
 
