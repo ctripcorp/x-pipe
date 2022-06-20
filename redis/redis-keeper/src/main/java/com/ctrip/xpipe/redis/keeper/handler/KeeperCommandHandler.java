@@ -5,7 +5,6 @@ import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
@@ -88,7 +87,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		if(containsProxyProtocol(args)) {
 			ProxyConnectProtocol protocol = getProxyProtocol(args);
 			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo());
-			return new ProxyEnabledEndpoint(ip, port, protocol);
+			return new DefaultEndPoint(ip, port, protocol);
 		} else {
 			ProxyRegistry.unregisterProxy(ip, port);
 			return new DefaultEndPoint(ip, port);
