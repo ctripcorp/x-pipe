@@ -489,7 +489,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
                 }
-                buildHeteroMeta();
+                if (interestClusterTypes.stream().map(String::toUpperCase).collect(Collectors.toList())
+                        .contains(ClusterType.HETERO.name())) {
+                    buildHeteroMeta();
+                }
 
                 future().setSuccess();
             } catch (Exception e) {
