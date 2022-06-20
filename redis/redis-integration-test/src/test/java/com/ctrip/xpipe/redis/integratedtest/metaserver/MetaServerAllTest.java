@@ -13,4 +13,5 @@ import org.junit.runners.Suite;
 })
 public class MetaServerAllTest {
 
+    /* add -Djdk.attach.allowAttachSelf=true for jdk11*/
 }
