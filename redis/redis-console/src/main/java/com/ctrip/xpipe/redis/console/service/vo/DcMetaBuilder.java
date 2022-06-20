@@ -10,21 +10,19 @@ import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.logging.log4j.util.Strings;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -37,6 +35,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     private Map<Long, String> dcNameMap;
 
+    private Map<String, Long> dcNameZoneMap;
+
+    private Map<Long, String> zoneNameMap;
+
+    private Map<Long, Long> keeperContainerIdDcMap;
+
+    private Map<Long, List<ApplierTbl>> replId2AppliersMap;
+
+    private List<ReplDirectionTbl> replDirectionTblList;
+
     private RedisMetaService redisMetaService;
 
     private DcClusterService dcClusterService;
@@ -44,6 +52,14 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
     private ClusterMetaService clusterMetaService;
 
     private DcClusterShardService dcClusterShardService;
+
+    private ReplDirectionService replDirectionService;
+
+    private ZoneService zoneService;
+
+    private KeeperContainerService keeperContainerService;
+
+    private ApplierService applierService;
 
     private DcService dcService;
 
@@ -59,12 +75,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
+    private Map<Long, List<DcClusterShardTbl>> dcCluster2DcClusterShardMap;
+
     private List<DcClusterShardTbl> dcClusterShards;
 
     private static final String DC_NAME_DELIMITER = ",";
 
     public DcMetaBuilder(DcMeta dcMeta, long dcId, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
-                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory, ConsoleConfig consoleConfig) {
+                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService,
+                         ReplDirectionService replDirectionService, ZoneService zoneService, KeeperContainerService keeperContainerService, ApplierService applierService,
+                         RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMeta = dcMeta;
         this.dcId = dcId;
         this.interestClusterTypes = clusterTypes;
@@ -74,6 +94,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         this.clusterMetaService = clusterMetaService;
         this.dcClusterShardService = dcClusterShardService;
         this.dcService = dcService;
+        this.replDirectionService = replDirectionService;
+        this.zoneService = zoneService;
+        this.keeperContainerService = keeperContainerService;
+        this.applierService = applierService;
         this.factory = factory;
         this.consoleConfig = consoleConfig;
     }
@@ -85,8 +109,14 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
         ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors, false);
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetAllDcClusterShardDetailCommand(dcId)));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new Cluster2DcClusterMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcIdNameMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
 
         sequenceCommandChain.add(parallelCommandChain);
         sequenceCommandChain.add(retry3TimesUntilSuccess(new BuildDcMetaCommand()));
@@ -192,6 +222,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         });
     }
 
+    public ShardMeta getOrCreateShardMeta(SourceMeta sourceMeta, ShardTbl shard) {
+        return MapUtils.getOrCreate(sourceMeta.getShards(), shard.getShardName(), () -> {
+            ShardMeta shardMeta = new ShardMeta(shard.getShardName());
+            shardMeta.setDbId(shard.getId());
+            shardMeta.setParent(sourceMeta);
+            return shardMeta;
+        });
+    }
+
     class GetAllDcClusterShardDetailCommand extends AbstractCommand<Void> {
 
         private long dcId;
@@ -218,6 +257,36 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         @Override
         public String getName() {
             return GetAllDcClusterShardDetailCommand.class.getSimpleName();
+        }
+    }
+
+    class DcCluster2dcClusterShardMapCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                dcCluster2DcClusterShardMap = Maps.newHashMap();
+                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByClusterTypes(interestClusterTypes);
+
+                for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
+                    List<DcClusterShardTbl> dcClusterShardTbls = MapUtils.getOrCreate(dcCluster2DcClusterShardMap,
+                            dcClusterShardTbl.getDcClusterId(), LinkedList::new);
+                    dcClusterShardTbls.add(dcClusterShardTbl);
+                }
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcCluster2DcClusterShardMap = null;
+        }
+
+        @Override
+        public String getName() {
+            return DcCluster2dcClusterShardMapCommand.class.getSimpleName();
         }
     }
 
@@ -279,14 +348,137 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         }
     }
 
+    class GetDcNameToZoneIdMapCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                dcNameZoneMap = dcService.dcNameZoneMap();
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcNameZoneMap = null;
+        }
+
+        @Override
+        public String getName() {
+            return GetDcNameToZoneIdMapCommand.class.getSimpleName();
+        }
+    }
+
+    class GetZoneIdNameMapCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                zoneNameMap = zoneService.zoneNameMap();
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            zoneNameMap = null;
+        }
+
+        @Override
+        public String getName() {
+            return GetZoneIdNameMapCommand.class.getSimpleName();
+        }
+    }
+
+    class GetReplDirectionListCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                replDirectionTblList = replDirectionService.findAllReplDirection();
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            replDirectionTblList = null;
+        }
+
+        @Override
+        public String getName() {
+            return GetReplDirectionListCommand.class.getSimpleName();
+        }
+    }
+
+    class GetReplId2ApplierMapCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                List<ApplierTbl> applierTblList = applierService.findAll();
+                replId2AppliersMap = new HashMap<>();
+                for (ApplierTbl applierTbl : applierTblList) {
+                    List<ApplierTbl> applierTbls = MapUtils.getOrCreate(replId2AppliersMap, applierTbl.getReplDirectionId(), ArrayList::new);
+                    applierTbls.add(applierTbl);
+                }
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            replId2AppliersMap = null;
+        }
+
+        @Override
+        public String getName() {
+            return GetReplId2ApplierMapCommand.class.getSimpleName();
+        }
+    }
+
+    class GetKeeperContainerIdDcMapCommand extends AbstractCommand<Void> {
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                keeperContainerIdDcMap = Maps.newHashMap();
+                List<KeepercontainerTbl> keepercontainerTblList = keeperContainerService.findAll();
+                for (KeepercontainerTbl keepercontainerTbl : keepercontainerTblList) {
+                    keeperContainerIdDcMap.put(keepercontainerTbl.getKeepercontainerId(), keepercontainerTbl.getKeepercontainerDc());
+                }
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            keeperContainerIdDcMap = null;
+        }
+
+        @Override
+        public String getName() {
+            return GetKeeperContainerIdDcMapCommand.class.getSimpleName();
+        }
+    }
+
     class BuildDcMetaCommand extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
             try {
                 for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
-                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo(), getDcClusterInfo(dcClusterShard));
-
+                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo(), getDcClusterInfo(dcClusterShard.getClusterInfo().getId(), dcId));
                     ShardMeta shardMeta = getOrCreateShardMeta(clusterMeta.getId(),
                             dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
 
@@ -297,14 +489,116 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
                 }
+                buildHeteroMeta();
+
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
             }
         }
 
-        private DcClusterTbl getDcClusterInfo(DcClusterShardTbl dcClusterShard) {
-            for(DcClusterTbl dcClusterTbl: cluster2DcClusterMap.get(dcClusterShard.getClusterInfo().getId())) {
+        private void buildHeteroMeta() {
+
+            List<ReplDirectionTbl> toCurrentDcOrFromCurrentDcList = replDirectionTblList
+                    .stream()
+                    .filter(a -> a.getFromDcId() == dcId || a.getToDcId() == dcId)
+                    .collect(Collectors.toList());
+
+            for (ReplDirectionTbl replDirection : toCurrentDcOrFromCurrentDcList) {
+                long clusterId = replDirection.getClusterId();
+                DcClusterTbl dcClusterTbl = getDcClusterInfo(clusterId, dcId);
+                ClusterMeta clusterMeta = getOrCreateClusterMeta(replDirection.getClusterInfo(), dcClusterTbl);
+                if (dcClusterTbl == null) {
+                    getLogger().warn("[buildHeteroMeta] dcCluster not found; clusterId={}", clusterId);
+                    continue;
+                }
+                if (replDirection.getToDcId() == dcId) {
+                    if (!isDRMaster(dcClusterTbl)) {
+                        SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirection.getSrcDcId(), replDirection.getFromDcId());
+                        buildSourceShardMetas(sourceMeta, clusterId, replDirection.getSrcDcId());
+                    }
+                }
+                if (replDirection.getFromDcId() == dcId) {
+                    setDownstreamDcs(clusterMeta, replDirection);
+                }
+            }
+        }
+
+        private void buildSourceShardMetas(SourceMeta sourceMeta, long clusterId, long srcDcId) {
+            DcClusterTbl dcClusterTbl = getDcClusterInfo(clusterId, srcDcId);
+            if (dcClusterTbl == null) {
+                getLogger().warn("[buildSourceShardMetas] dcCluster not found; clusterId={}", clusterId);
+                return;
+            }
+
+            List<DcClusterShardTbl> dcClusterShardTbls =  dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
+            for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+                ShardMeta shardMeta = getOrCreateShardMeta(sourceMeta, dcClusterShardTbl.getShardInfo());
+                RedisTbl redis = dcClusterShardTbl.getRedisInfo();
+                if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
+                    if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
+                        shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
+                    }
+                }
+            }
+
+            addApplierAndAddShardIfNotExists(clusterId, sourceMeta);
+        }
+
+        private void addApplierAndAddShardIfNotExists(long clusterId, SourceMeta sourceMeta) {
+            //add applier and add shard if not exist
+            List<Long> repIds = replDirectionTblList
+                    .stream()
+                    .filter(a -> clusterId == a.getClusterId() || a.getToDcId() == dcId)
+                    .map(ReplDirectionTbl::getId)
+                    .collect(Collectors.toList());
+
+            List<ApplierTbl> appliers = new ArrayList<>();
+            for (Long repId : repIds) {
+                if (replId2AppliersMap.get(repId) != null) {
+                    appliers.addAll(replId2AppliersMap.get(repId));
+                }
+            }
+
+            for (ApplierTbl applierTbl : appliers) {
+                ShardMeta shardMeta = getOrCreateShardMeta(sourceMeta, applierTbl.getShardInfo());
+                ApplierMeta applierMeta = new ApplierMeta();
+                applierMeta.setIp(applierTbl.getIp());
+                applierMeta.setPort(applierTbl.getPort());
+                applierMeta.setActive(applierTbl.isActive());
+                applierMeta.setApplierContainerId(applierTbl.getContainerId());
+                shardMeta.addApplier(applierMeta);
+            }
+        }
+
+        //0: Master; 1: DRMaster
+        private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
+            return dcClusterTbl.isGroupType();
+        }
+
+        private void setDownstreamDcs(ClusterMeta clusterMeta, ReplDirectionTbl replDirectionTbl) {
+            if (Strings.isEmpty(clusterMeta.getDownstreamDcs())) {
+                clusterMeta.setDownstreamDcs(dcNameMap.get(replDirectionTbl.getToDcId()));
+            } else {
+                clusterMeta.setDownstreamDcs(clusterMeta.getDownstreamDcs() + "," + dcNameMap.get(replDirectionTbl.getToDcId()));
+            }
+        }
+
+        private SourceMeta buildSourceMeta(ClusterMeta clusterMeta, long srcDc, long upstreamDc) {
+            SourceMeta sourceMeta = new SourceMeta();
+
+            sourceMeta.setSrcDc(dcNameMap.get(srcDc));
+            sourceMeta.setUpstreamDc(dcNameMap.get(upstreamDc));
+            sourceMeta.setRegion(zoneNameMap.get(dcNameZoneMap.get(dcNameMap.get(srcDc))));
+
+            clusterMeta.addSource(sourceMeta);
+            sourceMeta.setParent(clusterMeta);
+
+            return sourceMeta;
+        }
+
+        private DcClusterTbl getDcClusterInfo(long clusterId, long dcId) {
+            for(DcClusterTbl dcClusterTbl: cluster2DcClusterMap.get(clusterId)) {
                 if (dcClusterTbl.getDcId() == dcId) {
                     return dcClusterTbl;
                 }

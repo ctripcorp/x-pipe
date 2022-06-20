@@ -10,6 +10,8 @@ public interface ApplierService {
 
     ApplierTbl findByIpPort(String ip, int port);
 
+    List<ApplierTbl> findAll();
+
     List<ApplierTbl> findByShardAndReplDirection(long shardId, long replDirectionId);
 
     List<ApplierTbl> findAllAppliersWithSameIp(String ip);
