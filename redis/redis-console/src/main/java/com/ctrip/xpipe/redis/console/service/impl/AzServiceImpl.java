@@ -160,19 +160,17 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     }
 
     @Override
-    public List<AzInfoModel> getAllAvailableZoneIndoModelsByDc(long dcId) {
+    public List<AzInfoModel> getAllAvailableZoneInfoModelsByDc(long dcId) {
         List<AzTbl> azTbls = azDao.findActiveAvailableZonesByDc(dcId);
         Map<Long, String> dcNameMap = dcService.dcNameMap();
         return Lists.newArrayList(Lists.transform(azTbls, new Function<AzTbl, AzInfoModel>() {
             @Override
             public AzInfoModel apply(AzTbl azTbl) {
-                AzInfoModel azInfoModel = new AzInfoModel()
+                return new AzInfoModel()
                         .setDcName(dcNameMap.get(azTbl.getId()))
                         .setAzName(azTbl.getAzName())
                         .setActive(azTbl.isActive())
                         .setDescription(azTbl.getDescription());
-
-                return azInfoModel;
             }
         }));
     }

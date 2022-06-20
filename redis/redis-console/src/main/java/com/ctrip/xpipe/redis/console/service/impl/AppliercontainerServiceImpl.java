@@ -37,7 +37,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
     private ApplierService applierService;
 
     @Override
-    public AppliercontainerTbl find(long id) {
+    public AppliercontainerTbl findAppliercontainerTblById(long id) {
         return queryHandler.handleQuery(new DalQuery<AppliercontainerTbl>() {
             @Override
             public AppliercontainerTbl doQuery() throws DalException {
@@ -47,37 +47,37 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
     }
 
     @Override
-    public List<AppliercontainerTbl> findAllByDc(final String dcName) {
+    public List<AppliercontainerTbl> findAllAppliercontainerTblsByDc(final String dcName) {
         DcTbl dcTbl = StringUtil.isEmpty(dcName) ? null : dcService.find(dcName);
         if (null == dcTbl) throw new BadRequestException(String.format("dc %s does not exist", dcName));
 
         return queryHandler.handleQuery(new DalQuery<List<AppliercontainerTbl>>() {
             @Override
             public List<AppliercontainerTbl> doQuery() throws DalException {
-                return dao.findByDc(dcTbl.getId(), AppliercontainerTblEntity.READSET_FULL);
+                return dao.findAllAppliercontainersByDc(dcTbl.getId(), AppliercontainerTblEntity.READSET_FULL);
             }
         });
     }
 
     @Override
-    public List<AppliercontainerTbl> findByAz(long azId) {
+    public List<AppliercontainerTbl> findAllAppliercontainersByAz(long azId) {
         return queryHandler.handleQuery(new DalQuery<List<AppliercontainerTbl>>() {
             @Override
             public List<AppliercontainerTbl> doQuery() throws DalException {
-                return dao.findByAzId(azId, AppliercontainerTblEntity.READSET_FULL);
+                return dao.findAppliercontainersByAz(azId, AppliercontainerTblEntity.READSET_FULL);
             }
         });
     }
 
     @Override
-    public List<AppliercontainerTbl> findAllActiveByDc(String dcName) {
+    public List<AppliercontainerTbl> findAllActiveAppliercontainersByDc(String dcName) {
         DcTbl dcTbl = StringUtil.isEmpty(dcName) ? null : dcService.find(dcName);
         if (null == dcTbl) throw new BadRequestException(String.format("dc %s does not exist", dcName));
 
         return queryHandler.handleQuery(new DalQuery<List<AppliercontainerTbl>>() {
             @Override
             public List<AppliercontainerTbl> doQuery() throws DalException {
-                return dao.findActiveByDc(dcTbl.getId(), AppliercontainerTblEntity.READSET_FULL);
+                return dao.findActiveAppliercontainersByDc(dcTbl.getId(), AppliercontainerTblEntity.READSET_FULL);
             }
         });
     }
@@ -93,7 +93,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
     }
 
     @Override
-    public List<AppliercontainerTbl> findBestApplierContainersByDcCluster(String dcName, String clusterName) {
+    public List<AppliercontainerTbl> findBestAppliercontainersByDcCluster(String dcName, String clusterName) {
         long clusterOrgId;
         if (clusterName != null) {
             ClusterTbl clusterTbl = clusterService.find(clusterName);
@@ -105,23 +105,23 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
         return queryHandler.handleQuery(new DalQuery<List<AppliercontainerTbl>>() {
             @Override
             public List<AppliercontainerTbl> doQuery() throws DalException {
-                List<AppliercontainerTbl> appliercontainerTbls = dao.findApplierContainerByCluster(dcName, clusterOrgId,
+                List<AppliercontainerTbl> appliercontainerTbls = dao.findApplierContainersByDcAndOrg(dcName, clusterOrgId,
                         AppliercontainerTblEntity.READSET_APPLIER_COUNT_BY_CLUSTER);
                 if (appliercontainerTbls == null || appliercontainerTbls.isEmpty() ) {
                     logger.info("cluster {} with org id {} is going to find appliercontainers in normal pool",
                             clusterName, clusterOrgId);
-                    appliercontainerTbls = dao.findApplierContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
+                    appliercontainerTbls = dao.findApplierContainersByDcAndOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
                             AppliercontainerTblEntity.READSET_APPLIER_COUNT_BY_CLUSTER);
                 }
-                appliercontainerTbls = filterApplierFromSameAvailableZone(appliercontainerTbls, dcName);
+                appliercontainerTbls = filterAppliercontainerFromSameAvailableZone(appliercontainerTbls, dcName);
                 logger.info("find applier containers: {}", appliercontainerTbls);
                 return appliercontainerTbls;
             }
         });
     }
 
-    private List<AppliercontainerTbl> filterApplierFromSameAvailableZone(List<AppliercontainerTbl> appliercontainerTbls,
-                                                                         String dcName) {
+    private List<AppliercontainerTbl> filterAppliercontainerFromSameAvailableZone(List<AppliercontainerTbl> appliercontainerTbls,
+                                                                                  String dcName) {
         List<AzTbl> dcAvailableZones = azService.getDcAvailableZoneTbls(dcName);
         if (dcAvailableZones == null || dcAvailableZones.isEmpty()) {
             return appliercontainerTbls;
@@ -186,7 +186,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
         return queryHandler.handleQuery(new DalQuery<List<AppliercontainerTbl>>() {
             @Override
             public List<AppliercontainerTbl> doQuery() throws DalException {
-                return dao.findAllApplierContainer(AppliercontainerTblEntity.READSET_FULL);
+                return dao.findAllApplierContainers(AppliercontainerTblEntity.READSET_FULL);
             }
         });
     }
@@ -195,7 +195,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
     public List<AppliercontainerCreateInfo> findAllAppliercontainerCreateInfosByDc(String dcName) {
         Map<Long, String> dcNameMap = dcService.dcNameMap();
         Map<Long, String> azNameMap = azService.azNameMap();
-        List<AppliercontainerTbl> appliercontainerTbls = findAllByDc(dcName);
+        List<AppliercontainerTbl> appliercontainerTbls = findAllAppliercontainerTblsByDc(dcName);
 
         return Lists.newArrayList(Lists.transform(appliercontainerTbls, new Function<AppliercontainerTbl, AppliercontainerCreateInfo>() {
             @Override
@@ -254,7 +254,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
         return queryHandler.handleQuery(new DalQuery<AppliercontainerTbl>() {
             @Override
             public AppliercontainerTbl doQuery() throws DalException {
-                return dao.findByIpPort(ip, port, AppliercontainerTblEntity.READSET_FULL);
+                return dao.findAppliercontainerByIpPort(ip, port, AppliercontainerTblEntity.READSET_FULL);
             }
         });
     }
@@ -300,7 +300,7 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
             throw new BadRequestException(String.format("appliercontainer %s:%d does not exist",
                     appliercontainerIp, appliercontainerPort));
 
-        List<ApplierTbl> appliers = applierService.findAllAppliersWithSameIp(appliercontainerIp);
+        List<ApplierTbl> appliers = applierService.findAllApplierTblsWithSameIp(appliercontainerIp);
 
         if (appliers != null && !appliers.isEmpty()) {
             throw new BadRequestException(String.format("This appliercontainer %s:%d is not empty, unable to delete",
@@ -330,9 +330,9 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
         containerCountInfo.forEach(info -> {
             if (!containerCreateInfoMap.containsKey(info.getContainerId())) return;
             AppliercontainerInfoModel model = containerCreateInfoMap.get(info.getContainerId());
-            model.setApplierCount(model.getApplierCount());
-            model.setClusterCount(model.getClusterCount());
-            model.setShardCount(model.getShardCount());
+            model.setApplierCount(info.getCount());
+            model.setClusterCount(info.getDcClusterShardInfo().getClusterCount());
+            model.setShardCount(info.getDcClusterShardInfo().getShardCount());
         });
 
         return new ArrayList<>(containerCreateInfoMap.values());
@@ -340,13 +340,14 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
 
     @Override
     public AppliercontainerInfoModel findAppliercontainerInfoModelById(long appliercontainerId) {
-        return convertAppliercontainerTblToInfoModel(find(appliercontainerId), dcService.dcNameMap(), azService.azNameMap());
+        return convertAppliercontainerTblToInfoModel(findAppliercontainerTblById(appliercontainerId), dcService.dcNameMap(), azService.azNameMap());
     }
 
     private AppliercontainerInfoModel convertAppliercontainerTblToInfoModel(AppliercontainerTbl appliercontainerTbl,
                                                     Map<Long, String> dcNameMap, Map<Long, String> azNameMap) {
         AppliercontainerInfoModel infoModel = new AppliercontainerInfoModel();
-        infoModel.setId(appliercontainerTbl.getAppliercontainerId())
+        if (null == appliercontainerTbl) return infoModel;
+        infoModel.setId(appliercontainerTbl.getAppliercontainerId()).setActive(appliercontainerTbl.isAppliercontainerActive())
                 .setAddr(new HostPort(appliercontainerTbl.getAppliercontainerIp(), appliercontainerTbl.getAppliercontainerPort()))
                 .setDcName(dcNameMap.get(appliercontainerTbl.getAppliercontainerDc()))
                 .setAzName(azNameMap.get(appliercontainerTbl.getAppliercontainerAz()));

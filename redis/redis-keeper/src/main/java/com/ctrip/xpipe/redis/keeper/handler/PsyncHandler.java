@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 
 import java.io.IOException;
 
@@ -25,11 +25,11 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
 
 	@Override
-	protected RedisSlave<?> becomeSlave(RedisClient<?> redisClient) {
+	protected RedisSlave becomeSlave(RedisClient<?> redisClient) {
 		return redisClient.becomeSlave();
 	}
 
-	protected void innerDoHandle(final String[] args, final RedisSlave<?> redisSlave, RedisKeeperServer redisKeeperServer) {
+	protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) {
 		
 		KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 		KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
@@ -74,7 +74,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		}
 	}
 
-	protected void waitForoffset(final String[] args, final RedisSlave<?> redisSlave, String replId, final Long offsetRequest) {
+	protected void waitForoffset(final String[] args, final RedisSlave redisSlave, String replId, final Long offsetRequest) {
 
 		try {
 			ReplicationStore replicationStore = ((RedisKeeperServer)redisSlave.getRedisServer()).getReplicationStore();
@@ -104,7 +104,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		doFullSync(redisSlave);
 	}
 
-	protected void doPartialSync(RedisSlave<?> redisSlave, String replId, Long offset) {
+	protected void doPartialSync(RedisSlave redisSlave, String replId, Long offset) {
 		
 		if(logger.isInfoEnabled()){
 			logger.info("[doPartialSync]" + redisSlave);
@@ -126,7 +126,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSync();
 	}
 
-	protected void doKeeperPartialSync(RedisSlave<?> redisSlave, String replId, long continueOffset) {
+	protected void doKeeperPartialSync(RedisSlave redisSlave, String replId, long continueOffset) {
 		SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %s %d",
 				DefaultPsync.PARTIAL_SYNC, replId, continueOffset));
 

@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -199,15 +199,10 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(Object referenceFileRegion) {
 
-						sb.append(readFileChannelInfoMessageAsString(referenceFileRegion));
+						sb.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
 						semaphore.release();
-						return null;
-					}
-
-					@Override
-					public ChannelFuture onCommand(RedisOp redisOp) {
 						return null;
 					}
 
@@ -343,16 +338,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
-						public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+						public ChannelFuture onCommand(Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
-							result.append(readFileChannelInfoMessageAsString(referenceFileRegion));
-							semaphore.release((int) referenceFileRegion.count());
-							return null;
-						}
-
-						@Override
-						public ChannelFuture onCommand(RedisOp redisOp) {
+							result.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
+							semaphore.release((int) ((ReferenceFileRegion)referenceFileRegion).count());
 							return null;
 						}
 
@@ -402,22 +392,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		String result = readCommandStoreTilNoMessage(commandStore, sb.length());
 		logger.info("[testReadWrite]{}, {}", sb.length(), result.length());
 		Assert.assertTrue(sb.toString().equals(result));
-	}
-	
-	@Test
-	public void testBeginRead() throws IOException{
-		
-		int testCount = 10;
-		long total = commandStore.totalLength();
-				
-		Assert.assertEquals(0, total);
-		for(int i=0;i < testCount;i++){
-			
-			commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(maxFileSize).getBytes()));
-			total += maxFileSize;
-			commandStore.beginRead(new OffsetReplicationProgress(total));
-		}
-		
 	}
 
 
@@ -528,12 +502,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
-				return null;
-			}
-
-			@Override
-			public ChannelFuture onCommand(RedisOp redisOp) {
+			public ChannelFuture onCommand(Object cmd) {
 				return null;
 			}
 

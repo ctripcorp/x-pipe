@@ -93,6 +93,8 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
     @Override
     public void reset() {
         this.state = STATE.READ_INIT;
+        this.key = null;
+        this.value = null;
     }
 
     @Override

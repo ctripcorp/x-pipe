@@ -270,7 +270,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doExecute() throws Exception {
             try {
-                List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllByDc(dcMeta.getId());
+                List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainerTblsByDc(dcMeta.getId());
                 appliercontainers.forEach(appliercontainer -> dcMeta.addApplierContainer(
                         appliercontainerMetaService.encodeAppliercontainerMeta(appliercontainer, dcMeta)));
                 future().setSuccess();

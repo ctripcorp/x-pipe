@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ReplDirectionInfoModel implements Serializable {
 
@@ -11,7 +12,6 @@ public class ReplDirectionInfoModel implements Serializable {
     private String clusterName;
 
     private String srcDcName;
-
 
     private String fromDcName;
 
@@ -64,6 +64,19 @@ public class ReplDirectionInfoModel implements Serializable {
     public ReplDirectionInfoModel setToDcName(String toDcName) {
         this.toDcName = toDcName;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReplDirectionInfoModel that = (ReplDirectionInfoModel) o;
+        return id == that.id && Objects.equals(clusterName, that.clusterName) && Objects.equals(srcDcName, that.srcDcName) && Objects.equals(fromDcName, that.fromDcName) && Objects.equals(toDcName, that.toDcName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, clusterName, srcDcName, fromDcName, toDcName);
     }
 
     @Override

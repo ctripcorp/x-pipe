@@ -4,7 +4,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
@@ -18,26 +18,48 @@ import java.util.function.IntSupplier;
  *
  *         Aug 9, 2016
  */
-public class DefaultCommandStore extends AbstractCommandStore<OffsetReplicationProgress, ReferenceFileRegion>
-		implements CommandStore<OffsetReplicationProgress, ReferenceFileRegion> {
+public class DefaultCommandStore extends AbstractCommandStore implements CommandStore {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
 		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor);
+	}
+
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+										   long commandReaderFlyingThreshold, GtidSet baseGtidSet,
+										   CommandReaderWriterFactory cmdReaderWriterFactory,
+										   KeeperMonitor keeperMonitor) throws IOException {
+		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, baseGtidSet, cmdReaderWriterFactory, keeperMonitor);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 							   long commandReaderFlyingThreshold,
-							   CommandReaderWriterFactory<OffsetReplicationProgress, ReferenceFileRegion> cmdReaderWriterFactory,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor) throws IOException {
-		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, new GtidSet(""), cmdReaderWriterFactory, keeperMonitor);
 	}
 
+	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress) throws IOException {
+
+		makeSureOpen();
+
+		CommandReader<ReferenceFileRegion> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this,
+				offsetNotifier, commandReaderFlyingThreshold);
+		addReader(reader);
+		return reader;
+	}
+
 	@Override
-	public void addCommandsListener(OffsetReplicationProgress progress, final CommandsListener listener) throws IOException {
+	public void addCommandsListener(ReplicationProgress<?> progress, final CommandsListener listener) throws IOException {
+
+		if (!(progress instanceof OffsetReplicationProgress)) {
+			throw new UnsupportedOperationException("unsupported progress " + progress);
+		}
 
 		makeSureOpen();
 		logger.info("[addCommandsListener][begin] from offset {}, {}", progress, listener);
@@ -45,7 +67,7 @@ public class DefaultCommandStore extends AbstractCommandStore<OffsetReplicationP
 		CommandReader<ReferenceFileRegion> cmdReader = null;
 
 		try {
-			cmdReader = beginRead(progress);
+			cmdReader = beginRead((OffsetReplicationProgress) progress);
 		} finally {
 			// ensure beforeCommand() is always called
 			listener.beforeCommand();

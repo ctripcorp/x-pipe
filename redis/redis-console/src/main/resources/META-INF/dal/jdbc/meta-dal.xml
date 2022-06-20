@@ -657,15 +657,12 @@
 		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
 		<var name="redis-ip" value-type="String"/>
 		<var name="redis-port" value-type="Integer"/>
-<!--		<var name="applier-ip" value-type="String"/>-->
-<!--		<var name="applier-port" value-type="Integer"/>-->
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
 		<relation name="redis-info" entity-name="redis-tbl" entity-alias="rt"/>
-<!--		<relation name="applier-info" entity-name="applier-tbl" entity-alias="at"/>-->
 
 		<readsets>
 			<readset name="SENTINEL_ID">
@@ -2612,7 +2609,7 @@
 		</readsets>
 
 		<query-defs>
-			<query name="find-by-dc" type="SELECT" multiple="true">
+			<query name="find-all-appliercontainers-by-dc" type="SELECT" multiple="true">
 				<param name="appliercontainer-dc"/>
 				<statement>
 					<![CDATA[
@@ -2621,7 +2618,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-active-by-dc" type="SELECT" multiple="true">
+			<query name="find-active-appliercontainers-by-dc" type="SELECT" multiple="true">
 				<param name="appliercontainer-dc"/>
 				<statement>
 					<![CDATA[
@@ -2647,7 +2644,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-applier-container-by-cluster" type="SELECT" multiple="true">
+			<query name="find-applier-containers-by-dc-and-org" type="SELECT" multiple="true">
 				<param name="dc-name"/>
 				<param name="org-id" />
 				<statement>
@@ -2664,7 +2661,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-by-az-id" type="SELECT" multiple="true">
+			<query name="find-appliercontainers-by-az" type="SELECT" multiple="true">
 				<param name="appliercontainer-az"/>
 				<statement>
 					<![CDATA[
@@ -2675,7 +2672,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-by-ip-port" type="SELECT" multiple="false">
+			<query name="find-appliercontainer-by-ip-port" type="SELECT" multiple="false">
 				<param name="appliercontainer-ip"/>
 				<param name="appliercontainer-port"/>
 				<statement>
@@ -2688,7 +2685,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-all-applier-container" type="SELECT" multiple="true">
+			<query name="find-all-applier-containers" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS />
@@ -2697,7 +2694,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-applier-container-base-info" type="SELECT" multiple="true" >
+			<query name="find-applier-container-base-infos" type="SELECT" multiple="true" >
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS />
@@ -2734,6 +2731,7 @@
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
 		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2"></relation>
+		<relation name="repl-direction-info" entity-name="repl-direction-tbl" entity-alias="rdt"></relation>
 
 		<readsets>
 			<readset name="IP-AND-PORT">
@@ -2767,25 +2765,17 @@
 		</readsets>
 
 		<query-defs>
-<!--			<query name='find-dc-cluster-by-applier-container' type='SELECT' multiple='true'>-->
-<!--				<param name="container-id" />-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--					SELECT <FIELDS />-->
-<!--					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='dc-cluster-info' />-->
-<!--					WHERE <FIELD name='container-id' /> = ${container-id}-->
-<!--					AND <FIELD name='deleted' /> = 0-->
-<!--					AND <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id-->
-<!--					AND dcst.dc_cluster_id=dct.dc_cluster_id-->
-<!--        			]]>-->
-<!--				</statement>-->
-<!--			</query>-->
 			<query name='count-container-applier-and-cluster-and-shard' type='SELECT' multiple='true'>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS />
-					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />
+					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='repl-direction-info' />, <TABLE name='dc-cluster-info' />
 					WHERE <FIELD name='shard-id' /> = dcst.shard_id
+					AND <FIELD name='repl-direction-id' /> = rdt.id
+					AND rdt.src_dc_id = dct.dc_id
+					AND dct.dc_cluster_id = dcst.dc_cluster_id
+					AND dct.deleted = 0
+					AND rdt.deleted = 0
 					AND <FIELD name='deleted' /> = 0
 					AND dcst.deleted = 0
 					GROUP BY <FIELD name='container-id' />
@@ -2793,27 +2783,6 @@
 				</statement>
 			</query>
 
-<!--			<query name="find-all-by-dc-cluster-name" type="SELECT" multiple="true">-->
-<!--				<param name="dc-name"/>-->
-<!--				<param name="cluster-name"/>-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--					SELECT <FIELDS/>-->
-<!--					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='dc-cluster-shard-info'/>-->
-<!--					WHERE dt.dc_name = ${dc-name}-->
-<!--					AND ct.cluster_name = ${cluster-name}-->
-<!--					AND dct.dc_id = dt.id-->
-<!--					AND dct.cluster_id = ct.id-->
-<!--					AND dct.dc_cluster_id = dcst.dc_cluster_id-->
-<!--					AND dcst.dc_cluster_shard_id = <FIELD name='dc-cluster-shard-id' />-->
-<!--					AND dt.deleted = 0-->
-<!--					AND ct.deleted = 0-->
-<!--					AND dct.deleted = 0-->
-<!--					AND dcst.deleted = 0-->
-<!--					AND <FIELD name='deleted'/> = 0-->
-<!--					]]>-->
-<!--				</statement>-->
-<!--			</query>-->
 			<query name='find-by-ip-port' type='SELECT' multiple="false">
 				<param name='ip'/>
 				<param name='port'/>
@@ -2929,7 +2898,7 @@
 			</readset>
 		</readsets>
 		<query-defs>
-			<query name="find-repl-direction-by-cluster" type="SELECT" multiple="true">
+			<query name="find-repl-directions-by-cluster" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
 				<statement>
 					<![CDATA[
@@ -2940,7 +2909,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-repl-direction-by-cluster-and-to-dc" type="SELECT" multiple="true">
+			<query name="find-repl-directions-by-cluster-and-to-dc" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
 				<param name="to-dc-id"/>
 				<statement>
@@ -2953,6 +2922,21 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-repl-direction-by-cluster-and-src-to-dc" type="SELECT">
+				<param name="cluster-id"/>
+				<param name='src-dc-id'/>
+				<param name="to-dc-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='src-dc-id'/> = ${src-dc-id}
+					AND <FIELD name='to-dc-id'/> = ${to-dc-id}
+					AND <FIELD name='cluster-id'/> = ${cluster-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-all-repl-direction" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
@@ -2961,6 +2945,15 @@
 					WHERE <FIELD name='cluster-id'/> = ct.id
 					AND ct.deleted = 0
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-repl-directions" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

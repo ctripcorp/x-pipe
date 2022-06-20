@@ -26,6 +26,10 @@ public class DefaultRdbParseContext implements RdbParseContext {
 
     private AtomicInteger dbId = new AtomicInteger();
 
+    private AtomicInteger version = new AtomicInteger();
+
+    private AtomicReference<RdbType> currentType = new AtomicReference<>();
+
     private Map<String, String> auxMap = Maps.newConcurrentMap();
 
     private AtomicReference<RedisKey> redisKey = new AtomicReference<>();
@@ -89,6 +93,28 @@ public class DefaultRdbParseContext implements RdbParseContext {
     }
 
     @Override
+    public RdbParseContext setRdbVersion(int version) {
+        this.version.set(version);
+        return this;
+    }
+
+    @Override
+    public int getRdbVersion() {
+        return version.get();
+    }
+
+    @Override
+    public RdbParseContext setCurrentType(RdbType rdbType) {
+        this.currentType.set(rdbType);
+        return this;
+    }
+
+    @Override
+    public RdbType getCurrentType() {
+        return currentType.get();
+    }
+
+    @Override
     public RdbParseContext setAux(String key, String value) {
         this.auxMap.put(key, value);
         return this;
@@ -146,6 +172,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public void clearKvContext() {
         this.redisKey.set(null);
+        this.currentType.set(null);
         this.expireMilli.set(0);
         this.lruIdle.set(-1);
         this.lfuFreq.set(-1);

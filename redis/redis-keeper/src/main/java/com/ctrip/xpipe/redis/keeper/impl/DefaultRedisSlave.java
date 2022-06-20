@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ShardId;
@@ -19,7 +18,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * May 20, 2016 4:34:09 PM
  */
-public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
+public class DefaultRedisSlave implements RedisSlave {
 	
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRedisSlave.class);
 	
@@ -57,7 +56,7 @@ public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
 	private Long rdbFileOffset;
-	private ReplicationProgress<?,?> progressAfterRdb;
+	private ReplicationProgress<?> progressAfterRdb;
 	private EofType eofType;
 		
 	private ScheduledExecutorService scheduled;
@@ -223,13 +222,13 @@ public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 		return this.replAckTime;
 	}
 
-	protected String buildMarkBeforeFsync(ReplicationProgress<?, ?> rdbProgress) {
+	protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
 		return StringUtil.join(" ", DefaultPsync.FULL_SYNC, getRedisServer().getKeeperRepl().replId(),
 				rdbProgress.getProgress().toString());
 	}
 	
 	@Override
-	public void beginWriteRdb(EofType eofType, ReplicationProgress<?, ?> rdbProgress) {
+	public void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress) {
 		getLogger().info("[beginWriteRdb]{}, {}", eofType, rdbProgress);
 		closeState.makeSureOpen();
 
@@ -297,7 +296,7 @@ public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 	}
 
 	@Override
-	public void beginWriteCommands(ReplicationProgress<?,?> progress) {
+	public void beginWriteCommands(ReplicationProgress<?> progress) {
 
 		closeState.makeSureOpen();
 
@@ -340,19 +339,11 @@ public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 	}
 
 	@Override
-	public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
-
+	public ChannelFuture onCommand(Object cmd) {
 		closeState.makeSureOpen();
-		getLogger().debug("[onCommand]{}, {}", this, referenceFileRegion);
-		return doWriteFile(referenceFileRegion);
-	}
+		getLogger().debug("[onCommand]{}, {}", this, cmd);
 
-	@Override
-	public ChannelFuture onCommand(RedisOp redisOp) {
-		closeState.makeSureOpen();
-		getLogger().debug("[onCommand]{}, {}", this, redisOp);
-
-		ChannelFuture future = channel().writeAndFlush(redisOp.buildRESP());
+		ChannelFuture future = channel().writeAndFlush(cmd);
 		future.addListener(writeExceptionListener);
 		return future;
 	}
@@ -405,8 +396,8 @@ public class DefaultRedisSlave implements RedisSlave<RedisKeeperServer> {
 	}
 
 	@Override
-	public boolean supportProgress(ReplicationProgress.TYPE type) {
-		return ReplicationProgress.TYPE.OFFSET.equals(type);
+	public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+		return clazz.equals(OffsetReplicationProgress.class);
 	}
 
 	private int remotePort() {

@@ -2,14 +2,12 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetReplicationProgress;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +60,7 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
 
     @Override
     protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
-        if (!rdbFileListener.supportProgress(ReplicationProgress.TYPE.GTIDSET)) {
+        if (!rdbFileListener.supportProgress(GtidSetReplicationProgress.class)) {
             super.doReadRdbFileInfo(rdbFileListener);
             return;
         }

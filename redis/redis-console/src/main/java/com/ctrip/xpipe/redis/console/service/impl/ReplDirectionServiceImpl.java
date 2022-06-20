@@ -25,7 +25,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     DcService dcService;
 
     @Override
-    public ReplDirectionTbl find(long id) {
+    public ReplDirectionTbl findReplDirectionTblById(long id) {
         return queryHandler.handleQuery(new DalQuery<ReplDirectionTbl>() {
             @Override
             public ReplDirectionTbl doQuery() throws DalException {
@@ -45,18 +45,41 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
-    public List<ReplDirectionTbl> findAllReplDirectionByCluster(long clusterId) {
+    public List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId) {
 
         return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
             @Override
             public List<ReplDirectionTbl> doQuery() throws DalException {
-                return dao.findReplDirectionByCluster(clusterId, ReplDirectionTblEntity.READSET_FULL);
+                return dao.findReplDirectionsByCluster(clusterId, ReplDirectionTblEntity.READSET_FULL);
             }
         });
     }
 
     @Override
-    public List<ReplDirectionInfoModel> findReplDirectionInfoModelByClusterAndToDc(String clusterName, String toDcName) {
+    public ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName) {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            throw new IllegalArgumentException(String.format("cluster %s does not exist", clusterName));
+        }
+
+        DcTbl srcDcTbl = dcService.find(srcDcName);
+        DcTbl toDcTbl = dcService.find(toDcName);
+        if (srcDcTbl == null || toDcTbl == null) {
+            throw new IllegalArgumentException(String.format("src dc %s or to dc %s does not exist", srcDcName, toDcName));
+        }
+
+        ReplDirectionTbl replDirectionTbl = queryHandler.handleQuery(new DalQuery<ReplDirectionTbl>() {
+            @Override
+            public ReplDirectionTbl doQuery() throws DalException {
+                return dao.findReplDirectionByClusterAndSrcToDc(clusterTbl.getId(), srcDcTbl.getId(), toDcTbl.getId(), ReplDirectionTblEntity.READSET_FULL);
+            }
+        });
+        if (null == replDirectionTbl)  return null;
+        return convertReplDirectionTblToReplDirectionInfoModel(replDirectionTbl, dcService.dcNameMap());
+    }
+
+    @Override
+    public List<ReplDirectionInfoModel> findReplDirectionInfoModelsByClusterAndToDc(String clusterName, String toDcName) {
         ClusterTbl cluster = clusterService.find(clusterName);
         if (cluster == null) {
             throw new IllegalArgumentException(String.format("cluster %s does not exist", clusterName));
@@ -70,7 +93,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         List<ReplDirectionTbl> replDirectionTbls = queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
             @Override
             public List<ReplDirectionTbl> doQuery() throws DalException {
-                return dao.findReplDirectionByClusterAndToDc(cluster.getId(), dc.getId(), ReplDirectionTblEntity.READSET_FULL);
+                return dao.findReplDirectionsByClusterAndToDc(cluster.getId(), dc.getId(), ReplDirectionTblEntity.READSET_FULL);
             }
         });
 
@@ -99,18 +122,4 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         replDirectionInfoModel.setClusterName(clusterTbl.getClusterName());
         return replDirectionInfoModel;
     }
-
-
-    @Override
-    public void updateReplDirection(ReplDirectionInfoModel model) {
-        ReplDirectionTbl proto = dao.createLocal();
-
-        queryHandler.handleUpdate(new DalQuery<Integer>() {
-            @Override
-            public Integer doQuery() throws DalException {
-                return dao.updateByPK(proto, ReplDirectionTblEntity.UPDATESET_FULL);
-            }
-        });
-    }
-
 }

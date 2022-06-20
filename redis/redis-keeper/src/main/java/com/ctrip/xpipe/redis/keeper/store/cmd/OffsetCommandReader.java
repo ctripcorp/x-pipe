@@ -25,13 +25,13 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private ReferenceFileChannel referenceFileChannel;
 
-    private CommandStore<?,ReferenceFileRegion> commandStore;
+    private CommandStore commandStore;
 
     private OffsetNotifier offsetNotifier;
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
-    public OffsetCommandReader(File curFile, long globalPosition, long filePosition, CommandStore<?,ReferenceFileRegion> commandStore,
+    public OffsetCommandReader(File curFile, long globalPosition, long filePosition, CommandStore commandStore,
                                OffsetNotifier offsetNotifier, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);

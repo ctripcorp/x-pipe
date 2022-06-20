@@ -532,6 +532,9 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             }
 
             List<DcClusterShardTbl> dcClusterShardTbls =  dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
+            if (dcClusterShardTbls == null) {
+                return;
+            }
             for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
                 ShardMeta shardMeta = getOrCreateShardMeta(sourceMeta, dcClusterShardTbl.getShardInfo());
                 RedisTbl redis = dcClusterShardTbl.getRedisInfo();
