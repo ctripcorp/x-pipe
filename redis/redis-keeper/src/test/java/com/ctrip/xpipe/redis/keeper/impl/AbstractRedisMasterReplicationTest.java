@@ -5,12 +5,11 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -78,7 +77,7 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
         System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
         Server server = startEmptyServer();
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
-        ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
+        DefaultEndPoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort(), protocol);
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);
         KeeperResourceManager proxyEndpointManager = getRegistry().getComponent(KeeperResourceManager.class);
