@@ -7,6 +7,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -18,7 +19,7 @@ public class KeeperContainerErrorParser {
     private static final Type mapMessageType = new TypeToken<Map<String, String>>(){}.getType();
 
     public static RuntimeException parseErrorFromHttpException(HttpStatusCodeException ex) {
-        if (ex.getResponseHeaders().containsKey(ERROR_HEADER_NAME)) {
+        if (Objects.requireNonNull(ex.getResponseHeaders()).containsKey(ERROR_HEADER_NAME)) {
             try {
                 ErrorMessage<KeeperContainerErrorCode> errorMessage = gson.fromJson(ex.getResponseBodyAsString(),
                         errorMessageType);
