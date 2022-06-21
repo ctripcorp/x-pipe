@@ -59,7 +59,7 @@ public class RouteChangeTest extends AbstractXpipeServerMultiDcTest {
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 10000, 1000);
 
         RouteModel model = new RouteModel();
-        model.setId(2).setSrcProxyIds("2").setTag("META").setDstProxyIds("1,5").setSrcDcName("jq").setDstDcName("fra").setActive(true);
+        model.setId(2).setSrcProxyIds("2").setTag("META").setDstProxyIds("1,5").setSrcDcName("jq").setDstDcName("fra").setActive(true).setPublic(true);
         jqService.changeRoute(model);
         jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 61000, 1000);
