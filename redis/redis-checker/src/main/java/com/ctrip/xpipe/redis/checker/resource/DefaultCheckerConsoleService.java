@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.resource;
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -92,7 +93,11 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     public boolean isClusterOnMigration(String console, String clusterId) {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION)
                 .buildAndExpand(clusterId);
-        return restTemplate.getForObject(comp.toString() , Boolean.class);
+        Boolean result = restTemplate.getForObject(comp.toString() , Boolean.class);
+        if (result == null) {
+            throw new XpipeRuntimeException("result of isClusterOnMigration is null");
+        }
+        return result;
     }
 
     @Override
@@ -121,37 +126,41 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
 
     @Override
     public boolean isSentinelAutoProcess(String console) {
-        return restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, Boolean.class);
+        Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, Boolean.class);
+        if (result == null) {
+            throw new XpipeRuntimeException("result of isSentinelAutoProcess is null");
+        }
+        return result;
     }
 
     @Override
     public boolean isAlertSystemOn(String console) {
-        return restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, Boolean.class);
+        Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, Boolean.class);
+        if (result == null) {
+            throw new XpipeRuntimeException("result of isAlertSystemOn is null");
+        }
+        return result;
     }
 
     @Override
     public Date getClusterCreateTime(String console, String clusterId) {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME)
                 .buildAndExpand(clusterId);
-        Long time = restTemplate.getForObject(comp.toString(), Long.class);
-        return new Date(time);
+        Date date = restTemplate.getForObject(comp.toString(), Date.class);
+        if (date == null) {
+            throw new XpipeRuntimeException("result of getClusterCreateTime is null");
+        }
+        return date;
     }
 
     @Override
     public Map<String, Date> loadAllClusterCreateTime(String console) {
-        Map<String, Object> times = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME, Map.class);
-        Map<String, Date> dates = Maps.newConcurrentMap();
-        times.entrySet().stream().forEach(entry -> {
-            Object value = entry.getValue();
-            if(value instanceof Long) {
-                dates.put(entry.getKey(), new Date((long)value));
-            } else if(value instanceof Integer) {
-                dates.put(entry.getKey(), new Date((int)value));
-            } else {
-                throw new RuntimeException("type fail :" + value.getClass());
-            }
-        });
-        return dates;
+        ResponseEntity<Map<String, Date>> times = restTemplate.exchange(
+                console + ConsoleCheckerPath.PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME,
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<Map<String, Date>>(){});
+        return times.getBody();
     }
     
     @Override
