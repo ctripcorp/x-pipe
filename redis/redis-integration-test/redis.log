@@ -1,0 +1,838 @@
+59270:X 21 Jun 17:10:09.418 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59272:X 21 Jun 17:10:09.418 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59270:X 21 Jun 17:10:09.418 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59270, just started
+59272:X 21 Jun 17:10:09.418 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59272, just started
+59271:X 21 Jun 17:10:09.418 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59272:X 21 Jun 17:10:09.418 # Configuration loaded
+59270:X 21 Jun 17:10:09.418 # Configuration loaded
+59271:X 21 Jun 17:10:09.418 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59271, just started
+59271:X 21 Jun 17:10:09.418 # Configuration loaded
+59271:X 21 Jun 17:10:09.419 # Creating Server TCP listening socket *:5000: bind: Address already in use
+59270:X 21 Jun 17:10:09.420 * Running mode=sentinel, port=5001.
+59272:X 21 Jun 17:10:09.420 * Running mode=sentinel, port=5002.
+59270:X 21 Jun 17:10:09.420 # Sentinel ID is fabbfcb72e1fc2ed34a7293f648369546feb8f4e
+59272:X 21 Jun 17:10:09.420 # Sentinel ID is 7c01e406610d555a4a3f99e3e770a025798eefe3
+59332:X 21 Jun 17:10:12.597 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59332:X 21 Jun 17:10:12.598 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59332, just started
+59332:X 21 Jun 17:10:12.598 # Configuration loaded
+59333:X 21 Jun 17:10:12.598 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59333:X 21 Jun 17:10:12.598 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59333, just started
+59333:X 21 Jun 17:10:12.598 # Configuration loaded
+59334:X 21 Jun 17:10:12.598 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59334:X 21 Jun 17:10:12.599 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59334, just started
+59334:X 21 Jun 17:10:12.599 # Configuration loaded
+59332:X 21 Jun 17:10:12.599 * Running mode=sentinel, port=17171.
+59332:X 21 Jun 17:10:12.600 # Sentinel ID is eb49102ef315d3538e98c405f9a5c6b706fc77fe
+59333:X 21 Jun 17:10:12.600 * Running mode=sentinel, port=17172.
+59333:X 21 Jun 17:10:12.600 # Sentinel ID is 380c980b83995829b0a60eba2751b0974b5d2e80
+59334:X 21 Jun 17:10:12.600 * Running mode=sentinel, port=17170.
+59334:X 21 Jun 17:10:12.601 # Sentinel ID is bb5f575566123899bec700c5061eddcbf16946fa
+59378:X 21 Jun 17:10:15.769 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59378:X 21 Jun 17:10:15.770 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59378, just started
+59378:X 21 Jun 17:10:15.770 # Configuration loaded
+59379:X 21 Jun 17:10:15.770 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+59379:X 21 Jun 17:10:15.771 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=59379, just started
+59379:X 21 Jun 17:10:15.771 # Configuration loaded
+59378:X 21 Jun 17:10:15.771 * Running mode=sentinel, port=32222.
+59378:X 21 Jun 17:10:15.772 # Sentinel ID is 236a3aef11e10456b6ae281c12e5ff09b69cbef1
+59379:X 21 Jun 17:10:15.772 * Running mode=sentinel, port=32223.
+59379:X 21 Jun 17:10:15.772 # Sentinel ID is 2c58cd2442b034190e5eb2ae32853d9059c7f129
+59272:X 21 Jun 17:10:55.218 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+59270:X 21 Jun 17:10:55.218 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+59333:X 21 Jun 17:10:59.648 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+59332:X 21 Jun 17:10:59.649 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+59334:X 21 Jun 17:10:59.649 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+59378:X 21 Jun 17:11:01.109 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+59379:X 21 Jun 17:11:01.110 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+59270:X 21 Jun 17:11:25.230 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+59272:X 21 Jun 17:11:25.308 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+59332:X 21 Jun 17:11:29.683 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+59334:X 21 Jun 17:11:29.693 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+59333:X 21 Jun 17:11:29.744 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+59379:X 21 Jun 17:11:31.117 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+59378:X 21 Jun 17:11:31.121 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+65161:X 21 Jun 17:47:54.254 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65162:X 21 Jun 17:47:54.254 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65163:X 21 Jun 17:47:54.254 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65163:X 21 Jun 17:47:54.255 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65163, just started
+65161:X 21 Jun 17:47:54.255 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65161, just started
+65162:X 21 Jun 17:47:54.255 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65162, just started
+65163:X 21 Jun 17:47:54.255 # Configuration loaded
+65161:X 21 Jun 17:47:54.255 # Configuration loaded
+65162:X 21 Jun 17:47:54.255 # Configuration loaded
+65161:X 21 Jun 17:47:54.256 # Creating Server TCP listening socket *:5000: bind: Address already in use
+65163:X 21 Jun 17:47:54.256 * Running mode=sentinel, port=5002.
+65162:X 21 Jun 17:47:54.256 * Running mode=sentinel, port=5001.
+65163:X 21 Jun 17:47:54.257 # Sentinel ID is d22ef56bb5a3ad2781bc5842d6122e80e8d3ece1
+65162:X 21 Jun 17:47:54.257 # Sentinel ID is 1b4981e519c9504014f5ca48cd5ba91e71066c1e
+65218:X 21 Jun 17:47:57.454 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65217:X 21 Jun 17:47:57.454 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65218:X 21 Jun 17:47:57.454 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65218, just started
+65218:X 21 Jun 17:47:57.454 # Configuration loaded
+65217:X 21 Jun 17:47:57.454 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65217, just started
+65217:X 21 Jun 17:47:57.455 # Configuration loaded
+65217:X 21 Jun 17:47:57.455 * Running mode=sentinel, port=17172.
+65218:X 21 Jun 17:47:57.455 * Running mode=sentinel, port=17171.
+65220:X 21 Jun 17:47:57.455 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65220:X 21 Jun 17:47:57.456 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65220, just started
+65217:X 21 Jun 17:47:57.456 # Sentinel ID is e07d8fd33f7677875e63328bb4b6846558723826
+65218:X 21 Jun 17:47:57.456 # Sentinel ID is 653844898203fd9e334992b29cf01ac0030d59e2
+65220:X 21 Jun 17:47:57.456 # Configuration loaded
+65220:X 21 Jun 17:47:57.457 * Running mode=sentinel, port=17170.
+65220:X 21 Jun 17:47:57.457 # Sentinel ID is 8414e90de021d305e9c5be68c4414310e45e52b5
+65264:X 21 Jun 17:48:00.604 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65265:X 21 Jun 17:48:00.604 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65264:X 21 Jun 17:48:00.605 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65264, just started
+65265:X 21 Jun 17:48:00.605 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65265, just started
+65264:X 21 Jun 17:48:00.605 # Configuration loaded
+65265:X 21 Jun 17:48:00.605 # Configuration loaded
+65265:X 21 Jun 17:48:00.606 * Running mode=sentinel, port=32223.
+65264:X 21 Jun 17:48:00.606 * Running mode=sentinel, port=32222.
+65265:X 21 Jun 17:48:00.606 # Sentinel ID is 8e4734af878aec833512e9befaee0f57c32af57c
+65264:X 21 Jun 17:48:00.606 # Sentinel ID is 6f0e9d18c49ecf75a5d565d7c34eb2f0ef4a3033
+65218:X 21 Jun 17:48:39.629 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65217:X 21 Jun 17:48:39.629 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65220:X 21 Jun 17:48:39.631 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65265:X 21 Jun 17:48:42.449 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+65264:X 21 Jun 17:48:42.449 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+65163:X 21 Jun 17:48:53.866 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+65162:X 21 Jun 17:48:53.866 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+65218:X 21 Jun 17:49:09.629 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65220:X 21 Jun 17:49:09.631 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65217:X 21 Jun 17:49:09.677 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65265:X 21 Jun 17:49:12.487 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+65264:X 21 Jun 17:49:12.504 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+65162:X 21 Jun 17:49:23.873 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+65163:X 21 Jun 17:49:23.880 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+65846:X 21 Jun 17:49:47.592 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65844:X 21 Jun 17:49:47.592 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65845:X 21 Jun 17:49:47.592 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65846:X 21 Jun 17:49:47.592 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65846, just started
+65844:X 21 Jun 17:49:47.592 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65844, just started
+65845:X 21 Jun 17:49:47.592 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65845, just started
+65846:X 21 Jun 17:49:47.592 # Configuration loaded
+65844:X 21 Jun 17:49:47.592 # Configuration loaded
+65845:X 21 Jun 17:49:47.592 # Configuration loaded
+65844:X 21 Jun 17:49:47.593 * Running mode=sentinel, port=5002.
+65845:X 21 Jun 17:49:47.593 * Running mode=sentinel, port=5001.
+65846:X 21 Jun 17:49:47.593 # Creating Server TCP listening socket *:5000: bind: Address already in use
+65844:X 21 Jun 17:49:47.593 # Sentinel ID is 513fd14fd1aaa23fab6bdcec3675522d0c88541f
+65845:X 21 Jun 17:49:47.593 # Sentinel ID is 2dbc89fe7ccd879de619f3e398a0aa999c5d74b8
+65897:X 21 Jun 17:49:50.744 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65897:X 21 Jun 17:49:50.745 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65897, just started
+65897:X 21 Jun 17:49:50.745 # Configuration loaded
+65899:X 21 Jun 17:49:50.745 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65899:X 21 Jun 17:49:50.745 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65899, just started
+65899:X 21 Jun 17:49:50.745 # Configuration loaded
+65898:X 21 Jun 17:49:50.745 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65898:X 21 Jun 17:49:50.745 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65898, just started
+65898:X 21 Jun 17:49:50.745 # Configuration loaded
+65897:X 21 Jun 17:49:50.746 * Running mode=sentinel, port=17172.
+65899:X 21 Jun 17:49:50.746 * Running mode=sentinel, port=17171.
+65897:X 21 Jun 17:49:50.746 # Sentinel ID is 9db6733498b8329fce5ffce09cdbced1d55d723e
+65898:X 21 Jun 17:49:50.746 * Running mode=sentinel, port=17170.
+65899:X 21 Jun 17:49:50.746 # Sentinel ID is cbf5bc3adf7eeb417e849aeaf57e0b05e298587b
+65898:X 21 Jun 17:49:50.746 # Sentinel ID is 22aa1dd4df11fa4be1ce7188e190e0fce176651a
+65946:X 21 Jun 17:49:53.862 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65946:X 21 Jun 17:49:53.863 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65946, just started
+65946:X 21 Jun 17:49:53.863 # Configuration loaded
+65947:X 21 Jun 17:49:53.863 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+65947:X 21 Jun 17:49:53.863 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=65947, just started
+65947:X 21 Jun 17:49:53.863 # Configuration loaded
+65946:X 21 Jun 17:49:53.864 * Running mode=sentinel, port=32222.
+65946:X 21 Jun 17:49:53.864 # Sentinel ID is 7956b9402a42c75a868436a9128e765b3639dc11
+65947:X 21 Jun 17:49:53.864 * Running mode=sentinel, port=32223.
+65947:X 21 Jun 17:49:53.865 # Sentinel ID is 2666d922f8dcf7c5cdf57b4ac4a01bd37c9555dc
+65897:X 21 Jun 17:50:32.190 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65898:X 21 Jun 17:50:32.194 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65899:X 21 Jun 17:50:32.194 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+65844:X 21 Jun 17:50:43.295 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+65845:X 21 Jun 17:50:43.295 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+65947:X 21 Jun 17:50:46.808 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+65946:X 21 Jun 17:50:46.808 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+65897:X 21 Jun 17:51:02.199 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65899:X 21 Jun 17:51:02.206 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65898:X 21 Jun 17:51:02.237 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+65844:X 21 Jun 17:51:13.305 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+65845:X 21 Jun 17:51:13.333 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+65946:X 21 Jun 17:51:16.836 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+65947:X 21 Jun 17:51:16.844 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+67071:X 21 Jun 17:53:59.208 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67070:X 21 Jun 17:53:59.208 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67071:X 21 Jun 17:53:59.209 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67071, just started
+67072:X 21 Jun 17:53:59.208 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67070:X 21 Jun 17:53:59.209 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67070, just started
+67071:X 21 Jun 17:53:59.209 # Configuration loaded
+67072:X 21 Jun 17:53:59.209 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67072, just started
+67070:X 21 Jun 17:53:59.209 # Configuration loaded
+67072:X 21 Jun 17:53:59.209 # Configuration loaded
+67071:X 21 Jun 17:53:59.210 # Creating Server TCP listening socket *:5000: bind: Address already in use
+67072:X 21 Jun 17:53:59.210 * Running mode=sentinel, port=5001.
+67070:X 21 Jun 17:53:59.210 * Running mode=sentinel, port=5002.
+67072:X 21 Jun 17:53:59.211 # Sentinel ID is ecae700a61ea0fb3251b10a5bcb35d082cd610ce
+67070:X 21 Jun 17:53:59.211 # Sentinel ID is c989d7ea81ad64bd84542640cd496263feb7bda4
+67123:X 21 Jun 17:54:02.365 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67123:X 21 Jun 17:54:02.365 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67123, just started
+67123:X 21 Jun 17:54:02.365 # Configuration loaded
+67123:X 21 Jun 17:54:02.366 * Running mode=sentinel, port=17170.
+67123:X 21 Jun 17:54:02.366 # Sentinel ID is 6d7c25eacaac7ef555e30d20268ed44e93576d78
+67126:X 21 Jun 17:54:02.367 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67124:X 21 Jun 17:54:02.367 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67124:X 21 Jun 17:54:02.367 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67124, just started
+67126:X 21 Jun 17:54:02.367 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67126, just started
+67124:X 21 Jun 17:54:02.367 # Configuration loaded
+67126:X 21 Jun 17:54:02.367 # Configuration loaded
+67126:X 21 Jun 17:54:02.368 * Running mode=sentinel, port=17172.
+67126:X 21 Jun 17:54:02.368 # Sentinel ID is 5c1f5614c0b962faef0b54bb0f53f051adea24ed
+67124:X 21 Jun 17:54:02.368 * Running mode=sentinel, port=17171.
+67124:X 21 Jun 17:54:02.368 # Sentinel ID is 6daa3834204db76adaa819938c55f27e02e3a6ee
+67171:X 21 Jun 17:54:05.479 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67171:X 21 Jun 17:54:05.479 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67171, just started
+67171:X 21 Jun 17:54:05.480 # Configuration loaded
+67172:X 21 Jun 17:54:05.480 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67172:X 21 Jun 17:54:05.480 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67172, just started
+67172:X 21 Jun 17:54:05.480 # Configuration loaded
+67171:X 21 Jun 17:54:05.481 * Running mode=sentinel, port=32223.
+67171:X 21 Jun 17:54:05.481 # Sentinel ID is e7b4b54de253543951a92fe9c86028b54c134778
+67172:X 21 Jun 17:54:05.481 * Running mode=sentinel, port=32222.
+67172:X 21 Jun 17:54:05.482 # Sentinel ID is 48a64943dd2128691c8173b9d51891b296fe2719
+67072:X 21 Jun 17:54:45.710 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+67070:X 21 Jun 17:54:45.710 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+67124:X 21 Jun 17:54:46.985 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67126:X 21 Jun 17:54:46.985 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67123:X 21 Jun 17:54:46.986 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67171:X 21 Jun 17:54:49.707 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+67172:X 21 Jun 17:54:49.707 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+67070:X 21 Jun 17:55:15.738 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+67072:X 21 Jun 17:55:15.762 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+67124:X 21 Jun 17:55:16.998 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+67123:X 21 Jun 17:55:17.000 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+67126:X 21 Jun 17:55:17.006 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+67171:X 21 Jun 17:55:19.742 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+67172:X 21 Jun 17:55:19.754 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+67645:X 21 Jun 17:56:18.725 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67645:X 21 Jun 17:56:18.725 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67645, just started
+67645:X 21 Jun 17:56:18.725 # Configuration loaded
+67646:X 21 Jun 17:56:18.725 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67646:X 21 Jun 17:56:18.725 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67646, just started
+67646:X 21 Jun 17:56:18.725 # Configuration loaded
+67645:X 21 Jun 17:56:18.726 * Running mode=sentinel, port=5001.
+67646:X 21 Jun 17:56:18.726 # Creating Server TCP listening socket *:5000: bind: Address already in use
+67645:X 21 Jun 17:56:18.726 # Sentinel ID is 487b7baaea9eb6933872d29ad4b3e376b87c00d5
+67648:X 21 Jun 17:56:18.727 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67648:X 21 Jun 17:56:18.727 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67648, just started
+67648:X 21 Jun 17:56:18.727 # Configuration loaded
+67648:X 21 Jun 17:56:18.728 * Running mode=sentinel, port=5002.
+67648:X 21 Jun 17:56:18.728 # Sentinel ID is 6e25a1e7a214059a8352d77e91580fb3e85b8f54
+67699:X 21 Jun 17:56:21.861 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67699:X 21 Jun 17:56:21.861 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67699, just started
+67699:X 21 Jun 17:56:21.862 # Configuration loaded
+67700:X 21 Jun 17:56:21.862 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67701:X 21 Jun 17:56:21.862 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67700:X 21 Jun 17:56:21.862 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67700, just started
+67700:X 21 Jun 17:56:21.862 # Configuration loaded
+67701:X 21 Jun 17:56:21.862 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67701, just started
+67701:X 21 Jun 17:56:21.862 # Configuration loaded
+67699:X 21 Jun 17:56:21.863 * Running mode=sentinel, port=17171.
+67699:X 21 Jun 17:56:21.863 # Sentinel ID is b5414c883ff056cccad2efc3a8321b081fc45dee
+67700:X 21 Jun 17:56:21.863 * Running mode=sentinel, port=17170.
+67701:X 21 Jun 17:56:21.863 * Running mode=sentinel, port=17172.
+67700:X 21 Jun 17:56:21.863 # Sentinel ID is 7d03dd249e82ba391bae5aeb10b9cc4e63c11099
+67701:X 21 Jun 17:56:21.863 # Sentinel ID is 0d563479b08798c6a5eb3cc2a4b51eb28e733723
+67748:X 21 Jun 17:56:24.982 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67747:X 21 Jun 17:56:24.982 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+67748:X 21 Jun 17:56:24.983 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67748, just started
+67747:X 21 Jun 17:56:24.983 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=67747, just started
+67748:X 21 Jun 17:56:24.983 # Configuration loaded
+67747:X 21 Jun 17:56:24.983 # Configuration loaded
+67747:X 21 Jun 17:56:24.984 * Running mode=sentinel, port=32222.
+67748:X 21 Jun 17:56:24.984 * Running mode=sentinel, port=32223.
+67747:X 21 Jun 17:56:24.984 # Sentinel ID is 3189d6b36774b869e0895bb1e6430b70e2b5df1d
+67748:X 21 Jun 17:56:24.985 # Sentinel ID is e0c4c8305b3008e8f057e6aa1bbdc7d0afc926f0
+67748:X 21 Jun 17:57:34.324 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+67747:X 21 Jun 17:57:34.324 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+67648:X 21 Jun 17:57:34.981 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+67645:X 21 Jun 17:57:34.981 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+67699:X 21 Jun 17:57:43.780 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67701:X 21 Jun 17:57:43.780 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67700:X 21 Jun 17:57:43.782 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+67748:X 21 Jun 17:58:04.345 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+67747:X 21 Jun 17:58:04.363 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+67648:X 21 Jun 17:58:05.024 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+67645:X 21 Jun 17:58:05.033 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+68329:X 21 Jun 18:00:08.866 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68330:X 21 Jun 18:00:08.867 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68329:X 21 Jun 18:00:08.867 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68329, just started
+68330:X 21 Jun 18:00:08.867 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68330, just started
+68329:X 21 Jun 18:00:08.867 # Configuration loaded
+68330:X 21 Jun 18:00:08.867 # Configuration loaded
+68331:X 21 Jun 18:00:08.867 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68331:X 21 Jun 18:00:08.867 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68331, just started
+68331:X 21 Jun 18:00:08.867 # Configuration loaded
+68329:X 21 Jun 18:00:08.868 # Creating Server TCP listening socket *:5000: bind: Address already in use
+68330:X 21 Jun 18:00:08.868 * Running mode=sentinel, port=5001.
+68331:X 21 Jun 18:00:08.868 * Running mode=sentinel, port=5002.
+68330:X 21 Jun 18:00:08.868 # Sentinel ID is ecc3f9dabb6375c1fcc658cf2c8c77bf0a126b37
+68331:X 21 Jun 18:00:08.869 # Sentinel ID is b750d91b44abe82c9259eca87801165862361012
+68384:X 21 Jun 18:00:12.008 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68385:X 21 Jun 18:00:12.008 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68386:X 21 Jun 18:00:12.008 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68384:X 21 Jun 18:00:12.009 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68384, just started
+68384:X 21 Jun 18:00:12.009 # Configuration loaded
+68385:X 21 Jun 18:00:12.009 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68385, just started
+68386:X 21 Jun 18:00:12.009 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68386, just started
+68385:X 21 Jun 18:00:12.009 # Configuration loaded
+68386:X 21 Jun 18:00:12.009 # Configuration loaded
+68384:X 21 Jun 18:00:12.010 * Running mode=sentinel, port=17170.
+68385:X 21 Jun 18:00:12.010 * Running mode=sentinel, port=17172.
+68386:X 21 Jun 18:00:12.010 * Running mode=sentinel, port=17171.
+68385:X 21 Jun 18:00:12.010 # Sentinel ID is 39ed0cb48587498adc98cb5070aece7e2830f60f
+68384:X 21 Jun 18:00:12.010 # Sentinel ID is cf996b7b94fa51ba3bb0e8a17acbff1c58a9991d
+68386:X 21 Jun 18:00:12.010 # Sentinel ID is 0c73c1421c42e3bfe2ebeff4b3e63362cbaa5e70
+68434:X 21 Jun 18:00:15.118 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68433:X 21 Jun 18:00:15.118 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+68434:X 21 Jun 18:00:15.119 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68434, just started
+68433:X 21 Jun 18:00:15.119 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=68433, just started
+68434:X 21 Jun 18:00:15.119 # Configuration loaded
+68433:X 21 Jun 18:00:15.119 # Configuration loaded
+68433:X 21 Jun 18:00:15.120 * Running mode=sentinel, port=32223.
+68434:X 21 Jun 18:00:15.120 * Running mode=sentinel, port=32222.
+68433:X 21 Jun 18:00:15.120 # Sentinel ID is 2bcf5efb53f0913ba41c51e1a53b5f3dc8bf0a94
+68434:X 21 Jun 18:00:15.120 # Sentinel ID is 6082b8ffa0543a315b6975c5ccbaddde7efb11af
+68331:signal-handler (683846833068386:signal-handler (:signal-handler (1655806107683851655806107) ) Received SIGINT scheduling shutdown...Received SIGINT scheduling shutdown...
+6843368434:signal-handler (:signal-handler (:signal-handler (1655806107) Received SIGINT scheduling shutdown...
+:signal-handler (1655806107) Received SIGINT scheduling shutdown...
+1655806107
+) Received SIGINT scheduling shutdown...
+1655806107) Received SIGINT scheduling shutdown...1655806107
+) Received SIGINT scheduling shutdown...
+68434:X 21 Jun 18:08:27.787 # User requested shutdown...
+68434:X 21 Jun 18:08:27.787 # Sentinel is now ready to exit, bye bye...
+68331:X 21 Jun 18:08:27.796 # User requested shutdown...
+68331:X 21 Jun 18:08:27.796 # Sentinel is now ready to exit, bye bye...
+68433:X 21 Jun 18:08:27.797 # User requested shutdown...
+68433:X 21 Jun 18:08:27.798 # Sentinel is now ready to exit, bye bye...
+68330:X 21 Jun 18:08:27.800 # User requested shutdown...
+68330:X 21 Jun 18:08:27.801 # Sentinel is now ready to exit, bye bye...
+68385:X 21 Jun 18:08:27.810 # User requested shutdown...
+68385:X 21 Jun 18:08:27.810 # Sentinel is now ready to exit, bye bye...
+68384:X 21 Jun 18:08:27.833 # User requested shutdown...
+68384:X 21 Jun 18:08:27.834 # Sentinel is now ready to exit, bye bye...
+68386:X 21 Jun 18:08:27.842 # User requested shutdown...
+68386:X 21 Jun 18:08:27.845 # Sentinel is now ready to exit, bye bye...
+69400:X 21 Jun 18:08:32.914 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69400:X 21 Jun 18:08:32.914 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69400, just started
+69400:X 21 Jun 18:08:32.914 # Configuration loaded
+69402:X 21 Jun 18:08:32.914 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69402:X 21 Jun 18:08:32.915 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69402, just started
+69402:X 21 Jun 18:08:32.915 # Configuration loaded
+69400:X 21 Jun 18:08:32.915 * Running mode=sentinel, port=5001.
+69403:X 21 Jun 18:08:32.915 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69400:X 21 Jun 18:08:32.915 # Sentinel ID is 3e365f3a1507fefc6b069f5321df6477491cf564
+69402:X 21 Jun 18:08:32.915 * Running mode=sentinel, port=5002.
+69403:X 21 Jun 18:08:32.915 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69403, just started
+69403:X 21 Jun 18:08:32.915 # Configuration loaded
+69402:X 21 Jun 18:08:32.916 # Sentinel ID is ccdc626143595eb33e4415dbfb954a9bf7116130
+69403:X 21 Jun 18:08:32.916 # Creating Server TCP listening socket *:5000: bind: Address already in use
+69459:X 21 Jun 18:08:36.087 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69459:X 21 Jun 18:08:36.088 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69459, just started
+69459:X 21 Jun 18:08:36.088 # Configuration loaded
+69460:X 21 Jun 18:08:36.088 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69461:X 21 Jun 18:08:36.088 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69460:X 21 Jun 18:08:36.089 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69460, just started
+69461:X 21 Jun 18:08:36.089 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69461, just started
+69460:X 21 Jun 18:08:36.089 # Configuration loaded
+69461:X 21 Jun 18:08:36.089 # Configuration loaded
+69459:X 21 Jun 18:08:36.089 * Running mode=sentinel, port=17170.
+69459:X 21 Jun 18:08:36.090 # Sentinel ID is c4b85889fba0871941b6fc8d1aa57e8b630526c0
+69460:X 21 Jun 18:08:36.090 * Running mode=sentinel, port=17172.
+69461:X 21 Jun 18:08:36.090 * Running mode=sentinel, port=17171.
+69460:X 21 Jun 18:08:36.090 # Sentinel ID is 7b14c97f9c083dd9b90aa4837b62bfdfc3dddecc
+69461:X 21 Jun 18:08:36.090 # Sentinel ID is d9033061c3fd6cbab2338540d0600e6a3b7f11d8
+69508:X 21 Jun 18:08:39.205 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69508:X 21 Jun 18:08:39.205 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69508, just started
+69508:X 21 Jun 18:08:39.205 # Configuration loaded
+69508:X 21 Jun 18:08:39.206 * Running mode=sentinel, port=32223.
+69508:X 21 Jun 18:08:39.207 # Sentinel ID is e46aca7a352a96b3bc85c3dd04c3c428670c167e
+69509:X 21 Jun 18:08:39.206 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+69509:X 21 Jun 18:08:39.207 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=69509, just started
+69509:X 21 Jun 18:08:39.207 # Configuration loaded
+69509:X 21 Jun 18:08:39.208 * Running mode=sentinel, port=32222.
+69509:X 21 Jun 18:08:39.208 # Sentinel ID is bafdda0f9fe7c8b3eb5a193053471dc62b3eb3ac
+70540:X 21 Jun 18:16:59.695 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70539:X 21 Jun 18:16:59.695 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70540:X 21 Jun 18:16:59.696 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70540, just started
+70541:X 21 Jun 18:16:59.696 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70539:X 21 Jun 18:16:59.696 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70539, just started
+70540:X 21 Jun 18:16:59.696 # Configuration loaded
+70541:X 21 Jun 18:16:59.696 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70541, just started
+70539:X 21 Jun 18:16:59.696 # Configuration loaded
+70541:X 21 Jun 18:16:59.696 # Configuration loaded
+70539:X 21 Jun 18:16:59.697 # Creating Server TCP listening socket *:5000: bind: Address already in use
+70540:X 21 Jun 18:16:59.697 * Running mode=sentinel, port=5002.
+70541:X 21 Jun 18:16:59.697 * Running mode=sentinel, port=5001.
+70540:X 21 Jun 18:16:59.697 # Sentinel ID is 4931c682b698daac800b99fd89aedaa74152edd3
+70541:X 21 Jun 18:16:59.697 # Sentinel ID is ef8835e2c0bde9879208192b6ba2facbaf455162
+70593:X 21 Jun 18:17:02.861 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70594:X 21 Jun 18:17:02.861 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70593:X 21 Jun 18:17:02.876 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70593, just started
+70594:X 21 Jun 18:17:02.877 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70594, just started
+70594:X 21 Jun 18:17:02.877 # Configuration loaded
+70593:X 21 Jun 18:17:02.877 # Configuration loaded
+70594:X 21 Jun 18:17:02.878 * Running mode=sentinel, port=17170.
+70593:X 21 Jun 18:17:02.878 * Running mode=sentinel, port=17172.
+70594:X 21 Jun 18:17:02.878 # Sentinel ID is e44eb73506c35b7d6a5255602bbaa9bbccf61500
+70593:X 21 Jun 18:17:02.878 # Sentinel ID is a31ddaab9249c455bc864d781507620af94d218b
+70595:X 21 Jun 18:17:02.879 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70595:X 21 Jun 18:17:02.879 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70595, just started
+70595:X 21 Jun 18:17:02.880 # Configuration loaded
+70595:X 21 Jun 18:17:02.880 * Running mode=sentinel, port=17171.
+70595:X 21 Jun 18:17:02.881 # Sentinel ID is 6e96cf86f5eb2aca67a67bfc2c609b104dd7820a
+70643:X 21 Jun 18:17:05.997 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70644:X 21 Jun 18:17:05.997 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+70643:X 21 Jun 18:17:05.997 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70643, just started
+70644:X 21 Jun 18:17:05.998 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=70644, just started
+70643:X 21 Jun 18:17:05.998 # Configuration loaded
+70644:X 21 Jun 18:17:05.998 # Configuration loaded
+70643:X 21 Jun 18:17:05.999 * Running mode=sentinel, port=32223.
+70644:X 21 Jun 18:17:05.999 * Running mode=sentinel, port=32222.
+70643:X 21 Jun 18:17:05.999 # Sentinel ID is 642fd8441464271b2aedb886e0071924ba5edae9
+70644:X 21 Jun 18:17:05.999 # Sentinel ID is ef74ede78d1603e0df92cf4e1a96c01a546ff8b0
+70595:X 21 Jun 18:17:46.115 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+70593:X 21 Jun 18:17:46.115 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+70594:X 21 Jun 18:17:46.117 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+70540:X 21 Jun 18:17:54.011 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+70541:X 21 Jun 18:17:54.012 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+70643:X 21 Jun 18:17:56.568 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+70644:X 21 Jun 18:17:56.568 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+70594:X 21 Jun 18:18:16.128 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+70593:X 21 Jun 18:18:16.128 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+70595:X 21 Jun 18:18:16.173 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+70541:X 21 Jun 18:18:24.062 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+70540:X 21 Jun 18:18:24.065 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+70644:X 21 Jun 18:18:26.577 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+70643:X 21 Jun 18:18:26.588 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+72600:X 21 Jun 18:33:25.785 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72598:X 21 Jun 18:33:25.785 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72599:X 21 Jun 18:33:25.785 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72600:X 21 Jun 18:33:25.786 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72600, just started
+72598:X 21 Jun 18:33:25.786 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72598, just started
+72599:X 21 Jun 18:33:25.786 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72599, just started
+72600:X 21 Jun 18:33:25.786 # Configuration loaded
+72599:X 21 Jun 18:33:25.786 # Configuration loaded
+72598:X 21 Jun 18:33:25.786 # Configuration loaded
+72600:X 21 Jun 18:33:25.786 # Creating Server TCP listening socket *:5000: bind: Address already in use
+72599:X 21 Jun 18:33:25.787 * Running mode=sentinel, port=5002.
+72598:X 21 Jun 18:33:25.787 * Running mode=sentinel, port=5001.
+72599:X 21 Jun 18:33:25.787 # Sentinel ID is eae9ce4fd23c47e0b7bd130d5813f31b5999b5ac
+72598:X 21 Jun 18:33:25.787 # Sentinel ID is d39f18ffc64b2e4a9eb6a296eee2b57a2e6b2250
+72654:X 21 Jun 18:33:28.940 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72654:X 21 Jun 18:33:28.940 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72654, just started
+72654:X 21 Jun 18:33:28.940 # Configuration loaded
+72655:X 21 Jun 18:33:28.940 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72655:X 21 Jun 18:33:28.940 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72655, just started
+72655:X 21 Jun 18:33:28.940 # Configuration loaded
+72656:X 21 Jun 18:33:28.940 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72656:X 21 Jun 18:33:28.941 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72656, just started
+72656:X 21 Jun 18:33:28.941 # Configuration loaded
+72654:X 21 Jun 18:33:28.941 * Running mode=sentinel, port=17172.
+72655:X 21 Jun 18:33:28.941 * Running mode=sentinel, port=17171.
+72656:X 21 Jun 18:33:28.941 * Running mode=sentinel, port=17170.
+72654:X 21 Jun 18:33:28.941 # Sentinel ID is e0e4c31744eb1a6f9fd11261e965cfb1c3127d8b
+72655:X 21 Jun 18:33:28.941 # Sentinel ID is 01259bcd4d2dc90d724f636c1afc52dc07c13a6d
+72656:X 21 Jun 18:33:28.941 # Sentinel ID is 3c473d0622f3957d154135b609d7b0064caf2f03
+72709:X 21 Jun 18:33:32.059 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72710:X 21 Jun 18:33:32.059 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+72709:X 21 Jun 18:33:32.060 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72709, just started
+72710:X 21 Jun 18:33:32.060 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=72710, just started
+72709:X 21 Jun 18:33:32.060 # Configuration loaded
+72710:X 21 Jun 18:33:32.060 # Configuration loaded
+72709:X 21 Jun 18:33:32.061 * Running mode=sentinel, port=32223.
+72710:X 21 Jun 18:33:32.061 * Running mode=sentinel, port=32222.
+72710:X 21 Jun 18:33:32.061 # Sentinel ID is 99bdb57e9af35a4486929960576832528f91bef7
+72709:X 21 Jun 18:33:32.061 # Sentinel ID is 6caf74f2843e06b037475daa2c6004d7a0090218
+73373:X 21 Jun 18:37:21.983 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73375:X 21 Jun 18:37:21.983 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73373:X 21 Jun 18:37:21.983 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73373, just started
+73375:X 21 Jun 18:37:21.983 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73375, just started
+73373:X 21 Jun 18:37:21.983 # Configuration loaded
+73375:X 21 Jun 18:37:21.983 # Configuration loaded
+73374:X 21 Jun 18:37:21.984 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73374:X 21 Jun 18:37:21.984 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73374, just started
+73374:X 21 Jun 18:37:21.984 # Configuration loaded
+73375:X 21 Jun 18:37:21.984 * Running mode=sentinel, port=5002.
+73373:X 21 Jun 18:37:21.984 * Running mode=sentinel, port=5001.
+73374:X 21 Jun 18:37:21.985 # Creating Server TCP listening socket *:5000: bind: Address already in use
+73375:X 21 Jun 18:37:21.985 # Sentinel ID is ae0e3eb21e44aa534d101a2d70d16a7152cc5898
+73373:X 21 Jun 18:37:21.985 # Sentinel ID is 7e161dbded1c2b518d8a0e89c292f79d393f8c7f
+73424:X 21 Jun 18:37:25.144 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73425:X 21 Jun 18:37:25.144 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73424:X 21 Jun 18:37:25.145 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73424, just started
+73426:X 21 Jun 18:37:25.144 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73425:X 21 Jun 18:37:25.145 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73425, just started
+73425:X 21 Jun 18:37:25.145 # Configuration loaded
+73426:X 21 Jun 18:37:25.145 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73426, just started
+73424:X 21 Jun 18:37:25.145 # Configuration loaded
+73426:X 21 Jun 18:37:25.145 # Configuration loaded
+73425:X 21 Jun 18:37:25.146 * Running mode=sentinel, port=17171.
+73424:X 21 Jun 18:37:25.146 * Running mode=sentinel, port=17170.
+73426:X 21 Jun 18:37:25.146 * Running mode=sentinel, port=17172.
+73425:X 21 Jun 18:37:25.146 # Sentinel ID is d675f639b620b079e610b836dde5637e8ec960c4
+73424:X 21 Jun 18:37:25.147 # Sentinel ID is 41e029c724f3d07b3563439df0c2773098bd5224
+73426:X 21 Jun 18:37:25.147 # Sentinel ID is 34f9bdfcdfc717ebd824f699dca7bd0765716ad7
+73478:X 21 Jun 18:37:28.279 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73478:X 21 Jun 18:37:28.280 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73478, just started
+73479:X 21 Jun 18:37:28.279 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+73479:X 21 Jun 18:37:28.280 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=73479, just started
+73478:X 21 Jun 18:37:28.280 # Configuration loaded
+73479:X 21 Jun 18:37:28.280 # Configuration loaded
+73479:X 21 Jun 18:37:28.281 * Running mode=sentinel, port=32222.
+73478:X 21 Jun 18:37:28.281 * Running mode=sentinel, port=32223.
+73479:X 21 Jun 18:37:28.282 # Sentinel ID is 1217d4349f53c62d0a476ebc26013fd3ac914a15
+73478:X 21 Jun 18:37:28.282 # Sentinel ID is 53394e432150b82f85e29af5f58ce92810ca1491
+73425:X 21 Jun 18:38:38.557 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+73426:X 21 Jun 18:38:38.557 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+73424:X 21 Jun 18:38:38.559 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+73478:X 21 Jun 18:38:45.634 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+73479:X 21 Jun 18:38:45.634 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+73375:X 21 Jun 18:38:46.537 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+73373:X 21 Jun 18:38:46.537 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+73424:X 21 Jun 18:39:08.565 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+73425:X 21 Jun 18:39:08.576 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+73426:X 21 Jun 18:39:08.591 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+74287:X 21 Jun 18:43:30.775 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74287:X 21 Jun 18:43:30.776 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74287, just started
+74287:X 21 Jun 18:43:30.776 # Configuration loaded
+74288:X 21 Jun 18:43:30.776 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74288:X 21 Jun 18:43:30.776 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74288, just started
+74288:X 21 Jun 18:43:30.776 # Configuration loaded
+74289:X 21 Jun 18:43:30.776 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74289:X 21 Jun 18:43:30.776 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74289, just started
+74289:X 21 Jun 18:43:30.776 # Configuration loaded
+74287:X 21 Jun 18:43:30.777 * Running mode=sentinel, port=5002.
+74288:X 21 Jun 18:43:30.777 * Running mode=sentinel, port=5001.
+74287:X 21 Jun 18:43:30.777 # Sentinel ID is daee6614a86e7d6acefabf28702d846cb8cc4ef4
+74288:X 21 Jun 18:43:30.777 # Sentinel ID is 005c90e1a80e4926d28642ed792085ddf0a70c6f
+74289:X 21 Jun 18:43:30.777 # Creating Server TCP listening socket *:5000: bind: Address already in use
+74344:X 21 Jun 18:43:33.936 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74345:X 21 Jun 18:43:33.937 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74346:X 21 Jun 18:43:33.937 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74344:X 21 Jun 18:43:33.937 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74344, just started
+74345:X 21 Jun 18:43:33.937 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74345, just started
+74346:X 21 Jun 18:43:33.937 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74346, just started
+74344:X 21 Jun 18:43:33.937 # Configuration loaded
+74345:X 21 Jun 18:43:33.937 # Configuration loaded
+74346:X 21 Jun 18:43:33.937 # Configuration loaded
+74344:X 21 Jun 18:43:33.938 * Running mode=sentinel, port=17172.
+74346:X 21 Jun 18:43:33.939 * Running mode=sentinel, port=17170.
+74345:X 21 Jun 18:43:33.939 * Running mode=sentinel, port=17171.
+74344:X 21 Jun 18:43:33.939 # Sentinel ID is 32fd3113290e48353c2d869f2f7df4461f12d024
+74346:X 21 Jun 18:43:33.939 # Sentinel ID is b860810fbd13f68f40098a4c5aad6af215eb4f51
+74345:X 21 Jun 18:43:33.939 # Sentinel ID is 27b3b4e5a529528051eb5ed6f3c9defd2e606132
+74389:X 21 Jun 18:43:37.057 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74390:X 21 Jun 18:43:37.058 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+74389:X 21 Jun 18:43:37.058 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74389, just started
+74390:X 21 Jun 18:43:37.058 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=74390, just started
+74389:X 21 Jun 18:43:37.058 # Configuration loaded
+74390:X 21 Jun 18:43:37.058 # Configuration loaded
+74389:X 21 Jun 18:43:37.059 * Running mode=sentinel, port=32223.
+74390:X 21 Jun 18:43:37.059 * Running mode=sentinel, port=32222.
+74389:X 21 Jun 18:43:37.060 # Sentinel ID is e9fe6dfe3824d6a46e4987ced2cdbf2afb822ce7
+74390:X 21 Jun 18:43:37.060 # Sentinel ID is e46009e380b1f2a64740a9ef5d7f7ca55218d30e
+74389:X 21 Jun 18:45:21.364 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+74390:X 21 Jun 18:45:21.364 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+74344:X 21 Jun 18:45:23.824 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+74345:X 21 Jun 18:45:23.824 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+74346:X 21 Jun 18:45:23.826 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+74287:X 21 Jun 18:45:27.256 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+74288:X 21 Jun 18:45:27.256 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+74390:X 21 Jun 18:45:51.365 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+74389:X 21 Jun 18:45:51.442 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+74344:X 21 Jun 18:45:53.842 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+74346:X 21 Jun 18:45:53.868 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+74345:X 21 Jun 18:45:53.871 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+76090:X 21 Jun 18:58:18.365 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76089:X 21 Jun 18:58:18.365 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76091:X 21 Jun 18:58:18.365 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76090:X 21 Jun 18:58:18.366 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76090, just started
+76091:X 21 Jun 18:58:18.366 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76091, just started
+76089:X 21 Jun 18:58:18.366 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76089, just started
+76090:X 21 Jun 18:58:18.366 # Configuration loaded
+76091:X 21 Jun 18:58:18.366 # Configuration loaded
+76089:X 21 Jun 18:58:18.366 # Configuration loaded
+76089:X 21 Jun 18:58:18.366 # Creating Server TCP listening socket *:5000: bind: Address already in use
+76091:X 21 Jun 18:58:18.367 * Running mode=sentinel, port=5001.
+76090:X 21 Jun 18:58:18.367 * Running mode=sentinel, port=5002.
+76091:X 21 Jun 18:58:18.367 # Sentinel ID is cbc435961d59516a5ea3789178e8a333e04e9684
+76090:X 21 Jun 18:58:18.367 # Sentinel ID is 6f2b8fb77614972ca11c50418735cc1e46952f50
+76150:X 21 Jun 18:58:21.560 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76150:X 21 Jun 18:58:21.560 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76150, just started
+76150:X 21 Jun 18:58:21.561 # Configuration loaded
+76151:X 21 Jun 18:58:21.561 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76152:X 21 Jun 18:58:21.561 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76151:X 21 Jun 18:58:21.561 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76151, just started
+76152:X 21 Jun 18:58:21.561 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76152, just started
+76151:X 21 Jun 18:58:21.561 # Configuration loaded
+76152:X 21 Jun 18:58:21.561 # Configuration loaded
+76150:X 21 Jun 18:58:21.562 * Running mode=sentinel, port=17171.
+76150:X 21 Jun 18:58:21.562 # Sentinel ID is ba342d4066afbd203b176d15d17e31b5cb33f2c1
+76152:X 21 Jun 18:58:21.562 * Running mode=sentinel, port=17172.
+76151:X 21 Jun 18:58:21.562 * Running mode=sentinel, port=17170.
+76152:X 21 Jun 18:58:21.563 # Sentinel ID is e752bb293d7e3f3700b2ae08a4f904cc5993986a
+76151:X 21 Jun 18:58:21.563 # Sentinel ID is 66966417e095f54db84654c4489e19d58e9ddff0
+76195:X 21 Jun 18:58:24.689 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76195:X 21 Jun 18:58:24.690 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76195, just started
+76196:X 21 Jun 18:58:24.689 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+76195:X 21 Jun 18:58:24.690 # Configuration loaded
+76196:X 21 Jun 18:58:24.690 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=76196, just started
+76196:X 21 Jun 18:58:24.690 # Configuration loaded
+76196:X 21 Jun 18:58:24.691 * Running mode=sentinel, port=32222.
+76195:X 21 Jun 18:58:24.691 * Running mode=sentinel, port=32223.
+76196:X 21 Jun 18:58:24.691 # Sentinel ID is 7d20dc11793422d6de4c5a6aa3baa5ee437d1d35
+76195:X 21 Jun 18:58:24.692 # Sentinel ID is 855851037052942794c7ced1678d545b2d21454a
+76090:X 21 Jun 18:59:01.926 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+76091:X 21 Jun 18:59:01.927 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+76195:X 21 Jun 18:59:02.175 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+76196:X 21 Jun 18:59:02.175 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+76152:X 21 Jun 18:59:10.734 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+76150:X 21 Jun 18:59:10.734 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+76151:X 21 Jun 18:59:10.735 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+76091:X 21 Jun 18:59:31.933 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+76090:X 21 Jun 18:59:31.976 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+76195:X 21 Jun 18:59:32.204 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+76196:X 21 Jun 18:59:32.250 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+76152:X 21 Jun 18:59:40.760 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+76151:X 21 Jun 18:59:40.761 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+76150:X 21 Jun 18:59:40.764 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+78454:X 21 Jun 19:12:30.960 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78455:X 21 Jun 19:12:30.960 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78453:X 21 Jun 19:12:30.960 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78454:X 21 Jun 19:12:30.961 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78454, just started
+78455:X 21 Jun 19:12:30.961 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78455, just started
+78453:X 21 Jun 19:12:30.961 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78453, just started
+78454:X 21 Jun 19:12:30.961 # Configuration loaded
+78453:X 21 Jun 19:12:30.961 # Configuration loaded
+78455:X 21 Jun 19:12:30.961 # Configuration loaded
+78453:X 21 Jun 19:12:30.962 # Creating Server TCP listening socket *:5000: bind: Address already in use
+78455:X 21 Jun 19:12:30.962 * Running mode=sentinel, port=5001.
+78454:X 21 Jun 19:12:30.962 * Running mode=sentinel, port=5002.
+78455:X 21 Jun 19:12:30.962 # Sentinel ID is e201fcaf62731407950e7e68f0f9dd08073a6e28
+78454:X 21 Jun 19:12:30.962 # Sentinel ID is f58c766d307102297e4eaa3184c54ecb15ce263a
+78509:X 21 Jun 19:12:34.101 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78509:X 21 Jun 19:12:34.101 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78509, just started
+78510:X 21 Jun 19:12:34.101 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78509:X 21 Jun 19:12:34.102 # Configuration loaded
+78510:X 21 Jun 19:12:34.102 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78510, just started
+78510:X 21 Jun 19:12:34.102 # Configuration loaded
+78509:X 21 Jun 19:12:34.103 * Running mode=sentinel, port=17171.
+78510:X 21 Jun 19:12:34.103 * Running mode=sentinel, port=17170.
+78509:X 21 Jun 19:12:34.103 # Sentinel ID is 9e6fa22ef9d419439deb3802e1b574a34b1fa19f
+78510:X 21 Jun 19:12:34.103 # Sentinel ID is 899a589d1da41d06f5fb9476c3970f8daa837c1b
+78511:X 21 Jun 19:12:34.103 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78511:X 21 Jun 19:12:34.103 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78511, just started
+78511:X 21 Jun 19:12:34.103 # Configuration loaded
+78511:X 21 Jun 19:12:34.104 * Running mode=sentinel, port=17172.
+78511:X 21 Jun 19:12:34.104 # Sentinel ID is 2d7a854c0e60296ffc65d4977c6e24c43779c6f6
+78554:X 21 Jun 19:12:37.222 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78554:X 21 Jun 19:12:37.223 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78554, just started
+78554:X 21 Jun 19:12:37.223 # Configuration loaded
+78556:X 21 Jun 19:12:37.223 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+78556:X 21 Jun 19:12:37.224 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=78556, just started
+78556:X 21 Jun 19:12:37.224 # Configuration loaded
+78554:X 21 Jun 19:12:37.224 * Running mode=sentinel, port=32223.
+78554:X 21 Jun 19:12:37.224 # Sentinel ID is 1828689e0d42dd079d64c755c8787123489ab244
+78556:X 21 Jun 19:12:37.225 * Running mode=sentinel, port=32222.
+78556:X 21 Jun 19:12:37.225 # Sentinel ID is cba318fa504c0f44d414a8520808a954aeb6c6f2
+78511:X 21 Jun 19:13:19.990 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+78510:X 21 Jun 19:13:19.990 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+78509:X 21 Jun 19:13:19.990 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+78554:X 21 Jun 19:13:25.398 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+78556:X 21 Jun 19:13:25.399 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+78455:X 21 Jun 19:13:25.579 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+78454:X 21 Jun 19:13:25.579 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+78510:X 21 Jun 19:13:49.995 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+78509:X 21 Jun 19:13:50.007 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+78511:X 21 Jun 19:13:50.061 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+78554:X 21 Jun 19:13:55.449 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+78556:X 21 Jun 19:13:55.480 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+78455:X 21 Jun 19:13:55.619 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+78454:X 21 Jun 19:13:55.629 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+80081:X 21 Jun 19:18:28.917 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80080:X 21 Jun 19:18:28.917 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80081:X 21 Jun 19:18:28.918 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80081, just started
+80080:X 21 Jun 19:18:28.918 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80080, just started
+80081:X 21 Jun 19:18:28.918 # Configuration loaded
+80080:X 21 Jun 19:18:28.918 # Configuration loaded
+80080:X 21 Jun 19:18:28.919 * Running mode=sentinel, port=32222.
+80081:X 21 Jun 19:18:28.919 * Running mode=sentinel, port=32223.
+80081:X 21 Jun 19:18:28.920 # Sentinel ID is 52e89270191814098b77e641a38442f462bf2f16
+80080:X 21 Jun 19:18:28.920 # Sentinel ID is 4e0629917e7e40fe332b616230152c35e09492bd
+80109:X 21 Jun 19:18:31.439 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80110:X 21 Jun 19:18:31.439 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80109:X 21 Jun 19:18:31.440 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80109, just started
+80110:X 21 Jun 19:18:31.440 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80110, just started
+80109:X 21 Jun 19:18:31.440 # Configuration loaded
+80110:X 21 Jun 19:18:31.440 # Configuration loaded
+80109:X 21 Jun 19:18:31.441 * Running mode=sentinel, port=32223.
+80110:X 21 Jun 19:18:31.441 * Running mode=sentinel, port=32222.
+80109:X 21 Jun 19:18:31.441 # Sentinel ID is 6cf56ecac6437678d3025ae88071c663676a464b
+80110:X 21 Jun 19:18:31.441 # Sentinel ID is abcfc76c9dcdb5f8677d9b7b2657fc2817e231b7
+80196:X 21 Jun 19:18:35.058 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80197:X 21 Jun 19:18:35.058 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80196:X 21 Jun 19:18:35.059 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80196, just started
+80196:X 21 Jun 19:18:35.059 # Configuration loaded
+80197:X 21 Jun 19:18:35.059 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80197, just started
+80197:X 21 Jun 19:18:35.059 # Configuration loaded
+80195:X 21 Jun 19:18:35.059 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80195:X 21 Jun 19:18:35.059 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80195, just started
+80195:X 21 Jun 19:18:35.059 # Configuration loaded
+80196:X 21 Jun 19:18:35.060 # Creating Server TCP listening socket *:5000: bind: Address already in use
+80197:X 21 Jun 19:18:35.060 * Running mode=sentinel, port=5001.
+80195:X 21 Jun 19:18:35.060 * Running mode=sentinel, port=5002.
+80197:X 21 Jun 19:18:35.060 # Sentinel ID is 2b1dd66b9fa08daf64b7548d7e7cb60f66c781fc
+80195:X 21 Jun 19:18:35.061 # Sentinel ID is edf030460709fd604f328d33b54bd938f4eba7ca
+80256:X 21 Jun 19:18:38.162 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80256:X 21 Jun 19:18:38.163 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80256, just started
+80256:X 21 Jun 19:18:38.163 # Configuration loaded
+80258:X 21 Jun 19:18:38.163 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80257:X 21 Jun 19:18:38.163 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80258:X 21 Jun 19:18:38.164 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80258, just started
+80257:X 21 Jun 19:18:38.164 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80257, just started
+80257:X 21 Jun 19:18:38.164 # Configuration loaded
+80258:X 21 Jun 19:18:38.164 # Configuration loaded
+80256:X 21 Jun 19:18:38.164 * Running mode=sentinel, port=17170.
+80256:X 21 Jun 19:18:38.164 # Sentinel ID is b164005f7e90a1189185e82a7d9c54f089672753
+80258:X 21 Jun 19:18:38.165 * Running mode=sentinel, port=17171.
+80257:X 21 Jun 19:18:38.165 * Running mode=sentinel, port=17172.
+80258:X 21 Jun 19:18:38.165 # Sentinel ID is 1174a1fd3710058a732e607353ea5d1c7a3ab737
+80257:X 21 Jun 19:18:38.165 # Sentinel ID is d778490081f1cb33bc63c8d244a779c4e227ad49
+80304:X 21 Jun 19:18:41.260 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80305:X 21 Jun 19:18:41.260 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80304:X 21 Jun 19:18:41.260 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80304, just started
+80305:X 21 Jun 19:18:41.261 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80305, just started
+80304:X 21 Jun 19:18:41.261 # Configuration loaded
+80305:X 21 Jun 19:18:41.261 # Configuration loaded
+80304:X 21 Jun 19:18:41.261 * Running mode=sentinel, port=32223.
+80305:X 21 Jun 19:18:41.261 * Running mode=sentinel, port=32222.
+80304:X 21 Jun 19:18:41.262 # Sentinel ID is 183923d5907b112a0e8d5ebc746bb9df6329fd94
+80305:X 21 Jun 19:18:41.262 # Sentinel ID is 8edb253e2b714e49ee7daa0eb42f870f95c427d7
+80305:X 21 Jun 19:19:18.944 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+80304:X 21 Jun 19:19:18.944 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+80195:X 21 Jun 19:19:19.573 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+80197:X 21 Jun 19:19:19.573 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+80257:X 21 Jun 19:19:24.647 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80256:X 21 Jun 19:19:24.648 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80258:X 21 Jun 19:19:24.648 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80305:X 21 Jun 19:19:48.970 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+80304:X 21 Jun 19:19:49.012 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+80195:X 21 Jun 19:19:49.609 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+80197:X 21 Jun 19:19:49.613 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+80257:X 21 Jun 19:19:54.648 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+80258:X 21 Jun 19:19:54.659 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+80256:X 21 Jun 19:19:54.704 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+80800:X 21 Jun 19:21:11.272 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80802:X 21 Jun 19:21:11.272 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80801:X 21 Jun 19:21:11.272 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80800:X 21 Jun 19:21:11.273 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80800, just started
+80801:X 21 Jun 19:21:11.273 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80801, just started
+80800:X 21 Jun 19:21:11.273 # Configuration loaded
+80802:X 21 Jun 19:21:11.273 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80802, just started
+80801:X 21 Jun 19:21:11.273 # Configuration loaded
+80802:X 21 Jun 19:21:11.273 # Configuration loaded
+80801:X 21 Jun 19:21:11.273 # Creating Server TCP listening socket *:5000: bind: Address already in use
+80800:X 21 Jun 19:21:11.274 * Running mode=sentinel, port=5002.
+80802:X 21 Jun 19:21:11.274 * Running mode=sentinel, port=5001.
+80800:X 21 Jun 19:21:11.274 # Sentinel ID is 988279fe4021b97f9901d236f904fe0a925874cd
+80802:X 21 Jun 19:21:11.274 # Sentinel ID is a89e0f92288e166883f3f20fd3ddae27fa79bdb7
+80854:X 21 Jun 19:21:14.375 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80853:X 21 Jun 19:21:14.375 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80854:X 21 Jun 19:21:14.376 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80854, just started
+80853:X 21 Jun 19:21:14.376 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80853, just started
+80854:X 21 Jun 19:21:14.376 # Configuration loaded
+80853:X 21 Jun 19:21:14.376 # Configuration loaded
+80855:X 21 Jun 19:21:14.376 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80855:X 21 Jun 19:21:14.377 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80855, just started
+80855:X 21 Jun 19:21:14.377 # Configuration loaded
+80854:X 21 Jun 19:21:14.377 * Running mode=sentinel, port=17170.
+80853:X 21 Jun 19:21:14.377 * Running mode=sentinel, port=17172.
+80854:X 21 Jun 19:21:14.377 # Sentinel ID is 82898770708fb7f1ccca6dae321294b14446835d
+80855:X 21 Jun 19:21:14.377 * Running mode=sentinel, port=17171.
+80853:X 21 Jun 19:21:14.378 # Sentinel ID is 2a35f17ef5f2b8a7d3a97fc2a9400bf1c6f986b6
+80855:X 21 Jun 19:21:14.378 # Sentinel ID is 5b911cc3c315a0c317fae6d7cf207207840d5a7d
+80904:X 21 Jun 19:21:17.464 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80904:X 21 Jun 19:21:17.464 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80904, just started
+80904:X 21 Jun 19:21:17.465 # Configuration loaded
+80905:X 21 Jun 19:21:17.465 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+80905:X 21 Jun 19:21:17.465 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=80905, just started
+80905:X 21 Jun 19:21:17.465 # Configuration loaded
+80904:X 21 Jun 19:21:17.465 * Running mode=sentinel, port=32223.
+80904:X 21 Jun 19:21:17.466 # Sentinel ID is cbe2932a957a576093d890d5acc2ed540135fb99
+80905:X 21 Jun 19:21:17.466 * Running mode=sentinel, port=32222.
+80905:X 21 Jun 19:21:17.466 # Sentinel ID is 39fa73044514831fdda6dac8f685adcdbf9d7e7f
+80905:X 21 Jun 19:21:57.294 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+80904:X 21 Jun 19:21:57.294 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+80802:X 21 Jun 19:22:06.036 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+80800:X 21 Jun 19:22:06.036 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+80855:X 21 Jun 19:22:06.728 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80853:X 21 Jun 19:22:06.728 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80854:X 21 Jun 19:22:06.729 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+80904:X 21 Jun 19:22:27.299 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+80905:X 21 Jun 19:22:27.318 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+80802:X 21 Jun 19:22:36.057 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+80800:X 21 Jun 19:22:36.088 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+80855:X 21 Jun 19:22:36.760 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+80854:X 21 Jun 19:22:36.775 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+80853:X 21 Jun 19:22:36.791 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+82447:X 21 Jun 19:29:06.824 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82446:X 21 Jun 19:29:06.824 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82445:X 21 Jun 19:29:06.824 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82447:X 21 Jun 19:29:06.825 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82447, just started
+82445:X 21 Jun 19:29:06.825 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82445, just started
+82446:X 21 Jun 19:29:06.825 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82446, just started
+82447:X 21 Jun 19:29:06.825 # Configuration loaded
+82445:X 21 Jun 19:29:06.825 # Configuration loaded
+82446:X 21 Jun 19:29:06.825 # Configuration loaded
+82445:X 21 Jun 19:29:06.826 # Creating Server TCP listening socket *:5000: bind: Address already in use
+82447:X 21 Jun 19:29:06.826 * Running mode=sentinel, port=5002.
+82446:X 21 Jun 19:29:06.826 * Running mode=sentinel, port=5001.
+82446:X 21 Jun 19:29:06.827 # Sentinel ID is 50e545b9046ec220cf1f659542838bcd54879de1
+82447:X 21 Jun 19:29:06.827 # Sentinel ID is dea71bd447b32624389259d9dd2256deee70b724
+82508:X 21 Jun 19:29:09.984 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82508:X 21 Jun 19:29:09.984 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82508, just started
+82508:X 21 Jun 19:29:09.984 # Configuration loaded
+82510:X 21 Jun 19:29:09.984 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82510:X 21 Jun 19:29:09.985 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82510, just started
+82510:X 21 Jun 19:29:09.985 # Configuration loaded
+82508:X 21 Jun 19:29:09.985 * Running mode=sentinel, port=17172.
+82508:X 21 Jun 19:29:09.986 # Sentinel ID is ad505cae2a91b9836832ac36233a79a0c8d5cc83
+82510:X 21 Jun 19:29:09.986 * Running mode=sentinel, port=17171.
+82511:X 21 Jun 19:29:09.985 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82511:X 21 Jun 19:29:09.986 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82511, just started
+82511:X 21 Jun 19:29:09.986 # Configuration loaded
+82510:X 21 Jun 19:29:09.986 # Sentinel ID is 1af33d1cf1773423c709ff49f413400ace502bf8
+82511:X 21 Jun 19:29:09.987 * Running mode=sentinel, port=17170.
+82511:X 21 Jun 19:29:09.987 # Sentinel ID is 3d2089b68c63e6e6b7e330e40a1714355ca99da6
+82565:X 21 Jun 19:29:13.115 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82565:X 21 Jun 19:29:13.115 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82565, just started
+82566:X 21 Jun 19:29:13.115 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+82565:X 21 Jun 19:29:13.116 # Configuration loaded
+82566:X 21 Jun 19:29:13.116 # Redis version=4.0.12, bits=64, commit=e60e749c, modified=0, pid=82566, just started
+82566:X 21 Jun 19:29:13.116 # Configuration loaded
+82565:X 21 Jun 19:29:13.117 * Running mode=sentinel, port=32223.
+82566:X 21 Jun 19:29:13.117 * Running mode=sentinel, port=32222.
+82565:X 21 Jun 19:29:13.117 # Sentinel ID is 257d5ddc1031f69f736cb73d36dbc5d2fd1ab33d
+82566:X 21 Jun 19:29:13.117 # Sentinel ID is 101c8c4e7e1eab71915038a1aa373b8e50892219
+82508:X 21 Jun 19:29:48.903 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+82510:X 21 Jun 19:29:48.903 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+82511:X 21 Jun 19:29:48.904 # +monitor master cluster1+shard1+oy 127.0.0.1 37379 quorum 3
+82566:X 21 Jun 19:29:55.431 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+82565:X 21 Jun 19:29:55.432 # +monitor master cluster1+shard1+fra 127.0.0.1 38379 quorum 3
+82447:X 21 Jun 19:30:04.088 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+82446:X 21 Jun 19:30:04.088 # +monitor master cluster1+shard1+jq 127.0.0.1 36379 quorum 3
+82508:X 21 Jun 19:30:18.943 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+82510:X 21 Jun 19:30:18.954 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+82511:X 21 Jun 19:30:18.997 # +sdown master cluster1+shard1+oy 127.0.0.1 37379
+82565:X 21 Jun 19:30:25.484 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+82566:X 21 Jun 19:30:25.484 # +sdown master cluster1+shard1+fra 127.0.0.1 38379
+82446:X 21 Jun 19:30:34.101 # +sdown master cluster1+shard1+jq 127.0.0.1 36379
+82447:X 21 Jun 19:30:34.133 # +sdown master cluster1+shard1+jq 127.0.0.1 36379

@@ -4,16 +4,9 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoResponse;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -35,7 +28,6 @@ import org.junit.BeforeClass;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
-import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -183,6 +175,8 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
             put("console.all.addresses", String.join(",", localDcConsoles));
             put(KEY_CHECKER_META_REFRESH_INTERVAL, "2000");
             put(KEY_SENTINEL_CHECK_INTERVAL, "15000");
+//            put("DisableLoadProxyAgentJar", "false");
+            put("jdk.attach.allowAttachSelf", "true");
             putAll(extras);
         }}, executors);
         consoleServer.execute(executors).addListener(consoleFuture -> {
@@ -207,6 +201,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
             put(DATA_CENTER_KEY, idc);
             put(KEY_CONSOLE_ADDRESS, console);
             put(KEY_ZK_ADDRESS, zk);
+            put("jdk.attach.allowAttachSelf", "true");
             put(DefaultMetaServerConfig.KEY_DC_INFOS, JsonCodec.INSTANCE.encode(dcInfos));
         }}, executors);
         metaserver.execute(executors).addListener(metaserverFuture -> {
