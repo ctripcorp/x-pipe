@@ -6,7 +6,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TwoChecker2SameConsole.class,
-        //TestConsoleWeb.class,
+        TestConsoleWeb.class,
         TestAllCheckerLeader.class,
         CheckCrdtRedisByProxy.class
 })
