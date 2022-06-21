@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -445,6 +446,7 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
+    @Ignore
     public void syncRedisChangedTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
