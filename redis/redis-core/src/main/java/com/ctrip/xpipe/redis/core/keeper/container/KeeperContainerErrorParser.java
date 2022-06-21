@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.keeper.container;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.HttpStatusCodeException;
 
 import java.lang.reflect.Type;
@@ -19,7 +20,8 @@ public class KeeperContainerErrorParser {
     private static final Type mapMessageType = new TypeToken<Map<String, String>>(){}.getType();
 
     public static RuntimeException parseErrorFromHttpException(HttpStatusCodeException ex) {
-        if (Objects.requireNonNull(ex.getResponseHeaders()).containsKey(ERROR_HEADER_NAME)) {
+        HttpHeaders httpHeaders = ex.getResponseHeaders();
+        if (httpHeaders != null && httpHeaders.containsKey(ERROR_HEADER_NAME)) {
             try {
                 ErrorMessage<KeeperContainerErrorCode> errorMessage = gson.fromJson(ex.getResponseBodyAsString(),
                         errorMessageType);
