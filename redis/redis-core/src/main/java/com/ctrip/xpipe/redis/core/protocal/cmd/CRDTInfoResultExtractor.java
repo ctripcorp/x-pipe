@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -89,7 +88,7 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
                         protocolStr += " " + params;
                     }
                     ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
-                    peerEndPoint = new ProxyEnabledEndpoint(host, Integer.parseInt(port), protocol);
+                    peerEndPoint = new DefaultEndPoint(host, Integer.parseInt(port), protocol);
                     break;
                 default:
                     logger.warn("[UnKnow CRDT Redis Proxy Protocol type] {}", proxyType);

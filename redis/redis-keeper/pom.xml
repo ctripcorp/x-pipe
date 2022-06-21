@@ -13,6 +13,21 @@
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework.xpipe.redis</groupId>
+            <artifactId>redis-proxy-client</artifactId>
+            <version>${parent.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-logger</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- spring boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.utils.LeakyBucket;
 
 /**
@@ -10,13 +7,11 @@ import com.ctrip.xpipe.utils.LeakyBucket;
  * <p>
  * Feb 19, 2020
  */
-public class DefaultKeeperResourceManager extends KeeperProxyResourceManager implements KeeperResourceManager {
+public class DefaultKeeperResourceManager implements KeeperResourceManager {
 
     private LeakyBucket leakyBucket;
 
-    public DefaultKeeperResourceManager(ProxyEndpointManager endpointManager, NextHopAlgorithm algorithm,
-                                        LeakyBucket leakyBucket) {
-        super(endpointManager, algorithm);
+    public DefaultKeeperResourceManager(LeakyBucket leakyBucket) {
         this.leakyBucket = leakyBucket;
     }
 

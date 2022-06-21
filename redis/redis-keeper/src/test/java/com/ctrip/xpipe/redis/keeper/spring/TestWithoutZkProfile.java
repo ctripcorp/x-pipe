@@ -77,10 +77,8 @@ public class TestWithoutZkProfile extends AbstractProfile{
 	public KeeperResourceManager getProxyResourceManager(KeeperConfig keeperConfig,
 														 MetaServerKeeperService metaServerKeeperService,
 														 KeeperContainerService keeperContainerService) {
-		ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
-		NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 		CompositeLeakyBucket leakyBucket = getLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
-		return new DefaultKeeperResourceManager(endpointManager, algorithm, leakyBucket);
+		return new DefaultKeeperResourceManager(leakyBucket);
 	}
 
 	@Bean
