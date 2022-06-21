@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -67,7 +65,7 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
         CRDTInfoResultExtractor.PeerInfo meta = metas.get(0);
         Assert.assertTrue(meta.getGid() == 2L);
         Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
-        Assert.assertFalse(meta.getEndpoint() instanceof ProxyEnabledEndpoint);
+        Assert.assertNull(meta.getEndpoint().getProxyProtocol());
     }
 
     @Test
@@ -107,9 +105,7 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
         Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
         Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2");
-        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
-
+        Assert.assertEquals(proxy.getRouteInfo(), meta.getEndpoint().getProxyProtocol().getRouteInfo());
     }
 
     @Test
@@ -150,9 +146,7 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
         Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
         Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2 PROXYTLS://127.0.0.1:10,PROXYTLS://127.0.0.1:11");
-        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
-
+        Assert.assertEquals(proxy.getRouteInfo(), meta.getEndpoint().getProxyProtocol().getRouteInfo());
     }
 
     @Test
@@ -193,8 +187,6 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
         Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
         Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2 PROXYTLS://127.0.0.1:10 PROXYTLS://127.0.0.1:11");
-        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
-
+        Assert.assertEquals(proxy.getRouteInfo(), meta.getEndpoint().getProxyProtocol().getRouteInfo());
     }
 }

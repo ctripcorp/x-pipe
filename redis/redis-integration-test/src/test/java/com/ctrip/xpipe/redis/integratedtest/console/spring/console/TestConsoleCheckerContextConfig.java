@@ -27,6 +27,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
@@ -36,7 +38,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker"})
+@ComponentScan(
+        basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker"}
+        , excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = {SpringBootApplication.class, SpringBootTest.class}),
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {
+                com.ctrip.xpipe.redis.console.spring.CheckerContextConfig.class,
+                com.ctrip.xpipe.redis.console.spring.ConsoleCheckerContextConfig.class,
+                com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class
+        })
+})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER)
 public class TestConsoleCheckerContextConfig extends TestConsoleContextConfig {

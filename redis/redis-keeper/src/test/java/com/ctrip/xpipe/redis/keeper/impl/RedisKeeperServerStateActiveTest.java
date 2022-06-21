@@ -3,11 +3,9 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,7 +72,7 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 	@Test
 	public void testSetMaster() {
 		active = spy(active);
-		Endpoint endpoint = new ProxyEnabledEndpoint(redisMasterMeta.getIp(), redisMasterMeta.getPort(),
+		Endpoint endpoint = new DefaultEndPoint(redisMasterMeta.getIp(), redisMasterMeta.getPort(),
 				new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
 		active.becomeActive(endpoint);
 		verify(active, times(1)).keeperMasterChanged();
@@ -83,7 +81,7 @@ public class RedisKeeperServerStateActiveTest extends AbstractRedisKeeperServerS
 		active.becomeActive(endpoint);
 		verify(active, times(1)).keeperMasterChanged();
 
-		endpoint = new ProxyEnabledEndpoint(redisMasterMeta.getIp(), redisMasterMeta.getPort(),
+		endpoint = new DefaultEndPoint(redisMasterMeta.getIp(), redisMasterMeta.getPort(),
 				new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.3:443"));
 		active.becomeActive(endpoint);
 

@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PeerOfCommand;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
@@ -40,9 +39,9 @@ public class CrdtPeerMasterChangeTest extends AbstractXpipeServerMultiDcTest {
     }
 
 
-    ProxyEnabledEndpoint createProxyEndpoint(String host, int port, String proxy) {
+    DefaultEndPoint createEndpointWithProxyProtocol(String host, int port, String proxy) {
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(proxy);
-        return new ProxyEnabledEndpoint(host, port, protocol);
+        return new DefaultEndPoint(host, port, protocol);
     }
 
     @Test
@@ -50,7 +49,7 @@ public class CrdtPeerMasterChangeTest extends AbstractXpipeServerMultiDcTest {
         XpipeNettyClientKeyedObjectPool pool = getXpipeNettyClientKeyedObjectPool();
         Endpoint master = new DefaultEndPoint("127.0.0.1", 36379);
         RedisChecker redisChecker = new RedisChecker(pool, scheduled);
-        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 10000, 1000);
         //remove peer
@@ -67,7 +66,7 @@ public class CrdtPeerMasterChangeTest extends AbstractXpipeServerMultiDcTest {
         command.execute();
         command = new DefaultSlaveOfCommand(pool.getKeyPool(fqSlaveEndPint), scheduled);
         command.execute();
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38380, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38380, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
 
 
