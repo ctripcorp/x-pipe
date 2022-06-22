@@ -3,12 +3,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -25,7 +22,7 @@ import java.util.stream.Collectors;
  * date 2021/11/18
  */
 @Component
-public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport {
+public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, HeteroSupport {
 
     @Autowired
     private MetaCache metaCache;
