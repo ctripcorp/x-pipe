@@ -685,6 +685,13 @@
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 <!--				<readset-ref name="APPLIER_META_INFO" relation-name="applier-info"/>-->
 			</readset>
+			<readset name="FULL_CLUSTER_SHARD_REDIS_META_INFO">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="cluster-info"/>
+                <readset-ref name="FULL" relation-name="dc-cluster-info"/>
+				<readset-ref name="FULL" relation-name="redis-info"/>
+				<readset-ref name="FULL" relation-name="shard-info"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -823,6 +830,25 @@
 					FROM <TABLE/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='redis-info'/>, <TABLE name='shard-info'/>
 					WHERE dct.dc_id = ${dc-id}
 					AND ct.cluster_type in <IN>${cluster-types}</IN>
+					AND dct.cluster_id = ct.id
+					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND <FIELD name='shard-id' /> = st2.id
+					AND <FIELD name='dc-cluster-shard-id'/> = rt.dc_cluster_shard_id
+					AND st2.deleted = 0
+					AND rt.deleted = 0
+					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-cluster-types' type='SELECT' multiple='true'>
+				<param name="cluster-types"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='redis-info'/>, <TABLE name='shard-info'/>
+					WHERE ct.cluster_type in <IN>${cluster-types}</IN>
 					AND dct.cluster_id = ct.id
 					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
 					AND <FIELD name='shard-id' /> = st2.id
@@ -1504,6 +1530,15 @@
 			</readset>
 		</readsets>
 		<query-defs>
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name="dc-info"/>
+					WHERE dt.deleted = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-by-dc-name" type="SELECT" multiple="true">
 				<param name="dc-name"/>
 				<statement>
@@ -2723,6 +2758,10 @@
 			<readset name="CLUSTER_ID">
 				<readset-ref name="CLUSTER_ID" relation-name="dc-cluster-info" />
 			</readset>
+			<readset name="FULL_WITH_SHARD_INFO">
+				<readset-ref name="FULL" />
+				<readset-ref name="FULL" relation-name="shard-info"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -2764,6 +2803,17 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-id' /> = ${shard-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
+					]]>
+				</statement>
+			</query>
+			<query name='find-all' type='SELECT' multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='shard-info'/>
+					WHERE <FIELD name='shard-id'/> = st2.id
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/>
 					]]>
@@ -2840,7 +2890,13 @@
 	</entity>
 
 	<entity name="repl-direction-tbl" table="repl_direction_tbl" alias="rdt">
-
+		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
+		<readsets>
+			<readset name="REPL_DIRECTION_CLUSTER_INFO">
+				<readset-ref name="FULL"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+			</readset>
+		</readsets>
 		<query-defs>
 			<query name="find-repl-directions-by-cluster" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
@@ -2877,6 +2933,17 @@
 					WHERE <FIELD name='src-dc-id'/> = ${src-dc-id}
 					AND <FIELD name='to-dc-id'/> = ${to-dc-id}
 					AND <FIELD name='cluster-id'/> = ${cluster-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-repl-direction" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster-info'/>
+					WHERE <FIELD name='cluster-id'/> = ct.id
+					AND ct.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
