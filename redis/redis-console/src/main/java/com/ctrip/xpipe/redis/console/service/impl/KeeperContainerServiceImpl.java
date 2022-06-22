@@ -53,6 +53,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
+  public List<KeepercontainerTbl> findAll() {
+    return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+      @Override
+      public List<KeepercontainerTbl> doQuery() throws DalException {
+        return dao.findAll(KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
+  }
+
+  @Override
   public List<KeepercontainerTbl> findAllByDcName(final String dcName) {
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override

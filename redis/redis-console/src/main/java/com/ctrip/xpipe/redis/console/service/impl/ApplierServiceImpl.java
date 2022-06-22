@@ -89,6 +89,16 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     }
 
     @Override
+    public List<ApplierTbl> findAll() {
+        return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+            @Override
+            public List<ApplierTbl> doQuery() throws DalException {
+                return dao.findAll(ApplierTblEntity.READSET_FULL_WITH_SHARD_INFO);
+            }
+        });
+    }
+
+    @Override
     public List<ApplierTbl> findApplierTblByShardAndReplDirection(long shardId, long replDirectionId) {
         return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
             @Override
@@ -97,7 +107,6 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
             }
         });
     }
-
 
     @Override
     public List<ApplierTbl> findAllApplierTblsWithSameIp(String ip) {

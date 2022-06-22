@@ -65,7 +65,19 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     private MigrationService migrationService;
 
     @Autowired
+    private ReplDirectionService replDirectionService;
+
+    @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private ZoneService zoneService;
+
+    @Autowired
+    private KeeperContainerService keeperContainerService;
+
+    @Autowired
+    private ApplierService applierService;
 
     private List<DcClusterShardTbl> dcClusterShards;
 
@@ -77,7 +89,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         long dcId = dcNameMap.keySet().iterator().next();
         builder = new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-                new DefaultRetryCommandFactory(), consoleConfig);
+                replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
 
         logger.info("[beforeDcMetaBuilderTest] dcId: {}", dcId);
@@ -177,6 +189,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         new DcMetaBuilder(dcMeta, dcId, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 
         Assert.assertEquals(clusterSize, dcMeta.getClusters().size());

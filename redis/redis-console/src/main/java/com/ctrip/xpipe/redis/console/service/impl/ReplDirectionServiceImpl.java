@@ -35,6 +35,16 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
+    public List<ReplDirectionTbl> findAllReplDirection() {
+        return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
+            @Override
+            public List<ReplDirectionTbl> doQuery() throws DalException {
+                return dao.findAllReplDirection(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+            }
+        });
+    }
+
+    @Override
     public List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId) {
 
         return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {

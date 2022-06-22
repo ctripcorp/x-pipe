@@ -12,6 +12,8 @@ public interface ApplierService {
 
     ApplierTbl findApplierTblByIpPort(String ip, int port);
 
+    List<ApplierTbl> findAll();
+
     List<ApplierTbl> findApplierTblByShardAndReplDirection(long shardId, long replDirectionId);
 
     List<ApplierTbl> findAllApplierTblsWithSameIp(String ip);
@@ -19,7 +21,6 @@ public interface ApplierService {
     void updateAppliers(String dcName, String clusterName, String shardName, ShardModel sourceShard, long replDirectionId);
 
     List<ApplierTbl> findAllAppliercontainerCountInfo();
-
 
     List<ApplierBasicInfo> findBestAppliers(String dcName, int beginPort,
                                             BiPredicate<String, Integer> applierGood, String clusterName);
