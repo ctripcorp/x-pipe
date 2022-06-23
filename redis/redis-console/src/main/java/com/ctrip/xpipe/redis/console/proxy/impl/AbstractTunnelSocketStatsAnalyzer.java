@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -65,8 +66,12 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.setHostPort(info.getTunnelStatsResult().getBackend());
 
+        TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
+        if (tunnelStatsResult == null)
+            return metric;
+
+        metric.setHostPort(tunnelStatsResult.getBackend());
         return metric;
     }
 
@@ -78,8 +83,12 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.setHostPort(info.getTunnelStatsResult().getFrontend());
 
+        TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
+        if (tunnelStatsResult == null)
+            return metric;
+
+        metric.setHostPort(tunnelStatsResult.getFrontend());
         return metric;
     }
 
