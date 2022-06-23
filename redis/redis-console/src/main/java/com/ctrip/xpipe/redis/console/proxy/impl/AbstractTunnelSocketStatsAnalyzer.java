@@ -32,6 +32,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         List<FrontendAndBackendMetrics> result = Lists.newArrayList();
         String clusterId = chain.getCluster(), shardId = chain.getShard();
         for(TunnelInfo info : tunnelInfos) {
+            logger.debug("[analyze each info] {}", info);
             result.add(getMetrics(info, clusterId, shardId));
         }
         return result;
