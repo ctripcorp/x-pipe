@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
-import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
@@ -58,18 +57,28 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
     }
 
     private MetricData getBackendMetric(MetricData metric, TunnelInfo info) {
-        SocketStatsResult socketStatsResult = info.getTunnelSocketStatsResult().getBackendSocketStats();
+        TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
+        if (tunnelSocketStatsResult == null)
+            return metric;
+
+        SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
         metric.setHostPort(info.getTunnelStatsResult().getBackend());
+
         return metric;
     }
 
     private MetricData getFrontendMetric(MetricData metric, TunnelInfo info) {
-        SocketStatsResult socketStatsResult = info.getTunnelSocketStatsResult().getFrontendSocketStats();
+        TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
+        if (tunnelSocketStatsResult == null)
+            return metric;
+
+        SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
         metric.setHostPort(info.getTunnelStatsResult().getFrontend());
+
         return metric;
     }
 
