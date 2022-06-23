@@ -484,7 +484,9 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
                     RedisTbl redis = dcClusterShard.getRedisInfo();
                     if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
-                        shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
+                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
+                            shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
+                        }
                     } else {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
@@ -555,7 +557,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             //add applier and add shard if not exist
             List<Long> repIds = replDirectionTblList
                     .stream()
-                    .filter(a -> clusterId == a.getClusterId() || a.getToDcId() == dcId)
+                    .filter(a -> clusterId == a.getClusterId() && a.getToDcId() == dcId)
                     .map(ReplDirectionTbl::getId)
                     .collect(Collectors.toList());
 
