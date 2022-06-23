@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
+import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
@@ -34,7 +35,11 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         String clusterId = chain.getCluster(), shardId = chain.getShard();
         for(TunnelInfo info : tunnelInfos) {
             logger.debug("[analyze each info] {}", info);
-            result.add(getMetrics(info, clusterId, shardId));
+            try {
+                result.add(getMetrics(info, clusterId, shardId));
+            } catch (Throwable th) {
+//                ignore
+            }
         }
         return result;
     }
@@ -60,16 +65,20 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     private MetricData getBackendMetric(MetricData metric, TunnelInfo info) {
         TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
-        if (tunnelSocketStatsResult == null)
-            return metric;
+        if (tunnelSocketStatsResult == null) {
+            logger.warn("[getBackendMetric]no tunnelSocketStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
+            throw new XPipeProxyResultException("no tunnelSocketStatsResult found in tunnelInfo");
+        }
 
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
-        if (tunnelStatsResult == null)
-            return metric;
+        if (tunnelStatsResult == null) {
+            logger.warn("[getBackendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
+            throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
+        }
 
         metric.setHostPort(tunnelStatsResult.getBackend());
         return metric;
@@ -77,16 +86,20 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     private MetricData getFrontendMetric(MetricData metric, TunnelInfo info) {
         TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
-        if (tunnelSocketStatsResult == null)
-            return metric;
+        if (tunnelSocketStatsResult == null) {
+            logger.warn("[getFrontendMetric]no tunnelSocketStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
+            throw new XPipeProxyResultException("no tunnelSocketStatsResult found in tunnelInfo");
+        }
 
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
-        if (tunnelStatsResult == null)
-            return metric;
+        if (tunnelStatsResult == null) {
+            logger.warn("[getFrontendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
+            throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
+        }
 
         metric.setHostPort(tunnelStatsResult.getFrontend());
         return metric;
