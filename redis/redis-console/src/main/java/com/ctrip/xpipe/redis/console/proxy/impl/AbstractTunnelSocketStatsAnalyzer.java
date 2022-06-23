@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
-import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
@@ -33,6 +32,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         List<FrontendAndBackendMetrics> result = Lists.newArrayList();
         String clusterId = chain.getCluster(), shardId = chain.getShard();
         for(TunnelInfo info : tunnelInfos) {
+            logger.debug("[analyze each info] {}", info);
             result.add(getMetrics(info, clusterId, shardId));
         }
         return result;
