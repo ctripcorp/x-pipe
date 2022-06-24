@@ -1,24 +1,20 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.redis.core.redis.exception.RdbParseEmptyKeyException;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.encoding.Ziplist;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 /**
  * @author lishanglin
- * date 2022/6/17
+ * date 2022/6/18
  */
-public class RdbQuickListParser extends AbstractRdbParser<Integer> implements RdbParser<Integer> {
+public class RdbSetParser extends AbstractRdbParser<Integer> implements RdbParser<Integer> {
 
     private RdbParseContext context;
 
@@ -28,23 +24,20 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
 
     private int readCnt;
 
-    private byte[] temp;
-
     private STATE state = STATE.READ_INIT;
 
-    private static final Logger logger = LoggerFactory.getLogger(RdbQuickListParser.class);
+    private static final Logger logger = LoggerFactory.getLogger(RdbSetParser.class);
 
     enum STATE {
         READ_INIT,
         READ_LEN,
-        READ_ZL_AS_STR,
-        DECODE_ZL,
+        READ_VALUE,
         READ_END
     }
 
-    public RdbQuickListParser(RdbParseContext parseContext) {
+    public RdbSetParser(RdbParseContext parseContext) {
         this.context = parseContext;
-        rdbStringParser = (RdbParser<byte[]>) context.getOrCreateParser(RdbParseContext.RdbType.STRING);
+        this.rdbStringParser = (RdbParser<byte[]>) context.getOrCreateParser(RdbParseContext.RdbType.STRING);
     }
 
     @Override
@@ -58,35 +51,31 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
                     len = null;
                     readCnt = 0;
                     state = STATE.READ_LEN;
+                    break;
 
                 case READ_LEN:
                     len = parseRdbLength(byteBuf);
                     if (null != len) {
                         if (len.getLenValue() > 0) {
-                            state = STATE.READ_ZL_AS_STR;
+                            state = STATE.READ_VALUE;
                         } else {
-                            throw new RdbParseEmptyKeyException("quick list key:" + context.getKey());
+                            throw new RdbParseEmptyKeyException("set key " + context.getKey());
                         }
                     }
                     break;
 
-                case READ_ZL_AS_STR:
-                    temp = rdbStringParser.read(byteBuf);
-                    if (null == temp) break;
+                case READ_VALUE:
+                    byte[] value = rdbStringParser.read(byteBuf);
+                    if (null != value) {
+                        rdbStringParser.reset();
+                        propagateCmdIfNeed(value);
 
-                    rdbStringParser.reset();
-                    state = STATE.DECODE_ZL;
-
-                case DECODE_ZL:
-                    Ziplist ziplist = new Ziplist(temp);
-                    propagateCmdIfNeed(ziplist);
-                    temp = null;
-                    readCnt++;
-
-                    if (readCnt >= len.getLenValue()) {
-                        state = STATE.READ_END;
-                    } else {
-                        state = STATE.READ_ZL_AS_STR;
+                        readCnt++;
+                        if (readCnt >= len.getLenValue()) {
+                            state = STATE.READ_END;
+                        } else {
+                            state = STATE.READ_VALUE;
+                        }
                     }
                     break;
 
@@ -98,24 +87,21 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
             if (isFinish()) {
                 propagateExpireAtIfNeed(context.getKey(), context.getExpireMilli());
             }
-
         }
 
         if (isFinish()) return len.getLenValue();
         else return null;
     }
 
-    private void propagateCmdIfNeed(Ziplist ziplist) {
-        if (null == context.getKey() || null == ziplist) return;
-
-        List<byte[]> arr = ziplist.convertToList();
-        RedisKey key = context.getKey();
-        for (byte[] val: arr) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.RPUSH,
-                    new byte[][] {RedisOpType.RPUSH.name().getBytes(), key.get(), val},
-                    key, val));
+    private void propagateCmdIfNeed(byte[] value) {
+        if (null == value || null == context.getKey()) {
+            return;
         }
+
+        notifyRedisOp(new RedisOpSingleKey(
+                RedisOpType.SADD,
+                new byte[][] {RedisOpType.SADD.name().getBytes(), context.getKey().get(), value},
+                context.getKey(), value));
     }
 
     @Override
@@ -126,7 +112,6 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
     @Override
     public void reset() {
         this.state = STATE.READ_INIT;
-        temp = null;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.redis.rdb.ziplist;
+package com.ctrip.xpipe.redis.core.redis.rdb.encoding;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParseContext;

@@ -5,52 +5,55 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.encoding.Intset;
 import com.ctrip.xpipe.redis.core.redis.rdb.encoding.Ziplist;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * @author lishanglin
- * date 2022/6/16
+ * date 2022/6/18
  */
-public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>> implements RdbParser<Map<byte[],byte[]>> {
+public class RdbSetIntSetParser extends AbstractRdbParser<List<byte[]>> implements RdbParser<List<byte[]>> {
 
     private RdbParseContext context;
 
     private RdbParser<byte[]> rdbStringParser;
 
-    private byte[] temp;
+    private Intset intset;
 
-    private Ziplist ziplist;
+    private byte[] temp;
 
     private STATE state = STATE.READ_INIT;
 
-    private static final Logger logger = LoggerFactory.getLogger(RdbHashZipListParser.class);
+    private static final Logger logger = LoggerFactory.getLogger(RdbSetIntSetParser.class);
 
     enum STATE {
         READ_INIT,
         READ_AS_STRING,
-        DECODE_ZIPLIST,
+        DECODE_INTSET,
         READ_END
     }
 
-    public RdbHashZipListParser(RdbParseContext parseContext) {
+    public RdbSetIntSetParser(RdbParseContext parseContext) {
         this.context = parseContext;
-        this.rdbStringParser = (RdbParser<byte[]>) context.getOrCreateParser(RdbParseContext.RdbType.STRING);
+        this.rdbStringParser = (RdbParser<byte[]>) parseContext.getOrCreateParser(RdbParseContext.RdbType.STRING);
     }
 
     @Override
-    public Map<byte[], byte[]> read(ByteBuf byteBuf) {
+    public List<byte[]> read(ByteBuf byteBuf) {
 
         while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
 
                 case READ_INIT:
-                    ziplist = null;
+                    intset = null;
+                    temp = null;
                     state = STATE.READ_AS_STRING;
                     break;
 
@@ -60,10 +63,10 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
                         break;
                     }
                     rdbStringParser.reset();
-                    state = STATE.DECODE_ZIPLIST;
+                    state = STATE.DECODE_INTSET;
 
-                case DECODE_ZIPLIST:
-                    ziplist = new Ziplist(temp);
+                case DECODE_INTSET:
+                    intset = new Intset(temp);
                     state = STATE.READ_END;
 
                 case READ_END:
@@ -73,25 +76,25 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
             }
 
             if (isFinish()) {
-                propagateCmdIfNeed(ziplist);
+                propagateCmdIfNeed(intset);
                 propagateExpireAtIfNeed(context.getKey(), context.getExpireMilli());
             }
         }
 
-        if (isFinish()) return ziplist.convertToMap();
+        if (isFinish()) return intset.convertToStrList();
         else return null;
     }
 
-    private void propagateCmdIfNeed(Ziplist ziplist) {
-        if (null == context.getKey() || null == ziplist) return;
+    private void propagateCmdIfNeed(Intset intset) {
+        if (null == context.getKey() || null == intset) return;
 
-        Map<byte[], byte[]> map = ziplist.convertToMap();
+        List<byte[]> vals = intset.convertToStrList();
         RedisKey key = context.getKey();
-        for (Map.Entry<byte[], byte[]> entry: map.entrySet()) {
+        for (byte[] val: vals) {
             notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.HSET,
-                    new byte[][] {RedisOpType.HSET.name().getBytes(), key.get(), entry.getKey(), entry.getValue()},
-                    key, entry.getKey()));
+                    RedisOpType.SADD,
+                    new byte[][] {RedisOpType.SADD.name().getBytes(), key.get(), val},
+                    key, val));
         }
     }
 
@@ -103,8 +106,8 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
     @Override
     public void reset() {
         this.state = STATE.READ_INIT;
+        this.intset = null;
         this.temp = null;
-        this.ziplist = null;
     }
 
     @Override
