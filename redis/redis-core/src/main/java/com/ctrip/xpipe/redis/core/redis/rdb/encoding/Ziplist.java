@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.redis.rdb.ziplist;
+package com.ctrip.xpipe.redis.core.redis.rdb.encoding;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.exception.ZiplistParseFailException;
@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 /**
  * @author lishanglin
  * date 2022/6/16
+ * refer to https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format#zipmap-encoding
  */
 public class Ziplist {
 

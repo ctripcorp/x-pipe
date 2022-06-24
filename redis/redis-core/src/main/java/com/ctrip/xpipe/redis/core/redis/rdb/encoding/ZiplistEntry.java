@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.redis.rdb.ziplist;
+package com.ctrip.xpipe.redis.core.redis.rdb.encoding;
 
 import com.ctrip.xpipe.redis.core.redis.exception.ZiplistParseFailException;
 import io.netty.buffer.ByteBuf;

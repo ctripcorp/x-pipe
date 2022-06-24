@@ -57,6 +57,13 @@ public enum RedisOpSingleKeyEnum {
     ZREMRANGEBYRANK(RedisOpType.ZREMRANGEBYRANK, 1, null),
     ZREMRANGEBYSCORE(RedisOpType.ZREMRANGEBYSCORE, 1, null),
 
+    // Stream
+    XADD(RedisOpType.XADD, 1, null),
+    XDEL(RedisOpType.XDEL, 1, null),
+    XSETID(RedisOpType.XSETID, 1, 2),
+    XGROUP(RedisOpType.XGROUP, 2, null),
+    XCLAIM(RedisOpType.XCLAIM, 1, null),
+
     // TTL
     EXPIRE(RedisOpType.EXPIRE, 1, 2),
     EXPIREAT(RedisOpType.EXPIREAT, 1, 2),

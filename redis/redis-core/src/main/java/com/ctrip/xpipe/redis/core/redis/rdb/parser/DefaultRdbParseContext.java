@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.google.common.collect.Maps;
 
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,6 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DefaultRdbParseContext implements RdbParseContext {
 
     private EnumMap<RdbType, RdbParser> parsers = new EnumMap<>(RdbType.class);
+
+    private List<RdbParseContext> otherParsers = new LinkedList<>();
 
     private Set<RdbParseListener> listeners = new HashSet<>();
 
@@ -41,7 +40,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
     private AtomicInteger lfuFreq = new AtomicInteger(-1);
 
     @Override
-    public void bindRdbParser(RdbParser<?> parser) {
+    public synchronized void bindRdbParser(RdbParser<?> parser) {
         listeners.forEach(parser::registerListener);
     }
 
@@ -66,6 +65,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
         synchronized (this) {
             if (listeners.add(listener)) {
                 parsers.values().forEach(parser -> parser.registerListener(listener));
+                otherParsers.forEach(parser -> parser.registerListener(listener));
             }
         }
     }
@@ -77,6 +77,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
         synchronized (this) {
             if (listeners.remove(listener)) {
                 parsers.values().forEach(parser -> parser.unregisterListener(listener));
+                otherParsers.forEach(parser -> parser.unregisterListener(listener));
             }
         }
     }

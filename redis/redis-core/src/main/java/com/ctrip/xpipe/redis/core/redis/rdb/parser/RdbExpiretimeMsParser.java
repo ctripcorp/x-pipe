@@ -18,8 +18,6 @@ public class RdbExpiretimeMsParser extends AbstractRdbParser<Long> implements Rd
 
     private Long expiretimeMillisecond;
 
-    private ByteBuf temp;
-
     private static final Logger logger = LoggerFactory.getLogger(RdbExpiretimeMsParser.class);
 
     enum STATE {
@@ -41,18 +39,12 @@ public class RdbExpiretimeMsParser extends AbstractRdbParser<Long> implements Rd
 
                 case READ_INIT:
                     expiretimeMillisecond = null;
-                    temp = null;
                     state = STATE.READ_EXPIRETIME;
                     break;
 
                 case READ_EXPIRETIME:
-                    temp = readUntilBytesEnough(byteBuf, temp, 8);
-                    if (temp.readableBytes() == 8) {
-                        if (context.getRdbVersion() >= 9) {
-                            expiretimeMillisecond = temp.readLongLE();
-                        } else {
-                            expiretimeMillisecond = temp.readLong();
-                        }
+                    expiretimeMillisecond = readMillSecond(byteBuf, context);
+                    if (null != expiretimeMillisecond) {
                         context.setExpireMilli(expiretimeMillisecond);
                         state = STATE.READ_END;
                     }

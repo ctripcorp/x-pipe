@@ -14,9 +14,9 @@ import java.util.Map;
 
 /**
  * @author lishanglin
- * date 2022/6/16
+ * date 2022/6/18
  */
-public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>> implements RdbParser<Map<byte[],byte[]>> {
+public class RdbZSetZiplistParser extends AbstractRdbParser<Map<byte[], byte[]>> implements RdbParser<Map<byte[], byte[]>> {
 
     private RdbParseContext context;
 
@@ -28,7 +28,7 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
 
     private STATE state = STATE.READ_INIT;
 
-    private static final Logger logger = LoggerFactory.getLogger(RdbHashZipListParser.class);
+    private static final Logger logger = LoggerFactory.getLogger(RdbZSetZiplistParser.class);
 
     enum STATE {
         READ_INIT,
@@ -37,7 +37,7 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
         READ_END
     }
 
-    public RdbHashZipListParser(RdbParseContext parseContext) {
+    public RdbZSetZiplistParser(RdbParseContext parseContext) {
         this.context = parseContext;
         this.rdbStringParser = (RdbParser<byte[]>) context.getOrCreateParser(RdbParseContext.RdbType.STRING);
     }
@@ -89,8 +89,8 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
         RedisKey key = context.getKey();
         for (Map.Entry<byte[], byte[]> entry: map.entrySet()) {
             notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.HSET,
-                    new byte[][] {RedisOpType.HSET.name().getBytes(), key.get(), entry.getKey(), entry.getValue()},
+                    RedisOpType.ZADD,
+                    new byte[][] {RedisOpType.ZADD.name().getBytes(), key.get(), entry.getValue(), entry.getKey()},
                     key, entry.getKey()));
         }
     }
