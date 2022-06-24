@@ -154,12 +154,13 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			throw new MetaException("clusterId " + clusterId + " not found!");
 		}
 
-		ShardMeta shardMeta = clusterMeta.findFromAllShards(shardId);
-		if (shardMeta == null || !(shardMeta.parent() instanceof SourceMeta)) {
-			throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
+		for (SourceMeta sourceMeta : clusterMeta.getSources()) {
+			if (sourceMeta.getShards().containsKey(shardId)) {
+				return sourceMeta;
+			}
 		}
 
-		return shardMeta.parent();
+		throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
 	}
 
 	@Override
