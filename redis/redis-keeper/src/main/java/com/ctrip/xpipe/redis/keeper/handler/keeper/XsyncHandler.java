@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
 import java.util.Arrays;

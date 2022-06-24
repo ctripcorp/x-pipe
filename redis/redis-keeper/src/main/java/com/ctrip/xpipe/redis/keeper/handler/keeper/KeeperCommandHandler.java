@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
+import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
@@ -25,7 +26,7 @@ import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.
  *
  * Jul 7, 2016
  */
-public class KeeperCommandHandler extends AbstractCommandHandler{
+public class KeeperCommandHandler extends AbstractCommandHandler {
 
 	@Override
 	public String[] getCommands() {

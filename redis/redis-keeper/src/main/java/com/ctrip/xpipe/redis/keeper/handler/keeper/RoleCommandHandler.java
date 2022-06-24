@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -9,13 +9,14 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
+import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 
 /**
  * @author wenchao.meng
  *
  * Sep 14, 2016
  */
-public class RoleCommandHandler extends AbstractCommandHandler{
+public class RoleCommandHandler extends AbstractCommandHandler {
 
 	@Override
 	public String[] getCommands() {
