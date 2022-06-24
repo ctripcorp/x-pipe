@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
 

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.PsyncHandler;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperMonitor;
 import org.junit.Assert;
 import org.junit.Before;

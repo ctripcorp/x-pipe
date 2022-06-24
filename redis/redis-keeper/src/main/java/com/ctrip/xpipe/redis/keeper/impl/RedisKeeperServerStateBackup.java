@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.handler.PsyncHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.PsyncHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

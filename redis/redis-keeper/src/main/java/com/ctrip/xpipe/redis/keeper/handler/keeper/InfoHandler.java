@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
+import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
@@ -22,7 +23,7 @@ import java.util.Set;
  *
  * 2016年4月22日 下午3:51:33
  */
-public class InfoHandler extends AbstractCommandHandler{
+public class InfoHandler extends AbstractCommandHandler {
 
 	private Map<String, InfoSection> sections = Maps.newConcurrentMap();
 

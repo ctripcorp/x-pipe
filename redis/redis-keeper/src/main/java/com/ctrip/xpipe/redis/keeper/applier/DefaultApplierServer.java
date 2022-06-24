@@ -26,7 +26,7 @@ import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
-import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
+import com.ctrip.xpipe.redis.keeper.handler.ApplierCommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.impl.ApplierRedisClient;
 import com.ctrip.xpipe.redis.keeper.netty.NettyApplierHandler;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
@@ -92,6 +92,8 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public final ShardId shardId;
 
     public final ApplierMeta applierMeta;
+
+    private STATE state = STATE.NONE;
 
     /* utility */
 
@@ -206,12 +208,24 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     public void setStateActive(Endpoint endpoint, GtidSet gtidSet) {
+        this.state = STATE.ACTIVE;
         replication.connect(endpoint, gtidSet);
     }
 
     @Override
     public void setStateBackup() {
+        this.state = STATE.BACKUP;
         replication.disconnect();
+    }
+
+    @Override
+    public STATE getState() {
+        return state;
+    }
+
+    @Override
+    public Endpoint getUpstreamEndpoint() {
+        return replication.endpoint();
     }
 
     @Override
@@ -231,7 +245,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
                         p.addLast(new NettySimpleMessageHandler());
-                        p.addLast(new NettyApplierHandler(DefaultApplierServer.this, new CommandHandlerManager()));
+                        p.addLast(new NettyApplierHandler(DefaultApplierServer.this, new ApplierCommandHandlerManager()));
                     }
                 });
         serverSocketChannel = (ServerSocketChannel) b.bind(listeningPort).sync().channel();

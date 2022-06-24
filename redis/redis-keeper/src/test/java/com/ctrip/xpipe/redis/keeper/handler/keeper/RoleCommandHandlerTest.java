@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.handler;
+package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.RoleCommandHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
