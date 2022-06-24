@@ -182,7 +182,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
         StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
-            if(dcClusterTbl.getDcId() != activeDcId) {
+            if(dcClusterTbl.getDcId() != activeDcId && isDRMaster(dcClusterTbl)) {
                 sb.append(dcNameMap.get(dcClusterTbl.getDcId())).append(",");
             }
         });
@@ -579,11 +579,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             }
         }
 
-        //0: Master; 1: DRMaster
-        private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
-            return dcClusterTbl.isGroupType();
-        }
-
         private void setDownstreamDcs(ClusterMeta clusterMeta, ReplDirectionTbl replDirectionTbl) {
             if (Strings.isEmpty(clusterMeta.getDownstreamDcs())) {
                 clusterMeta.setDownstreamDcs(dcNameMap.get(replDirectionTbl.getToDcId()));
@@ -626,6 +621,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         }
     }
 
+    //0: Master; 1: DRMaster
+    private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
+        return dcClusterTbl.isGroupType();
+    }
 
     /**------------------Visible for Test-----------------------*/
     public DcMetaBuilder setDcNameMap(Map<Long, String> dcNameMap) {
