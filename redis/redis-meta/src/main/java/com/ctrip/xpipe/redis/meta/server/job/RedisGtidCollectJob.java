@@ -77,10 +77,16 @@ public class RedisGtidCollectJob extends AbstractCommand<Void> {
                         getLogger().warn("[info gtid command return null], cluster_{}, shard_{}", clusterDbId, shardDbId);
                         return;
                     }
-                    redisMeta.setGtid(gtidSet.toString());
+                    String sids = null;
                     if (!gtidSet.getUUIDs().isEmpty()) {
-                        redisMeta.setSid(gtidSet.getUUIDs().iterator().next());
+                        for(String sid: gtidSet.getUUIDs()) {
+                            sids = sids == null? sid: sids + "," + sid;
+                        }
                     }
+
+                    dcMetaCache.setRedisGtidAndSids(clusterDbId, shardDbId, redisMeta, gtidSet.toString(), sids);
+                } else {
+                    getLogger().error("[info gtid command failed], cluster_{}, shard_{}", clusterDbId, shardDbId, commandFuture.cause());
                 }
             });
         }

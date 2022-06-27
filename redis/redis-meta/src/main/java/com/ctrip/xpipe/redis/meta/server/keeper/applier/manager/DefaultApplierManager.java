@@ -170,6 +170,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     private void addApplier(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
         try {
+            //TODO ayq add clusterName
             applierStateController.addApplier(new ApplierTransMeta(clusterDbId, shardDbId, applierMeta));
         } catch (Exception e) {
             logger.error(String.format("[addApplier]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, applierMeta), e);
