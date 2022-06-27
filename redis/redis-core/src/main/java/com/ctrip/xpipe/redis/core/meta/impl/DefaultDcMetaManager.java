@@ -90,6 +90,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<RedisMeta> getRedises(String clusterId) {
+	    return metaManager.getRedises(currentDc, clusterId);
+	}
+
+	@Override
 	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
 		return metaManager.getKeeperActive(currentDc, clusterId, shardId);
 	}
@@ -204,6 +209,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers) {
 		metaManager.setSurviveKeepers(currentDc, clusterId, shardId, surviceKeepers);
+	}
+
+	@Override
+	public void setRedisGtidAndSids(String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids) {
+		metaManager.setRedisGtidAndSids(currentDc, clusterId, shardId, redisMeta, gtid, sids);
 	}
 
 	@Override
@@ -405,6 +415,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<RedisMeta> getRedises(Long clusterDbId) {
+	    String clusterId = clusterDbId2Name(clusterDbId);
+	    return getRedises(clusterId);
+	}
+
+	@Override
 	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getKeeperActive(clusterShard.getKey(), clusterShard.getValue());
@@ -455,6 +471,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		setSurviveKeepers(clusterShard.getKey(), clusterShard.getValue(), surviveKeepers);
+	}
+
+	@Override
+	public void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		setRedisGtidAndSids(clusterShard.getKey(), clusterShard.getValue(), redisMeta, gtid, sids);
 	}
 
 	@Override

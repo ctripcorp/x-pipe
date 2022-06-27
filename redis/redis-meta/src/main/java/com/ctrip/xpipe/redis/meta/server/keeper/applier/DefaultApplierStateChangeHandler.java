@@ -110,7 +110,7 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
         }
         Pair<String, Integer> activeApplierMaster = currentMetaManager.getApplierMaster(clusterDbId, shardDbId);
 
-        List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
         ApplierStateChangeJob applierStateChangeJob = createApplierStateChangeJob(clusterDbId, appliers,
                 activeApplierMaster, sids, gtidSet);
