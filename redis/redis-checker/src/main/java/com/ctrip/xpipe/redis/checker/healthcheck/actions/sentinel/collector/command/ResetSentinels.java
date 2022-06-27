@@ -149,7 +149,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             logger.info("[isKeeperOrDead] role: {}", role.getServerRole().name());
         } catch (Throwable th) {
             redundant.set(inactive(th.getCause()));
-            logger.error("[isKeeperOrDead][failed]{}", hostPort, th);
+            logger.warn("[isKeeperOrDead][failed]{}", hostPort, th);
         }
 
         return redundant.get();
@@ -190,7 +190,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
 
             List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
-                logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
+                logger.warn("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
                 return new ArrayList<>();
             });
 

@@ -228,7 +228,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
                         @Override
                         public void go() throws Exception {
-                            SequenceCommandChain chain = new SequenceCommandChain(false);
+                            SequenceCommandChain chain = new SequenceCommandChain(false, false);
                             SentinelHelloCollectContext context = new SentinelHelloCollectContext(info, hellos, sentinelMonitorName, sentinels, metaMaster, shardInstances, clusterTypeSentinelConfig);
                             chain.add(new DeleteWrongSentinels(context, sentinelManager));
                             chain.add(new CheckMissingOrMasterSwitchedSentinels(context, alertManager, checkerConfig, sentinelManager));
