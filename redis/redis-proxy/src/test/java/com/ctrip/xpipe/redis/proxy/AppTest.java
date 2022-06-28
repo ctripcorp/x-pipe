@@ -38,6 +38,12 @@ public class AppTest extends AbstractProxyIntegrationTest {
     }
 
     @Test
+    public void start_8992_1443() throws Exception {
+        startFirstProxy();
+        waitForAnyKey();
+    }
+
+    @Test
     public void startTwoProxyWithClientServer() throws Exception {
         DefaultProxyServer firstServer = startFirstProxy();
         ((TestProxyConfig)firstServer.getConfig()).setCompress(true);
