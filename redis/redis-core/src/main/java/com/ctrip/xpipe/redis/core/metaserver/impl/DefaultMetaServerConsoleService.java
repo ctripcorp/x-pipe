@@ -81,12 +81,10 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	@Override
 	public PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
 
-		HttpEntity<Object> entity = new HttpEntity<Object>(null);
 		return restTemplate.exchange(
 				makeMasterReadonlyPath,
-				HttpMethod.PUT, entity,
+				HttpMethod.PUT, HttpEntity.EMPTY,
 				PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly).getBody();
-
 	}
 
 	@Override

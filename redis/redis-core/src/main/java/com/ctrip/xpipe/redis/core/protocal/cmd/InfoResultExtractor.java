@@ -102,10 +102,12 @@ public class InfoResultExtractor {
     }
 
     public long getMasterReplOffset() {
-        return extractAsLong(KEY_MASTER_REPL_OFFSET);
+        Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);
+        return result == null ? 0L : result;
     }
 
     public long getSlaveReplOffset() {
-        return extractAsLong(KEY_SLAVE_REPL_OFFSET);
+        Long result = extractAsLong(KEY_SLAVE_REPL_OFFSET);
+        return result == null ? 0L : result;
     }
 }

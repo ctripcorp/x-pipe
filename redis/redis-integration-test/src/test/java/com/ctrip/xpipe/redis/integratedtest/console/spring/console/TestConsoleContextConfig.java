@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -30,21 +29,31 @@ import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.integratedtest.console.config.SpringEnvConsoleConfig;
 import com.ctrip.xpipe.redis.integratedtest.console.config.TestFoundationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
-
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
+@ComponentScan(
+        basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"}
+        , excludeFilters = {
+                @ComponentScan.Filter(type = FilterType.ANNOTATION, value = {SpringBootApplication.class, SpringBootTest.class}),
+                @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {
+                        com.ctrip.xpipe.redis.console.spring.CheckerContextConfig.class,
+                        com.ctrip.xpipe.redis.console.spring.ConsoleCheckerContextConfig.class,
+                        com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class
+                })
+        }
+)
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class TestConsoleContextConfig {
@@ -52,6 +61,11 @@ public class TestConsoleContextConfig {
     @Bean
     public ConsoleConfig consoleConfig() {
         return new SpringEnvConsoleConfig();
+    }
+
+    @Bean
+    public RouteChooseStrategyFactory getRouteChooseStrategyFactory() {
+        return new DefaultRouteChooseStrategyFactory();
     }
 
     @Bean

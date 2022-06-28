@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
@@ -41,13 +40,9 @@ public class RouteChangeTest extends AbstractXpipeServerMultiDcTest {
         startCRDTAllServer(defaultConsoleInfo());
     }
 
-
-
-
-
-    ProxyEnabledEndpoint createProxyEndpoint(String host, int port, String proxy) {
+    DefaultEndPoint createEndpointWithProxyProtocol(String host, int port, String proxy) {
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(proxy);
-        return new ProxyEnabledEndpoint(host, port, protocol);
+        return new DefaultEndPoint(host, port, protocol);
     }
 
     @Test
@@ -57,7 +52,7 @@ public class RouteChangeTest extends AbstractXpipeServerMultiDcTest {
         XpipeNettyClientKeyedObjectPool pool = getXpipeNettyClientKeyedObjectPool();
         Endpoint master = new DefaultEndPoint("127.0.0.1", 36379);
 
-        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         ConsoleService jqService = new ConsoleService("jq", jqConsoleUrl);
         RedisChecker redisChecker = new RedisChecker(pool, scheduled);
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
@@ -66,12 +61,12 @@ public class RouteChangeTest extends AbstractXpipeServerMultiDcTest {
         RouteModel model = new RouteModel();
         model.setId(2).setSrcProxyIds("2").setTag("META").setDstProxyIds("1,5").setSrcDcName("jq").setDstDcName("fra").setActive(true);
         jqService.changeRoute(model);
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 61000, 1000);
         model.setDstProxyIds("1");
         jqService.changeRoute(model);
 
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createEndpointWithProxyProtocol("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 61000, 1000);
 
     }

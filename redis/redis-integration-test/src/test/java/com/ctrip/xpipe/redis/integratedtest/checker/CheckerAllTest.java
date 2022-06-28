@@ -11,4 +11,6 @@ import org.junit.runners.Suite;
         CheckCrdtRedisByProxy.class
 })
 public class CheckerAllTest {
+
+    /* add -Djdk.attach.allowAttachSelf=true for jdk11*/
 }

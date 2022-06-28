@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
@@ -18,15 +17,15 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Jun 01, 2018
  */
-public class ProxyEnabledEndpointTest {
+public class DefaultEndpointWithProxyTest {
 
     private ProxyProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379\r\n");
 
-    private static final Logger logger = LoggerFactory.getLogger(ProxyEnabledEndpointTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultEndpointWithProxyTest.class);
 
     @Test
     public void testToString() {
-        ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
+        Endpoint endpoint = new DefaultEndPoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
         logger.info("{}", endpoint);
         logger.info("{}", endpoint.toString());
         logger.info("{}", endpoint.getProxyProtocol());
@@ -34,7 +33,7 @@ public class ProxyEnabledEndpointTest {
 
     @Test
     public void testEquals() {
-        Endpoint endpoint1 = new ProxyEnabledEndpoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
+        Endpoint endpoint1 = new DefaultEndPoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
         Endpoint endpoint2 = new DefaultEndPoint("127.0.0.1", 6379);
 
         logger.info("{}", ObjectUtils.equals(endpoint1, endpoint2));
@@ -43,7 +42,7 @@ public class ProxyEnabledEndpointTest {
 
     @Test
     public void testEncode() {
-        Endpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
+        Endpoint endpoint = new DefaultEndPoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
         Codec.DEFAULT.encode(endpoint);
     }
 }

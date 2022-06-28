@@ -31,7 +31,7 @@ public class DefaultRetryCommandFactoryTest extends AbstractTest {
         Command<String> retryCommand = retryCommandFactory.createRetryCommand(new TestCommand(new Exception(msg), sleepMilli));
 
         try {
-            retryCommand.execute().get(sleepMilli * 2, TimeUnit.MILLISECONDS);
+            retryCommand.execute().get(sleepMilli * 4, TimeUnit.MILLISECONDS);
             Assert.fail();
         } catch (ExecutionException e) {
             Assert.assertEquals(msg, e.getCause().getMessage());

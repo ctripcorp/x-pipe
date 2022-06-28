@@ -25,7 +25,7 @@ public class RedisSlaveBacklogOffsetListener extends AbstractMetricListener<Info
             tryWriteMetric(getPoint(METRIC_TYPE_REDIS_SLAVE_REPL_OFFSET, offset, recvTimeMilli, info));
 
         } catch (Throwable th) {
-            logger.error("get slave backlog size of redis:{} error: ", context.instance().getCheckInfo().getHostPort(), th);
+            logger.warn("get slave backlog size of redis:{} error: ", context.instance().getCheckInfo().getHostPort(), th);
         }
     }
 }
