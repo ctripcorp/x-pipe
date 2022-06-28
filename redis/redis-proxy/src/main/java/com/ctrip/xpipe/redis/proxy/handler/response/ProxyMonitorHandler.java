@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.handler.response;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.error.ProxyError;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SessionTrafficResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
@@ -13,6 +17,7 @@ import com.ctrip.xpipe.redis.proxy.monitor.session.SessionStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -76,13 +81,18 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
 
         @Override
         public void response(Channel channel) {
-            List<T> samples = getSamples();
-            Object[] resultSet = new Object[samples.size()];
-            int index = 0;
-            for(T t : samples) {
-                resultSet[index ++] = format(t);
+            try {
+                List<T> samples = getSamples();
+                Object[] resultSet = new Object[samples.size()];
+                int index = 0;
+                for (T t : samples) {
+                    resultSet[index++] = format(t);
+                }
+                channel.writeAndFlush(new ArrayParser(resultSet).format());
+            } catch (Throwable t) {
+                logger.warn("[response] {}", channel, t);
+                channel.writeAndFlush(new RedisErrorParser(new ProxyError(t.getClass().getName() + ": " + t.getMessage())).format());
             }
-            channel.writeAndFlush(new ArrayParser(resultSet).format());
         }
 
         abstract List<T> getSamples();
