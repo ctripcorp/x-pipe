@@ -95,8 +95,13 @@ public class CurrentMeta implements Releasable {
 	public GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids){
 
 		checkClusterSupportApplier(clusterDbId);
-		if (StringUtil.isEmpty(sids) || redises == null) {
-			return null;
+		if (sids == null || redises == null) {
+			logger.error("[getGtidSet] sids={}, redises={}, cluster_{},shard_{}", sids, redises, clusterDbId, shardDbId);
+			return new GtidSet("");
+		}
+
+		if (sids.isEmpty()) {
+		    return new GtidSet("");
 		}
 
 		GtidSet result = null;
@@ -105,8 +110,8 @@ public class CurrentMeta implements Releasable {
 			result = result == null? gtidSet: result.intersectionGtidSet(gtidSet);
 		}
 		if (result == null) {
-			logger.warn("[getGtidSet] null, cluster_{},shard_{}", clusterDbId, shardDbId);
-			return null;
+			logger.warn("[getGtidSet] redis list empty, cluster_{},shard_{}", clusterDbId, shardDbId);
+			return new GtidSet("");
 		}
 
 		Set<String> uuidSet = new HashSet<>();

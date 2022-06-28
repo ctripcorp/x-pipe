@@ -83,7 +83,11 @@ public class DefaultRedisGtidCollector extends AbstractLifecycle implements Redi
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                     RedisGtidCollectJob redisGtidCollectJob = new RedisGtidCollectJob(clusterDbId, shardMeta.getDbId(),
                             dcMetaCache, scheduled, clientPool);
-                    redisGtidCollectJob.execute(executors);
+                    try {
+                        redisGtidCollectJob.execute(executors);
+                    } catch (Exception e) {
+                        logger.warn("[RedisGtidCollectTask]", e);
+                    }
                 }
             }
         }

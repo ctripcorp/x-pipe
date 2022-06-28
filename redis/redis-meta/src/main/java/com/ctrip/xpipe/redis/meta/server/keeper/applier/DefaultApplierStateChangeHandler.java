@@ -90,8 +90,8 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
 
         List<ApplierMeta> appliers = new LinkedList<>();
         appliers.add(activeApplier);
-        List<RedisMeta> redis = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
-        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redis, sids);
+        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
+        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
 
         keyedOneThreadTaskExecutor.execute(
                 new Pair<>(clusterDbId, shardDbId),

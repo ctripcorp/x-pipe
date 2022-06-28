@@ -122,7 +122,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         for (SourceMeta sourceMeta : clusterMeta.getSources()) {
             for (ShardMeta shardMeta : sourceMeta.getShards().values()) {
                 for (ApplierMeta applierMeta : shardMeta.getAppliers()) {
-                    addApplier(clusterMeta.getDbId(), shardMeta.getDbId(), applierMeta);
+                    addApplier(clusterMeta.getId(), clusterMeta.getDbId(), shardMeta.getDbId(), applierMeta);
                 }
             }
         }
@@ -131,7 +131,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
         ClusterMeta cluster = comparator.getCurrent();
-        comparator.accept(new ClusterComparatorVisitor(cluster.getDbId()));
+        comparator.accept(new ClusterComparatorVisitor(cluster.getId(), cluster.getDbId()));
     }
 
     @Override
@@ -168,10 +168,9 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         return result;
     }
 
-    private void addApplier(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+    private void addApplier(String clusterId, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
         try {
-            //TODO ayq add clusterName
-            applierStateController.addApplier(new ApplierTransMeta(clusterDbId, shardDbId, applierMeta));
+            applierStateController.addApplier(new ApplierTransMeta(clusterId, clusterDbId, shardDbId, applierMeta));
         } catch (Exception e) {
             logger.error(String.format("[addApplier]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, applierMeta), e);
         }
@@ -198,7 +197,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
             }
             for (ApplierMeta deadApplier : deadAppliers) {
                 try {
-                    applierStateController.addApplier(new ApplierTransMeta(clusterDbId, shardDbId, deadApplier));
+                    applierStateController.addApplier(new ApplierTransMeta(clusterMeta.getId(), clusterDbId, shardDbId, deadApplier));
                 } catch (ResourceAccessException e) {
                     logger.error(String.format("cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
                             deadApplier, e.getMessage()));
@@ -211,9 +210,11 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
 
+        private String clusterId;
         private Long clusterDbId;
 
-        public ClusterComparatorVisitor(Long clusterDbId) {
+        public ClusterComparatorVisitor(String clusterId, Long clusterDbId) {
+            this.clusterId = clusterId;
             this.clusterDbId = clusterDbId;
         }
 
@@ -221,7 +222,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public void visitAdded(ShardMeta added) {
             logger.info("[visitAdded][add shard]{}", added);
             for (ApplierMeta applierMeta : added.getAppliers()) {
-                addApplier(clusterDbId, added.getDbId(), applierMeta);
+                addApplier(clusterId, clusterDbId, added.getDbId(), applierMeta);
             }
         }
 
@@ -229,7 +230,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
             ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
             ShardMeta shard = shardMetaComparator.getCurrent();
-            shardMetaComparator.accept(new ShardComparatorVisitor(clusterDbId, shard.getDbId()));
+            shardMetaComparator.accept(new ShardComparatorVisitor(clusterId, clusterDbId, shard.getDbId()));
         }
 
         @Override
@@ -243,10 +244,12 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     protected class ShardComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
 
+        private String clusterId;
         private Long clusterDbId;
         private Long shardDbId;
 
-        protected ShardComparatorVisitor(Long clusterDbId, Long shardDbId) {
+        protected ShardComparatorVisitor(String clusterId, Long clusterDbId, Long shardDbId) {
+            this.clusterId = clusterId;
             this.clusterDbId = clusterDbId;
             this.shardDbId = shardDbId;
         }
@@ -254,7 +257,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         @Override
         public void visitAdded(InstanceNode added) {
             if (added instanceof ApplierMeta) {
-                addApplier(clusterDbId, shardDbId, (ApplierMeta) added);
+                addApplier(clusterId, clusterDbId, shardDbId, (ApplierMeta) added);
             } else {
                 logger.debug("[visitAdded][do nothing]{}", added);
             }
@@ -402,7 +405,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
         String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
 
-        List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
         return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }
