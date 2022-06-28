@@ -40,6 +40,7 @@ import java.rmi.ServerException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
@@ -121,6 +122,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
+    public long countAllWithoutTestCluster() {
+        return migrationClusterDao.countAllEventsWithoutTestClusters();
+    }
+
+    @Override
     public List<MigrationModel> find(long size, long offset) {
         List<MigrationClusterTbl> migrationClusterList = migrationClusterDao.find(size, offset);
         return aggregateClusterByMigration(migrationClusterList);
@@ -144,6 +150,16 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public List<MigrationModel> findByStatus(String status, long size, long offset) {
         List<MigrationClusterTbl> migrationClusterList =
                 migrationClusterDao.findByStatus(status, size, offset);
+        return aggregateClusterByMigration(migrationClusterList);
+    }
+
+    @Override
+    public List<MigrationModel> findWithoutTestClusters(long size, long offset) {
+        List<Long> migrationEventIds =
+                migrationClusterDao.findAllEventsWithoutTestCluster(size, offset)
+                        .stream().map(MigrationClusterTbl::getMigrationEventId).collect(Collectors.toList());
+        if (migrationEventIds.isEmpty()) return Collections.emptyList();
+        List<MigrationClusterTbl> migrationClusterList = migrationClusterDao.findByMigEventIds(migrationEventIds);
         return aggregateClusterByMigration(migrationClusterList);
     }
 

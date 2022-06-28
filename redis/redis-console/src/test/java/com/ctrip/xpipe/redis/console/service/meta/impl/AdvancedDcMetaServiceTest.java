@@ -132,7 +132,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     public void testClusterOrgInfo() {
         List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
 
-        ClusterTbl clusterTbl = clusterTbls.get(2);
+        ClusterTbl clusterTbl = clusterTbls.get(3);
         clusterTbl.setClusterOrgId(3);
         clusterService.update(clusterTbl);
 
