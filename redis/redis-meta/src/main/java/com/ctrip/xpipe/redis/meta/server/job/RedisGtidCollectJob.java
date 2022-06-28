@@ -64,7 +64,7 @@ public class RedisGtidCollectJob extends AbstractCommand<Void> {
 
         for (RedisMeta redisMeta : redises) {
 
-            //TODO ayq different pool
+            //TODO ayq different pool; future().setSuccess()
             SimpleObjectPool<NettyClient> simpleObjectPool = new XpipeObjectPoolFromKeyed<Endpoint, NettyClient>(
                     pool, new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
 

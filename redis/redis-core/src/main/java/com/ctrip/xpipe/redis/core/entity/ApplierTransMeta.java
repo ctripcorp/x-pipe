@@ -20,10 +20,15 @@ public class ApplierTransMeta {
     //for json conversion
     public ApplierTransMeta() {}
 
-    public ApplierTransMeta(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+    public ApplierTransMeta(String clusterName, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+        this.clusterName = clusterName;
         this.clusterDbId = clusterDbId;
         this.shardDbId = shardDbId;
         this.applierMeta = applierMeta;
+    }
+
+    public ApplierTransMeta(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+        this(null, clusterDbId, shardDbId, applierMeta);
     }
 
     public ApplierMeta getApplierMeta() {
