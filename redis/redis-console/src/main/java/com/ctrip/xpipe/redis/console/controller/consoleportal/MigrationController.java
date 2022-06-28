@@ -64,15 +64,12 @@ public class MigrationController extends AbstractConsoleController {
 
 	@RequestMapping(value = "/migration/events", method = RequestMethod.GET)
 	public PageModal<MigrationModel> getEventAndCluster(@RequestParam(required = false) String clusterName,
+														@RequestParam(defaultValue = "false") boolean withoutTestClusters,
 														@RequestParam Long size, @RequestParam Long page) {
-		if (null == size || size <=0) size = 10L;
+		if (null == size || size <= 0) size = 10L;
 		if (null == page || page < 0) page = 0L;
 
-		if (StringUtil.isEmpty(clusterName)) {
-			long totalSize = migrationService.countAll();
-			if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
-			return new PageModal<>(migrationService.find(size, size * page), size, page, totalSize);
-		} else {
+		if (!StringUtil.isEmpty(clusterName)) {
 			ClusterTbl clusterTbl = clusterService.find(clusterName);
 			if (null == clusterTbl) return new PageModal<>(Collections.emptyList(), size, page, 0);
 
@@ -82,6 +79,14 @@ public class MigrationController extends AbstractConsoleController {
 			return new PageModal<>(
 					migrationService.findByCluster(clusterTbl.getId(), size, size * page),
 					size, page, totalSize);
+		} else if (withoutTestClusters) {
+			long totalSize = migrationService.countAllWithoutTestCluster();
+			if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+			return new PageModal<>(migrationService.findWithoutTestClusters(size, size * page), size, page, totalSize);
+		} else {
+			long totalSize = migrationService.countAll();
+			if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+			return new PageModal<>(migrationService.find(size, size * page), size, page, totalSize);
 		}
 	}
 
