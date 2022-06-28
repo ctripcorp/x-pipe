@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetSt
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -26,9 +25,6 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int minTimeMilliToGcAfterCreate = 2000;
-
-	protected ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(
-			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm());
 
 	protected KeeperMeta getKeeperActive(RedisMeta redisMeta) {
 		

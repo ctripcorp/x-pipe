@@ -7,8 +7,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractMetr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationListener;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,7 +25,7 @@ public class PeerBacklogOffsetListener extends AbstractMetricListener<CrdtInfoRe
                 tryWriteMetric(getPoint(METRIC_TYPE, offset, recvTimeMilli, info));
             }
         } catch (Throwable throwable) {
-            logger.error("[onAction] redis:{} error: ",context.instance().getCheckInfo().getHostPort(), throwable);
+            logger.warn("[onAction] redis:{} error: ",context.instance().getCheckInfo().getHostPort(), throwable);
         }
     }
 

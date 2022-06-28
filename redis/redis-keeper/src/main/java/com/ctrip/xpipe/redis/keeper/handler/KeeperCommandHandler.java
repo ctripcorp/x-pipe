@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
+import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
@@ -81,17 +81,22 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 	}
 
 	private Endpoint getMasterAddress(String[] args) {
+		String ip = args[2];
+		int port = Integer.parseInt(args[3]);
+
 		if(containsProxyProtocol(args)) {
-			return new ProxyEnabledEndpoint(args[2], Integer.parseInt(args[3]), getProxyProtocol(args));
+			ProxyConnectProtocol protocol = getProxyProtocol(args);
+			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo());
+			return new DefaultEndPoint(ip, port, protocol);
 		} else {
-			return new DefaultEndPoint(args[2], Integer.parseInt(args[3]));
+			ProxyRegistry.unregisterProxy(ip, port);
+			return new DefaultEndPoint(ip, port);
 		}
 	}
 
 	private boolean containsProxyProtocol(String[] args) {
 		return args.length > 4 && "proxy".equalsIgnoreCase(args[4]);
 	}
-
 
 	// setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2;80 TCP
 	@VisibleForTesting

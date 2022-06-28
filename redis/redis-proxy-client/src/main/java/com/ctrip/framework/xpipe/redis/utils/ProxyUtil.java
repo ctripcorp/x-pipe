@@ -66,8 +66,17 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         return socketAddressMap.remove(o);
     }
 
+    private String appendIpPortIfAbsent(String routeInfo, String ip, int port) {
+        String[] splits = routeInfo.trim().split(" ");
+        String dest = splits[splits.length - 1];
+        if (!dest.contains(":") && !dest.contains("/")) {
+            return String.format("%s://%s:%s", routeInfo.trim(), ip, port);
+        }
+        return routeInfo;
+    }
+
     private ProxyResourceManager getProxyProtocol(String ip, int port, String routeInfo) {
-        String protocol = String.format("%s://%s:%s", routeInfo.trim(), ip, port);
+        String protocol = appendIpPortIfAbsent(routeInfo.trim(), ip, port);
         ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(protocol);
         List<InetSocketAddress> endpoints = proxyConnectProtocol.nextEndpoints();
         List<ProxyInetSocketAddress> next = new ArrayList<>();

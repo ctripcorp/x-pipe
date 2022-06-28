@@ -57,7 +57,7 @@ public class DefaultHealthCheckEndpointFactoryTest extends AbstractRedisTest {
     }
 
     @Test
-    public void testGetOrCreateProxyEnabledEndpoint() {
+    public void testGetOrCreateEndpointWithProxyProtocol() {
         String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
         String routeInfo2 = "PROXYTCP://127.0.0.2:8008,PROXYTCP://127.0.0.2:8998";
         RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("oy").setIsPublic(true);

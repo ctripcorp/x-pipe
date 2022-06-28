@@ -2,13 +2,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -20,7 +15,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
-import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -184,16 +178,10 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void testReconnectAfterTryConnectThroughException() throws Exception {
 		System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
 		Server server = startEmptyServer();
-		ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
-		ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
-
+		DefaultEndPoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
-		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
+		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(new DefaultLeakyBucket(4));
 
-		// first time empty list, sec time return endpoint
-		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
-				.thenReturn(protocol.nextEndpoints());
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
 				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager);
 
