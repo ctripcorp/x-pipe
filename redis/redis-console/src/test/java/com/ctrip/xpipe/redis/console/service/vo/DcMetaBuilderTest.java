@@ -141,6 +141,19 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void getOrCreateHeteroClusterMeta() throws Exception {
+        ClusterTbl clusterTbl = clusterService.find("hetero2-local-cluster");
+        Assert.assertNotNull(clusterTbl);
+
+        tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
+        ClusterMeta clusterMeta = dcMeta.getClusters().get("hetero2-local-cluster");
+        Assert.assertNotNull(clusterMeta);
+        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO));
+        Assert.assertEquals("jq", clusterMeta.getActiveDc());
+        Assert.assertEquals("", clusterMeta.getBackupDcs());
+    }
+
+    @Test
     public void getOrCreateShardMeta() throws Exception {
         DcClusterShardTbl dcClusterShard = dcClusterShards.get(0);
         Assert.assertNotNull(dcClusterShard);
