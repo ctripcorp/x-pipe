@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -162,6 +163,9 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setType(cluster.getClusterType());
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
+                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.getDesc():
+                        DcGroupType.findByValue(dcClusterInfo.isGroupType()).getDesc());
+                clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
@@ -623,7 +627,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     //0: Master; 1: DRMaster
     private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
-        return dcClusterTbl.isGroupType();
+        return DcGroupType.DR_MASTER.equals(DcGroupType.findByValue(dcClusterTbl.isGroupType()));
+    }
+
+    private String getDcGroupName(DcClusterTbl dcClusterInfo) {
+        if (dcClusterInfo == null || dcClusterInfo.getGroupName() == null) {
+            return dcMeta.getId();
+        }
+
+        return dcClusterInfo.getGroupName();
     }
 
     /**------------------Visible for Test-----------------------*/

@@ -58,6 +58,8 @@
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
     <attribute name="downstream-dcs" value-type="String" />
+    <attribute name="dc-group-type" value-type="String" />
+    <attribute name="dc-group-name" value-type="String" />
     <attribute name="org-id" value-type="int" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
