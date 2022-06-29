@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
@@ -23,9 +24,12 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
 /**
  * @author chen.zhu
  * <p>
@@ -194,6 +198,82 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Map<Long, List<DcClusterTbl>> map = Maps.newHashMap();
         map.put(clusterTbl.getId(), Lists.newArrayList(new DcClusterTbl().setClusterId(clusterTbl.getId()).setDcId(1)));
         builder.setCluster2DcClusterMap(map);
+    }
+
+    @Test
+    public void testHeteroPrimaryDc() throws ExecutionException, InterruptedException {
+        DcMeta dcMeta = new DcMeta();
+        long dcId = 1L;
+
+        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                replDirectionService, zoneService, keeperContainerService, applierService,
+                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
+
+        boolean found = false;
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            if (clusterMeta.getId().equals("hetero2-local-cluster")) {
+                found = true;
+            } else {
+                continue;
+            }
+            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            Assert.assertEquals("jq", clusterMeta.getActiveDc());
+            Assert.assertEquals("", clusterMeta.getBackupDcs());
+            Assert.assertEquals("oy", clusterMeta.getDownstreamDcs());
+            Assert.assertEquals("DRMaster", clusterMeta.getDcGroupType());
+            Assert.assertEquals("jq", clusterMeta.getDcGroupName());
+            Collection<ShardMeta> shardMetas = clusterMeta.getShards().values();
+            Assert.assertEquals(2, shardMetas.size());
+            for (ShardMeta shardMeta : shardMetas) {
+                Assert.assertEquals(2, shardMeta.getRedises().size());
+                Assert.assertEquals(2, shardMeta.getKeepers().size());
+                Assert.assertEquals(0, shardMeta.getAppliers().size());
+            }
+            List<SourceMeta> sourceMetas = clusterMeta.getSources();
+            Assert.assertEquals(0, sourceMetas.size());
+        }
+        Assert.assertTrue(found);
+    }
+
+    @Test
+    public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
+        DcMeta dcMeta = new DcMeta();
+        long dcId = 2L;
+
+        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                replDirectionService, zoneService, keeperContainerService, applierService,
+                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
+
+        boolean found = false;
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            if (clusterMeta.getId().equals("hetero2-local-cluster")) {
+                found = true;
+            } else {
+                continue;
+            }
+            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            Assert.assertEquals("jq", clusterMeta.getActiveDc());
+            Assert.assertEquals("", clusterMeta.getBackupDcs());
+            Assert.assertEquals("", clusterMeta.getDownstreamDcs());
+            Assert.assertEquals("MASTER", clusterMeta.getDcGroupType());
+            Assert.assertEquals("oy", clusterMeta.getDcGroupName());
+            Collection<ShardMeta> shardMetas = clusterMeta.getShards().values();
+            Assert.assertEquals(1, shardMetas.size());
+            for (ShardMeta shardMeta : shardMetas) {
+                Assert.assertEquals(2, shardMeta.getRedises().size());
+                Assert.assertEquals(0, shardMeta.getAppliers().size());
+            }
+            List<SourceMeta> sourceMetas = clusterMeta.getSources();
+            Assert.assertEquals(1, sourceMetas.size());
+            for (ShardMeta shardMeta : sourceMetas.get(0).getShards().values()) {
+                Assert.assertEquals(0, shardMeta.getRedises().size());
+                Assert.assertEquals(2, shardMeta.getKeepers().size());
+                Assert.assertEquals(2, shardMeta.getAppliers().size());
+            }
+        }
+        Assert.assertTrue(found);
     }
 
     private void testBuildMetaForClusterType(ClusterType clusterType, int clusterSize) throws Exception {
