@@ -163,6 +163,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setType(cluster.getClusterType());
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
+                clusterMeta.setDownstreamDcs("");
                 clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.getDesc():
                         DcGroupType.findByValue(dcClusterInfo.isGroupType()).getDesc());
                 clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
@@ -540,7 +541,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 return;
             }
 
-            List<DcClusterShardTbl> dcClusterShardTbls =  dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
+            List<DcClusterShardTbl> dcClusterShardTbls = dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
             if (dcClusterShardTbls == null) {
                 return;
             }
@@ -558,7 +559,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         }
 
         private void addApplierAndAddShardIfNotExists(long clusterId, SourceMeta sourceMeta) {
-            //add applier and add shard if not exist
             List<Long> repIds = replDirectionTblList
                     .stream()
                     .filter(a -> clusterId == a.getClusterId() && a.getToDcId() == dcId)
