@@ -115,6 +115,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	});
 	}
 
+
 	@Override
 	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
 															 Map<Long, SentinelGroupModel> sentinels) {

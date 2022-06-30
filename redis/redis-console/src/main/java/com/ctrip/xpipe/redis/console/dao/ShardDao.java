@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -173,6 +174,10 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 
+		if (ClusterType.isSameClusterType(cluster.getClusterType(), ClusterType.HETERO)) {
+			return shard;
+		}
+
 		// dc-cluster-shards
 		List<DcClusterTbl> dcClusters = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 			@Override
@@ -181,7 +186,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			}
 		});
 
-		if(null != dcClusters) {
+		if(null != dcClusters && !dcClusters.isEmpty()) {
 			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
 			for(DcClusterTbl dcCluster : dcClusters) {
 				DcClusterShardTbl dcClusterShardProto = dcClusterShardTblDao.createLocal();
@@ -192,12 +197,14 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 				}
 				dcClusterShards.add(dcClusterShardProto);
 			}
-			queryHandler.handleBatchInsert(new DalQuery<int[]>() {
-				@Override
-				public int[] doQuery() throws DalException {
-					return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
-				}
-			});
+			if (!dcClusterShards.isEmpty()) {
+				queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+					@Override
+					public int[] doQuery() throws DalException {
+						return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+					}
+				});
+			}
 
 		}
 		return shard;

@@ -108,6 +108,81 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testCreateHeteroCluster() {
+        String clusterName = randomString(10);
+        List<DcTbl> dcTbls = dcService.findAllDcs();
+
+        ClusterModel clusterModel = new ClusterModel();
+
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setActivedcId(1)
+                .setClusterName(clusterName)
+                .setClusterType(ClusterType.HETERO.toString())
+                .setClusterAdminEmails("test@ctrip.com")
+                .setClusterDescription(randomString(20))
+        );
+
+
+        ShardModel shard1 = new ShardModel();
+        shard1.setShardTbl(new ShardTbl().setShardName(clusterName + "_1").setSetinelMonitorName(clusterName + "_1"));
+        ShardModel shard2 = new ShardModel();
+        shard2.setShardTbl(new ShardTbl().setShardName(clusterName + "_2").setSetinelMonitorName(clusterName + "_2"));
+        ShardModel shard3 = new ShardModel();
+        shard3.setShardTbl(new ShardTbl().setShardName(clusterName + "_3").setSetinelMonitorName(clusterName + "_3"));
+        ShardModel shard4 = new ShardModel();
+        shard4.setShardTbl(new ShardTbl().setShardName(clusterName + "_4").setSetinelMonitorName(clusterName + "_4"));
+        ShardModel shard5 = new ShardModel();
+        shard5.setShardTbl(new ShardTbl().setShardName(clusterName + "_5").setSetinelMonitorName(clusterName + "_5"));
+
+        DcModel jq = new DcModel();
+        jq.setDc_name("jq");
+        DcClusterModel jqDcCluster = new DcClusterModel().setDc(jq)
+                                            .setDcCluster(new DcClusterTbl().setGroupName("jq").setGroupType(true))
+                                            .setShards(Lists.newArrayList(shard1, shard2, shard3));
+        DcModel oy = new DcModel();
+        oy.setDc_name("oy");
+        DcClusterModel oyDcCluster = new DcClusterModel().setDc(oy)
+                .setDcCluster(new DcClusterTbl().setGroupName("oy").setGroupType(true))
+                .setShards(Lists.newArrayList(shard1, shard2, shard3));
+
+        DcModel fra = new DcModel();
+        fra.setDc_name("fra");
+        DcClusterModel fraDcCluster = new DcClusterModel().setDc(fra)
+                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(true))
+                .setShards(Lists.newArrayList(shard4, shard5));
+        clusterModel.setDcClusters(Lists.newArrayList(jqDcCluster, oyDcCluster, fraDcCluster));
+
+        ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(clusterName)
+                                                            .setSrcDcName("jq").setFromDcName("jq").setToDcName("oy");
+        ReplDirectionInfoModel replDirectionInfoModel2 = new ReplDirectionInfoModel().setClusterName(clusterName)
+                .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
+        clusterModel.setReplDirections(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+
+
+        clusterService.createCluster(clusterModel);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertTrue(clusterTbl.isIsXpipeInterested());
+
+        Assert.assertFalse(dcTbls.isEmpty());
+        dcTbls.forEach(dcTbl -> {
+            DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), clusterName);
+            Assert.assertNotNull(dcClusterTbl);
+
+        });
+        DcClusterTbl dcClusterTbl = dcClusterService.find("jq", clusterName);
+        Assert.assertNotNull(dcClusterTbl);
+        Assert.assertEquals(jqDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl.getDcClusterId()).size());
+
+        DcClusterTbl dcClusterTbl2 = dcClusterService.find("oy", clusterName);
+        Assert.assertNotNull(dcClusterTbl2);
+        Assert.assertEquals(oyDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl2.getDcClusterId()).size());
+
+        DcClusterTbl dcClusterTbl3 = dcClusterService.find("fra", clusterName);
+        Assert.assertNotNull(dcClusterTbl3);
+        Assert.assertEquals(fraDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl3.getDcClusterId()).size());
+    }
+
+    @Test
     public void testCreateBiDirectionCluster() {
         String clusterName = randomString(10);
         List<DcTbl> dcTbls = dcService.findAllDcs();
