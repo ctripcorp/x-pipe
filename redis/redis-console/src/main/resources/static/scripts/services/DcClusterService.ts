@@ -8,7 +8,12 @@ function DcClusterService($resource, $q) {
     var resource = $resource('', {}, {
         find_dc_cluster: {
             method: 'GET',
-            url: '/console/clusters/:clusterName/dcs/:dcName',
+            url: '/console/dc-cluster/clusters/:clusterName/dcs/:dcName',
+        },
+        find_dc_clusters_by_cluster: {
+            method: 'GET',
+            url: '/console/dc-cluster/clusters/:clusterName',
+            isArray: true
         }
     });
 
@@ -26,7 +31,21 @@ function DcClusterService($resource, $q) {
         return d.promise;
     }
 
+        function findDcClusterByCluster(clusterName) {
+            var d = $q.defer();
+            resource.find_dc_clusters_by_cluster({
+                    clusterName: clusterName,
+                },
+                function (result) {
+                    d.resolve(result);
+                }, function (result) {
+                    d.reject(result);
+                });
+            return d.promise;
+        }
+
     return {
         findDcCluster : findDcCluster,
+        findDcClusterByCluster : findDcClusterByCluster,
     }
 }

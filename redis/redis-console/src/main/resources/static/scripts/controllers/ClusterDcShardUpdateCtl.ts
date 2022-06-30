@@ -170,7 +170,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function loadReplDirection(clusterName, srcDcName, toDcName) {
-        ReplDirectionService.findReplDirectionBySrcDcAndToDc(clusterName, srcDcName, toDcName)
+        ReplDirectionService.findReplDirectionByClusterAndSrcToDc(clusterName, srcDcName, toDcName)
             .then(function (result) {
                 $scope.replDirection = result;
             }, function (result) {

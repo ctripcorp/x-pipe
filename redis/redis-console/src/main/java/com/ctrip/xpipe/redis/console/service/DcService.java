@@ -22,5 +22,7 @@ public interface DcService {
 
 	void insertWithPartField(long zoneId, String dcName, String description);
 
-	DcModel findDcModel(String dcName);
+	DcModel findDcModelByDcName(String dcName);
+
+	DcModel findDcModelByDcId(long dcId);
 }

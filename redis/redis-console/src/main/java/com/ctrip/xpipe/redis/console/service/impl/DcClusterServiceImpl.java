@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -177,9 +178,9 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
-	public DcClusterModel findDcClusterModel(String clusterName, String dcName) {
+	public DcClusterModel findDcClusterModelByClusterAndDc(String clusterName, String dcName) {
 		DcClusterModel result = new DcClusterModel();
-		DcModel dcModel = dcService.findDcModel(dcName);
+		DcModel dcModel = dcService.findDcModelByDcName(dcName);
 		if (dcModel == null) {
 			throw new BadRequestException(String.format("dc %s does not exist", dcName));
 		}
@@ -189,12 +190,45 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		if (dcClusterTbl == null) {
 			throw new BadRequestException(String.format("cluster %s does not have dc %s", clusterName, dcName));
 		}
-		result.setDcCluster(find(dcName, clusterName));
+		result.setDcCluster(dcClusterTbl);
 
 		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
 		if (!dcClusterTbl.isGroupType()) {
 			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
 		}
+		return result;
+	}
+
+	@Override
+	public List<DcClusterModel> findDcClusterModelsByCluster(String clusterName) {
+		ClusterTbl clusterTbl = clusterService.find(clusterName);
+		if(clusterTbl == null)
+			throw new BadRequestException(String.format("cluster %s does not exist", clusterName));
+
+		List<DcClusterTbl> dcClusterTbls = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+			@Override
+			public List<DcClusterTbl> doQuery() throws DalException {
+				return dao.findAllByClusterId(clusterTbl.getId(), DcClusterTblEntity.READSET_FULL);
+			}
+		});
+
+		List<DcClusterModel> result = new ArrayList<>();
+		dcClusterTbls.forEach(dcClusterTbl -> {
+			DcClusterModel dcClusterModel = new DcClusterModel().setDcCluster(dcClusterTbl);
+			DcModel dcModel = dcService.findDcModelByDcId(dcClusterTbl.getDcId());
+			if (dcModel == null) {
+				throw new BadRequestException(String.format("dc %s does not exist", dcClusterTbl.getDcId()));
+			}
+			dcClusterModel.setDc(dcModel);
+
+			dcClusterModel.setShards(shardModelService.getAllShardModel(dcModel.getDc_name(), clusterName));
+			if (!dcClusterTbl.isGroupType()) {
+				dcClusterModel.setSources(sourceModelService.getAllSourceModels(dcModel.getDc_name(), clusterName));
+			}
+			result.add(dcClusterModel);
+		});
+
+
 		return result;
 	}
 }

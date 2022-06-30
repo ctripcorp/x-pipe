@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionTbl;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,18 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
         }
     }
 
+    @Test
+    public void testFindAllReplDirectionInfoModelsByCluster() {
+        String clusterName = "hetero-cluster";
+        ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setId(1)
+                .setClusterName(clusterName).setSrcDcName("jq").setFromDcName("jq").setToDcName("oy");
+        ReplDirectionInfoModel replDirectionInfoModel2 = new ReplDirectionInfoModel().setId(2)
+                .setClusterName(clusterName).setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
+
+        List<ReplDirectionInfoModel> replDirectionInfoModels =
+                replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
+        Assert.assertEquals(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2), replDirectionInfoModels);
+    }
 
 
     @Override
