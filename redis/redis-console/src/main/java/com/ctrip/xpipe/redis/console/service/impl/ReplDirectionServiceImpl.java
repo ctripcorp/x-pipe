@@ -122,4 +122,33 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         replDirectionInfoModel.setClusterName(clusterTbl.getClusterName());
         return replDirectionInfoModel;
     }
+    @Override
+    public void addReplDirectionByInfoModel(ReplDirectionInfoModel replDirectionInfoModel) {
+        ClusterTbl clusterTbl = clusterService.find(replDirectionInfoModel.getClusterName());
+        if (clusterTbl == null) {
+            throw new IllegalArgumentException(String.format("cluster %s does not exist",
+                    replDirectionInfoModel.getClusterName()));
+        }
+
+        DcTbl srcDc = dcService.find(replDirectionInfoModel.getSrcDcName());
+        DcTbl fromDc = dcService.find(replDirectionInfoModel.getFromDcName());
+        DcTbl toDc = dcService.find(replDirectionInfoModel.getToDcName());
+        if (srcDc == null || fromDc == null || toDc == null) {
+            throw new IllegalArgumentException(String.format("srcDc:%s or fromDc:%s or toDc:%s does not exist",
+                    replDirectionInfoModel.getSrcDcName(), replDirectionInfoModel.getFromDcName(),
+                    replDirectionInfoModel.getToDcName()));
+        }
+
+        ReplDirectionTbl proto = dao.createLocal();
+        proto.setClusterId(clusterTbl.getId()).setFromDcId(fromDc.getId())
+                .setSrcDcId(srcDc.getId()).setToDcId(toDc.getId());
+
+        queryHandler.handleInsert(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.insert(proto);
+            }
+        });
+    }
+
 }

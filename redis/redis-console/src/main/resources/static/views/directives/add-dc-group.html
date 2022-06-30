@@ -1,0 +1,262 @@
+<div>
+    <a class="btn btn-warning" type="button" ng-click="preCreateDcGroup()">
+        增加 dc_group
+    </a>
+
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr>
+            <td> DC </td>
+            <td> group_name </td>
+            <td> group_type </td>
+            <td> shard_num </td>
+            <td> 操作 </td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="dcClusterModel in dcClusterModels">
+            <td>{{dcClusterModel.dc.dc_name}}</td>
+            <td>{{dcClusterModel.dcCluster.groupName}}</td>
+            <td>{{dcClusterModel.dcCluster.groupType}}</td>
+            <td>{{dcClusterModel.shardNum}}</td>
+            <td>
+                <a ng-click="preUpdateDcGroup(dcClusterModel.dc.dc_name)">编辑</a>
+                <a ng-click="deleteDcGroup($index)" style="color:red">删除</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr>
+            <td> Shard 名称</td>
+            <td> Shard 监控</td>
+            <td> 操作 </td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="drMasterShard in drMasterShards">
+            <td>{{drMasterShard.shardName}}</td>
+            <td>{{drMasterShard.setinelMonitorName}}</td>
+            <td>
+                <a ng-click="preUpdateDrMasterShardModel($index)">编辑</a>
+            </td>
+        </tr>
+        <tr ng-repeat="masterShard in allMasterShards">
+            <td>{{masterShard.shardName}}</td>
+            <td>{{masterShard.setinelMonitorName}}</td>
+            <td>
+                <a ng-click="preUpdateMasterShardModel($index)">编辑</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <form class="modal fade form-horizontal" id="createDcGroupModal" tabindex="-1" role="dialog"
+          ng-submit="createDcGroup()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header panel-primary">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <div class="modal-title">
+                        <span>编辑DC信息</span>
+                    </div>
+                </div>
+
+                <div class="modal-body form-horizontal">
+                    <div ng-repeat="toCreateDcGroup in toCreateDcGroups">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateDcGroup.dc.dc_name"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in allDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> group_name </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateDcGroup.dcCluster.groupName"
+                                        allow_single_deselect="true"
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="groupName for groupName in groupNames[toCreateDcGroup.dc.dc_name]"
+                                >
+                                    <option value=""/>
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> group_type</label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateDcGroup.dcCluster.groupType"
+                                        allow_single_deselect="true"
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="groupType for groupType in groupTypes"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> shard_num </label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" ng-model="toCreateDcGroup.shardNum"
+                                       style="width:200px;" ng-required="true">
+                            </div>
+                            <div class="col-md-2" ng-show="$index >= 1">
+                                <button class="btn btn-danger btn-xs" type="button"
+                                        ng-click="removeToCreateDcGroups($index)">remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group text-center">
+                        <button class="btn btn-default btn-xs" type="button" ng-click="addOtherDcGroup()">
+                            add Other Dc
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"> 取消</button>
+                    <button type="submit" class="btn btn-primary"> 创建</button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+
+    <form class="modal fade form-horizontal" id="updateDcGroupModal" tabindex="-1" role="dialog"
+          ng-submit="updateDcGroup()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header panel-primary">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <div class="modal-title">
+                        <span>编辑DC信息</span>
+                    </div>
+                </div>
+
+                <div class="modal-body form-horizontal">
+                    <div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateDcGroup.dc.dc_name"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-disabled="true"
+                                        ng-options="dcName for dcName in allDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> group_name </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateDcGroup.dcCluster.groupName"
+                                        allow_single_deselect="true"
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="groupName for groupName in groupNames[toUpdateDcGroup.dc.dc_name]"
+                                >
+                                    <option value=""/>
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> group_type</label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateDcGroup.dcCluster.groupType"
+                                        allow_single_deselect="true"
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="groupType for groupType in groupTypes"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> shard_num </label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" ng-model="toUpdateDcGroup.shardNum"
+                                       style="width:200px;" ng-required="true">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal"> 取消</button>
+                        <button type="submit" class="btn btn-primary"> 确认</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <form class="modal fade form-horizontal" id="updateShardModal" tabindex="-1" role="dialog"
+          ng-submit="updateShardModel()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header panel-primary">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <div class="modal-title">
+                        <span>编辑shard</span>
+                    </div>
+                </div>
+
+                <div class="modal-body form-horizontal">
+                    <div class="form-group" valdr-form-group>
+                        <label class="col-sm-4 control-label">
+                            <apollorequiredfiled></apollorequiredfiled>
+                            shard 名称
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toUpdateShardModel.shardName"
+                                   ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"
+                                   ng-change="shardNameChanged()">
+                        </div>
+                    </div>
+                    <div class="form-group" valdr-form-group>
+                        <label class="col-sm-4 control-label">
+                            sentinel 监控名称
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toUpdateShardModel.setinelMonitorName"
+                                   ng-required="true" pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"> 取消 </button>
+                    <button type="submit" class="btn btn-primary"> 确定 </button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>

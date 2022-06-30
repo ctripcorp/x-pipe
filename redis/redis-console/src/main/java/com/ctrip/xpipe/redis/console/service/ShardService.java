@@ -14,7 +14,7 @@ public interface ShardService {
 	List<ShardTbl> findAllByClusterName(String clusterName);
 	List<ShardTbl> findAllShardNamesByClusterName(String clusterName);
 	ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels);
-	ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels);
+    ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels);
 	void deleteShard(String clusterName, String shardName);
 	void deleteShards(ClusterTbl cluster, List<String> shardNames);
 	List<ShardListModel> findAllUnhealthy();

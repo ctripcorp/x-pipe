@@ -83,6 +83,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
+	@Autowired
+	private ReplDirectionService replDirectionService;
+
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
 	private static final String PROXY_SPLITTER = "\\s*-\\s*";
@@ -192,6 +195,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<DcTbl> allDcs = clusterModel.getDcs();
 		List<ShardModel> shards = clusterModel.getShards();
 		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+		List<ReplDirectionInfoModel> replDirections = clusterModel.getReplDirections();
+		List<DcClusterModel> dcClusters = clusterModel.getDcClusters();
 
 		// ensure active dc assigned
 		if(!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
@@ -236,6 +241,39 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if(shards != null){
 			for (ShardModel shard : shards) {
 				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+			}
+		}
+
+		if (replDirections != null) {
+			for (ReplDirectionInfoModel replDirection : replDirections) {
+				replDirectionService.addReplDirectionByInfoModel(replDirection);
+			}
+		}
+
+		if (dcClusters != null) {
+			for (DcClusterModel dcCluster : dcClusters) {
+				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
+				if (dcTbl == null) {
+					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
+				}
+				List<ShardTbl> shardTbls = new ArrayList<>();
+				dcCluster.getShards().forEach(shardModel -> {
+					// if already has dcClusters it will create all dcClusterShard in all related Dc
+					shardTbls.add(shardService.findOrCreateShardIfNotExist(result.getClusterName(),
+							shardModel.getShardTbl(), sentinelBalanceService.selectMultiDcSentinels(clusterType)));
+				});
+
+				queryHandler.handleQuery(new DalQuery<Integer>() {
+					@Override
+					public Integer doQuery() throws DalException {
+						ClusterType clusterType=ClusterType.lookup(result.getClusterType());
+						if (consoleConfig.supportSentinelHealthCheck(clusterType, result.getClusterName()))
+							return clusterDao.addDcCluster(dcCluster, result, dcTbl, shardTbls,
+									sentinelBalanceService.selectSentinel(dcTbl.getDcName(), clusterType));
+						else
+							return clusterDao.addDcCluster(dcCluster, result, dcTbl, shardTbls, null);
+					}
+				});
 			}
 		}
 

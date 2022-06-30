@@ -17,4 +17,6 @@ public interface ReplDirectionService {
                                                                          String srcDcName, String toDcName);
 
     List<ReplDirectionInfoModel> findReplDirectionInfoModelsByClusterAndToDc(String cluterName, String toDcName);
+
+    void addReplDirectionByInfoModel(ReplDirectionInfoModel replDirectionInfoModel);
 }

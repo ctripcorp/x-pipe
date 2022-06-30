@@ -282,12 +282,14 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function createCluster(cluster, selectedDcs, shards) {
+    function createCluster(cluster, selectedDcs, shards, dcClusters, replDirections) {
         var d = $q.defer();
         resource.create_cluster({}, {
                 clusterTbl: cluster,
                 dcs: selectedDcs,
-                shards: shards
+                shards: shards,
+                dcClusters: dcClusters,
+                replDirections: replDirections
             },
             function (result) {
                 d.resolve(result);
