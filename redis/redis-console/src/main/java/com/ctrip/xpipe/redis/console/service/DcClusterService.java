@@ -19,5 +19,7 @@ public interface DcClusterService {
 	List<DcClusterTbl> findClusterRelated(long clusterId);
 	List<DcClusterCreateInfo> findClusterRelated(String clusterName);
 
-	DcClusterModel findDcClusterModel(String clusterName, String dcName);
+	DcClusterModel findDcClusterModelByClusterAndDc(String clusterName, String dcName);
+
+	List<DcClusterModel> findDcClusterModelsByCluster(String clusterName);
 }

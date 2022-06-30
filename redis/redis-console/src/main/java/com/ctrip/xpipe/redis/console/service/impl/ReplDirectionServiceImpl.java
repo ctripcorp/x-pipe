@@ -56,6 +56,24 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
+    public List<ReplDirectionInfoModel> findAllReplDirectionInfoModelsByCluster(String clusterName) {
+
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            throw new IllegalArgumentException(String.format("cluster %s does not exist", clusterName));
+        }
+        List<ReplDirectionTbl> replDirectionTbls = findAllReplDirectionTblsByCluster(clusterTbl.getId());
+
+        Map<Long, String> dcNameMap = dcService.dcNameMap();
+        List<ReplDirectionInfoModel> result = new ArrayList<>();
+        for (ReplDirectionTbl replDirectionTbl : replDirectionTbls) {
+            result.add(convertReplDirectionTblToReplDirectionInfoModel(replDirectionTbl, dcNameMap));
+        }
+
+        return result;
+    }
+
+    @Override
     public ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName) {
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {

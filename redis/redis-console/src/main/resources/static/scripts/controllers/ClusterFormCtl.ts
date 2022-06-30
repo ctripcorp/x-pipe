@@ -2,11 +2,11 @@ angular
     .module('index')
     .controller('ClusterFromCtl', ClusterFromCtl);
 
-ClusterFromCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window',
-    'toastr', 'AppUtil', 'ClusterService', 'DcService', 'SentinelService', 'ClusterType'];
+ClusterFromCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'ClusterService',
+      'DcService', 'DcClusterService', 'ReplDirectionService', 'SentinelService', 'ClusterType'];
 
-function ClusterFromCtl($rootScope, $scope, $stateParams, $window,
-                        toastr, AppUtil, ClusterService, DcService, SentinelService, ClusterType) {
+function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUtil,
+    ClusterService, DcService, DcClusterService, ReplDirectionService, SentinelService, ClusterType) {
 
     $rootScope.currentNav = '1-3';
 
@@ -114,9 +114,49 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window,
                     $scope.clusterTypeName = clusterType.name
                     $scope.selectedType = clusterType.value
                     $scope.showActiveDc = !clusterType.multiActiveDcs
+                    $scope.activeDcName = getDcName(result.activedcId);
+                    $scope.drMasterDcs.push($scope.activeDcName);
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
-                })
+                });
+
+            ReplDirectionService.findReplDirectionByCluster(clusterName)
+                .then(function (result) {
+                    $scope.replDirections = result;
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+
+            DcClusterService.findDcClusterByCluster(clusterName)
+                .then(function (result) {
+                    $scope.dcClusterModels = result;
+                    $scope.dcClusterModels.forEach(function(dcClusterModel){
+                        if (dcClusterModel.dcCluster.groupType == true ) {
+                            dcClusterModel.dcCluster.groupType = $scope.groupTypes[1];
+                            dcClusterModel.shardNum = dcClusterModel.shards.length;
+                            if (dcClusterModel.dc.dc_name == $scope.activeDcName) {
+                                $scope.drMasterShards=[];
+                                dcClusterModel.shards.forEach(function(shard) {
+                                    $scope.drMasterShards.push(shard.shardTbl);
+                                });
+
+                            }
+                        } else if (dcClusterModel.dcCluster.groupType == false) {
+                            $scope.masterShards[dcClusterModel.dcCluster.groupName] = [];
+                            dcClusterModel.dcCluster.groupType = $scope.groupTypes[0];
+                            dcClusterModel.shardNum = dcClusterModel.shards.length;
+                            var index = 0;
+                            dcClusterModel.shards.forEach(function(shard){
+                                shard.shardTbl.shardGroup = dcClusterModel.dcCluster.groupName;
+                                shard.shardTbl.groupIndex = index++;
+                                $scope.masterShards[dcClusterModel.dcCluster.groupName].push(shard.shardTbl);
+                            });
+                        }
+                    });
+                    updateAllMasterShards();
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
         } else {
             $scope.cluster = {};
             $scope.clusterRelatedDcs = [];

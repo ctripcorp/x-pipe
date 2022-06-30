@@ -128,7 +128,7 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
 
     @Test
     public void testFindDcClusterModel() {
-        DcClusterModel fra = dcClusterService.findDcClusterModel("hetero-cluster", "fra");
+        DcClusterModel fra = dcClusterService.findDcClusterModelByClusterAndDc("hetero-cluster", "fra");
 
         Assert.assertEquals(1, fra.getShards().size());
         Assert.assertEquals(2, fra.getShards().get(0).getRedises().size());
@@ -139,7 +139,7 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, fra.getSources().get(0).getShards().get(0).getAppliers().size());
         Assert.assertEquals(2, fra.getSources().get(0).getShards().get(1).getAppliers().size());
 
-        DcClusterModel jq = dcClusterService.findDcClusterModel("hetero-cluster", "jq");
+        DcClusterModel jq = dcClusterService.findDcClusterModelByClusterAndDc("hetero-cluster", "jq");
         Assert.assertEquals(2, jq.getShards().size());
         Assert.assertEquals(2, jq.getShards().get(0).getRedises().size());
         Assert.assertEquals(2, jq.getShards().get(0).getKeepers().size());
@@ -147,5 +147,18 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, jq.getShards().get(1).getKeepers().size());
 
         Assert.assertNull(jq.getSources());
+    }
+
+    @Test
+    public void testFindDcClusterModelByCluster() {
+        List<DcClusterModel> dcClusterModels = dcClusterService.findDcClusterModelsByCluster("hetero-cluster");
+        Assert.assertEquals(3, dcClusterModels.size());
+
+        try {
+            dcClusterModels = dcClusterService.findDcClusterModelsByCluster("none");
+        } catch (Exception e) {
+            Assert.assertEquals(String.format("cluster %s does not exist", "none"), e.getMessage());
+        }
+
     }
 }
