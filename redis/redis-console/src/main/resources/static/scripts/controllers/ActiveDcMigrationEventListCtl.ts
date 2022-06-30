@@ -12,16 +12,19 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
     $scope.operator = undefined;
     $scope.type = undefined;
     $scope.types = ["All", "Init", "Processing", "Success", "Fail"];
+    $scope.filterTestCluster = false;
 
     $scope.onClusterChange = function() {
         $scope.operator = undefined;
         $scope.type = undefined;
+        $scope.filterTestCluster = false;
         $scope.refresh();
     }
 
     $scope.onOperatorChange = function() {
         $scope.clusterName = undefined;
         $scope.type = undefined;
+        $scope.filterTestCluster = false;
         $scope.refresh();
     }
 
@@ -29,6 +32,14 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
         console.log("ActiveDcMigrationEventListCtl: onStatusChange", type);
         $scope.clusterName = undefined;
         $scope.operator = undefined;
+        $scope.filterTestCluster = false;
+        $scope.refresh();
+    }
+
+    $scope.onTestFilterChanged = function() {
+        $scope.clusterName = undefined;
+        $scope.operator = undefined;
+        $scope.type = undefined;
         $scope.refresh();
     }
 
@@ -47,6 +58,8 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
                 promise = MigrationService.findByMigrationStatusType($scope.page - 1, $scope.size, $scope.type);
             } else if (!!$scope.operator) {
                 promise = MigrationService.findByOperator($scope.page - 1, $scope.size, $scope.operator);
+            } else if ($scope.filterTestCluster) {
+                promise = MigrationService.findWithoutTestClusters($scope.page - 1, $scope.size);
             } else {
                 promise = MigrationService.find($scope.page - 1, $scope.size, $scope.clusterName)
             }

@@ -1710,8 +1710,10 @@
 		<var name="size" value-type="long" />
 		<var name="offset" value-type="long" />
 		<var name="operator" value-type="String" />
+		<var name="event-ids" value-type="java.util.List&lt;Long&gt;" />
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+		<member name="migEventCnt" value-type="long" select-expr=" COUNT(distinct mct.migration_event_id) migEventCnt" all="false" />
 
 		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
@@ -1720,6 +1722,12 @@
 		<readsets>
 			<readset name="COUNT" >
 				<member name="count" />
+			</readset>
+			<readset name="MIG_EVENT_CNT">
+				<member name="migEventCnt" />
+			</readset>
+			<readset name="MIG_EVENT_ID">
+				<member name="migration-event-id" />
 			</readset>
 			<readset name="STATUS" >
 				<member name="status" />
@@ -1849,6 +1857,42 @@
 					<![CDATA[
 					SELECT <FIELDS /> FROM <TABLE/>
 					WHERE <FIELD name='status'/> = ${status}
+					AND <FIELD name='deleted' /> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-migration-events-without-test-cluster" type="SELECT" multiple="true">
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>, <TABLE name='cluster' />
+					WHERE <FIELD name='cluster-id'/> = ct.id
+					AND ct.cluster_name not like 'test\_%'
+					AND <FIELD name='deleted' /> = 0
+					GROUP BY <FIELD name='migration-event-id'/>
+					ORDER BY <FIELD name='migration-event-id'/> DESC LIMIT ${size} OFFSET ${offset}
+					]]>
+				</statement>
+			</query>
+			<query name="find-migration-clusters-by-mig-events" type="SELECT" multiple="true">
+				<param name="event-ids"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>, <TABLE name='migration-event' />, <TABLE name='cluster' />
+					WHERE <FIELD name='migration-event-id'/> IN <IN>${event-ids}</IN>
+					AND <FIELD name='cluster-id'/> = ct.id
+					AND <FIELD name='migration-event-id'/> = met.id
+					ORDER BY <FIELD name='migration-event-id'/> DESC
+					]]>
+				</statement>
+			</query>
+			<query name="count-events-without-test-cluster" type="SELECT">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>, <TABLE name='cluster' />
+					WHERE <FIELD name='cluster-id'/> = ct.id
+					AND ct.cluster_name not like 'test\_%'
 					AND <FIELD name='deleted' /> = 0
 					]]>
 				</statement>
