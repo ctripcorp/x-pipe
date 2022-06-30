@@ -30,6 +30,14 @@
 			<div class="col-md-2">
 				<dynamic-string-value-select title="MigrationStatus" [values]="types" [(value)]="type" (selected)="onStatusChange($event)"></dynamic-string-value-select>
 			</div>
+			<div class="col-md-2">
+				<div class="checkbox">
+					<label>
+						<input ng-model="filterTestCluster" type="checkbox" class="ace" ng-change="onTestFilterChanged()" />
+						<span class="lbl">过滤测试集群</span>
+					</label>
+				</div>
+			</div>
 		</div>
 
 		<table ng-table="tableParams" class="table table-striped table-hover">
