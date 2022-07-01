@@ -525,7 +525,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 if (replDirection.getToDcId() == dcId) {
                     if (!isDRMaster(dcClusterTbl)) {
                         SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirection.getSrcDcId(), replDirection.getFromDcId());
-                        buildSourceShardMetas(sourceMeta, clusterId, replDirection.getSrcDcId());
+                        buildSourceShardMetas(sourceMeta, clusterMeta.getId(), clusterId, replDirection.getSrcDcId());
                     }
                 }
                 if (replDirection.getFromDcId() == dcId) {
@@ -534,7 +534,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             }
         }
 
-        private void buildSourceShardMetas(SourceMeta sourceMeta, long clusterId, long srcDcId) {
+        private void buildSourceShardMetas(SourceMeta sourceMeta, String clusterName, long clusterId, long srcDcId) {
             DcClusterTbl dcClusterTbl = getDcClusterInfo(clusterId, srcDcId);
             if (dcClusterTbl == null) {
                 getLogger().warn("[buildSourceShardMetas] dcCluster not found; clusterId={}", clusterId);
@@ -555,10 +555,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 }
             }
 
-            addApplierAndAddShardIfNotExists(clusterId, sourceMeta);
+            addApplierAndAddShardIfNotExists(clusterName, clusterId, sourceMeta);
         }
 
-        private void addApplierAndAddShardIfNotExists(long clusterId, SourceMeta sourceMeta) {
+        private void addApplierAndAddShardIfNotExists(String clusterName, long clusterId, SourceMeta sourceMeta) {
             List<Long> repIds = replDirectionTblList
                     .stream()
                     .filter(a -> clusterId == a.getClusterId() && a.getToDcId() == dcId)
@@ -579,6 +579,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 applierMeta.setPort(applierTbl.getPort());
                 applierMeta.setActive(applierTbl.isActive());
                 applierMeta.setApplierContainerId(applierTbl.getContainerId());
+                applierMeta.setTargetClusterName(applierTbl.getTargetClusterName() == null? clusterName: applierTbl.getTargetClusterName());
                 shardMeta.addApplier(applierMeta);
             }
         }

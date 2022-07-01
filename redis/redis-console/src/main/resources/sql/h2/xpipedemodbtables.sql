@@ -351,6 +351,7 @@ CREATE TABLE `applier_tbl` (
   ip varchar(40) NOT NULL DEFAULT '0.0.0.0',
   port int(11) NOT NULL DEFAULT 0,
   active tinyint(1) NOT NULL DEFAULT 0,
+  `target_cluster_name` varchar(128) DEFAULT NULL COMMENT 'target cluster name',
   container_id bigint(20) NOT NULL DEFAULT 0,
   DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
   deleted tinyint(1) NOT NULL DEFAULT 0,
