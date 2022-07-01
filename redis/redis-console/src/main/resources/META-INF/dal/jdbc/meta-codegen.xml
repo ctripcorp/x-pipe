@@ -461,6 +461,7 @@
     <member name="ip" field="ip" value-type="String" length="40" nullable="false" />
     <member name="port" field="port" value-type="int" length="10" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
+    <member name="target-cluster-name" field="target_cluster_name" value-type="String" length="128" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="deleted-at" field="deleted_at" value-type="int" length="10" nullable="false" />

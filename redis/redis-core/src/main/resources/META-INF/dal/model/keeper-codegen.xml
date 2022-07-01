@@ -90,6 +90,7 @@
   <entity name="applier">
     <attribute name="id" value-type="String" />
     <attribute name="ip" value-type="String" />
+    <attribute name="targetClusterName" value-type="String"/>
     <attribute name="port" value-type="int" />
     <attribute name="active" value-type="boolean" />
     <attribute name="applierContainerId" value-type="int" />

@@ -122,7 +122,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         for (SourceMeta sourceMeta : clusterMeta.getSources()) {
             for (ShardMeta shardMeta : sourceMeta.getShards().values()) {
                 for (ApplierMeta applierMeta : shardMeta.getAppliers()) {
-                    addApplier(clusterMeta.getId(), clusterMeta.getDbId(), shardMeta.getDbId(), applierMeta);
+                    addApplier(clusterMeta.getDbId(), shardMeta.getDbId(), applierMeta);
                 }
             }
         }
@@ -131,7 +131,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
         ClusterMeta cluster = comparator.getCurrent();
-        comparator.accept(new ClusterComparatorVisitor(cluster.getId(), cluster.getDbId()));
+        comparator.accept(new ClusterComparatorVisitor(cluster.getDbId()));
     }
 
     @Override
@@ -168,9 +168,9 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         return result;
     }
 
-    private void addApplier(String clusterId, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+    private void addApplier(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
         try {
-            applierStateController.addApplier(new ApplierTransMeta(clusterId, clusterDbId, shardDbId, applierMeta));
+            applierStateController.addApplier(new ApplierTransMeta(applierMeta.getTargetClusterName(), clusterDbId, shardDbId, applierMeta));
         } catch (Exception e) {
             logger.error(String.format("[addApplier]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, applierMeta), e);
         }
@@ -210,11 +210,9 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
 
-        private String clusterId;
         private Long clusterDbId;
 
-        public ClusterComparatorVisitor(String clusterId, Long clusterDbId) {
-            this.clusterId = clusterId;
+        public ClusterComparatorVisitor(Long clusterDbId) {
             this.clusterDbId = clusterDbId;
         }
 
@@ -222,7 +220,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public void visitAdded(ShardMeta added) {
             logger.info("[visitAdded][add shard]{}", added);
             for (ApplierMeta applierMeta : added.getAppliers()) {
-                addApplier(clusterId, clusterDbId, added.getDbId(), applierMeta);
+                addApplier(clusterDbId, added.getDbId(), applierMeta);
             }
         }
 
@@ -230,7 +228,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
             ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
             ShardMeta shard = shardMetaComparator.getCurrent();
-            shardMetaComparator.accept(new ShardComparatorVisitor(clusterId, clusterDbId, shard.getDbId()));
+            shardMetaComparator.accept(new ShardComparatorVisitor(clusterDbId, shard.getDbId()));
         }
 
         @Override
@@ -244,12 +242,10 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     protected class ShardComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
 
-        private String clusterId;
         private Long clusterDbId;
         private Long shardDbId;
 
-        protected ShardComparatorVisitor(String clusterId, Long clusterDbId, Long shardDbId) {
-            this.clusterId = clusterId;
+        protected ShardComparatorVisitor(Long clusterDbId, Long shardDbId) {
             this.clusterDbId = clusterDbId;
             this.shardDbId = shardDbId;
         }
@@ -257,7 +253,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         @Override
         public void visitAdded(InstanceNode added) {
             if (added instanceof ApplierMeta) {
-                addApplier(clusterId, clusterDbId, shardDbId, (ApplierMeta) added);
+                addApplier(clusterDbId, shardDbId, (ApplierMeta) added);
             } else {
                 logger.debug("[visitAdded][do nothing]{}", added);
             }
