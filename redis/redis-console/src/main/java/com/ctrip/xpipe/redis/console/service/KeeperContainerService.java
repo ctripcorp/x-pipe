@@ -9,6 +9,7 @@ import java.util.List;
 public interface KeeperContainerService {
 
 	KeepercontainerTbl find(long id);
+	List<KeepercontainerTbl> findAll();
 	List<KeepercontainerTbl> findAllByDcName(String dcName);
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);
 	List<KeepercontainerTbl> findKeeperCount(String dcName);

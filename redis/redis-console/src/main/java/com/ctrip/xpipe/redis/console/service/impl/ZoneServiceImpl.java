@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author taotaotu
@@ -33,6 +35,12 @@ public class ZoneServiceImpl extends AbstractConsoleService<ZoneTblDao> implemen
     @Override
     public List<ZoneTbl> findAllZones() {
         return zoneDao.findAllZones();
+    }
+
+    @Override
+    public Map<Long, String> zoneNameMap() {
+        List<ZoneTbl> zoneTblList = findAllZones();
+        return zoneTblList.stream().collect(Collectors.toMap(ZoneTbl::getId, ZoneTbl::getZoneName));
     }
 
     @Override

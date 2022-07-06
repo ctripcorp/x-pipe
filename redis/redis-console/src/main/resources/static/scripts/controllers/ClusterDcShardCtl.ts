@@ -2,19 +2,21 @@ angular
     .module('index')
     .controller('ClusterCtl', ClusterCtl);
 
-ClusterCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location',
-    'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'HealthCheckService', 'ProxyService', 'ClusterType'];
+ClusterCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location','toastr', 'AppUtil',
+'ClusterService', 'DcClusterService', 'HealthCheckService', 'ProxyService', 'ClusterType'];
 
-function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService, ProxyService, ClusterType) {
+function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService,
+    DcClusterService, HealthCheckService, ProxyService, ClusterType) {
 
     $scope.dcs, $scope.shards;
     $scope.clusterName = $stateParams.clusterName;
     $scope.routeAvail = false;
+
     $scope.activeDcName;
+    $scope.sources=[];
 
     $scope.switchDc = switchDc;
     $scope.loadCluster = loadCluster;
-    $scope.loadShards = loadShards;
     $scope.gotoHickwall = gotoHickwall;
     $scope.gotoOutComingTrafficToPeerHickwall = gotoOutComingTrafficToPeerHickwall;
     $scope.gotoInComingTrafficFromPeerHickwall = gotoInComingTrafficFromPeerHickwall;
@@ -33,7 +35,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     function switchDc(dc) {
         $scope.currentDcName = dc.dcName;
         existsRoute($scope.currentDcName, $scope.clusterName);
-        loadShards($scope.clusterName, dc.dcName);
+        loadDcCluster($scope.clusterName, $scope.currentDcName);
     }
 
     function loadCluster() {
@@ -75,7 +77,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                         }
 
                         existsRoute($scope.currentDcName, $scope.clusterName);
-                        loadShards($scope.clusterName, $scope.currentDcName);
+                        loadDcCluster($scope.clusterName, $scope.currentDcName);
                     }, function(result) {
                         $scope.currentDcName = $scope.dcs[0].dcName;
                         switchDc($scope.dcs[0]);
@@ -85,24 +87,42 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
-
-
     }
 
-    function loadShards(clusterName, dcName) {
-        console.log("loadShards", clusterName, dcName)
-        ShardService.findClusterDcShards(clusterName, dcName)
+
+    function loadDcCluster(clusterName, dcName) {
+        $scope.sources = [];
+        $scope.shards = [];
+        DcClusterService.findDcCluster(clusterName, dcName)
             .then(function (result) {
-                $scope.shards = result.sort((v1, v2) => {
-                    if (v1.shardTbl.shardName.length != v2.shardTbl.shardName.length)
-                        return v1.shardTbl.shardName.length - v2.shardTbl.shardName.length;
-                    if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
-                    else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
-                    else return 0;
-                });
+                $scope.dcCluster = result;
+
+                if (result.shards != null) {
+                    $scope.shards = result.shards.sort((v1, v2) => {
+                        if (v1.shardTbl.shardName.length != v2.shardTbl.shardName.length)
+                            return v1.shardTbl.shardName.length - v2.shardTbl.shardName.length;
+                        if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
+                        else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
+                        else return 0;
+                    });
+                }
+               if (result.sources != null) {
+                   result.sources.forEach(source => {
+                       source.shards = source.shards.sort((v1, v2) => {
+                           if (v1.shardTbl.shardName.length != v2.shardTbl.shardName.length)
+                               return v1.shardTbl.shardName.length - v2.shardTbl.shardName.length;
+                           if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
+                           else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
+                           else return 0;
+                       });
+                       $scope.sources.push(source);
+                   });
+               }
+
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
+
     }
 
     function checkCrossMasterDelay() {

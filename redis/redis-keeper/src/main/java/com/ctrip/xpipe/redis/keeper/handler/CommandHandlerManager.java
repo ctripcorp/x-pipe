@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.CommandHandler;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Arrays;
@@ -24,7 +25,7 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		initCommands();
 	}
 
-	private void initCommands() {
+	protected void initCommands() {
 		
 		putHandler(new ReplconfHandler());
 		putHandler(new PsyncHandler());
@@ -40,10 +41,9 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		putHandler(new ClientCommandHandler());
 		putHandler(new RoleCommandHandler());
 		putHandler(new ProxyCommandHandler());
-		putHandler(new ApplierCommandHandler());
 	}
 
-	private void putHandler(CommandHandler handler) {
+	protected void putHandler(CommandHandler handler) {
 		
 		for(String commandName : handler.getCommands()){
 			

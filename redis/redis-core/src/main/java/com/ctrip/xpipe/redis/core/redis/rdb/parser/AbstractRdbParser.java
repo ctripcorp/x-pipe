@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbLenType;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.google.common.primitives.UnsignedLong;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
+import com.ctrip.xpipe.redis.core.redis.rdb.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -28,6 +27,8 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
     private RdbLenType lenType;
 
     private ByteBuf lenTemp;
+
+    private ByteBuf millSecondTemp;
 
     private int lenNeedBytes = -1;
 
@@ -76,7 +77,7 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
                     }
                     lenTemp = readUntilBytesEnough(byteBuf, lenTemp, lenNeedBytes);
                     if (lenTemp.readableBytes() == lenNeedBytes) {
-                        int lenValue = parseUnsignedLong(lenTemp, lenType);
+                        long lenValue = parseUnsignedLong(lenTemp, lenType);
                         RdbLength rdbLength = new RdbLength(lenType, lenValue);
                         lenReadState = LEN_READ_STATE.READ_INIT;
                         lenTemp.release();
@@ -109,7 +110,32 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
         }
     }
 
-    private int parseUnsignedLong(ByteBuf byteBuf, RdbLenType lenType) {
+    protected Long readMillSecond(ByteBuf src, RdbParseContext context) {
+        millSecondTemp = readUntilBytesEnough(src, millSecondTemp, 8);
+        long millSecond;
+        if (millSecondTemp.readableBytes() == 8) {
+            if (context.getRdbVersion() >= 9) {
+                millSecond = millSecondTemp.readLongLE();
+            } else {
+                millSecond = millSecondTemp.readLong();
+            }
+        } else return null;
+
+        millSecondTemp = null;
+        return millSecond;
+    }
+
+    protected void propagateExpireAtIfNeed(RedisKey redisKey, long expireTimeMilli) {
+        if (null == redisKey || expireTimeMilli <= 0) return;
+
+        byte[] expireAt = String.valueOf(expireTimeMilli).getBytes();
+        notifyRedisOp(new RedisOpSingleKey(
+                RedisOpType.PEXPIREAT, new byte[][] {
+                RedisOpType.PEXPIREAT.name().getBytes(), redisKey.get(), expireAt},
+                redisKey, expireAt));
+    }
+
+    private long parseUnsignedLong(ByteBuf byteBuf, RdbLenType lenType) {
         boolean hasSkipTypeBits = lenType.needSkipLenTypeByte();
         long rawLong = 0;
         while (byteBuf.readableBytes() > 0) {
@@ -121,10 +147,10 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
             rawLong = (rawLong << 8) | unsignedByte;
         }
 
-        if (rawLong < 0 || rawLong > Integer.MAX_VALUE) {
-            throw new UnsupportedOperationException("unsupport huge len " + UnsignedLong.fromLongBits(rawLong));
+        if (rawLong < 0) {
+            throw new UnsupportedOperationException("unsupport unsigned long in rdb len");
         }
-        return (int) rawLong;
+        return rawLong;
     }
 
     protected void notifyRedisOp(RedisOp redisOp) {

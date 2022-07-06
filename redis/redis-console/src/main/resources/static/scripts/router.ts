@@ -116,7 +116,7 @@ function router($stateProvider, $urlRouterProvider) {
         	controller: 'ClusterDesignatedRoutesUpdateCtl'
         })
         .state('cluster_dc_shard_update', {
-        	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',
+        	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName&srcDcName',
         	templateUrl: 'views/index/cluster_dc_shard_update.html',
         	controller: 'ClusterDcShardUpdateCtl'
         })
@@ -183,6 +183,16 @@ function router($stateProvider, $urlRouterProvider) {
             url: '/keepercontainers',
             templateUrl: 'views/index/keepercontainer_list.html',
             controller : 'KeeperContainerListCtl',
+        })
+        .state('appliercontainer_list', {
+            url: '/appliercontainers',
+            templateUrl: 'views/index/appliercontainer_list.html',
+            controller : 'AppliercontainerListCtl',
+        })
+        .state('appliercontainer_form',{
+            url: '/appliercontainer_form?id&type',
+            templateUrl: 'views/index/appliercontainer_form.html',
+            controller: 'AppliercontainerFormCtl'
         });
 
 }
