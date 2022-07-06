@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.google.common.collect.Maps;
 
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,9 +19,15 @@ public class DefaultRdbParseContext implements RdbParseContext {
 
     private EnumMap<RdbType, RdbParser> parsers = new EnumMap<>(RdbType.class);
 
+    private List<RdbParseContext> otherParsers = new LinkedList<>();
+
     private Set<RdbParseListener> listeners = new HashSet<>();
 
     private AtomicInteger dbId = new AtomicInteger();
+
+    private AtomicInteger version = new AtomicInteger();
+
+    private AtomicReference<RdbType> currentType = new AtomicReference<>();
 
     private Map<String, String> auxMap = Maps.newConcurrentMap();
 
@@ -37,7 +40,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
     private AtomicInteger lfuFreq = new AtomicInteger(-1);
 
     @Override
-    public void bindRdbParser(RdbParser<?> parser) {
+    public synchronized void bindRdbParser(RdbParser<?> parser) {
         listeners.forEach(parser::registerListener);
     }
 
@@ -62,6 +65,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
         synchronized (this) {
             if (listeners.add(listener)) {
                 parsers.values().forEach(parser -> parser.registerListener(listener));
+                otherParsers.forEach(parser -> parser.registerListener(listener));
             }
         }
     }
@@ -73,6 +77,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
         synchronized (this) {
             if (listeners.remove(listener)) {
                 parsers.values().forEach(parser -> parser.unregisterListener(listener));
+                otherParsers.forEach(parser -> parser.unregisterListener(listener));
             }
         }
     }
@@ -86,6 +91,28 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public int getDbId() {
         return this.dbId.get();
+    }
+
+    @Override
+    public RdbParseContext setRdbVersion(int version) {
+        this.version.set(version);
+        return this;
+    }
+
+    @Override
+    public int getRdbVersion() {
+        return version.get();
+    }
+
+    @Override
+    public RdbParseContext setCurrentType(RdbType rdbType) {
+        this.currentType.set(rdbType);
+        return this;
+    }
+
+    @Override
+    public RdbType getCurrentType() {
+        return currentType.get();
     }
 
     @Override
@@ -146,6 +173,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public void clearKvContext() {
         this.redisKey.set(null);
+        this.currentType.set(null);
         this.expireMilli.set(0);
         this.lruIdle.set(-1);
         this.lfuFreq.set(-1);

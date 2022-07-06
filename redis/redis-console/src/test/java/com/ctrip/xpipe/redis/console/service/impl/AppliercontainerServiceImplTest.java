@@ -23,28 +23,28 @@ public class AppliercontainerServiceImplTest extends AbstractServiceImplTest {
     @Test
     public void testFind() {
         for (int i = 1; i < 10; i++) {
-            logger.info(appliercontainerService.find(i).toString());
+            logger.info(appliercontainerService.findAppliercontainerTblById(i).toString());
         }
-        AppliercontainerTbl appliercontainerTbl = appliercontainerService.find(5);
+        AppliercontainerTbl appliercontainerTbl = appliercontainerService.findAppliercontainerTblById(5);
         Assert.assertNotNull(appliercontainerTbl);
         Assert.assertEquals("127.0.0.5", appliercontainerTbl.getAppliercontainerIp());
     }
 
     @Test
     public void testFindByDcName() {
-        List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllByDc("oy");
+        List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainerTblsByDc("oy");
         Assert.assertEquals(3, appliercontainers.size());
 
         List<AppliercontainerCreateInfo> appliercontainerCreateInfos = appliercontainerService.findAllAppliercontainerCreateInfosByDc("oy");
         Assert.assertEquals(3, appliercontainerCreateInfos.size());
 
-        appliercontainers = appliercontainerService.findAllActiveByDc("oy");
+        appliercontainers = appliercontainerService.findAllActiveAppliercontainersByDc("oy");
         Assert.assertEquals(2, appliercontainers.size());
     }
 
     @Test
     public void testFindByAzId() {
-        List<AppliercontainerTbl> appliercontainers = appliercontainerService.findByAz(1L);
+        List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainersByAz(1L);
         Assert.assertEquals(4, appliercontainers.size());
     }
 
@@ -147,7 +147,7 @@ public class AppliercontainerServiceImplTest extends AbstractServiceImplTest {
     @Test
     public void testFindBestAppliercontainer() {
         List<AppliercontainerTbl> bestAppliercontainers =
-                appliercontainerService.findBestApplierContainersByDcCluster("fra", "hetero-cluster");
+                appliercontainerService.findBestAppliercontainersByDcCluster("fra", "hetero-cluster");
         Assert.assertEquals(2, bestAppliercontainers.size());
         Assert.assertEquals(true, bestAppliercontainers.get(0).getAppliercontainerId() < 10);
         Assert.assertEquals(true, bestAppliercontainers.get(1).getAppliercontainerId() < 10);
@@ -155,7 +155,7 @@ public class AppliercontainerServiceImplTest extends AbstractServiceImplTest {
                 bestAppliercontainers.get(1).getAppliercontainerAz());
 
         bestAppliercontainers =
-                appliercontainerService.findBestApplierContainersByDcCluster("fra", "hetero-cluster2");
+                appliercontainerService.findBestAppliercontainersByDcCluster("fra", "hetero-cluster2");
         Assert.assertEquals(2, bestAppliercontainers.size());
         Assert.assertEquals(true, bestAppliercontainers.get(0).getAppliercontainerId() > 10);
         Assert.assertEquals(true, bestAppliercontainers.get(1).getAppliercontainerId() > 10);

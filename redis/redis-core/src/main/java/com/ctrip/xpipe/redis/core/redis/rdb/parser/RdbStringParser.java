@@ -201,21 +201,17 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
     }
 
     private void propagateCmdIfNeed() {
-        if (null == redisString) return;
-
-        if (null != context.getKey() && context.getExpireMilli() > 0) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.PSETEX,
-                    new byte[][] {RedisOpType.PSETEX.name().getBytes(), context.getKey().get(), String.valueOf(context.getExpireMilli()).getBytes(), redisString},
-                    context.getKey(),
-                    redisString));
-        } else if (null != context.getKey()) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.SET,
-                    new byte[][] {RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
-                    context.getKey(),
-                    redisString));
+        if (null == redisString
+                || null == context.getKey()
+                || !RdbParseContext.RdbType.STRING.equals(context.getCurrentType())) {
+            return;
         }
+
+        notifyRedisOp(new RedisOpSingleKey(
+                RedisOpType.SET,
+                new byte[][] {RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
+                context.getKey(), redisString));
+        propagateExpireAtIfNeed(context.getKey(), context.getExpireMilli());
     }
 
     @Override
@@ -226,6 +222,8 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
     @Override
     public void reset() {
         this.state = STATE.READ_INIT;
+        lzfContent = null;
+        redisString = null;
     }
 
     @Override

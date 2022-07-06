@@ -117,7 +117,9 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
                 // console monitors only cluster with active idc in current idc
-                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster)) {
+                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc())
+                        && !isClusterActiveIdcCurrentIdc(cluster)
+                        && !dcClusterIsMasterGroupType(cluster)) {
                     continue;
                 }
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
@@ -150,6 +152,11 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             if (dc.equalsIgnoreCase(currentDcId)) return true;
         }
 
+        return false;
+    }
+
+    private boolean dcClusterIsMasterGroupType(ClusterMeta clusterMeta) {
+//        todo: cluster is hetero and current dc is master type
         return false;
     }
 

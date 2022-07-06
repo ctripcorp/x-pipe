@@ -13,6 +13,8 @@ import com.ctrip.xpipe.redis.keeper.RedisServer;
  */
 public interface ApplierServer extends Lifecycle, RedisServer {
 
+    enum STATE { NONE, ACTIVE, BACKUP }
+
     int getListeningPort();
 
     ApplierInstanceMeta getApplierInstanceMeta();
@@ -20,5 +22,9 @@ public interface ApplierServer extends Lifecycle, RedisServer {
     void setStateActive(Endpoint endpoint, GtidSet gtidSet);
 
     void setStateBackup();
+
+    STATE getState();
+
+    Endpoint getUpstreamEndpoint();
 
 }
