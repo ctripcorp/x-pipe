@@ -180,7 +180,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			if (toDelete.getDcCluster().getDcId() == clusterTbl.getActivedcId()) {
 				throw new BadRequestException("can not delete active dc");
 			}
-			dcClusterDao.deleteDcClusterBatchByDcClusterModel(toDelete);
+			dcClusterDao.deleteDcClusterBatchByDcClusterModel(toDelete, clusterTbl);
 		}
 	}
 

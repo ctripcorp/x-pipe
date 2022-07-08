@@ -160,16 +160,16 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public void handleShardsUpdate(List<ShardTbl> toCreate, List<ShardTbl> toDelete, ClusterTbl clusterTbl, DcTbl dcTbl,
+	public void handleShardsUpdate(List<ShardTbl> toCreates, List<ShardTbl> toDeletes, ClusterTbl clusterTbl, DcTbl dcTbl,
 								   boolean isDRMaster, List<SentinelGroupModel> sentinels) throws DalException {
-		if (toDelete != null && !toDelete.isEmpty()) {
-			logger.info("[handleShardsUpdate] delete shards : {}", toDelete.size());
-			deleteShardBatch(toDelete, clusterTbl, dcTbl, isDRMaster);
+		if (toDeletes != null && !toDeletes.isEmpty()) {
+			logger.info("[handleShardsUpdate] delete shards : {}", toDeletes.size());
+			deleteShardBatch(toDeletes, clusterTbl, dcTbl, isDRMaster);
 		}
 
-		if (toCreate != null && !toCreate.isEmpty()) {
-			logger.info("[handleShardsUpdate] create shards : {}", toCreate.size());
-			createShardBatch(toCreate, clusterTbl, dcTbl, isDRMaster, sentinels);
+		if (toCreates != null && !toCreates.isEmpty()) {
+			logger.info("[handleShardsUpdate] create shards : {}", toCreates.size());
+			createShardBatch(toCreates, clusterTbl, dcTbl, isDRMaster, sentinels);
 		}
 	}
 

@@ -208,19 +208,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 					throw new ServerException(e.getMessage());
 				}
 
-				for (ShardTbl shard : shards) {
-					// Call shard event
-					Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
-					ShardEvent shardEvent = null;
-					if (sentinels != null && !sentinels.isEmpty()) {
-						shardEvent = createShardDeleteEvent(clusterName, cluster, shard.getShardName(), shard, sentinels);
-					}
-					if (shardEvent != null) {
-						// RejectedExecutionException
-						shardEvent.onEvent();
-					}
-				}
-
+				deleteShardSentinels(shards, cluster);
 				clusterModifyNotify(clusterName, cluster);
 			}
 		}
@@ -393,21 +381,36 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	private void handleShardsUpdate(List<ShardTbl> targetShards, List<ShardTbl> originShards, ClusterTbl clusterTbl,
 									long dcId, boolean isDRMaster) throws DalException {
-		List<ShardTbl> toCreate = (List<ShardTbl>) setOperator.difference(ShardTbl.class, targetShards,
+		List<ShardTbl> toCreates = (List<ShardTbl>) setOperator.difference(ShardTbl.class, targetShards,
 																					originShards, shardTblComparator);
-		for (ShardTbl shard : toCreate) {
+		for (ShardTbl shard : toCreates) {
 			shardDao.validateShard(clusterTbl.getClusterName(), shard);
 		}
 
-		List<ShardTbl> toDelete = (List<ShardTbl>) setOperator.difference(ShardTbl.class, originShards,
+		List<ShardTbl> toDeletes = (List<ShardTbl>) setOperator.difference(ShardTbl.class, originShards,
 																				targetShards, shardTblComparator);
 		DcTbl dcTbl = dcService.find(dcId);
 
 		try {
-			shardDao.handleShardsUpdate(toCreate, toDelete, clusterTbl, dcTbl, isDRMaster,
+			shardDao.handleShardsUpdate(toCreates, toDeletes, clusterTbl, dcTbl, isDRMaster,
 					sentinelService.findAllByDcAndType(dcService.getDcName(dcId), ClusterType.lookup(clusterTbl.getClusterType())));
 		} catch (Exception e) {
 			throw new ServerException(e.getMessage());
+		}
+		deleteShardSentinels(toDeletes, clusterTbl);
+	}
+
+	@Override
+	public void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl) {
+		for (ShardTbl shard : shards) {
+			Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
+			ShardEvent shardEvent = null;
+			if (sentinels != null && !sentinels.isEmpty()) {
+				shardEvent = createShardDeleteEvent(clusterTbl.getClusterName(), clusterTbl, shard.getShardName(), shard, sentinels);
+			}
+			if (shardEvent != null) {
+				shardEvent.onEvent();
+			}
 		}
 	}
 

@@ -388,10 +388,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		final ClusterTbl queryProto = proto;
 		clusterDao.updateCluster(queryProto);
 
+		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
 		if (ClusterType.isSameClusterType(cluster.getClusterTbl().getClusterType(), ClusterType.HETERO)) {
 			dcClusterService.updateDcClustersByDcClusterModels(cluster.getDcClusters(), cluster.getClusterTbl());
 			replDirectionService.updateClusterReplDirections(cluster.getClusterTbl(), cluster.getReplDirections());
+
+			if (consoleConfig.shouldNotifyClusterTypes().contains(queryProto.getClusterType()))
+				notifier.notifyClusterDelete(clusterName, relatedDcs);
 		}
+
 	}
 
 	@Override
