@@ -21,7 +21,7 @@
             <td>{{dcClusterModel.shardNum}}</td>
             <td>
                 <a ng-click="preUpdateDcGroup(dcClusterModel.dc.dc_name)">编辑</a>
-                <a ng-click="deleteDcGroup($index)" style="color:red">删除</a>
+                <a ng-click="preDeleteDcGroup($index)" style="color:red">删除</a>
             </td>
         </tr>
         </tbody>
@@ -141,7 +141,7 @@
     </form>
 
     <form class="modal fade form-horizontal" id="updateDcGroupModal" tabindex="-1" role="dialog"
-          ng-submit="updateDcGroup()">
+          ng-submit="confirmUpdateDcGroup()">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header panel-primary">
@@ -217,7 +217,7 @@
     </form>
 
     <form class="modal fade form-horizontal" id="updateShardModal" tabindex="-1" role="dialog"
-          ng-submit="updateShardModel()">
+          ng-submit="confirmUpdateShardModel()">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header panel-primary">

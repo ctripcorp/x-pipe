@@ -17,7 +17,8 @@ public interface DcService {
 	List<DcTbl> findClusterRelatedDc(String clusterName);
 	DcTbl findByDcName(String activeDcName);
 	Map<Long, String> dcNameMap();
-	Map<String, Long> dcNameZoneMap();
+    Map<String, Long> dcNameIdMap();
+    Map<String, Long> dcNameZoneMap();
 	List<DcListDcModel> findAllDcsRichInfo();
 
 	void insertWithPartField(long zoneId, String dcName, String description);

@@ -140,7 +140,7 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.PUT)
-    public void updateCluster(@PathVariable String clusterName, @RequestBody ClusterTbl cluster) {
+    public void updateCluster(@PathVariable String clusterName, @RequestBody ClusterModel cluster) {
         logger.info("[Update Cluster]{},{}", clusterName, cluster);
         clusterService.updateCluster(clusterName, cluster);
     }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionTbl;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -15,6 +16,9 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     ReplDirectionServiceImpl replDirectionService;
+
+    @Autowired
+    ClusterServiceImpl clusterService;
 
     @Test
     public void testFindReplDirectionTblById(){
@@ -99,6 +103,51 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2), replDirectionInfoModels);
     }
 
+    @Test
+    public void testUpdateReplDirection() {
+        String heteroClusterName = "hetero-cluster";
+        String wrongClusterName = "hetero-cluster2";
+        long heteroClusterId = 7;
+        ClusterTbl clusterTbl = clusterService.find(heteroClusterName);
+
+        ReplDirectionTbl replDirectionTbl = replDirectionService.findReplDirectionTblById(1L);
+        Assert.assertEquals(2, replDirectionTbl.getToDcId());
+        replDirectionTbl = replDirectionService.findReplDirectionTblById(2L);
+        Assert.assertEquals(3, replDirectionTbl.getToDcId());
+
+        ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)
+                .setSrcDcName("jq").setFromDcName("jq").setToDcName("oy").setId(2L);
+        ReplDirectionInfoModel replDirectionInfoModel2 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)
+                .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra").setId(1L);
+
+        replDirectionService.updateClusterReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+
+        replDirectionTbl = replDirectionService.findReplDirectionTblById(1L);
+        Assert.assertEquals(3, replDirectionTbl.getToDcId());
+        replDirectionTbl = replDirectionService.findReplDirectionTblById(2L);
+        Assert.assertEquals(2, replDirectionTbl.getToDcId());
+
+        try {
+            replDirectionService.updateClusterReplDirections(null, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+        } catch (Exception e) {
+            Assert.assertEquals("[updateClusterReplDirections] cluster can not be null!", e.getMessage());
+        }
+
+        replDirectionInfoModel1.setClusterName(wrongClusterName);
+        try {
+            replDirectionService.updateClusterReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+        } catch (Exception e) {
+            Assert.assertEquals("[updateClusterReplDirections] repl direction should belong to cluster:7, but belong to cluster:8", e.getMessage());
+        }
+
+        replDirectionInfoModel1.setClusterName(heteroClusterName).setSrcDcName("oy");
+        try {
+            replDirectionService.updateClusterReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+        } catch (Exception e) {
+            Assert.assertEquals("[updateClusterReplDirections] repl direction should copy from src dc:1, but from 2", e.getMessage());
+        }
+
+    }
 
     @Override
     protected String prepareDatas() throws IOException {

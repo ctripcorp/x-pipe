@@ -9,6 +9,7 @@ import java.util.Set;
 public interface DcClusterShardService {
 	List<DcClusterShardTbl> findByShardId(long shardId);
     List<DcClusterShardTbl> findAll();
+    List<DcClusterShardTbl> findAllDcClusterTblsByShard(long shardId);
     DcClusterShardTbl findByPk(long dcClusterShardId);
 	DcClusterShardTbl find(long dcClusterId, long shardId);
 	DcClusterShardTbl find(String dcName, String clusterName, String shardName);
@@ -22,4 +23,5 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findBackupDcShardsBySentinel(long sentinelId);
 	List<DcClusterShardTbl> findAllShardsBySentinel(long sentinelId);
 	List<DcClusterShardTbl> findWithShardRedisBySentinel(long sentinelId);
+	void insertBatch(List<DcClusterShardTbl> dcClusterShardTbls);
 }

@@ -36,6 +36,16 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
+	public List<DcClusterShardTbl> findAllDcClusterTblsByShard(long shardId) {
+		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+			@Override
+			public List<DcClusterShardTbl> doQuery() throws DalException {
+				return dao.findAllByShardId(shardId, DcClusterShardTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public DcClusterShardTbl findByPk(long dcClusterShardId) {
 		return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
 			@Override
@@ -155,6 +165,16 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 			@Override
 			public List<DcClusterShardTbl> doQuery() throws DalException {
 				return dao.findWithShardRedisBySentinel(sentinelId, DcClusterShardTblEntity.READSET_FULL_WITH_SHARD_REDIS);
+			}
+		});
+	}
+
+	@Override
+	public void insertBatch(List<DcClusterShardTbl> dcClusterShardTbls) {
+		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dao.insertBatch(dcClusterShardTbls.toArray(new DcClusterShardTbl[dcClusterShardTbls.size()]));
 			}
 		});
 	}

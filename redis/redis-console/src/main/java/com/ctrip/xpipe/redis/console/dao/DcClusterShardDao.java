@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +26,9 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 	private DcClusterShardTblDao dcClusterShardTblDao;
 
 	@Autowired
+	private ApplierDao applierDao;
+
+	@Autowired
 	private RedisDao redisDao;
 	
 	@PostConstruct
@@ -48,6 +48,7 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 		}
 		
 		List<RedisTbl> redises = new LinkedList<RedisTbl>();
+		List<ApplierTbl> appliers = new LinkedList<ApplierTbl>();
 		for(final DcClusterShardTbl dcClusterShard : dcClusterShards) {
 			List<RedisTbl> relatedRedises = redisDao.findAllByDcClusterShard(dcClusterShard.getDcClusterShardId());
 			if(null != relatedRedises && !relatedRedises.isEmpty()) {
@@ -56,8 +57,14 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 				}
 				redises.addAll(relatedRedises);
 			}
+
+			List<ApplierTbl> relatedAppliers = applierDao.findByDcClusterShard(dcClusterShard.getDcClusterShardId());
+			if(null != relatedAppliers && !relatedAppliers.isEmpty()) {
+				appliers.addAll(relatedAppliers);
+			}
 		}
 		redisDao.deleteRedisesBatch(redises);
+		applierDao.deleteApplierBatch(appliers);
 
 		queryHandler.handleBatchDelete(new DalQuery<int[]>() {
 			@Override
@@ -67,7 +74,15 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 						DcClusterShardTblEntity.UPDATESET_FULL);
 			}
 		}, true);
-
 	}
 
+
+	public void insertDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) {
+		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
+			@Override
+			public int[] doQuery() throws DalException {
+				return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
+			}
+		});
+	}
 }

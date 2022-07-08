@@ -299,11 +299,15 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function updateCluster(clusterName, cluster) {
+    function updateCluster(clusterName, clusterTbl, dcClusters, replDirections) {
         var d = $q.defer();
         resource.update_cluster({
                                   clusterName: clusterName
-                              }, cluster,
+                              }, {
+                                  clusterTbl : clusterTbl,
+                                  dcClusters : dcClusters,
+                                  replDirections : replDirections
+                              },
                               function (result) {
                                   d.resolve(result);
                               }, function (result) {
