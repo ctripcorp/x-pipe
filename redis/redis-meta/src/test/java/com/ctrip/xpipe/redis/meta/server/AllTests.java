@@ -42,6 +42,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheRefreshTest
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
+import com.ctrip.xpipe.redis.meta.server.service.console.ConsoleServiceImplTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -117,6 +118,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	BecomePrimaryActionTest.class,
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
+	ConsoleServiceImplTest.class,
 })
 public class AllTests {
 

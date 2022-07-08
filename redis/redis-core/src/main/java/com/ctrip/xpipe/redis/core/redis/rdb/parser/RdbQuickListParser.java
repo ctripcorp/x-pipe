@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.ziplist.Ziplist;
+import com.ctrip.xpipe.redis.core.redis.rdb.encoding.Ziplist;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

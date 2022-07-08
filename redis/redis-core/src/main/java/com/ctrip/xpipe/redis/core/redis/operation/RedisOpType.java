@@ -55,6 +55,13 @@ public enum RedisOpType {
     ZREMRANGEBYRANK(false, 4),
     ZREMRANGEBYSCORE(false, 4),
 
+    // Stream single
+    XADD(false, -5),
+    XDEL(false, -3),
+    XSETID(false, 3),
+    XGROUP(false, -2),
+    XCLAIM(false, -6),
+
     // TTL single
     EXPIRE(false, 3),
     EXPIREAT(false, 3),

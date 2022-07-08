@@ -7,10 +7,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -25,7 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Component
-public class DefaultRedisMasterActionListener implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport {
+public class DefaultRedisMasterActionListener implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, HeteroSupport {
 
     private PersistenceCache persistenceCache;
 

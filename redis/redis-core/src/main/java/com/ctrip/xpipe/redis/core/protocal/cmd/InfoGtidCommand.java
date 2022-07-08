@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.dianping.cat.utils.StringUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -27,6 +28,10 @@ public class InfoGtidCommand extends AbstractRedisCommand<GtidSet> {
     protected GtidSet format(Object payload) {
 
         String info = payloadToString(payload);
+        //filter "all:"
+        if (!StringUtils.isEmpty(info) && info.startsWith("# Gtid\r\nall:")) {
+            return new GtidSet(info.trim().substring(12));
+        }
         return new GtidSet(info);
     }
 
