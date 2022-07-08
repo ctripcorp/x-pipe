@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
@@ -8,6 +9,7 @@ import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author wenchao.meng
@@ -61,22 +63,33 @@ public class ShardMetaComparator extends AbstractMetaComparator<InstanceNode>{
 		List<InstanceNode> subResult = new LinkedList<>();
 		List<Pair<InstanceNode, InstanceNode>> intersectResult = new LinkedList<>();
 		
-		for(InstanceNode redis1 : all1){
+		for(InstanceNode instanceNode1 : all1){
 			
-			InstanceNode redis2Equal = null;
-			for(InstanceNode redis2 : all2){
-				if(MetaUtils.theSame(redis1, redis2)){
-					redis2Equal = redis2;
+			InstanceNode instanceNode2Equal = null;
+			for(InstanceNode instanceNode2 : all2){
+				if(instanceNodeTheSame(instanceNode1, instanceNode2)){
+					instanceNode2Equal = instanceNode2;
 					break;
 				}
 			}
-			if(redis2Equal == null){
-				subResult.add(redis1);
+			if(instanceNode2Equal == null){
+				subResult.add(instanceNode1);
 			}else{
-				intersectResult.add(new Pair<>(redis1, redis2Equal));
+				intersectResult.add(new Pair<>(instanceNode1, instanceNode2Equal));
 			}
 		}
 		return new Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>>(subResult, intersectResult);
+	}
+
+	private boolean instanceNodeTheSame(InstanceNode instanceNode1, InstanceNode instanceNode2) {
+		if (!MetaUtils.theSame(instanceNode1, instanceNode2)) {
+			return false;
+		}
+		if (instanceNode1 instanceof ApplierMeta && instanceNode2 instanceof ApplierMeta) {
+			return Objects.equals(((ApplierMeta) instanceNode1).getTargetClusterName(),
+					((ApplierMeta) instanceNode2).getTargetClusterName());
+		}
+		return true;
 	}
 
 	private List<InstanceNode> getAll(ShardMeta shardMeta) {

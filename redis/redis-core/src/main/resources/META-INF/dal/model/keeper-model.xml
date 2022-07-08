@@ -23,6 +23,7 @@
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
 		<snippet>
+			&#64;com.fasterxml.jackson.annotation.JsonIgnore
 			public Map&lt;String, ShardMeta&gt; getAllShards() {
 				Map &lt;String, ShardMeta&gt; map = new LinkedHashMap&lt;&gt;();
 				map.putAll(m_shards);
@@ -33,6 +34,7 @@
 			}
 		</snippet>
 		<snippet>
+			&#64;com.fasterxml.jackson.annotation.JsonIgnore
 			public ShardMeta findFromAllShards(String id) {
 				ShardMeta result = findShard(id);
 				if (result != null) {

@@ -154,12 +154,13 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			throw new MetaException("clusterId " + clusterId + " not found!");
 		}
 
-		ShardMeta shardMeta = clusterMeta.findFromAllShards(shardId);
-		if (shardMeta == null || !(shardMeta.parent() instanceof SourceMeta)) {
-			throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
+		for (SourceMeta sourceMeta : clusterMeta.getSources()) {
+			if (sourceMeta.getShards().containsKey(shardId)) {
+				return sourceMeta;
+			}
 		}
 
-		return shardMeta.parent();
+		throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
 	}
 
 	@Override
@@ -305,6 +306,35 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return (List<RedisMeta>) clone((Serializable)shardMeta.getRedises());
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<RedisMeta> doGetRedises(String dc, String clusterId) {
+
+		List<RedisMeta> result = new ArrayList<>();
+
+	    ClusterMeta clusterMeta = getClusterMeta(dc, clusterId);
+		if (clusterMeta == null) {
+			return result;
+		}
+		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+			if (shardMeta == null) {
+				continue;
+			}
+		    result.addAll((List<RedisMeta>) clone((Serializable)shardMeta.getRedises()));
+		}
+
+		return result;
+	}
+
+	protected List<RedisMeta> getDirectRedises(String dc, String clusterId, String shardId) {
+
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		if(shardMeta == null){
+			return null;
+		}
+		return shardMeta.getRedises();
+	}
+
 	@Override
 	public KeeperMeta doGetKeeperActive(String dc, String clusterId, String shardId) {
 		
@@ -428,6 +458,21 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			throw new IllegalArgumentException("unfound keeper set active:" + unfoundKeepers);
 		}
 		
+	}
+
+	@Override
+	public void doSetRedisGtidAndSids(String dc, String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids) {
+		List<RedisMeta> directRedises = getDirectRedises(dc, clusterId, shardId);
+		for (RedisMeta real : directRedises) {
+			if (MetaUtils.same(redisMeta, real)) {
+				real.setGtid(gtid);
+				real.setSid(sids);
+				return;
+			}
+		}
+
+		logger.warn("[doSetRedisGtidAndSids] not found, dc={} cluster={}, shard={}, redis ip={}, port={}",
+				dc, clusterId, shardId, redisMeta.getIp(), redisMeta.getPort());
 	}
 
 	@Override

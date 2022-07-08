@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.ApplierTransMeta;
  */
 public interface ApplierStateController {
 
-    void addApplier(ApplierTransMeta keeperTransMeta);
+    void addApplier(ApplierTransMeta applierTransMeta);
 
-    void removeApplier(ApplierTransMeta keeperTransMeta);
+    void removeApplier(ApplierTransMeta applierTransMeta);
 }

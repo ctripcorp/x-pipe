@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.ziplist.Ziplist;
+import com.ctrip.xpipe.redis.core.redis.rdb.encoding.Ziplist;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
     enum STATE {
         READ_INIT,
         READ_AS_STRING,
-        ZIPLIST_DECODE,
+        DECODE_ZIPLIST,
         READ_END
     }
 
@@ -60,12 +60,11 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
                         break;
                     }
                     rdbStringParser.reset();
-                    state = STATE.ZIPLIST_DECODE;
+                    state = STATE.DECODE_ZIPLIST;
 
-                case ZIPLIST_DECODE:
+                case DECODE_ZIPLIST:
                     ziplist = new Ziplist(temp);
                     state = STATE.READ_END;
-                    break;
 
                 case READ_END:
                 default:

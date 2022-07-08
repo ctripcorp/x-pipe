@@ -53,6 +53,8 @@ public interface DcMetaManager{
 
 	List<RedisMeta> getRedises(String clusterId, String shardId);
 
+	List<RedisMeta> getRedises(String clusterId);
+
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
 	
 	List<KeeperMeta> getKeeperBackup(String clusterId, String shardId);
@@ -87,6 +89,8 @@ public interface DcMetaManager{
 	boolean updateRedisMaster(String clusterId, String shardId, RedisMeta redisMaster);
 
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
+
+	void setRedisGtidAndSids(String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids);
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
@@ -130,6 +134,8 @@ public interface DcMetaManager{
 
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
 
+	List<RedisMeta> getRedises(Long clusterDbId);
+
 	KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId);
 
 	List<KeeperMeta> getKeeperBackup(Long clusterDbId, Long shardDbId);
@@ -152,6 +158,8 @@ public interface DcMetaManager{
 	boolean updateRedisMaster(Long clusterDbId, Long shardDbId, RedisMeta redisMaster);
 
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers);
+
+	void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids);
 
 	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
 

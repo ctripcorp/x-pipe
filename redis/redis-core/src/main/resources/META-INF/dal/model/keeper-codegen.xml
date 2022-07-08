@@ -58,6 +58,8 @@
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
     <attribute name="downstream-dcs" value-type="String" />
+    <attribute name="dc-group-type" value-type="String" />
+    <attribute name="dc-group-name" value-type="String" />
     <attribute name="org-id" value-type="int" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
@@ -88,6 +90,7 @@
   <entity name="applier">
     <attribute name="id" value-type="String" />
     <attribute name="ip" value-type="String" />
+    <attribute name="targetClusterName" value-type="String"/>
     <attribute name="port" value-type="int" />
     <attribute name="active" value-type="boolean" />
     <attribute name="applierContainerId" value-type="int" />

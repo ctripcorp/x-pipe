@@ -438,6 +438,7 @@ CREATE TABLE `applier_tbl` (
   `ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'ip',
   `port` int(11) NOT NULL DEFAULT '0' COMMENT 'port',
   `active` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'applier active status',
+  `target_cluster_name` varchar(128) DEFAULT NULL COMMENT 'target cluster name',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',

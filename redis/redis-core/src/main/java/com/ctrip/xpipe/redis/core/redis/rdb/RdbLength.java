@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.rdb;
 
+import com.ctrip.xpipe.redis.core.redis.exception.RdbParseFailException;
+
 import java.util.Objects;
 
 /**
@@ -10,11 +12,9 @@ public class RdbLength {
 
     private final RdbLenType lenType;
 
-//    private final UnsignedLong unsignedLong;
-    // too complex to support unsignedLong
-    private final int lenValue;
+    private final long lenValue;
 
-    public RdbLength(RdbLenType lenType, int lenValue) {
+    public RdbLength(RdbLenType lenType, long lenValue) {
         this.lenType = lenType;
         this.lenValue = lenValue;
     }
@@ -24,6 +24,13 @@ public class RdbLength {
     }
 
     public int getLenValue() {
+        if (lenValue > Integer.MAX_VALUE) {
+            throw new RdbParseFailException("can't convert to int: " + lenValue);
+        }
+        return (int) lenValue;
+    }
+
+    public long getLenLongValue() {
         return lenValue;
     }
 
