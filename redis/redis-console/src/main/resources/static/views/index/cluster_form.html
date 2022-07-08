@@ -204,3 +204,18 @@
                     xpipe-detail="'您确定要删除该cluster下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteCluster"></xpipeconfirmdialog>
 
+<xpipeconfirmdialog xpipe-dialog-id="'deleteDcGroupConfirm'" xpipe-title="'删除 Dc Group'"
+                    xpipe-detail="'您确定要删除该Dc Group下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteDcGroup"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'updateDcGroupConfirm'" xpipe-title="'更新 Dc Group'"
+                    xpipe-detail="'您确定要更新该Dc Group下的所有内容吗（如果shard数目减少会导致部分shard及相应的redis实例都将被删除）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="updateDcGroup"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'updateShardModelConfirm'" xpipe-title="'更新 shard'"
+                    xpipe-detail="'您确定要更新该shard吗（可能会导致原有shard及相对应的redis实例都将被删除）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="updateShardModel"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteReplDirectionConfirm'" xpipe-title="'删除 复制方向'"
+                    xpipe-detail="'您确定要更新该复制方向吗（可能会导致该slave Dc 无法同步数据）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteReplDirection"></xpipeconfirmdialog>

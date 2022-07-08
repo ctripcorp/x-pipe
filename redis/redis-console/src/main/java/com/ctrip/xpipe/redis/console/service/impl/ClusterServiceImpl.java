@@ -366,26 +366,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void updateCluster(String clusterName, ClusterTbl cluster) {
+	@DalTransaction
+	public void updateCluster(String clusterName, ClusterModel cluster) {
 		ClusterTbl proto = find(clusterName);
 		if(null == proto) throw new BadRequestException("Cannot find cluster");
 
-		if(proto.getId() != cluster.getId()) {
+		if(proto.getId() != cluster.getClusterTbl().getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
-		proto.setClusterDescription(cluster.getClusterDescription());
+		proto.setClusterDescription(cluster.getClusterTbl().getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-		if(!checkEmails(cluster.getClusterAdminEmails())) {
+		if(!checkEmails(cluster.getClusterTbl().getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
-		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+		proto.setClusterAdminEmails(cluster.getClusterTbl().getClusterAdminEmails());
+		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster.getClusterTbl()));
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
 
 		final ClusterTbl queryProto = proto;
 		clusterDao.updateCluster(queryProto);
+
+		if (ClusterType.isSameClusterType(cluster.getClusterTbl().getClusterType(), ClusterType.HETERO)) {
+			dcClusterService.updateDcClustersByDcClusterModels(cluster.getDcClusters(), cluster.getClusterTbl());
+			replDirectionService.updateClusterReplDirections(cluster.getClusterTbl(), cluster.getReplDirections());
+		}
 	}
 
 	@Override

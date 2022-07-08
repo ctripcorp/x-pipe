@@ -30,7 +30,7 @@ public interface ClusterService {
 	Map<String, Long> getMigratableClustersCountByActiveDc();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
-	void updateCluster(String clusterName, ClusterTbl cluster);
+	void updateCluster(String clusterName, ClusterModel cluster);
 
 	void updateActivedcId(long id, long activeDcId);
 	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);

@@ -37,6 +37,15 @@ public class ApplierDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<ApplierTbl> findByDcClusterShard(long dcClusterShardId) {
+        return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+            @Override
+            public List<ApplierTbl> doQuery() throws DalException {
+                return applierTblDao.findAppliersByDcClusterShard(dcClusterShardId, ApplierTblEntity.READSET_FULL);
+            }
+        });
+    }
+
     public ApplierTbl findByIpPort(String ip, int port) {
         return queryHandler.handleQuery(new DalQuery<ApplierTbl>() {
             @Override

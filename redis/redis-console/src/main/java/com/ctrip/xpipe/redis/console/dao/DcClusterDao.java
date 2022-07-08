@@ -11,6 +11,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,6 +25,8 @@ import java.util.List;
 public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	private DcClusterTblDao dcClusterTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
+	private ShardTblDao shardTblDao;
+	private ApplierTblDao applierTblDao;
 	
 	@Autowired
 	private DcClusterShardDao dcClusterShardDao;
@@ -33,6 +36,8 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 		try {
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
+			applierTblDao = ContainerLoader.getDefaultContainer().lookup(ApplierTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
@@ -91,7 +96,73 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 				return dcClusterTblDao.deleteBatch(dcCluster, DcClusterTblEntity.UPDATESET_FULL);
 			}
 		}, true);
+	}
+
+	@DalTransaction
+	public void deleteDcClusterBatchByDcClusterModel(final DcClusterModel dcClusterModel) throws DalException {
+		List<ShardTbl> shardTbls = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return shardTblDao.findAllShardByDcCluster(dcClusterModel.getDcCluster().getDcId(),
+						dcClusterModel.getDcCluster().getClusterId(), ShardTblEntity.READSET_FULL);
+			}
+		});
+
+		deleteDcClustersBatch(dcClusterModel.getDcCluster());
+
+		if (!dcClusterModel.getDcCluster().isGroupType()) {
+			deleteAppliersAndKeeperWhenMasterDcDeleted(dcClusterModel);
+		}
+
+		deleteShardsWhenNoDcClusterShards(shardTbls);
 
 	}
-	
+
+	private void deleteShardsWhenNoDcClusterShards(List<ShardTbl> shardTbls) {
+		List<ShardTbl> toDeleteShards = new ArrayList<>();
+		shardTbls.forEach(shardTbl -> {
+			List<DcClusterShardTbl> existDcClusterShard = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+				@Override
+				public List<DcClusterShardTbl> doQuery() throws DalException {
+					return dcClusterShardTblDao.findAllByShardId(shardTbl.getId(), DcClusterShardTblEntity.READSET_FULL);
+				}
+			});
+
+			if (existDcClusterShard == null || existDcClusterShard.isEmpty()) {
+				toDeleteShards.add(shardTbl);
+			}
+		});
+
+		if (!toDeleteShards.isEmpty()) {
+			queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+				@Override
+				public int[] doQuery() throws DalException {
+					return shardTblDao.deleteShardsBatch(toDeleteShards.toArray(new ShardTbl[toDeleteShards.size()]), ShardTblEntity.UPDATESET_FULL);
+				}
+			}, true);
+		}
+	}
+
+	private void deleteAppliersAndKeeperWhenMasterDcDeleted(DcClusterModel dcClusterModel) {
+		List<ApplierTbl> toDeleteAppliers = queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+			@Override
+			public List<ApplierTbl> doQuery() throws DalException {
+				return applierTblDao.findAppliersByClusterAndToDc(dcClusterModel.getDcCluster().getDcId(),
+						dcClusterModel.getDcCluster().getClusterId(), ApplierTblEntity.READSET_FULL);
+			}
+		});
+
+		if (toDeleteAppliers != null && !toDeleteAppliers.isEmpty()) {
+			queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+				@Override
+				public int[] doQuery() throws DalException {
+					return applierTblDao.deleteBatch(toDeleteAppliers.toArray(new ApplierTbl[toDeleteAppliers.size()]),
+							ApplierTblEntity.UPDATESET_FULL);
+				}
+			}, true);
+		}
+
+		//TODO song_yu delete keepers
+	}
+
 }
