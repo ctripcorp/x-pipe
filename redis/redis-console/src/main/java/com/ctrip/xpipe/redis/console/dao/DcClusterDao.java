@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -30,6 +31,9 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@Autowired
 	private DcClusterShardDao dcClusterShardDao;
+
+	@Autowired
+	private ShardService shardService;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -99,7 +103,8 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public void deleteDcClusterBatchByDcClusterModel(final DcClusterModel dcClusterModel) throws DalException {
+	public void deleteDcClusterBatchByDcClusterModel(final DcClusterModel dcClusterModel,
+													 final ClusterTbl cluster) throws DalException {
 		List<ShardTbl> shardTbls = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
@@ -114,11 +119,11 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 			deleteAppliersAndKeeperWhenMasterDcDeleted(dcClusterModel);
 		}
 
-		deleteShardsWhenNoDcClusterShards(shardTbls);
+		deleteShardsWhenNoDcClusterShards(shardTbls, cluster);
 
 	}
 
-	private void deleteShardsWhenNoDcClusterShards(List<ShardTbl> shardTbls) {
+	private void deleteShardsWhenNoDcClusterShards(List<ShardTbl> shardTbls, ClusterTbl cluster) {
 		List<ShardTbl> toDeleteShards = new ArrayList<>();
 		shardTbls.forEach(shardTbl -> {
 			List<DcClusterShardTbl> existDcClusterShard = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
@@ -137,10 +142,13 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 			queryHandler.handleBatchDelete(new DalQuery<int[]>() {
 				@Override
 				public int[] doQuery() throws DalException {
-					return shardTblDao.deleteShardsBatch(toDeleteShards.toArray(new ShardTbl[toDeleteShards.size()]), ShardTblEntity.UPDATESET_FULL);
+					return shardTblDao.deleteShardsBatch(toDeleteShards.toArray(new ShardTbl[toDeleteShards.size()]),
+							ShardTblEntity.UPDATESET_FULL);
 				}
 			}, true);
 		}
+		shardService.deleteShardSentinels(shardTbls, cluster);
+
 	}
 
 	private void deleteAppliersAndKeeperWhenMasterDcDeleted(DcClusterModel dcClusterModel) {

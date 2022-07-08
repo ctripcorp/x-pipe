@@ -22,4 +22,5 @@ public interface ShardService {
 	List<ShardListModel> findAllUnhealthy();
     void updateShardsByDcClusterModel(DcClusterModel dcClusterModel, ClusterTbl clusterTbl) throws DalException;
     List<ShardTbl> findAllShardByDcCluster(long dcId, long clusterId);
+	void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl);
 }
