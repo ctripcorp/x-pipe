@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ApplierDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -50,6 +51,12 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
 
     @Autowired
     private ApplierDao applierDao;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private ReplDirectionService replDirectionService;
 
     @Autowired
     private ClusterMonitorModifiedNotifier monitorNotifier;
@@ -119,23 +126,42 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     }
 
     @Override
-    public void updateAppliers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
-                               long replDirectionId) {
+    @DalTransaction
+    public void updateAppliersAndKeepers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
+                                         long replDirectionId) {
         if (null == sourceShard) {
-            throw new BadRequestException("[updateAppliers]sourceModel can not be null");
+            throw new BadRequestException("[updateAppliersAndKeepers]sourceModel can not be null");
+        }
+        DcTbl dcTbl = dcService.find(dcName);
+        if (dcTbl == null) {
+            throw new BadRequestException(String.format("[updateAppliersAndKeepers]dc %s does not exist", dcName));
         }
 
+        updateSourceKeepers(dcTbl.getId(), clusterName, shardName, sourceShard, replDirectionId);
+        updateAppliers(dcName, clusterName, shardName, sourceShard, replDirectionId);
+        notifyClusterUpdate(dcName, clusterName);
+    }
+
+    private void updateSourceKeepers(long dcId, String clusterName, String shardName, ShardModel sourceShard, long replDirectionId) {
+        ReplDirectionInfoModel replDirectionInfoModel = replDirectionService.findReplDirectionInfoModelById(replDirectionId);
+        if (replDirectionInfoModel == null) {
+            throw new BadRequestException("[updateAppliersAndKeepers]replDirection can not be null");
+        }
+
+        redisService.updateSourceKeepers(replDirectionInfoModel.getSrcDcName(), clusterName, shardName, dcId, sourceShard);
+    }
+
+    @Override
+    public void updateAppliers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
+                               long replDirectionId) {
         List<ApplierTbl> originAppliers =
                 findApplierTblByShardAndReplDirection(sourceShard.getShardTbl().getId(), replDirectionId);
         List<ApplierTbl> targetAppliers = formatAppliersFromSourceModel(sourceShard, replDirectionId);
         updateAppliers(originAppliers, targetAppliers);
-
-        notifyClusterUpdate(dcName, clusterName);
     }
 
     private void updateAppliers(List<ApplierTbl> originAppliers, List<ApplierTbl> targetAppliers) {
         validateAppliers(originAppliers, targetAppliers);
-
         List<ApplierTbl> toCreate = (List<ApplierTbl>) setOperator.difference(ApplierTbl.class, targetAppliers,
                 originAppliers, applierComparator);
         List<ApplierTbl> toDelete = (List<ApplierTbl>) setOperator.difference(ApplierTbl.class, originAppliers,

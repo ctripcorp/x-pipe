@@ -234,6 +234,16 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         ReplDirectionInfoModel replDirectionInfoModel2 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)
                 .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
 
+        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(53);
+        Assert.assertEquals(4, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(54);
+        Assert.assertEquals(4, redisTbls.size());
+
+        redisTbls = redisService.findAllByDcClusterShard(51);
+        Assert.assertEquals(6, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(52);
+        Assert.assertEquals(6, redisTbls.size());
+
         // test delete dc oy and fra
         ClusterModel deleteOyFraModel = new ClusterModel();
         deleteOyFraModel.setClusterTbl(clusterTbl);
@@ -262,11 +272,11 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(52, dcClusterShardTbl.getDcClusterShardId());
 
         //oy
-        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(53);
+        redisTbls = redisService.findAllByDcClusterShard(53);
         Assert.assertEquals(0, redisTbls.size());
         redisTbls = redisService.findAllByDcClusterShard(54);
-        //fra
         Assert.assertEquals(0, redisTbls.size());
+        //fra
         redisTbls = redisService.findAllByDcClusterShard(55);
         Assert.assertEquals(0, redisTbls.size());
         //jq

@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -15,6 +18,8 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -28,12 +33,18 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	private DcClusterShardTblDao dcClusterShardTblDao;
 	private ShardTblDao shardTblDao;
 	private ApplierTblDao applierTblDao;
-	
+
 	@Autowired
 	private DcClusterShardDao dcClusterShardDao;
 
 	@Autowired
+	private RedisDao redisDao;
+
+	@Autowired
 	private ShardService shardService;
+
+	@Autowired
+	private KeeperContainerService keeperContainerService;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -116,7 +127,7 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 		deleteDcClustersBatch(dcClusterModel.getDcCluster());
 
 		if (!dcClusterModel.getDcCluster().isGroupType()) {
-			deleteAppliersAndKeeperWhenMasterDcDeleted(dcClusterModel);
+			deleteAppliersAndKeeperWhenMasterDcDeleted(dcClusterModel, cluster);
 		}
 
 		deleteShardsWhenNoDcClusterShards(shardTbls, cluster);
@@ -151,7 +162,8 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 
 	}
 
-	private void deleteAppliersAndKeeperWhenMasterDcDeleted(DcClusterModel dcClusterModel) {
+	@DalTransaction
+	private void deleteAppliersAndKeeperWhenMasterDcDeleted(DcClusterModel dcClusterModel, ClusterTbl cluster) {
 		List<ApplierTbl> toDeleteAppliers = queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
 			@Override
 			public List<ApplierTbl> doQuery() throws DalException {
@@ -170,7 +182,18 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 			}, true);
 		}
 
-		//TODO song_yu delete keepers
+		Map<Long, Long> keeperContainerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
+		List<RedisTbl> toDeleteKeepers =
+				redisDao.findAllByDcCluster(cluster.getActivedcId(), cluster.getClusterName(), XPipeConsoleConstant.ROLE_KEEPER)
+						.stream()
+						.filter(redisTbl -> ObjectUtils.equals(Long.valueOf(dcClusterModel.getDcCluster().getDcId()),
+								keeperContainerIdDcMap.get(redisTbl.getKeepercontainerId())))
+						.collect(Collectors.toList());
+
+		if (toDeleteKeepers != null && !toDeleteKeepers.isEmpty()) {
+			redisDao.deleteRedisesBatch(toDeleteKeepers);
+		}
+
 	}
 
 }

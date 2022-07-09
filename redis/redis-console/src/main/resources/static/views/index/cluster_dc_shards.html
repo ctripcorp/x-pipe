@@ -184,6 +184,18 @@
                             </td>
                             <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
+                        <tr ng-repeat="keeper in shard.keepers">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-success" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
+                            </td>
+                            <td ng-bind="keeper.redisIp">
+                            </td>
+                            <td ng-bind="keeper.redisPort">
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

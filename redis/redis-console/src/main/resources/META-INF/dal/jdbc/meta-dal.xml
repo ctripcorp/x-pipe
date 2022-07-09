@@ -961,6 +961,7 @@
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
 		<var name="keeper-container-id" value-type="long" />
+		<var name="dc-id" value-type="Long"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
@@ -1049,6 +1050,31 @@
 					]]>
 				</statement>
 			</query>
+
+			<query name="find-all-by-dc-cluster" type="SELECT" multiple="true">
+				<param name="dc-id"/>
+				<param name="cluster-name"/>
+				<param name="redis-role"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='dc-cluster-shard-info'/>
+					WHERE dt.id = ${dc-id}
+					AND ct.cluster_name = ${cluster-name}
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND dct.dc_cluster_id = dcst.dc_cluster_id
+					AND dcst.dc_cluster_shard_id = <FIELD name='dc-cluster-shard-id' />
+					AND <FIELD name='redis-role'/> = ${redis-role}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND dcst.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
 			<query name='find-by-ip-port' type='SELECT' multiple="false">
 				<param name='redis-ip'/>
 				<param name='redis-port'/>
@@ -2766,8 +2792,8 @@
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
 		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
-		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2"></relation>
-		<relation name="repl-direction-info" entity-name="repl-direction-tbl" entity-alias="rdt"></relation>
+		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" />
+		<relation name="repl-direction-info" entity-name="repl-direction-tbl" entity-alias="rdt" />
 
 		<readsets>
 			<readset name="IP-AND-PORT">
