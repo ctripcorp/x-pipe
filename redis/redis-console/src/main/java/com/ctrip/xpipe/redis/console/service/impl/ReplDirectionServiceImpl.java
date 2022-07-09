@@ -153,6 +153,15 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         return replDirectionInfoModel;
     }
     @Override
+    public ReplDirectionInfoModel findReplDirectionInfoModelById(long id) {
+        ReplDirectionTbl replDirectionTbl = findReplDirectionTblById(id);
+        if (replDirectionTbl == null) {
+            return null;
+        }
+        return convertReplDirectionTblToReplDirectionInfoModel(replDirectionTbl, dcService.dcNameMap());
+    }
+
+    @Override
     public void addReplDirectionByInfoModel(ReplDirectionInfoModel replDirectionInfoModel) {
         ClusterTbl clusterTbl = clusterService.find(replDirectionInfoModel.getClusterName());
         if (clusterTbl == null) {

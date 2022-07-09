@@ -2,10 +2,12 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.model.ApplierTbl;
 import com.ctrip.xpipe.redis.console.model.AppliercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.ApplierBasicInfo;
 import com.ctrip.xpipe.redis.console.service.ApplierService;
 import com.ctrip.xpipe.redis.console.service.AppliercontainerService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.assertj.core.util.Lists;
 import org.junit.Assert;
@@ -25,6 +27,9 @@ public class ApplierServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     AppliercontainerService appliercontainerService;
+
+    @Autowired
+    RedisService redisService;
 
     @Test
     public void testFind() {
@@ -56,34 +61,97 @@ public class ApplierServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testUpdateAppliersSuccess() {
+    public void testUpdateSourceAppliersAndKeepersSuccess() {
         ShardModel sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
         Assert.assertEquals(2, sourceShardModel.getAppliers().size());
         Assert.assertEquals(16000, sourceShardModel.getAppliers().get(0).getPort());
         Assert.assertEquals(16000, sourceShardModel.getAppliers().get(1).getPort());
 
+        Assert.assertEquals(2, sourceShardModel.getKeepers().size());
+        Assert.assertEquals(15, sourceShardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(17, sourceShardModel.getKeepers().get(1).getKeepercontainerId());
+
         ApplierTbl newApplier1 = new ApplierTbl().setContainerId(3).setActive(true).setPort(16055).setIp("127.0.0.3")
                 .setShardId(21).setReplDirectionId(2);
-        ApplierTbl newApplier2 = new ApplierTbl().setContainerId(4).setActive(true).setPort(16055).setIp("127.0.0.4")
+        ApplierTbl newApplier2 = new ApplierTbl().setContainerId(4).setPort(16055).setIp("127.0.0.4")
                 .setShardId(21).setReplDirectionId(2);
-        List<ApplierTbl> newAppliers = Lists.newArrayList(newApplier1, newApplier2);
+        RedisTbl newKeeper1 = new RedisTbl().setKeepercontainerId(16).setRedisIp("127.0.0.16").setRedisPort(6384);
+        RedisTbl newKeeper2 = new RedisTbl().setKeepercontainerId(18).setRedisIp("127.0.0.18").setRedisPort(6384);
 
         ShardModel newSourceShardModel = new ShardModel();
         newSourceShardModel.setShardTbl(sourceShardModel.getShardTbl());
         newSourceShardModel.addApplier(newApplier1).addApplier(newApplier2);
 
-        applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+        applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
         Assert.assertEquals(2, sourceShardModel.getAppliers().size());
         Assert.assertEquals(16055, sourceShardModel.getAppliers().get(0).getPort());
         Assert.assertEquals(16055, sourceShardModel.getAppliers().get(1).getPort());
+        Assert.assertEquals(0, sourceShardModel.getKeepers().size());
 
         ShardModel newSourceShardModel2 = new ShardModel();
         newSourceShardModel2.setShardTbl(sourceShardModel.getShardTbl());
-        applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel2, 2L);
+        newSourceShardModel2.addKeeper(newKeeper1).addKeeper(newKeeper2);
+        applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel2, 2L);
+        sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
+        Assert.assertEquals(0, sourceShardModel.getAppliers().size());
+        Assert.assertEquals(2, sourceShardModel.getKeepers().size());
+        Assert.assertEquals(16, sourceShardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(18, sourceShardModel.getKeepers().get(1).getKeepercontainerId());
+
+        ShardModel newSourceShardModel3 = new ShardModel();
+        newSourceShardModel3.setShardTbl(sourceShardModel.getShardTbl());
+        applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel3, 2L);
         sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
         Assert.assertEquals(0, sourceShardModel.getAppliers().size());
 
+    }
+
+    @Test
+    public void testUpdateShardKeepers() {
+        ShardModel sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
+        Assert.assertEquals(2, sourceShardModel.getKeepers().size());
+        Assert.assertEquals(15, sourceShardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(17, sourceShardModel.getKeepers().get(1).getKeepercontainerId());
+
+        ShardModel shardModel = shardModelService.getShardModel("jq", "hetero-cluster", "hetero-cluster_1", false, null);
+        Assert.assertEquals(2, shardModel.getKeepers().size());
+        Assert.assertEquals(1, shardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(2, shardModel.getKeepers().get(1).getKeepercontainerId());
+
+        RedisTbl newSourceKeeper1 = new RedisTbl().setKeepercontainerId(16).setRedisIp("127.0.0.16").setRedisPort(6384);
+        RedisTbl newSourceKeeper2 = new RedisTbl().setKeepercontainerId(18).setRedisIp("127.0.0.18").setRedisPort(6384);
+        ShardModel newSourceShardModel = new ShardModel();
+        newSourceShardModel.setShardTbl(sourceShardModel.getShardTbl());
+        newSourceShardModel.addKeeper(newSourceKeeper1).addKeeper(newSourceKeeper2);
+
+        applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+        sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
+        Assert.assertEquals(2, sourceShardModel.getKeepers().size());
+        Assert.assertEquals(16, sourceShardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(18, sourceShardModel.getKeepers().get(1).getKeepercontainerId());
+
+        shardModel = shardModelService.getShardModel("jq", "hetero-cluster", "hetero-cluster_1", false, null);
+        Assert.assertEquals(2, shardModel.getKeepers().size());
+        Assert.assertEquals(1, shardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(2, shardModel.getKeepers().get(1).getKeepercontainerId());
+
+        RedisTbl newShardKeeper1 = new RedisTbl().setKeepercontainerId(11).setRedisIp("127.0.0.11").setRedisPort(6384);
+        RedisTbl newShardKeeper2 = new RedisTbl().setKeepercontainerId(12).setRedisIp("127.0.0.12").setRedisPort(6384);
+        ShardModel newShardModel = new ShardModel();
+        newShardModel.setShardTbl(shardModel.getShardTbl());
+        newShardModel.addKeeper(newShardKeeper1).addKeeper(newShardKeeper2);
+        redisService.updateRedises("jq", "hetero-cluster", "hetero-cluster_1", newShardModel);
+
+        sourceShardModel = shardModelService.getSourceShardModel("hetero-cluster", "jq", "fra", "hetero-cluster_1");
+        Assert.assertEquals(2, sourceShardModel.getKeepers().size());
+        Assert.assertEquals(16, sourceShardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(18, sourceShardModel.getKeepers().get(1).getKeepercontainerId());
+
+        shardModel = shardModelService.getShardModel("jq", "hetero-cluster", "hetero-cluster_1", false, null);
+        Assert.assertEquals(2, shardModel.getKeepers().size());
+        Assert.assertEquals(11, shardModel.getKeepers().get(0).getKeepercontainerId());
+        Assert.assertEquals(12, shardModel.getKeepers().get(1).getKeepercontainerId());
     }
 
     @Test
@@ -102,50 +170,50 @@ public class ApplierServiceImplTest extends AbstractServiceImplTest{
         newSourceShardModel.setShardTbl(sourceShardModel.getShardTbl());
         newSourceShardModel.addApplier(newApplier1);
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("size of appliers must be 0 or 2", e.getMessage());
         }
 
         newSourceShardModel.addApplier(newApplier2);
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("If you wanna change applier port in same applier container, please delete it first!!", e.getMessage());
         }
 
         newSourceShardModel.getAppliers().get(0).setContainerId(3).setPort(16000).setIp("127.0.0.3");
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("Already int use for applier`s port:16000", e.getMessage());
         }
 
         newSourceShardModel.getAppliers().get(0).setContainerId(3).setPort(16000).setIp("127.0.0.7");
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("applier's ip : 127.0.0.7 should be equal to applier container's ip : 127.0.0.3", e.getMessage());
         }
 
         newSourceShardModel.getAppliers().get(0).setContainerId(17);
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("can not find related applier containers 17", e.getMessage());
         }
 
         newSourceShardModel.getAppliers().get(0).setContainerId(4);
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", newSourceShardModel, 2L);
         } catch (Exception e) {
             Assert.assertEquals("appliers should be assigned to different applier containers : " + newSourceShardModel.getAppliers(), e.getMessage());
         }
 
         try {
-            applierService.updateAppliers("fra", "hetero-cluster", "hetero-cluster_1", null, 2L);
+            applierService.updateAppliersAndKeepers("fra", "hetero-cluster", "hetero-cluster_1", null, 2L);
         } catch (Exception e) {
-            Assert.assertEquals("[updateAppliers]sourceModel can not be null", e.getMessage());
+            Assert.assertEquals("[updateAppliersAndKeepers]sourceModel can not be null", e.getMessage());
         }
 
     }

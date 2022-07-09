@@ -137,9 +137,9 @@
                                 <a ng-click="preDeleteApplier(applier)">删除</a>
                             </td>
                         </tr>
-                        <tr ng-repeat="keeper in dcSources[currentDcName].keepers">
+                        <tr ng-repeat="keeper in dcSourceShards[currentDcName].keepers">
                             <td title="{{keeper.runId}}">
-                                <span class="label label-info" ng-if="keeper.keeperActive">
+                                <span class="label label-success" ng-if="keeper.keeperActive">
                                     active</span>  Keeper
                             </td>
                             <td ng-bind="keeper.redisIp">
