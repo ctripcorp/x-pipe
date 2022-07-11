@@ -27,6 +27,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.organizations = [];
     $scope.organizationNames = [];
     $scope.clusterTypeName = undefined;
+    $scope.clusterRelatedDcNames = [];
 
     $scope.dcClusterModels = [];
     $scope.toCreateDcGroups = [];
@@ -59,6 +60,8 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.selectedType = ClusterType.default().value
     $scope.typeChange = typeChange;
 
+    $scope.activeDcNameChange = activeDcNameChange;
+    $scope.toCreateDcGroupNameChange = toCreateDcGroupNameChange;
     $scope.preCreateDcGroup = preCreateDcGroup;
     $scope.createDcGroup = createDcGroup;
     $scope.preDeleteDcGroup = preDeleteDcGroup;
@@ -143,6 +146,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                 $scope.dcClusterModels = result;
                 $scope.test = result;
                 $scope.dcClusterModels.forEach(function(dcClusterModel){
+                    $scope.clusterRelatedDcNames.push(dcClusterModel.dc.dc_name);
                     if (dcClusterModel.dcCluster.groupType == true ) {
                         dcClusterModel.dcCluster.groupType = $scope.groupTypes[1];
                         dcClusterModel.shardNum = dcClusterModel.shards.length;
@@ -189,6 +193,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
              $scope.dcClusterModels.forEach(function (dcClusterModel) {
                 addShardToDcModel(dcClusterModel);
+             });
+
+             $scope.replDirections.forEach(function(replDirection) {
+                replDirection.clusterName = $scope.cluster.clusterName;
              });
 
              if ($scope.activeDcName != '' && $scope.selectedType == 'hetero') {
@@ -350,6 +358,20 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     	}
     }
 
+    function activeDcNameChange() {
+        $scope.replDirections = [];
+        $scope.clusterRelatedDcNames.forEach(function(dcName) {
+            if (dcName !== $scope.activeDcName) {
+                $scope.replDirections.push({
+                    "clusterName": $scope.cluster.clusterName,
+                    "srcDcName": $scope.activeDcName,
+                    "fromDcName": $scope.activeDcName,
+                    "toDcName": dcName,
+              });
+            }
+        });
+    }
+
     function activeDcSelected(toPush) {
    	 var forDeleted = [];
    	 $scope.clusterRelatedDcs.forEach(function(dc) {
@@ -422,6 +444,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         $scope.toCreateDcGroups.forEach(function(toCreateDcGroup){
             if (!isAlreadyExistDcGroup(toCreateDcGroup.dc.dc_name)) {
                 $scope.dcClusterModels.push(toCreateDcGroup);
+                $scope.clusterRelatedDcNames.push(toCreateDcGroup.dc.dc_name);
                 if (toCreateDcGroup.dcCluster.groupType == $scope.groupTypes[1]) {
                     $scope.drMasterDcs.push(toCreateDcGroup.dc.dc_name);
                     $scope.drMasterShardNum = toCreateDcGroup.shardNum;
@@ -432,6 +455,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                     updateAllMasterShards();
                 }
             }
+
         });
 
         $('#createDcGroupModal').modal('hide');
@@ -448,9 +472,17 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         return exist;
     }
 
+    function toCreateDcGroupNameChange(index) {
+        $scope.toCreateDcGroups[index].dcCluster.groupName = $scope.toCreateDcGroups[index].dc.dc_name;
+    }
+
     function preDeleteDcGroup(index) {
         $scope.toDeleteDcGroupIndex = index;
-        $('#deleteDcGroupConfirm').modal('show');
+        if ($scope.operateType == OPERATE_TYPE.CREATE) {
+            deleteDcGroup();
+        } else {
+            $('#deleteDcGroupConfirm').modal('show');
+        }
     }
 
     function deleteDcGroup() {
@@ -468,9 +500,13 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             $scope.needCheckDrMasterShards = true;
         }
         $scope.dcClusterModels.splice($scope.toDeleteDcGroupIndex, 1);
+        $scope.clusterRelatedDcNames.splice($scope.toDeleteDcGroupIndex, 1);
+
         updateAllMasterShards();
         updateAllDrMasterShards($scope.needCheckDrMasterShards);
-        $('#deleteDcGroupConfirm').modal('hide');
+        if ($scope.operateType !== OPERATE_TYPE.CREATE) {
+            $('#deleteDcGroupConfirm').modal('hide');
+        }
     }
 
     function removeDcFromDrMasterDcs(dcName) {
@@ -508,7 +544,11 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     }
 
     function confirmUpdateDcGroup() {
-        $('#updateDcGroupConfirm').modal('show');
+        if ($scope.operateType == OPERATE_TYPE.CREATE) {
+            updateDcGroup();
+        } else {
+            $('#updateDcGroupConfirm').modal('show');
+        }
     }
 
     function updateDcGroup() {
@@ -537,7 +577,9 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                 break;
             }
         }
-        $('#updateDcGroupConfirm').modal('hide');
+        if ($scope.operateType !== OPERATE_TYPE.CREATE) {
+            $('#updateDcGroupConfirm').modal('hide');
+        }
         $('#updateDcGroupModal').modal('hide');
     }
 
@@ -546,7 +588,16 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     }
 
     function addOtherDcGroup() {
-        $scope.toCreateDcGroups.push({});
+        $scope.toCreateDcGroups.push({
+                "dc":  {
+                    "dc_name":$scope.allDcNames[0]
+                },
+                "dcCluster" : {
+                    "groupName": $scope.allDcNames[0],
+                    "groupType": $scope.groupTypes[1]
+                },
+                "shardNum": 0
+            });
     }
 
     function updateDrMasterShard() {
@@ -652,7 +703,11 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     }
 
     function confirmUpdateShardModel(){
-        $('#updateShardModelConfirm').modal('show');
+        if ($scope.operateType == OPERATE_TYPE.CREATE) {
+            updateShardModel();
+        } else {
+            $('#updateShardModelConfirm').modal('show');
+        }
     }
 
     function updateShardModel() {
@@ -673,7 +728,9 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                 "setinelMonitorName" : $scope.toUpdateShardModel.setinelMonitorName
             }
         }
-        $('#updateShardModelConfirm').modal('hide');
+        if ($scope.operateType == OPERATE_TYPE.CREATE) {
+            $('#updateShardModelConfirm').modal('hide');
+        }
         $('#updateShardModal').modal('hide');
     }
 
@@ -682,10 +739,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         $scope.toCreateReplDirections=[];
         $scope.toCreateReplDirections.push({
             "clusterName": $scope.cluster.clusterName,
-            "srcDcName": $scope.allDcNames[0],
-            "fromDcName": $scope.allDcNames[0],
-            "toDcName": $scope.allDcNames[0],
-        })
+            "srcDcName": $scope.activeDcName,
+            "fromDcName": $scope.activeDcName,
+            "toDcName": $scope.activeDcName
+        });
         $('#createReplDirectionModal').modal('show');
     }
 
@@ -699,12 +756,18 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     function confirmDeleteReplDirection(index) {
         $scope.toDeleteReplDirectionIndex = index;
-        $('#deleteReplDirectionConfirm').modal('show');
+        if ($scope.operateType == OPERATE_TYPE.CREATE) {
+            deleteReplDirection();
+        } else {
+            $('#deleteReplDirectionConfirm').modal('show');
+        }
     }
 
     function deleteReplDirection() {
         $scope.replDirections.splice($scope.toDeleteReplDirectionIndex, 1);
-        $('#deleteReplDirectionConfirm').modal('hide');
+        if ($scope.operateType !== OPERATE_TYPE.CREATE) {
+           $('#deleteReplDirectionConfirm').modal('hide');
+        }
     }
 
     function removeToCreateReplDirections(index) {
@@ -713,7 +776,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     function addOtherReplDirection() {
         $scope.toCreateReplDirections.push({
-            "clusterName": $scope.cluster.clusterName
+            "clusterName": $scope.cluster.clusterName,
+            "srcDcName": $scope.activeDcName,
+            "fromDcName": $scope.activeDcName,
+            "toDcName": $scope.activeDcName,
         });
     }
 }

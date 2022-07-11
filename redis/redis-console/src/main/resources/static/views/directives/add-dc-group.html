@@ -76,9 +76,15 @@
                                         style="width:200px;"
                                         ng-required="true"
                                         ng-options="dcName for dcName in allDcNames"
+                                        ng-change="toCreateDcGroupNameChange($index)"
                                 >
                                     <option value=""/>
                                 </select>
+                            </div>
+                            <div class="col-md-2" ng-show="$index >= 1">
+                                <button class="btn btn-danger btn-xs" type="button"
+                                        ng-click="removeToCreateDcGroups($index)">remove
+                                </button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -112,14 +118,12 @@
                         </div>
                         <div class="form-group">
                             <label class="col-sm-4 control-label no-padding-right"> shard_num </label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <input type="text" class="form-control" ng-model="toCreateDcGroup.shardNum"
-                                       style="width:200px;" ng-required="true">
+                                          style="width:200px;" ng-required="true" >
                             </div>
-                            <div class="col-md-2" ng-show="$index >= 1">
-                                <button class="btn btn-danger btn-xs" type="button"
-                                        ng-click="removeToCreateDcGroups($index)">remove
-                                </button>
+                            <div class="col-sm-4" ng-show="toCreateDcGroup.dcCluster.groupType == 'DRMaster'">
+                                <a style="color:red;font-size:10px">&nbsp;&nbsp;!DRMaster的shard数量 <br>&nbsp;&nbsp;以最后一次提交为准</a>
                             </div>
                         </div>
                     </div>
