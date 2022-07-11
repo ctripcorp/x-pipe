@@ -290,7 +290,7 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(30,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(31,'hetero2-local-cluster_2','hetero2-local-cluster_2', 10);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(32,'hetero2-local-cluster_oy_1','hetero2-local-cluster_oy_1', 10);
 
-insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(7, 10, 1, 1, 2);
+insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id, target_cluster_name) values(7, 10, 1, 1, 2, 'test_target_cluster');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (64,39,30,3,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (65,39,31,3,1);

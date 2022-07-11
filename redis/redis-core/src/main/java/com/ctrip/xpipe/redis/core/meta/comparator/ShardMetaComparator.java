@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
@@ -9,7 +8,6 @@ import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author wenchao.meng
@@ -85,10 +83,10 @@ public class ShardMetaComparator extends AbstractMetaComparator<InstanceNode>{
 		if (!MetaUtils.theSame(instanceNode1, instanceNode2)) {
 			return false;
 		}
-		if (instanceNode1 instanceof ApplierMeta && instanceNode2 instanceof ApplierMeta) {
-			return Objects.equals(((ApplierMeta) instanceNode1).getTargetClusterName(),
-					((ApplierMeta) instanceNode2).getTargetClusterName());
-		}
+//		if (instanceNode1 instanceof ApplierMeta && instanceNode2 instanceof ApplierMeta) {
+//			return Objects.equals(((ApplierMeta) instanceNode1).getTargetClusterName(),
+//					((ApplierMeta) instanceNode2).getTargetClusterName());
+//		}
 		return true;
 	}
 

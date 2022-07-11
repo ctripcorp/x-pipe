@@ -8,6 +8,7 @@
             <td> 源DC </td>
             <td> 上游DC </td>
             <td> 下游DC </td>
+            <td> 目标集群 </td>
             <td> 操作 </td>
         </tr>
     </thead>
@@ -16,6 +17,7 @@
 			<td>{{replDirection.srcDcName}}</td>
 			<td>{{replDirection.fromDcName}}</td>
 			<td>{{replDirection.toDcName}}</td>
+            <td>{{replDirection.targetClusterName}}</td>
             <td>
 	        	<a ng-click="confirmDeleteReplDirection($index)" style="color:red">删除</a>
 			</td>

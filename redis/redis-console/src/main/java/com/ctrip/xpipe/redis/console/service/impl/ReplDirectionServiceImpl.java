@@ -143,7 +143,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                 .setClusterName(clusterService.find(replDirectionTbl.getClusterId()).getClusterName())
                 .setSrcDcName(dcNameMap.get(replDirectionTbl.getSrcDcId()))
                 .setFromDcName(dcNameMap.get(replDirectionTbl.getFromDcId()))
-                .setToDcName(dcNameMap.get(replDirectionTbl.getToDcId()));
+                .setToDcName(dcNameMap.get(replDirectionTbl.getToDcId()))
+                .setTargetClusterName(replDirectionTbl.getTargetClusterName());
 
         ClusterTbl clusterTbl = clusterService.find(replDirectionTbl.getClusterId());
         if (null == clusterTbl)
@@ -180,7 +181,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
 
         ReplDirectionTbl proto = dao.createLocal();
         proto.setClusterId(clusterTbl.getId()).setFromDcId(fromDc.getId())
-                .setSrcDcId(srcDc.getId()).setToDcId(toDc.getId());
+                .setSrcDcId(srcDc.getId()).setToDcId(toDc.getId())
+                .setTargetClusterName(replDirectionInfoModel.getTargetClusterName());
 
         queryHandler.handleInsert(new DalQuery<Integer>() {
             @Override
@@ -313,7 +315,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         }
         result.setClusterId(cluster.getId()).setSrcDcId(dcNameIdMap.get(replDirection.getSrcDcName()))
                 .setFromDcId(dcNameIdMap.get(replDirection.getFromDcName()))
-                .setToDcId(dcNameIdMap.get(replDirection.getToDcName()));
+                .setToDcId(dcNameIdMap.get(replDirection.getToDcName()))
+                .setTargetClusterName(replDirection.getTargetClusterName());
         return result;
     }
 }
