@@ -51,6 +51,7 @@
                                 ng-disabled="operateType == 'update'"
                                 ng-model="activeDcName"
                                 ng-required="true"
+                                ng-change="activeDcNameChange()"
                         >
                             <option ng-repeat = "dc in drMasterDcs" value="{{dc}}">{{dc}}</option>
                         </select>

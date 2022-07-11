@@ -40,8 +40,9 @@
                     <div class="form-group">
                         <label class="col-sm-4 control-label no-padding-right"> cluster </label>
                         <div class="col-sm-6">
-                            <input type="text" class="form-control" style="width:200px;"
-                                   ng-model="toCreateReplDirection.clusterName" value="cluster.clusterName">
+                            <input type="text" class="form-control" style="width:200px;" ng-diabled="true"
+                                   ng-model="toCreateReplDirection.clusterName" value="cluster.clusterName"
+                            >
                         </div>
                     </div>
                     <div class="form-group">
@@ -52,7 +53,7 @@
                                     allow_single_deselect=true
                                     style="width:200px;"
                                     ng-required="true"
-                                    ng-options="dcName for dcName in allDcNames"
+                                    ng-options="dcName for dcName in clusterRelatedDcNames"
                             >
                                 <option value=""/>
                             </select>
@@ -66,7 +67,7 @@
                                     allow_single_deselect=true
                                     style="width:200px;"
                                     ng-required="true"
-                                    ng-options="dcName for dcName in allDcNames"
+                                    ng-options="dcName for dcName in clusterRelatedDcNames"
                             >
                                 <option value=""/>
                             </select>
@@ -80,7 +81,7 @@
                                     allow_single_deselect=true
                                     style="width:200px;"
                                     ng-required="true"
-                                    ng-options="dcName for dcName in allDcNames"
+                                    ng-options="dcName for dcName in clusterRelatedDcNames"
                             >
                                 <option value=""/>
                             </select>

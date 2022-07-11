@@ -154,17 +154,17 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	private void handleUpdateDcClusters(List<DcClusterModel> toCreates, List<DcClusterModel> toDeletes,
 										List<DcClusterModel> toUpdates, ClusterTbl clusterTbl) throws DalException {
 		if (toDeletes != null && !toDeletes.isEmpty()) {
-			logger.info("[updateDcClustersByDcClusterModels] delete dc cluster {}", toDeletes.size());
+			logger.info("[updateDcClustersByDcClusterModels] delete dc cluster {}, {}", toDeletes.size(), toDeletes);
 			deleteDcClusterBatch(toDeletes, clusterTbl);
 		}
 
 		if (toCreates != null && !toCreates.isEmpty()) {
-			logger.info("[updateDcClustersByDcClusterModels] create dc cluster {}", toCreates.size());
+			logger.info("[updateDcClustersByDcClusterModels] create dc cluster {}, {}", toCreates.size(), toCreates);
 			createDcClusterBatch(toCreates, clusterTbl);
 		}
 
 		if (toUpdates != null && !toUpdates.isEmpty()) {
-			logger.info("[updateDcClustersByDcClusterModels] update dc cluster {}", toUpdates.size());
+			logger.info("[updateDcClustersByDcClusterModels] update dc cluster {}, {}", toUpdates.size(), toUpdates);
 			updateDcClusterBatch(toUpdates, clusterTbl);
 		}
 	}
@@ -215,8 +215,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			return;
 		}
 
-		List<DcClusterTbl> relatedDcClusters =
-				findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterModel.getDcCluster().isGroupType());
+		List<DcClusterTbl> relatedDcClusters =getRelatedDcClusters(clusterTbl, dcClusterModel);
 		if (relatedDcClusters == null || relatedDcClusters.isEmpty()) {
 			throw new BadRequestException(String.format("insert dc %s cluster %s fail",
 					dcClusterModel.getDc().getDc_name(), clusterTbl.getClusterName()));
@@ -233,6 +232,17 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 		dcClusterShardService.insertBatch(dcClusterShardTbls);
 	}
+
+	private List<DcClusterTbl>  getRelatedDcClusters(ClusterTbl clusterTbl, DcClusterModel dcClusterModel) {
+		List<DcClusterTbl> result = new ArrayList<>();
+		if (dcClusterModel.getDcCluster().isGroupType()) {
+			result.addAll(findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterModel.getDcCluster().isGroupType()));
+		} else {
+			result.add(find(dcClusterModel.getDc().getDc_name(), clusterTbl.getClusterName()));
+		}
+		return result;
+	}
+
 	private List<DcClusterShardTbl> getRelatedDcClusterShards(ShardTbl shard, List<DcClusterTbl> relatedDcClusters,
 															  ClusterTbl clusterTbl, Map<Long, String> dcNameMap) {
 		List<DcClusterShardTbl> result = new ArrayList<>();
