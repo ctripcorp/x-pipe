@@ -643,6 +643,72 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testDeleteHeteroCluster() {
+        String heteroClusterName = "hetero-cluster";
+        long heteroClusterId = 7;
+        String shard1 = "hetero-cluster_1";
+        String shard2 = "hetero-cluster_oy_1";
+        String shard4 = "hetero-cluster_oy_2";
+        String shard3 = "hetero-cluster_fra_1";
+        String shard5 = "hetero-cluster_fra_2";
+
+        clusterService.deleteCluster(heteroClusterName);
+
+        ClusterTbl clusterTbl = clusterService.find(heteroClusterName);
+        Assert.assertNull(clusterTbl);
+
+        DcClusterTbl dcClusterTbl = dcClusterService.find("oy", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+        dcClusterTbl = dcClusterService.find("fra", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+        dcClusterTbl = dcClusterService.find("jq", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("jq", heteroClusterName, shard1);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("jq", heteroClusterName, shard2);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("oy", heteroClusterName, shard1);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("oy", heteroClusterName, shard2);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("fra", heteroClusterName, shard3);
+        Assert.assertNull(dcClusterShardTbl);
+
+
+        //oy
+        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(53);
+        Assert.assertEquals(0, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(54);
+        Assert.assertEquals(0, redisTbls.size());
+        //fra
+        redisTbls = redisService.findAllByDcClusterShard(55);
+        Assert.assertEquals(0, redisTbls.size());
+        //jq
+        redisTbls = redisService.findAllByDcClusterShard(51);
+        Assert.assertEquals(0, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(52);
+        Assert.assertEquals(0, redisTbls.size());
+
+        List<ApplierTbl> applierTbls = applierService.findApplierTblByShardAndReplDirection(21 , 2);
+        Assert.assertEquals(0, applierTbls.size());
+        applierTbls = applierService.findApplierTblByShardAndReplDirection(22 , 2);
+        Assert.assertEquals(0, applierTbls.size());
+
+        ShardTbl shardTbl = shardService.find(23);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+        shardTbl = shardService.find(22);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+        shardTbl = shardService.find(21);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+
+
+        List<ReplDirectionTbl> allReplications = replDirectionService.findAllReplDirectionTblsByCluster(heteroClusterId);
+        Assert.assertEquals(0, allReplications.size());
+
+    }
+
+    @Test
     public void testCreateBiDirectionCluster() {
         String clusterName = randomString(10);
         List<DcTbl> dcTbls = dcService.findAllDcs();

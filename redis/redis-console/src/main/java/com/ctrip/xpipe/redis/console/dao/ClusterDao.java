@@ -32,6 +32,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	private DcClusterTblDao dcClusterTblDao;
 	private ShardTblDao shardTblDao;
 	private DcClusterShardTblDao dcClusterShardTblDao;
+	private ReplDirectionTblDao replDirectionTblDao;
 	
 	@Autowired
 	private ShardDao shardDao;
@@ -46,6 +47,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
 			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+			replDirectionTblDao = ContainerLoader.getDefaultContainer().lookup(ReplDirectionTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
@@ -116,6 +118,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				return dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
 			}
 		});
+
+		List<ReplDirectionTbl> replDirections = queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
+			@Override
+			public List<ReplDirectionTbl> doQuery() throws DalException {
+				return replDirectionTblDao.findReplDirectionsByCluster(cluster.getId(), ReplDirectionTblEntity.READSET_FULL);
+			}
+		});
 		
 		if(null != shards && !shards.isEmpty()) {
 			shardDao.deleteShardsBatch(shards);
@@ -123,6 +132,16 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		
 		if(null != dcClusters && !dcClusters.isEmpty()) {
 			dcClusterDao.deleteDcClustersBatch(dcClusters);
+		}
+
+		if (null != replDirections && !replDirections.isEmpty()) {
+			queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+				@Override
+				public int[] doQuery() throws DalException {
+					return replDirectionTblDao.deleteBatch(replDirections.toArray(new ReplDirectionTbl[replDirections.size()]),
+							ReplDirectionTblEntity.UPDATESET_FULL);
+				}
+			}, true);
 		}
 		
 		ClusterTbl proto = cluster;
