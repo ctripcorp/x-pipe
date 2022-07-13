@@ -579,9 +579,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 applierMeta.setPort(applierTbl.getPort());
                 applierMeta.setActive(applierTbl.isActive());
                 applierMeta.setApplierContainerId(applierTbl.getContainerId());
-//                applierMeta.setTargetClusterName(applierTbl.getTargetClusterName() == null? clusterName: applierTbl.getTargetClusterName());
+                applierMeta.setTargetClusterName(getTargetClusterName(applierTbl, clusterName));
                 shardMeta.addApplier(applierMeta);
             }
+        }
+
+        private String getTargetClusterName(ApplierTbl applierTbl, String clusterName) {
+            if (applierTbl.getReplDirectionInfo() == null || applierTbl.getReplDirectionInfo().getTargetClusterName() == null) {
+                return clusterName;
+            }
+            return applierTbl.getReplDirectionInfo().getTargetClusterName();
         }
 
         private void setDownstreamDcs(ClusterMeta clusterMeta, ReplDirectionTbl replDirectionTbl) {

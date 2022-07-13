@@ -2820,9 +2820,10 @@
 			<readset name="CLUSTER_ID">
 				<readset-ref name="CLUSTER_ID" relation-name="dc-cluster-info" />
 			</readset>
-			<readset name="FULL_WITH_SHARD_INFO">
+			<readset name="FULL_WITH_SHARD_AND_REPL_INFO">
 				<readset-ref name="FULL" />
 				<readset-ref name="FULL" relation-name="shard-info"/>
+				<readset-ref name="FULL" relation-name="repl-direction-info"/>
 			</readset>
 		</readsets>
 
@@ -2915,8 +2916,9 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>, <TABLE name='shard-info'/>
+					FROM <TABLE/>, <TABLE name='shard-info'/>, <TABLE name='repl-direction-info'/>
 					WHERE <FIELD name='shard-id'/> = st2.id
+					AND <FIELD name='repl-direction-id'/> = rdt.id
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/>
 					]]>

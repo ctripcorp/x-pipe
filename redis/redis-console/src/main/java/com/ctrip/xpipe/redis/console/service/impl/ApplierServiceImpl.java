@@ -100,7 +100,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
         return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
             @Override
             public List<ApplierTbl> doQuery() throws DalException {
-                return dao.findAll(ApplierTblEntity.READSET_FULL_WITH_SHARD_INFO);
+                return dao.findAll(ApplierTblEntity.READSET_FULL_WITH_SHARD_AND_REPL_INFO);
             }
         });
     }
