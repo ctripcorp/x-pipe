@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
@@ -43,7 +44,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			MetaServerConsoleService.PrimaryDcChangeRequest request = new MetaServerConsoleService.PrimaryDcChangeRequest();
 			request.setMasterInfo(new MasterInfo(RunidGenerator.DEFAULT.generateRunid(), 100L));
 
-			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(new MetaserverAddress("jq", server.getAddress()));
 			PrimaryDcChangeMessage message = consoleService.doChangePrimaryDc(getClusterId(), getShardId(), "jq", request);
 			logger.info("{}", message);
 			
@@ -113,7 +114,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		for(TestMetaServer server : getServers()){
 			
 			logger.info("[testChangePrimaryDcCheck]{}", server.getAddress());
-			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(new MetaserverAddress("oy", server.getAddress()));
 			PrimaryDcCheckMessage message = consoleService.changePrimaryDcCheck(getClusterId(), getShardId(), "newPrimaryDc");
 			logger.info("[testChangePrimaryDcCheck]{}, {}", server.getAddress(), message);
 		}
@@ -129,7 +130,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		for(TestMetaServer server : getServers()){
 			
 			logger.info("[testChangePrimaryDcCheck]{}", server.getAddress());
-			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(server.getAddress());
+			MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(new MetaserverAddress("oy", server.getAddress()));
 			MetaServerConsoleService.PreviousPrimaryDcMessage message = consoleService.makeMasterReadOnly(getClusterId(), getShardId(), true);
 			logger.info("[testMakeMasterReadOnly][true]{}", message);
 			message = consoleService.makeMasterReadOnly(getClusterId(), getShardId(), false);

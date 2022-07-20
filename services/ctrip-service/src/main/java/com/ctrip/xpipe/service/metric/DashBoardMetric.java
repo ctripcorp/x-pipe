@@ -14,6 +14,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -51,10 +52,10 @@ public class DashBoardMetric implements MetricProxy{
                 return createAggregator(metricData);
             }
         });
-        List<String> tagVals = Lists.newArrayList(FoundationService.DEFAULT.getDataCenter(),
-                metricData.getDcName(),
-                metricData.getClusterName(),
-                metricData.getShardName());
+        List<String> tagVals = Lists.newArrayList(FoundationService.DEFAULT.getDataCenter());
+        if (null != metricData.getDcName()) tagVals.add(metricData.getDcName());
+        if (null != metricData.getClusterName()) tagVals.add(metricData.getClusterName());
+        if (null != metricData.getShardName()) tagVals.add(metricData.getShardName());
         if (null != metricData.getHostPort()) {
             tagVals.add(metricData.getHostPort().getHost());
             tagVals.add(String.valueOf(metricData.getHostPort().getPort()));
@@ -78,11 +79,13 @@ public class DashBoardMetric implements MetricProxy{
 
     private MetricsAggregator createAggregator(MetricData metricData) {
         String mesurement = String.format("fx.xpipe.%s", metricData.getMetricType());
-        List<String> metrics;
-        if (null == metricData.getHostPort()) {
-            metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard");
-        } else {
-            metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard", "ip", "port");
+        List<String> metrics = Lists.newArrayList("console-dc");
+        if (null != metricData.getDcName()) metrics.add("dc");
+        if (null != metricData.getClusterName()) metrics.add("cluster");
+        if (null != metricData.getShardName()) metrics.add("shard");
+        if (null != metricData.getHostPort()) {
+            metrics.add("ip");
+            metrics.add("port");
         }
         if(metricData.getTags() != null && !metricData.getTags().isEmpty()) {
             metrics.addAll(metricData.getTags().keySet());

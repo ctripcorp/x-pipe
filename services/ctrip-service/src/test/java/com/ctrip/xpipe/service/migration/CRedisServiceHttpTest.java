@@ -4,7 +4,10 @@ import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.service.AbstractServiceTest;
+import com.ctrip.xpipe.metric.MockMetricProxy;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -36,16 +39,21 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
 
     private CRedisService credisService = (CRedisService) OuterClientService.DEFAULT;
 
+    private MockMetricProxy metricProxy = new MockMetricProxy();
+
     @Before
     public void setupCRedisServiceHttpTest() throws Exception {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
         when(config.get(matches(CRedisConfig.KEY_CREDIS_SERVEICE_ADDRESS), anyString())).thenReturn("127.0.0.1:" + webServer.getPort());
         CRedisConfig.INSTANCE.setConfig(config);
+        metricProxy.reset();
+        credisService.setMetricProxy(metricProxy);
     }
 
     @After
     public void afterCRedisServiceHttpTest() throws Exception {
+        credisService.setMetricProxy(MetricProxy.DEFAULT);
         webServer.shutdown();
     }
 
@@ -67,6 +75,14 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=test-cluster&ip=10.0.0.1&port=6379&canRead=false",
                 request.getPath());
         Assert.assertEquals("POST", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("markInstanceDown", metricData.getTags().get("api"));
+        Assert.assertEquals("test-cluster", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
     }
 
     @Test
@@ -80,6 +96,14 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("/keeperApi/checkcluster/test-cluster",
                 request.getPath());
         Assert.assertEquals("POST", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("clusterMigratePreCheck", metricData.getTags().get("api"));
+        Assert.assertEquals("test-cluster", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
     }
 
     @Test
@@ -97,6 +121,14 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("/keeperApi/excludedIdcs/test-cluster",
                 request.getPath());
         Assert.assertEquals("POST", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("excludeClusterDc", metricData.getTags().get("api"));
+        Assert.assertEquals("test-cluster", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
     }
 
 }

@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MockMetricProxy;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import io.netty.channel.ConnectTimeoutException;
 import okhttp3.mockwebserver.MockResponse;
@@ -27,13 +30,18 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
 
     private MockWebServer webServer;
 
+    private MockMetricProxy metricProxy;
+
     private String cluster = "cluster1", shard = "shard1", currentDc = "jq", targetDc = "oy";
 
     @Before
     public void setupDefaultReactorMetaServerConsoleServiceTest() throws Exception {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        service = new DefaultReactorMetaServerConsoleService("http://127.0.0.1:" + webServer.getPort(), loopResources, connectionProvider);
+        String metaserverAddress = "http://127.0.0.1:" + webServer.getPort();
+        service = new DefaultReactorMetaServerConsoleService(new MetaserverAddress(targetDc, metaserverAddress), loopResources, connectionProvider);
+        metricProxy = new MockMetricProxy();
+        service.setMetricProxy(metricProxy);
     }
 
     @Test
@@ -50,6 +58,12 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
         RecordedRequest req = webServer.takeRequest();
         Assert.assertEquals(String.format("/api/meta/changeprimarydc/check/%s/%s/%s", cluster, shard, targetDc), req.getPath());
         Assert.assertEquals("GET", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals(targetDc, metricData.getDcName());
+        Assert.assertEquals(cluster, metricData.getClusterName());
+        Assert.assertEquals("changePrimaryDcCheck", metricData.getTags().get("api"));
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
     }
 
     @Test
@@ -67,6 +81,12 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
         RecordedRequest req = webServer.takeRequest();
         Assert.assertEquals(String.format("/api/meta/masterreadonly/%s/%s/true", cluster, shard), req.getPath());
         Assert.assertEquals("PUT", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals(targetDc, metricData.getDcName());
+        Assert.assertEquals(cluster, metricData.getClusterName());
+        Assert.assertEquals("makeMasterReadOnly", metricData.getTags().get("api"));
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
     }
 
     @Test
@@ -88,6 +108,12 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
         Assert.assertEquals("123",
                 Codec.DEFAULT.decode(req.getBody().readByteArray(), MetaServerConsoleService.PrimaryDcChangeRequest.class).getMasterInfo().getReplId());
         Assert.assertEquals("PUT", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals(targetDc, metricData.getDcName());
+        Assert.assertEquals(cluster, metricData.getClusterName());
+        Assert.assertEquals("changePrimaryDc", metricData.getTags().get("api"));
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
     }
 
     @Test
@@ -102,11 +128,18 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
         MetaServerConsoleService.PrimaryDcChangeMessage resp = service.doChangePrimaryDc(cluster, shard, targetDc, null)
                 .get(1, TimeUnit.SECONDS);
         Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, resp.getErrorType());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals(targetDc, metricData.getDcName());
+        Assert.assertEquals(cluster, metricData.getClusterName());
+        Assert.assertEquals("changePrimaryDc", metricData.getTags().get("api"));
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
     }
 
     @Test
     public void testConnectTimeout() throws Exception {
-        service = new DefaultReactorMetaServerConsoleService("http://10.0.0.1:80", loopResources, connectionProvider);
+        service = new DefaultReactorMetaServerConsoleService(new MetaserverAddress(targetDc, "http://10.0.0.1:80"), loopResources, connectionProvider);
+        service.setMetricProxy(metricProxy);
         long start = System.currentTimeMillis();
 
         try {
@@ -120,6 +153,12 @@ public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
             Assert.assertTrue(end - start >= 2000); // 2 * connect timeout milli
             Assert.assertTrue(e.getCause() instanceof ConnectTimeoutException);
         }
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals(targetDc, metricData.getDcName());
+        Assert.assertEquals(cluster, metricData.getClusterName());
+        Assert.assertEquals("makeMasterReadOnly", metricData.getTags().get("api"));
+        Assert.assertEquals("FAIL", metricData.getTags().get("status"));
     }
 
 }

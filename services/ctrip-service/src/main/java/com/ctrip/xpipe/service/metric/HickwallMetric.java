@@ -138,14 +138,14 @@ public class HickwallMetric implements MetricProxy {
     }
 
     private Point metricData2InfluxDbPoint(MetricData md) {
-         Point.Builder pointBuilder = Point.measurement(String.format("fx.xpipe.%s", md.getMetricType()))
-                 .time(md.getTimestampMilli(), TimeUnit.MILLISECONDS)
-                 .addField("value", md.getValue())
-                 .tag("srcaddr", localIp)
-                 .tag("app", "fx")
-                 .tag("dc", md.getDcName())
-                 .tag("source", CURRENT_DC_ID);
+        Point.Builder pointBuilder = Point.measurement(String.format("fx.xpipe.%s", md.getMetricType()))
+                .time(md.getTimestampMilli(), TimeUnit.MILLISECONDS)
+                .addField("value", md.getValue())
+                .tag("srcaddr", localIp)
+                .tag("app", "fx")
+                .tag("source", CURRENT_DC_ID);
 
+        if (null != md.getDcName()) pointBuilder.tag("dc", md.getDcName());
         if (null != md.getHostPort()) {
             pointBuilder.tag("endpoint", getEndpoint(md));
             pointBuilder.tag("address", md.getHostPort().toString());
