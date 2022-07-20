@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 	@Override
 	public List<MetaServerConsoleService> get(List<String> dcNames) {
 		List<MetaServerConsoleService> result = new ArrayList<MetaServerConsoleService>(dcNames.size());
-		for(String addr : fetchMetaServerAddress(dcNames)) {
+		for(MetaserverAddress addr : fetchMetaServerAddress(dcNames)) {
 			result.add(metaServerConsoleServiceManager.getOrCreate(addr));
 		}
 		return result;
@@ -52,16 +53,16 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 		return metaServerConsoleService.getCurrentMaster(clusterId, shardId);
 	}
 
-	private List<String> fetchMetaServerAddress(List<String> dcNames) {
-		List<String> result = new ArrayList<String>(dcNames.size());
+	private List<MetaserverAddress> fetchMetaServerAddress(List<String> dcNames) {
+		List<MetaserverAddress> result = new ArrayList<MetaserverAddress>(dcNames.size());
 		
 		Map<String, String> metaservers = config.getMetaservers();
 		if(null != metaservers) {
 			for(String dcName : dcNames) {
 				if(null != metaservers.get(dcName)) {
-					result.add(metaservers.get(dcName));
+					result.add(new MetaserverAddress(dcName, metaservers.get(dcName)));
 				} else {
-					result.add(XPipeConsoleConstant.DEFAULT_ADDRESS);
+					result.add(new MetaserverAddress(dcName, XPipeConsoleConstant.DEFAULT_ADDRESS));
 				}
 			}
 		}
@@ -69,14 +70,14 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 		return result;
 	}
 	
-	private String fetchMetaServerAddress(String dcName) {
+	private MetaserverAddress fetchMetaServerAddress(String dcName) {
 		Map<String, String> metaservers = config.getMetaservers();
 		if(null != metaservers) {
 			if(null != metaservers.get(dcName)) {
-				return metaservers.get(dcName);
+				return new MetaserverAddress(dcName, metaservers.get(dcName));
 			}
 		}
-		return XPipeConsoleConstant.DEFAULT_ADDRESS;
+		return new MetaserverAddress(dcName, XPipeConsoleConstant.DEFAULT_ADDRESS);
 		
 	}
 

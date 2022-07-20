@@ -4,10 +4,7 @@ package com.ctrip.xpipe.redis.meta.server.cluster.manul;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
+import com.ctrip.xpipe.redis.core.metaserver.*;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
@@ -38,7 +35,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 		testMetaServer = getServers().get(0);
 		
 		MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
-		metaServerConsoleService = metaServerConsoleServiceManager.getOrCreate(String.format("http://localhost:%d", testMetaServer.getServerPort()));
+		metaServerConsoleService = metaServerConsoleServiceManager.getOrCreate(new MetaserverAddress(dc, String.format("http://localhost:%d", testMetaServer.getServerPort())));
 		
 		MetaServerMultiDcServiceManager metaServerMultiDcServiceManager = new DefaultMetaServerMultiDcServiceManager();
 		metaServerMultiDcService = metaServerMultiDcServiceManager.getOrCreate(String.format("http://localhost:%d", testMetaServer.getServerPort()));
