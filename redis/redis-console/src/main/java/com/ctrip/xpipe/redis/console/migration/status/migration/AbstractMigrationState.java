@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Done;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Inited;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
 import org.slf4j.Logger;
