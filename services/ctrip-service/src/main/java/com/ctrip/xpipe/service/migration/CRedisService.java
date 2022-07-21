@@ -20,6 +20,7 @@ import org.springframework.web.client.RestOperations;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -75,7 +76,7 @@ public class CRedisService extends AbstractOuterClientService {
 	private void doMarkInstance(ClusterShardHostPort clusterShardHostPort, boolean state) throws OuterClientException {
 
 		try {
-			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s-%s", clusterShardHostPort, state), new Task() {
+			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s", clusterShardHostPort.getClusterName()), new Task() {
                 @Override
                 public void go() throws Exception {
 
@@ -97,7 +98,12 @@ public class CRedisService extends AbstractOuterClientService {
 
 				@Override
 				public Map getData() {
-					return null;
+					return new HashMap<String, Object>() {{
+						put("cluster", clusterShardHostPort.getClusterName());
+						put("shard", clusterShardHostPort.getShardName());
+						put("hostport", clusterShardHostPort.getHostPort());
+						put("state", state);
+					}};
 				}
             });
 		} catch (Exception e) {
