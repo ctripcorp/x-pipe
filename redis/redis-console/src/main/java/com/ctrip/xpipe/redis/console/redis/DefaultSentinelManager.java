@@ -8,6 +8,8 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -56,6 +58,8 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
 
     @Resource(name = REDIS_COMMAND_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    private MetricProxy metricProxy = MetricProxy.DEFAULT;
 
     @Override
     public void handleShardDelete(ShardEvent shardEvent) {
@@ -108,6 +112,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
                 .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
         silentCommand(sentinelMaster);
         sentinelMaster.future().addListener(innerFuture -> {
+            tryMetric("master", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[getMasterOfMonitor] sentinel master {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
             } else {
@@ -126,6 +131,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
                 .SentinelRemove(clientPool, sentinelMonitorName, scheduled);
         silentCommand(sentinelRemove);
         sentinelRemove.future().addListener(innerFuture -> {
+            tryMetric("remove", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[removeSentinels] sentinel remove {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
             } else {
@@ -144,6 +150,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         infoCommand.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
         silentCommand(infoCommand);
         infoCommand.future().addListener(innerFuture -> {
+            tryMetric("info", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (!innerFuture.isSuccess()) {
                 logger.error("[infoSentinel] " + sentinel, innerFuture.cause());
             }
@@ -160,6 +167,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
                 scheduled, sentinelMonitorName, master, quorum);
         silentCommand(command);
         command.future().addListener(innerFuture -> {
+            tryMetric("monitor", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[monitor] sentinel monitor {} for {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
             } else {
@@ -183,6 +191,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         command.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
         silentCommand(command);
         command.future().addListener(innerFuture -> {
+            tryMetric("slaves", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (!innerFuture.isSuccess()) {
                 if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
                     logger.error("[slaves] sentinel slaves {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
@@ -202,6 +211,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         AbstractSentinelCommand.SentinelReset sentinelReset = new AbstractSentinelCommand.SentinelReset(clientPool, sentinelMonitorName, scheduled);
         silentCommand(sentinelReset);
         sentinelReset.future().addListener(innerFuture -> {
+            tryMetric("reset", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[reset] sentinel reset {} for {}", sentinelMonitorName, sentinel);
             } else {
@@ -223,6 +233,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         AbstractSentinelCommand.SentinelSet sentinelSet = new AbstractSentinelCommand.SentinelSet(clientPool, scheduled, sentinelMonitorName, configs);
         silentCommand(sentinelSet);
         sentinelSet.future().addListener(innerFuture -> {
+            tryMetric("set", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel);
             } else {
@@ -244,6 +255,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         AbstractSentinelCommand.SentinelConfigSet sentinelConfigSet = new AbstractSentinelCommand.SentinelConfigSet(clientPool, scheduled, configName, configValue);
         silentCommand(sentinelConfigSet);
         sentinelConfigSet.future().addListener(innerFuture -> {
+            tryMetric("config_set", sentinel.getIp(), sentinel.getPort(), innerFuture.isSuccess());
             if (innerFuture.isSuccess()) {
                 logger.info("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel);
             } else {
@@ -282,6 +294,8 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
             AbstractSentinelCommand.Sentinels sentinelsCommand = new AbstractSentinelCommand
                     .Sentinels(clientPool, sentinelMonitorName, scheduled);
             silentCommand(sentinelsCommand);
+            sentinelsCommand.future().addListener(innerFuture ->
+                    tryMetric("sentinels", sentinelAddress.getHostString(), sentinelAddress.getPort(), innerFuture.isSuccess()));
             try {
                 realSentinels = sentinelsCommand.execute().get();
                 logger.info("[getRealSentinels]sentinel sentinels from {} : {}", sentinelAddress, realSentinels);
@@ -304,9 +318,28 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         return realSentinels;
     }
 
+    private void tryMetric(String cmd, String sentinelIp, int sentinelPort, boolean success) {
+        try {
+            MetricData metricData = new MetricData("call.sentinel");
+            metricData.setValue(1);
+            metricData.setTimestampMilli(System.currentTimeMillis());
+            metricData.addTag("cmd", cmd);
+            metricData.addTag("sentinelAddr", String.format("%s:%d", sentinelIp, sentinelPort));
+            metricData.addTag("status", success ? "SUCCESS" : "FAIL");
+            metricProxy.writeBinMultiDataPoint(metricData);
+        } catch (Throwable th) {
+            logger.debug("[tryMetric] fail", th);
+        }
+    }
+
     private void silentCommand(AbstractRedisCommand command) {
         command.logRequest(false);
         command.logResponse(false);
+    }
+
+    @VisibleForTesting
+    protected void setMetricProxy(MetricProxy metricProxy) {
+        this.metricProxy = metricProxy;
     }
 
     @VisibleForTesting

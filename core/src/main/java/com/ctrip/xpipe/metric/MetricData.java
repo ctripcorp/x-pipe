@@ -23,6 +23,10 @@ public class MetricData {
     private HostPort hostPort;
     private volatile Map<String, String> tags;
 
+    public MetricData(String metricType) {
+        this(metricType, null, null, null);
+    }
+
     public MetricData(String metricType, String dcName, String clusterName, String shardName){
         this.metricType = metricType;
         this.dcName = dcName;

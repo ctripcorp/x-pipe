@@ -6,6 +6,6 @@ package com.ctrip.xpipe.redis.core.metaserver;
  */
 public interface ReactorMetaServerConsoleServiceManager {
 
-    ReactorMetaServerConsoleService getOrCreate(String metaServerAddress);
+    ReactorMetaServerConsoleService getOrCreate(MetaserverAddress metaserverAddress);
 
 }
