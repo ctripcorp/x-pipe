@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceManager;
@@ -89,7 +90,7 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
     private ReactorMetaServerConsoleService getMetaServerConsoleService(String dc) {
         String metaAddress = config.getMetaservers().get(dc);
         if (StringUtil.isEmpty(metaAddress)) metaAddress = XPipeConsoleConstant.DEFAULT_ADDRESS;
-        return metaServerConsoleServiceManager.getOrCreate(metaAddress);
+        return metaServerConsoleServiceManager.getOrCreate(new MetaserverAddress(dc, metaAddress));
     }
 
     private static class ReactorMigrationCmdWrap<T> extends AbstractCommand<T> {

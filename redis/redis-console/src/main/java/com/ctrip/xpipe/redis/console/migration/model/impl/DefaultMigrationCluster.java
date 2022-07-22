@@ -2,12 +2,8 @@ package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.retry.RetryTemplate;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
-import com.ctrip.xpipe.redis.console.job.retry.RetryNTimesOnCondition;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.status.*;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;

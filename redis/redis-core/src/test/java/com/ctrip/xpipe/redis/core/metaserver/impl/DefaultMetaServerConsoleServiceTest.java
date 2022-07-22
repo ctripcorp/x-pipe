@@ -1,7 +1,12 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MockMetricProxy;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -11,12 +16,19 @@ import org.junit.Test;
  */
 public class DefaultMetaServerConsoleServiceTest extends AbstractRedisTest{
 
+    private MockMetricProxy metricProxy;
+
+    @Before
+    public void setupDefaultMetaServerConsoleServiceTest() {
+        this.metricProxy = new MockMetricProxy();
+    }
+
     @Test
     public void test(){
 
         try {
             logger.info("[begin]");
-            MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService("http://10.3.2.39:1234");
+            MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(new MetaserverAddress("oy", "http://10.0.0.1:1234"));
             consoleService.doChangePrimaryDc("cluster1", "shard-0", "oy", null);
         }catch (Exception e){
             logger.error("[Exception]", e);
@@ -29,11 +41,17 @@ public class DefaultMetaServerConsoleServiceTest extends AbstractRedisTest{
 
         try {
             logger.info("[begin]");
-            MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService("http://10.0.0.1:1234");
+            DefaultMetaServerConsoleService consoleService = new DefaultMetaServerConsoleService(new MetaserverAddress("oy", "http://10.0.0.1:1234"));
+            consoleService.setMetricProxy(metricProxy);
             consoleService.doChangePrimaryDc("cluster1", "shard-0", "oy", null);
         }catch (Exception e){
             logger.error("[Exception]", e);
         }
 
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals("oy", metricData.getDcName());
+        Assert.assertEquals("cluster1", metricData.getClusterName());
+        Assert.assertEquals("changePrimaryDc", metricData.getTags().get("api"));
+        Assert.assertEquals("FAIL", metricData.getTags().get("status"));
     }
 }

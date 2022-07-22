@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.metaserver;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 
@@ -52,8 +51,6 @@ public interface MetaServerConsoleService extends MetaServerService{
 	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, PrimaryDcChangeRequest request);
 
 	RedisMeta getCurrentMaster(String clusterId, String shardId);
-
-	DcMeta getDynamicInfo();
 	
 	public static enum PRIMARY_DC_CHECK_RESULT{
 		
@@ -120,6 +117,10 @@ public interface MetaServerConsoleService extends MetaServerService{
 
 		public PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT errorType) {
 			super(errorType, null);
+		}
+
+		public boolean isSuccess() {
+			return PRIMARY_DC_CHECK_RESULT.SUCCESS.equals(getErrorType());
 		}
 	}
 	
@@ -188,6 +189,10 @@ public interface MetaServerConsoleService extends MetaServerService{
 		
 		public int getNewMasterPort() {
 			return newMasterPort;
+		}
+
+		public boolean isSuccess() {
+			return PRIMARY_DC_CHANGE_RESULT.SUCCESS.equals(getErrorType());
 		}
 		
 		@Override
