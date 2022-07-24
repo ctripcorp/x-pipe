@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.checker;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
-import org.aspectj.weaver.Checker;
 
 import java.util.List;
 import java.util.Map;
@@ -17,5 +16,5 @@ public interface CheckerManager {
 
     List<Map<HostPort, CheckerStatus>> getCheckers();
 
-    List<CheckerService> getLeaderCheckerServices();
+    List<ConsoleCheckerService> getLeaderCheckerServices();
 }

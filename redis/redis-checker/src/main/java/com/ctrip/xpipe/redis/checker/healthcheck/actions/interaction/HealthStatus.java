@@ -279,4 +279,13 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     public HEALTH_STATE getState() {
         return state.get();
     }
+
+    public long getLastPongTime() {
+        return lastPongTime.get();
+    }
+
+    public long getLastHealthyDelayTime() {
+        return lastHealthDelayTime.get();
+    }
+
 }

@@ -82,7 +82,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(defaultDelayPingActionCollector.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
         when(metaCache.findMasterInSameShard(any())).thenReturn(master);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
-        when(remoteCheckerManager.allHealthStatus(anyString(), anyInt())).thenReturn(Lists.newArrayList(HEALTH_STATE.SICK, HEALTH_STATE.DOWN, HEALTH_STATE.UNHEALTHY));
+        when(remoteCheckerManager.getHealthStates(anyString(), anyInt())).thenReturn(Lists.newArrayList(HEALTH_STATE.SICK, HEALTH_STATE.DOWN, HEALTH_STATE.UNHEALTHY));
         when(checkerConfig.getQuorum()).thenReturn(1);
         processor.setEventHandlers(Lists.newArrayList(instanceSickHandler, instanceDownHandler, instanceUpHandler));
 
