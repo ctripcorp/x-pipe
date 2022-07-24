@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
@@ -30,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.*;
 
@@ -179,6 +181,26 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         @Bean
         public FoundationService foundationService() {
             return FoundationService.DEFAULT;
+        }
+
+        @Bean
+        public OuterClientCache outerClientCache() {
+            return new OuterClientCache() {
+                @Override
+                public OuterClientService.ClusterInfo getClusterInfo(String clusterName) throws Exception {
+                    return null;
+                }
+
+                @Override
+                public Map<String, OuterClientService.ClusterInfo> getAllCurrentDcActiveOneWayClusters(String activeDc) throws Exception {
+                    return null;
+                }
+
+                @Override
+                public void refresh() {
+
+                }
+            };
         }
 
     }

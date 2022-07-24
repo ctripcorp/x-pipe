@@ -217,6 +217,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public long getHealthMarkCompensateIntervalMill() {
+        return getLongProperty(KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI, 60 * 1000L);
+    }
+
+    @Override
     public int getHealthyDelayMilliThroughProxy() {
         return getIntProperty(KEY_HEALTHY_DELAY_THROUGH_PROXY, 30 * 1000);
     }

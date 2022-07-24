@@ -21,7 +21,7 @@ public class ConsoleCheckerPath {
     public static final String PATH_PUT_HEALTH_CHECK_RESULT = "/api/health/check/result";
     
     public static final String PATH_PERSISTENCE = "/api/persistence/";
-    
+
     public static final String PATH_GET_IS_CLUSTER_ON_MIGRATION = PATH_PERSISTENCE + "isClusterOnMigration/{clusterName}";
     
     public static final String PATH_PUT_UPDATE_REDIS_ROLE = PATH_PERSISTENCE + "updateRedisRole/{role}";
@@ -41,5 +41,7 @@ public class ConsoleCheckerPath {
     public static final String PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME = PATH_PERSISTENCE + "loadAllClusterCreateTime";
 
     public static final String PATH_POST_RECORD_ALERT = PATH_PERSISTENCE + "recordAlert";
+
+    public static final String PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS = "/api/outclient/clusters/one_way";
     
 }

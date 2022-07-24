@@ -35,7 +35,7 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
 
         ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig);
 
-        List<HEALTH_STATE> health_states = manager.allHealthStatus("127.0.0.1", 6379);
+        List<HEALTH_STATE> health_states = manager.getHealthStates("127.0.0.1", 6379);
 
         logger.info("{}", health_states);
         boolean result = manager.quorumSatisfy(health_states, (state) -> state == HEALTH_STATE.DOWN || state == HEALTH_STATE.UNHEALTHY);
@@ -48,7 +48,7 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
         when(consoleConfig.getAllConsoles()).thenReturn("127.0.0.1:8080, 127.0.0.1:8081");
         ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig);
 
-        List<HEALTH_STATE> health_states = manager.allHealthStatus("127.0.0.1", 6379);
+        List<HEALTH_STATE> health_states = manager.getHealthStates("127.0.0.1", 6379);
         logger.info("{}", health_states);
 
     }

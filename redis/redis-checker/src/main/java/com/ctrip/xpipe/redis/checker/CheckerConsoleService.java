@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -48,6 +49,8 @@ public interface CheckerConsoleService {
     Date getClusterCreateTime(String console, String clusterId);
     
     Map<String, Date> loadAllClusterCreateTime(String console);
+
+    Map<String, OuterClientService.ClusterInfo> loadAllActiveDcOneWayClusterInfo(String console, String activeDc);
 
     void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta);
 
