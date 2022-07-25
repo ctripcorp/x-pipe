@@ -39,9 +39,6 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     private final IntSupplier instanceLongDelayMilli;
     private final IntSupplier pingDownAfterMilli;
     private final IntSupplier healthyDelayMilli;
-    @VisibleForTesting IntSupplier leastNotifyIntervalMilli;
-
-    private AtomicLong lastMarkupNotify = new AtomicLong(0L);
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
@@ -55,7 +52,6 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
         this.delayDownAfterMilli = ()->instance.getHealthCheckConfig().delayDownAfterMilli();
         this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
-        this.leastNotifyIntervalMilli = ()->instance.getHealthCheckConfig().getHealthyLeastNotifyIntervalMilli();
         checkParam();
     }
 
@@ -233,33 +229,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    @VisibleForTesting void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
+    private void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
         logStateChange(pre, cur);
-        if (cur.shouldNotifyMarkup()) {
-            if (pre.isToUpNotify()) {
-                logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
-                doMarkUpAndNotify(pre, cur);
-            } else {
-                markUpForLeastInterval(pre, cur);
-            }
+        if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
+            logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
+            notifyObservers(new InstanceUp(instance));
         }
-    }
-
-    @VisibleForTesting void markUpForLeastInterval(HEALTH_STATE pre, HEALTH_STATE cur) {
-        long last = lastMarkupNotify.get();
-        long now = System.currentTimeMillis();
-        if ((now - last > leastNotifyIntervalMilli.getAsInt())
-                && lastMarkupNotify.compareAndSet(last, now)) {
-            doMarkUpAndNotify(pre, cur);
-        } else {
-            logger.debug("[markUpForLeastInterval] not success {} {}->{}", this, pre, cur);
-        }
-    }
-
-    @VisibleForTesting void doMarkUpAndNotify(HEALTH_STATE pre, HEALTH_STATE cur) {
-        logger.debug("[doMarkUpAndNotify]{} {}->{}", this, pre, cur);
-        notifyObservers(new InstanceUp(instance));
-        lastMarkupNotify.set(System.currentTimeMillis());
     }
 
     private void logStateChange(HEALTH_STATE pre, HEALTH_STATE cur) {
