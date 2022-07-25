@@ -21,8 +21,6 @@ public interface CheckerConfig {
 
     String KEY_HEALTHY_DELAY = "console.healthy.delay";
 
-    String KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI = "console.healthy.least.notify.interval.milli";
-
     String KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI = "console.health.compensate.interval.milli";
 
     String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
@@ -104,8 +102,6 @@ public interface CheckerConfig {
     int getSentinelCheckIntervalMilli();
 
     int getHealthyDelayMilli();
-
-    int getHealthyLeastNotifyIntervalMilli();
 
     long getHealthMarkCompensateIntervalMill();
 
