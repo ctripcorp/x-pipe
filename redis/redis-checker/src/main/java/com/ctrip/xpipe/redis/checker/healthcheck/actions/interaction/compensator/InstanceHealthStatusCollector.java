@@ -116,7 +116,7 @@ public class InstanceHealthStatusCollector {
         protected void doExecute() throws Throwable {
             try {
                 resultHolder.addClusters(
-                        outerClientCache.getAllCurrentDcActiveOneWayClusters(FoundationService.DEFAULT.getDataCenter()));
+                        outerClientCache.getAllActiveDcClusters(FoundationService.DEFAULT.getDataCenter()));
             } catch (Throwable th) {
                 logger.info("[doExecute][fail]", th);
             }

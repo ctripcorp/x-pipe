@@ -43,7 +43,7 @@ public class InstanceStatusAdjuster {
         for (HostPort instance: instances) {
             Pair<String, String> clusterShard = metaCache.findClusterShard(instance);
             new InstanceStatusAdjustCommand(new ClusterShardHostPort(clusterShard.getKey(), clusterShard.getValue(), instance),
-                    state, timeoutAtMilli, outerClientService, alertManager).execute(executors);
+                    state, timeoutAtMilli, metaCache, outerClientService, alertManager).execute(executors);
         }
     }
 

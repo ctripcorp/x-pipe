@@ -11,18 +11,19 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
+import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 /**
@@ -41,6 +42,9 @@ public class CRedisService extends AbstractOuterClientService {
 	private MetricProxy metricProxy = MetricProxy.DEFAULT;
 
 	private final String TYPE = "credis";
+
+	private static final ParameterizedTypeReference<List<ClusterInfo>> clustersRespTypeDef =
+			new ParameterizedTypeReference<List<ClusterInfo>>(){};
 
 	@Override
 	public int getOrder() {
@@ -184,6 +188,22 @@ public class CRedisService extends AbstractOuterClientService {
 						() -> restOperations.getForObject(address + "?name={clusterName}", ClusterInfo.class, clusterName));
 				clusterInfo.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 				return clusterInfo;
+			}
+		});
+	}
+
+	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return catTransactionMonitor.logTransaction(TYPE, String.format("getActiveDcClusters:%s", dc), new Callable<List<ClusterInfo>>() {
+			@Override
+			public List<ClusterInfo> call() throws Exception {
+				String address = CREDIS_SERVICE.QUERY_CLUSTERS.getRealPath(credisConfig.getCredisServiceAddress());
+				List<ClusterInfo> clusters = doRequest("getActiveDcClusters", null,
+						() -> restOperations
+								.exchange(address + "?activeDc={clusterName}", HttpMethod.GET, null, clustersRespTypeDef, convertDcName(dc))
+								.getBody());
+				clusters.forEach(cluster -> cluster.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER));
+				return clusters;
 			}
 		});
 	}

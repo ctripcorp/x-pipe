@@ -22,8 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -46,27 +45,31 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
 
     private InstanceHealthStatusCollector collector;
 
+    private Map<String, Set<HostPort>> interested;
+
     @Before
     public void setupInstanceHealthStatusCollectorTest() {
         this.collector = new InstanceHealthStatusCollector(delayPingActionCollector, remoteCheckerManager,
                 outerClientCache, executors);
         Mockito.when(remoteCheckerManager.getAllCheckerServices()).thenReturn(Collections.singletonList(checkerService));
+        interested = new HashMap<>();
+        interested.put("cluster1", new HashSet<>(Arrays.asList(new HostPort("10.0.0.1", 6379))));
     }
 
     @Test
     public void testCollect() throws Exception {
         Map<HostPort, HealthStatusDesc> healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
         Mockito.when(checkerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
-        Mockito.when(outerClientCache.getAllCurrentDcActiveOneWayClusters("jq")).thenReturn(mockOutClientResp(true));
+        Mockito.when(outerClientCache.getAllActiveDcClusters("jq")).thenReturn(mockOutClientResp(true));
         healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
         Mockito.when(delayPingActionCollector.getAllHealthStatus()).thenReturn(healthStatus);
         Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> result = this.collector.collect();
 
-        UpDownInstances xpipeUpDownInstances = result.getKey().aggregate(Collections.singleton(new HostPort("10.0.0.1", 6379)), 2);
+        UpDownInstances xpipeUpDownInstances = result.getKey().aggregate(interested, 2);
         Assert.assertEquals(Collections.singleton(new HostPort("10.0.0.1", 6379)), xpipeUpDownInstances.getHealthyInstances());
         Assert.assertTrue(xpipeUpDownInstances.getUnhealthyInstances().isEmpty());
 
-        UpDownInstances outClientUpDownInstances = result.getValue().extractReadable(Collections.singleton(new HostPort("10.0.0.1", 6379)));
+        UpDownInstances outClientUpDownInstances = result.getValue().extractReadable(interested);
         Assert.assertEquals(Collections.singleton(new HostPort("10.0.0.1", 6379)), outClientUpDownInstances.getHealthyInstances());
         Assert.assertTrue(outClientUpDownInstances.getUnhealthyInstances().isEmpty());
     }
@@ -79,7 +82,7 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
         holder.add(mockHealthStatusMap(HEALTH_STATE.DOWN));
         holder.add(mockHealthStatusMap(HEALTH_STATE.UNHEALTHY));
 
-        UpDownInstances xpipeUpDownInstances = holder.aggregate(Collections.singleton(new HostPort("10.0.0.1", 6379)), 2);
+        UpDownInstances xpipeUpDownInstances = holder.aggregate(interested, 2);
         Assert.assertTrue(xpipeUpDownInstances.getHealthyInstances().isEmpty());
         Assert.assertTrue(xpipeUpDownInstances.getUnhealthyInstances().isEmpty());
     }
@@ -91,7 +94,7 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
         holder.add(mockHealthStatusMap(HEALTH_STATE.DOWN));
         holder.add(mockHealthStatusMap(HEALTH_STATE.SICK));
 
-        UpDownInstances xpipeUpDownInstances = holder.aggregate(Collections.singleton(new HostPort("10.0.0.1", 6379)), 2);
+        UpDownInstances xpipeUpDownInstances = holder.aggregate(interested, 2);
         Assert.assertTrue(xpipeUpDownInstances.getHealthyInstances().isEmpty());
         Assert.assertEquals(Collections.singleton(new HostPort("10.0.0.1", 6379)), xpipeUpDownInstances.getUnhealthyInstances());
     }
@@ -101,7 +104,7 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
         OutClientInstanceHealthHolder outClientInstanceHealthHolder = new OutClientInstanceHealthHolder();
         outClientInstanceHealthHolder.addClusters(mockOutClientResp(false));
 
-        UpDownInstances outClientUpDownInstances = outClientInstanceHealthHolder.extractReadable(Collections.singleton(new HostPort("10.0.0.1", 6379)));
+        UpDownInstances outClientUpDownInstances = outClientInstanceHealthHolder.extractReadable(interested);
         Assert.assertTrue(outClientUpDownInstances.getHealthyInstances().isEmpty());
         Assert.assertEquals(Collections.singleton(new HostPort("10.0.0.1", 6379)), outClientUpDownInstances.getUnhealthyInstances());
     }

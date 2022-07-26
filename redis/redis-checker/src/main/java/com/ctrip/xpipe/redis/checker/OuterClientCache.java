@@ -12,8 +12,6 @@ public interface OuterClientCache {
 
     OuterClientService.ClusterInfo getClusterInfo(String clusterName) throws Exception;
 
-    Map<String, OuterClientService.ClusterInfo> getAllCurrentDcActiveOneWayClusters(String activeDc) throws Exception;
-
-    void refresh();
+    Map<String, OuterClientService.ClusterInfo> getAllActiveDcClusters(String activeDc);
 
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.service.migration;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -20,6 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.matches;
@@ -46,6 +51,7 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
         when(config.get(matches(CRedisConfig.KEY_CREDIS_SERVEICE_ADDRESS), anyString())).thenReturn("127.0.0.1:" + webServer.getPort());
+        when(config.get(matches(CRedisConfig.KEY_CREDIS_IDC_MAPPING_RULE), anyString())).thenReturn("{}");
         CRedisConfig.INSTANCE.setConfig(config);
         metricProxy.reset();
         credisService.setMetricProxy(metricProxy);
@@ -129,6 +135,61 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("test-cluster", metricData.getClusterName());
         Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
         Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
+    public void testGetActiveDcClusters() throws Exception {
+        OuterClientService.ClusterInfo cluster1 = mockClusterInfo("cluster1", "jq", "oy", "10.0.0.1");
+        OuterClientService.ClusterInfo cluster2 = mockClusterInfo("cluster2", "jq", "oy", "10.0.0.2");
+        List<OuterClientService.ClusterInfo> clusters = Arrays.asList(cluster1, cluster2);
+        webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(clusters)).setHeader("Content-Type", "application/json"));
+
+        List<OuterClientService.ClusterInfo> resp = credisService.getActiveDcClusters("jq");
+        Assert.assertEquals(clusters, resp);
+
+        Assert.assertEquals(1, webServer.getRequestCount());
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals("/keeperApi/queryclusters?activeDc=jq", req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals("getActiveDcClusters", metricData.getTags().get("api"));
+    }
+
+    private OuterClientService.ClusterInfo mockClusterInfo(String clusterName, String activeDc, String backupDc, String redisIp) {
+        OuterClientService.ClusterInfo clusterInfo = new OuterClientService.ClusterInfo();
+        clusterInfo.setName(clusterName);
+        clusterInfo.setIsXpipe(true);
+        clusterInfo.setUsingIdc(true);
+        clusterInfo.setMasterIDC(activeDc);
+        clusterInfo.setRule(1);
+        clusterInfo.setRuleName("读写主机房master");
+        clusterInfo.setGroups(new ArrayList<>());
+
+        OuterClientService.GroupInfo groupInfo = new OuterClientService.GroupInfo();
+        groupInfo.setName(clusterName + "_shard1");
+        groupInfo.setInstances(new ArrayList<>());
+        clusterInfo.getGroups().add(groupInfo);
+
+        IntStream.rangeClosed(6379, 6380).forEach(port -> {
+            groupInfo.getInstances().add(mockInstanceInfo(redisIp, port, port == 6379, activeDc));
+        });
+        IntStream.rangeClosed(7379, 7380).forEach(port -> {
+            groupInfo.getInstances().add(mockInstanceInfo(redisIp, port, false, backupDc));
+        });
+
+        return clusterInfo;
+    }
+
+    private OuterClientService.InstanceInfo mockInstanceInfo(String ip, int port, boolean isMaster, String dc) {
+        OuterClientService.InstanceInfo instanceInfo = new OuterClientService.InstanceInfo();
+        instanceInfo.setIPAddress(ip);
+        instanceInfo.setPort(port);
+        instanceInfo.setIsMaster(isMaster);
+        instanceInfo.setCanRead(true);
+        instanceInfo.setStatus(true);
+        instanceInfo.setEnv(dc);
+        return instanceInfo;
     }
 
 }

@@ -14,6 +14,7 @@ public enum CREDIS_SERVICE {
 	SWITCH_STATUS(PATH.PATH_SWITCH_STATUS),
 	QUERY_STATUS(PATH.PATH_QUERY_STATUS),
 	QUERY_CLUSTER(PATH.PATH_QUERY_CLUSTER),
+	QUERY_CLUSTERS(PATH.QUERY_CLUSTERS),
 	QUERY_DC_META(PATH.PATH_QUERY_DC_META),
 	EXCLUDE_IDCS(PATH.PATH_EXCLUDE_IDCS);
 
@@ -45,5 +46,6 @@ public enum CREDIS_SERVICE {
 		public static final String PATH_QUERY_CLUSTER = "keeperApi/querycluster";
 		public static final String PATH_QUERY_DC_META = "config/getIdcClusters";
 		public static final String PATH_EXCLUDE_IDCS = "/keeperApi/excludedIdcs/{clusterName}";
+		public static final String QUERY_CLUSTERS = "/keeperApi/queryclusters";
 	}
 }

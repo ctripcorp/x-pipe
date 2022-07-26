@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
@@ -28,7 +29,8 @@ import java.util.List;
 
 public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
 
-    private OuterClientService outerClientService = ServicesUtil.getOuterClientService();
+    @Autowired
+    private OuterClientCache outerClientCache;
 
     @Autowired
     private MetaCache metaCache;
@@ -84,7 +86,7 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
 
     private void checkCluster(String clusterName, XpipeMeta xpipeMeta) throws Exception {
 
-        OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
+        OuterClientService.ClusterInfo clusterInfo = outerClientCache.getClusterInfo(clusterName);
         try {
             checkClusterInfo(clusterInfo);
         } catch (Exception e) {
