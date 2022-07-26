@@ -34,7 +34,7 @@ public class CheckerOuterClientCache implements OuterClientCache {
     }
 
     @Override
-    public Map<String, OuterClientService.ClusterInfo> getAllCurrentDcActiveOneWayClusters(String activeDc) throws Exception {
+    public Map<String, OuterClientService.ClusterInfo> getAllActiveDcClusters(String activeDc) {
         try {
             return service.loadAllActiveDcOneWayClusterInfo(config.getConsoleAddress(), activeDc);
         } catch (RestClientException e) {
@@ -44,11 +44,6 @@ public class CheckerOuterClientCache implements OuterClientCache {
         }
 
         return Collections.emptyMap();
-    }
-
-    @Override
-    public void refresh() {
-        throw new UnsupportedOperationException();
     }
 
 }

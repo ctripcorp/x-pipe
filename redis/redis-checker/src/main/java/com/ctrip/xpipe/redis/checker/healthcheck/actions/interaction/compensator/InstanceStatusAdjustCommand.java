@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,8 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private long deadlineTimeMilli;
 
+    private MetaCache metaCache;
+
     private OuterClientService outerClientService;
 
     private AlertManager alertManager;
@@ -29,10 +32,11 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
     private static final Logger logger = LoggerFactory.getLogger(InstanceStatusAdjustCommand.class);
 
     public InstanceStatusAdjustCommand(ClusterShardHostPort instance, boolean state, long deadlineTimeMilli,
-                                       OuterClientService outerClientService, AlertManager alertManager) {
+                                       MetaCache metaCache, OuterClientService outerClientService, AlertManager alertManager) {
         this.instance = instance;
         this.state = state;
         this.deadlineTimeMilli = deadlineTimeMilli;
+        this.metaCache = metaCache;
         this.outerClientService = outerClientService;
         this.alertManager = alertManager;
     }
@@ -42,6 +46,11 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
         if (System.currentTimeMillis() > deadlineTimeMilli) {
             future().setFailure(new TimeoutException(instance.toString()));
             logger.debug("[doExecute][skip] timeout {}, instance {}", deadlineTimeMilli, instance);
+            return;
+        }
+        if (!metaCache.inBackupDc(instance.getHostPort())) {
+            future().setFailure(new IllegalArgumentException("instance not in backup dc"));
+            logger.info("[doExecute][skip] active dc instance {}", instance);
             return;
         }
 

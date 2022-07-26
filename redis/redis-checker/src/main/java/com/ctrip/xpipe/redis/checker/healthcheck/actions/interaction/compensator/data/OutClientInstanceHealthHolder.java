@@ -28,15 +28,19 @@ public class OutClientInstanceHealthHolder {
         this.clusters.putAll(outerClientClusters);
     }
 
-    public UpDownInstances extractReadable(Set<HostPort> interested) {
+    public UpDownInstances extractReadable(Map<String, Set<HostPort>> interested) {
         Set<HostPort> healthyInstances = new HashSet<>();
         Set<HostPort> unhealthyInstances = new HashSet<>();
 
-        for (OuterClientService.ClusterInfo clusterInfo: clusters.values()) {
+        for (String cluster: interested.keySet()) {
+            OuterClientService.ClusterInfo clusterInfo = clusters.get(cluster.toLowerCase());
+            if (null == clusterInfo) continue;
+
+            Set<HostPort> interestedInstances = interested.get(cluster);
             for (OuterClientService.GroupInfo group : clusterInfo.getGroups()) {
                 group.getInstances().forEach(instanceInfo -> {
                     HostPort hostPort = new HostPort(instanceInfo.getIPAddress(), instanceInfo.getPort());
-                    if (!interested.contains(hostPort)) return;
+                    if (!interestedInstances.contains(hostPort)) return;
                     if (instanceInfo.isCanRead()) healthyInstances.add(hostPort);
                     else unhealthyInstances.add(hostPort);
                 });

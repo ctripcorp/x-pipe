@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -10,7 +9,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +29,7 @@ import static org.mockito.ArgumentMatchers.*;
  * date 2022/7/24
  */
 @RunWith(MockitoJUnitRunner.class)
-public class InstanceHealthStatusConsistenceCheckerTest extends AbstractRedisTest {
+public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisTest {
 
     @Mock
     private InstanceHealthStatusCollector collector;
@@ -54,11 +52,11 @@ public class InstanceHealthStatusConsistenceCheckerTest extends AbstractRedisTes
     @Mock
     private OutClientInstanceHealthHolder outClientInstanceHealthHolder;
 
-    private InstanceHealthStatusConsistenceChecker checker;
+    private InstanceHealthStatusConsistenceInspector inspector;
 
     @Before
     public void setupInstanceHealthStatusConsistenceCheckerTest() throws Exception {
-        checker = new InstanceHealthStatusConsistenceChecker(collector, adjuster, leaderElector, config, metaCache);
+        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, config, metaCache);
         Mockito.when(leaderElector.amILeader()).thenReturn(true);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.when(collector.collect()).thenReturn(Pair.of(xpipeInstanceHealthHolder, outClientInstanceHealthHolder));
@@ -80,7 +78,7 @@ public class InstanceHealthStatusConsistenceCheckerTest extends AbstractRedisTes
         Mockito.when(outClientInstanceHealthHolder.extractReadable(any()))
                 .thenReturn(new UpDownInstances(Collections.singleton(new HostPort("10.0.0.2", 6379)),
                         Collections.singleton(new HostPort("10.0.0.1", 6379))));
-        checker.check();
+        inspector.inspect();
 
         Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.1", 6379))),
                 ArgumentMatchers.eq(true), anyLong());
@@ -90,7 +88,7 @@ public class InstanceHealthStatusConsistenceCheckerTest extends AbstractRedisTes
 
     @Test
     public void testFetchInterestedInstance() {
-        Set<HostPort> interested = checker.fetchInterestedInstance();
+        Set<HostPort> interested = inspector.fetchInterestedInstance();
         Set<HostPort> expected = new HashSet<>();
         getXpipeMeta().getDcs().get("oy").getClusters().get("cluster1").getShards().values()
                 .forEach(shardMeta -> {

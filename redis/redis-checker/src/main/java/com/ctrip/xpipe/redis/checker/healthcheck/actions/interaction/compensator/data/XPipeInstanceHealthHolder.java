@@ -25,22 +25,24 @@ public class XPipeInstanceHealthHolder {
         this.healthCheckResult.add(result);
     }
 
-    public UpDownInstances aggregate(Set<HostPort> interested, int quorum) {
+    public UpDownInstances aggregate(Map<String, Set<HostPort>> interested, int quorum) {
         Set<HostPort> healthyInstances = new HashSet<>();
         Set<HostPort> unhealthyInstances = new HashSet<>();
 
-        interested.forEach(instance -> {
-            List<HealthStatusDesc> statusList = getHealthStatus(instance);
-            int upCnt = 0;
-            int downCnt = 0;
+        interested.values().forEach(instances -> {
+            instances.forEach(instance -> {
+                List<HealthStatusDesc> statusList = getHealthStatus(instance);
+                int upCnt = 0;
+                int downCnt = 0;
 
-            for (HealthStatusDesc status: statusList) {
-                if (status.getState().shouldNotifyMarkup()) upCnt++;
-                else if (status.getState().shouldNotifyMarkDown()) downCnt++;
-            }
+                for (HealthStatusDesc status: statusList) {
+                    if (status.getState().shouldNotifyMarkup()) upCnt++;
+                    else if (status.getState().shouldNotifyMarkDown()) downCnt++;
+                }
 
-            if (upCnt >= quorum) healthyInstances.add(instance);
-            else if (downCnt >= quorum) unhealthyInstances.add(instance);
+                if (upCnt >= quorum) healthyInstances.add(instance);
+                else if (downCnt >= quorum) unhealthyInstances.add(instance);
+            });
         });
 
         return new UpDownInstances(healthyInstances, unhealthyInstances);

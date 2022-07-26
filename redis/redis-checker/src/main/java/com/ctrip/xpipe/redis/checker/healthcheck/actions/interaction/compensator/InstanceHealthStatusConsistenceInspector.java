@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
@@ -27,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
 
@@ -36,7 +39,7 @@ import java.util.concurrent.*;
  * date 2022/7/21
  */
 @Service
-public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle implements TopElement {
+public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle implements TopElement {
 
     private InstanceHealthStatusCollector collector;
 
@@ -52,15 +55,15 @@ public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle im
 
     private ScheduledExecutorService scheduled;
 
-    private static final Logger logger = LoggerFactory.getLogger(InstanceHealthStatusConsistenceChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(InstanceHealthStatusConsistenceInspector.class);
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
-    public InstanceHealthStatusConsistenceChecker(InstanceHealthStatusCollector instanceHealthStatusCollector,
-                                                  InstanceStatusAdjuster instanceStatusAdjuster,
-                                                  @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
-                                                  CheckerConfig checkerConfig, MetaCache metaCache) {
+    public InstanceHealthStatusConsistenceInspector(InstanceHealthStatusCollector instanceHealthStatusCollector,
+                                                    InstanceStatusAdjuster instanceStatusAdjuster,
+                                                    @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
+                                                    CheckerConfig checkerConfig, MetaCache metaCache) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
         this.leaderElector = groupCheckerLeaderElector;
@@ -69,7 +72,7 @@ public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle im
     }
 
     @VisibleForTesting
-    protected void check() throws InterruptedException, ExecutionException, TimeoutException {
+    protected void inspect() throws InterruptedException, ExecutionException, TimeoutException {
         if (null == leaderElector || !leaderElector.amILeader()) {
             logger.debug("[inspect][skip] not leader");
         }
@@ -77,7 +80,7 @@ public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle im
         logger.debug("[inspect] begin");
         long timeoutMill = System.currentTimeMillis() + Math.min(config.getPingDownAfterMilli() / 2,
                 config.getDownAfterCheckNums() * config.getRedisReplicationHealthCheckInterval() / 2);
-        Set<HostPort> interested = fetchInterestedInstance();
+        Map<String, Set<HostPort>> interested = fetchInterestedClusterInstances();
         if (interested.isEmpty()) {
             logger.debug("[inspect][skip] no interested instance");
             return;
@@ -128,9 +131,32 @@ public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle im
         return interested;
     }
 
+    // return instance with clusterName so that we can check if out-client-service instance in the same cluster
+    protected Map<String, Set<HostPort>> fetchInterestedClusterInstances() {
+        Map<String, Set<HostPort>> interestedClusterInstances = new HashMap<>();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (null == xpipeMeta) return interestedClusterInstances;
+
+        for (DcMeta dcMeta: xpipeMeta.getDcs().values()) {
+            if (dcMeta.getId().equalsIgnoreCase(currentDc)) continue;
+
+            for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
+                if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
+                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
+
+                Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
+                for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+                    shardMeta.getRedises().forEach(redis -> interestedInstances.add(new HostPort(redis.getIp(), redis.getPort())));
+                }
+            }
+        }
+
+        return interestedClusterInstances;
+    }
+
     protected UpDownInstances findHostPortNeedAdjust(XPipeInstanceHealthHolder xpipeInstanceHealthHolder,
-                                                                        OutClientInstanceHealthHolder outClientInstanceHealthHolder,
-                                                                        Set<HostPort> interested) {
+                                                     OutClientInstanceHealthHolder outClientInstanceHealthHolder,
+                                                     Map<String, Set<HostPort>> interested) {
         UpDownInstances xpipeInstances = xpipeInstanceHealthHolder.aggregate(interested, config.getQuorum());
         UpDownInstances outClientInstances = outClientInstanceHealthHolder.extractReadable(interested);
 
@@ -146,7 +172,7 @@ public class InstanceHealthStatusConsistenceChecker extends AbstractLifecycle im
         this.task = new DynamicDelayPeriodTask("inspect", new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                check();
+                inspect();
             }
         }, config::getHealthMarkCompensateIntervalMill, scheduled);
     }

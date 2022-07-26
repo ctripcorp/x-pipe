@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,6 +85,11 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		clusterInfo.setName(clusterName);
 		clusterInfo.setGroups(Lists.newArrayList(new GroupInfo()));
 		return clusterInfo;
+	}
+
+	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return Collections.emptyList();
 	}
 
 	@Override

@@ -64,6 +64,11 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return null;
+	}
+
+	@Override
 	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
 	    return false;
 	}

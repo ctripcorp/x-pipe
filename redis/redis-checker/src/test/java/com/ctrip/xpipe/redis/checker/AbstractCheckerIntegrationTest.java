@@ -192,14 +192,10 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
                 }
 
                 @Override
-                public Map<String, OuterClientService.ClusterInfo> getAllCurrentDcActiveOneWayClusters(String activeDc) throws Exception {
+                public Map<String, OuterClientService.ClusterInfo> getAllActiveDcClusters(String activeDc) {
                     return null;
                 }
 
-                @Override
-                public void refresh() {
-
-                }
             };
         }
 
