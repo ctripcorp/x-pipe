@@ -75,6 +75,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     protected void inspect() throws InterruptedException, ExecutionException, TimeoutException {
         if (null == leaderElector || !leaderElector.amILeader()) {
             logger.debug("[inspect][skip] not leader");
+            return;
         }
 
         logger.debug("[inspect] begin");
@@ -102,36 +103,15 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
             adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, timeoutMill);
     }
 
-    private void checkTimeout(long timeoutAtMilli, String msg) {
+    private void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
         if (System.currentTimeMillis() > timeoutAtMilli) {
             logger.info("[timeout] {}", msg);
+            throw new TimeoutException(msg);
         }
-    }
-
-    @VisibleForTesting
-    protected Set<HostPort> fetchInterestedInstance() {
-        Set<HostPort> interested = new HashSet<>();
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta) return interested;
-
-        for (DcMeta dcMeta: xpipeMeta.getDcs().values()) {
-            if (dcMeta.getId().equalsIgnoreCase(currentDc)) continue;
-
-            for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
-                if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
-
-                for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
-                    shardMeta.getRedises().forEach(redis -> interested.add(new HostPort(redis.getIp(), redis.getPort())));
-                }
-            }
-        }
-
-
-        return interested;
     }
 
     // return instance with clusterName so that we can check if out-client-service instance in the same cluster
+    @VisibleForTesting
     protected Map<String, Set<HostPort>> fetchInterestedClusterInstances() {
         Map<String, Set<HostPort>> interestedClusterInstances = new HashMap<>();
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
