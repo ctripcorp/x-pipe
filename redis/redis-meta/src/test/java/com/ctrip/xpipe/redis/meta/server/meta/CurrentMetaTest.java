@@ -273,18 +273,6 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterDbId, bishardDbId));
 	}
 
-	@Test
-	public void testGetActiveDc() {
-		ClusterMeta clusterMeta1 = MetaClone.clone(clusterMeta);
-		clusterMeta1.setActiveDc("fq").setBackupDcs("jq,fra");
-		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2L).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1").setIsPublic(true);
-		Map<String, RouteMeta> newChooseRoutes = new HashMap<>();
-		newChooseRoutes.put("fq", hadOrgIdRoute);
-		
-		List<String> dcs = currentMeta.updateClusterRoutes(clusterMeta1, newChooseRoutes);
-		Assert.assertEquals(dcs.size(), 1);
-		Assert.assertEquals(dcs.get(0), clusterMeta1.getActiveDc());
-	}
 }
 	
 		

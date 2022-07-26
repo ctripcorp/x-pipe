@@ -186,19 +186,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private void clusterRoutesChange(Long clusterDbId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
-		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoutes(clusterDbId));
-
-		if(changedDcs != null && !changedDcs.isEmpty())  {
-			if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
-				for (ShardMeta shard : clusterMeta.getShards().values()) {
-					changedDcs.forEach(dcId -> {
-						notifyPeerMasterChange(dcId, clusterMeta.getDbId(), shard.getDbId());
-					});
-				}
-			}
-			else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
-				refreshKeeperMaster(clusterMeta);
-			}
+		if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
+			refreshPeerMasters(clusterMeta);
+		}
+		else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
+			refreshKeeperMaster(clusterMeta);
 		}
 	}
 
@@ -269,7 +261,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 		logger.info("[addCluster]{}:{}, {}", clusterMeta.getId(), clusterDbId, clusterMeta);
 		currentMeta.addCluster(clusterMeta);
-		currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoutes(clusterDbId));
 		notifyObservers(new NodeAdded<ClusterMeta>(clusterMeta));
 	}
 
@@ -400,6 +391,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected void routeChanges() {
 		for(Long clusterDbId : allClusters()) {
 			clusterRoutesChange(clusterDbId);
+		}
+	}
+
+	protected void refreshPeerMasters(ClusterMeta clusterMeta) {
+		for (ShardMeta shard : clusterMeta.getShards().values()) {
+			notifyPeerMasterChange(clusterMeta.getDbId(), shard.getDbId());
 		}
 	}
 
@@ -537,7 +534,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
 		currentMeta.setPeerMaster(dcId, clusterDbId, shardDbId, peerMaster);
-		notifyPeerMasterChange(dcId, clusterDbId, shardDbId);
+		notifyPeerMasterChange(clusterDbId, shardDbId);
 	}
 
 	@Override
@@ -555,8 +552,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public RouteMeta getClusterRouteByDcId(String dcId, Long clusterDbId) {
-		return currentMeta.getClusterRouteByDcId(clusterDbId, dcId);
+	public RouteMeta getClusterRouteByDcId(String dstDcId, Long clusterDbId) {
+		return dcMetaCache.chooseRoute(clusterDbId, dstDcId);
 	}
 
 	@Override
@@ -575,12 +572,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@VisibleForTesting
-	protected void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
+	protected void notifyPeerMasterChange(Long clusterDbId, Long shardDbId) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);
+				stateHandler.peerMasterChanged(clusterDbId, shardDbId);
 			} catch (Exception e) {
-				logger.error("[notifyPeerMasterChange] {}, cluster_{}, shard_{}", dcId, clusterDbId, shardDbId, e);
+				logger.error("[notifyPeerMasterChange] cluster_{}, shard_{}", clusterDbId, shardDbId, e);
 			}
 		}
 	}

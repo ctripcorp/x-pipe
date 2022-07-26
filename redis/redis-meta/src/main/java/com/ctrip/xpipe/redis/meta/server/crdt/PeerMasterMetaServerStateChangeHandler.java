@@ -17,7 +17,7 @@ public class PeerMasterMetaServerStateChangeHandler implements MetaServerStateCh
     }
 
     @Override
-    public void peerMasterChanged(String dcId, Long clusterDbId, Long shardDbId) {
+    public void peerMasterChanged(Long clusterDbId, Long shardDbId) {
         peerMasterAdjustAction.adjustPeerMaster(clusterDbId, shardDbId);
     }
 

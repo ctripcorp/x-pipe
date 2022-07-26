@@ -34,7 +34,7 @@ public interface DcMetaCache extends Observable {
 
 	List<RouteMeta> getAllMetaRoutes();
 
-	Map<String, RouteMeta> chooseRoutes(long clusterDbId);
+	RouteMeta chooseRoute(long clusterDbId, String dstDcId);
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
