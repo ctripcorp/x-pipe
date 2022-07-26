@@ -20,6 +20,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -87,14 +88,14 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
     }
 
     @Test
-    public void testFetchInterestedInstance() {
-        Set<HostPort> interested = inspector.fetchInterestedInstance();
-        Set<HostPort> expected = new HashSet<>();
+    public void testFetchInterestedClusterInstances() {
+        Map<String, Set<HostPort>> interestedClusterInstances = inspector.fetchInterestedClusterInstances();
+        Set<HostPort> expectedInstances = new HashSet<>();
         getXpipeMeta().getDcs().get("oy").getClusters().get("cluster1").getShards().values()
                 .forEach(shardMeta -> {
-                    shardMeta.getRedises().forEach(redisMeta -> expected.add(new HostPort(redisMeta.getIp(), redisMeta.getPort())));
+                    shardMeta.getRedises().forEach(redisMeta -> expectedInstances.add(new HostPort(redisMeta.getIp(), redisMeta.getPort())));
                 });
-        Assert.assertEquals(expected, interested);
+        Assert.assertEquals(Collections.singletonMap("cluster1", expectedInstances), interestedClusterInstances);
     }
 
 }

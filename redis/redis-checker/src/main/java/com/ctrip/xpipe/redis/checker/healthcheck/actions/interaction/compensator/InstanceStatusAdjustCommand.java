@@ -45,7 +45,7 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
     protected void doExecute() throws Throwable {
         if (System.currentTimeMillis() > deadlineTimeMilli) {
             future().setFailure(new TimeoutException(instance.toString()));
-            logger.debug("[doExecute][skip] timeout {}, instance {}", deadlineTimeMilli, instance);
+            logger.info("[doExecute][skip] timeout {}, instance {}", deadlineTimeMilli, instance);
             return;
         }
         if (!metaCache.inBackupDc(instance.getHostPort())) {
@@ -54,6 +54,7 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
             return;
         }
 
+        logger.info("[compensate][{}] {}", state ? "up" : "down", instance);
         if (state) {
             alertManager.alert(instance.getClusterName(), instance.getShardName(), instance.getHostPort(),
                     ALERT_TYPE.COMPENSATE_MARK_INSTANCE_UP, "Mark instance up");
