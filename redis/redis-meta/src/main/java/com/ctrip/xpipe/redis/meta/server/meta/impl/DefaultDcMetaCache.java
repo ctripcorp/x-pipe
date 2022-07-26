@@ -269,16 +269,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public Map<String, RouteMeta> chooseRoutes(long clusterDbId) {
+	public RouteMeta chooseRoute(long clusterDbId, String dstDcId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterDbId);
-		List<String> dstDcs = parseDstDcs(clusterMeta);
-		Map<String, List<RouteMeta>> clusterDesignatedRoutes =
-				getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
-		int orgId = clusterMeta.getOrgId() == null ? 0 : clusterMeta.getOrgId();
 		RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
 				RouteChooseStrategyFactory.RouteStrategyType.lookup(metaServerConfig.getChooseRouteStrategyType());
-
-		return dcMetaManager.get().chooseRoutes(clusterMeta.getId(), dstDcs, orgId, getRouteChooseStrategy(routeStrategyType), clusterDesignatedRoutes);
+		return dcMetaManager.get().chooseRoute(clusterMeta.getId(), dstDcId, clusterMeta.getOrgId(), getRouteChooseStrategy(routeStrategyType));
 	}
 
 	private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
@@ -289,14 +284,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		}
 
 		return localStrategy;
-	}
-
-	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
-		if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
-		} else {
-			return Lists.newArrayList(clusterMeta.getActiveDc());
-		}
 	}
 
 	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
