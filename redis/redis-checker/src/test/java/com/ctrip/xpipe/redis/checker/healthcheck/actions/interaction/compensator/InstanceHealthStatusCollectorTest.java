@@ -32,16 +32,16 @@ import java.util.*;
 public class InstanceHealthStatusCollectorTest extends AbstractTest {
 
     @Mock
-    private DefaultDelayPingActionCollector delayPingActionCollector;
-
-    @Mock
     private RemoteCheckerManager remoteCheckerManager;
 
     @Mock
     private OuterClientCache outerClientCache;
 
     @Mock
-    private CheckerService checkerService;
+    private CheckerService remoteCheckerService;
+
+    @Mock
+    private CheckerService localCheckerService;
 
     private InstanceHealthStatusCollector collector;
 
@@ -49,9 +49,8 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
 
     @Before
     public void setupInstanceHealthStatusCollectorTest() {
-        this.collector = new InstanceHealthStatusCollector(delayPingActionCollector, remoteCheckerManager,
-                outerClientCache, executors);
-        Mockito.when(remoteCheckerManager.getAllCheckerServices()).thenReturn(Collections.singletonList(checkerService));
+        this.collector = new InstanceHealthStatusCollector(remoteCheckerManager, outerClientCache, executors);
+        Mockito.when(remoteCheckerManager.getAllCheckerServices()).thenReturn(Arrays.asList(remoteCheckerService, localCheckerService));
         interested = new HashMap<>();
         interested.put("cluster1", new HashSet<>(Arrays.asList(new HostPort("10.0.0.1", 6379))));
     }
@@ -59,10 +58,10 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
     @Test
     public void testCollect() throws Exception {
         Map<HostPort, HealthStatusDesc> healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
-        Mockito.when(checkerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
+        Mockito.when(remoteCheckerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
         Mockito.when(outerClientCache.getAllActiveDcClusters("jq")).thenReturn(mockOutClientResp(true));
         healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
-        Mockito.when(delayPingActionCollector.getAllHealthStatus()).thenReturn(healthStatus);
+        Mockito.when(localCheckerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
         Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> result = this.collector.collect();
 
         UpDownInstances xpipeUpDownInstances = result.getKey().aggregate(interested, 2);
