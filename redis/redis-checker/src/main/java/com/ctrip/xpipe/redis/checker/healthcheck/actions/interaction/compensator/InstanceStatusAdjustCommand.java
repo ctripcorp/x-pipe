@@ -44,13 +44,18 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
     @Override
     protected void doExecute() throws Throwable {
         if (System.currentTimeMillis() > deadlineTimeMilli) {
+            logger.info("[compensate][skip] timeout {}, instance {}", deadlineTimeMilli, instance);
             future().setFailure(new TimeoutException(instance.toString()));
-            logger.info("[doExecute][skip] timeout {}, instance {}", deadlineTimeMilli, instance);
             return;
         }
         if (!metaCache.inBackupDc(instance.getHostPort())) {
+            logger.info("[compensate][skip][active dc instance] {}", instance);
             future().setFailure(new IllegalArgumentException("instance not in backup dc"));
-            logger.info("[doExecute][skip] active dc instance {}", instance);
+            return;
+        }
+        if (state == outerClientService.isInstanceUp(instance)) {
+            logger.info("[compensate][skip][already consistent] {}", instance);
+            future().setSuccess();
             return;
         }
 
