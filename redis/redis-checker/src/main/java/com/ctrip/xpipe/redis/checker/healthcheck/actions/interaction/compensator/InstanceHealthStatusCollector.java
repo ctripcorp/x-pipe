@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.tuple.Pair;
@@ -32,8 +30,6 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
 @Component
 public class InstanceHealthStatusCollector {
 
-    private DefaultDelayPingActionCollector delayPingActionCollector;
-
     private RemoteCheckerManager remoteCheckerManager;
 
     private OuterClientCache outerClientCache;
@@ -43,10 +39,8 @@ public class InstanceHealthStatusCollector {
     private Logger logger = LoggerFactory.getLogger(InstanceHealthStatusCollector.class);
 
     @Autowired
-    public InstanceHealthStatusCollector(DefaultDelayPingActionCollector defaultDelayPingActionCollector,
-                                         RemoteCheckerManager remoteCheckerManager, OuterClientCache outerClientCache,
+    public InstanceHealthStatusCollector(RemoteCheckerManager remoteCheckerManager, OuterClientCache outerClientCache,
                                          @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors) {
-        this.delayPingActionCollector = defaultDelayPingActionCollector;
         this.remoteCheckerManager = remoteCheckerManager;
         this.outerClientCache = outerClientCache;
         this.executors = executors;
@@ -62,9 +56,7 @@ public class InstanceHealthStatusCollector {
         remoteCheckerManager.getAllCheckerServices().forEach(checkerService -> {
             commandChain.add(new GetRemoteCheckResultCmd(checkerService, xpipeInstanceHealthHolder));
         });
-        CommandFuture<?> commandFuture = commandChain.execute();
-        xpipeInstanceHealthHolder.add(delayPingActionCollector.getAllHealthStatus());
-        commandFuture.get(5, TimeUnit.SECONDS);
+        commandChain.execute().get(5, TimeUnit.SECONDS);
 
         return new Pair<>(xpipeInstanceHealthHolder, outClientInstanceHealthHolder);
     }
