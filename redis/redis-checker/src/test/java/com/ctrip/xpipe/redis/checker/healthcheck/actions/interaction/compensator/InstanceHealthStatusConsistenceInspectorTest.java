@@ -55,11 +55,17 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
 
     private InstanceHealthStatusConsistenceInspector inspector;
 
+    private String cluster = "cluster1", shard = "shard1";
+
+    private HostPort master = new HostPort("127.0.0.1", 6379);
+
     @Before
     public void setupInstanceHealthStatusConsistenceCheckerTest() throws Exception {
         inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, config, metaCache);
         Mockito.when(leaderElector.amILeader()).thenReturn(true);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
+        Mockito.when(metaCache.findClusterShard(any())).thenReturn(Pair.of(cluster, shard));
+        Mockito.when(metaCache.findMaster(cluster, shard)).thenReturn(master);
         Mockito.when(collector.collect()).thenReturn(Pair.of(xpipeInstanceHealthHolder, outClientInstanceHealthHolder));
         Mockito.when(config.getPingDownAfterMilli()).thenReturn(10000);
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
@@ -73,18 +79,31 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
 
     @Test
     public void testCheckAndAdjust() throws Exception {
-        Mockito.when(xpipeInstanceHealthHolder.aggregate(any(), anyInt()))
+        Mockito.when(xpipeInstanceHealthHolder.aggregate(anyMap(), anyInt()))
                 .thenReturn(new UpDownInstances(Collections.singleton(new HostPort("10.0.0.1", 6379)),
                         Collections.singleton(new HostPort("10.0.0.2", 6379))));
         Mockito.when(outClientInstanceHealthHolder.extractReadable(any()))
                 .thenReturn(new UpDownInstances(Collections.singleton(new HostPort("10.0.0.2", 6379)),
                         Collections.singleton(new HostPort("10.0.0.1", 6379))));
+        Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(true);
         inspector.inspect();
 
         Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.1", 6379))),
                 ArgumentMatchers.eq(true), anyLong());
         Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.2", 6379))),
                 ArgumentMatchers.eq(false), anyLong());
+    }
+
+    @Test
+    public void testNotMarkDownMasterUnhealthyInstances() throws Exception {
+        Mockito.when(xpipeInstanceHealthHolder.aggregate(anyMap(), anyInt()))
+                .thenReturn(new UpDownInstances(Collections.emptySet(), Collections.singleton(new HostPort("10.0.0.1", 6379))));
+        Mockito.when(outClientInstanceHealthHolder.extractReadable(any()))
+                .thenReturn(new UpDownInstances(Collections.singleton(new HostPort("10.0.0.1", 6379)), Collections.emptySet()));
+        Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(false);
+        inspector.inspect();
+
+        Mockito.verify(adjuster, Mockito.never()).adjustInstances(any(), anyBoolean(), anyLong());
     }
 
     @Test
