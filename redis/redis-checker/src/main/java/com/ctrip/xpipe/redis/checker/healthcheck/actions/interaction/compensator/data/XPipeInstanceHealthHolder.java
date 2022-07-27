@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensato
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
+import org.springframework.lang.Nullable;
 
 import java.util.*;
 
@@ -25,23 +26,30 @@ public class XPipeInstanceHealthHolder {
         this.healthCheckResult.add(result);
     }
 
+    public @Nullable Boolean aggregate(HostPort instance, int quorum) {
+        List<HealthStatusDesc> statusList = getHealthStatus(instance);
+        int upCnt = 0;
+        int downCnt = 0;
+
+        for (HealthStatusDesc status: statusList) {
+            if (status.getState().shouldNotifyMarkup()) upCnt++;
+            else if (status.getState().shouldNotifyMarkDown()) downCnt++;
+        }
+
+        if (upCnt >= quorum) return Boolean.TRUE;
+        else if (downCnt >= quorum) return Boolean.FALSE;
+        else return null;
+    }
+
     public UpDownInstances aggregate(Map<String, Set<HostPort>> interested, int quorum) {
         Set<HostPort> healthyInstances = new HashSet<>();
         Set<HostPort> unhealthyInstances = new HashSet<>();
 
         interested.values().forEach(instances -> {
             instances.forEach(instance -> {
-                List<HealthStatusDesc> statusList = getHealthStatus(instance);
-                int upCnt = 0;
-                int downCnt = 0;
-
-                for (HealthStatusDesc status: statusList) {
-                    if (status.getState().shouldNotifyMarkup()) upCnt++;
-                    else if (status.getState().shouldNotifyMarkDown()) downCnt++;
-                }
-
-                if (upCnt >= quorum) healthyInstances.add(instance);
-                else if (downCnt >= quorum) unhealthyInstances.add(instance);
+                Boolean healthy = aggregate(instance, quorum);
+                if (Boolean.TRUE.equals(healthy)) healthyInstances.add(instance);
+                else if (Boolean.FALSE.equals(healthy)) unhealthyInstances.add(instance);
             });
         });
 

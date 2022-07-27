@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -137,12 +138,44 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     protected UpDownInstances findHostPortNeedAdjust(XPipeInstanceHealthHolder xpipeInstanceHealthHolder,
                                                      OutClientInstanceHealthHolder outClientInstanceHealthHolder,
                                                      Map<String, Set<HostPort>> interested) {
-        UpDownInstances xpipeInstances = xpipeInstanceHealthHolder.aggregate(interested, config.getQuorum());
+        int quorum = config.getQuorum();
+        UpDownInstances xpipeInstances = xpipeInstanceHealthHolder.aggregate(interested, quorum);
         UpDownInstances outClientInstances = outClientInstanceHealthHolder.extractReadable(interested);
 
-        xpipeInstances.getHealthyInstances().retainAll(outClientInstances.getUnhealthyInstances());
-        xpipeInstances.getUnhealthyInstances().retainAll(outClientInstances.getHealthyInstances());
-        return xpipeInstances;
+        Set<HostPort> needMarkUpInstances = xpipeInstances.getHealthyInstances();
+        Set<HostPort> needMarkDownInstances = xpipeInstances.getUnhealthyInstances();
+        needMarkUpInstances.retainAll(outClientInstances.getUnhealthyInstances());
+        needMarkDownInstances.retainAll(outClientInstances.getHealthyInstances());
+        needMarkDownInstances = filterMasterHealthyInstances(xpipeInstanceHealthHolder, needMarkDownInstances, quorum);
+
+        return new UpDownInstances(needMarkUpInstances, needMarkDownInstances);
+    }
+
+    protected Set<HostPort> filterMasterHealthyInstances(XPipeInstanceHealthHolder xpipeInstanceHealthHolder,
+                                                         Set<HostPort> instances, int quorum) {
+        Map<Pair<String, String>, Boolean> masterHealthStatusMap = new HashMap<>();
+        Set<HostPort> masterHealthyInstances = new HashSet<>();
+        for (HostPort instance: instances) {
+            Pair<String, String> clusterShard = metaCache.findClusterShard(instance);
+            if (null == clusterShard) continue;
+
+            if (!masterHealthStatusMap.containsKey(clusterShard)) {
+                try {
+                    HostPort master = metaCache.findMaster(clusterShard.getKey(), clusterShard.getValue());
+                    Boolean healthy = xpipeInstanceHealthHolder.aggregate(master, quorum);
+                    masterHealthStatusMap.put(clusterShard, healthy);
+                } catch (MasterNotFoundException e) {
+                    masterHealthStatusMap.put(clusterShard, null);
+                }
+            }
+
+            if (Boolean.TRUE.equals(masterHealthStatusMap.get(clusterShard))) {
+                masterHealthyInstances.add(instance);
+            }
+        }
+
+
+        return masterHealthyInstances;
     }
 
     @Override
