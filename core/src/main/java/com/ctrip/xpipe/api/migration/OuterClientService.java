@@ -30,9 +30,13 @@ public interface OuterClientService extends Ordered{
 
 	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
+	void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
+
 	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
+
+	void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
 
 	boolean clusterMigratePreCheck(String clusterName) throws OuterClientException;
 
