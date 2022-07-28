@@ -16,13 +16,12 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestOperations;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 /**
@@ -42,6 +41,9 @@ public class CRedisService extends AbstractOuterClientService {
 
 	private final String TYPE = "credis";
 
+	private static final ParameterizedTypeReference<List<ClusterInfo>> clustersRespTypeDef =
+			new ParameterizedTypeReference<List<ClusterInfo>>(){};
+
 	@Override
 	public int getOrder() {
 		return HIGHEST_PRECEDENCE;
@@ -58,6 +60,11 @@ public class CRedisService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		doMarkInstanceIfNoModifyFor(clusterShardHostPort, true, noModifySeconds);
+	}
+
+	@Override
 	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 
 		GetInstanceResult instance = getInstance(clusterShardHostPort);
@@ -71,6 +78,52 @@ public class CRedisService extends AbstractOuterClientService {
 	@Override
 	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 		doMarkInstance(clusterShardHostPort, false);
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		doMarkInstanceIfNoModifyFor(clusterShardHostPort, false, noModifySeconds);
+	}
+
+	private void doMarkInstanceIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, boolean state, long noModifySeconds) throws OuterClientException {
+
+		try {
+			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstanceIfNoModifyFor-%s", clusterShardHostPort.getClusterName()), new Task() {
+				@Override
+				public void go() throws Exception {
+
+					logger.info("[doMarkInstanceIfNoModifyFor][begin]{},{},{}", clusterShardHostPort, state, noModifySeconds);
+					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+					String cluster = clusterShardHostPort.getClusterName();
+					HostPort hostPort = clusterShardHostPort.getHostPort();
+					String reqType = state ? "markInstanceUpIfNoModify" : "markInstanceDownIfNoModify";
+
+					MarkInstanceResponse response = doRequest(reqType, cluster, () ->
+							restOperations.postForObject(
+									address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}&noModifySeconds={noModifySeconds}",
+									null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state, noModifySeconds)
+					);
+					logger.info("[doMarkInstanceIfNoModifyFor][end]{},{},{},{}", clusterShardHostPort, state, noModifySeconds, response);
+					if(!response.isSuccess()){
+						throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
+					}
+				}
+
+				@Override
+				public Map getData() {
+					return new HashMap<String, Object>() {{
+						put("cluster", clusterShardHostPort.getClusterName());
+						put("shard", clusterShardHostPort.getShardName());
+						put("hostport", clusterShardHostPort.getHostPort());
+						put("state", state);
+						put("noModifySeconds", noModifySeconds);
+					}};
+				}
+			});
+		} catch (Exception e) {
+			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
+		}
+
 	}
 
 	private void doMarkInstance(ClusterShardHostPort clusterShardHostPort, boolean state) throws OuterClientException {
@@ -90,7 +143,7 @@ public class CRedisService extends AbstractOuterClientService {
 							restOperations.postForObject(address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}",
 							null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state)
 					);
-                    logger.info("[doMarkInstance][ end ]{},{},{}", clusterShardHostPort, state, response);
+                    logger.info("[doMarkInstance][end]{},{},{}", clusterShardHostPort, state, response);
                     if(!response.isSuccess()){
                         throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
                     }
@@ -184,6 +237,22 @@ public class CRedisService extends AbstractOuterClientService {
 						() -> restOperations.getForObject(address + "?name={clusterName}", ClusterInfo.class, clusterName));
 				clusterInfo.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 				return clusterInfo;
+			}
+		});
+	}
+
+	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return catTransactionMonitor.logTransaction(TYPE, String.format("getActiveDcClusters:%s", dc), new Callable<List<ClusterInfo>>() {
+			@Override
+			public List<ClusterInfo> call() throws Exception {
+				String address = CREDIS_SERVICE.QUERY_CLUSTERS.getRealPath(credisConfig.getCredisServiceAddress());
+				List<ClusterInfo> clusters = doRequest("getActiveDcClusters", null,
+						() -> restOperations
+								.exchange(address + "?activeDc={clusterName}", HttpMethod.GET, null, clustersRespTypeDef, convertDcName(dc))
+								.getBody());
+				clusters.forEach(cluster -> cluster.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER));
+				return clusters;
 			}
 		});
 	}

@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.console;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -13,9 +13,7 @@ import java.util.Map;
  *         <p>
  *         Jun 07, 2017
  */
-public interface ConsoleService {
-
-    HEALTH_STATE getInstanceStatus(String ip, int port);
+public interface ConsoleService extends CheckerService {
 
     Boolean getInstancePingStatus(String ip, int port);
 

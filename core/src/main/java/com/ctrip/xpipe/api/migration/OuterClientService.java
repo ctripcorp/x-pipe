@@ -5,6 +5,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,9 +30,13 @@ public interface OuterClientService extends Ordered{
 
 	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
+	void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
+
 	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
+
+	void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
 
 	boolean clusterMigratePreCheck(String clusterName) throws OuterClientException;
 
@@ -39,6 +45,8 @@ public interface OuterClientService extends Ordered{
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;
 
 	ClusterInfo getClusterInfo(String clusterName) throws Exception;
+
+	List<ClusterInfo> getActiveDcClusters(String dc) throws Exception;
 
 	DcMeta getOutClientDcMeta(String dc) throws Exception;
 
@@ -174,6 +182,7 @@ public interface OuterClientService extends Ordered{
 			}
 		}
 
+		@JsonProperty("isXpipe")
 		public boolean isXpipe() {
 			return isXpipe;
 		}
@@ -231,6 +240,24 @@ public interface OuterClientService extends Ordered{
 			return this;
 		}
 
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClusterInfo that = (ClusterInfo) o;
+			return isXpipe == that.isXpipe &&
+					rule == that.rule &&
+					usingIdc == that.usingIdc &&
+					Objects.equals(masterIDC, that.masterIDC) &&
+					Objects.equals(name, that.name) &&
+					Objects.equals(ruleName, that.ruleName) &&
+					Objects.equals(groups, that.groups);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(isXpipe, masterIDC, name, rule, ruleName, usingIdc, groups);
+		}
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -267,6 +294,20 @@ public interface OuterClientService extends Ordered{
 			if (instances != null) {
 				instances.forEach(instanceMeta -> instanceMeta.check());
 			}
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			GroupInfo groupInfo = (GroupInfo) o;
+			return Objects.equals(name, groupInfo.name) &&
+					Objects.equals(instances, groupInfo.instances);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(name, instances);
 		}
 	}
 
@@ -321,6 +362,7 @@ public interface OuterClientService extends Ordered{
 			return this;
 		}
 
+		@JsonProperty("isMaster")
 		public boolean isMaster() {
 			return isMaster;
 		}
@@ -346,6 +388,24 @@ public interface OuterClientService extends Ordered{
 		public InstanceInfo setStatus(boolean status) {
 			this.status = status;
 			return this;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			InstanceInfo that = (InstanceInfo) o;
+			return canRead == that.canRead &&
+					isMaster == that.isMaster &&
+					port == that.port &&
+					status == that.status &&
+					Objects.equals(env, that.env) &&
+					Objects.equals(IPAddress, that.IPAddress);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(canRead, env, IPAddress, isMaster, port, status);
 		}
 	}
 

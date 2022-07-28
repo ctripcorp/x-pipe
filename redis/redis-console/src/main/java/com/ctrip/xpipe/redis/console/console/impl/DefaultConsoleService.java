@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -25,6 +26,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private String address;
 
     private final String healthStatusUrl;
+
+    private final String allHealthStatusUrl;
 
     private final String pingStatusUrl;
 
@@ -57,6 +60,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
+        allHealthStatusUrl = String.format("%s/api/health/check/status/all", this.address);
         pingStatusUrl = String.format("%s/api/redis/ping/{ip}/{port}", this.address);
         innerDelayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
         delayStatusUrl = String.format("%s/api/redis/delay/{ip}/{port}", this.address);
@@ -71,6 +75,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public HEALTH_STATE getInstanceStatus(String ip, int port) {
         return restTemplate.getForObject(healthStatusUrl, HEALTH_STATE.class, ip, port);
+    }
+
+    @Override
+    public Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus() {
+        return restTemplate.getForObject(allHealthStatusUrl, AllInstanceHealthStatus.class);
     }
 
     @Override

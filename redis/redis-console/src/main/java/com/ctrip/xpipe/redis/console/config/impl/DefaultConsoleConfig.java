@@ -212,8 +212,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getHealthyLeastNotifyIntervalMilli() {
-        return getIntProperty(KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI, 3 * 60 * 1000);
+    public long getHealthMarkCompensateIntervalMill() {
+        return getLongProperty(KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI, 2 * 60 * 1000L);
+    }
+
+    @Override
+    public int getHealthMarkCompensateThreads() {
+        return getIntProperty(KEY_HEALTHY_MARK_COMPENSATE_THREADS, 20);
     }
 
     @Override

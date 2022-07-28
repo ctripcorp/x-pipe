@@ -101,8 +101,13 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public int getHealthyLeastNotifyIntervalMilli() {
+    public long getHealthMarkCompensateIntervalMill() {
         return 60 * 1000;
+    }
+
+    @Override
+    public int getHealthMarkCompensateThreads() {
+        return 5;
     }
 
     @Override
