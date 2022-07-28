@@ -213,7 +213,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public long getHealthMarkCompensateIntervalMill() {
-        return getLongProperty(KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI, 3 * 60 * 1000L);
+        return getLongProperty(KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI, 2 * 60 * 1000L);
     }
 
     @Override
