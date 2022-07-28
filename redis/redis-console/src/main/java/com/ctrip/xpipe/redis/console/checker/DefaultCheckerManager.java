@@ -81,12 +81,12 @@ public class DefaultCheckerManager implements CheckerManager {
     }
 
     @Override
-    public List<CheckerService> getLeaderCheckerServices() {
-        List<CheckerService> services = new ArrayList<>();
+    public List<ConsoleCheckerService> getLeaderCheckerServices() {
+        List<ConsoleCheckerService> services = new ArrayList<>();
         for (Map<HostPort, CheckerStatus> checker : checkers) {
             for (CheckerStatus value : checker.values()) {
                 if (LEADER.equals(value.getCheckerRole())) {
-                    services.add(new ConsoleCheckerService(value.getHostPort()));
+                    services.add(new DefaultConsoleCheckerService(value.getHostPort()));
                 }
             }
         }

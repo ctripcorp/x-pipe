@@ -186,6 +186,38 @@ public enum ALERT_TYPE {
             return new DetailDesc("Instance Mark Down", "说明：从机房Redis健康检测出问题，会将Redis拉出集群");
         }
     },
+    COMPENSATE_MARK_INSTANCE_UP("compensate mark instance up", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("Instance Mark Up", "XPipe实例检查结果与CRedis可读状态不一致，补偿机制拉入实例");
+        }
+    },
+    COMPENSATE_MARK_INSTANCE_DOWN("compensate mark instance down", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("Instance Mark Down", "XPipe实例检查结果与CRedis可读状态不一致，补偿机制拉出实例");
+        }
+    },
     CRDT_INSTANCE_UP("crdt instance up", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {

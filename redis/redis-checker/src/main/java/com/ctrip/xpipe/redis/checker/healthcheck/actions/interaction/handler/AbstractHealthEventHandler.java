@@ -130,7 +130,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {
-        List<HEALTH_STATE> health_states = remoteCheckerManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
+        List<HEALTH_STATE> health_states = remoteCheckerManager.getHealthStates(hostPort.getHost(), hostPort.getPort());
         long matchStates = health_states.stream().filter(healthStates::contains).count();
         return matchStates >= checkerConfig.getQuorum();
     }

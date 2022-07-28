@@ -64,7 +64,22 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return null;
+	}
+
+	@Override
 	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
 	    return false;
+	}
+
+	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+
 	}
 }

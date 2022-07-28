@@ -7,8 +7,8 @@ import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,6 +69,11 @@ public class CheckerHealthController {
     @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
         return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
+    }
+
+    @GetMapping("/health/check/status/all")
+    public Map<HostPort, HealthStatusDesc> getAllHealthStatusDesc() {
+        return defaultDelayPingActionCollector.getAllHealthStatus();
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

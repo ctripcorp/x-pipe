@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,6 +88,11 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public List<ClusterInfo> getActiveDcClusters(String dc) throws Exception {
+		return Collections.emptyList();
+	}
+
+	@Override
 	public DcMeta getOutClientDcMeta(String dc) throws Exception {
 		return new DcMeta();
 	}
@@ -94,5 +100,17 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	@Override
 	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
 		return true;
+	}
+
+	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		logger.info("[markInstanceUpIfNoModifyFor]{}", clusterShardHostPort);
+		instanceStatus.put(clusterShardHostPort.getHostPort(), true);
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		logger.info("[markInstanceDownIfNoModifyFor]{}", clusterShardHostPort);
+		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
 	}
 }

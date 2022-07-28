@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.spring;
 
+import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -32,4 +33,10 @@ public class Production extends AbstractProfile {
         SpringZkClient springZkClient = new SpringZkClient(zkConfig, zkAddress);
         return springZkClient;
     }
+
+    @Bean
+    public SpringComponentLifecycleManager getSpringComponentLifecycleManager(){
+        return new SpringComponentLifecycleManager();
+    }
+
 }
