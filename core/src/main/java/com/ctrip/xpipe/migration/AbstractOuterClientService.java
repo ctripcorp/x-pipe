@@ -72,4 +72,14 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
 	    return false;
 	}
+
+	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+
+	}
 }

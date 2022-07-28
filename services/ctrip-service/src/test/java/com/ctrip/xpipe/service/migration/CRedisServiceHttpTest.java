@@ -138,6 +138,33 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     }
 
     @Test
+    public void testMarkInstanceDownIfNoModifyFor() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\n" +
+                "    \"success\": true,\n" +
+                "    \"message\": \"success\"" +
+                "}")
+                .setHeader("Content-Type", "application/json"));
+
+        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort("cluster1", "shard1",
+                new HostPort("10.0.0.1", 6379));
+        credisService.markInstanceDownIfNoModifyFor(clusterShardHostPort, 60);
+
+        Assert.assertEquals(1, webServer.getRequestCount());
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=cluster1&ip=10.0.0.1&port=6379&canRead=false&noModifySeconds=60",
+                req.getPath());
+        Assert.assertEquals("POST", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("markInstanceDownIfNoModify", metricData.getTags().get("api"));
+        Assert.assertEquals("cluster1", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
     public void testGetActiveDcClusters() throws Exception {
         OuterClientService.ClusterInfo cluster1 = mockClusterInfo("cluster1", "jq", "oy", "10.0.0.1");
         OuterClientService.ClusterInfo cluster2 = mockClusterInfo("cluster2", "jq", "oy", "10.0.0.2");

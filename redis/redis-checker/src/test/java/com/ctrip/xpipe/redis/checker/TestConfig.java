@@ -106,6 +106,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public int getHealthMarkCompensateThreads() {
+        return 5;
+    }
+
+    @Override
     public int getHealthyDelayMilliThroughProxy() {
         return 30 * 1000;
     }

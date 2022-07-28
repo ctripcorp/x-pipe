@@ -11,7 +11,6 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
-import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -19,7 +18,6 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
 import java.net.InetSocketAddress;
@@ -62,6 +60,11 @@ public class CRedisService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		doMarkInstanceIfNoModifyFor(clusterShardHostPort, true, noModifySeconds);
+	}
+
+	@Override
 	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 
 		GetInstanceResult instance = getInstance(clusterShardHostPort);
@@ -75,6 +78,52 @@ public class CRedisService extends AbstractOuterClientService {
 	@Override
 	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 		doMarkInstance(clusterShardHostPort, false);
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		doMarkInstanceIfNoModifyFor(clusterShardHostPort, false, noModifySeconds);
+	}
+
+	private void doMarkInstanceIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, boolean state, long noModifySeconds) throws OuterClientException {
+
+		try {
+			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstanceIfNoModifyFor-%s", clusterShardHostPort.getClusterName()), new Task() {
+				@Override
+				public void go() throws Exception {
+
+					logger.info("[doMarkInstanceIfNoModifyFor][begin]{},{},{}", clusterShardHostPort, state, noModifySeconds);
+					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+					String cluster = clusterShardHostPort.getClusterName();
+					HostPort hostPort = clusterShardHostPort.getHostPort();
+					String reqType = state ? "markInstanceUpIfNoModify" : "markInstanceDownIfNoModify";
+
+					MarkInstanceResponse response = doRequest(reqType, cluster, () ->
+							restOperations.postForObject(
+									address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}&noModifySeconds={noModifySeconds}",
+									null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state, noModifySeconds)
+					);
+					logger.info("[doMarkInstanceIfNoModifyFor][end]{},{},{},{}", clusterShardHostPort, state, noModifySeconds, response);
+					if(!response.isSuccess()){
+						throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
+					}
+				}
+
+				@Override
+				public Map getData() {
+					return new HashMap<String, Object>() {{
+						put("cluster", clusterShardHostPort.getClusterName());
+						put("shard", clusterShardHostPort.getShardName());
+						put("hostport", clusterShardHostPort.getHostPort());
+						put("state", state);
+						put("noModifySeconds", noModifySeconds);
+					}};
+				}
+			});
+		} catch (Exception e) {
+			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
+		}
+
 	}
 
 	private void doMarkInstance(ClusterShardHostPort clusterShardHostPort, boolean state) throws OuterClientException {
@@ -94,7 +143,7 @@ public class CRedisService extends AbstractOuterClientService {
 							restOperations.postForObject(address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}",
 							null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state)
 					);
-                    logger.info("[doMarkInstance][ end ]{},{},{}", clusterShardHostPort, state, response);
+                    logger.info("[doMarkInstance][end]{},{},{}", clusterShardHostPort, state, response);
                     if(!response.isSuccess()){
                         throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
                     }

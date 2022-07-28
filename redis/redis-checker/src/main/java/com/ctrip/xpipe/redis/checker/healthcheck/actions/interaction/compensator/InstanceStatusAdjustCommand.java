@@ -23,6 +23,8 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private long deadlineTimeMilli;
 
+    private long noModifySeconds;
+
     private MetaCache metaCache;
 
     private OuterClientService outerClientService;
@@ -31,11 +33,12 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceStatusAdjustCommand.class);
 
-    public InstanceStatusAdjustCommand(ClusterShardHostPort instance, boolean state, long deadlineTimeMilli,
+    public InstanceStatusAdjustCommand(ClusterShardHostPort instance, boolean state, long deadlineTimeMilli, long noModifySeconds,
                                        MetaCache metaCache, OuterClientService outerClientService, AlertManager alertManager) {
         this.instance = instance;
         this.state = state;
         this.deadlineTimeMilli = deadlineTimeMilli;
+        this.noModifySeconds = noModifySeconds;
         this.metaCache = metaCache;
         this.outerClientService = outerClientService;
         this.alertManager = alertManager;
@@ -63,11 +66,11 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
         if (state) {
             alertManager.alert(instance.getClusterName(), instance.getShardName(), instance.getHostPort(),
                     ALERT_TYPE.COMPENSATE_MARK_INSTANCE_UP, "Mark instance up");
-            outerClientService.markInstanceUp(instance);
+            outerClientService.markInstanceUpIfNoModifyFor(instance, noModifySeconds);
         } else {
             alertManager.alert(instance.getClusterName(), instance.getShardName(), instance.getHostPort(),
                     ALERT_TYPE.COMPENSATE_MARK_INSTANCE_DOWN, "Mark instance down");
-            outerClientService.markInstanceDown(instance);
+            outerClientService.markInstanceDownIfNoModifyFor(instance, noModifySeconds);
         }
 
         future().setSuccess();

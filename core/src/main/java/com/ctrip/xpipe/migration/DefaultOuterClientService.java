@@ -101,4 +101,16 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
 		return true;
 	}
+
+	@Override
+	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		logger.info("[markInstanceUpIfNoModifyFor]{}", clusterShardHostPort);
+		instanceStatus.put(clusterShardHostPort.getHostPort(), true);
+	}
+
+	@Override
+	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
+		logger.info("[markInstanceDownIfNoModifyFor]{}", clusterShardHostPort);
+		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
+	}
 }

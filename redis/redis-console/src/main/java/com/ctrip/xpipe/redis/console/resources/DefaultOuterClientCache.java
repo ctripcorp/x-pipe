@@ -50,7 +50,7 @@ public class DefaultOuterClientCache extends AbstractLifecycle implements OuterC
             return outerClientService.getClusterInfo(clusterName);
         }
 
-        return null;
+        return clusterInfo;
     }
 
     @Override
