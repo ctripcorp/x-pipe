@@ -239,7 +239,6 @@ public class HealthStatusTest extends AbstractRedisTest {
         when(config.getHealthyDelayMilli()).thenReturn(baseInterval);
         when(config.instanceLongDelayMilli()).thenReturn(baseInterval * 2);
         when(config.delayDownAfterMilli()).thenReturn(baseInterval * 5);
-        when(config.getHealthyLeastNotifyIntervalMilli()).thenReturn(60 * 1000);
 
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
@@ -504,78 +503,6 @@ public class HealthStatusTest extends AbstractRedisTest {
         assertEquals(INSTANCEUP, healthStatus.getState());
         healthStatus.delay(1L);
         assertEquals(HEALTHY, healthStatus.getState());
-    }
-
-    @Test
-    public void bugfixShouldNotNotifyUpWhenPingUpOnSick() {
-        when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(10);
-        when(config.getHealthyDelayMilli()).thenReturn(10);
-        when(config.getHealthyLeastNotifyIntervalMilli()).thenReturn(50);
-        markup();
-
-        AtomicInteger notifyCount = new AtomicInteger(0);
-        healthStatus.addObserver(new Observer() {
-            @Override
-            public void update(Object args, Observable observable) {
-                notifyCount.incrementAndGet();
-            }
-        });
-        healthStatus.pong();
-        sleep(11);
-        healthStatus.healthStatusUpdate();
-        assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
-        assertEquals(1, notifyCount.get());
-
-        sleep(51);
-        healthStatus.pong();
-        assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
-        assertEquals(1, notifyCount.get());
-    }
-
-    @Test
-    public void testLeastHealthyNotify() {
-        healthStatus.leastNotifyIntervalMilli = ()->30 * 1000;
-        HealthStatus spy = spy(healthStatus);
-        AtomicInteger notifyCount = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            notifyCount.addAndGet(1);
-            return null;
-        }).when(spy).doMarkUpAndNotify(any(), any());
-        spy.markUpIfNecessary(HEALTHY, HEALTHY);
-        assertEquals(1, notifyCount.get());
-        sleep(5);
-        spy.markUpIfNecessary(HEALTHY, HEALTHY);
-        assertEquals(1, notifyCount.get());
-    }
-
-    @Test
-    public void testLeastHealthyNotifyConcurrently() throws InterruptedException {
-        healthStatus.leastNotifyIntervalMilli = () -> 30 * 1000;
-        HealthStatus spy = spy(healthStatus);
-        AtomicInteger notifyCount = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            notifyCount.addAndGet(1);
-            return null;
-        }).when(spy).doMarkUpAndNotify(any(), any());
-
-        int concurrency = 100;
-        ExecutorService executors = Executors.newFixedThreadPool(concurrency);
-        CountDownLatch start = new CountDownLatch(concurrency);
-        CountDownLatch end = new CountDownLatch(concurrency);
-        for (int i = 0; i < concurrency; i++) {
-            executors.submit(() -> {
-                start.countDown();
-                try {
-                    start.await();
-                } catch (InterruptedException ignore) {
-                }
-                spy.markUpForLeastInterval(HEALTHY, HEALTHY);
-                end.countDown();
-            });
-        }
-        end.await();
-        assertEquals(1, notifyCount.get());
     }
 
     private void markup() {

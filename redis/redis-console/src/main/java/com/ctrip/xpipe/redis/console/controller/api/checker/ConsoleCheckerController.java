@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.controller.api.checker;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -67,6 +69,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
 
     @Autowired
     private HealthStateService healthStateService;
+
+    @Autowired
+    private OuterClientCache outerClientCache;
 
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
@@ -171,6 +176,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_POST_RECORD_ALERT, method = RequestMethod.POST)
     public void recordAlert(@RequestBody CheckerConsoleService.AlertMessage alertMessage) {
         this.persistenceCache.recordAlert(alertMessage.getEventOperator(), alertMessage.getMessage(), alertMessage.getEmailResponse());
+    }
+
+    @GetMapping(value = ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS)
+    public Map<String, OuterClientService.ClusterInfo> loadAllOuterClientClusters(@RequestParam String activeDc) {
+        return outerClientCache.getAllActiveDcClusters(activeDc);
     }
 
 

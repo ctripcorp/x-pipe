@@ -59,11 +59,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public int getHealthyLeastNotifyIntervalMilli() {
-        return config.getHealthyLeastNotifyIntervalMilli();
-    }
-
-    @Override
     public int getRedisConfCheckIntervalMilli() {
         return config.getRedisConfCheckIntervalMilli();
     }

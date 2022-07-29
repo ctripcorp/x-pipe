@@ -34,7 +34,7 @@ public class DynamicDelayPeriodTask extends AbstractStartStoppable implements St
 
     @Override
     protected void doStart() throws Exception {
-        doRun();
+        scheduled.schedule(this::doRun, 0, TimeUnit.MILLISECONDS);
     }
 
     @Override

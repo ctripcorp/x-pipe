@@ -45,7 +45,7 @@ public class DefaultRemoteCheckerManagerTest extends AbstractCheckerTest {
     @Test
     public void testAllHealthStatus() throws Exception {
         webServer.enqueue(new MockResponse().setBody("\"" + INSTANCEUP.name() + "\"").setHeader("Content-Type", "application/json"));
-        List<HEALTH_STATE> states = this.manager.allHealthStatus("10.0.0.1", 6379);
+        List<HEALTH_STATE> states = this.manager.getHealthStates("10.0.0.1", 6379);
         Assert.assertEquals(Collections.singletonList(INSTANCEUP), states);
 
         Assert.assertEquals(1, webServer.getRequestCount());
