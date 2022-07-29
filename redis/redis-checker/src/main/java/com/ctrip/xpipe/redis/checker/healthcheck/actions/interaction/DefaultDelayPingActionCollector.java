@@ -156,6 +156,16 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
         return cachedHealthStatus;
     }
 
+    public Map<HostPort, HealthStatusDesc> getAllHealthStatus() {
+        Map<HostPort, HealthStatusDesc> cachedHealthStatus = new HashMap<>();
+        allHealthStatus.forEach(((instance, healthStatus) -> {
+            HostPort hostPort = instance.getCheckInfo().getHostPort();
+            cachedHealthStatus.put(hostPort, new HealthStatusDesc(hostPort, healthStatus));
+        }));
+
+        return cachedHealthStatus;
+    }
+
     @Override
     public void updateHealthState(Map<HostPort, HEALTH_STATE> redisStates) {
         throw new UnsupportedOperationException();

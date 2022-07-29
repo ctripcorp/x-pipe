@@ -123,9 +123,9 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		long startTime = System.currentTimeMillis();
 		try {
 			request.run();
-			tryMetric(api, "", cluster, true, startTime, System.currentTimeMillis());
+			tryMetric(api, dc, cluster, true, startTime, System.currentTimeMillis());
 		} catch (Throwable th) {
-			tryMetric(api, "", cluster, false, startTime, System.currentTimeMillis());
+			tryMetric(api, dc, cluster, false, startTime, System.currentTimeMillis());
 			throw th;
 		}
 	}

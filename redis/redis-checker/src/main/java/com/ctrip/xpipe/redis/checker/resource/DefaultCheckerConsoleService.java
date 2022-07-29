@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.resource;
 
 import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -48,6 +49,8 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
 
     private static final ParameterizedTypeReference<Set<String>> stringSetRespTypeDef =
             new ParameterizedTypeReference<Set<String>>(){};
+    private static final ParameterizedTypeReference<Map<String, OuterClientService.ClusterInfo>> clusterInfoMapTypeDef =
+            new ParameterizedTypeReference<Map<String, OuterClientService.ClusterInfo>>(){};
 
     public XpipeMeta getXpipeMeta(String console, int clusterPartIndex) throws SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_META)
@@ -162,7 +165,18 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
                 new ParameterizedTypeReference<Map<String, Date>>(){});
         return times.getBody();
     }
-    
+
+    @Override
+    public Map<String, OuterClientService.ClusterInfo> loadAllActiveDcOneWayClusterInfo(String console, String activeDc) {
+        UriComponents comp = UriComponentsBuilder
+                .fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS)
+                .queryParam("activeDc", activeDc).build();
+
+        ResponseEntity<Map<String, OuterClientService.ClusterInfo>> times = restTemplate.exchange(
+                comp.toString(), HttpMethod.GET, null, clusterInfoMapTypeDef);
+        return times.getBody();
+    }
+
     @Override
     public void recordAlert(String console, String eventOperator, AlertMessageEntity message, EmailResponse response) {
         restTemplate.postForObject(console + ConsoleCheckerPath.PATH_POST_RECORD_ALERT, new AlertMessage(eventOperator,message, response), String.class);

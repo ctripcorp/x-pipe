@@ -24,6 +24,11 @@ public class TimeBoundCache<T> {
         this.dataSupplier = dataSupplier;
     }
 
+    // allow data timeout
+    public T getCurrentData() {
+        return this.data;
+    }
+
     public T getData(boolean disableCache) {
         if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) {
             return data;
@@ -35,6 +40,11 @@ public class TimeBoundCache<T> {
             this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
             return this.data;
         }
+    }
+
+    public synchronized void refresh() {
+        this.data = dataSupplier.get();
+        this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
     }
 
 }
