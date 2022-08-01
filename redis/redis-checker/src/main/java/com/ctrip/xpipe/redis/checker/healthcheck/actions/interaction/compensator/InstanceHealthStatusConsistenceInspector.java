@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensato
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -29,10 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -60,6 +59,8 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
+    private static final String TYPE = "HealthCheck";
+
     @Autowired
     public InstanceHealthStatusConsistenceInspector(InstanceHealthStatusCollector instanceHealthStatusCollector,
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
@@ -73,35 +74,49 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     }
 
     @VisibleForTesting
-    protected void inspect() throws InterruptedException, ExecutionException, TimeoutException {
+    protected void inspect() {
+        if(config.isConsoleSiteUnstable()) {
+            logger.debug("[inspect][skip] unstable");
+            return;
+        }
         if (null == leaderElector || !leaderElector.amILeader()) {
             logger.debug("[inspect][skip] not leader");
             return;
         }
 
         logger.debug("[inspect] begin");
-        long timeoutMill = System.currentTimeMillis() + Math.min(config.getPingDownAfterMilli() / 2,
+        final long timeoutMill = System.currentTimeMillis() + Math.min(config.getPingDownAfterMilli() / 2,
                 config.getDownAfterCheckNums() * config.getRedisReplicationHealthCheckInterval() / 2);
-        Map<String, Set<HostPort>> interested = fetchInterestedClusterInstances();
-        if (interested.isEmpty()) {
-            logger.debug("[inspect][skip] no interested instance");
-            return;
-        }
+        TransactionMonitor.DEFAULT.logTransactionSwallowException(TYPE, "compensator.inspect", new Task() {
+            @Override
+            public void go() throws Exception {
+                Map<String, Set<HostPort>> interested = fetchInterestedClusterInstances();
+                if (interested.isEmpty()) {
+                    logger.debug("[inspect][skip] no interested instance");
+                    return;
+                }
 
-        Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> instanceHealth = collector.collect();
-        checkTimeout(timeoutMill, "after collect");
+                Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> instanceHealth = collector.collect();
+                checkTimeout(timeoutMill, "after collect");
 
-        XPipeInstanceHealthHolder xpipeInstanceHealth = instanceHealth.getKey();
-        OutClientInstanceHealthHolder outClientInstanceHealth = instanceHealth.getValue();
-        UpDownInstances instanceNeedAdjust = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interested);
+                XPipeInstanceHealthHolder xpipeInstanceHealth = instanceHealth.getKey();
+                OutClientInstanceHealthHolder outClientInstanceHealth = instanceHealth.getValue();
+                UpDownInstances instanceNeedAdjust = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interested);
 
-        checkTimeout(timeoutMill, "after compare");
-        if (!instanceNeedAdjust.getHealthyInstances().isEmpty())
-            adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), true, timeoutMill);
+                checkTimeout(timeoutMill, "after compare");
+                if (!instanceNeedAdjust.getHealthyInstances().isEmpty())
+                    adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), true, timeoutMill);
 
-        checkTimeout(timeoutMill, "after adjust up");
-        if (!instanceNeedAdjust.getUnhealthyInstances().isEmpty())
-            adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, timeoutMill);
+                checkTimeout(timeoutMill, "after adjust up");
+                if (!instanceNeedAdjust.getUnhealthyInstances().isEmpty())
+                    adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, timeoutMill);
+            }
+
+            @Override
+            public Map getData() {
+                return Collections.singletonMap("timeoutMilli", timeoutMill);
+            }
+        });
     }
 
     private void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
