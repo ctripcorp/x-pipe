@@ -22,6 +22,10 @@ public class XPipeInstanceHealthHolder {
         this.healthCheckResult = healthCheckResult;
     }
 
+    public synchronized void add(HealthStatusDesc healthStatus) {
+        this.healthCheckResult.add(Collections.singletonMap(healthStatus.getHostPort(), healthStatus));
+    }
+
     public synchronized void add(Map<HostPort, HealthStatusDesc> result) {
         this.healthCheckResult.add(result);
     }
