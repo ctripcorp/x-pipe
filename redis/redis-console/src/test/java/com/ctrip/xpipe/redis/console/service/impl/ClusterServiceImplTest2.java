@@ -94,7 +94,7 @@ public class ClusterServiceImplTest2 {
         TunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel1, tunnelId1);
         List<TunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
-        when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1, null))
+        when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1))
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);

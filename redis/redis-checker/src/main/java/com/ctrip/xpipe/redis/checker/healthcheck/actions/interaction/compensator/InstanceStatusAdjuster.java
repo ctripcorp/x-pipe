@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class InstanceStatusAdjuster {
 
-    private CheckerConfig config;
+    private InstanceHealthStatusCollector collector;
 
-    private OuterClientService outerClientService;
+    private CheckerConfig config;
 
     private AlertManager alertManager;
 
@@ -35,8 +35,9 @@ public class InstanceStatusAdjuster {
     private ExecutorService executors;
 
     @Autowired
-    public InstanceStatusAdjuster(AlertManager alertManager, MetaCache metaCache, CheckerConfig checkerConfig) {
-        this.outerClientService = OuterClientService.DEFAULT;
+    public InstanceStatusAdjuster(InstanceHealthStatusCollector collector, AlertManager alertManager,
+                                  MetaCache metaCache, CheckerConfig checkerConfig) {
+        this.collector = collector;
         this.alertManager = alertManager;
         this.metaCache = metaCache;
         this.config = checkerConfig;
@@ -49,8 +50,7 @@ public class InstanceStatusAdjuster {
         for (HostPort instance: instances) {
             Pair<String, String> clusterShard = metaCache.findClusterShard(instance);
             new InstanceStatusAdjustCommand(new ClusterShardHostPort(clusterShard.getKey(), clusterShard.getValue(), instance),
-                    state, timeoutAtMilli, TimeUnit.MILLISECONDS.toSeconds(config.getHealthMarkCompensateIntervalMill()),
-                    metaCache, outerClientService, alertManager).execute(executors);
+                    collector, OuterClientService.DEFAULT, state, timeoutAtMilli, config, metaCache, alertManager).execute(executors);
         }
     }
 

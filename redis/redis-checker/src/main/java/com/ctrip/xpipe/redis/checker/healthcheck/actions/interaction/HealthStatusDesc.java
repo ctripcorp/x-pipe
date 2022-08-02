@@ -12,12 +12,17 @@ public class HealthStatusDesc {
 
     private HEALTH_STATE state;
 
-    private long lastPongTime;
+    private long lastPongTime = -1;
 
-    private long lastHealthDelayTime;
+    private long lastHealthDelayTime = -1;
 
     public HealthStatusDesc() {
 
+    }
+
+    public HealthStatusDesc(HostPort hostPort, HEALTH_STATE state) {
+        this.hostPort = hostPort;
+        this.state = state;
     }
 
     public HealthStatusDesc(HostPort hostPort, HealthStatus status) {

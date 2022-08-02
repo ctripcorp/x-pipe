@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -89,4 +92,15 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache,
             cleanMetaCache();
         }
     }
+
+    @Override
+    public Map<String, RouteMeta> chooseDefaultRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId) {
+        throw new UnsupportedOperationException();
+    }
+
 }

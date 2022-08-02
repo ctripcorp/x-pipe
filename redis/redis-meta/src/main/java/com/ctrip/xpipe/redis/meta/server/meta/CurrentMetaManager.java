@@ -73,7 +73,7 @@ public interface CurrentMetaManager extends Observable {
 
 	Map<String, RedisMeta> getAllPeerMasters(Long clusterDbId, Long shardDbId);
 
-	RouteMeta getClusterRouteByDcId(String dcId, Long clusterDbId);
+	RouteMeta getClusterRouteByDcId(String dstDcId, Long clusterDbId);
 
 	void removePeerMaster(String dcId, Long clusterDbId, Long shardDbId);
 
