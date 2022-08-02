@@ -70,6 +70,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(config.getPingDownAfterMilli()).thenReturn(10000);
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
         Mockito.when(config.getDownAfterCheckNums()).thenReturn(5);
+        Mockito.when(config.isConsoleSiteUnstable()).thenReturn(false);
     }
 
     @Override

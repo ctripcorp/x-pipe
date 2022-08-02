@@ -136,6 +136,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
             clusterMeta.setType(clusterInfo.getClusterType());
             clusterMeta.setActiveRedisCheckRules(dcClusterInfo.getActiveRedisCheckRules());
             clusterMeta.setClusterDesignatedRouteIds(clusterInfo.getClusterDesignatedRouteIds());
+            clusterMeta.setOrgId(Math.toIntExact(clusterInfo.getClusterOrgId()));
             clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 
             if (ClusterType.lookup(clusterInfo.getClusterType()).supportMultiActiveDC()) {

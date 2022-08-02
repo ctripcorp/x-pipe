@@ -34,7 +34,7 @@ public class PeerMasterMetaServerStateChangeHandlerTest extends AbstractMetaServ
 
     @Test
     public void testPeerMasterChanged() {
-        peerMasterMetaServerStateChangeHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);
+        peerMasterMetaServerStateChangeHandler.peerMasterChanged(clusterDbId, shardDbId);
         Mockito.verify(peerMasterAdjustAction, Mockito.times(1)).adjustPeerMaster(clusterDbId, shardDbId);
     }
 

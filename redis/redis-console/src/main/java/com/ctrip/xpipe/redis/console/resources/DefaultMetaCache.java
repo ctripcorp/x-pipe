@@ -149,14 +149,21 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
-                                               Map<String, List<RouteMeta>> clusterPrioritizedRoutes){
+    public Map<String, RouteMeta> chooseDefaultRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId) {
+        return chooseRoutes(clusterName, srcDc, dstDcs, orgId, false);
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId) {
+        return chooseRoutes(clusterName, srcDc, dstDcs, orgId, true);
+    }
+
+    private Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId, boolean useClusterPrioritizedRoutes) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
                 RouteChooseStrategyFactory.RouteStrategyType.lookup(consoleConfig.getChooseRouteStrategyType());
 
-        return xpipeMetaManager.chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
-                getRouteChooseStrategy(routeStrategyType));
+        return xpipeMetaManager.chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, getRouteChooseStrategy(routeStrategyType), useClusterPrioritizedRoutes);
     }
 
     private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {

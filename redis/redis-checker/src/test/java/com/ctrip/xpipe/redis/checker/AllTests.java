@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPi
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusConsistenceInspectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
@@ -147,6 +148,7 @@ import org.junit.runners.Suite;
         OuterClientServiceProcessorTest.class,
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
+        InstanceStatusAdjustCommandTest.class,
 
         PingActionContextTest.class,
         PingActionTest.class,

@@ -9,11 +9,8 @@ import com.google.common.hash.Hashing;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Random;
 
 public class Crc32HashRouteChooseStrategy implements RouteChooseStrategy {
-
-    private Random random = new Random();
 
     private static HashFunction crc32HashFunction = Hashing.crc32();
 
@@ -35,7 +32,7 @@ public class Crc32HashRouteChooseStrategy implements RouteChooseStrategy {
         }
 
         if(StringUtil.isEmpty(clusterName)) {
-            return routeMetas.get(random.nextInt(routeMetas.size()));
+            throw new IllegalArgumentException("empty cluster name");
         }
 
         int hashCode = crc32HashFunction.hashString(clusterName, Charset.forName("utf-8")).asInt();

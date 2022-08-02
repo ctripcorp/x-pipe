@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
+import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.tuple.Pair;
@@ -52,13 +56,25 @@ public class InstanceHealthStatusCollector {
         OutClientInstanceHealthHolder outClientInstanceHealthHolder = new OutClientInstanceHealthHolder();
 
         ParallelCommandChain commandChain = new ParallelCommandChain(executors);
-        commandChain.add(new GetOutClientInstanceStatusCmd(outClientInstanceHealthHolder));
+        commandChain.add(new GetAllOutClientInstanceStatusCmd(outClientInstanceHealthHolder));
         remoteCheckerManager.getAllCheckerServices().forEach(checkerService -> {
             commandChain.add(new GetRemoteCheckResultCmd(checkerService, xpipeInstanceHealthHolder));
         });
         commandChain.execute().get(5, TimeUnit.SECONDS);
 
         return new Pair<>(xpipeInstanceHealthHolder, outClientInstanceHealthHolder);
+    }
+
+    public XPipeInstanceHealthHolder collectXPipeInstanceHealth(HostPort hostPort)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        ParallelCommandChain commandChain = new ParallelCommandChain(executors);
+        XPipeInstanceHealthHolder xpipeInstanceHealthHolder = new XPipeInstanceHealthHolder();
+        remoteCheckerManager.getAllCheckerServices().forEach(checkerService -> {
+            commandChain.add(new GetRemoteHealthStateCmd(hostPort, checkerService, xpipeInstanceHealthHolder));
+        });
+        commandChain.execute().get(5, TimeUnit.SECONDS);
+
+        return xpipeInstanceHealthHolder;
     }
 
     private class GetRemoteCheckResultCmd extends AbstractCommand<Void> {
@@ -96,11 +112,11 @@ public class InstanceHealthStatusCollector {
         }
     }
 
-    public class GetOutClientInstanceStatusCmd extends AbstractCommand<Void> {
+    private class GetAllOutClientInstanceStatusCmd extends AbstractCommand<Void> {
 
         private OutClientInstanceHealthHolder resultHolder;
 
-        public GetOutClientInstanceStatusCmd(OutClientInstanceHealthHolder outClientInstanceHealthHolder) {
+        public GetAllOutClientInstanceStatusCmd(OutClientInstanceHealthHolder outClientInstanceHealthHolder) {
             this.resultHolder = outClientInstanceHealthHolder;
         }
 
@@ -125,6 +141,45 @@ public class InstanceHealthStatusCollector {
         public String getName() {
             return "GetOutClientInstanceStatusCmd";
         }
+    }
+
+    private class GetRemoteHealthStateCmd extends AbstractCommand<Void> {
+
+        private HostPort hostPort;
+
+        private CheckerService checkerService;
+
+        private XPipeInstanceHealthHolder resultHolder;
+
+        public GetRemoteHealthStateCmd(HostPort hostPort, CheckerService checkerService, XPipeInstanceHealthHolder xpipeInstanceHealthHolder) {
+            this.hostPort = hostPort;
+            this.checkerService = checkerService;
+            this.resultHolder = xpipeInstanceHealthHolder;
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                resultHolder.add(new HealthStatusDesc(hostPort, checkerService.getInstanceStatus(hostPort.getHost(), hostPort.getPort())));
+            } catch (RestClientException restException) {
+                logger.info("[doExecute][rest fail] {}", restException.getMessage());
+            } catch (Throwable th) {
+                logger.info("[doExecute][fail]", th);
+            }
+
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getName() {
+            return "GetRemoteHealthStateCmd";
+        }
+
     }
 
 }

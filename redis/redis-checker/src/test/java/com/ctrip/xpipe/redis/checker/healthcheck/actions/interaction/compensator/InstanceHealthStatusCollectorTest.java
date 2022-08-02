@@ -108,6 +108,15 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
         Assert.assertEquals(Collections.singleton(new HostPort("10.0.0.1", 6379)), outClientUpDownInstances.getUnhealthyInstances());
     }
 
+    @Test
+    public void testCollectXPipeInstanceHealth() throws Exception {
+        HostPort mockInstance = new HostPort("10.0.0.1", 6379);
+        Mockito.when(remoteCheckerService.getInstanceStatus(mockInstance.getHost(), mockInstance.getPort())).thenReturn(HEALTH_STATE.HEALTHY);
+        Mockito.when(localCheckerService.getInstanceStatus(mockInstance.getHost(), mockInstance.getPort())).thenReturn(HEALTH_STATE.HEALTHY);
+        XPipeInstanceHealthHolder xpipeInstanceHealthHolder = this.collector.collectXPipeInstanceHealth(mockInstance);
+        Assert.assertEquals(Boolean.TRUE, xpipeInstanceHealthHolder.aggregate(mockInstance, 2));
+    }
+
     private Map<HostPort, HealthStatusDesc> mockHealthStatusMap(HEALTH_STATE healthState) {
         HealthStatus healthStatus = Mockito.mock(HealthStatus.class);
         Mockito.when(healthStatus.getState()).thenReturn(healthState);
