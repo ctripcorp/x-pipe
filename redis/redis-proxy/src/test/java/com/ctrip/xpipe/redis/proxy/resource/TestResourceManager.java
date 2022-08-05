@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStatsManager;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStatsManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,8 @@ public class TestResourceManager implements ResourceManager {
 
     private ProxyConfig config = new TestProxyConfig();
 
+    private SocketStatsManager socketStatsManager = new DefaultSocketStatsManager();
+
     private NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 
     private volatile SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool;
@@ -60,6 +64,11 @@ public class TestResourceManager implements ResourceManager {
     @Override
     public ProxyConfig getProxyConfig() {
         return config;
+    }
+
+    @Override
+    public SocketStatsManager getSocketStatsManager() {
+        return socketStatsManager;
     }
 
     @Override

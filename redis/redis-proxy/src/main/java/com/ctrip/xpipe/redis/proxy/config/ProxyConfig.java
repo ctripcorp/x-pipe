@@ -22,6 +22,8 @@ public interface ProxyConfig extends TLSConfig {
 
     int endpointHealthCheckIntervalSec();
 
+    int socketStatsCheckInterval();
+
     boolean noTlsNettyHandler();
 
     int getFixedRecvBufferSize();

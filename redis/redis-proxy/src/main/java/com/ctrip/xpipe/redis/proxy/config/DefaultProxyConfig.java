@@ -41,6 +41,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_ENDPOINT_HEALTH_CHECK_INTERVAL = "proxy.endpoint.check.interval.sec";
 
+    private static final String KEY_PROXY_SOCKET_STATS_CHECK_INTERVAL = "proxy.socket.stats.check.interval.milli";
+
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "proxy.traffic.report.interval.milli";
 
     private static final String KEY_FRONTEND_TCP_PORT = "proxy.frontend.tcp.port";
@@ -113,6 +115,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public int endpointHealthCheckIntervalSec() {
         return getIntProperty(KEY_ENDPOINT_HEALTH_CHECK_INTERVAL, 60);
+    }
+
+    @Override
+    public int socketStatsCheckInterval() {
+        return getIntProperty(KEY_PROXY_SOCKET_STATS_CHECK_INTERVAL, 1000);
     }
 
     @Override
