@@ -30,7 +30,7 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
         this.resourceManager = resourceManager;
         this.sessionStats = new DefaultSessionStats(resourceManager.getGlobalSharedScheduled());
         this.outboundBufferMonitor = new DefaultOutboundBufferMonitor(session);
-        this.socketStats = new DefaultSocketStats(resourceManager.getGlobalSharedScheduled(), session);
+        this.socketStats = new DefaultSocketStats(resourceManager.getGlobalSharedScheduled(), session, resourceManager.getSocketStatsManager());
     }
 
     @Override
