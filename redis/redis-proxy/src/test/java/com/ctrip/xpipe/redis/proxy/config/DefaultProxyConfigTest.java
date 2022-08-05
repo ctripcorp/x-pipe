@@ -22,4 +22,9 @@ public class DefaultProxyConfigTest {
         Assert.assertEquals(60, config.endpointHealthCheckIntervalSec());
     }
 
+    @Test
+    public void socketStatsCheckInterval() {
+        Assert.assertEquals(1000, config.socketStatsCheckInterval());
+    }
+
 }

@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStatsManager;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.resource.SslEnabledNettyClientFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -30,6 +32,8 @@ public class LocalResourceManager implements ResourceManager {
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(4, XpipeThreadFactory.create("scheduled"));
 
     private ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->10000);
+
+    private SocketStatsManager socketStatsManager = new DefaultSocketStatsManager();
 
     private ProxyConfig config ;
 
@@ -60,6 +64,11 @@ public class LocalResourceManager implements ResourceManager {
     @Override
     public ProxyConfig getProxyConfig() {
         return config;
+    }
+
+    @Override
+    public SocketStatsManager getSocketStatsManager() {
+        return socketStatsManager;
     }
 
     @Override
