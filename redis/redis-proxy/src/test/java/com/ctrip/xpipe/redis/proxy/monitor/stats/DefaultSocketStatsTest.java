@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStats;
 import io.netty.channel.Channel;
+import org.assertj.core.util.Lists;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -30,8 +32,7 @@ public class DefaultSocketStatsTest extends AbstractRedisProxyServerTest {
         when(channel.localAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 6389));
         SocketStats socketStats = new DefaultSocketStats(scheduled, session, proxyResourceManager.getSocketStatsManager());
         socketStats.start();
-        logger.info(socketStats.getSocketStatsResult().toString());
         sleep(1000);
-        logger.info(socketStats.getSocketStatsResult().toString());
+        Assert.assertEquals(Lists.newArrayList("Empty"), socketStats.getSocketStatsResult().getResult());
     }
 }
