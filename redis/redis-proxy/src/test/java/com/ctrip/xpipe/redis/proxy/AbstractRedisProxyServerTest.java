@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.monitor.CatConfig;

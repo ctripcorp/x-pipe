@@ -47,6 +47,11 @@ public class LocalProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int socketStatsCheckInterval() {
+        return 1000;
+    }
+
+    @Override
     public boolean noTlsNettyHandler() {
         return false;
     }
