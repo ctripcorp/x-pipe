@@ -76,6 +76,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInsta
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleServiceTest;
@@ -149,6 +150,7 @@ import org.junit.runners.Suite;
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
         InstanceStatusAdjustCommandTest.class,
+        StabilityInspectorTest.class,
 
         PingActionContextTest.class,
         PingActionTest.class,

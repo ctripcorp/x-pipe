@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.controller;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
@@ -10,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.DefaultStabilityHolder;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.CheckerRole;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
@@ -19,9 +20,7 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +58,9 @@ public class CheckerStatusController {
     @Autowired
     private HealthCheckInstanceManager healthCheckInstanceManager;
 
+    @Autowired
+    private StabilityHolder siteStability;
+
     @Value("${server.port:8080}")
     private int serverPort;
 
@@ -95,6 +97,21 @@ public class CheckerStatusController {
             allCheckClusters.add(instance.getCheckInfo().getClusterId())
         );
         return allCheckClusters;
+    }
+
+    @GetMapping("/stable")
+    public DefaultStabilityHolder.Desc getSiteStable() {
+        return siteStability.getDebugDesc();
+    }
+
+    @PutMapping("/stable")
+    public DefaultStabilityHolder.Desc updateSiteStable(@RequestParam boolean stable, @RequestParam(defaultValue = "600") int ttl) {
+        if (ttl > 0) {
+            siteStability.setStaticStable(stable, ttl);
+        } else {
+            siteStability.useDynamicStable();
+        }
+        return siteStability.getDebugDesc();
     }
 
 }

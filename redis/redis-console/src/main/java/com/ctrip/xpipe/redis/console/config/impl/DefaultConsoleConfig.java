@@ -483,8 +483,33 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public boolean isConsoleSiteUnstable() {
-        return !getBooleanProperty(KEY_CONSOLE_SITE_STABLE, true);
+    public int getStableLossAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_LOSS_AFTER_ROUNDS, 10);
+    }
+
+    @Override
+    public int getStableRecoverAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_RECOVER_AFTER_ROUNDS, 30 * 30);
+    }
+
+    @Override
+    public int getStableResetAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_RESET_AFTER_ROUNDS, 30);
+    }
+
+    @Override
+    public float getSiteStableThreshold() {
+        return getFloatProperty(KEY_CHECKER_STABLE_THRESHOLD, 0.8f);
+    }
+
+    @Override
+    public Boolean getSiteStable() {
+        return getBooleanProperty(KEY_CHECKER_SITE_STABLE, null);
+    }
+
+    @Override
+    public float getSiteUnstableThreshold() {
+        return getFloatProperty(KEY_CHECKER_UNSTABLE_THRESHOLD, 0.8f);
     }
 
     @Override

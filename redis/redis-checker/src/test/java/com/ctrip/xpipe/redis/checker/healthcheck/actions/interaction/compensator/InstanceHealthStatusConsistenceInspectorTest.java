@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -39,6 +40,9 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
     private InstanceStatusAdjuster adjuster;
 
     @Mock
+    private StabilityHolder siteStability;
+
+    @Mock
     private CheckerConfig config;
 
     @Mock
@@ -61,7 +65,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
 
     @Before
     public void setupInstanceHealthStatusConsistenceCheckerTest() throws Exception {
-        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, config, metaCache);
+        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, siteStability, config, metaCache);
         Mockito.when(leaderElector.amILeader()).thenReturn(true);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.when(metaCache.findClusterShard(any())).thenReturn(Pair.of(cluster, shard));
@@ -70,7 +74,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(config.getPingDownAfterMilli()).thenReturn(10000);
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
         Mockito.when(config.getDownAfterCheckNums()).thenReturn(5);
-        Mockito.when(config.isConsoleSiteUnstable()).thenReturn(false);
+        Mockito.when(siteStability.isSiteStable()).thenReturn(true);
     }
 
     @Override

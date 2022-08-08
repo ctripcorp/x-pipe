@@ -29,6 +29,8 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 
 	private Map<String, Integer> intergerCache;
 
+	private Map<String, Float> floatCache;
+
 	private AtomicLong configVersion = new AtomicLong(0L);
 
 	public AbstractConfigBean(){
@@ -74,6 +76,18 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		}
 
 		return getValueFromCache(key, Functions.TO_LONG_FUNCTION, longCache, defaultValue);
+	}
+
+	protected Float getFloatProperty(String key, Float defaultValue){
+		if (floatCache == null) {
+			synchronized (this) {
+				if (floatCache == null) {
+					floatCache = Maps.newConcurrentMap();
+				}
+			}
+		}
+
+		return getValueFromCache(key, Functions.TO_FLOAT_FUNCTION, floatCache, defaultValue);
 	}
 
 	protected Boolean getBooleanProperty(String key, Boolean defaultValue){
@@ -151,6 +165,7 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		synchronized (this) {
 			intergerCache = Maps.newConcurrentMap();
 			longCache = Maps.newConcurrentMap();
+			floatCache = Maps.newConcurrentMap();
 			configVersion.getAndIncrement();
 		}
 	}
@@ -166,6 +181,12 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 			@Override
 			public Long apply(String input) {
 				return Long.parseLong(input);
+			}
+		};
+		Function<String, Float> TO_FLOAT_FUNCTION = new Function<String, Float>() {
+			@Override
+			public Float apply(String input) {
+				return Float.parseFloat(input);
 			}
 		};
 		Function<String, Boolean> TO_BOOLEAN_FUNCTION = new Function<String, Boolean>() {

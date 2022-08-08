@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -45,6 +46,8 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
     private InstanceStatusAdjuster adjuster;
 
+    private StabilityHolder siteStability;
+
     private CheckerConfig config;
 
     private MetaCache metaCache;
@@ -65,17 +68,19 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     public InstanceHealthStatusConsistenceInspector(InstanceHealthStatusCollector instanceHealthStatusCollector,
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
                                                     @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
-                                                    CheckerConfig checkerConfig, MetaCache metaCache) {
+                                                    StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
+                                                    MetaCache metaCache) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
         this.leaderElector = groupCheckerLeaderElector;
+        this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         this.metaCache = metaCache;
     }
 
     @VisibleForTesting
     protected void inspect() {
-        if(config.isConsoleSiteUnstable()) {
+        if(!siteStability.isSiteStable()) {
             logger.debug("[inspect][skip] unstable");
             return;
         }

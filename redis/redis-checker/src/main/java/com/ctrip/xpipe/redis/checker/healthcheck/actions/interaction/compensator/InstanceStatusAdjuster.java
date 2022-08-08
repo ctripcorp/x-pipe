@@ -6,6 +6,8 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -26,6 +27,8 @@ public class InstanceStatusAdjuster {
 
     private InstanceHealthStatusCollector collector;
 
+    private StabilityHolder siteStability;
+
     private CheckerConfig config;
 
     private AlertManager alertManager;
@@ -36,10 +39,11 @@ public class InstanceStatusAdjuster {
 
     @Autowired
     public InstanceStatusAdjuster(InstanceHealthStatusCollector collector, AlertManager alertManager,
-                                  MetaCache metaCache, CheckerConfig checkerConfig) {
+                                  MetaCache metaCache, StabilityHolder stabilityHolder, CheckerConfig checkerConfig) {
         this.collector = collector;
         this.alertManager = alertManager;
         this.metaCache = metaCache;
+        this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         DefaultExecutorFactory executorFactory = new DefaultExecutorFactory("InstanceStatusAdjuster",
                 config.getHealthMarkCompensateThreads(), config.getHealthMarkCompensateThreads(), new ThreadPoolExecutor.AbortPolicy());
@@ -50,7 +54,7 @@ public class InstanceStatusAdjuster {
         for (HostPort instance: instances) {
             Pair<String, String> clusterShard = metaCache.findClusterShard(instance);
             new InstanceStatusAdjustCommand(new ClusterShardHostPort(clusterShard.getKey(), clusterShard.getValue(), instance),
-                    collector, OuterClientService.DEFAULT, state, timeoutAtMilli, config, metaCache, alertManager).execute(executors);
+                    collector, OuterClientService.DEFAULT, state, timeoutAtMilli, siteStability, config, metaCache, alertManager).execute(executors);
         }
     }
 

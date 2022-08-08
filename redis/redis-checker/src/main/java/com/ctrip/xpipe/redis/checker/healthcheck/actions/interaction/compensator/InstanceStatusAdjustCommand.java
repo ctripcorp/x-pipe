@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,8 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private MetaCache metaCache;
 
+    private StabilityHolder siteStability;
+
     private CheckerConfig config;
 
     private AlertManager alertManager;
@@ -39,11 +42,13 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     public InstanceStatusAdjustCommand(ClusterShardHostPort instance, InstanceHealthStatusCollector collector,
                                        OuterClientService outerClientService, boolean state, long deadlineTimeMilli,
-                                       CheckerConfig config, MetaCache metaCache, AlertManager alertManager) {
+                                       StabilityHolder stabilityHolder, CheckerConfig config, MetaCache metaCache,
+                                       AlertManager alertManager) {
         this.instance = instance;
         this.collector = collector;
         this.outerClientService = outerClientService;
         this.state = state;
+        this.siteStability = stabilityHolder;
         this.config = config;
         this.deadlineTimeMilli = deadlineTimeMilli;
         this.metaCache = metaCache;
@@ -53,7 +58,7 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
     @Override
     protected void doExecute() throws Throwable {
         if (checkTimeout()) return;
-        if (config.isConsoleSiteUnstable()) {
+        if (!siteStability.isSiteStable()) {
             logger.info("[compensate][skip][unstable] {}", instance);
             future().setSuccess();
             return;

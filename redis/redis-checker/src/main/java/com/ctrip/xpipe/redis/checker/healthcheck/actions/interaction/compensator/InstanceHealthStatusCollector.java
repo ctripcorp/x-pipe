@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;

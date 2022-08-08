@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
@@ -54,6 +55,9 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
     @Mock
     protected DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
+    @Mock
+    private StabilityHolder siteStability;
+
     @InjectMocks
     private InstanceSickHandler instanceSickHandler = new DefaultInstanceSickHandler();
 
@@ -76,7 +80,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
         CommandFuture<Boolean> future = new DefaultCommandFuture<>();
         future.setSuccess(true);
-        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
+        when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         HostPort master = localHostport(randomPort());
         when(defaultDelayPingActionCollector.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
@@ -100,7 +104,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(
                 Sets.newHashSet(new DcClusterDelayMarkDown().setDcId(dc).setClusterId(cluster)));
         when(metaCache.inBackupDc(hostPort)).thenReturn(true);
-        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
+        when(siteStability.isSiteStable()).thenReturn(true);
         processor.onEvent(new InstanceSick(instance));
         verify(alertManager, atLeastOnce()).alert(instance.getCheckInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
     }
