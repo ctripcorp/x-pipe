@@ -7,6 +7,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,9 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
     private OuterClientService outerClientService;
 
     @Mock
+    private StabilityHolder siteStability;
+
+    @Mock
     private CheckerConfig config;
 
     @Mock
@@ -54,14 +58,14 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
         when(metaCache.inBackupDc(instance.getHostPort())).thenReturn(true);
         when(config.getHealthMarkCompensateIntervalMill()).thenReturn(1000L);
         when(config.getQuorum()).thenReturn(2);
-        when(config.isConsoleSiteUnstable()).thenReturn(false);
+        when(siteStability.isSiteStable()).thenReturn(true);
         when(collector.collectXPipeInstanceHealth(instance.getHostPort())).thenReturn(xpipeInstanceHealth);
     }
 
     @Test
     public void testAdjust() throws Exception {
         InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
-                System.currentTimeMillis() + timeoutMilli, config, metaCache, alertManager);
+                System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(Boolean.TRUE);
         cmd.execute().get();
@@ -72,7 +76,7 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
     @Test(expected = ExecutionException.class)
     public void testTimeoutAfterCollect() throws Exception {
         InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
-                System.currentTimeMillis() + timeoutMilli, config, metaCache, alertManager);
+                System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(Boolean.TRUE);
         doAnswer(inv -> {
@@ -86,7 +90,7 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
     @Test
     public void testSkipForOuterClientChange() throws Exception {
         InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
-                System.currentTimeMillis() + timeoutMilli, config, metaCache, alertManager);
+                System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(true);
         cmd.execute().get();
         Mockito.verify(outerClientService, never()).markInstanceUpIfNoModifyFor(instance, 1);
@@ -96,7 +100,7 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
     @Test
     public void testSkipForXPipeChange() throws Exception {
         InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
-                System.currentTimeMillis() + timeoutMilli, config, metaCache, alertManager);
+                System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(null);
         cmd.execute().get();
@@ -107,8 +111,8 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
     @Test
     public void testSiteUnstable() throws Exception {
         InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
-                System.currentTimeMillis() + timeoutMilli, config, metaCache, alertManager);
-        when(config.isConsoleSiteUnstable()).thenReturn(true);
+                System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
+        when(siteStability.isSiteStable()).thenReturn(false);
         cmd.execute().get();
         Mockito.verify(outerClientService, never()).markInstanceUpIfNoModifyFor(instance, 1);
         Mockito.verify(outerClientService, never()).markInstanceDownIfNoModifyFor(instance, 1);

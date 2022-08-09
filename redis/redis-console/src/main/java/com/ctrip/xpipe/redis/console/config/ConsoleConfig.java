@@ -128,8 +128,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getParallelConsoleDomain();
 
-	boolean isConsoleSiteUnstable();
-
 	String getDefaultBeaconHost();
 
 	Map<Long, String> getBeaconHosts();
