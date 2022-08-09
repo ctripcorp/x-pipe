@@ -161,8 +161,33 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public boolean isConsoleSiteUnstable() {
-        return true;
+    public int getStableLossAfterRounds() {
+        return 2;
+    }
+
+    @Override
+    public int getStableRecoverAfterRounds() {
+        return 2;
+    }
+
+    @Override
+    public int getStableResetAfterRounds() {
+        return 2;
+    }
+
+    @Override
+    public float getSiteStableThreshold() {
+        return 0.8f;
+    }
+
+    @Override
+    public float getSiteUnstableThreshold() {
+        return 0.8f;
+    }
+
+    @Override
+    public Boolean getSiteStable() {
+        return null;
     }
 
     @Override
