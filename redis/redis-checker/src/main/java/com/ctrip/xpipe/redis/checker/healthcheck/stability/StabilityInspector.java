@@ -41,7 +41,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
 
     private AtomicInteger continuousMismatchTimes;
 
-    private AtomicInteger continueNoInterested;
+    private AtomicInteger continuousNoInterested;
 
     private DynamicDelayPeriodTask task;
 
@@ -57,7 +57,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
         this.config = checkerConfig;
         this.stable = new AtomicBoolean(true);
         this.continuousMismatchTimes = new AtomicInteger();
-        this.continueNoInterested = new AtomicInteger();
+        this.continuousNoInterested = new AtomicInteger();
     }
 
     protected boolean isSiteStable() {
@@ -73,7 +73,8 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
         Set<HostPort> interested = currentAllHealthStates.keySet().stream()
                 .filter(hostPort -> {
                     try {
-                        return currentDc.equalsIgnoreCase(metaCache.getDc(hostPort));
+                        return currentDc.equalsIgnoreCase(metaCache.getDc(hostPort))
+                                && currentDc.equalsIgnoreCase(metaCache.getActiveDc(hostPort));
                     } catch (Throwable th) {
                         logger.debug("[inspect][ignore instance] {}", hostPort, th);
                         return false;
@@ -81,8 +82,10 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
                 }).collect(Collectors.toSet());
 
         if (interested.isEmpty()) {
-            continueNoInterested.incrementAndGet();
+            if (continuousNoInterested.incrementAndGet() < 0) continuousNoInterested.set(0);
         } else {
+            continuousNoInterested.set(0);
+
             int upCnt = 0;
             int downCnt = 0;
             for (HostPort hostPort : interested) {
@@ -106,11 +109,10 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
     }
 
     private void incrMismatchIfNeeded(boolean mayStable) {
-        continueNoInterested.set(0);
         if (mayStable != stable.get()) {
             int after = continuousMismatchTimes.incrementAndGet();
             logger.info("[incrMismatchIfNeeded] may {}:{}", mayStable ? "stable":"unstable", after);
-        } else {
+        } else if (continuousMismatchTimes.get() > 0) {
             logger.info("[incrMismatchIfNeeded][reset]");
             this.continuousMismatchTimes.set(0);
         }
@@ -119,13 +121,13 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
     private void toggleStableIfNeeded() {
         if (stable.get() && continuousMismatchTimes.get() >= config.getStableLossAfterRounds()) {
             logger.info("[toggleStableIfNeeded] become unstable");
-            stable.set(false);
+            setStable(false);
         } else if (!stable.get() && continuousMismatchTimes.get() >= config.getStableRecoverAfterRounds()) {
             logger.info("[toggleStableIfNeeded] become stable");
-            stable.set(true);
-        } else if (!stable.get() && continueNoInterested.get() >= config.getStableResetAfterRounds()) {
+            setStable(true);
+        } else if (!stable.get() && continuousNoInterested.get() >= config.getStableResetAfterRounds()) {
             logger.info("[toggleStableIfNeeded][continue no interested] become stable");
-            stable.set(true);
+            setStable(true);
         }
     }
 

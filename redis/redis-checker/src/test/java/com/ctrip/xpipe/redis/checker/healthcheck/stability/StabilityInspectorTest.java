@@ -45,6 +45,7 @@ public class StabilityInspectorTest extends AbstractTest {
         inspector = new StabilityInspector(collector, metaCache, config);
 
         when(metaCache.getDc(any())).thenReturn(FoundationService.DEFAULT.getDataCenter());
+        when(metaCache.getActiveDc(any())).thenReturn(FoundationService.DEFAULT.getDataCenter());
         when(config.getStableRecoverAfterRounds()).thenReturn(2);
         when(config.getStableLossAfterRounds()).thenReturn(2);
         when(config.getStableResetAfterRounds()).thenReturn(2);
@@ -102,6 +103,19 @@ public class StabilityInspectorTest extends AbstractTest {
     public void testNoInterestedAndReset() {
         inspector.setStable(false);
         when(collector.getAllCachedState()).thenReturn(Collections.emptyMap());
+
+        inspector.inspect();
+        Assert.assertFalse(inspector.isSiteStable());
+        inspector.inspect();
+        Assert.assertTrue(inspector.isSiteStable());
+    }
+
+    @Test
+    // healthStatus may remain after active dc loss
+    public void testUnexpectedHealthStatusAndReset() {
+        inspector.setStable(false);
+        when(metaCache.getActiveDc(any())).thenReturn("otherDc");
+        when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN));
 
         inspector.inspect();
         Assert.assertFalse(inspector.isSiteStable());
