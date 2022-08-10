@@ -31,7 +31,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
@@ -111,6 +114,14 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         frontChannel = null;
         tunnel = null;
         tunnelManager = null;
+    }
+
+    @Test
+    public void testAddCompressOptionToProtocolIfNeeded() {
+        ((TestProxyConfig)config).setCompress(true);
+        tunnel.addCompressOptionToProtocolIfNeeded();
+        Assert.assertNull(tunnel.getProxyProtocol().getCompressAlgorithm());
+        logger.info(tunnel.getProxyProtocol().toString());
     }
 
     @Test

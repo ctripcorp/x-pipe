@@ -40,11 +40,14 @@ import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MAR
  */
 public class DefaultBackendSession extends AbstractSession implements BackendSession {
 
-    private static final String BACKEND_SESSION_HANDLER = "backendSessionHandler";
+    @VisibleForTesting
+    static final String BACKEND_SESSION_HANDLER = "backendSessionHandler";
 
-    private static final String BACKEND_COMPRESS_DECODER = "backendCompressDecoder";
+    @VisibleForTesting
+    static final String BACKEND_COMPRESS_DECODER = "backendCompressDecoder";
 
-    private static final String BACKEND_COMPRESS_ENCODER = "backendCompressEncoder";
+    @VisibleForTesting
+    static final String BACKEND_COMPRESS_ENCODER = "backendCompressEncoder";
 
     private ProxyEndpointSelector selector;
 
@@ -137,7 +140,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
         ProxyConfig config = resourceManager.getProxyConfig();
-        if(config.isCompressEnabled()) {
+        if(config.isCompressEnabled() && !tunnel().getProxyProtocol().isLastProxyHop()) {
             logger.info("Backend compress codec installed: {}", ChannelUtil.getDesc(channel));
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_DECODER, config.getCompressDecoder());
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_ENCODER, config.getCompressEncoder());
