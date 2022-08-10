@@ -133,12 +133,12 @@
                     <header class="panel-heading" style="background: #C7EDCC">
                         <div class="row">
 
-                            <div class="col-md-6">
-                                <font color="black">
+                            <div class="col-md-10">
+                                <font color="black" class="col-md-10">
                                     src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}})
                                 </font>
                             </div>
-                            <div class="col-md-6 text-right">
+                            <div class="col-md-2 text-right">
                                 <a class="btn btn-success btn-sm" style="background: #CCFF33" ng-if="routeAvail === true" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                                 <a class="btn btn-success btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}&srcDcName={{source.replDirectionInfoModel.srcDcName}}">编辑</a>
                             </div>
@@ -183,6 +183,18 @@
                                 </span>
                             </td>
                             <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                        </tr>
+                        <tr ng-repeat="keeper in shard.keepers">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-success" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
+                            </td>
+                            <td ng-bind="keeper.redisIp">
+                            </td>
+                            <td ng-bind="keeper.redisPort">
+                            </td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         </tbody>
                     </table>

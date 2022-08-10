@@ -404,6 +404,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
+	public List<RedisMeta> getClusterRedises(Long clusterDbId) {
+	    return dcMetaManager.get().getRedises(clusterDbId);
+	}
+
+	@Override
 	public List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId) {
 		return dcMetaManager.get().getRedises(clusterDbId, shardDbId);
 	}
@@ -448,6 +453,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public String getSentinelMonitorName(Long clusterDbId, Long shardDbId) {
 		return dcMetaManager.get().getSentinelMonitorName(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids) {
+		dcMetaManager.get().setRedisGtidAndSids(clusterDbId, shardDbId, redisMeta, gtid, sids);
 	}
 
 	@Override

@@ -115,6 +115,16 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
+	public Map<String, Long> dcNameIdMap() {
+		List<DcTbl> allDcs = findAllDcs();
+		Map<String, Long> result = new HashMap<>();
+
+		allDcs.forEach(dcTbl -> result.put(dcTbl.getDcName(), dcTbl.getId()));
+		return result;
+	}
+
+
+	@Override
 	public Map<String, Long> dcNameZoneMap() {
 		List<DcTbl> allDcs = findAllDcs();
 		Map<String, Long> result = new HashMap<>();
@@ -169,8 +179,17 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
-	public DcModel findDcModel(String dcName) {
+	public DcModel findDcModelByDcName(String dcName) {
 		DcTbl dcTbl = find(dcName);
+		return convertDcTblToDcModel(find(dcName));
+	}
+
+	@Override
+	public DcModel findDcModelByDcId(long dcId) {
+		return convertDcTblToDcModel(find(dcId));
+	}
+
+	private DcModel convertDcTblToDcModel(DcTbl dcTbl) {
 		if (dcTbl == null) {
 			return null;
 		}

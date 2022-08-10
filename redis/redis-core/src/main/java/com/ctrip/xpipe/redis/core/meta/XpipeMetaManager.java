@@ -80,6 +80,9 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<RedisMeta> getRedises(String dc, String clusterId, String shardId) { return read(()->doGetRedises(dc, clusterId, shardId)); }
 	List<RedisMeta> doGetRedises(String dc, String clusterId, String shardId);
 
+	default List<RedisMeta> getRedises(String dc, String clusterId) { return read(()->doGetRedises(dc, clusterId)); }
+	List<RedisMeta> doGetRedises(String dc, String clusterId);
+
 	default KeeperMeta getKeeperActive(String dc, String clusterId, String shardId) { return read(()->doGetKeeperActive(dc, clusterId, shardId)); }
 	KeeperMeta doGetKeeperActive(String dc, String clusterId, String shardId);
 

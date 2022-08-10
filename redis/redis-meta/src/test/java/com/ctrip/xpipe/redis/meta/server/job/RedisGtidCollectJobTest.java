@@ -53,17 +53,14 @@ public class RedisGtidCollectJobTest extends AbstractMetaServerTest {
         startServer(redises.get(0).getPort(), String.format("+%s\r\n", gtid0));
         startServer(redises.get(1).getPort(), String.format("+%s\r\n", gtid1));
 
-        CommandFuture future = job.execute();
+        CommandFuture<Void> future = job.execute();
         Thread.sleep(100);
-        //TODO ayq why future isSuccess false
 //        while (!future.isSuccess()) {
 //            logger.info("future is not done, wait another 10ms");
 //            Thread.sleep(10);
 //        }
 
-        assertEquals(gtid0, redises.get(0).getGtid());
-        assertEquals(gtid1, redises.get(1).getGtid());
-        assertEquals(sid0, redises.get(0).getSid());
-        assertEquals(sid1, redises.get(1).getSid());
+        verify(dcMetaCache, times(1)).setRedisGtidAndSids(clusterDbId, shardDbId, redises.get(0), gtid0, sid0);
+        verify(dcMetaCache, times(1)).setRedisGtidAndSids(clusterDbId, shardDbId, redises.get(1), gtid1, sid1);
     }
 }

@@ -128,7 +128,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			    String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 			    String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 			    String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId,shardDbId);
-			    List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+			    List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
 			    GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
 				logger.info("[keeperActiveElected][current source shard, set applier xsync to new keeper]cluster_{},shard_{},{}",
 						clusterDbId, shardDbId, appliers);

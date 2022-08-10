@@ -932,6 +932,7 @@
     <member name="src-dc-id" field="src_dc_id" value-type="long" length="20" nullable="false" />
     <member name="from-dc-id" field="from_dc_id" value-type="long" length="20" nullable="false" />
     <member name="to-dc-id" field="to_dc_id" value-type="long" length="20" nullable="false" />
+    <member name="target-cluster-name" field="target_cluster_name" value-type="String" length="128" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

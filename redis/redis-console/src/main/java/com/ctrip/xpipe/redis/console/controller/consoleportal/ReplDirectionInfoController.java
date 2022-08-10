@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ReplDirectionInfoController extends AbstractConsoleController {
@@ -19,5 +21,10 @@ public class ReplDirectionInfoController extends AbstractConsoleController {
     public ReplDirectionInfoModel getReplDirectionInfoModelByClusterAndSrcToDc(@PathVariable String clusterName,
                                                                                @PathVariable String srcDcName, @PathVariable String toDcName){
         return replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, srcDcName, toDcName);
+    }
+
+    @RequestMapping("/repl-direction/cluster/" + CLUSTER_NAME_PATH_VARIABLE)
+    public List<ReplDirectionInfoModel> getAllReplDirectionInfoModelsByCluster(@PathVariable String clusterName) {
+        return replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
     }
 }

@@ -404,6 +404,7 @@ CREATE TABLE `repl_direction_tbl` (
   `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'source dc id of this direction',
   `from_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'from dc id of this direction',
   `to_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'to dc id of this direction',
+  `target_cluster_name` varchar(128) DEFAULT NULL COMMENT 'target cluster name',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),

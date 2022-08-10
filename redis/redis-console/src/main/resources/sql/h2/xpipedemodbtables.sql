@@ -324,6 +324,7 @@ CREATE TABLE `repl_direction_tbl` (
   src_dc_id bigint(20) NOT NULL DEFAULT 0,
   from_dc_id bigint(20) NOT NULL DEFAULT 0,
   to_dc_id bigint(20) NOT NULL DEFAULT 0,
+  target_cluster_name varchar(128) DEFAULT NULL,
   DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
   deleted tinyint(1) NOT NULL DEFAULT 0,
 ) ;

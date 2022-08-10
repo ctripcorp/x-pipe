@@ -33,7 +33,7 @@ public class ApplierInfoController extends AbstractConsoleController {
         try {
             if (null != sourceShard) {
                 logger.info("[Update Appliers][construct]{},{},{},{}", clusterName, dcName, shardName, sourceShard);
-                applierService.updateAppliers(dcName, clusterName, shardName, sourceShard, replDirectionId);
+                applierService.updateAppliersAndKeepers(dcName, clusterName, shardName, sourceShard, replDirectionId);
                 logger.info("[Update Appliers][success]{},{},{},{}", clusterName, dcName, shardName, sourceShard);
             } else {
                 logger.error("[Update Appliers][Null SourceShard]{},{},{}", clusterName, dcName, shardName);

@@ -170,7 +170,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function loadReplDirection(clusterName, srcDcName, toDcName) {
-        ReplDirectionService.findReplDirectionBySrcDcAndToDc(clusterName, srcDcName, toDcName)
+        ReplDirectionService.findReplDirectionByClusterAndSrcToDc(clusterName, srcDcName, toDcName)
             .then(function (result) {
                 $scope.replDirection = result;
             }, function (result) {
@@ -235,7 +235,12 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
 
     function createKeeper() {
         $scope.createKeeperErrorMsg = '';
-        var shard = $scope.dcShards[$scope.currentDcName];
+        if ($scope.isSource) {
+            var shard = $scope.dcSourceShards[$scope.currentDcName];
+        } else {
+            var shard = $scope.dcShards[$scope.currentDcName];
+        }
+
 
             if (!validKeeper($scope.toCreateFirstKeeper)){
                 $scope.createKeeperErrorMsg = "valid form content please check";
@@ -285,7 +290,12 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function deleteRedis() {
-        var shard = $scope.dcShards[$scope.currentDcName];
+        if ($scope.isSource) {
+            var shard = $scope.dcSourceShards[$scope.currentDcName];
+        } else {
+            var shard = $scope.dcShards[$scope.currentDcName];
+        }
+
         var index = -1;
         for (var cnt_redis = 0; cnt_redis != shard.redises.length; ++cnt_redis) {
             if ($scope.toDeleteRedis == shard.redises[cnt_redis]) {

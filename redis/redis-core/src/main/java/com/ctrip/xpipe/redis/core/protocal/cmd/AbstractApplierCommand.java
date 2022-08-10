@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
@@ -10,6 +11,9 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -61,21 +65,21 @@ public abstract class AbstractApplierCommand<T> extends AbstractRedisCommand<T> 
 
         private ApplierState state;
         private Pair<String, Integer> masterAddress;
-        private String sid;
+        private String sids;
         private String gtidSet;
         private RouteMeta routeMeta;
 
         public ApplierSetStateCommand(SimpleObjectPool<NettyClient> clientPool,
                                      ApplierState state,
                                      Pair<String, Integer> masterAddress,
-                                     String sid,
+                                     String sids,
                                      String gtidSet,
                                      RouteMeta routeMeta,
                                      ScheduledExecutorService scheduled) {
             super(clientPool, scheduled);
             this.state = state;
             this.masterAddress = masterAddress;
-            this.sid = sid;
+            this.sids = sids;
             this.gtidSet = gtidSet;
             this.routeMeta = routeMeta;
         }
@@ -88,21 +92,41 @@ public abstract class AbstractApplierCommand<T> extends AbstractRedisCommand<T> 
 
         @Override
         public ByteBuf getRequest() {
+
+            //TODO ayq delete
+            GtidSet gtidSetToBeSend = new GtidSet(gtidSet);
+            Set<String> sidSet = new HashSet<>(Arrays.asList(sids.split(",")));
+            GtidSet filteredGtidSet = gtidSetToBeSend.filterGtid(sidSet);
+            for (String sid : sidSet) {
+                if (filteredGtidSet.getUUIDSet(sid) == null) {
+                    filteredGtidSet.add(sid+":0");
+                }
+            }
             return new RequestStringParser(
                     getName(),
                     SET_STATE,
                     state.toString(),
                     masterAddress.getKey(), String.valueOf(masterAddress.getValue()),
-                    sid, gtidSet,
+                    filteredGtidSet.toString(),
                     routeMeta == null?"":(routeMeta.routeProtocol() + " " + ProxyEndpoint.PROXY_SCHEME.TCP.name())
             ).format();
+
+            //TODO ayq open
+//            return new RequestStringParser(
+//                    getName(),
+//                    SET_STATE,
+//                    state.toString(),
+//                    masterAddress.getKey(), String.valueOf(masterAddress.getValue()),
+//                    sids, gtidSet,
+//                    routeMeta == null?"":(routeMeta.routeProtocol() + " " + ProxyEndpoint.PROXY_SCHEME.TCP.name())
+//            ).format();
         }
 
 
         @Override
         public String toString() {
             return String.format("(to:%s) %s %s %s %s %s %s %s", getClientPool().desc(), getName(), SET_STATE,
-                    state.toString(), masterAddress.getKey(), masterAddress.getValue(), sid, gtidSet);
+                    state.toString(), masterAddress.getKey(), masterAddress.getValue(), sids, gtidSet);
         }
     }
 }

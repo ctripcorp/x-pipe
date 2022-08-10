@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 
 import java.util.List;
+import java.util.Map;
 
 public interface KeeperContainerService {
 
@@ -16,7 +17,6 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
 	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
 
-
 	List<KeeperContainerInfoModel> findAllInfos();
 
 	void addKeeperContainer(KeeperContainerCreateInfo createInfo);
@@ -26,4 +26,6 @@ public interface KeeperContainerService {
 	void updateKeeperContainer(KeeperContainerCreateInfo createInfo);
 
 	void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort);
+
+	Map<Long, Long> keeperContainerIdDcMap();
 }
