@@ -64,28 +64,28 @@ public class DefaultProxyConnectProtocolTest extends AbstractTest {
     public void testIsLastProxyHop() {
         DefaultProxyConnectProtocolParser parser1 = new DefaultProxyConnectProtocolParser();
         DefaultProxyConnectProtocol protocol1 = (DefaultProxyConnectProtocol) parser1.read("PROXY ROUTE TCP://127.0.0.1:6379;FORWARD_FOR 10.128.12.20:45700;CONTENT COMPRESS ZSTD 1.0#");
-        Assert.assertEquals(true, protocol1.isLastProxyHop());
+        Assert.assertEquals(true, protocol1.isLastHopLeft());
         RouteOptionParser routeParser = (RouteOptionParser) parser1.getProxyOptionParser(PROXY_OPTION.ROUTE);
         Assert.assertNotNull(routeParser);
         parser1.removeProxyOptionParser(parser1.getProxyOptionParser(PROXY_OPTION.ROUTE));
 
 
         protocol1 = (DefaultProxyConnectProtocol) parser1.read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379");
-        Assert.assertEquals(false, protocol1.isLastProxyHop());
+        Assert.assertEquals(false, protocol1.isLastHopLeft());
         routeParser = (RouteOptionParser) parser1.getProxyOptionParser(PROXY_OPTION.ROUTE);
         Assert.assertNotNull(routeParser);
         parser1.removeProxyOptionParser(routeParser);
         Assert.assertNull(parser1.getProxyOptionParser(PROXY_OPTION.ROUTE));
 
         protocol1 = (DefaultProxyConnectProtocol) parser1.read("PROXY ROUTE PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443 TCP://127.0.0.1:6379");
-        Assert.assertEquals(false, protocol1.isLastProxyHop());
+        Assert.assertEquals(false, protocol1.isLastHopLeft());
         routeParser = (RouteOptionParser) parser1.getProxyOptionParser(PROXY_OPTION.ROUTE);
         Assert.assertNotNull(routeParser);
         parser1.removeProxyOptionParser(routeParser);
         Assert.assertNull(parser1.getProxyOptionParser(PROXY_OPTION.ROUTE));
 
         protocol1 = (DefaultProxyConnectProtocol) parser1.read("PROXY ROUTE ");
-        Assert.assertEquals(true, protocol1.isLastProxyHop());
+        Assert.assertEquals(true, protocol1.isLastHopLeft());
         routeParser = (RouteOptionParser) parser1.getProxyOptionParser(PROXY_OPTION.ROUTE);
         Assert.assertNotNull(routeParser);
         parser1.removeProxyOptionParser(routeParser);
