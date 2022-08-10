@@ -7,9 +7,11 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.SelectOneCycle;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -29,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
+import static com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -54,7 +57,10 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
         ResourceManager resourceManager = mock(ResourceManager.class);
-        when(resourceManager.getProxyConfig()).thenReturn(new TestProxyConfig());
+        TestProxyConfig proxyConfig1 = new TestProxyConfig();
+        proxyConfig1.setCompress(true);
+        when(resourceManager.getProxyConfig()).thenReturn(proxyConfig1);
+//        when(resourceManager.getProxyConfig()).thenReturn(new TestProxyConfig());
         when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
 
@@ -75,15 +81,34 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     }
 
     @Test
-    public void onChannelEstablished() {
+    public void onChannelEstablished1() {
+        when(tunnel.getProxyProtocol()).thenReturn(new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n"));
         EmbeddedChannel channel = new EmbeddedChannel();
+        channel.pipeline().addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel));
         session.endpoint = new DefaultProxyEndpoint("TCP://127.0.0.1:6379");
-
         SessionEventHandler handler = mock(SessionEventHandler.class);
         session.addSessionEventHandler(handler);
         session.onChannelEstablished(channel);
+        Assert.assertNull(channel.pipeline().get(BACKEND_COMPRESS_DECODER));
+        Assert.assertNull(channel.pipeline().get(BACKEND_COMPRESS_ENCODER));
         verify(handler).onEstablished();
     }
+
+    @Test
+    public void onChannelEstablished2() {
+        when(tunnel.getProxyProtocol()).thenReturn(new DefaultProxyConnectProtocolParser()
+                .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLC://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n"));
+        EmbeddedChannel channel = new EmbeddedChannel();
+        channel.pipeline().addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel));
+        session.endpoint = new DefaultProxyEndpoint("TCP://127.0.0.1:6379");
+        SessionEventHandler handler = mock(SessionEventHandler.class);
+        session.addSessionEventHandler(handler);
+        session.onChannelEstablished(channel);
+        Assert.assertNotNull(channel.pipeline().get(BACKEND_COMPRESS_DECODER));
+        Assert.assertNotNull(channel.pipeline().get(BACKEND_COMPRESS_ENCODER));
+        verify(handler).onEstablished();
+    }
+
 
     @Test
     public void doStart() throws Exception {

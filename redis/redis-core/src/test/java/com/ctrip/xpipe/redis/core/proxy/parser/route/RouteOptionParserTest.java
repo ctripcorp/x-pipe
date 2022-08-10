@@ -31,4 +31,15 @@ public class RouteOptionParserTest {
         Assert.assertEquals("last-stop", parser.getFinalStation());
 
     }
+
+    @Test
+    public void testIsLastProxyHop() {
+        Assert.assertEquals(false, parser.isLastProxyHop());
+        parser = new RouteOptionParser().read("ROUTE PROXYTLS://127.0.0.1:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(false, parser.isLastProxyHop());
+        parser = new RouteOptionParser().read("ROUTE TCP://127.0.0.1:6379");
+        Assert.assertEquals(true, parser.isLastProxyHop());
+        parser = new RouteOptionParser().read("ROUTE ");
+        Assert.assertEquals(true, parser.isLastProxyHop());
+    }
 }
