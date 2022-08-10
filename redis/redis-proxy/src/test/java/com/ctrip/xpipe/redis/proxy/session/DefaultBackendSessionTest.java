@@ -60,7 +60,6 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         TestProxyConfig proxyConfig1 = new TestProxyConfig();
         proxyConfig1.setCompress(true);
         when(resourceManager.getProxyConfig()).thenReturn(proxyConfig1);
-//        when(resourceManager.getProxyConfig()).thenReturn(new TestProxyConfig());
         when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
 
