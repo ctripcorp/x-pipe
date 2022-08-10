@@ -119,9 +119,20 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
     @Test
     public void testAddCompressOptionToProtocolIfNeeded() {
         ((TestProxyConfig)config).setCompress(true);
-        tunnel.addCompressOptionToProtocolIfNeeded();
-        Assert.assertNull(tunnel.getProxyProtocol().getCompressAlgorithm());
-        logger.info(tunnel.getProxyProtocol().toString());
+        ProxyConnectProtocol proxyConnectProtocol1 =
+                new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
+
+        DefaultTunnel tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+        tunnel1.addCompressOptionToProtocolIfNeeded();
+        Assert.assertNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
+
+        proxyConnectProtocol1 = new DefaultProxyConnectProtocolParser()
+                .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n");
+        tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+        tunnel1.addCompressOptionToProtocolIfNeeded();
+        Assert.assertNotNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
     }
 
     @Test
