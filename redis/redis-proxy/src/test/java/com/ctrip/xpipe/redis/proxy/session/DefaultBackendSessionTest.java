@@ -97,7 +97,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Test
     public void onChannelEstablished2() {
         when(tunnel.getProxyProtocol()).thenReturn(new DefaultProxyConnectProtocolParser()
-                .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLC://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n"));
+                .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n"));
         EmbeddedChannel channel = new EmbeddedChannel();
         channel.pipeline().addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel));
         session.endpoint = new DefaultProxyEndpoint("TCP://127.0.0.1:6379");
