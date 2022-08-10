@@ -20,5 +20,5 @@ public interface ProxyRouteParser extends ProxyOptionParser {
 
     String getFinalStation();
 
-    boolean isLastHopLeft();
+    boolean isNearDest();
 }

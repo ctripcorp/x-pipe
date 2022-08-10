@@ -140,7 +140,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
         ProxyConfig config = resourceManager.getProxyConfig();
-        if(config.isCompressEnabled() && !tunnel().getProxyProtocol().isLastHopLeft()) {
+        if(config.isCompressEnabled() && !tunnel().getProxyProtocol().isNearDest()) {
             logger.info("Backend compress codec installed: {}", ChannelUtil.getDesc(channel));
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_DECODER, config.getCompressDecoder());
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_ENCODER, config.getCompressEncoder());
