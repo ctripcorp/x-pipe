@@ -64,6 +64,18 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
+	private Comparator<ShardTbl> shardTblComparator = new Comparator<ShardTbl>() {
+		@Override
+		public int compare(ShardTbl o1, ShardTbl o2) {
+			if (o1 != null && o2 != null
+					&& ObjectUtils.equals(o1.getShardName(), o2.getShardName())
+					&& ObjectUtils.equals(o1.getSetinelMonitorName(), o2.getSetinelMonitorName())) {
+				return 0;
+			}
+			return -1;
+		}
+	};
+
 	@Override
 	public ShardTbl find(final long shardId) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
@@ -114,6 +126,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			}
     	});
 	}
+
 
 	@Override
 	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
@@ -195,19 +208,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 					throw new ServerException(e.getMessage());
 				}
 
-				for (ShardTbl shard : shards) {
-					// Call shard event
-					Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
-					ShardEvent shardEvent = null;
-					if (sentinels != null && !sentinels.isEmpty()) {
-						shardEvent = createShardDeleteEvent(clusterName, cluster, shard.getShardName(), shard, sentinels);
-					}
-					if (shardEvent != null) {
-						// RejectedExecutionException
-						shardEvent.onEvent();
-					}
-				}
-
+				deleteShardSentinels(shards, cluster);
 				clusterModifyNotify(clusterName, cluster);
 			}
 		}
@@ -345,6 +346,71 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			notifier.notifyClusterUpdate(clusterName, dcs);
 		if (clusterType.supportMigration()) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
+		}
+	}
+
+	@Override
+	public void updateShardsByDcClusterModel(DcClusterModel dcClusterModel, ClusterTbl clusterTbl) throws DalException {
+		List<ShardTbl> targetShards = new ArrayList<>();
+		dcClusterModel.getShards().forEach(shardModel -> {
+			targetShards.add(shardModel.getShardTbl());
+		});
+
+		List<ShardTbl> originShards = findAllShardByDcCluster(dcClusterModel.getDcCluster().getDcId(),
+				dcClusterModel.getDcCluster().getClusterId());
+
+		if (dcClusterModel.getDcCluster().isGroupType() &&
+				!ObjectUtils.equals(clusterTbl.getActivedcId(), dcClusterModel.getDcCluster().getDcId())) {
+			return ;
+		}
+
+		handleShardsUpdate(targetShards, originShards, clusterTbl, dcClusterModel.getDcCluster().getDcId(),
+				dcClusterModel.getDcCluster().isGroupType());
+
+	}
+
+	@Override
+	public List<ShardTbl> findAllShardByDcCluster(long dcId, long clusterId) {
+		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return dao.findAllShardByDcCluster(dcId, clusterId, ShardTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	private void handleShardsUpdate(List<ShardTbl> targetShards, List<ShardTbl> originShards, ClusterTbl clusterTbl,
+									long dcId, boolean isDRMaster) throws DalException {
+		List<ShardTbl> toCreates = (List<ShardTbl>) setOperator.difference(ShardTbl.class, targetShards,
+																					originShards, shardTblComparator);
+		for (ShardTbl shard : toCreates) {
+			shardDao.validateShard(clusterTbl.getClusterName(), shard);
+		}
+
+		List<ShardTbl> toDeletes = (List<ShardTbl>) setOperator.difference(ShardTbl.class, originShards,
+																				targetShards, shardTblComparator);
+		DcTbl dcTbl = dcService.find(dcId);
+
+		try {
+			shardDao.handleShardsUpdate(toCreates, toDeletes, clusterTbl, dcTbl, isDRMaster,
+					sentinelService.findAllByDcAndType(dcService.getDcName(dcId), ClusterType.lookup(clusterTbl.getClusterType())));
+		} catch (Exception e) {
+			throw new ServerException(e.getMessage());
+		}
+		deleteShardSentinels(toDeletes, clusterTbl);
+	}
+
+	@Override
+	public void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl) {
+		for (ShardTbl shard : shards) {
+			Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
+			ShardEvent shardEvent = null;
+			if (sentinels != null && !sentinels.isEmpty()) {
+				shardEvent = createShardDeleteEvent(clusterTbl.getClusterName(), clusterTbl, shard.getShardName(), shard, sentinels);
+			}
+			if (shardEvent != null) {
+				shardEvent.onEvent();
+			}
 		}
 	}
 

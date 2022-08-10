@@ -40,4 +40,6 @@ public interface RedisService {
 	List<RedisTbl> findAllKeeperContainerCountInfo();
 
 	List<Long> findClusterIdsByKeeperContainer(long keeperContainerId);
+
+	void updateSourceKeepers(String srcDcName, String clusterName, String shardName, long dstDcId, ShardModel sourceShard);
 }

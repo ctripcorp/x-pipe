@@ -170,7 +170,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     private void addApplier(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
         try {
-            applierStateController.addApplier(new ApplierTransMeta(clusterDbId, shardDbId, applierMeta));
+            applierStateController.addApplier(new ApplierTransMeta(applierMeta.getTargetClusterName(), clusterDbId, shardDbId, applierMeta));
         } catch (Exception e) {
             logger.error(String.format("[addApplier]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, applierMeta), e);
         }
@@ -197,7 +197,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
             }
             for (ApplierMeta deadApplier : deadAppliers) {
                 try {
-                    applierStateController.addApplier(new ApplierTransMeta(clusterDbId, shardDbId, deadApplier));
+                    applierStateController.addApplier(new ApplierTransMeta(clusterMeta.getId(), clusterDbId, shardDbId, deadApplier));
                 } catch (ResourceAccessException e) {
                     logger.error(String.format("cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
                             deadApplier, e.getMessage()));
@@ -401,7 +401,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
         String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
 
-        List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
         return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }

@@ -93,6 +93,17 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
         Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testParamShorterParse() {
+        parser.parse(Arrays.asList("SET").toArray());
+    }
+
+    @Test
+    public void testParamLongerParse() {
+        RedisOp redisOp = parser.parse(Arrays.asList("SET", "a", "1", "b").toArray());
+        Assert.assertEquals(RedisOpType.SET, redisOp.getOpType());
+    }
+
     @Test
     public void testParseAllCmds() {
         List<String> cmdList = Arrays.asList(

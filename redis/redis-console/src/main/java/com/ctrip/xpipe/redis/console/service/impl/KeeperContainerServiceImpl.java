@@ -306,6 +306,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }, true);
   }
 
+  @Override
+  public Map<Long, Long> keeperContainerIdDcMap() {
+    Map<Long, Long> keeperContainerIdDcMap = new HashMap<>();
+    List<KeepercontainerTbl> allKeeperContainers = findAll();
+    allKeeperContainers.forEach((keeperContainer) -> {
+      keeperContainerIdDcMap.put(keeperContainer.getKeyKeepercontainerId(), keeperContainer.getKeepercontainerDc());
+    });
+    return keeperContainerIdDcMap;
+  }
+
 
   @Override
   public List<KeeperContainerInfoModel> findAllInfos() {

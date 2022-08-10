@@ -18,6 +18,9 @@ public interface ApplierService {
 
     List<ApplierTbl> findAllApplierTblsWithSameIp(String ip);
 
+    void updateAppliersAndKeepers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
+                                  long replDirectionId);
+
     void updateAppliers(String dcName, String clusterName, String shardName, ShardModel sourceShard, long replDirectionId);
 
     List<ApplierTbl> findAllAppliercontainerCountInfo();

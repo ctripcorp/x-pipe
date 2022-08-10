@@ -301,10 +301,10 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	public void testGetGtidSet() {
 		List<RedisMeta> redises = heteroClusterMeta.getShards().get(heteroShardId).getRedises();
 		GtidSet gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, null);
-		Assert.assertNull(gtidSet);
+		Assert.assertNotNull(gtidSet);
 
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, null, "t");
-		Assert.assertNull(gtidSet);
+		Assert.assertNotNull(gtidSet);
 
 		setRedisesGtids(redises);
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, "a1");

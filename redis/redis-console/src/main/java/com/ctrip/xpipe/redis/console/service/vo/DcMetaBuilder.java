@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -162,6 +163,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setType(cluster.getClusterType());
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
+                clusterMeta.setDownstreamDcs("");
+                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.getDesc():
+                        DcGroupType.findByValue(dcClusterInfo.isGroupType()).getDesc());
+                clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
@@ -520,7 +525,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 if (replDirection.getToDcId() == dcId) {
                     if (!isDRMaster(dcClusterTbl)) {
                         SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirection.getSrcDcId(), replDirection.getFromDcId());
-                        buildSourceShardMetas(sourceMeta, clusterId, replDirection.getSrcDcId());
+                        buildSourceShardMetas(sourceMeta, clusterMeta.getId(), clusterId, replDirection.getSrcDcId());
                     }
                 }
                 if (replDirection.getFromDcId() == dcId) {
@@ -529,14 +534,14 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             }
         }
 
-        private void buildSourceShardMetas(SourceMeta sourceMeta, long clusterId, long srcDcId) {
+        private void buildSourceShardMetas(SourceMeta sourceMeta, String clusterName, long clusterId, long srcDcId) {
             DcClusterTbl dcClusterTbl = getDcClusterInfo(clusterId, srcDcId);
             if (dcClusterTbl == null) {
                 getLogger().warn("[buildSourceShardMetas] dcCluster not found; clusterId={}", clusterId);
                 return;
             }
 
-            List<DcClusterShardTbl> dcClusterShardTbls =  dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
+            List<DcClusterShardTbl> dcClusterShardTbls = dcCluster2DcClusterShardMap.get(dcClusterTbl.getDcClusterId());
             if (dcClusterShardTbls == null) {
                 return;
             }
@@ -550,11 +555,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 }
             }
 
-            addApplierAndAddShardIfNotExists(clusterId, sourceMeta);
+            addApplierAndAddShardIfNotExists(clusterName, clusterId, sourceMeta);
         }
 
-        private void addApplierAndAddShardIfNotExists(long clusterId, SourceMeta sourceMeta) {
-            //add applier and add shard if not exist
+        private void addApplierAndAddShardIfNotExists(String clusterName, long clusterId, SourceMeta sourceMeta) {
             List<Long> repIds = replDirectionTblList
                     .stream()
                     .filter(a -> clusterId == a.getClusterId() && a.getToDcId() == dcId)
@@ -575,8 +579,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 applierMeta.setPort(applierTbl.getPort());
                 applierMeta.setActive(applierTbl.isActive());
                 applierMeta.setApplierContainerId(applierTbl.getContainerId());
+                applierMeta.setTargetClusterName(getTargetClusterName(applierTbl, clusterName));
                 shardMeta.addApplier(applierMeta);
             }
+        }
+
+        private String getTargetClusterName(ApplierTbl applierTbl, String clusterName) {
+            if (applierTbl.getReplDirectionInfo() == null || applierTbl.getReplDirectionInfo().getTargetClusterName() == null) {
+                return clusterName;
+            }
+            return applierTbl.getReplDirectionInfo().getTargetClusterName();
         }
 
         private void setDownstreamDcs(ClusterMeta clusterMeta, ReplDirectionTbl replDirectionTbl) {
@@ -623,7 +635,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     //0: Master; 1: DRMaster
     private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
-        return dcClusterTbl.isGroupType();
+        return DcGroupType.DR_MASTER.equals(DcGroupType.findByValue(dcClusterTbl.isGroupType()));
+    }
+
+    private String getDcGroupName(DcClusterTbl dcClusterInfo) {
+        if (dcClusterInfo == null || dcClusterInfo.getGroupName() == null) {
+            return dcMeta.getId();
+        }
+
+        return dcClusterInfo.getGroupName();
     }
 
     /**------------------Visible for Test-----------------------*/

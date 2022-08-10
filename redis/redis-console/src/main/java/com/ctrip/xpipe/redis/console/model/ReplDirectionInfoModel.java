@@ -17,6 +17,8 @@ public class ReplDirectionInfoModel implements Serializable {
 
     private String toDcName;
 
+    private String targetClusterName;
+
     public ReplDirectionInfoModel() {
 
     }
@@ -66,17 +68,26 @@ public class ReplDirectionInfoModel implements Serializable {
         return this;
     }
 
+    public String getTargetClusterName() {
+        return targetClusterName;
+    }
+
+    public ReplDirectionInfoModel setTargetClusterName(String targetClusterName) {
+        this.targetClusterName = targetClusterName;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ReplDirectionInfoModel that = (ReplDirectionInfoModel) o;
-        return id == that.id && Objects.equals(clusterName, that.clusterName) && Objects.equals(srcDcName, that.srcDcName) && Objects.equals(fromDcName, that.fromDcName) && Objects.equals(toDcName, that.toDcName);
+        return id == that.id && Objects.equals(clusterName, that.clusterName) && Objects.equals(srcDcName, that.srcDcName) && Objects.equals(fromDcName, that.fromDcName) && Objects.equals(toDcName, that.toDcName) && Objects.equals(targetClusterName, that.targetClusterName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, clusterName, srcDcName, fromDcName, toDcName);
+        return Objects.hash(id, clusterName, srcDcName, fromDcName, toDcName, targetClusterName);
     }
 
     @Override
@@ -87,6 +98,7 @@ public class ReplDirectionInfoModel implements Serializable {
                 ", srcDcName='" + srcDcName + '\'' +
                 ", fromDcName='" + fromDcName + '\'' +
                 ", toDcName='" + toDcName + '\'' +
+                ", targetClusterName='" + targetClusterName + '\'' +
                 '}';
     }
 }

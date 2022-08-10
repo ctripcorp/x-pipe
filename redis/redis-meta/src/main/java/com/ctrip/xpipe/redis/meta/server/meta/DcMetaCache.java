@@ -66,11 +66,15 @@ public interface DcMetaCache extends Observable {
 
 	List<ApplierMeta> getShardAppliers(Long clusterDbId, Long shardDbId);
 
+	List<RedisMeta> getClusterRedises(Long clusterDbId);
+
 	List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId);
 
 	SentinelMeta getSentinel(Long clusterDbId, Long shardDbId);
 
 	String getSentinelMonitorName(Long clusterDbId, Long shardDbId);
+
+	void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids);
 	
 	void clusterAdded(ClusterMeta clusterMeta);
 

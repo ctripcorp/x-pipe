@@ -6,11 +6,13 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 @Service
@@ -32,6 +34,8 @@ public class ShardModelServiceImpl implements ShardModelService{
 	private ApplierService applierService;
 	@Autowired
 	private ReplDirectionService replDirectionService;
+	@Autowired
+	private KeeperContainerService keeperContainerService;
 
 	@Override
 	public List<ShardModel> getAllShardModel(String dcName, String clusterName) {
@@ -125,30 +129,46 @@ public class ShardModelServiceImpl implements ShardModelService{
 
 		ShardModel shardModel = new ShardModel();
 		shardModel.setShardTbl(shardInfo);
-
+		Map<Long, Long> keeperContainerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
 		if (isSourceShard && replDirectionInfoModel != null) {
-			addAppliersAndKeepersToSourceShard(shardModel, shardInfo.getId(), replDirectionInfoModel.getId());
+			addAppliersAndKeepersToSourceShard(shardModel, shardInfo.getId(), replDirectionInfoModel.getId(), dcInfo.getId(),
+					dcClusterShardInfo.getDcClusterShardId(), keeperContainerIdDcMap);
 		} else {
-			addRedisesAndKeepersToNormalShard(shardModel, dcClusterShardInfo.getDcClusterShardId());
+			addRedisesAndKeepersToNormalShard(shardModel, dcClusterShardInfo.getDcClusterShardId(),
+														dcInfo.getId(), keeperContainerIdDcMap);
 		}
 		
 		return shardModel;
 	}
 
-	private void addAppliersAndKeepersToSourceShard(ShardModel shardModel, long shardId, long replDirectionId) {
+	private void addAppliersAndKeepersToSourceShard(ShardModel shardModel, long shardId, long replDirectionId,
+													long dcId, long dcClusterShardId, Map<Long, Long> keeperContainerIdDcMap) {
 		List<ApplierTbl> appliers = applierService.findApplierTblByShardAndReplDirection(shardId, replDirectionId);
         appliers.forEach(applier -> shardModel.addApplier(applier));
+
+        List<RedisTbl> keepers = redisService.findAllByDcClusterShard(dcClusterShardId);
+		if(null != keepers) {
+			for (RedisTbl keeper : keepers) {
+				if (keeper.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER) &&
+						ObjectUtils.equals(Long.valueOf(dcId), keeperContainerIdDcMap.get(Long.valueOf(keeper.getKeepercontainerId())))) {
+					shardModel.addKeeper(keeper);
+				}
+			}
+		}
 	}
 
-	private void addRedisesAndKeepersToNormalShard(ShardModel shardModel, long dcClusterShardId) {
+	private void addRedisesAndKeepersToNormalShard(ShardModel shardModel, long dcClusterShardId, long dcId,
+												   Map<Long, Long> keeperContainerIdDcMap) {
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardId);
 		if(null != shard_redises) {
 			for(RedisTbl redis : shard_redises) {
 				if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
 					shardModel.addRedis(redis);
 				} else {
-					//TODO song_yu filter source keeper
-					shardModel.addKeeper(redis);
+					if (ObjectUtils.equals(Long.valueOf(dcId),
+							keeperContainerIdDcMap.get(Long.valueOf(redis.getKeepercontainerId())))) {
+						shardModel.addKeeper(redis);
+					}
 				}
 			}
 		}
