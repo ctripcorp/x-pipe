@@ -132,9 +132,9 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
     }
 
     @Override
-    public boolean isLastProxyHop() {
+    public boolean isLastHopLeft() {
         ProxyRouteParser routeOptionParser = (ProxyRouteParser) parser.getProxyOptionParser(PROXY_OPTION.ROUTE);
-        return routeOptionParser.isLastProxyHop();
+        return routeOptionParser.isLastHopLeft();
     }
 
     @Override

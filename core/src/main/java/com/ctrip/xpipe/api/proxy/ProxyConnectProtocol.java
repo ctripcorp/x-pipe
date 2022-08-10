@@ -36,6 +36,5 @@ public interface ProxyConnectProtocol extends ProxyProtocol {
 
     void addCompression(CompressAlgorithm algorithm);
 
-    boolean isLastProxyHop();
-
+    boolean isLastHopLeft();
 }
