@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
 
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,6 +16,7 @@ import org.springframework.http.MediaType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * @author wenchao.meng
@@ -21,6 +25,7 @@ import java.util.List;
  */
 public class DefaultMetaServerConsoleService extends AbstractMetaService implements MetaServerConsoleService{
 
+	private String dc;
 
 	private String  metaServerAddress;
 	private String  changeClusterPath;
@@ -29,64 +34,59 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	private String  changePrimaryDcPath;
 	private String  getCurrentMasterPath;
 
-	protected DefaultMetaServerConsoleService(String metaServerAddress, int retryTimes, int retryIntervalMilli, int connectTimeout, int soTimout) {
+	private MetricProxy metricProxy = MetricProxy.DEFAULT;
+
+	protected DefaultMetaServerConsoleService(MetaserverAddress metaserverAddress, int retryTimes, int retryIntervalMilli, int connectTimeout, int soTimout) {
 		super(retryTimes, retryIntervalMilli, connectTimeout, soTimout);
-		initService(metaServerAddress);
+		initService(metaserverAddress);
 	}
 	
-	public DefaultMetaServerConsoleService(String metaServerAddress) {
+	public DefaultMetaServerConsoleService(MetaserverAddress metaServerAddress) {
 		initService(metaServerAddress);
 	}
 
-	private void initService(String metaServerAddress) {
-		this.metaServerAddress = metaServerAddress;
-		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress);
-		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
-		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
-		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
-		getCurrentMasterPath = META_SERVER_SERVICE.GET_CURRENT_MASTER.getRealPath(metaServerAddress);
+	private void initService(MetaserverAddress metaServerAddress) {
+		this.dc = metaServerAddress.getDcName();
+		this.metaServerAddress = metaServerAddress.getAddress();
+		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress.getAddress());
+		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress.getAddress());
+		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress.getAddress());
+		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress.getAddress());
+		getCurrentMasterPath = META_SERVER_SERVICE.GET_CURRENT_MASTER.getRealPath(metaServerAddress.getAddress());
 	}
 
 	@Override
 	public void clusterAdded(String clusterId, ClusterMeta clusterMeta) {
-		
-		restTemplate.postForEntity(changeClusterPath, clusterMeta, String.class, clusterId);
+
+		doRequest("clusterAdded", clusterId, () -> restTemplate.postForEntity(changeClusterPath, clusterMeta, String.class, clusterId));
 	}
 
 	@Override
 	public void clusterModified(String clusterId, ClusterMeta clusterMeta) {
-		
-		restTemplate.put(changeClusterPath, clusterMeta, clusterId);
+
+		doRequest("clusterModified", clusterId, () -> restTemplate.put(changeClusterPath, clusterMeta, clusterId));
 	}
 
 	@Override
 	public void clusterDeleted(String clusterId) {
-		
-		restTemplate.delete(changeClusterPath, clusterId);
-	}
 
-
-	@Override
-	public DcMeta getDynamicInfo() {
-		
-		return null;
+		doRequest("clusterDeleted", clusterId, () -> restTemplate.delete(changeClusterPath, clusterId));
 	}
 
 	@Override
 	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc) {
-		
-		return restTemplate.getForObject(changePrimaryDcCheckPath, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
+
+		return doRequest("changePrimaryDcCheck", clusterId, () ->
+				restTemplate.getForObject(changePrimaryDcCheckPath, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc));
 	}
 
 	@Override
 	public PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly) {
 
-		HttpEntity<Object> entity = new HttpEntity<Object>(null);
-		return restTemplate.exchange(
+		return doRequest("makeMasterReadOnly", clusterId, () -> restTemplate.exchange(
 				makeMasterReadonlyPath,
-				HttpMethod.PUT, entity,
-				PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly).getBody();
-
+				HttpMethod.PUT, HttpEntity.EMPTY,
+				PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly).getBody());
 	}
 
 	@Override
@@ -96,17 +96,18 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
 		HttpEntity<Object> entity = new HttpEntity<Object>(request, httpHeaders);
 
-		return restTemplate.exchange(changePrimaryDcPath,
+		return doRequest("changePrimaryDc", clusterId, () -> restTemplate.exchange(changePrimaryDcPath,
 				HttpMethod.PUT,
 				entity,
 				PrimaryDcChangeMessage.class,
-				clusterId, shardId, newPrimaryDc).getBody();
+				clusterId, shardId, newPrimaryDc).getBody());
 	}
 
 	@Override
 	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
 
-		return restTemplate.getForObject(getCurrentMasterPath, RedisMeta.class, clusterId, shardId);
+		return doRequest("getCurrentMaster", clusterId, () ->
+				restTemplate.getForObject(getCurrentMasterPath, RedisMeta.class, clusterId, shardId));
 
 	}
 
@@ -116,6 +117,46 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		List<String> result = new ArrayList<>();
 		result.add(metaServerAddress);
 		return result;
+	}
+
+	private void doRequest(String api, String cluster, Runnable request) {
+		long startTime = System.currentTimeMillis();
+		try {
+			request.run();
+			tryMetric(api, dc, cluster, true, startTime, System.currentTimeMillis());
+		} catch (Throwable th) {
+			tryMetric(api, dc, cluster, false, startTime, System.currentTimeMillis());
+			throw th;
+		}
+	}
+
+	private <T> T doRequest(String api, String cluster, Supplier<T> request) {
+		long startTime = System.currentTimeMillis();
+		T resp = null;
+		try {
+			resp = request.get();
+			return resp;
+		} finally {
+			tryMetric(api, dc, cluster, null != resp, startTime, System.currentTimeMillis());
+		}
+	}
+
+	private void tryMetric(String api, String dc, String cluster, boolean isSuccess, long startTime, long endTime) {
+		try {
+			MetricData metricData = new MetricData("call.metaserver", dc, cluster, null);
+			metricData.setTimestampMilli(startTime);
+			metricData.addTag("api", api);
+			metricData.setValue(endTime - startTime);
+			metricData.addTag("status", isSuccess ? "SUCCESS" : "FAIL");
+			metricProxy.writeBinMultiDataPoint(metricData);
+		} catch (Throwable th) {
+			logger.debug("[tryMetric] fail", th);
+		}
+	}
+
+	@VisibleForTesting
+	protected void setMetricProxy(MetricProxy metricProxy) {
+		this.metricProxy = metricProxy;
 	}
 
 }

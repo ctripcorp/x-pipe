@@ -213,8 +213,14 @@ public class StringUtil {
     }
 
     private static final String LINE_SPLITTER = "\\r?\\n";
+    private static final String COMMA_SPLITTER = "\\s*,\\s*";
 
     public static String[] splitByLineRemoveEmpty(String str) {
         return splitRemoveEmpty(LINE_SPLITTER, str);
     }
+
+    public static String[] splitByCommaRemoveEmpty(String str) {
+        return splitRemoveEmpty(COMMA_SPLITTER, str);
+    }
+
 }

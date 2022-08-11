@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -27,10 +28,8 @@ public class DefaultReactorMetaServerConsoleServiceManager implements ReactorMet
     }
 
     @Override
-    public ReactorMetaServerConsoleService getOrCreate(final String metaServerAddress) {
-        return MapUtils.getOrCreate(services, metaServerAddress,
-                () -> new DefaultReactorMetaServerConsoleService(metaServerAddress, loopResources, connectionProvider));
+    public ReactorMetaServerConsoleService getOrCreate(final MetaserverAddress metaserverAddress) {
+        return MapUtils.getOrCreate(services, metaserverAddress.getAddress(),
+                () -> new DefaultReactorMetaServerConsoleService(metaserverAddress, loopResources, connectionProvider));
     }
-
-
 }

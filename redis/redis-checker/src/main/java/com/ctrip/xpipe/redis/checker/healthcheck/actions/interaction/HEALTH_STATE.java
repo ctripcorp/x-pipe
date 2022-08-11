@@ -39,12 +39,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -80,12 +80,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -121,12 +121,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return true;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -162,12 +162,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return false;
         }
     },
@@ -203,12 +203,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return true;
         }
     },
@@ -244,12 +244,12 @@ public enum HEALTH_STATE {
         }
 
         @Override
-        protected boolean shouldNotifyMarkup() {
+        public boolean shouldNotifyMarkup() {
             return false;
         }
 
         @Override
-        protected boolean shouldNotifyMarkDown() {
+        public boolean shouldNotifyMarkDown() {
             return true;
         }
     };
@@ -282,7 +282,7 @@ public enum HEALTH_STATE {
 
     protected abstract HEALTH_STATE afterDelayHalfFail();
 
-    protected abstract boolean shouldNotifyMarkup();
+    public abstract boolean shouldNotifyMarkup();
 
-    protected abstract boolean shouldNotifyMarkDown();
+    public abstract boolean shouldNotifyMarkDown();
 }

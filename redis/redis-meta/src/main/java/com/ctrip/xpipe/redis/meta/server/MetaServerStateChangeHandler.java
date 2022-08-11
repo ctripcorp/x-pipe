@@ -29,6 +29,6 @@ public interface MetaServerStateChangeHandler {
 
 	default void currentMasterChanged(Long clusterDbId, Long shardDbId) {}
 
-	default void peerMasterChanged(String dcId, Long clusterDbId, Long shardDbId) {}
+	default void peerMasterChanged(Long clusterDbId, Long shardDbId) {}
 
 }

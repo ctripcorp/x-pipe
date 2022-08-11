@@ -34,7 +34,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getClusterHealthCheckInterval();
 
-	String getHickwallClusterMetricFormat();
+	Map<String,String> getHickwallClusterMetricFormat();
 
 	HickwallMetricInfo getHickwallMetricInfo();
 
@@ -86,6 +86,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getNoAlarmMinutesForClusterUpdate();
 
+	int getHealthCheckSuspendMinutes();
+
 	Set<String> getIgnoredHealthCheckDc();
 
 	Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
@@ -103,6 +105,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getOutterClientCheckInterval();
 
 	int getOuterClientSyncInterval();
+
+	String getOuterClientToken();
 
 	String filterOuterClusters();
 
@@ -123,8 +127,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	boolean isSensitiveForRedundantRedis();
 
 	String getParallelConsoleDomain();
-
-	boolean isConsoleSiteUnstable();
 
 	String getDefaultBeaconHost();
 

@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -44,7 +46,8 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         }
     }
 
-    public List<HEALTH_STATE> allHealthStatus(String ip, int port){
+    @Override
+    public List<HEALTH_STATE> getHealthStates(String ip, int port){
 
         Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
         List<HEALTH_STATE> result = new LinkedList<>();
@@ -53,12 +56,33 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
             try{
                 HEALTH_STATE instanceStatus = consoleService.getInstanceStatus(ip, port);
                 result.add(instanceStatus);
-                logger.info("[allHealthStatus]{}, {}:{}, {}", consoleService, ip, port, instanceStatus);
+                logger.info("[getHealthStates]{}, {}:{}, {}", consoleService, ip, port, instanceStatus);
             }catch (Exception e){
-                logger.error("[allHealthStatus]" + consoleService + "," + ip + ":" + port, e);
+                logger.error("[getHealthStates]" + consoleService + "," + ip + ":" + port, e);
             }
         }
         return result;
+    }
+
+    @Override
+    public List<Map<HostPort, HealthStatusDesc>> allInstanceHealthStatus() {
+        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
+        List<Map<HostPort, HealthStatusDesc>> result = new LinkedList<>();
+
+        for(ConsoleService consoleService : consoleServiceMap.values()){
+            try{
+                Map<HostPort, HealthStatusDesc> allInstanceHealthStatus = consoleService.getAllInstanceHealthStatus();
+                result.add(allInstanceHealthStatus);
+            }catch (Exception e){
+                logger.error("[allInstanceHealthStatus] {}", consoleService, e);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<CheckerService> getAllCheckerServices() {
+        return new ArrayList<>(loadAllConsoleServices().values());
     }
 
     public long getDelay(String ip, int port, String activeIdc) {

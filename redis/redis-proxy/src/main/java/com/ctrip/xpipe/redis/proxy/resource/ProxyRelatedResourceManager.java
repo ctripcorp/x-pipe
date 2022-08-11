@@ -10,6 +10,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStatsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ public class ProxyRelatedResourceManager implements ResourceManager {
     @Autowired
     private ProxyConfig config;
 
+    @Autowired
+    private SocketStatsManager socketStatsManager;
+
     private NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 
     private volatile SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool;
@@ -67,6 +71,11 @@ public class ProxyRelatedResourceManager implements ResourceManager {
     @Override
     public ProxyConfig getProxyConfig() {
         return config;
+    }
+
+    @Override
+    public SocketStatsManager getSocketStatsManager() {
+        return socketStatsManager;
     }
 
     @Override

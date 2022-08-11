@@ -67,6 +67,11 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
+    public CheckerAllMetaCache checkerAllMetaCache() {
+        return new CheckerAllMetaCache();
+    }
+
+    @Bean
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public MetaCache testMetaCache() {
         return new TestMetaCache();

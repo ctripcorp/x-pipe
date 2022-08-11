@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDela
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLoading;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -42,6 +43,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     private RemoteCheckerManager remoteCheckerManager;
 
     @Autowired
+    private StabilityHolder siteStability;
+
+    @Autowired
     private CheckerConfig checkerConfig;
 
     @SuppressWarnings("unchecked")
@@ -62,6 +66,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected void tryMarkDown(AbstractInstanceEvent event) {
+        if (siteStability.isSiteStable()) {
+            logger.warn("[onEvent][site down, skip] {}", event);
+        }
         if(!masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
@@ -88,8 +95,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @VisibleForTesting
     protected void markdown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        boolean siteReliable = !checkerConfig.isConsoleSiteUnstable();
-        if(siteReliable) {
+        if(siteStability.isSiteStable()) {
             doMarkDown(event);
         } else {
             logger.warn("[site-down][not-mark-down] {}", info);
@@ -130,7 +136,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {
-        List<HEALTH_STATE> health_states = remoteCheckerManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
+        List<HEALTH_STATE> health_states = remoteCheckerManager.getHealthStates(hostPort.getHost(), hostPort.getPort());
         long matchStates = health_states.stream().filter(healthStates::contains).count();
         return matchStates >= checkerConfig.getQuorum();
     }

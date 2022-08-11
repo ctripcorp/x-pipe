@@ -130,6 +130,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         verify(alertManager, times(1)).alert(anyString(), anyString(), any(), any(), anyString());
 
         unknownActiveServer.stop();
+        waitConditionUntilTimeOut(() -> unknownActiveServer.getConnected() <= 0);
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
         Assert.assertTrue(shouldResetAndReason.getKey());
         Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));

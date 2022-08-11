@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
@@ -18,6 +19,11 @@ public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction
 
     public RedisMasterCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
+    }
+
+    @Override
+    protected boolean shouldCheck(HealthCheckInstance instance) {
+        return super.shouldCheckInstance(instance);
     }
 
     @Override

@@ -128,6 +128,18 @@ function MigrationService($resource, $q) {
 		return d.promise;
 	}
 
+	function findWithoutTestClusters(page, size) {
+		let d = $q.defer();
+		resource.find({ page, size, withoutTestClusters: true},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
 	function findEventDetails(eventId) {
 		var d = $q.defer();
 		resource.find_event_details(
@@ -258,6 +270,7 @@ function MigrationService($resource, $q) {
 		find: find,
 		findByOperator: findByOperator,
 		findByMigrationStatusType: findByMigrationStatusType,
+		findWithoutTestClusters: findWithoutTestClusters,
 		findEventDetails : findEventDetails,
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,

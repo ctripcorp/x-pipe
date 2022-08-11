@@ -5,8 +5,6 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.FailSafeCommandWrapper;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -18,11 +16,8 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -56,6 +51,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
+
 /**
  * @author wenchao.meng
  *
@@ -70,8 +67,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public static int DEFAULT_REPLICATION_TIMEOUT_MILLI = Integer.parseInt(System.getProperty(KEY_REPLICATION_TIMEOUT, "60000"));
 
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
-
-	protected static int PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI = 15 * 1000;
 
 	private final int replTimeoutMilli;
 
@@ -148,13 +143,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			logger.warn("[startReplication][channel alive, don't do replication]{}", this.masterChannel);
 			return;
 		}
-		Endpoint endpoint = redisMaster.masterEndPoint();
-		String masterInfo = endpoint.toString();
-		if(isMasterConnectThroughProxy()) {
-			masterInfo = String.format("endpoint: %s, proxy info: %s", endpoint.toString(),
-					((ProxyEnabled)endpoint).getProxyProtocol());
-		}
-		logger.info("[startReplication]{}", masterInfo);
+		logger.info("[startReplication]{}", redisMaster.masterEndPoint());
 		connectWithMaster();
 
 	}
@@ -213,35 +202,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doConnect(Bootstrap b);
 
 	protected ChannelFuture tryConnect(Bootstrap b) {
-		if(isMasterConnectThroughProxy()) {
-			return tryConnectThroughProxy(b);
-		} else {
-			Endpoint endpoint = redisMaster.masterEndPoint();
-			logger.info("[tryConnect][begin]{}", endpoint);
-			return b.connect(endpoint.getHost(), endpoint.getPort());
-		}
+		Endpoint endpoint = redisMaster.masterEndPoint();
+		logger.info("[tryConnect][begin]{}", endpoint);
+		return b.connect(endpoint.getHost(), endpoint.getPort());
 	}
 
 	@Override
 	public void reconnectMaster() {
 		throw new UnsupportedOperationException();
-	}
-
-	@VisibleForTesting
-	protected boolean isMasterConnectThroughProxy() {
-		return redisMaster.masterEndPoint() instanceof ProxyEnabled;
-	}
-
-	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
-		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
-		ProxyConnectProtocol protocol = endpoint.getProxyProtocol();
-		if(selector == null) {
-			selector = resourceManager.createProxyEndpointSelector(protocol);
-		}
-		ProxyEndpoint nextHop = selector.nextHop();
-		logger.info("[tryConnectThroughProxy] connect endpoint: {}", nextHop.getUri());
-
-		return b.connect(nextHop.getHost(), nextHop.getPort());
 	}
 
 	@Override
@@ -271,11 +239,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			replicationObserver.onMasterConnected();
 		}
 		checkTimeout(channel);
-
-		if(isMasterConnectThroughProxy()) {
-			ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
-			channel.writeAndFlush(endpoint.getProxyProtocol().output());
-		}
 
 		checkKeeper();
 
@@ -553,10 +516,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	private int initCommandTimeoutMilli() {
-		if(isMasterConnectThroughProxy()) {
-			return AbstractRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI;
-		}
-		return AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+	    return PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
 	}
 
 	@VisibleForTesting

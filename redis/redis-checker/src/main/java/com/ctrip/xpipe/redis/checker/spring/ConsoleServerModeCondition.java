@@ -26,6 +26,7 @@ public class ConsoleServerModeCondition implements Condition {
     public boolean matches(ConditionContext conditionContext, AnnotatedTypeMetadata metadata)
     {
         Map<String, Object> attributes = metadata.getAnnotationAttributes(ConsoleServerMode.class.getName());
+        assert attributes != null;
         SERVER_MODE supportMode = (SERVER_MODE) attributes.get("value");
         return getMode().equals(supportMode);
     }

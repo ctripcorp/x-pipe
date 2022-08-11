@@ -194,7 +194,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         protected void doExecute() throws Throwable {
             try {
                 List<AzTbl> azTbls = azService.getDcActiveAvailableZoneTbls(dcMeta.getId());
-                if(azTbls != null || !azTbls.isEmpty()) {
+                if(azTbls != null && !azTbls.isEmpty()) {
                     azTbls.forEach(aztbl -> {
                         dcMeta.addAz(encodeAzMeta(aztbl, dcMeta));
                     });

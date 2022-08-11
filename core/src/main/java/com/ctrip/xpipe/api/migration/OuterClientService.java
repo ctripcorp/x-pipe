@@ -5,6 +5,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -28,9 +30,13 @@ public interface OuterClientService extends Ordered{
 
 	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
+	void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
+
 	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
+
+	void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
 
 	boolean clusterMigratePreCheck(String clusterName) throws OuterClientException;
 
@@ -39,6 +45,8 @@ public interface OuterClientService extends Ordered{
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;
 
 	ClusterInfo getClusterInfo(String clusterName) throws Exception;
+
+	List<ClusterInfo> getActiveDcClusters(String dc) throws Exception;
 
 	DcMeta getOutClientDcMeta(String dc) throws Exception;
 
@@ -174,6 +182,7 @@ public interface OuterClientService extends Ordered{
 			}
 		}
 
+		@JsonProperty("isXpipe")
 		public boolean isXpipe() {
 			return isXpipe;
 		}
@@ -226,10 +235,29 @@ public interface OuterClientService extends Ordered{
 			return groups;
 		}
 
-		public void setGroups(List<GroupInfo> groups) {
+		public ClusterInfo setGroups(List<GroupInfo> groups) {
 			this.groups = groups;
+			return this;
 		}
 
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClusterInfo that = (ClusterInfo) o;
+			return isXpipe == that.isXpipe &&
+					rule == that.rule &&
+					usingIdc == that.usingIdc &&
+					Objects.equals(masterIDC, that.masterIDC) &&
+					Objects.equals(name, that.name) &&
+					Objects.equals(ruleName, that.ruleName) &&
+					Objects.equals(groups, that.groups);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(isXpipe, masterIDC, name, rule, ruleName, usingIdc, groups);
+		}
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -241,16 +269,18 @@ public interface OuterClientService extends Ordered{
 			return name;
 		}
 
-		public void setName(String name) {
+		public GroupInfo setName(String name) {
 			this.name = name;
+			return this;
 		}
 
 		public List<InstanceInfo> getInstances() {
 			return instances;
 		}
 
-		public void setInstances(List<InstanceInfo> instances) {
+		public GroupInfo setInstances(List<InstanceInfo> instances) {
 			this.instances = instances;
+			return this;
 		}
 
 		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
@@ -264,6 +294,20 @@ public interface OuterClientService extends Ordered{
 			if (instances != null) {
 				instances.forEach(instanceMeta -> instanceMeta.check());
 			}
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			GroupInfo groupInfo = (GroupInfo) o;
+			return Objects.equals(name, groupInfo.name) &&
+					Objects.equals(instances, groupInfo.instances);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(name, instances);
 		}
 	}
 
@@ -304,40 +348,64 @@ public interface OuterClientService extends Ordered{
 			return env;
 		}
 
-		public void setEnv(String env) {
+		public InstanceInfo setEnv(String env) {
 			this.env = env;
+			return this;
 		}
 
 		public String getIPAddress() {
 			return IPAddress;
 		}
 
-		public void setIPAddress(String IPAddress) {
+		public InstanceInfo setIPAddress(String IPAddress) {
 			this.IPAddress = IPAddress;
+			return this;
 		}
 
+		@JsonProperty("isMaster")
 		public boolean isMaster() {
 			return isMaster;
 		}
 
-		public void setIsMaster(boolean master) {
+		public InstanceInfo setIsMaster(boolean master) {
 			isMaster = master;
+			return this;
 		}
 
 		public int getPort() {
 			return port;
 		}
 
-		public void setPort(int port) {
+		public InstanceInfo setPort(int port) {
 			this.port = port;
+			return this;
 		}
 
 		public boolean isStatus() {
 			return status;
 		}
 
-		public void setStatus(boolean status) {
+		public InstanceInfo setStatus(boolean status) {
 			this.status = status;
+			return this;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			InstanceInfo that = (InstanceInfo) o;
+			return canRead == that.canRead &&
+					isMaster == that.isMaster &&
+					port == that.port &&
+					status == that.status &&
+					Objects.equals(env, that.env) &&
+					Objects.equals(IPAddress, that.IPAddress);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(canRead, env, IPAddress, isMaster, port, status);
 		}
 	}
 

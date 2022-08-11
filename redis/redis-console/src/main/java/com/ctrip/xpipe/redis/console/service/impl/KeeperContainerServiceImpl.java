@@ -401,8 +401,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     getOrCreateRestTemplate();
     String url = "http://%s:%d/health";
     try {
-      return restTemplate.getForObject(String.format(url, host, port), Boolean.class);
-
+      Boolean result = restTemplate.getForObject(String.format(url, host, port), Boolean.class);
+      if (result == null) {
+          throw new XpipeRuntimeException("result of checkIpAndPort is null");
+      }
+      return result;
     } catch (RestClientException e) {
       logger.error("[healthCheck]Http connect occur exception. ", e);
     }

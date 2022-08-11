@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsContext;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,13 +52,13 @@ public class CrdtSyncListenerTest extends AbstractCheckerTest {
             Assert.assertEquals(context.getRecvTimeMilli(), point.getTimestampMilli());
 
             switch (point.getMetricType()) {
-                case CrdtSyncListener.METRIC_TYPE_SYNC_FULL:
+                case CrdtSyncListener.METRIC_TYPE_CRDT_SYNC_FULL:
                     Assert.assertEquals(extractors.getSyncFull(), point.getValue(), DOUBLE_DELTA);
                     break;
-                case CrdtSyncListener.METRIC_TYPE_SYNC_PARTIAL_OK:
+                case CrdtSyncListener.METRIC_TYPE_CRDT_SYNC_PARTIAL_OK:
                     Assert.assertEquals(extractors.getSyncPartialOk(), point.getValue(), DOUBLE_DELTA);
                     break;
-                case CrdtSyncListener.METRIC_TYPE_SYNC_PARTIAL_ERR:
+                case CrdtSyncListener.METRIC_TYPE_CRDT_SYNC_PARTIAL_ERR:
                     Assert.assertEquals(extractors.getSyncPartialErr(), point.getValue(), DOUBLE_DELTA);
                     break;
                 default:

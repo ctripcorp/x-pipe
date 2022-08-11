@@ -309,12 +309,16 @@ public class AbstractXpipeServerMultiDcTest extends AbstractXpipeServerIntegrate
         for(DcMeta dcMeta: getXpipeMeta().getDcs().values()) {
             String idc = dcMeta.getId();
             ConsoleInfo info = consoleInfos.get(idc);
-            waitConsole("127.0.0.1:" + info.console_port, idc, 52000);
+            waitConsole("127.0.0.1:" + info.console_port, idc, 180 * 1000);
             dcMeta.getMetaServers().stream().forEach(meta -> {
+                logger.info("================= start metaserver {} ==================", meta.getPort());
                 startMetaServer(idc, String.format("http://127.0.0.1:%d" , info.console_port),  dcMeta.getZkServer().getAddress(),  meta.getPort(), dcinfos);
             });
         }
 
+        for (String url: metaservers.values()) {
+            waitForServerAck(url + "/health", Boolean.class, 180 * 1000);
+        }
     }
 
     public void stopAllServer() throws Exception {

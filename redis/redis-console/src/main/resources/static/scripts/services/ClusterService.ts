@@ -125,7 +125,7 @@ function ClusterService($resource, $q) {
         },
         get_cluster_hickwall: {
             method: 'GET',
-            url: '/console/cluster/hickwall/:clusterName'
+            url: '/console/cluster/hickwall/:clusterName/:clusterType'
         },
        get_cluster_default_routes_by_src_dc_name_and_cluster_name: {
             method: 'GET',
@@ -463,9 +463,12 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function getClusterHickwallAddr(clusterName) {
+    function getClusterHickwallAddr(clusterName, clusterType) {
         var d = $q.defer();
-        resource.get_cluster_hickwall ({clusterName},
+        resource.get_cluster_hickwall ({
+                 clusterName : clusterName,
+                 clusterType : clusterType
+            },
             function (result) {
                 d.resolve(result);
             }, function (result) {

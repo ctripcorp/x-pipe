@@ -51,6 +51,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTER_CLIENT_SYNC_INTERVAL = "console.outer.client.sync.interval";
 
+    private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
+
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
@@ -60,6 +62,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_OUTER_CLUSTER_TYPES = "console.outer.cluster.types";
 
     private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
+
+    private static final String KEY_NO_HEALTH_CHECK_MINUTES = "no.health.check.minutes";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
@@ -187,8 +191,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private HickwallMetricInfo info;
 
     @Override
-    public String getHickwallClusterMetricFormat() {
-        return getProperty(KEY_HICKWALL_CLUSTER_METRIC_FORMAT, "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s");
+    public Map<String,String> getHickwallClusterMetricFormat() {
+        String property = getProperty(KEY_HICKWALL_CLUSTER_METRIC_FORMAT, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     @Override
@@ -207,8 +212,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getHealthyLeastNotifyIntervalMilli() {
-        return getIntProperty(KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI, 3 * 60 * 1000);
+    public long getHealthMarkCompensateIntervalMill() {
+        return getLongProperty(KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI, 2 * 60 * 1000L);
+    }
+
+    @Override
+    public int getHealthMarkCompensateThreads() {
+        return getIntProperty(KEY_HEALTHY_MARK_COMPENSATE_THREADS, 20);
     }
 
     @Override
@@ -301,6 +311,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getHealthCheckSuspendMinutes() {
+        return getIntProperty(KEY_NO_HEALTH_CHECK_MINUTES, 40);
+    }
+
+    @Override
     public Set<String> getIgnoredHealthCheckDc() {
         return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
@@ -377,6 +392,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getOuterClientSyncInterval() {
         return getIntProperty(KEY_OUTER_CLIENT_SYNC_INTERVAL, 10 * 1000);
+    }
+
+    @Override
+    public String getOuterClientToken() {
+        return getProperty(KEY_OUTER_CLIENT_TOKEN, "");
     }
 
     @Override
@@ -463,8 +483,33 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public boolean isConsoleSiteUnstable() {
-        return !getBooleanProperty(KEY_CONSOLE_SITE_STABLE, true);
+    public int getStableLossAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_LOSS_AFTER_ROUNDS, 10);
+    }
+
+    @Override
+    public int getStableRecoverAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_RECOVER_AFTER_ROUNDS, 30 * 30);
+    }
+
+    @Override
+    public int getStableResetAfterRounds() {
+        return getIntProperty(KEY_CHECKER_STABLE_RESET_AFTER_ROUNDS, 30);
+    }
+
+    @Override
+    public float getSiteStableThreshold() {
+        return getFloatProperty(KEY_CHECKER_STABLE_THRESHOLD, 0.8f);
+    }
+
+    @Override
+    public Boolean getSiteStable() {
+        return getBooleanProperty(KEY_CHECKER_SITE_STABLE, null);
+    }
+
+    @Override
+    public float getSiteUnstableThreshold() {
+        return getFloatProperty(KEY_CHECKER_UNSTABLE_THRESHOLD, 0.8f);
     }
 
     @Override

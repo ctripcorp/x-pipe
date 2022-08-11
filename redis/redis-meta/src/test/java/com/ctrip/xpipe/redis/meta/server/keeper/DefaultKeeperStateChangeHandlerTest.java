@@ -35,7 +35,7 @@ import static org.mockito.Mockito.*;
  *
  * Jan 4, 2017
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	
 	private DefaultKeeperStateChangeHandler handler;

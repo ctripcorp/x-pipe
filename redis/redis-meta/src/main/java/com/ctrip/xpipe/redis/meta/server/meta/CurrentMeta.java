@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
@@ -263,16 +262,6 @@ public class CurrentMeta implements Releasable {
 		return currentCRDTShardMeta.getPeerMaster(dcId);
 	}
 
-	public RouteMeta getClusterRouteByDcId(Long clusterDbId, String dcId) {
-		CurrentClusterMeta clusterMeta = currentMetas.get(clusterDbId);
-		return clusterMeta.getRouteByDcId(dcId);
-	}
-
-	public List<String> updateClusterRoutes(ClusterMeta clusterMeta, Map<String, RouteMeta> routes) {
-		CurrentClusterMeta currentClusterMeta = currentMetas.get(clusterMeta.getDbId());
-		return currentClusterMeta.updateRoutes(routes);
-	}
-
 	public void removePeerMaster(String dcId, Long clusterDbId, Long shardDbId) {
 		checkClusterSupportPeerMaster(clusterDbId);
 
@@ -403,7 +392,6 @@ public class CurrentMeta implements Releasable {
 	}
 
 	public static class CurrentClusterMeta implements Releasable {
-		private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 		@JsonIgnore
 		private static Logger logger = LoggerFactory.getLogger(CurrentClusterMeta.class);
 
@@ -411,8 +399,6 @@ public class CurrentMeta implements Releasable {
 		private Long clusterDbId;
 		private String clusterType;
 		private Map<Long, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
-		//map<dc, RouteMeta>
-		private Map<String, RouteMeta> outgoingRoutes = new ConcurrentHashMap<>();
 
 		public CurrentClusterMeta() {
 
@@ -539,24 +525,6 @@ public class CurrentMeta implements Releasable {
 			return changedDcs;
 		}
 
-		public List<String> updateRoutes(Map<String, RouteMeta> newOutgoingRoutes) {
-			List<String> changedDcs = diffRoutes(this.outgoingRoutes, newOutgoingRoutes);
-			logger.debug("[updateRoutes] update outgoingRoutes from {} to {} ", this.outgoingRoutes, newOutgoingRoutes);
-			this.outgoingRoutes = newOutgoingRoutes;
-			return changedDcs;
-		}
-
-		public RouteMeta getRouteByDcId(String dcId) {
-			return this.outgoingRoutes.get(dcId.toLowerCase());
-		}
-
-		public void setOutgoingRoutes(Map<String, RouteMeta> outgoingRoutes) {
-			this.outgoingRoutes = outgoingRoutes;
-		}
-
-		public Map<String, RouteMeta> getOutgoingRoutes() {
-			return outgoingRoutes;
-		}
 	}
 
 

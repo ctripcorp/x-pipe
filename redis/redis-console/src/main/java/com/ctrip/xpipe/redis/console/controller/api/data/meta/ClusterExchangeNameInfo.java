@@ -13,6 +13,8 @@ public class ClusterExchangeNameInfo extends AbstractCreateInfo{
 
     private String latterClusterName;
 
+    private String token;
+
     public ClusterExchangeNameInfo(){
     }
 
@@ -48,6 +50,14 @@ public class ClusterExchangeNameInfo extends AbstractCreateInfo{
         this.latterClusterName = clusterName;
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     @Override
     public void check() throws CheckFailException{
 
@@ -58,6 +68,11 @@ public class ClusterExchangeNameInfo extends AbstractCreateInfo{
         if(StringUtil.isEmpty(latterClusterName)){
             throw new CheckFailException("latterClusterName empty");
         }
+
+        if(StringUtil.isEmpty(token)){
+            throw new CheckFailException("token empty");
+        }
+
     }
 
     @Override

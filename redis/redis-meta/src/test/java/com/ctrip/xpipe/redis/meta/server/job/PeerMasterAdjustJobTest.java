@@ -8,7 +8,6 @@ import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
@@ -177,8 +176,8 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
      *     2 proxy -> proxy
      *     2 proxy -> no proxy
      */
-    Endpoint createProxyEndpoint(String host, int port, String proxy) {
-        return new ProxyEnabledEndpoint(host, port, new DefaultProxyConnectProtocolParser().read(proxy));
+    Endpoint createEndpointWithProxyProtocol(String host, int port, String proxy) {
+        return new DefaultEndPoint(host, port, new DefaultProxyConnectProtocolParser().read(proxy));
     }
 
     @Test
@@ -190,7 +189,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
         expectPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
@@ -212,7 +211,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
         expectPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
@@ -229,12 +228,12 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     public void test1ProxyTo2Proxy() throws Exception {
 
         currentPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
         expectPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
@@ -251,7 +250,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     public void test1ProxyToNoProxy() throws Exception {
 
         currentPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
@@ -273,12 +272,12 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     public void test2ProxyTo1Proxy() throws Exception {
 
         currentPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
         expectPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
@@ -295,7 +294,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     public void test2ProxyToNoProxy() throws Exception {
 
         currentPeerMaster = new HashMap<Long, Endpoint >(){{
-            put(1L, createProxyEndpoint("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
+            put(1L, createEndpointWithProxyProtocol("10.0.0.1", 6379, "PROXY ROUTE PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2")); // peer master changed
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
