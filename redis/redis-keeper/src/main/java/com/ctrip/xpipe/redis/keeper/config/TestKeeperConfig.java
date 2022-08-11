@@ -114,6 +114,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
 	}
 
+	@Override
+	public int getCommandIndexBytesInterval() {
+		return 256;
+	}
+
 	public void setMinTimeMilliToGcAfterCreate(int minTimeMilliToGcAfterCreate) {
 		this.minTimeMilliToGcAfterCreate = minTimeMilliToGcAfterCreate;
 	}

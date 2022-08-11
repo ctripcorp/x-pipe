@@ -45,7 +45,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
 
     private RdbParser<?> rdbParser;
 
-    private String reqUuid = "1a82e1f0a716d32c34936e82df70d3dcdf50a5d8";
+    private String reqUuid = "00229094ffbf30b0e016ccb8a9ffe327d560accc";
 
     @Before
     public void setupGtidKeeperTest() throws Exception {

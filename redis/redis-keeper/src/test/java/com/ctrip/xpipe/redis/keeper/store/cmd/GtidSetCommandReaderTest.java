@@ -75,10 +75,10 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
     public void testReadCrossFileSegment() throws Exception {
         CommandFileOffsetGtidIndex startIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-2,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_0"), 0),
-                98);
+                112);
         CommandFileOffsetGtidIndex endIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-15,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                260);
+                295);
         Mockito.when(commandStore.findFirstFileSegment(any())).thenReturn(new CommandFileSegment(startIndex, endIndex));
         Mockito.when(commandStore.findNextFile(startIndex.getCommandFile().getFile())).thenReturn(endIndex.getCommandFile());
 
@@ -105,10 +105,10 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
     public void testReadMultiSegment() throws IOException {
         CommandFileOffsetGtidIndex startIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-5,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_0"), 0),
-                245);
+                280);
         CommandFileOffsetGtidIndex endIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-9,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_0"), 0),
-                441);
+                504);
         Mockito.when(commandStore.findFirstFileSegment(any())).thenReturn(new CommandFileSegment(startIndex, endIndex));
         Mockito.when(commandStore.findNextFile(startIndex.getCommandFile().getFile()))
                 .thenReturn(new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0));
@@ -119,7 +119,7 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
         startIndex = endIndex;
         endIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-16,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                312);
+                354);
         Mockito.when(commandStore.findFirstFileSegment(any())).thenReturn(new CommandFileSegment(startIndex, endIndex));
 
         for (int i = 6; i <= 16;) {
@@ -140,7 +140,7 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
     public void testReadRightBoundOpenSegment() throws IOException {
         CommandFileOffsetGtidIndex startIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-16,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                312);
+                354);
         Mockito.when(commandStore.findFirstFileSegment(any())).thenReturn(new CommandFileSegment(startIndex));
         Mockito.when(commandStore.findNextFile(startIndex.getCommandFile().getFile()))
                 .thenReturn(new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_2"), 0));
@@ -180,11 +180,13 @@ public class GtidSetCommandReaderTest extends AbstractRedisOpParserTest {
     }
 
     private String mockCmdRaw(String gtid, String key, String val) {
-        return  "*5\r\n" +
+        return  "*6\r\n" +
                 "$4\r\n" +
                 "gtid\r\n" +
                 "$" + gtid.length() + "\r\n"
                 + gtid + "\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
                 "$3\r\n" +
                 "SET\r\n" +
                 "$" + key.length() + "\r\n"

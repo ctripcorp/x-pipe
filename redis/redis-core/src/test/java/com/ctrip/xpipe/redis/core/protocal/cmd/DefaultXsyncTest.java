@@ -82,16 +82,16 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
         xsync.execute(executors);
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
-        server.propagate("gtid a1:21 set k1 v1");
-        server.propagate("gtid a1:22 mset k1 v1 k2 v2");
-        server.propagate("gtid a1:23 del k1 k2");
+        server.propagate("gtid a1:21 0 set k1 v1");
+        server.propagate("gtid a1:22 0 mset k1 v1 k2 v2");
+        server.propagate("gtid a1:23 0 del k1 k2");
 
         waitConditionUntilTimeOut(() -> 3 == redisOps.size());
-        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:21", "set", "k1", "v1")),
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:21", "0", "set", "k1", "v1")),
                 redisOps.get(0).buildRawOpArgs());
-        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:22", "mset", "k1", "v1", "k2", "v2")),
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:22", "0", "mset", "k1", "v1", "k2", "v2")),
                 redisOps.get(1).buildRawOpArgs());
-        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:23", "del", "k1", "k2")),
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("gtid", "a1:23", "0", "del", "k1", "k2")),
                 redisOps.get(2).buildRawOpArgs());
     }
 

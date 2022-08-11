@@ -25,7 +25,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) throws IOException {
-        super(baseDir, config, keeperRunid, new GtidSetCommandReaderWriterFactory(redisOpParser), keeperMonitor);
+        super(baseDir, config, keeperRunid,
+                new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
+                keeperMonitor);
     }
 
     @Override
@@ -33,16 +35,18 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                               KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
                                               KeeperMonitor keeperMonitor, RdbStore rdbStore) throws IOException {
 
+        String replRdbGtidSet = replMeta.getRdbGtidSet();
         GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
-                new GtidSet(replMeta.getRdbGtidSet()), config::getReplicationStoreCommandFileKeepTimeSeconds,
+                new GtidSet(replRdbGtidSet), config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(), config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor);
 
-        if (null != replMeta.getRdbGtidSet()) {
+        if (null != replRdbGtidSet) {
             try {
                 cmdStore.initialize();
             } catch (Exception e) {
                 logger.info("[createCommandStore] init fail", e);
+                cmdStore.close();
                 throw new XpipeRuntimeException("cmdStore init fail", e);
             }
         } else if (null != rdbStore) {
@@ -53,9 +57,14 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                     try {
                         getLogger().info("[onRdbGtidSet][update cmdstore] {} {}", rdbStore.getRdbFileName(), gtidSet);
                         cmdStore.setBaseGtidSet(gtidSet);
-                        getCommandStore().initialize();
+                        cmdStore.initialize();
                     } catch (Exception e) {
                         getLogger().error("[onRdbGtidSet][update cmdstore]", e);
+                        try {
+                            cmdStore.close();
+                        } catch (Throwable th) {
+                            getLogger().error("[onRdbGtidSet] fail and close fail", th);
+                        }
                     }
                 }
 

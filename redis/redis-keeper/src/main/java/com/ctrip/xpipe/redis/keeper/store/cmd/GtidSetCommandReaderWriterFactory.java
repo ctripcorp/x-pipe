@@ -17,14 +17,17 @@ public class GtidSetCommandReaderWriterFactory extends OffsetCommandReaderWriter
 
     private RedisOpParser redisOpParser;
 
-    public GtidSetCommandReaderWriterFactory(RedisOpParser redisOpParser) {
+    private int bytesBetweenIndex;
+
+    public GtidSetCommandReaderWriterFactory(RedisOpParser redisOpParser, int bytesBetweenIndex) {
         this.redisOpParser = redisOpParser;
+        this.bytesBetweenIndex = bytesBetweenIndex;
     }
 
     @Override
     public CommandWriter createCmdWriter(CommandStore cmdStore,
                                          int maxFileSize, Logger delayTraceLogger) {
-        return new GtidSetCommandWriter(new ArrayParser(), redisOpParser, cmdStore, maxFileSize, delayTraceLogger);
+        return new GtidSetCommandWriter(new ArrayParser(), redisOpParser, cmdStore, bytesBetweenIndex, maxFileSize, delayTraceLogger);
     }
 
     @Override
