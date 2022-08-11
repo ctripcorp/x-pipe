@@ -4,9 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,6 +60,30 @@ public class RedisMasterCheckActionFactoryTest extends AbstractCheckerIntegratio
         action.doTask();
     }
 
+    @Test
+    public void testCreateForSingleDcCluster() throws Exception {
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("singleDc", ClusterType.SINGLE_DC, 6379);
+        RedisMasterCheckAction action = (RedisMasterCheckAction) factory.create(instance);
+        checkActionController(action, ClusterType.SINGLE_DC);
+        action.doTask();
+    }
+
+    @Test
+    public void testCreateForLocalDcCluster() throws Exception {
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("localDc", ClusterType.LOCAL_DC, 6379);
+        RedisMasterCheckAction action = (RedisMasterCheckAction) factory.create(instance);
+        checkActionController(action, ClusterType.LOCAL_DC);
+        action.doTask();
+    }
+
+    @Test
+    public void testCreateForCrossDcCluster() throws Exception {
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("crossDc", ClusterType.CROSS_DC, 6379);
+        RedisMasterCheckAction action = (RedisMasterCheckAction) factory.create(instance);
+        checkActionController(action, ClusterType.CROSS_DC);
+        action.doTask();
+    }
+
     private void checkActionController(RedisMasterCheckAction action, ClusterType clusterType) throws Exception {
         Field controllersField = AbstractHealthCheckAction.class.getDeclaredField("controllers");
         controllersField.setAccessible(true);
@@ -70,8 +92,14 @@ public class RedisMasterCheckActionFactoryTest extends AbstractCheckerIntegratio
         Assert.assertTrue(controllers.size() > 0);
         if (clusterType.equals(ClusterType.ONE_WAY)) {
             Assert.assertTrue(controllers.stream().allMatch(controller -> controller instanceof OneWaySupport));
-        } else {
+        } else if (clusterType.equals(ClusterType.BI_DIRECTION)) {
             Assert.assertTrue(controllers.stream().allMatch(controller -> controller instanceof BiDirectionSupport));
+        } else if (clusterType.equals(ClusterType.SINGLE_DC)) {
+            Assert.assertTrue(controllers.stream().allMatch(controller -> controller instanceof SingleDcSupport));
+        } else if (clusterType.equals(ClusterType.LOCAL_DC)) {
+            Assert.assertTrue(controllers.stream().allMatch(controller -> controller instanceof LocalDcSupport));
+        } else if (clusterType.equals(ClusterType.CROSS_DC)) {
+            Assert.assertTrue(controllers.stream().allMatch(controller -> controller instanceof CrossDcSupport));
         }
     }
 

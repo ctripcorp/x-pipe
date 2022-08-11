@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -40,7 +41,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  * date 2021/11/18
  */
 @Component
-public class MasterOverOneMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, HeteroSupport {
+public class MasterOverOneMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, HeteroSupport {
 
     @Autowired
     private MetaCache metaCache;
@@ -76,7 +77,8 @@ public class MasterOverOneMonitor implements RedisMasterActionListener, OneWaySu
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
         HostPort master = info.getHostPort();
-        Set<HostPort> otherMasters = findOtherMasters(dcId, clusterId, shardId, master);
+        ClusterType clusterType = info.getClusterType();
+        Set<HostPort> otherMasters = findOtherMasters(dcId, clusterId, shardId, master, clusterType);
         if (otherMasters.isEmpty()) return;
 
         DcClusterShard dcClusterShard = new DcClusterShard(dcId, clusterId, shardId);
@@ -102,8 +104,14 @@ public class MasterOverOneMonitor implements RedisMasterActionListener, OneWaySu
         }
     }
 
-    public Set<HostPort> findOtherMasters(String dc, String cluster, String shard, HostPort master) {
-        List<RedisMeta> redisMetas = metaCache.getRedisOfDcClusterShard(dc, cluster, shard);
+    public Set<HostPort> findOtherMasters(String dc, String cluster, String shard, HostPort master, ClusterType clusterType) {
+        List<RedisMeta> redisMetas;
+        if (clusterType.isCrossDc()) {
+            redisMetas = metaCache.getAllInstancesOfShard(cluster, shard);
+        } else {
+            redisMetas = metaCache.getRedisOfDcClusterShard(dc, cluster, shard);
+        }
+
         return redisMetas.stream()
                 .filter(redisMeta -> redisMeta.isMaster() && !(redisMeta.getIp().equals(master.getHost())
                         && redisMeta.getPort().equals(master.getPort())))

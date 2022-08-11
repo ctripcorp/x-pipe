@@ -189,7 +189,6 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
 
-	
 	private Set<String> expandDcs(String dcsDesc) {
 		
 		Set<String> dcs = new HashSet<>();
@@ -779,9 +778,58 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return result;
 	}
 
+	public Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterId, String srcDcId) {
+		DcMeta dcMeta = getDirectDcMeta(srcDcId);
+		if (null == dcMeta) throw new MetaException("dc " + srcDcId + " not found");
+
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+		if (null == clusterMeta) throw new MetaException("cluster " + clusterId + " not found");
+
+		Map<String, List<RouteMeta>> designatedRoutes = new HashMap<>();
+		Set<Long> designatedRouteIds = expandIds(clusterMeta.getClusterDesignatedRouteIds());
+		List<RouteMeta> allDcRoutes = dcMeta.getRoutes();
+		if (designatedRouteIds.isEmpty() || allDcRoutes.isEmpty()) return designatedRoutes;
+
+		for (RouteMeta routeMeta : allDcRoutes) {
+			if (designatedRouteIds.contains(routeMeta.getId())) {
+				MapUtils.getOrCreate(designatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(clone(routeMeta));
+			}
+		}
+		return designatedRoutes;
+	}
+
+	private Set<Long> expandIds(String idDesc) {
+		Set<Long> ids = new HashSet<>();
+		if (StringUtil.isEmpty(idDesc)) {
+			return ids;
+		}
+
+		for (String idStr: idDesc.split("\\s*,\\s*")) {
+			try {
+				Long id = Long.parseLong(idStr);
+				ids.add(id);
+			} catch (NumberFormatException e) {
+				logger.warn("[expandIds] unexpected id {}", idStr);
+			}
+		}
+
+		return ids;
+	}
+
 	@Override
-	public Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
-					RouteChooseStrategy strategy, String tag, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
+	public RouteMeta doChooseRoute(String clusterId, String srcDc, String dstDc, int orgId,
+												 RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes) {
+		if (StringUtil.isEmpty(dstDc)) throw new IllegalArgumentException("empty dstDc");
+		return doChooseRoutes(clusterId, srcDc, Collections.singletonList(dstDc),
+				orgId, strategy, tag, useClusterPrioritizedRoutes).get(dstDc.toLowerCase());
+	}
+
+	@Override
+	public Map<String, RouteMeta> doChooseRoutes(String clusterId, String srcDc, List<String> dstDcs, int orgId,
+												  RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes) {
+		Map<String, List<RouteMeta>> clusterPrioritizedRoutes = null;
+		if (useClusterPrioritizedRoutes) clusterPrioritizedRoutes = getClusterDesignatedRoutes(clusterId, srcDc);
+
 		Map<String, RouteMeta> chooseRoutes = new HashMap<>();
 		if (dstDcs == null || dstDcs.isEmpty()) return chooseRoutes;
 
@@ -790,13 +838,13 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
 		}));
 		logger.debug("[doChooseRoute] begin to choose route for dstDcs:{} with orgId:{} from clusterPrioritizedRoutes:{} and routes:{}",
-						dstDcs, orgId, clusterPrioritizedRoutes, dstDcRouteMap);
+				dstDcs, orgId, clusterPrioritizedRoutes, dstDcRouteMap);
 		if (dstDcRouteMap.isEmpty()) return chooseRoutes;
 
 		for (String dstDc : dstDcs) {
 			if (srcDc.equalsIgnoreCase(dstDc)) continue;
 
-			RouteMeta chooseRoute = chooseRoute(clusterName, dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()),
+			RouteMeta chooseRoute = chooseRoute(clusterId, dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()),
 					strategy, clusterPrioritizedRoutes);
 			logger.debug("[doChooseRoute] choose route {} for dstDc:{}", chooseRoute, dstDc);
 			if (chooseRoute != null) chooseRoutes.put(dstDc.toLowerCase(), chooseRoute);

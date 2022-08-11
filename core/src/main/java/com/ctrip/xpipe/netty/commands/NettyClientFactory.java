@@ -76,17 +76,10 @@ public class NettyClientFactory extends AbstractStartStoppable implements Pooled
 		ChannelFuture f = b.connect(endpoint.getHost(), endpoint.getPort());
 		f.get(connectTimeoutMilli, TimeUnit.MILLISECONDS);
 		Channel channel = f.channel();
-		sendProxyProtocolIfNeeded(channel);
 		logger.info("[makeObject]{}", channel);
 		NettyClient nettyClient = new DefaultNettyClient(channel);
 		channel.attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
 		return new DefaultPooledObject<NettyClient>(nettyClient);
-	}
-
-	private void sendProxyProtocolIfNeeded(Channel channel) {
-		if(endpoint instanceof ProxyEnabled) {
-			channel.writeAndFlush(((ProxyEnabled) endpoint).getProxyProtocol());
-		}
 	}
 
 	@Override

@@ -24,6 +24,8 @@ public interface MigrationService {
 
     long countAllByStatus(String status);
 
+    long countAllWithoutTestCluster();
+
     List<MigrationModel> find(long size, long offset);
 
     List<MigrationModel> findByCluster(long clusterId, long size, long offset);
@@ -31,6 +33,8 @@ public interface MigrationService {
     List<MigrationModel> findByOperator(String operator, long size, long offset);
 
     List<MigrationModel> findByStatus(String status, long size, long offset);
+
+    List<MigrationModel> findWithoutTestClusters(long size, long offset);
 
     MigrationEventTbl find(long id);
 

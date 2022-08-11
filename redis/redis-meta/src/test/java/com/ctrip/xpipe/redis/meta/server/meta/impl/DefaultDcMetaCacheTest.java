@@ -196,26 +196,25 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         DcMeta future = MetaClone.clone(dcMeta);
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 10000);
 
-        Map<String, RouteMeta> routes = dcMetaCache.chooseRoutes(1L);
-        Assert.assertEquals(1, routes.size());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta4), clusterName1).getId(), routes.get("jq").getId());
+        RouteMeta jqRoute, oyRoute;
+        jqRoute = dcMetaCache.chooseRoute(1L, "jq");
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta4), clusterName1).getId(), jqRoute.getId());
 
         strategy = routeChooseStrategyFactory.create(routeStrategyType);
-        routes = dcMetaCache.chooseRoutes(2L);
-        Assert.assertEquals(1, routes.size());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3), clusterName2).getId(), routes.get("jq").getId());
+        jqRoute = dcMetaCache.chooseRoute(2L, "jq");
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3), clusterName2).getId(), jqRoute.getId());
 
         strategy = routeChooseStrategyFactory.create(routeStrategyType);
-        routes = dcMetaCache.chooseRoutes(4L);
-        Assert.assertEquals(2, routes.size());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta6), biClusterName1).getId(), routes.get("jq").getId());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10), biClusterName1).getId(), routes.get("oy").getId());
+        jqRoute = dcMetaCache.chooseRoute(4L, "jq");
+        oyRoute = dcMetaCache.chooseRoute(4L, "oy");
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta6), biClusterName1).getId(), jqRoute.getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10), biClusterName1).getId(), oyRoute.getId());
 
         strategy = routeChooseStrategyFactory.create(routeStrategyType);
-        routes = dcMetaCache.chooseRoutes(5L);
-        Assert.assertEquals(2, routes.size());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5), biClusterName2).getId(), routes.get("jq").getId());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9), biClusterName2).getId(), routes.get("oy").getId());
+        jqRoute = dcMetaCache.chooseRoute(5L, "jq");
+        oyRoute = dcMetaCache.chooseRoute(5L, "oy");
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5), biClusterName2).getId(), jqRoute.getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9), biClusterName2).getId(), oyRoute.getId());
 
     }
 

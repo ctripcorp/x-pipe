@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
+import org.junit.BeforeClass;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -35,6 +36,11 @@ import java.util.concurrent.TimeUnit;
  *         Jun 12, 2016
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
+
+	@BeforeClass
+	public static void beforeAbstractCheckerTest(){
+		System.setProperty("DisableLoadProxyAgentJar", "true");
+	}
 
 	protected ClusterId getClusterId() {
 		return new ClusterId(currentTestName()  + "-", 0L);

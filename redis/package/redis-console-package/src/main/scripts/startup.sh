@@ -20,6 +20,27 @@ function getPortFromPathOrDefault(){
 function toUpper(){
     echo $(echo $1 | tr [a-z] [A-Z])
 }
+function getTotalMem() {
+    echo `free -g | egrep "^Mem" | awk -F " " '{print $2}'`
+}
+function getSafeXmx() {
+    total=`getTotalMem`
+    SAFE_PERCENT=85
+    MAX_MEM=16
+    result=`expr $total \* $SAFE_PERCENT / 100`
+    if [ "$result" -gt "$MAX_MEM" ]
+    then
+        echo "$MAX_MEM"
+    else
+        echo "$result"
+    fi
+}
+function getSafeXmn() {
+    xmx=$1
+    XMN_PERCENT=90
+    echo `expr $xmx \* $XMN_PERCENT / 100`
+}
+
 function getEnv(){
     ENV=local
     if [ -f /opt/settings/server.properties ];then
@@ -103,8 +124,8 @@ echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
     #GB
-    USED_MEM=8
-    XMN=6
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=1
     META_SPACE=256
     MAX_META_SPACE=256
@@ -119,8 +140,8 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 elif [ $ENV = "UAT" ];then
     #GB
-    USED_MEM=6
-    XMN=4
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=100
     META_SPACE=256
     MAX_META_SPACE=256
@@ -142,7 +163,9 @@ SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.log"
 
 #set the jdk to 1.8 version
-if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_121/ ]]; then
+if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_302/ ]]; then
+    export JAVA_HOME=/usr/java/jdk1.8.0_302
+elif [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_121/ ]]; then
     export JAVA_HOME=/usr/java/jdk1.8.0_121
 elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/

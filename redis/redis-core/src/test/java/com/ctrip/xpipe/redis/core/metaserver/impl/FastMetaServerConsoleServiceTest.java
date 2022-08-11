@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
@@ -40,7 +41,7 @@ public class FastMetaServerConsoleServiceTest extends AbstractTest {
                 return mockHttpResp("{\"ip\":\"127.0.0.1\", \"port\": 6379}");
             }
         });
-        fastMetaServerConsoleService = new FastMetaServerConsoleService("http://127.0.0.1:" + metaServer.getPort());
+        fastMetaServerConsoleService = new FastMetaServerConsoleService(new MetaserverAddress("oy", "http://127.0.0.1:" + metaServer.getPort()));
     }
 
     private String mockHttpResp(String content) {

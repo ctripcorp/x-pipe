@@ -14,12 +14,19 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	
 	private boolean failContinue = false;
 
+	private boolean isLoggable = true;
+
 	public SequenceCommandChain(String tag) {
 		super(tag);
 	}
 
 	public SequenceCommandChain(boolean failContinue){
 		this.failContinue = failContinue;
+	}
+
+	public SequenceCommandChain(boolean failContinue, boolean isLoggable){
+		this.failContinue = failContinue;
+		this.isLoggable = isLoggable;
 	}
 	
 	public SequenceCommandChain(Command<?> ... commands) {
@@ -76,6 +83,8 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	}
 
 	private void logFail(CommandFuture<?> commandFuture) {
+		if (!isLoggable)
+			return;
 		if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
 			getLogger().error("[{}][failExecuteNext]{}, {}", tag, commandFuture.command(), commandFuture.cause().getMessage());
 		} else {

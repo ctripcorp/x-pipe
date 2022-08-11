@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,13 @@ import java.util.Map;
  *         Mar 22, 2018
  */
 public class InfoResultExtractor {
+
+    private static final String KEY_SYNC_FULL = "sync_full";
+    private static final String KEY_SYNC_PARTIAL_OK = "sync_partial_ok";
+    private static final String KEY_SYNC_PARTIAL_ERR = "sync_partial_err";
+
+    private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
+    private static final String KEY_SLAVE_REPL_OFFSET = "slave_repl_offset";
 
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
@@ -81,7 +87,27 @@ public class InfoResultExtractor {
                 }
             }
         }
-
     }
 
+    public long getSyncFull() {
+        return extractAsLong(KEY_SYNC_FULL);
+    }
+
+    public long getSyncPartialOk() {
+        return extractAsLong(KEY_SYNC_PARTIAL_OK);
+    }
+
+    public long getSyncPartialErr() {
+        return extractAsLong(KEY_SYNC_PARTIAL_ERR);
+    }
+
+    public long getMasterReplOffset() {
+        Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);
+        return result == null ? 0L : result;
+    }
+
+    public long getSlaveReplOffset() {
+        Long result = extractAsLong(KEY_SLAVE_REPL_OFFSET);
+        return result == null ? 0L : result;
+    }
 }

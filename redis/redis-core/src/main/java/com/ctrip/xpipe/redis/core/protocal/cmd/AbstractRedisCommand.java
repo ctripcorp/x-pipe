@@ -30,7 +30,9 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	// consider TCP-retransmit 200ms + 400ms
 	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "660"));
 
-	public static int PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("PROXYED_REDIS_COMMAND_TIME_OUT_SECONDS", "5000"));
+	public static String KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI = "PROXYED_REDIS_COMMAND_TIME_OUT_MILLI";
+
+	public static int PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, "5000"));
 
 	private int commandTimeoutMilli = DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 

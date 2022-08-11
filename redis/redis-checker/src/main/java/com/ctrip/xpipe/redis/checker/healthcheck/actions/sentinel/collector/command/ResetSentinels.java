@@ -26,7 +26,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
@@ -139,33 +142,27 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     boolean redundantInstance(HostPort hostPort) {
         AtomicBoolean redundant = new AtomicBoolean(false);
         RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(hostPort.getHost(), hostPort.getPort())), scheduled);
-        roleCommand.future().addListener(roleFuture -> redundant.set(redundant(roleFuture)));
         try {
             Role role = roleCommand.execute().get(1, TimeUnit.SECONDS);
+            if (context.getInfo().getClusterType().supportKeeper())
+                redundant.set(isKeeper(role));
             logger.info("[isKeeperOrDead] role: {}", role.getServerRole().name());
         } catch (Throwable th) {
-            logger.error("[isKeeperOrDead][failed]{}", hostPort, th);
+            redundant.set(inactive(th.getCause()));
+            logger.warn("[isKeeperOrDead][failed]{}", hostPort, th);
         }
 
         return redundant.get();
     }
 
-    boolean redundant(CommandFuture<Role> roleCommandFuture) throws ExecutionException, InterruptedException {
-        if (context.getInfo().getClusterType().supportKeeper())
-            return isKeeper(roleCommandFuture) || inactive(roleCommandFuture);
-
-        return inactive(roleCommandFuture);
+    boolean isKeeper(Role role) {
+        return Server.SERVER_ROLE.KEEPER.equals(role.getServerRole());
     }
 
-    boolean isKeeper(CommandFuture<Role> roleCommandFuture) throws ExecutionException, InterruptedException {
-        return roleCommandFuture.isSuccess() && Server.SERVER_ROLE.KEEPER.equals(roleCommandFuture.get().getServerRole());
-    }
-
-    boolean inactive(CommandFuture<Role> roleCommandFuture) {
-        return !roleCommandFuture.isSuccess() &&
-                (roleCommandFuture.cause() instanceof CommandExecutionException ||
-                        roleCommandFuture.cause() instanceof CommandTimeoutException ||
-                        roleCommandFuture.cause() instanceof SocketException);
+    boolean inactive(Throwable th) {
+        return th instanceof CommandExecutionException ||
+                th instanceof CommandTimeoutException ||
+                th instanceof SocketException;
     }
 
     class ResetSentinel extends AbstractCommand<Void> {
@@ -193,7 +190,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
 
             List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
-                logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
+                logger.warn("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
                 return new ArrayList<>();
             });
 

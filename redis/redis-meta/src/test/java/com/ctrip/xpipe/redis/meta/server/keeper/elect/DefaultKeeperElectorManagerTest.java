@@ -102,9 +102,6 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 
 	@Test
 	public void testObserverShardLeader() throws Exception {
-
-		String clusterId = clusterMeta.getId();
-		String shardId = shardMeta.getId();
 		Long clusterDbId = clusterMeta.getDbId();
 		Long shardDbId = shardMeta.getDbId();
 

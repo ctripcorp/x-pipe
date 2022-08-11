@@ -3,13 +3,13 @@ package com.ctrip.xpipe.redis.proxy.monitor.stats.impl;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStatsManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
-import com.ctrip.xpipe.utils.AbstractScriptExecutor;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -26,11 +26,14 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
     private static final SocketStatsResult EMPTY_ONE = new SocketStatsResult(Lists.newArrayList("Empty"));
 
+    private SocketStatsManager socketStatsManager;
+
     private AtomicReference<SocketStatsResult> result = new AtomicReference<>(EMPTY_ONE);
 
-    public DefaultSocketStats(ScheduledExecutorService scheduled, Session session) {
+    public DefaultSocketStats(ScheduledExecutorService scheduled, Session session, SocketStatsManager socketStatsManager) {
         super(scheduled);
         this.session = session;
+        this.socketStatsManager = socketStatsManager;
     }
 
     @Override
@@ -50,42 +53,13 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
             remotePort = ((InetSocketAddress) channel.remoteAddress()).getPort();
         }
 
-        new SocketStatsScriptExecutor(localPort, remotePort)
-                .execute()
-                .addListener(future -> result.set(future.getNow()));
-    }
-
-    private static class SocketStatsScriptExecutor extends AbstractScriptExecutor<SocketStatsResult> {
-
-        private static final String SS_TEMPLATE = "ss -itnm '( sport = :%d and dport = :%d )' | grep -v State";
-
-        private int localPort;
-
-        private int remotePort;
-
-        public SocketStatsScriptExecutor(int localPort, int remotePort) {
-            this.localPort = localPort;
-            this.remotePort = remotePort;
-        }
-
-        @Override
-        public String getScript() {
-            return String.format(SS_TEMPLATE, localPort, remotePort);
-        }
-
-        @Override
-        public SocketStatsResult format(List<String> result) {
-            return new SocketStatsResult(result);
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return getClass().getSimpleName();
+        SocketStatsResult socketStatsResult = socketStatsManager.getSocketStatsResult(localPort, remotePort);
+        if (socketStatsResult == null) {
+            logger.warn("[doTask] fail to get socket stat of channel:{}", ChannelUtil.getDesc(channel));
+            result.set(EMPTY_ONE);
+        } else {
+            logger.debug("[doTask] succeed to get socket stat of channel:{}", ChannelUtil.getDesc(channel));
+            result.set(socketStatsResult);
         }
     }
 }

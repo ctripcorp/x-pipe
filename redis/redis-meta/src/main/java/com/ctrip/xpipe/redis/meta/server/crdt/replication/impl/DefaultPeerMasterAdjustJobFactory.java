@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
@@ -78,8 +77,8 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
             RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dcName, clusterDbId);
             Endpoint endpoint;
             if(routeMeta != null) {
-                ProxyConnectProtocol proxyProtocol =  new DefaultProxyConnectProtocolParser().read(String.format("%s %s %s", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, routeMeta.getRouteInfo()));
-                endpoint = new ProxyEnabledEndpoint(peerMeta.getIp(), peerMeta.getPort(), proxyProtocol);
+                ProxyConnectProtocol proxyProtocol = new DefaultProxyConnectProtocolParser().read(String.format("%s %s %s", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, routeMeta.getRouteInfo()));
+                endpoint = new DefaultEndPoint(peerMeta.getIp(), peerMeta.getPort(), proxyProtocol);
             } else {
                 endpoint = new DefaultEndPoint(peerMeta.getIp(), peerMeta.getPort());
             }

@@ -26,7 +26,7 @@
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}})</div>
+                            <div class="col-md-6">{{shard.shardTbl.shardName}}(cluster_{{shard.shardTbl.clusterId}}.shard_{{shard.shardTbl.id}})</div>
                             <div class="col-md-6 text-right">
                                 <a class="btn btn-primary btn-sm" ng-if="routeAvail === true && (clusterType == 'bi_direction'|| clusterType == 'one_way')" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                             	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>

@@ -9,9 +9,11 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     $scope.clusterName = $stateParams.clusterName;
     $scope.currentDcName = $stateParams.srcDcName;
     $scope.dcs;
-    $scope.designatedRoutes=[];
-    $scope.allRoutes=[];
-    $scope.toAddDesignatedRoute=[];
+    $scope.designatedRoutes = [];
+    $scope.allRoutes = [];
+    $scope.toAddDesignatedRoute = [];
+    $scope.allDcRouteIdsMap = new Map();
+    $scope.dstDcs = [];
 
     $scope.switchDc = switchDc;
 
@@ -24,6 +26,7 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
 
     $scope.preSubmitUpdates = preSubmitUpdates;
     $scope.submitUpdates = submitUpdates;
+
 
     if ($scope.clusterName) {
         loadClusterRoutes();
@@ -61,18 +64,29 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
 
     function preAddClusterDesignatedRoute() {
         $scope.toAddDesignatedRoutes = [];
+        $scope.dstDcs = [];
+        $scope.allDcRouteIdsMap=[];
+        $scope.dcs.forEach(function(dc){
+            if(dc.dcName != $scope.currentDcName) {
+                $scope.dstDcs.push(dc.dcName)
 
-        RouteService.getAllActiveRoutesBySrcDcName($scope.currentDcName)
-            .then(function (result) {
-                $scope.allRouteIds=[];
-                result.forEach(function (route) {
-                    $scope.allRoutes[route.id] = route;
-                    $scope.allRouteIds.push(route.id);
+                RouteService.getAllActiveRoutesByTagAndDirection('meta', $scope.currentDcName, dc.dcName)
+                .then(function(result){
+                    var idList = [];
+                    result.forEach(function (route) {
+                        $scope.allRoutes[route.id] = route;
+                        idList.push(route.id);
+                    });
+                    $scope.allDcRouteIdsMap[dc.dcName] = idList;
+
+                    if ($scope.toAddDesignatedRoutes.length == 0) {
+                        $scope.toAddDesignatedRoutes.push(result.shift());
+                    }
+                },function(result){
+                    toastr.error(AppUtil.errorMsg(result));
                 });
-                $scope.toAddDesignatedRoutes.push(result.shift());
-            }, function (result) {
-                toastr.error(AppUtil.errorMsg(result));
-            });
+            }
+        })
 
         $('#addClusterDesignatedRouteModal').modal('show');
     }

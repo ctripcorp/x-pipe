@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.UnexpectedRouteUsageInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
@@ -20,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Arrays;
@@ -92,7 +94,7 @@ public class ClusterServiceImplTest2 {
         TunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel1, tunnelId1);
         List<TunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
-        when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1, null))
+        when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1))
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
@@ -137,6 +139,8 @@ public class ClusterServiceImplTest2 {
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(RouteMeta.TAG_META, mockDcs.get(0)))
                 .thenReturn(Lists.newArrayList(routeInfoModel1, routeInfoModel2));
+        when(clusterDao.findClusterByClusterName(Mockito.anyString())).thenReturn(new ClusterTbl().setClusterType("one_way"));
+
 
         when(proxyService.getProxyChains(mockDcs.get(0), mockClusters.get(0)))
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), Lists.newArrayList(proxyChain)));

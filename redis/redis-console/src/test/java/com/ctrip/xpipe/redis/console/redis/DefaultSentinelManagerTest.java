@@ -2,12 +2,16 @@ package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.metric.MockMetricProxy;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,8 +34,9 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private DefaultSentinelManager manager;
 
-    private int port;
+    private MockMetricProxy metricProxy;
 
+    private int port;
 
     @Before
     public void beforeShardDeleteEventListener4SentinelTest() throws Exception {
@@ -63,6 +68,14 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
                 }
             }
         });
+
+        metricProxy = new MockMetricProxy();
+        manager.setMetricProxy(metricProxy);
+    }
+
+    @After
+    public void afterDefaultSentinelManagerTest() {
+        manager.setMetricProxy(MetricProxy.DEFAULT);
     }
 
     @Test
@@ -71,6 +84,8 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
         shardEvent.setShardSentinels("127.0.0.1:"+port);
         shardEvent.setShardMonitorName("sitemon-xpipegroup0");
         manager.handleShardDelete(shardEvent);
+
+        Assert.assertNotNull(metricProxy.poll());
     }
 
     @Test

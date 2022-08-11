@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerOuterClientCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
@@ -197,4 +198,10 @@ public class CheckerContextConfig {
                                                @Qualifier(GLOBAL_EXECUTOR) ExecutorService executor, CheckerConsoleService checkerConsoleService) {
         return new SentinelShardBind(metaCache, checkerConfig, sentinelManager, executor, checkerConsoleService);
     }
+
+    @Bean
+    public OuterClientCache outerClientCache(CheckerConsoleService service, CheckerConfig config) {
+        return new CheckerOuterClientCache(service, config);
+    }
+
 }

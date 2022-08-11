@@ -7,12 +7,15 @@ import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -34,10 +37,13 @@ public class CheckerHealthController {
     @Autowired
     private RedisInfoManager redisInfoManager;
 
+    @Autowired
+    private StabilityHolder siteStability;
+
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
-
-        return defaultDelayPingActionCollector.getState(new HostPort(ip, port));
+        if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getState(new HostPort(ip, port));
+        else return HEALTH_STATE.UNKNOWN;
     }
 
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
@@ -68,6 +74,12 @@ public class CheckerHealthController {
     @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
         return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
+    }
+
+    @GetMapping("/health/check/status/all")
+    public Map<HostPort, HealthStatusDesc> getAllHealthStatusDesc() {
+        if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getAllHealthStatus();
+        else return Collections.emptyMap();
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

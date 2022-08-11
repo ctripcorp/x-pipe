@@ -21,7 +21,9 @@ public interface CheckerConfig {
 
     String KEY_HEALTHY_DELAY = "console.healthy.delay";
 
-    String KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI = "console.healthy.least.notify.interval.milli";
+    String KEY_HEALTHY_MARK_COMPENSATE_INTERVAL_MILLI = "console.health.compensate.interval.milli";
+
+    String KEY_HEALTHY_MARK_COMPENSATE_THREADS = "console.health.compensate.threads";
 
     String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
 
@@ -59,7 +61,17 @@ public interface CheckerConfig {
 
     String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
-    String KEY_CONSOLE_SITE_STABLE = "console.site.stable";
+    String KEY_CHECKER_SITE_STABLE = "checker.stable";
+
+    String KEY_CHECKER_STABLE_RECOVER_AFTER_ROUNDS = "checker.stable.recover.after.rounds";
+
+    String KEY_CHECKER_STABLE_RESET_AFTER_ROUNDS = "checker.stable.reset.after.rounds";
+
+    String KEY_CHECKER_STABLE_LOSS_AFTER_ROUNDS = "checker.stable.loss.after.rounds";
+
+    String KEY_CHECKER_STABLE_THRESHOLD = "checker.stable.recover.threshold";
+
+    String KEY_CHECKER_UNSTABLE_THRESHOLD = "checker.stable.loss.threshold";
 
     String KEY_QUORUM = "console.quorum";
 
@@ -103,7 +115,9 @@ public interface CheckerConfig {
 
     int getHealthyDelayMilli();
 
-    int getHealthyLeastNotifyIntervalMilli();
+    long getHealthMarkCompensateIntervalMill();
+
+    int getHealthMarkCompensateThreads();
 
     int getHealthyDelayMilliThroughProxy();
 
@@ -125,7 +139,17 @@ public interface CheckerConfig {
 
     Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
 
-    boolean isConsoleSiteUnstable();
+    int getStableLossAfterRounds();
+
+    int getStableRecoverAfterRounds();
+
+    int getStableResetAfterRounds();
+
+    float getSiteStableThreshold();
+
+    float getSiteUnstableThreshold();
+
+    Boolean getSiteStable();
 
     int getQuorum();
 
