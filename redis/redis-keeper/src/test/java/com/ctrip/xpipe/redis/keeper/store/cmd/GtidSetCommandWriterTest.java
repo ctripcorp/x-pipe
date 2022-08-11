@@ -109,11 +109,13 @@ public class GtidSetCommandWriterTest extends AbstractRedisOpParserTest {
     }
 
     private String mockCmdRaw(String gtid, String key, String val) {
-        return "*5\r\n" +
+        return "*6\r\n" +
                 "$4\r\n" +
                 "gtid\r\n" +
                 "$" + gtid.length() + "\r\n"
                 + gtid + "\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
                 "$3\r\n" +
                 "SET\r\n" +
                 "$" + key.length() + "\r\n"

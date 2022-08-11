@@ -48,7 +48,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
 
     private RdbParser<?> rdbParser;
 
-    private String reqUuid = "a65661da334cdeac39e3f68e20a88d7e2d3f47fd";
+    private String reqUuid = "00229094ffbf30b0e016ccb8a9ffe327d560accc";
 
     @Before
     public void setupGtidKeeperTest() throws Exception {

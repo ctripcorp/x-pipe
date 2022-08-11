@@ -37,7 +37,7 @@ public class GtidCmdOneSegmentReaderTest extends AbstractRedisOpParserTest {
                 0);
         CommandFileOffsetGtidIndex endIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-15,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                260);
+                295);
 
         GtidCmdOneSegmentReader reader = new GtidCmdOneSegmentReader(commandStore,
                 new CommandFileSegment(startIndex, endIndex), new ArrayParser(), parser);
@@ -57,10 +57,10 @@ public class GtidCmdOneSegmentReaderTest extends AbstractRedisOpParserTest {
     public void testReadCrossFileSegment() throws Exception {
         CommandFileOffsetGtidIndex startIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-2,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_0"), 0),
-                98);
+                112);
         CommandFileOffsetGtidIndex endIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-15,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                260);
+                295);
         Mockito.when(commandStore.findNextFile(startIndex.getCommandFile().getFile())).thenReturn(endIndex.getCommandFile());
 
         GtidCmdOneSegmentReader reader = new GtidCmdOneSegmentReader(commandStore,
@@ -81,7 +81,7 @@ public class GtidCmdOneSegmentReaderTest extends AbstractRedisOpParserTest {
     public void testReadRightBoundOpenSegment() throws Exception {
         CommandFileOffsetGtidIndex startIndex = new CommandFileOffsetGtidIndex(new GtidSet("a1:1-16,b1:1-5"),
                 new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_1"), 0),
-                312);
+                354);
         Mockito.when(commandStore.findNextFile(startIndex.getCommandFile().getFile()))
                 .thenReturn(new CommandFile(new File("./src/test/resources/GtidSetCommandReaderTest/cmd_2"), 0));
         GtidCmdOneSegmentReader reader = new GtidCmdOneSegmentReader(commandStore,

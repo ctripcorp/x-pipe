@@ -21,14 +21,15 @@ public class RedisOpGtidParser extends AbstractRedisOpParser implements RedisOpP
     }
 
     @Override
+    // format: GTID 00229094ffbf30b0e016ccb8a9ffe327d560accc:1 0 set k1 v1
     public RedisOp parse(byte[][] args) {
-        if (args.length < 3) throw new IllegalArgumentException("no enough args found for gtid");
+        if (args.length < 4) throw new IllegalArgumentException("no enough args found for gtid");
         String gtid = bytes2Str(args[1]);
-        byte[][] gtidArgs = Arrays.copyOfRange(args, 0, 2);
+        byte[][] gtidArgs = Arrays.copyOfRange(args, 0, 3);
 
-        String subCmd = bytes2Str(args[2]);
+        String subCmd = bytes2Str(args[3]);
         RedisOpType subOpType = RedisOpType.lookup(subCmd);
-        byte[][] subArgs = Arrays.copyOfRange(args, 2, args.length);
+        byte[][] subArgs = Arrays.copyOfRange(args, 3, args.length);
         if (!subOpType.checkArgcNotStrictly(subArgs)) {
             throw new IllegalArgumentException("wrong number of args for " + subCmd);
         }

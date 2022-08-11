@@ -31,10 +31,10 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
 
     @Test
     public void testGtidParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "set", "k1", "v1").toArray());
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "set", "k1", "v1").toArray());
         Assert.assertEquals(RedisOpType.SET, redisOp.getOpType());
         Assert.assertEquals("a1:10", redisOp.getOpGtid());
-        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "set", "k1", "v1")), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "0", "set", "k1", "v1")), redisOp.buildRawOpArgs());
 
         RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
         Assert.assertArrayEquals("k1".getBytes(), redisSingleKeyOp.getKey().get());
@@ -58,10 +58,10 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
 
     @Test
     public void testGtidMSetParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2").toArray());
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "MSET", "k1", "v1", "k2", "v2").toArray());
         Assert.assertEquals(RedisOpType.MSET, redisOp.getOpType());
         Assert.assertEquals("a1:10", redisOp.getOpGtid());
-        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2")), redisOp.buildRawOpArgs());
+        Assert.assertArrayEquals(strList2bytesArray(Arrays.asList("GTID", "a1:10", "0", "MSET", "k1", "v1", "k2", "v2")), redisOp.buildRawOpArgs());
 
         RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
         Assert.assertEquals(2, redisMultiKeyOp.getKeys().size());
