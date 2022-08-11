@@ -4,7 +4,7 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import credis.java.client.AsyncCacheFactory;
 import credis.java.client.exception.CRedisException;
-import credis.java.client.util.CacheFactory;
+import credis.java.client.sync.applier.ApplierFactory;
 
 /**
  * @author Slight
@@ -18,7 +18,7 @@ public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
         return new CRedisAsyncClient(
                 AsyncCacheFactory.getInstance().getOrCreateProvider(clusterName),
-                CacheFactory.getProvider(clusterName));
+                ApplierFactory.getProvider(clusterName));
     }
 
     @Override
