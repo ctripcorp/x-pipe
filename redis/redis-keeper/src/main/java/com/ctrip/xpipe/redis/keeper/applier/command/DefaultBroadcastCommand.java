@@ -23,7 +23,7 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
     @Override
     protected void doExecute() throws Throwable {
 
-        /* TODO: we should get masters only */
+        /* DONE: we should get masters only */
         Object[] resources = client.broadcast();
         Object[] rawArgs = redisOp.buildRawOpArgs();
 
@@ -32,11 +32,14 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
             client
                     .write(rc, rawArgs)
                     .addListener(f->{
-                        /* TODO: future() might be already completed */
-                        if (f.isSuccess()) {
-                            future().setSuccess(true);
-                        } else {
-                            future().setFailure(f.cause());
+                        try {
+                            if (f.isSuccess()) {
+                                future().setSuccess(true);
+                            } else {
+                                future().setFailure(f.cause());
+                            }
+                        } catch (IllegalStateException alreadyDone) {
+                            //ignore
                         }
                     });
         }

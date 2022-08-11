@@ -7,18 +7,16 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.MoreExecutors;
 import credis.java.client.AsyncCacheProvider;
-import credis.java.client.CacheProvider;
-import credis.java.client.RCPVVVVVOnlyForXpipeVVVVVDontUse;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
 import credis.java.client.sync.RedisClient;
+import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
-import redis.clients.jedis.exceptions.JedisDataException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -37,20 +35,20 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final Codec codec;
 
-    final RCPVVVVVOnlyForXpipeVVVVVDontUse txnProvider;
+    final ApplierCacheProvider txnProvider;
 
     boolean isInMulti = false;
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, CacheProvider txnProvider) {
+    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
-        this.txnProvider = (RCPVVVVVOnlyForXpipeVVVVVDontUse) txnProvider;
+        this.txnProvider = txnProvider;
         this.codec = new SedisCodec();
     }
 
     @Override
     public Object[] broadcast() {
         /* not efficient */
-        return locator().getAllSession().values().toArray();
+        return locator().getAllSession(true).toArray();
     }
 
     public Map<RedisClient, RedisTransactionClient> clients2TxnClients = new HashMap<>();
@@ -58,7 +56,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Object select(Object key) {
         if (isInMulti) {
-            RedisClient client = txnProvider.getClient(key, clients2TxnClients.keySet());
+            RedisClient client = txnProvider.getClientOnlyForApplier(key, clients2TxnClients.keySet());
             if (!client.isInMulti()) {
                 RedisTransactionClient txnClient = client.multi();
                 clients2TxnClients.put(client, txnClient);
@@ -71,7 +69,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Map<Object, List<Object>> selectMulti(List<Object> keys) {
         if (isInMulti) {
-            Map<RedisClient, List<Object>> clients = txnProvider.getClients(keys, clients2TxnClients.keySet());
+            Map<RedisClient, List<Object>> clients = txnProvider.getClientsOnlyForApplier(keys, clients2TxnClients.keySet());
             for (RedisClient client : clients.keySet()) {
                 if (!client.isInMulti()) {
                     RedisTransactionClient txnClient = client.multi();
@@ -127,7 +125,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public CommandFuture<Object> exec(Object... rawArgs) {
-        if (txnProvider.isValid(clients2TxnClients.keySet())) {
+        if (txnProvider.isValidOnlyForApplier(clients2TxnClients.keySet())) {
             try {
                 for (RedisTransactionClient txnClient : clients2TxnClients.values()) {
                     List<Object> results = txnClient.exec(rawArgs);
