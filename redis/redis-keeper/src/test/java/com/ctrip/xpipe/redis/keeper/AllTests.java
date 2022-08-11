@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.*;
+import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
@@ -62,6 +63,8 @@ import org.junit.runners.Suite.SuiteClasses;
         SlaveOfCommandHandlerTest.class,
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
+        ApplierCommandHandlerTest.class,
+
         DefaultKeeperStatsTest.class,
         DefaultLeakyBucketTest.class,
         CompositeLeakyBucketTest.class,
