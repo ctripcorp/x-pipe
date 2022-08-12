@@ -64,14 +64,13 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
         }
     }
 
-    @VisibleForTesting
     protected Endpoint getMasterAddress(String[] args) {
         String ip = args[2];
         int port = Integer.parseInt(args[3]);
 
         if (args.length >= 6 && ProxyProtocol.KEY_WORD.equalsIgnoreCase(args[5])) {
             ProxyConnectProtocol protocol = getProxyProtocol(args);
-            ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo());
+            ProxyRegistry.registerProxy(ip, port, protocol.getContent());
             return new DefaultEndPoint(ip, port, protocol);
         } else {
             ProxyRegistry.unregisterProxy(ip, port);
