@@ -33,7 +33,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
                     getLogger().warn("UNLIKELY - setSuccess", unlikely);
                 }
             } else {
-                getLogger().warn("[{}] failed, retry", this);
+                getLogger().warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
                 executeTilSuccess();
             }
