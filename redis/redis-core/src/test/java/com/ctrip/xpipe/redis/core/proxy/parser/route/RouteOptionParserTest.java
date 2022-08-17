@@ -33,13 +33,27 @@ public class RouteOptionParserTest {
     }
 
     @Test
-    public void testIsNearDest() {
-        Assert.assertEquals(false, parser.isNearDest());
-        parser = new RouteOptionParser().read("ROUTE PROXYTLS://127.0.0.1:443 TCP://127.0.0.1:6379");
-        Assert.assertEquals(false, parser.isNearDest());
+    public void testIsNextHopProxy() {
+        Assert.assertEquals(true, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXYTCP://127.0.0.2:80,PROXYTCP://127.0.0.3:80 PROXYTLS://127.0.0.1:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(true, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(true, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXYTCP://127.0.0.2:80,TCP://127.0.0.3:80 PROXYTLS://127.0.0.1:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(false, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXYTLS://127.0.0.1:443,TCP://127.0.0.2:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(false, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXY://127.0.0.2:80,PROXY://127.0.0.3:80 PROXY://127.0.0.1:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(true, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXY://127.0.0.1:443,PROXY://127.0.0.2:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(true, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXY://127.0.0.2:80,TCP://127.0.0.3:80 PROXY://127.0.0.1:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(false, parser.isNextHopProxy());
+        parser = new RouteOptionParser().read("ROUTE PROXY://127.0.0.1:443,TCP://127.0.0.2:443 TCP://127.0.0.1:6379");
+        Assert.assertEquals(false, parser.isNextHopProxy());
         parser = new RouteOptionParser().read("ROUTE TCP://127.0.0.1:6379");
-        Assert.assertEquals(true, parser.isNearDest());
+        Assert.assertEquals(false, parser.isNextHopProxy());
         parser = new RouteOptionParser().read("ROUTE ");
-        Assert.assertEquals(true, parser.isNearDest());
+        Assert.assertEquals(false, parser.isNextHopProxy());
     }
 }

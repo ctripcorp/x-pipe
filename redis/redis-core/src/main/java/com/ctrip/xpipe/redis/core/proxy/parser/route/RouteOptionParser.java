@@ -21,9 +21,11 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
 
     private String[] nextNodes;
 
-    private boolean isNearDest = true;
+    private boolean isNextHopProxy = true;
 
     private AtomicBoolean nextNodesRemoved = new AtomicBoolean(false);
+
+    private static final String PROXY_PREFIX = "PROXY";
 
     @Override
     public PROXY_OPTION option() {
@@ -67,19 +69,27 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
     }
 
     @Override
-    public boolean isNearDest() {
-        return isNearDest;
+    public boolean isNextHopProxy() {
+        return isNextHopProxy;
     }
 
     @Override
     public RouteOptionParser read(String option) {
-        if(option == null || option.isEmpty() || option.length() <= option().name().length() + 1) {
+        if (option == null || option.isEmpty() || option.length() <= option().name().length() + 1) {
+            this.isNextHopProxy = false;
             return this;
         }
         this.originOptionString = option.substring(option().name().length() + 1);
         this.nodes = originOptionString.split(ELEMENT_SPLITTER);
-        this.isNearDest = nodes.length <= 1;
         this.nextNodes = nodes[0].split(ARRAY_SPLITTER);
+        if (this.nextNodes != null && this.nextNodes.length > 0) {
+            for (String nextNode : this.nextNodes) {
+                if (!nextNode.startsWith(PROXY_PREFIX)) {
+                    this.isNextHopProxy = false;
+                }
+            }
+        }
+
         return this;
     }
 

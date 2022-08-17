@@ -150,7 +150,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public boolean isCompressEnabled() {
-        return getBooleanProperty(KEY_PROXY_COMPRESS_ENABLED, Boolean.FALSE);
+        return getBooleanProperty(KEY_PROXY_COMPRESS_ENABLED, Boolean.TRUE);
     }
 
     @Override
