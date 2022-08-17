@@ -273,7 +273,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     @VisibleForTesting
     protected void addCompressOptionToProtocolIfNeeded() {
-        if(config.isCompressEnabled() && !protocol.isNearDest()) {
+        if(config.isCompressEnabled() && protocol.isNextHopProxy()) {
             logger.info("Content Compress add to protocol:{}", protocol.toString());
             protocol.addCompression(config.getCompressAlgorithm());
         }
