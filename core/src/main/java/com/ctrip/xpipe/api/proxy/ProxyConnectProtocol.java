@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.api.proxy;
 
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import io.netty.buffer.ByteBuf;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -37,4 +36,5 @@ public interface ProxyConnectProtocol extends ProxyProtocol {
 
     void addCompression(CompressAlgorithm algorithm);
 
+    boolean isNextHopProxy();
 }
