@@ -20,6 +20,41 @@ function getPortFromPathOrDefault(){
 function toUpper(){
     echo $(echo $1 | tr [a-z] [A-Z])
 }
+
+function getTotalMem() {
+    echo `free -m | egrep "^Mem" | awk -F " " '{print $2}'`
+}
+function getSafeXmx() {
+    total=`getTotalMem`
+    SAFE_PERCENT=80
+    MAX_MEM=5120
+    result=`expr $total \* $SAFE_PERCENT / 100`
+
+    if [ "$result" -gt "$MAX_MEM" ]
+    then
+        echo "$MAX_MEM"
+    else
+        echo "$result"
+    fi
+}
+
+function getSafeXmn() {
+    xmx=$1
+    XMN_PERCENT=80
+    echo `expr $xmx \* $XMN_PERCENT / 100`
+}
+
+function getSafeMaxDirect() {
+    total=`getTotalMem`
+    SAFE_PERCENT=10
+    if [ "$total" -gt 7168 ]
+    then
+      echo 2048
+    else
+      echo `expr $total \* $SAFE_PERCENT / 100`
+    fi
+}
+
 function getEnv(){
     ENV=local
     if [ -f /opt/settings/server.properties ];then
@@ -100,12 +135,11 @@ ENV=`getEnv`
 echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
-    #GB
-    USED_MEM=5
-    XMN=3
     #MB
-    MAX_DIRECT=2
-    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
+    MAX_DIRECT=`getSafeMaxDirect`
+    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     #MB
     USED_MEM=600
@@ -114,10 +148,10 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
     #MB
-    USED_MEM=6
-    XMN=4
-    MAX_DIRECT=512
-    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
+    MAX_DIRECT=`getSafeMaxDirect`
+    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 fi
 #export JAVA_OPTS="$JAVA_OPTS -Dio.netty.allocator.numDirectArenas=2 -Dio.netty.maxDirectMemory=0 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+UseParNewGC -XX:MaxTenuringThreshold=2 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:$LOG_DIR/heap_trace.txt -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
 export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 -Dio.netty.maxDirectMemory=0 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:gc:$LOG_DIR/heap_trace.txt -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
