@@ -308,6 +308,13 @@ public class MetaUpdate extends AbstractConsoleController {
                 needUpdate = true;
                 clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
             }
+            if(!ObjectUtils.equals(clusterTbl.getClusterType(), clusterInfo.getClusterType())) {
+                // only support clusterType change from one way to hetero
+                if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.ONE_WAY) && ClusterType.isSameClusterType(clusterInfo.getClusterType(), ClusterType.HETERO)) {
+                    needUpdate = true;
+                    clusterTbl.setClusterType(clusterInfo.getClusterType());
+                }
+            }
             if(needUpdate) {
                 clusterService.update(clusterTbl);
             } else {

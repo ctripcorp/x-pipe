@@ -47,12 +47,14 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         clusterInfo.setClusterName(CLUSTER_NAME);
         clusterInfo.setClusterAdminEmails("test@ctrip.com");
         clusterInfo.setOrganizationId(ORG_ID);
+        clusterInfo.setClusterType(ClusterType.HETERO.toString());
         RetMessage retMessage = clusterController.updateCluster(clusterInfo);
         logger.info("{}", retMessage.getMessage());
         Assert.assertEquals(SUCCESS_STATE, retMessage.getState());
 
         ClusterTbl cluster = clusterDao.findClusterAndOrgByName(CLUSTER_NAME);
         Assert.assertEquals(ORG_ID, cluster.getOrganizationInfo().getOrgId());
+        Assert.assertEquals(ClusterType.HETERO.toString(), cluster.getClusterType());
     }
 
     @Test
