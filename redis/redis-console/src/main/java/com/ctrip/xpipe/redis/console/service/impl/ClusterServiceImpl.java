@@ -250,29 +250,24 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 
 		if (dcClusters != null) {
+			Map<ShardTbl, List<DcClusterTbl>> shard2DcClustersMap = new HashMap<>();
+
 			for (DcClusterModel dcCluster : dcClusters) {
 				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
 				if (dcTbl == null) {
 					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
 				}
-				List<ShardTbl> shardTbls = new ArrayList<>();
-				dcCluster.getShards().forEach(shardModel -> {
-					// if already has dcClusters it will create all dcClusterShard in all related Dc
-					shardTbls.add(shardService.findOrCreateShardIfNotExist(result.getClusterName(),
-							shardModel.getShardTbl(), sentinelBalanceService.selectMultiDcSentinels(clusterType)));
-				});
+				DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), cluster.getClusterName());
+				dcCluster.getShards().forEach(shardModel ->
+						shard2DcClustersMap
+								.computeIfAbsent(shardModel.getShardTbl(), ignore->new LinkedList<>())
+								.add(dcClusterTbl));
+			}
 
-				queryHandler.handleQuery(new DalQuery<Integer>() {
-					@Override
-					public Integer doQuery() throws DalException {
-						ClusterType clusterType=ClusterType.lookup(result.getClusterType());
-						if (consoleConfig.supportSentinelHealthCheck(clusterType, result.getClusterName()))
-							return clusterDao.addDcCluster(dcCluster, result, dcTbl, shardTbls,
-									sentinelBalanceService.selectSentinel(dcTbl.getDcName(), clusterType));
-						else
-							return clusterDao.addDcCluster(dcCluster, result, dcTbl, shardTbls, null);
-					}
-				});
+			for (Map.Entry<ShardTbl, List<DcClusterTbl>> shard2DcClustersEntry : shard2DcClustersMap.entrySet()) {
+				// create shard and dcClusterShard according to the dcClusterModel
+				shardService.findOrCreateShardIfNotExist(result.getClusterName(),
+						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue(), sentinelBalanceService.selectMultiDcSentinels(clusterType));
 			}
 		}
 
@@ -384,18 +379,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
 
-		final ClusterTbl queryProto = proto;
-		clusterDao.updateCluster(queryProto);
-
-		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-		if (ClusterType.isSameClusterType(cluster.getClusterTbl().getClusterType(), ClusterType.HETERO)) {
-			dcClusterService.updateDcClustersByDcClusterModels(cluster.getDcClusters(), cluster.getClusterTbl());
-			replDirectionService.updateClusterReplDirections(cluster.getClusterTbl(), cluster.getReplDirections());
-
-			if (consoleConfig.shouldNotifyClusterTypes().contains(queryProto.getClusterType()))
-				notifier.notifyClusterDelete(clusterName, relatedDcs);
-		}
-
+		clusterDao.updateCluster(proto);
 	}
 
 	@Override

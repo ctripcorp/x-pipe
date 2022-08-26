@@ -14,13 +14,20 @@ public class ShardCreateInfo extends AbstractCreateInfo{
 
     protected String shardMonitorName;
 
+    protected String dcId;
+
     public ShardCreateInfo(){
 
     }
 
     public ShardCreateInfo(String shardName, String shardMonitorName){
+        this(shardName, shardMonitorName, null);
+    }
+
+    public ShardCreateInfo(String shardName, String shardMonitorName, String dcId) {
         this.shardName = shardName;
         this.shardMonitorName = shardMonitorName;
+        this.dcId = dcId;
     }
 
     public String getShardName() {
@@ -37,6 +44,15 @@ public class ShardCreateInfo extends AbstractCreateInfo{
 
     public void setShardMonitorName(String shardMonitorName) {
         this.shardMonitorName = shardMonitorName;
+    }
+
+    public String getDcId() {
+        return dcId;
+    }
+
+    public ShardCreateInfo setDcId(String dcId) {
+        this.dcId = dcId;
+        return this;
     }
 
     @Override

@@ -75,8 +75,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		});
 
 	    ClusterTbl newCluster = clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
-	    if (!ClusterType.lookup(newCluster.getClusterType()).supportMultiActiveDC()
-				&& !ClusterType.isSameClusterType(newCluster.getClusterType(), ClusterType.HETERO)) {
+	    if (!ClusterType.lookup(newCluster.getClusterType()).supportMultiActiveDC()) {
 			// related dc-cluster
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();

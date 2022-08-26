@@ -74,6 +74,12 @@ public class MetaUpdate extends AbstractConsoleController {
     private SentinelBalanceService sentinelBalanceService;
 
     @Autowired
+    private DcClusterService dcClusterService;
+
+    @Autowired
+    private DcClusterShardService dcClusterShardService;
+
+    @Autowired
     private ConsoleConfig config;
 
     private static final String TYPE = "MetaUpdate";
@@ -414,13 +420,25 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<ShardCreateInfo> getShards(@PathVariable String clusterName) {
-
+    public List<ShardCreateInfo> getShards(@PathVariable String clusterName) throws CheckFailException {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if(clusterTbl == null) {
+            throw new CheckFailException("cluster not found:" + clusterName);
+        }
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
         List<ShardCreateInfo> result = new LinkedList<>();
+        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
+            for (ShardTbl shardTbl : allByClusterName) {
+                List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
+                for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+                    result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
+                }
+            }
+        } else {
+            allByClusterName.forEach(shardTbl -> result.add(
+                    new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
+        }
 
-        allByClusterName.forEach(shardTbl -> result.add(
-                new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
         return result;
     }
 
@@ -433,7 +451,7 @@ public class MetaUpdate extends AbstractConsoleController {
         logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, shardName);
 
         try {
-            createShardWithOnePost(clusterName, shardName, null, redisCreateInfos);
+            doCreateShard(clusterName, shardName, null, null, redisCreateInfos);
             return RetMessage.createSuccessMessage("Successfully created shard");
         } catch (Exception e) {
             logger.error("[createShard]" + clusterName + "," + shardName, e);
@@ -451,13 +469,43 @@ public class MetaUpdate extends AbstractConsoleController {
         logger.info("[createShard] Create Shard with redises: {} - {}", clusterName, shardName);
 
         try {
-            createShardWithOnePost(clusterName, shardName, monitorName, redisCreateInfos);
+            doCreateShard(clusterName, shardName, monitorName, null, redisCreateInfos);
             return RetMessage.createSuccessMessage("Successfully created shard");
         } catch (Exception e) {
             logger.error("[createShard]" + clusterName + "," + shardName, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
 
+    }
+
+    @RequestMapping(value = "/shards/with/redises" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
+    public RetMessage createShardsWithRedis(@PathVariable String clusterName, @RequestBody List<RedisCreateInfo> redisCreateInfos) {
+        logger.info("[createShardsWithRedis] create Shard with redises: {} {}", clusterName, redisCreateInfos);
+        try {
+            Map<String, List<RedisCreateInfo>> shardName2RedisCreateInfoMap = new HashMap<>();
+            for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+                shardName2RedisCreateInfoMap.computeIfAbsent(redisCreateInfo.getShardName(), ignore->new LinkedList<>()).add(redisCreateInfo);
+            }
+            for (Map.Entry<String, List<RedisCreateInfo>> shardName2RedisCreateInfoEntry : shardName2RedisCreateInfoMap.entrySet()) {
+                String shardName = shardName2RedisCreateInfoEntry.getKey();
+                List<RedisCreateInfo> shardRedisCreateInfos = shardName2RedisCreateInfoEntry.getValue();
+                List<DcClusterTbl> dcClusterTbls = new LinkedList<>();
+                for (RedisCreateInfo shardRedisCreateInfo : shardRedisCreateInfos) {
+                    String dcId = shardRedisCreateInfo.getDcId();
+                    DcClusterTbl dcClusterTbl = dcClusterService.find(dcId, clusterName);
+                    if(dcClusterTbl == null) {
+                        String message = String.format("dc %s not exist in cluster %s", dcId, clusterName);
+                        return RetMessage.createFailMessage(message);
+                    }
+                    dcClusterTbls.add(dcClusterTbl);
+                }
+                doCreateShard(clusterName, shardName, null, dcClusterTbls, shardRedisCreateInfos);
+            }
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[createShardsWithRedis]{}, {}" + clusterName, redisCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
     @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE,
@@ -516,8 +564,8 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @DalTransaction
-    private void createShardWithOnePost(String clusterName, String shardName, String monitorName,
-                                          List<RedisCreateInfo> redisCreateInfos) throws Exception {
+    private void doCreateShard(String clusterName, String shardName, String monitorName,
+                               List<DcClusterTbl> dcClusterTbls, List<RedisCreateInfo> redisCreateInfos) throws Exception {
 
         // Pre-validate
         ClusterTbl clusterTbl = clusterService.find(clusterName);
@@ -530,7 +578,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
                 .setShardName(shardName);
-        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
 
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {

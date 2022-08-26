@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -167,7 +168,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
         clusterModel.setReplDirections(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
 
-
+        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName("oy"), new DcTbl().setDcName("fra"), new DcTbl().setDcName("jq")));
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
