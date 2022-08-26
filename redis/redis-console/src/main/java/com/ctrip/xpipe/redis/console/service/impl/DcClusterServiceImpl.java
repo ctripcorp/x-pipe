@@ -224,7 +224,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		Map<Long, String> dcNameMap = dcService.dcNameMap();
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (ShardModel shard : dcClusterModel.getShards()) {
-			ShardTbl newShard = shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shard.getShardTbl(), null);
+			ShardTbl newShard = shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shard.getShardTbl(), null, null);
 
 			List<DcClusterShardTbl> relatedDcClusterShards = getRelatedDcClusterShards(newShard, relatedDcClusters, clusterTbl, dcNameMap);
 			dcClusterShardTbls.addAll(relatedDcClusterShards);
