@@ -3,10 +3,13 @@ package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -32,7 +35,14 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String clusterAdminEmails;
 
-    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<DcDetailInfo> dcDetails = new LinkedList<>();
+
+    public static String innerGroupType2OuterGroupType(boolean groupType) {
+        return groupType ? "drMaster" : "master";
+    }
+
+    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
 
@@ -53,6 +63,22 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
+        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
+            List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+
+            dcClusterTbls.forEach(dcClusterTbl -> {
+                DcDetailInfo dcDetailInfo = new DcDetailInfo()
+                        .setDcId(dcClusterTbl.getDcName())
+                        .setDcGroupName(dcClusterTbl.getGroupName())
+                        .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
+                if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
+                    clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
+                } else {
+                    clusterCreateInfo.addDcDetail(dcDetailInfo);
+                }
+            });
+
+        }
 
         return clusterCreateInfo;
     }
@@ -108,6 +134,22 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         dcs.add(0, dcName);
     }
 
+    public void addDcDetail(DcDetailInfo dcDetailInfo) {
+        boolean exist = dcDetails.stream().anyMatch(dcDetail -> dcDetail.getDcId().equals(dcDetailInfo.getDcId()));
+        if(exist) {
+            logger.info("[addDcDetail][already exist]{}", dcDetailInfo);
+            return;
+        }
+        dcDetails.add(dcDetailInfo);
+    }
+
+    public void addFirstDcDetail(DcDetailInfo dcDetailInfo) {
+        boolean remove = dcDetails.removeIf(dcDetail -> dcDetail.getDcId().equals(dcDetailInfo.getDcId()));
+        if(remove) {
+            logger.info("[addFirstDcDetail][already exist, remove]", clusterName);
+        }
+        dcDetails.add(0, dcDetailInfo);
+    }
 
     public String getDesc() {
         return desc;
@@ -131,6 +173,15 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     public void setClusterType(String clusterType) {
         this.clusterType = clusterType;
+    }
+
+    public List<DcDetailInfo> getDcDetails() {
+        return dcDetails;
+    }
+
+    public ClusterCreateInfo setDcDetails(List<DcDetailInfo> dcDetails) {
+        this.dcDetails = dcDetails;
+        return this;
     }
 
     @Override

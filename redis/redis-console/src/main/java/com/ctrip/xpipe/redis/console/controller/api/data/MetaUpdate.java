@@ -350,7 +350,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
         List<ClusterCreateInfo> result = new LinkedList<>();
         allClusters.forEach(clusterTbl -> {
-            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService));
+            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterService));
         });
 
         return transformFromInner(result);
@@ -362,7 +362,7 @@ public class MetaUpdate extends AbstractConsoleController {
         logger.info("[getCluster]{}", clusterName);
 
         ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
-        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService);
+        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterService);
 
         return transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER);
     }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -59,5 +60,10 @@ public class ReplDirectionCreateInfo extends AbstractCreateInfo {
     public ReplDirectionCreateInfo setTargetClusterName(String targetClusterName) {
         this.targetClusterName = targetClusterName;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return JsonCodec.INSTANCE.encode(this);
     }
 }
