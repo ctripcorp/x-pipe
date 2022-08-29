@@ -47,6 +47,8 @@ public interface CurrentMetaManager extends Observable {
 
 	List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId);
 
+	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
+
 	String getCurrentMetaDesc();
 
 	/************* update support *****************/
@@ -57,9 +59,11 @@ public interface CurrentMetaManager extends Observable {
 
 	void setSurviveAppliersAndNotify(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids);
 
-	GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids);
+	GtidSet getGtidSet(Long clusterDbId, String srcSids);
 
-	String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises);
+	String getSids(Long clusterDbId, Long shardDbId);
+
+	String getSrcSids(Long clusterDbId, Long shardDbId);
 
 	boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper);
 
@@ -72,6 +76,8 @@ public interface CurrentMetaManager extends Observable {
 	void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port);
 
 	void setApplierMasterAndNotify(Long clusterDbId, Long shardDbId, String ip, int port, String sids);
+
+	void setSrcSidsAndNotify(Long clusterDbId, Long shardDbId, String sids);
 
 	void setCurrentCRDTMaster(Long clusterDbId, Long shardDbId, long gid, String ip, int port);
 

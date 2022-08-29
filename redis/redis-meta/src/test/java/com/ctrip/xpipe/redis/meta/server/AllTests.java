@@ -92,7 +92,6 @@ import org.junit.runners.Suite.SuiteClasses;
 	ApplierStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
 	DefaultApplierStateChangeHandlerTest.class,
-	RedisGtidCollectJobTest.class,
 	DeferredResponseTest.class,
 	DefaultSentinelManagerTest.class,
 	DefaultDcMetaCacheRefreshTest.class,
@@ -119,6 +118,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,
+	DefaultRedisGtidCollectorTest.class,
 })
 public class AllTests {
 

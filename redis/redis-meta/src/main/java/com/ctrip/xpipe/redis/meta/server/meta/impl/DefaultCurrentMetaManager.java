@@ -453,6 +453,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getRedises(clusterDbId, shardDbId);
+	}
+
+	@Override
 	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
 		return currentMeta.getKeeperActive(clusterDbId, shardDbId);
 	}
@@ -504,13 +509,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids) {
-		return currentMeta.getGtidSet(clusterDbId, shardDbId, redises, sids);
+	public GtidSet getGtidSet(Long clusterDbId, String srcSids) {
+		return currentMeta.getGtidSet(clusterDbId, srcSids);
 	}
 
 	@Override
-	public String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises) {
-	    return currentMeta.getSids(clusterDbId, shardDbId, redises);
+	public String getSids(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getSids(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public String getSrcSids(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getSrcSids(clusterDbId, shardDbId);
 	}
 
 	@Override
@@ -538,6 +548,16 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.info("[setApplierMaster][applier master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
 
+	}
+
+	@Override
+	public void setSrcSidsAndNotify(Long clusterDbId, Long shardDbId, String sids) {
+		if (currentMeta.setSrcSids(clusterDbId, shardDbId, sids)) {
+			logger.info("[setSrcSids]cluster_{},shard_{},{}", clusterDbId, shardDbId, sids);
+			notifyApplierMasterChanged(clusterDbId, shardDbId, currentMeta.getApplierMaster(clusterDbId, shardDbId), sids);
+		} else {
+			logger.info("[setSrcSids][srcSids not changed!]cluster_{},shard_{},{}", clusterDbId, shardDbId, sids);
+		}
 	}
 
 	@Override

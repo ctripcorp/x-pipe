@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -47,9 +46,8 @@ public class DefaultRedisMetaChangeManager extends AbstractCurrentMetaObserver i
         for (MetaComparator shardMetaComparator : shardMetaComparators) {
             ShardMeta shardMeta = ((ShardMetaComparator) shardMetaComparator).getFuture();
             Long shardDbId = shardMeta.getDbId();
-            List<RedisMeta> redises = shardMeta.getRedises();
 
-            String sids = currentMetaManager.getSids(clusterDbId, shardDbId, redises);
+            String sids = currentMetaManager.getSids(clusterDbId, shardDbId);
             if (StringUtils.isEmpty(sids)) {
                 logger.warn("[handleClusterModified] sid empty, cluster_{}, shard_{}", clusterDbId, shardDbId);
                 return;

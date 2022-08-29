@@ -169,11 +169,8 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
         ApplierActiveElectAlgorithm klea = applierActiveElectAlgorithmManager.get(clusterDbId, shardDbId);
         ApplierMeta activeApplier = klea.select(clusterDbId, shardDbId, survivalAppliers);
 
-        String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-        String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-        String upstreamSids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
-
-        currentMetaManager.setSurviveAppliersAndNotify(clusterDbId, shardDbId, survivalAppliers, activeApplier, upstreamSids);
+        String srcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
+        currentMetaManager.setSurviveAppliersAndNotify(clusterDbId, shardDbId, survivalAppliers, activeApplier, srcSids);
     }
 
     private LockInternalsSorter sorter = new LockInternalsSorter() {
