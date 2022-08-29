@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.UnexpectedRouteUsageInfoModel;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
@@ -35,7 +32,7 @@ public interface ClusterService {
 	void updateActivedcId(long id, long activeDcId);
 	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);
 	void deleteCluster(String clusterName);
-	void bindDc(String clusterName, String dcName);
+	void bindDc(DcClusterTbl dcClusterTbl);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);

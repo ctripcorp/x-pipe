@@ -233,7 +233,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			for(DcTbl dc : allDcs) {
 				// single active dc cluster bind active dc when create
 				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
-				bindDc(cluster.getClusterName(), dc.getDcName());
+				DcClusterTbl dcClusterInfo = dc.getDcClusterInfo();
+				DcClusterTbl dcProto =
+						dcClusterInfo == null ? new DcClusterTbl()
+								.setClusterName(cluster.getClusterName())
+								.setDcName(dc.getDcName())
+								.setGroupType(true) : dcClusterInfo;
+
+				bindDc(dcProto);
 			}
 		}
 
@@ -450,19 +457,19 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void bindDc(String clusterName, String dcName) {
-		final ClusterTbl cluster = find(clusterName);
-		final DcTbl dc = dcService.find(dcName);
+	public void bindDc(DcClusterTbl dcClusterTbl) {
+		final ClusterTbl cluster = find(dcClusterTbl.getClusterName());
+		final DcTbl dc = dcService.find(dcClusterTbl.getDcName());
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
-				if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
+				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName()))
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
 				else
-					return clusterDao.bindDc(cluster, dc, null);
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
 			}
 		});
 	}

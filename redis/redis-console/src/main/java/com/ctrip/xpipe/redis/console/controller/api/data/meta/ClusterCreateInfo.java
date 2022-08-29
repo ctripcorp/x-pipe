@@ -38,10 +38,6 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<DcDetailInfo> dcDetails = new LinkedList<>();
 
-    public static String innerGroupType2OuterGroupType(boolean groupType) {
-        return groupType ? "drMaster" : "master";
-    }
-
     public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
@@ -70,7 +66,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 DcDetailInfo dcDetailInfo = new DcDetailInfo()
                         .setDcId(dcClusterTbl.getDcName())
                         .setDcGroupName(dcClusterTbl.getGroupName())
-                        .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
+                        .setDcGroupType(dcClusterTbl.isGroupType());
                 if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
                     clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
                 } else {
