@@ -266,7 +266,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBindDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "fra");
+        RetMessage ret = metaUpdate.bindDc(clusterName, "fra", null);
         Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
 
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
@@ -276,7 +276,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBindDuplicatedDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "jq");
+        RetMessage ret = metaUpdate.bindDc(clusterName, "jq", null);
         Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
 
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);

@@ -107,7 +107,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
-        List<DcTbl> dcs = new LinkedList<>();
+        Map<String, DcTbl> dcName2DcTblMap = new HashMap<>();
         try {
             clusterCreateInfo.check();
 
@@ -120,11 +120,25 @@ public class MetaUpdate extends AbstractConsoleController {
                 if (dcTbl == null) {
                     return RetMessage.createFailMessage("dc not exist:" + dcName);
                 }
-                dcs.add(dcTbl);
+                dcName2DcTblMap.put(dcName, dcTbl);
+            }
+            if(clusterCreateInfo.getDcDetails() != null) {
+                for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {
+                    String dcId = dcDetail.getDcId();
+                    if(!dcName2DcTblMap.containsKey(dcId)) {
+                        return RetMessage.createFailMessage("dcs not contains dc detail info :" + dcDetail);
+                    }
+                    DcClusterTbl dcClusterTbl = new DcClusterTbl().setGroupType(true).setGroupName(dcDetail.getDcGroupName());
+                    if(dcDetail.getDcGroupType() != null) {
+                        dcClusterTbl.setGroupType(dcDetail.getDcGroupType());
+                    }
+                    dcName2DcTblMap.get(dcId).setDcClusterInfo(dcClusterTbl);
+                }
             }
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
+        List<DcTbl> dcs = new LinkedList<>(dcName2DcTblMap.values());
 
         ClusterModel clusterModel = new ClusterModel();
         ClusterType clusterType = ClusterType.lookup(clusterCreateInfo.getClusterType());
@@ -135,6 +149,7 @@ public class MetaUpdate extends AbstractConsoleController {
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
+
         long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcs.get(0).getId();
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(activeDcId)
@@ -641,8 +656,9 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
-    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
-        logger.info("[bindDc]{},{}", clusterName, dcName);
+    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName, @RequestBody DcDetailInfo dcDetailInfo) {
+        logger.info("[bindDc]{},{},{}", clusterName, dcName, dcDetailInfo);
+
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         DcTbl dcTbl = dcService.findByDcName(dcName);
         if (null == dcTbl || null == clusterTbl) {
@@ -652,8 +668,18 @@ public class MetaUpdate extends AbstractConsoleController {
         if (dcTbls.stream().anyMatch(dc -> dc.getId() == dcTbl.getId())) {
             return RetMessage.createFailMessage("cluster has already contain dc " + dcName);
         }
+        DcClusterTbl dcClusterTbl = new DcClusterTbl()
+                .setClusterName(clusterName)
+                .setDcName(dcName)
+                .setGroupType(true);
+        if(dcDetailInfo != null){
+            if(dcDetailInfo.getDcGroupType() != null){
+                dcClusterTbl.setGroupType(dcDetailInfo.getDcGroupType());
+            }
+            dcClusterTbl.setGroupName(dcDetailInfo.getDcGroupName());
+        }
+        clusterService.bindDc(dcClusterTbl);
 
-        clusterService.bindDc(clusterName, dcName);
         return RetMessage.createSuccessMessage();
     }
 
