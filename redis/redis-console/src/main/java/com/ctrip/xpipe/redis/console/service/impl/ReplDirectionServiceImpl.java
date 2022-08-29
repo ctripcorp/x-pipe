@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirectionTblDao>
@@ -268,7 +271,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
     }
 
-    private void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
+    @Override
+    public void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
         queryHandler.handleBatchDelete(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -278,7 +282,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         }, true);
     }
 
-    private void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
+    @Override
+    public void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
         queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {

@@ -77,6 +77,9 @@ public class MetaUpdate extends AbstractConsoleController {
     private DcClusterService dcClusterService;
 
     @Autowired
+    private ReplDirectionService replDirectionService;
+
+    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -679,6 +682,131 @@ public class MetaUpdate extends AbstractConsoleController {
 
         clusterService.unbindDc(clusterName, dcName);
         return RetMessage.createSuccessMessage();
+    }
+
+    @DalTransaction
+    public void doCreateReplDirections(List<ReplDirectionInfoModel> replDirectionInfoModels) {
+        for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
+            replDirectionService.addReplDirectionByInfoModel(replDirectionInfoModel);
+        }
+    }
+
+    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.POST)
+    public RetMessage createReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
+        logger.info("[createReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
+        try {
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                replDirectionCreateInfo.check();
+            }
+            List<ReplDirectionInfoModel> replDirectionInfoModels = new LinkedList<>();
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                if (exist != null) {
+                    String message = String.format("cluster %s srcDc %s toDc %s repl direction already exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                    return RetMessage.createFailMessage(message);
+                }
+                ReplDirectionInfoModel replDirectionInfoModel = new ReplDirectionInfoModel()
+                        .setClusterName(clusterName)
+                        .setSrcDcName(replDirectionCreateInfo.getSrcDcName())
+                        .setFromDcName(replDirectionCreateInfo.getFromDcName())
+                        .setToDcName(replDirectionCreateInfo.getToDcName())
+                        .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
+                replDirectionInfoModels.add(replDirectionInfoModel);
+            }
+            doCreateReplDirections(replDirectionInfoModels);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[createReplDirections][fail] {}", replDirectionCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.GET)
+    public List<ReplDirectionCreateInfo> getReplDirections(@PathVariable String clusterName) {
+        logger.info("[getReplDirections] {}", clusterName);
+        List<ReplDirectionInfoModel> replDirectionInfoModels = replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
+        List<ReplDirectionCreateInfo> replDirectionCreateInfos = replDirectionInfoModels
+                .stream()
+                .map(replDirectionInfoModel ->
+                        new ReplDirectionCreateInfo()
+                                .setSrcDcName(replDirectionInfoModel.getSrcDcName())
+                                .setFromDcName(replDirectionInfoModel.getFromDcName())
+                                .setToDcName(replDirectionInfoModel.getToDcName())
+                                .setTargetClusterName(replDirectionInfoModel.getTargetClusterName()))
+                .collect(Collectors.toList());
+        return replDirectionCreateInfos;
+    }
+
+    private ReplDirectionTbl replDirectionCreateInfo2ReplDirectionTbl(ReplDirectionCreateInfo replDirectionCreateInfo) throws CheckFailException {
+        DcTbl sourceDcTbl = dcService.find(replDirectionCreateInfo.getSrcDcName());
+        if (sourceDcTbl == null) {
+            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getSrcDcName());
+        }
+        DcTbl fromDcTbl = dcService.find(replDirectionCreateInfo.getFromDcName());
+        if (fromDcTbl == null) {
+            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getFromDcName());
+        }
+        DcTbl toDcTbl = dcService.find(replDirectionCreateInfo.getToDcName());
+        if (toDcTbl == null) {
+            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getToDcName());
+        }
+        return new ReplDirectionTbl()
+                .setSrcDcId(sourceDcTbl.getId())
+                .setFromDcId(fromDcTbl.getId())
+                .setToDcId(toDcTbl.getId())
+                .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
+    }
+
+    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.PUT)
+    public RetMessage updateReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
+        logger.info("[updateReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
+        try {
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                replDirectionCreateInfo.check();
+            }
+            List<ReplDirectionTbl> replDirectionTbls = new LinkedList<>();
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                if (exist == null) {
+                    String message = String.format("cluster %s srcDc %s toDc %s repl direction not exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                    return RetMessage.createFailMessage(message);
+                }
+
+                ReplDirectionTbl replDirectionTbl = replDirectionCreateInfo2ReplDirectionTbl(replDirectionCreateInfo);
+                replDirectionTbls.add(replDirectionTbl);
+            }
+            replDirectionService.updateReplDirectionBatch(replDirectionTbls);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[updateReplDirections][fail] {}", replDirectionCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method=RequestMethod.DELETE)
+    public RetMessage deleteReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
+        logger.info("[deleteReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
+        try {
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                replDirectionCreateInfo.check();
+            }
+            List<ReplDirectionTbl> replDirectionTbls = new LinkedList<>();
+            for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
+                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                if (exist == null) {
+                    String message = String.format("cluster %s srcDc %s toDc %s repl direction already not exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                    return RetMessage.createFailMessage(message);
+                }
+
+                ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(exist.getId());
+                replDirectionTbls.add(replDirectionTbl);
+            }
+            replDirectionService.deleteReplDirectionBatch(replDirectionTbls);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
     @VisibleForTesting
