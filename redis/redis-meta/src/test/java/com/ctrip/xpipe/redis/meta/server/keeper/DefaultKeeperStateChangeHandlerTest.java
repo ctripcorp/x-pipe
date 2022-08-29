@@ -190,7 +190,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		when(dcMetaCache.getCurrentDc()).thenReturn("currentdc");
 		when(dcMetaCache.getShardAppliers(clusterDbId, shardDbId)).thenReturn(appliers);
 		when(multiDcService.getSids(any(), any(), anyLong(), anyLong())).thenReturn("sids");
-		when(currentMetaManager.getGtidSet(anyLong(), anyLong(), anyList(), anyString())).thenReturn(new GtidSet(""));
+		when(currentMetaManager.getGtidSet(anyLong(), anyString())).thenReturn(new GtidSet(""));
 
 		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);

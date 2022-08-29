@@ -125,16 +125,13 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		} else {
 			List<ApplierMeta> appliers = dcMetaCache.getShardAppliers(clusterDbId, shardDbId);
 			if (appliers != null) {
-			    String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-			    String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-			    String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId,shardDbId);
-			    List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
-			    GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
+			    String srcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
+			    GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
 				logger.info("[keeperActiveElected][current source shard, set applier xsync to new keeper]cluster_{},shard_{},{}",
 						clusterDbId, shardDbId, appliers);
 			    keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
 			    		new ApplierStateChangeJob(appliers, new Pair<>(activeKeeper.getIp(), activeKeeper.getPort()),
-								sids, gtidSet, null, clientPool, scheduled, executors),
+								srcSids, gtidSet, null, clientPool, scheduled, executors),
 					() -> true, true));
 			}
 		}

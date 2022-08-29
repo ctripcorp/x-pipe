@@ -397,13 +397,10 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         //TODO ayq route
         RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
 
-        String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-        String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
-        String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
+        String srcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
+        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
 
-        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
-        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
-        return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
+        return new ApplierStateChangeJob(appliers, master, srcSids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }
 
     public class BackupApplierInfoChecker extends AbstractApplierInfoChecker {

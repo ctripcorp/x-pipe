@@ -6,6 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -14,10 +15,12 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.*;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,25 +94,17 @@ public class CurrentMeta implements Releasable {
 		currentShardMeta.setSurviveAppliers(surviveAppliers, activeApplier);
 	}
 
-	public GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids){
-
-		checkClusterSupportApplier(clusterDbId);
-		if (sids == null || redises == null) {
-			logger.error("[getGtidSet] sids={}, redises={}, cluster_{},shard_{}", sids, redises, clusterDbId, shardDbId);
-			return new GtidSet("");
-		}
-
-		if (sids.isEmpty()) {
+	public GtidSet getGtidSet(Long clusterDbId, String sids) {
+        checkClusterSupportApplier(clusterDbId);
+		if (!currentMetas.containsKey(clusterDbId) || StringUtil.isEmpty(sids)) {
 		    return new GtidSet("");
 		}
 
-		GtidSet result = null;
-		for (RedisMeta redis : redises) {
-			GtidSet gtidSet = new GtidSet(redis.getGtid());
-			result = result == null? gtidSet: result.intersectionGtidSet(gtidSet);
-		}
+		CurrentClusterMeta currentClusterMeta = currentMetas.get(clusterDbId);
+		GtidSet result = currentClusterMeta.getGtidSet();
+
 		if (result == null) {
-			logger.warn("[getGtidSet] redis list empty, cluster_{},shard_{}", clusterDbId, shardDbId);
+			logger.warn("[getGtidSet] redis list empty, cluster_{}", clusterDbId);
 			return new GtidSet("");
 		}
 
@@ -120,28 +115,18 @@ public class CurrentMeta implements Releasable {
 		return result.filterGtid(uuidSet);
 	}
 
-	public String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises){
-
+	public String getSids(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportApplier(clusterDbId);
 
-		logger.debug("[getSids]{}, {}", clusterDbId, shardDbId);
+		CurrentHeteroShardMeta currentShardMeta = (CurrentHeteroShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getSids();
+	}
 
-		StringBuilder result = new StringBuilder();
-		if (redises == null) {
-			return result.toString();
-		}
+	public String getSrcSids(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportApplier(clusterDbId);
 
-		for (RedisMeta redis : redises) {
-			if (redis.getSid() == null) {
-				continue;
-			}
-			if (result.length() != 0) {
-				result.append(",");
-			}
-			result.append(redis.getSid());
-		}
-
-		return result.toString();
+		CurrentApplierShardMeta currentApplierShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentApplierShardMeta.getSrcSids();
 	}
 
 	public void addResource(Long clusterDbId, Long shardDbId, Releasable releasable) {
@@ -162,6 +147,13 @@ public class CurrentMeta implements Releasable {
 
 		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getSurviveAppliers();
+	}
+
+	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		return ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas();
 	}
 
 	public boolean setKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
@@ -197,6 +189,13 @@ public class CurrentMeta implements Releasable {
 
 		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.setApplierMaster(applierMaster);
+	}
+
+	public boolean setSrcSids(Long clusterDbId, Long shardDbId, String sids) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentApplierShardMeta currentApplierShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentApplierShardMeta.setSrcSids(sids);
 	}
 
 	public Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId) {
@@ -442,8 +441,9 @@ public class CurrentMeta implements Releasable {
 						case HETERO:
 							CurrentKeeperShardMeta keeperShardMeta = new CurrentKeeperShardMeta(clusterDbId, shardMeta.getDbId());
 							CurrentApplierShardMeta applierShardMeta = new CurrentApplierShardMeta(clusterDbId, shardMeta.getDbId());
-							CurrentHeteroShardMeta currentHeteroShardMeta = new CurrentHeteroShardMeta(clusterDbId, shardMeta.getDbId(),
-									keeperShardMeta, applierShardMeta);
+							CurrentHeteroShardMeta currentHeteroShardMeta = new CurrentHeteroShardMeta(
+									clusterDbId, shardMeta.getDbId(), keeperShardMeta, applierShardMeta,
+									(List<RedisMeta>) MetaClone.clone((Serializable) shardMeta.getRedises()));
 							return currentHeteroShardMeta;
 						default:
 							throw new IllegalArgumentException("unknow type:" + clusterType);
@@ -500,6 +500,22 @@ public class CurrentMeta implements Releasable {
 
 		public String getClusterType() {
 			return clusterType;
+		}
+
+		@VisibleForTesting
+		public Map<Long, CurrentShardMeta> getClusterMetas() {
+			return clusterMetas;
+		}
+
+		GtidSet getGtidSet() {
+			GtidSet result = null;
+			for (CurrentShardMeta currentShardMeta : clusterMetas.values()) {
+				for (RedisMeta redisMeta : ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas()) {
+					GtidSet gtidSet = new GtidSet(redisMeta.getGtid());
+					result = result == null? gtidSet: result.intersectionGtidSet(gtidSet);
+				}
+			}
+			return result;
 		}
 
 		//callback changed dc list

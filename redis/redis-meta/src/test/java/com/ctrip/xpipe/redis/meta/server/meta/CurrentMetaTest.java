@@ -6,20 +6,20 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentHeteroShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -286,31 +286,49 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 
 	@Test
 	public void testGetGtidSet() {
-		List<RedisMeta> redises = heteroClusterMeta.getShards().get(heteroShardId).getRedises();
-		GtidSet gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, null);
+		GtidSet gtidSet = currentMeta.getGtidSet(heteroClusterDbId, null);
 		Assert.assertNotNull(gtidSet);
 
-		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, null, "t");
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "t");
 		Assert.assertNotNull(gtidSet);
 
-		setRedisesGtids(redises);
-		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, "a1");
+        List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
+        CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
+		List<RedisMeta> redisMetas = ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas();
+		setRedisesSidsAndGtids(redisMetas);
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "a1");
 		Assert.assertEquals("a1:1-10:15-20", gtidSet.toString());
 
-		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, "b1");
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "b1");
 		Assert.assertEquals("", gtidSet.toString());
 	}
 
-	private void setRedisesGtids(List<RedisMeta> redises) {
+	@Test
+	public void testGetSids() {
+		String sids = currentMeta.getSids(heteroClusterDbId, heteroShardDbId);
+		Assert.assertEquals("", sids);
+
+		List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
+		CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
+		List<RedisMeta> redisMetas = ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas();
+		setRedisesSidsAndGtids(redisMetas);
+
+		Set<String> sidSet = new HashSet(Arrays.asList(currentMeta.getSids(heteroClusterDbId, heteroShardDbId).split(",")));
+		Set<String> resultSet = new HashSet(Arrays.asList("a1,b1,b2".split(",")));
+		Assert.assertFalse(resultSet.retainAll(sidSet));
+		Assert.assertFalse(sidSet.retainAll(resultSet));
+	}
+
+	private void setRedisesSidsAndGtids(List<RedisMeta> redises) {
 
 		RedisMeta redis1 = redises.get(0);
 		redis1.setGtid("a1:1-10:15-20,b1:1-8");
+		redis1.setSid("a1,b1");
 
 		RedisMeta redis2 = redises.get(1);
 		redis2.setGtid("a1:1-10:15-21,b2:1-7");
-
-		redises.add(redis1);
-		redises.add(redis2);
+		redis2.setSid("a1,b2");
 	}
 }
 	

@@ -444,11 +444,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids) {
-		dcMetaManager.get().setRedisGtidAndSids(clusterDbId, shardDbId, redisMeta, gtid, sids);
-	}
-
-	@Override
 	public void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
 		synchronized (this) {
 			// serial with dc meta change
