@@ -474,11 +474,20 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
+
+	@DalTransaction
 	@Override
 	public void unbindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
 		final DcTbl dc = dcService.find(dcName);
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
+
+		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
+		if(!dcClusterTbl.isGroupType()) {
+			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
+			List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
+			shardService.deleteShards(cluster, shardNames);
+		}
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override

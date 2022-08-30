@@ -35,7 +35,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String clusterAdminEmails;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<DcDetailInfo> dcDetails = new LinkedList<>();
 
     public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
