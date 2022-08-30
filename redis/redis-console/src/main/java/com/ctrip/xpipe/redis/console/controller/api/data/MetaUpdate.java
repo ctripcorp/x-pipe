@@ -107,7 +107,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
-        Map<String, DcTbl> dcName2DcTblMap = new HashMap<>();
+        Map<String, DcTbl> dcName2DcTblMap = new LinkedHashMap<>();
         try {
             clusterCreateInfo.check();
 
@@ -499,14 +499,18 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/shards/with/redises" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public RetMessage createShardsWithRedis(@PathVariable String clusterName, @RequestBody List<RedisCreateInfo> redisCreateInfos) {
         logger.info("[createShardsWithRedis] create Shard with redises: {} {}", clusterName, redisCreateInfos);
-        try {
-            Map<String, List<RedisCreateInfo>> shardName2RedisCreateInfoMap = new HashMap<>();
-            for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
-                shardName2RedisCreateInfoMap.computeIfAbsent(redisCreateInfo.getShardName(), ignore->new LinkedList<>()).add(redisCreateInfo);
-            }
-            for (Map.Entry<String, List<RedisCreateInfo>> shardName2RedisCreateInfoEntry : shardName2RedisCreateInfoMap.entrySet()) {
-                String shardName = shardName2RedisCreateInfoEntry.getKey();
-                List<RedisCreateInfo> shardRedisCreateInfos = shardName2RedisCreateInfoEntry.getValue();
+
+        Map<String, List<RedisCreateInfo>> shardName2RedisCreateInfoMap = new HashMap<>();
+        for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+            shardName2RedisCreateInfoMap.computeIfAbsent(redisCreateInfo.getShardName(), ignore->new LinkedList<>()).add(redisCreateInfo);
+        }
+        List<String> successShards = new LinkedList<>();
+        List<String> failShards = new LinkedList<>();
+
+        for (Map.Entry<String, List<RedisCreateInfo>> shardName2RedisCreateInfoEntry : shardName2RedisCreateInfoMap.entrySet()) {
+            String shardName = shardName2RedisCreateInfoEntry.getKey();
+            List<RedisCreateInfo> shardRedisCreateInfos = shardName2RedisCreateInfoEntry.getValue();
+            try {
                 List<DcClusterTbl> dcClusterTbls = new LinkedList<>();
                 for (RedisCreateInfo shardRedisCreateInfo : shardRedisCreateInfos) {
                     String dcId = shardRedisCreateInfo.getDcId();
@@ -518,11 +522,22 @@ public class MetaUpdate extends AbstractConsoleController {
                     dcClusterTbls.add(dcClusterTbl);
                 }
                 doCreateShard(clusterName, shardName, null, dcClusterTbls, shardRedisCreateInfos);
+                successShards.add(shardName);
+            }catch (Exception e){
+                logger.error("[createShardsWithRedis]" + clusterName + "," + shardName, e);
+                failShards.add(shardName);
             }
+        }
+
+        if (failShards.size() == 0) {
             return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[createShardsWithRedis]{}, {}" + clusterName, redisCreateInfos, e);
-            return RetMessage.createFailMessage(e.getMessage());
+        } else {
+            StringBuilder sb = new StringBuilder();
+            if (successShards.size() > 0) {
+                sb.append(String.format("success shards:%s", joiner.join(successShards)));
+            }
+            sb.append(String.format("fail shards:%s", joiner.join(failShards)));
+            return RetMessage.createFailMessage(sb.toString());
         }
     }
 
@@ -763,26 +778,6 @@ public class MetaUpdate extends AbstractConsoleController {
         return replDirectionCreateInfos;
     }
 
-    private ReplDirectionTbl replDirectionCreateInfo2ReplDirectionTbl(ReplDirectionCreateInfo replDirectionCreateInfo) throws CheckFailException {
-        DcTbl sourceDcTbl = dcService.find(replDirectionCreateInfo.getSrcDcName());
-        if (sourceDcTbl == null) {
-            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getSrcDcName());
-        }
-        DcTbl fromDcTbl = dcService.find(replDirectionCreateInfo.getFromDcName());
-        if (fromDcTbl == null) {
-            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getFromDcName());
-        }
-        DcTbl toDcTbl = dcService.find(replDirectionCreateInfo.getToDcName());
-        if (toDcTbl == null) {
-            throw new CheckFailException("dc not exist:" + replDirectionCreateInfo.getToDcName());
-        }
-        return new ReplDirectionTbl()
-                .setSrcDcId(sourceDcTbl.getId())
-                .setFromDcId(fromDcTbl.getId())
-                .setToDcId(toDcTbl.getId())
-                .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
-    }
-
     @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.PUT)
     public RetMessage updateReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
         logger.info("[updateReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
@@ -791,6 +786,8 @@ public class MetaUpdate extends AbstractConsoleController {
                 replDirectionCreateInfo.check();
             }
             List<ReplDirectionTbl> replDirectionTbls = new LinkedList<>();
+            Map<String, Long> dcNameIdMap = dcService.dcNameIdMap();
+
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
                 ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                 if (exist == null) {
@@ -798,7 +795,24 @@ public class MetaUpdate extends AbstractConsoleController {
                     return RetMessage.createFailMessage(message);
                 }
 
-                ReplDirectionTbl replDirectionTbl = replDirectionCreateInfo2ReplDirectionTbl(replDirectionCreateInfo);
+                Long srcDcId = dcNameIdMap.get(replDirectionCreateInfo.getSrcDcName());
+                if(srcDcId == null) {
+                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getSrcDcName());
+                }
+                Long fromDcId = dcNameIdMap.get(replDirectionCreateInfo.getFromDcName());
+                if(fromDcId == null) {
+                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getFromDcName());
+                }
+                Long toDcId = dcNameIdMap.get(replDirectionCreateInfo.getToDcName());
+                if(toDcId == null) {
+                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getToDcName());
+                }
+                ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl()
+                        .setId(exist.getId())
+                        .setSrcDcId(srcDcId)
+                        .setFromDcId(fromDcId)
+                        .setToDcId(toDcId)
+                        .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
                 replDirectionTbls.add(replDirectionTbl);
             }
             replDirectionService.updateReplDirectionBatch(replDirectionTbls);

@@ -219,6 +219,40 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(backupDC, clusterCreateInfo.getDcs().get(1));
     }
 
+    @Test
+    public void testCreateClusterWithDcSequence() {
+        String clusterName = "testCreateClusterWithDcSequence";
+        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+        clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
+        clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
+        clusterCreateInfo.setDcs(Lists.newArrayList("jq", "oy"));
+        clusterCreateInfo.setOrganizationId(3L);
+        clusterCreateInfo.setDesc("test cluster");
+        metaUpdate.createCluster(clusterCreateInfo);
+
+        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        Assert.assertEquals("jq", current.getDcs().get(0));
+        Assert.assertEquals("oy", current.getDcs().get(1));
+    }
+
+    @Test
+    public void testCreateClusterWithDcSequence1() {
+        String clusterName = "testCreateClusterWithDcSequence1";
+        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+        clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
+        clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
+        clusterCreateInfo.setDcs(Lists.newArrayList("oy", "jq"));
+        clusterCreateInfo.setOrganizationId(3L);
+        clusterCreateInfo.setDesc("test cluster");
+        metaUpdate.createCluster(clusterCreateInfo);
+
+        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        Assert.assertEquals("oy", current.getDcs().get(0));
+        Assert.assertEquals("jq", current.getDcs().get(1));
+    }
+
     private List<RedisCreateInfo> createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {
         return Lists.newArrayList(new RedisCreateInfo().setDcId(activeDC).setRedises(StringUtil.join(", ", activeDcRedis.toArray())),
                 new RedisCreateInfo().setDcId(backupDC).setRedises(StringUtil.join(", ", backupDcRedis.toArray())));
