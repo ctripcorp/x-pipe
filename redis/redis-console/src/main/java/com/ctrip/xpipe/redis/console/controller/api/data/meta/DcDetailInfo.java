@@ -8,7 +8,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
  */
 public class DcDetailInfo {
     private String dcId;
-    private Boolean dcGroupType;
+    private String dcGroupType;
     private String dcGroupName;
 
     public String getDcId() {
@@ -20,11 +20,11 @@ public class DcDetailInfo {
         return this;
     }
 
-    public Boolean getDcGroupType() {
+    public String getDcGroupType() {
         return dcGroupType;
     }
 
-    public DcDetailInfo setDcGroupType(Boolean dcGroupType) {
+    public DcDetailInfo setDcGroupType(String dcGroupType) {
         this.dcGroupType = dcGroupType;
         return this;
     }
