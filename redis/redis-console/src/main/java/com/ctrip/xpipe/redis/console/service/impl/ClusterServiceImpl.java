@@ -485,8 +485,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
 		if(!dcClusterTbl.isGroupType()) {
 			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
-			List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
-			shardService.deleteShards(cluster, shardNames);
+			if(null != shardTbls && !shardTbls.isEmpty()) {
+				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
+				shardService.deleteShards(cluster, shardNames);
+			}
 		}
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
