@@ -74,8 +74,6 @@ public interface DcMetaCache extends Observable {
 
 	String getSentinelMonitorName(Long clusterDbId, Long shardDbId);
 
-	void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids);
-	
 	void clusterAdded(ClusterMeta clusterMeta);
 
 	void clusterModified(ClusterMeta clusterMeta);

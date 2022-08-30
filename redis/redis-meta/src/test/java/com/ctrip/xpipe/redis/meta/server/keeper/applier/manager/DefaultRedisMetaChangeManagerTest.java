@@ -56,7 +56,7 @@ public class DefaultRedisMetaChangeManagerTest {
         when(comparator.getMofified()).thenReturn(new HashSet<>(Arrays.asList(shardMetaComparator)));
         when(shardMetaComparator.getFuture()).thenReturn(new ShardMeta());
 
-        when(currentMetaManager.getSids(any(), any(), any())).thenReturn("sids");
+        when(currentMetaManager.getSids(any(), any())).thenReturn("sids");
         when(dcMetaCache.getDownstreamDcs(any(), any(), any())).thenReturn(new HashSet<>(Arrays.asList("downstreamDc")));
 
         redisMetaChangeManager.handleClusterModified(comparator);

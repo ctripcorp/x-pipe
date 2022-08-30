@@ -112,7 +112,7 @@ public class DefaultApplierStateChangeHandlerTest extends AbstractMetaServerTest
 
         when(currentMetaManager.getSurviveAppliers(clusterDbId, shardDbId)).thenReturn(appliers);
         when(currentMetaManager.getApplierMaster(clusterDbId, shardDbId)).thenReturn(applierMaster);
-        when(currentMetaManager.getGtidSet(clusterDbId, shardDbId, redisList, "a1")).thenReturn(new GtidSet(""));
+        when(currentMetaManager.getGtidSet(clusterDbId, "a1")).thenReturn(new GtidSet(""));
         when(dcMetaCache.getClusterRedises(clusterDbId)).thenReturn(Collections.singletonList(redis));
         when(currentMetaManager.getClusterMeta(clusterDbId)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
     }
@@ -127,7 +127,7 @@ public class DefaultApplierStateChangeHandlerTest extends AbstractMetaServerTest
         when(currentMetaManager.getSurviveAppliers(clusterDbId1, shardDbId1)).thenReturn(newAppliers);
         when(currentMetaManager.getApplierMaster(clusterDbId1, shardDbId1)).thenReturn(applierMaster);
         when(dcMetaCache.getClusterRedises(clusterDbId1)).thenReturn(redisList);
-        when(currentMetaManager.getGtidSet(clusterDbId1, shardDbId1, redisList, sid)).thenReturn(new GtidSet(""));
+        when(currentMetaManager.getGtidSet(clusterDbId1, sid)).thenReturn(new GtidSet(""));
         when(currentMetaManager.getClusterMeta(clusterDbId1)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
 
 

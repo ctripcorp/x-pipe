@@ -7,10 +7,10 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -23,6 +23,7 @@ public class CurrentApplierShardMeta extends AbstractCurrentShardMeta {
     private AtomicBoolean watched = new AtomicBoolean(false);
     private List<ApplierMeta> surviveAppliers = new LinkedList<>();
     private Pair<String, Integer> applierMaster;
+    private String srcSids;
 
     public CurrentApplierShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
         super(clusterDbId, shardDbId);
@@ -49,6 +50,29 @@ public class CurrentApplierShardMeta extends AbstractCurrentShardMeta {
             }
         }
         return null;
+    }
+
+    public String getSrcSids() {
+        return srcSids;
+    }
+
+    public synchronized boolean setSrcSids(String srcSids) {
+        logger.info("[setSrcSids]cluster_{},shard_{},{}", clusterDbId, shardDbId, srcSids);
+
+        Set<String> sidSet = StringUtils.isEmpty(srcSids)?
+                new HashSet<>():
+                new HashSet<>(Arrays.asList(srcSids.split(",")));
+
+        Set<String> currentSidSet = StringUtils.isEmpty(this.srcSids)?
+                new HashSet<>():
+                new HashSet<>(Arrays.asList(this.srcSids.split(",")));
+
+        if (!sidSet.retainAll(currentSidSet) && !currentSidSet.retainAll(sidSet)) {
+            return false;
+        }
+
+        this.srcSids = srcSids;
+        return true;
     }
 
     @SuppressWarnings("unchecked")

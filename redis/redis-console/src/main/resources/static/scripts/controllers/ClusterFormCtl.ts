@@ -699,7 +699,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             "setinelMonitorName" : $scope.allMasterShards[index].setinelMonitorName
         }
 
-        $('#updateShardModal').modal('hide');
+        $('#updateShardModal').modal('show');
     }
 
     function confirmUpdateShardModel(){
