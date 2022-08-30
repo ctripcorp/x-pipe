@@ -130,7 +130,7 @@ public class MetaUpdate extends AbstractConsoleController {
                     }
                     DcClusterTbl dcClusterTbl = new DcClusterTbl().setGroupType(true).setGroupName(dcDetail.getDcGroupName());
                     if(dcDetail.getDcGroupType() != null) {
-                        dcClusterTbl.setGroupType(dcDetail.getDcGroupType());
+                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()));
                     }
                     dcName2DcTblMap.get(dcId).setDcClusterInfo(dcClusterTbl);
                 }
@@ -689,7 +689,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 .setGroupType(true);
         if(dcDetailInfo != null){
             if(dcDetailInfo.getDcGroupType() != null){
-                dcClusterTbl.setGroupType(dcDetailInfo.getDcGroupType());
+                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()));
             }
             dcClusterTbl.setGroupName(dcDetailInfo.getDcGroupName());
         }
