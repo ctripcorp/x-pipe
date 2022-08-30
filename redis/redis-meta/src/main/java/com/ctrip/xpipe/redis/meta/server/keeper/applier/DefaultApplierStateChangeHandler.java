@@ -73,7 +73,7 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
     }
 
     @Override
-    public void applierMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster, String sids) {
+    public void applierMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster, String srcSids) {
 
         logger.info("[applierMasterChanged]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
         ApplierMeta activeApplier = currentMetaManager.getApplierActive(clusterDbId, shardDbId);
@@ -90,16 +90,15 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
 
         List<ApplierMeta> appliers = new LinkedList<>();
         appliers.add(activeApplier);
-        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
-        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
+        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
 
         keyedOneThreadTaskExecutor.execute(
                 new Pair<>(clusterDbId, shardDbId),
-                createApplierStateChangeJob(clusterDbId, appliers, newMaster, sids, gtidSet));
+                createApplierStateChangeJob(clusterDbId, appliers, newMaster, srcSids, gtidSet));
     }
 
     @Override
-    public void applierActiveElected(Long clusterDbId, Long shardDbId, ApplierMeta activeApplier, String sids) {
+    public void applierActiveElected(Long clusterDbId, Long shardDbId, ApplierMeta activeApplier, String srcSids) {
 
         logger.info("[applierActiveElected]cluster_{},shard_{},{}", clusterDbId, shardDbId, activeApplier);
 
@@ -110,10 +109,9 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
         }
         Pair<String, Integer> activeApplierMaster = currentMetaManager.getApplierMaster(clusterDbId, shardDbId);
 
-        List<RedisMeta> redises = dcMetaCache.getClusterRedises(clusterDbId);
-        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
+        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
         ApplierStateChangeJob applierStateChangeJob = createApplierStateChangeJob(clusterDbId, appliers,
-                activeApplierMaster, sids, gtidSet);
+                activeApplierMaster, srcSids, gtidSet);
 
         keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), applierStateChangeJob);
     }

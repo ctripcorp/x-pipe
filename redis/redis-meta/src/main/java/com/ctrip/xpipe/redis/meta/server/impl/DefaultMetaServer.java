@@ -140,9 +140,8 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		}
 
 		logger.debug("[getSids]{}, {}", clusterId, shardId);
-		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterShard.getKey(), clusterShard.getValue());
 
-		return currentMetaManager.getSids(clusterShard.getKey(), clusterShard.getValue(), redises);
+		return currentMetaManager.getSids(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
@@ -247,10 +246,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			List<ApplierMeta> appliers = dcMetaCache.getShardAppliers(clusterShard.getKey(), clusterShard.getValue());
 			if (!CollectionUtils.isEmpty(appliers)) {
 				logger.info("[hetero][applier][updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
-				String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterShard.getKey(), clusterShard.getValue());
-				String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterShard.getKey(), clusterShard.getValue());
-				String sid = multiDcService.getSids(upstreamDc, srcDc, clusterShard.getKey(), clusterShard.getValue());
-
+				String sid = currentMetaManager.getSrcSids(clusterShard.getKey(), clusterShard.getValue());
 				currentMetaManager.setApplierMasterAndNotify(clusterShard.getKey(), clusterShard.getValue(), ip, port, sid);
 			}
 		}
