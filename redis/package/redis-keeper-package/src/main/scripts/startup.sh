@@ -154,7 +154,8 @@ else
     fi
 
     IDC=`getIdc`
-    if [ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ];then
+    total=`getTotalMem`
+    if ([ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ]) && ([ "$total" -gt 30720 ]);then
         #MB
         USED_MEM=30720
         XMN=11520
