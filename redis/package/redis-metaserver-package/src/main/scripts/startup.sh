@@ -17,6 +17,39 @@ function getPortFromPathOrDefault(){
     fi
     echo $result
 }
+function getTotalMem() {
+    echo `free -m | egrep "^Mem" | awk -F " " '{print $2}'`
+}
+function getSafeXmx() {
+    total=`getTotalMem`
+    SAFE_PERCENT=55
+    MAX_MEM=8192
+
+    if [ "$total" -gt 10240 ]
+    then
+      echo "$MAX_MEM"
+    else
+      echo `expr $total \* $SAFE_PERCENT / 100`
+    fi
+}
+
+function getSafeXmn() {
+    xmx=$1
+    XMN_PERCENT=75
+    echo `expr $xmx \* $XMN_PERCENT / 100`
+}
+
+function getSafeMaxDirect() {
+    total=`getTotalMem`
+    SAFE_PERCENT=10
+    if [ "$total" -gt 10240 ]
+    then
+      echo 1024
+    else
+      echo `expr $total \* $SAFE_PERCENT / 100`
+    fi
+}
+
 function toUpper(){
     echo $(echo $1 | tr [a-z] [A-Z])
 }
@@ -108,13 +141,13 @@ ENV=`getEnv`
 echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
-    #GB
-    USED_MEM=8
-    XMN=6
-    MAX_DIRECT=1
+    #MB
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
+    MAX_DIRECT=`getSafeMaxDirect`
     META_SPACE=256
     MAX_META_SPACE=256
-    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g  -XX:+AlwaysPreTouch -Xmn${XMN}g -XX:MaxDirectMemorySize=${MAX_DIRECT}g -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
+    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m  -XX:+AlwaysPreTouch -Xmn${XMN}m -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     #MB
     USED_MEM=600
@@ -131,14 +164,15 @@ else
         XMN=6144
         META_SPACE=256
         MAX_META_SPACE=256
+        MAX_DIRECT=100
     else
         #MB
-        USED_MEM=800
-        XMN=600
+        USED_MEM=`getSafeXmx`
+        XMN=`getSafeXmn $USED_MEM`
         META_SPACE=128
         MAX_META_SPACE=128
+        MAX_DIRECT=`getSafeMaxDirect`
     fi
-    MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 fi
 export JAVA_OPTS="$JAVA_OPTS -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:$LOG_DIR/heap_trace.txt -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
