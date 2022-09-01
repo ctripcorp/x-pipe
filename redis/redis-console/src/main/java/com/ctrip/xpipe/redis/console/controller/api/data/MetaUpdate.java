@@ -29,6 +29,7 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.APPLIER_PORT_DEFAULT;
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
 /**
@@ -63,6 +64,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     protected RedisService redisService;
+
+    @Autowired
+    protected ApplierService applierService;
 
     @Autowired
     protected KeeperAdvancedService keeperAdvancedService;
@@ -725,10 +729,48 @@ public class MetaUpdate extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
+    @VisibleForTesting
+    protected int addAppliers(String dcId, String clusterName, ShardTbl shardTbl, long replDirectionId) {
+
+        List<ApplierTbl> applierTbls = applierService.findApplierTblByShardAndReplDirection(shardTbl.getId(), replDirectionId);
+        if(applierTbls== null || applierTbls.isEmpty()) {
+            logger.info("[addAppliers] no appliers on shard {}: {}", clusterName, shardTbl.getShardName());
+        }
+
+        if(applierTbls != null && !applierTbls.isEmpty()) {
+            if (applierTbls.size() > 2) {
+                throw new IllegalStateException("applier numbers should not be greater than 2");
+            } else if (applierTbls.size() == 1) {
+                applierService.deleteAppliers(shardTbl, replDirectionId);
+            } else {
+                // if size == 2, do nothing
+                return 0;
+            }
+        }
+
+        List<ApplierTbl> bestAppliers = applierService.findBestAppliers(dcId,
+                        APPLIER_PORT_DEFAULT, (ip, port) -> true, clusterName)
+                .stream()
+                .map(applierBasicInfo -> new ApplierTbl()
+                        .setIp(applierBasicInfo.getHost())
+                        .setPort(applierBasicInfo.getPort())
+                        .setContainerId(applierBasicInfo.getAppliercontainerId()))
+                .collect(Collectors.toList());
+
+        logger.info("[addAppliers]{},{},{},{}", dcId, clusterName, shardTbl.getShardName(), bestAppliers);
+        return applierService.createAppliers(bestAppliers, shardTbl, replDirectionId);
+    }
+
     @DalTransaction
-    public void doCreateReplDirections(List<ReplDirectionInfoModel> replDirectionInfoModels) {
+    public void doCreateReplDirections(String clusterName, List<ReplDirectionInfoModel> replDirectionInfoModels) {
+        List<ShardTbl> allClusterShards = shardService.findAllByClusterName(clusterName);
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
-            replDirectionService.addReplDirectionByInfoModel(replDirectionInfoModel);
+            ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterName, replDirectionInfoModel);
+            if(null!=allClusterShards && !allClusterShards.isEmpty()) {
+                for (ShardTbl shardTbl : allClusterShards) {
+                    addAppliers(replDirectionInfoModel.getSrcDcName(), clusterName, shardTbl, replDirectionTbl.getId());
+                }
+            }
         }
     }
 
@@ -754,7 +796,7 @@ public class MetaUpdate extends AbstractConsoleController {
                         .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
                 replDirectionInfoModels.add(replDirectionInfoModel);
             }
-            doCreateReplDirections(replDirectionInfoModels);
+            doCreateReplDirections(clusterName, replDirectionInfoModels);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[createReplDirections][fail] {}", replDirectionCreateInfos, e);
@@ -841,7 +883,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(exist.getId());
                 replDirectionTbls.add(replDirectionTbl);
             }
-            replDirectionService.deleteReplDirectionBatch(replDirectionTbls);
+            replDirectionService.deleteReplDirectionBatch(clusterName, replDirectionTbls);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);

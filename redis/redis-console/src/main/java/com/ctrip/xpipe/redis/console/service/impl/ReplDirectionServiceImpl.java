@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +25,12 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
 
     @Autowired
     DcService dcService;
+
+    @Autowired
+    ShardService shardService;
+
+    @Autowired
+    ApplierService applierService;
 
     private Comparator<ReplDirectionTbl> replDirectionTblComparator = new Comparator<ReplDirectionTbl>() {
         @Override
@@ -166,8 +170,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
-    public void addReplDirectionByInfoModel(ReplDirectionInfoModel replDirectionInfoModel) {
-        ClusterTbl clusterTbl = clusterService.find(replDirectionInfoModel.getClusterName());
+    public ReplDirectionTbl addReplDirectionByInfoModel(String clusterName, ReplDirectionInfoModel replDirectionInfoModel) {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new IllegalArgumentException(String.format("cluster %s does not exist",
                     replDirectionInfoModel.getClusterName()));
@@ -193,6 +197,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                 return dao.insert(proto);
             }
         });
+
+        return proto;
     }
 
     @Override
@@ -207,7 +213,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                 convertReplDirectionInfoModelsToReplDirectionTbls(replDirections, dcNameIdMap);
 
         validateReplDirection(clusterTbl, targetReplDirections);
-        updateClusterReplDirections(originReplDirections, targetReplDirections);
+        updateClusterReplDirections(clusterTbl.getClusterName(), originReplDirections, targetReplDirections);
     }
 
     private void validateReplDirection(ClusterTbl cluster, List<ReplDirectionTbl> replDirectionTbls) {
@@ -225,7 +231,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
     }
 
-    private void updateClusterReplDirections(List<ReplDirectionTbl> originReplDirections,
+    private void updateClusterReplDirections(String clusterName, List<ReplDirectionTbl> originReplDirections,
                                              List<ReplDirectionTbl> targetReplDirections) {
 
         List<ReplDirectionTbl> toCreate = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
@@ -238,13 +244,13 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                 originReplDirections, targetReplDirections, replDirectionTblComparator);
 
         try {
-            handleUpdateReplDirecitons(toCreate, toDelete, toUpdate);
+            handleUpdateReplDirecitons(clusterName, toCreate, toDelete, toUpdate);
         } catch (Exception e) {
             throw new ServerException(e.getMessage());
         }
     }
 
-    private void handleUpdateReplDirecitons(List<ReplDirectionTbl> toCreate, List<ReplDirectionTbl> toDelete,
+    private void handleUpdateReplDirecitons(String clusterName, List<ReplDirectionTbl> toCreate, List<ReplDirectionTbl> toDelete,
                                              List<ReplDirectionTbl> toUpdate) {
         if (toCreate != null && !toCreate.isEmpty()) {
             logger.info("[updateClusterReplDirections] create repl direction {}", toCreate);
@@ -253,7 +259,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
 
         if (toDelete != null && !toDelete.isEmpty()) {
             logger.info("[updateClusterReplDirections] delete repl direction {}", toDelete);
-            deleteReplDirectionBatch(toDelete);
+            deleteReplDirectionBatch(clusterName, toDelete);
         }
 
         if (toUpdate != null && !toUpdate.isEmpty()) {
@@ -271,8 +277,9 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
     }
 
+    @DalTransaction
     @Override
-    public void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
+    public void deleteReplDirectionBatch(String clusterName, List<ReplDirectionTbl> replDirections) {
         queryHandler.handleBatchDelete(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -280,6 +287,14 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                         ReplDirectionTblEntity.UPDATESET_FULL);
             }
         }, true);
+        List<ShardTbl> allClusterShards = shardService.findAllByClusterName(clusterName);
+        for (ReplDirectionTbl replDirection : replDirections) {
+            if(null!=allClusterShards && !allClusterShards.isEmpty()) {
+                for (ShardTbl shardTbl : allClusterShards) {
+                    applierService.deleteAppliers(shardTbl, replDirection.getId());
+                }
+            }
+        }
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.model.ApplierTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -22,6 +23,10 @@ public interface ApplierService {
                                   long replDirectionId);
 
     void updateAppliers(String dcName, String clusterName, String shardName, ShardModel sourceShard, long replDirectionId);
+
+    int createAppliers(List<ApplierTbl> applierTbls, ShardTbl shardTbl, long replDirectionId);
+
+    void deleteAppliers(ShardTbl shardTbl, long replDirectionId);
 
     List<ApplierTbl> findAllAppliercontainerCountInfo();
 
