@@ -194,7 +194,13 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			}
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
-					keeperStateController.addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper));
+					KeeperTransMeta keeperTransMeta;
+					if (Objects.equals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase())) {
+						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, deadKeeper);
+					} else {
+						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
+					}
+					keeperStateController.addKeeper(keeperTransMeta);
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
 							deadKeeper, e.getMessage()));
