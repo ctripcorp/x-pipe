@@ -496,7 +496,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
     }
 
-    @RequestMapping(value = "/shards/with/redises" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
+    @RequestMapping(value = "/shards/with/redises/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public RetMessage createShardsWithRedis(@PathVariable String clusterName, @RequestBody List<RedisCreateInfo> redisCreateInfos) {
         logger.info("[createShardsWithRedis] create Shard with redises: {} {}", clusterName, redisCreateInfos);
 
