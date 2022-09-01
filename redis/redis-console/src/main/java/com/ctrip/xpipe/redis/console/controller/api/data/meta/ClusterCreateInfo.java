@@ -11,8 +11,10 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -58,9 +60,10 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
         clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
 
+        Map<Long, String> dcId2DcNameMap = new HashMap<>();
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
         clusterRelatedDc.forEach(dcTbl -> {
-
+            dcId2DcNameMap.put(dcTbl.getId(), dcTbl.getDcName());
             if (dcTbl.getId() == clusterTbl.getActivedcId()) {
                 clusterCreateInfo.addFirstDc(dcTbl.getDcName());
             } else {
@@ -72,7 +75,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
             dcClusterTbls.forEach(dcClusterTbl -> {
                 DcDetailInfo dcDetailInfo = new DcDetailInfo()
-                        .setDcId(dcClusterTbl.getDcName())
+                        .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
                         .setDcGroupName(dcClusterTbl.getGroupName())
                         .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
                 if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
