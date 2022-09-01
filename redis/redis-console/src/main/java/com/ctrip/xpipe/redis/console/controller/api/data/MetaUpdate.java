@@ -732,7 +732,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.POST)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.POST)
     public RetMessage createReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
         logger.info("[createReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
         try {
@@ -762,7 +762,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.GET)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.GET)
     public List<ReplDirectionCreateInfo> getReplDirections(@PathVariable String clusterName) {
         logger.info("[getReplDirections] {}", clusterName);
         List<ReplDirectionInfoModel> replDirectionInfoModels = replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
@@ -778,7 +778,7 @@ public class MetaUpdate extends AbstractConsoleController {
         return replDirectionCreateInfos;
     }
 
-    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.PUT)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method = RequestMethod.PUT)
     public RetMessage updateReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
         logger.info("[updateReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
         try {
@@ -823,7 +823,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/api/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method=RequestMethod.DELETE)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method=RequestMethod.DELETE)
     public RetMessage deleteReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
         logger.info("[deleteReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
         try {
