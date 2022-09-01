@@ -252,7 +252,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		if (replDirections != null) {
 			for (ReplDirectionInfoModel replDirection : replDirections) {
-				replDirectionService.addReplDirectionByInfoModel(replDirection);
+				replDirectionService.addReplDirectionByInfoModel(cluster.getClusterName(), replDirection);
 			}
 		}
 

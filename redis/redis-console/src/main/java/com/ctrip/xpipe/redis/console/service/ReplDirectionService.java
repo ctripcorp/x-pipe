@@ -21,7 +21,7 @@ public interface ReplDirectionService {
 
     ReplDirectionInfoModel findReplDirectionInfoModelById(long id);
 
-    void addReplDirectionByInfoModel(ReplDirectionInfoModel replDirectionInfoModel);
+    ReplDirectionTbl addReplDirectionByInfoModel(String clusterName, ReplDirectionInfoModel replDirectionInfoModel);
 
     List<ReplDirectionInfoModel> findAllReplDirectionInfoModelsByCluster(String clusterName);
 
@@ -29,5 +29,5 @@ public interface ReplDirectionService {
 
     void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections);
 
-    void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirectionTbls);
+    void deleteReplDirectionBatch(String clusterName, List<ReplDirectionTbl> replDirectionTbls);
 }

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -158,6 +159,22 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
                 findApplierTblByShardAndReplDirection(sourceShard.getShardTbl().getId(), replDirectionId);
         List<ApplierTbl> targetAppliers = formatAppliersFromSourceModel(sourceShard, replDirectionId);
         updateAppliers(originAppliers, targetAppliers);
+    }
+
+    @Override
+    public int createAppliers(List<ApplierTbl> applierTbls, ShardTbl shardTbl, long replDirectionId) {
+        for (ApplierTbl applier : applierTbls) {
+            applier.setShardId(shardTbl.getId());
+            applier.setReplDirectionId(replDirectionId);
+        }
+        int[] insert = applierDao.createApplierBatch(applierTbls);
+        return MathUtil.sum(insert);
+    }
+
+    @Override
+    public void deleteAppliers(ShardTbl shardTbl, long replDirectionId) {
+        List<ApplierTbl> applierTbls = findApplierTblByShardAndReplDirection(shardTbl.getId(), replDirectionId);
+        applierDao.deleteApplierBatch(applierTbls);
     }
 
     private void updateAppliers(List<ApplierTbl> originAppliers, List<ApplierTbl> targetAppliers) {
