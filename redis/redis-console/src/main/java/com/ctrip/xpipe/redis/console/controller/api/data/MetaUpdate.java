@@ -768,7 +768,7 @@ public class MetaUpdate extends AbstractConsoleController {
             ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterName, replDirectionInfoModel);
             if(null!=allClusterShards && !allClusterShards.isEmpty()) {
                 for (ShardTbl shardTbl : allClusterShards) {
-                    addAppliers(replDirectionInfoModel.getSrcDcName(), clusterName, shardTbl, replDirectionTbl.getId());
+                    addAppliers(replDirectionInfoModel.getToDcName(), clusterName, shardTbl, replDirectionTbl.getId());
                 }
             }
         }
