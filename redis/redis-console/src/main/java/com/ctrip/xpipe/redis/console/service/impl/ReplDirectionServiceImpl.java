@@ -94,6 +94,13 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
 
     @Override
     public ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName) {
+        ReplDirectionTbl replDirectionTbl = findByClusterAndSrcToDc(clusterName, srcDcName, toDcName);
+        if(replDirectionTbl == null) return null;
+        return convertReplDirectionTblToReplDirectionInfoModel(replDirectionTbl, dcService.dcNameMap());
+    }
+
+    @Override
+    public ReplDirectionTbl findByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName) {
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new IllegalArgumentException(String.format("cluster %s does not exist", clusterName));
@@ -111,8 +118,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
                 return dao.findReplDirectionByClusterAndSrcToDc(clusterTbl.getId(), srcDcTbl.getId(), toDcTbl.getId(), ReplDirectionTblEntity.READSET_FULL);
             }
         });
-        if (null == replDirectionTbl)  return null;
-        return convertReplDirectionTblToReplDirectionInfoModel(replDirectionTbl, dcService.dcNameMap());
+        return replDirectionTbl;
     }
 
     @Override
