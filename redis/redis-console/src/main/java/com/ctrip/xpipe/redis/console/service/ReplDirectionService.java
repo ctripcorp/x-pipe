@@ -32,5 +32,5 @@ public interface ReplDirectionService {
 
     void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections);
 
-    void deleteReplDirectionBatch(String clusterName, List<ReplDirectionTbl> replDirectionTbls);
+    void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirectionTbls);
 }
