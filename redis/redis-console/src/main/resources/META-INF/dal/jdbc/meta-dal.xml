@@ -3143,7 +3143,7 @@
 					UPDATE <TABLE/>
         			SET <FIELD name='src-dc-id'/> = ${src-dc-id}, <FIELD name='to-dc-id'/> = ${to-dc-id},
         			<FIELD name='from-dc-id'/> = ${from-dc-id}, <FIELD name='cluster-id'/> = ${cluster-id},
-        			<FIELD name='target-cluster-name'> = ${target-cluster-name}
+        			<FIELD name='target-cluster-name'/> = ${target-cluster-name}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
