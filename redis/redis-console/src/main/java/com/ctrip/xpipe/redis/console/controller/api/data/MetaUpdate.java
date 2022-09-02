@@ -783,7 +783,7 @@ public class MetaUpdate extends AbstractConsoleController {
             }
             List<ReplDirectionInfoModel> replDirectionInfoModels = new LinkedList<>();
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
-                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                ReplDirectionTbl exist = replDirectionService.findByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                 if (exist != null) {
                     String message = String.format("cluster %s srcDc %s toDc %s repl direction already exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                     return RetMessage.createFailMessage(message);
@@ -827,33 +827,26 @@ public class MetaUpdate extends AbstractConsoleController {
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
                 replDirectionCreateInfo.check();
             }
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if(clusterTbl == null) {
+                return RetMessage.createFailMessage("unknown cluster " + clusterName);
+            }
             List<ReplDirectionTbl> replDirectionTbls = new LinkedList<>();
-            Map<String, Long> dcNameIdMap = dcService.dcNameIdMap();
 
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
-                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                ReplDirectionTbl exist = replDirectionService.findByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                 if (exist == null) {
                     String message = String.format("cluster %s srcDc %s toDc %s repl direction not exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                     return RetMessage.createFailMessage(message);
                 }
 
-                Long srcDcId = dcNameIdMap.get(replDirectionCreateInfo.getSrcDcName());
-                if(srcDcId == null) {
-                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getSrcDcName());
-                }
-                Long fromDcId = dcNameIdMap.get(replDirectionCreateInfo.getFromDcName());
-                if(fromDcId == null) {
-                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getFromDcName());
-                }
-                Long toDcId = dcNameIdMap.get(replDirectionCreateInfo.getToDcName());
-                if(toDcId == null) {
-                    return RetMessage.createFailMessage("dc not exist:" + replDirectionCreateInfo.getToDcName());
-                }
+                // only update targetClusterName
                 ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl()
                         .setId(exist.getId())
-                        .setSrcDcId(srcDcId)
-                        .setFromDcId(fromDcId)
-                        .setToDcId(toDcId)
+                        .setClusterId(clusterTbl.getId())
+                        .setSrcDcId(exist.getSrcDcId())
+                        .setFromDcId(exist.getFromDcId())
+                        .setToDcId(exist.getToDcId())
                         .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
                 replDirectionTbls.add(replDirectionTbl);
             }
