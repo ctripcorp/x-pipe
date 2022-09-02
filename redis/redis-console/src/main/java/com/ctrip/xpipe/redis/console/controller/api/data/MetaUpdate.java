@@ -858,6 +858,19 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
+    @DalTransaction
+    public void doDeleteReplDirections(String clusterName, List<ReplDirectionTbl> replDirections) {
+        replDirectionService.deleteReplDirectionBatch(replDirections);
+        List<ShardTbl> allClusterShards = shardService.findAllByClusterName(clusterName);
+        for (ReplDirectionTbl replDirection : replDirections) {
+            if(null!=allClusterShards && !allClusterShards.isEmpty()) {
+                for (ShardTbl shardTbl : allClusterShards) {
+                    applierService.deleteAppliers(shardTbl, replDirection.getId());
+                }
+            }
+        }
+    }
+
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-direction", method=RequestMethod.DELETE)
     public RetMessage deleteReplDirections(@PathVariable String clusterName, @RequestBody List<ReplDirectionCreateInfo> replDirectionCreateInfos) {
         logger.info("[deleteReplDirections]{}, {}", clusterName, replDirectionCreateInfos);
@@ -876,7 +889,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(exist.getId());
                 replDirectionTbls.add(replDirectionTbl);
             }
-            replDirectionService.deleteReplDirectionBatch(clusterName, replDirectionTbls);
+            doDeleteReplDirections(clusterName, replDirectionTbls);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
