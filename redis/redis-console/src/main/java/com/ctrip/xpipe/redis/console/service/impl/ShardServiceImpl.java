@@ -205,7 +205,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
-		dcClusterShardService.insertBatch(dcClusterShardTbls);
+		if(!dcClusterShardTbls.isEmpty()) {
+			dcClusterShardService.insertBatch(dcClusterShardTbls);
+		}
 
 		return shardTbl;
 	}
