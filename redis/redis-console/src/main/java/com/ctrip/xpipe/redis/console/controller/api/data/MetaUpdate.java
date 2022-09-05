@@ -675,8 +675,8 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
-    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName, @RequestBody DcDetailInfo dcDetailInfo) {
-        logger.info("[bindDc]{},{},{}", clusterName, dcName, dcDetailInfo);
+    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName, @RequestBody Optional<DcDetailInfo> dcDetailInfoOptional) {
+        logger.info("[bindDc]{},{},{}", clusterName, dcName, dcDetailInfoOptional);
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         DcTbl dcTbl = dcService.findByDcName(dcName);
@@ -691,7 +691,8 @@ public class MetaUpdate extends AbstractConsoleController {
                 .setClusterName(clusterName)
                 .setDcName(dcName)
                 .setGroupType(true);
-        if(dcDetailInfo != null){
+        if(dcDetailInfoOptional.isPresent()){
+            DcDetailInfo dcDetailInfo = dcDetailInfoOptional.get();
             if(dcDetailInfo.getDcGroupType() != null){
                 dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()));
             }
