@@ -197,7 +197,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
             }
             for (ApplierMeta deadApplier : deadAppliers) {
                 try {
-                    applierStateController.addApplier(new ApplierTransMeta(clusterMeta.getId(), clusterDbId, shardDbId, deadApplier));
+                    applierStateController.addApplier(new ApplierTransMeta(deadApplier.getTargetClusterName(), clusterDbId, shardDbId, deadApplier));
                 } catch (ResourceAccessException e) {
                     logger.error(String.format("cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
                             deadApplier, e.getMessage()));
