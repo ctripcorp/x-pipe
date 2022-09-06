@@ -120,7 +120,8 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private static final int DEFAULT_SCHEDULED_CORE_POOL_SIZE = 1;
 
-    private static final int DEFAULT_KEYED_CLIENT_POOL_SIZE = 2;
+    //TODO change value
+    private static final int DEFAULT_KEYED_CLIENT_POOL_SIZE = 100;
 
     private static final int DEFAULT_NTEEY_BOSS_THREADS_SIZE = 1;
 
