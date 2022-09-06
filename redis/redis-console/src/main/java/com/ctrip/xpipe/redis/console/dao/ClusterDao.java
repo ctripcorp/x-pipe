@@ -13,9 +13,8 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.model.ClusterTblEntity.*;
 
@@ -219,12 +218,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 	@DalTransaction
 	public int bindDc(final ClusterTbl cluster, final DcTbl dc, DcClusterTbl dcClusterTbl, SentinelGroupModel sentinel) throws DalException {
-		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
-			@Override
-			public List<ShardTbl> doQuery() throws DalException {
-				return shardTblDao.findAllByClusterId(cluster.getId(), ShardTblEntity.READSET_FULL);
-			}
-		});
 		
 		DcClusterTbl existingDcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
 			@Override
@@ -245,14 +238,31 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			});
 
 			if(dcClusterTbl.isGroupType()) {
+
+				List<DcClusterTbl> dcClusters = dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
+
+				Set<Long> shardIds = new HashSet<>();
+				for (DcClusterTbl dcCluster : dcClusters) {
+					if(dcCluster.isGroupType()) {
+						List<ShardTbl> shardTbls = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+							@Override
+							public List<ShardTbl> doQuery() throws DalException {
+								return shardTblDao.findAllShardByDcCluster(dcCluster.getDcId(), cluster.getId(), ShardTblEntity.READSET_FULL);
+							}
+						});
+						List<Long> dcShardIds = shardTbls.stream().map(ShardTbl::getId).collect(Collectors.toList());
+						shardIds.addAll(dcShardIds);
+					}
+				}
+
 				DcClusterTbl dcCluster = dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
 
-				if (null != shards && !shards.isEmpty()) {
+				if (!shardIds.isEmpty()) {
 					List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
-					for (ShardTbl shard : shards) {
+					for (Long shardId : shardIds) {
 						DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
 						dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
-								.setShardId(shard.getId());
+								.setShardId(shardId);
 						if (sentinel != null) {
 							dcClusterShard.setSetinelId(sentinel.getSentinelGroupId());
 						}
