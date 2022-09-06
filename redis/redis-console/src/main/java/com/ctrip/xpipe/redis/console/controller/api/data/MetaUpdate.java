@@ -763,13 +763,13 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @DalTransaction
-    public void doCreateReplDirections(String clusterName, List<ReplDirectionInfoModel> replDirectionInfoModels) {
-        List<ShardTbl> allClusterShards = shardService.findAllByClusterName(clusterName);
+    public void doCreateReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirectionInfoModels) {
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
-            ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterName, replDirectionInfoModel);
-            if(null!=allClusterShards && !allClusterShards.isEmpty()) {
-                for (ShardTbl shardTbl : allClusterShards) {
-                    addAppliers(replDirectionInfoModel.getToDcName(), clusterName, shardTbl, replDirectionTbl.getId());
+            ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel);
+            List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getSrcDcId(), clusterTbl.getId());
+            if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
+                for (ShardTbl shardTbl : allSrcDcShards) {
+                    addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
                 }
             }
         }
@@ -781,6 +781,10 @@ public class MetaUpdate extends AbstractConsoleController {
         try {
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
                 replDirectionCreateInfo.check();
+            }
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if(clusterTbl == null) {
+                return RetMessage.createFailMessage("unknown cluster " + clusterName);
             }
             List<ReplDirectionInfoModel> replDirectionInfoModels = new LinkedList<>();
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
@@ -797,7 +801,7 @@ public class MetaUpdate extends AbstractConsoleController {
                         .setTargetClusterName(replDirectionCreateInfo.getTargetClusterName());
                 replDirectionInfoModels.add(replDirectionInfoModel);
             }
-            doCreateReplDirections(clusterName, replDirectionInfoModels);
+            doCreateReplDirections(clusterTbl, replDirectionInfoModels);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[createReplDirections][fail] {}", replDirectionCreateInfos, e);
