@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -77,11 +78,25 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
         clusterService.bindDc(new DcClusterTbl().setClusterName("cluster7").setDcName("jq").setGroupType(true));
         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("jq", "cluster7", "shard1");
 
-        Assert.assertNotNull(dcClusterShardTbl);
-        Assert.assertEquals(1, dcClusterShardTbl.getSetinelId());
+        Assert.assertNull(dcClusterShardTbl);
 
         DcClusterTbl dcClusterTbl = dcClusterService.find("jq", "cluster7");
         Assert.assertTrue(dcClusterTbl.isGroupType());
+    }
+
+    @Test
+    public void testBindDcWithExistDrMasterDc() {
+        clusterService.bindDc(new DcClusterTbl().setClusterName("cluster7").setDcName("jq").setGroupType(true));
+
+        ShardTbl shardTbl = shardService.find("cluster7", "shard1");
+
+        DcClusterTbl dcClusterTbl = dcClusterService.find("jq", "cluster7");
+        DcClusterShardTbl proto = new DcClusterShardTbl().setShardId(shardTbl.getId()).setDcClusterId(dcClusterTbl.getDcClusterId());
+        dcClusterShardService.insertBatch(Lists.newArrayList(proto));
+
+        clusterService.bindDc(new DcClusterTbl().setClusterName("cluster7").setDcName("oy").setGroupType(true));
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("oy", "cluster7", "shard1");
+        Assert.assertNotNull(dcClusterShardTbl);
     }
 
     @Test

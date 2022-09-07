@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -300,7 +301,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBindDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "fra", null);
+        RetMessage ret = metaUpdate.bindDc(clusterName, "fra", Optional.ofNullable(null));
         Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
 
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);

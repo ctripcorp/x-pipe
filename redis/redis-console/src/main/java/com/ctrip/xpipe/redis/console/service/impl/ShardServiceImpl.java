@@ -70,6 +70,11 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
+	@VisibleForTesting
+	public void setConsoleConfig(ConsoleConfig consoleConfig) {
+		this.consoleConfig = consoleConfig;
+	}
+
 	private Comparator<ShardTbl> shardTblComparator = new Comparator<ShardTbl>() {
 		@Override
 		public int compare(ShardTbl o1, ShardTbl o2) {
