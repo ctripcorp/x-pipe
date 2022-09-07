@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
@@ -12,6 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class SentinelGroupServiceTest extends AbstractServiceImplTest {
 
@@ -22,7 +27,7 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
     private SentinelServiceImpl sentinelService;
 
     @Autowired
-    private ShardService shardService;
+    private ShardServiceImpl shardService;
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
@@ -102,6 +107,10 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
 
     @Test
     public void getSentinelGroupsWithUsageByType() {
+        ConsoleConfig consoleConfig = mock(ConsoleConfig.class);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString()))
+                .thenReturn(true);
+        shardService.setConsoleConfig(consoleConfig);
         SentinelGroupModel sentinelGroupModel1 = new SentinelGroupModel().setClusterType(ClusterType.ONE_WAY.name()).setSentinels(Lists.newArrayList(
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6000),
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6001),
