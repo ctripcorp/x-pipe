@@ -27,7 +27,7 @@ public class ProxyEndpointTest {
         long startTime = System.currentTimeMillis();
         ProxyEndpoint endpoint1 = new DefaultProxyEndpoint(new InetSocketAddress("100.100.100.100", 8080));
         long spendTime = System.currentTimeMillis() - startTime;
-        Assert.assertEquals(true, spendTime < 2);
+        Assert.assertEquals(true, spendTime < 2000);
     }
 
     @Test
