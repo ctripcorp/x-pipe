@@ -4,6 +4,8 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -18,6 +20,14 @@ public class ProxyEndpointTest {
 
         Assert.assertFalse(endpoint1.isSslEnabled());
         Assert.assertTrue(endpoint2.isSslEnabled());
+    }
+
+    @Test
+    public void testNotReverseDNS() {
+        long startTime = System.currentTimeMillis();
+        ProxyEndpoint endpoint1 = new DefaultProxyEndpoint(new InetSocketAddress("100.100.100.100", 8080));
+        long spendTime = System.currentTimeMillis() - startTime;
+        Assert.assertEquals(true, spendTime < 2);
     }
 
     @Test
