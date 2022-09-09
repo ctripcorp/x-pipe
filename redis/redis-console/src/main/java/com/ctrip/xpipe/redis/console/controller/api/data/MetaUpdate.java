@@ -511,6 +511,7 @@ public class MetaUpdate extends AbstractConsoleController {
         List<String> successShards = new LinkedList<>();
         List<String> failShards = new LinkedList<>();
 
+        Map<String, DcClusterTbl> dcName2DcClusterTblMap = new HashMap<>();
         for (Map.Entry<String, List<RedisCreateInfo>> shardName2RedisCreateInfoEntry : shardName2RedisCreateInfoMap.entrySet()) {
             String shardName = shardName2RedisCreateInfoEntry.getKey();
             List<RedisCreateInfo> shardRedisCreateInfos = shardName2RedisCreateInfoEntry.getValue();
@@ -518,7 +519,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 List<DcClusterTbl> dcClusterTbls = new LinkedList<>();
                 for (RedisCreateInfo shardRedisCreateInfo : shardRedisCreateInfos) {
                     String dcId = shardRedisCreateInfo.getDcId();
-                    DcClusterTbl dcClusterTbl = dcClusterService.find(dcId, clusterName);
+                    DcClusterTbl dcClusterTbl = dcName2DcClusterTblMap.computeIfAbsent(dcId.toUpperCase(), ignore -> dcClusterService.find(dcId, clusterName));
                     if(dcClusterTbl == null) {
                         String message = String.format("dc %s not exist in cluster %s", dcId, clusterName);
                         return RetMessage.createFailMessage(message);
@@ -622,12 +623,51 @@ public class MetaUpdate extends AbstractConsoleController {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
             redisService.insertRedises(dcId, clusterName, shardName,
                     redisCreateInfo.getRedisAddresses());
-            if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) addKeepers(dcId, clusterName, shardTbl);
+            addKeepers(clusterTbl, dcClusterTbls, shardTbl, redisCreateInfos);
+        }
+    }
+
+    protected void addKeepers(ClusterTbl clusterTbl, List<DcClusterTbl> dcClusterTbls, ShardTbl shardTbl, List<RedisCreateInfo> redisCreateInfos) throws Exception {
+        if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
+            List<ReplDirectionTbl> replDirectionTbls = replDirectionService.findAllReplDirectionTblsByCluster(clusterTbl.getId());
+            Map<String, DcClusterTbl> dcName2DcClusterTbl = new HashMap<>();
+            Map<Long, String> dcNameMap = dcService.dcNameMap();
+
+            for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+                String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
+                String clusterName = clusterTbl.getClusterName();
+                DcClusterTbl dcClusterTbl = null;
+                if(dcClusterTbls == null) {
+                    dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(), ignore-> dcClusterService.find(dcId, clusterName));
+                } else {
+                    for (DcClusterTbl tmp : dcClusterTbls) {
+                        if(dcId.equalsIgnoreCase(tmp.getDcName())) {
+                            dcClusterTbl = tmp;
+                        }
+                    }
+                }
+                if (dcClusterTbl == null) {
+                    throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
+                }
+                final DcClusterTbl dcClusterFound = dcClusterTbl;
+                List<ReplDirectionTbl> replDirectionsOfFromDc = replDirectionTbls
+                        .stream()
+                        .filter(replDirectionTbl -> dcClusterFound.getDcId() == replDirectionTbl.getFromDcId())
+                        .collect(Collectors.toList());
+                if(dcClusterTbl.isGroupType()) {
+                    doAddKeepers(dcId, clusterName, shardTbl, dcId);
+                } else if (!replDirectionsOfFromDc.isEmpty()) {
+                    Set<Long> srcDcIds = replDirectionsOfFromDc.stream().map(ReplDirectionTbl::getSrcDcId).collect(Collectors.toSet());
+                    for (Long srcDcId : srcDcIds) {
+                        doAddKeepers(dcNameMap.get(srcDcId), clusterName, shardTbl, dcId);
+                    }
+                }
+            }
         }
     }
 
     @VisibleForTesting
-    protected int addKeepers(String dcId, String clusterId, ShardTbl shardTbl) throws DalException {
+    protected int doAddKeepers(String dcId, String clusterId, ShardTbl shardTbl, String keeperDcId) throws DalException {
 
         List<RedisTbl> keepers = null;
         try {
@@ -651,10 +691,10 @@ public class MetaUpdate extends AbstractConsoleController {
             }
         }
 
-        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcId,
+        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(keeperDcId,
                 KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterId);
 
-        logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardTbl.getShardName(), bestKeepers);
+        logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardTbl.getShardName(), bestKeepers, keeperDcId);
         try {
             return redisService.insertKeepers(dcId, clusterId, shardTbl.getShardName(), bestKeepers);
         } catch (ResourceNotFoundException e) {
@@ -864,12 +904,12 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @DalTransaction
-    public void doDeleteReplDirections(String clusterName, List<ReplDirectionTbl> replDirections) {
+    public void doDeleteReplDirections(long clusterId, List<ReplDirectionTbl> replDirections) {
         replDirectionService.deleteReplDirectionBatch(replDirections);
-        List<ShardTbl> allClusterShards = shardService.findAllByClusterName(clusterName);
         for (ReplDirectionTbl replDirection : replDirections) {
-            if(null!=allClusterShards && !allClusterShards.isEmpty()) {
-                for (ShardTbl shardTbl : allClusterShards) {
+            List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirection.getSrcDcId(), clusterId);
+            if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
+                for (ShardTbl shardTbl : allSrcDcShards) {
                     applierService.deleteAppliers(shardTbl, replDirection.getId());
                 }
             }
@@ -883,6 +923,11 @@ public class MetaUpdate extends AbstractConsoleController {
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
                 replDirectionCreateInfo.check();
             }
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if(clusterTbl == null) {
+                return RetMessage.createFailMessage("unknown cluster " + clusterName);
+            }
+            Map<String, Long> dcNameIdMap = dcService.dcNameIdMap();
             List<ReplDirectionTbl> replDirectionTbls = new LinkedList<>();
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
                 ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
@@ -891,10 +936,12 @@ public class MetaUpdate extends AbstractConsoleController {
                     return RetMessage.createFailMessage(message);
                 }
 
-                ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(exist.getId());
+                ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl()
+                        .setId(exist.getId())
+                        .setSrcDcId(dcNameIdMap.get(exist.getSrcDcName()));
                 replDirectionTbls.add(replDirectionTbl);
             }
-            doDeleteReplDirections(clusterName, replDirectionTbls);
+            doDeleteReplDirections(clusterTbl.getId(), replDirectionTbls);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
