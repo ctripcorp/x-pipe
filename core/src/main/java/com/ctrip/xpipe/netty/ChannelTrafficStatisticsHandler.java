@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.FileRegion;
+import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 
 import java.net.SocketAddress;
@@ -96,6 +97,7 @@ public abstract class ChannelTrafficStatisticsHandler extends AbstractNettyHandl
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof ByteBuf) {
+            logger.debug("[write]{}", ((ByteBuf) msg).toString(CharsetUtil.UTF_8));
             writtenBytes.addAndGet(((ByteBuf) msg).readableBytes());
         } else if (msg instanceof FileRegion) {
             writtenBytes.addAndGet(((FileRegion) msg).count());
