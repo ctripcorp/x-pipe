@@ -73,6 +73,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
+        logger.debug("[onCommand] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
         if (RedisOpType.PING.equals(redisOp.getOpType()) || RedisOpType.SELECT.equals(redisOp.getOpType())) {
             return;
         }
