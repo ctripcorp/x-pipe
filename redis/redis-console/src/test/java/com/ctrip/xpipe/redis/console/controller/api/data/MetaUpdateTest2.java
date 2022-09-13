@@ -4,9 +4,11 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ReplDirectionTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
+import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -16,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
-import java.util.HashMap;
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
@@ -39,13 +40,7 @@ public class MetaUpdateTest2 {
     private KeeperAdvancedService keeperAdvancedService;
 
     @Mock
-    private ReplDirectionService replDirectionService;
-
-    @Mock
     private DcClusterService dcClusterService;
-
-    @Mock
-    private DcService dcService;
 
     @Spy
     @InjectMocks
@@ -104,33 +99,6 @@ public class MetaUpdateTest2 {
     }
 
     @Test
-    public void addKeepersWithIsMasterDcAndIsFromDc() throws Exception {
-        ClusterTbl clusterTbl = mock(ClusterTbl.class);
-        when(clusterTbl.getClusterName()).thenReturn("cluster-test");
-        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
-        when(clusterTbl.getId()).thenReturn(1L);
-        DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
-        when(dcClusterTbl.isGroupType()).thenReturn(false);
-        when(dcClusterTbl.getDcId()).thenReturn(2L);
-        when(dcClusterService.find("SHAJQ", "cluster-test")).thenReturn(dcClusterTbl);
-        ShardTbl shardTbl = mock(ShardTbl.class);
-        RedisCreateInfo redisCreateInfo = mock(RedisCreateInfo.class);
-        when(redisCreateInfo.getDcId()).thenReturn("SHAJQ");
-        when(dcService.dcNameMap()).thenReturn(new HashMap<Long, String>(){
-            {
-                put(3L, "SHAOY");
-            }
-        });
-        ReplDirectionTbl replDirectionTbl = mock(ReplDirectionTbl.class);
-        when(replDirectionTbl.getFromDcId()).thenReturn(2L);
-        when(replDirectionTbl.getSrcDcId()).thenReturn(3L);
-        when(replDirectionService.findAllReplDirectionTblsByCluster(1L)).thenReturn(Lists.newArrayList(replDirectionTbl));
-
-        metaUpdate.addKeepers(clusterTbl, null, shardTbl, Lists.newArrayList(redisCreateInfo));
-        verify(metaUpdate).doAddKeepers("SHAOY", "cluster-test", shardTbl, "SHAJQ");
-    }
-
-    @Test
     public void addKeepersWithIsDRMasterDc() throws Exception {
         ClusterTbl clusterTbl = mock(ClusterTbl.class);
         when(clusterTbl.getClusterName()).thenReturn("cluster-test");
@@ -144,7 +112,7 @@ public class MetaUpdateTest2 {
         RedisCreateInfo redisCreateInfo = mock(RedisCreateInfo.class);
         when(redisCreateInfo.getDcId()).thenReturn("SHAJQ");
 
-        metaUpdate.addKeepers(clusterTbl, null, shardTbl, Lists.newArrayList(redisCreateInfo));
+        metaUpdate.addKeepers(clusterTbl, shardTbl, Lists.newArrayList(redisCreateInfo));
         verify(metaUpdate).doAddKeepers("SHAJQ", "cluster-test", shardTbl, "SHAJQ");
     }
 
