@@ -623,44 +623,24 @@ public class MetaUpdate extends AbstractConsoleController {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
             redisService.insertRedises(dcId, clusterName, shardName,
                     redisCreateInfo.getRedisAddresses());
-            addKeepers(clusterTbl, dcClusterTbls, shardTbl, redisCreateInfos);
+            addKeepers(clusterTbl, shardTbl, redisCreateInfos);
         }
     }
 
-    protected void addKeepers(ClusterTbl clusterTbl, List<DcClusterTbl> dcClusterTbls, ShardTbl shardTbl, List<RedisCreateInfo> redisCreateInfos) throws Exception {
+    protected void addKeepers(ClusterTbl clusterTbl, ShardTbl shardTbl, List<RedisCreateInfo> redisCreateInfos) throws Exception {
         if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
-            List<ReplDirectionTbl> replDirectionTbls = replDirectionService.findAllReplDirectionTblsByCluster(clusterTbl.getId());
             Map<String, DcClusterTbl> dcName2DcClusterTbl = new HashMap<>();
-            Map<Long, String> dcNameMap = dcService.dcNameMap();
 
             for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
                 String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
                 String clusterName = clusterTbl.getClusterName();
-                DcClusterTbl dcClusterTbl = null;
-                if(dcClusterTbls == null) {
-                    dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(), ignore-> dcClusterService.find(dcId, clusterName));
-                } else {
-                    for (DcClusterTbl tmp : dcClusterTbls) {
-                        if(dcId.equalsIgnoreCase(tmp.getDcName())) {
-                            dcClusterTbl = tmp;
-                        }
-                    }
-                }
+                DcClusterTbl dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(), ignore-> dcClusterService.find(dcId, clusterName));
+
                 if (dcClusterTbl == null) {
                     throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
                 }
-                final DcClusterTbl dcClusterFound = dcClusterTbl;
-                List<ReplDirectionTbl> replDirectionsOfFromDc = replDirectionTbls
-                        .stream()
-                        .filter(replDirectionTbl -> dcClusterFound.getDcId() == replDirectionTbl.getFromDcId())
-                        .collect(Collectors.toList());
                 if(dcClusterTbl.isGroupType()) {
                     doAddKeepers(dcId, clusterName, shardTbl, dcId);
-                } else if (!replDirectionsOfFromDc.isEmpty()) {
-                    Set<Long> srcDcIds = replDirectionsOfFromDc.stream().map(ReplDirectionTbl::getSrcDcId).collect(Collectors.toSet());
-                    for (Long srcDcId : srcDcIds) {
-                        doAddKeepers(dcNameMap.get(srcDcId), clusterName, shardTbl, dcId);
-                    }
                 }
             }
         }
@@ -803,13 +783,22 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @DalTransaction
-    public void doCreateReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirectionInfoModels) {
+    public void doCreateReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirectionInfoModels) throws Exception {
+        Map<String, DcClusterTbl> dcName2DcClusterTblMap = new HashMap<>();
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
             ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel);
             List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getSrcDcId(), clusterTbl.getId());
+            DcClusterTbl dcClusterTbl = dcName2DcClusterTblMap.computeIfAbsent(replDirectionInfoModel.getFromDcName().toUpperCase(), ignore -> dcClusterService.find(replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
+            if(dcClusterTbl == null) {
+               throw new CheckFailException(String.format("dc %s not exist in cluster %s", replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
+            }
             if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
                 for (ShardTbl shardTbl : allSrcDcShards) {
                     addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
+                    if(clusterType.supportKeeper() && !dcClusterTbl.isGroupType()) {
+                        doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
+                    }
                 }
             }
         }
