@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -29,9 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.LongStream;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -150,6 +150,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId());
+        info.setDcGroupType(DcGroupType.valueOf(clusterMeta.getDcGroupType()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);

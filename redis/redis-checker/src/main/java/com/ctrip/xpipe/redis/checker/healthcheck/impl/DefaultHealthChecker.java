@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -116,15 +117,11 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                // console monitors only cluster with active idc in current idc
-                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc())
-                        && !isClusterActiveIdcCurrentIdc(cluster)
-                        && !dcClusterIsMasterGroupType(cluster)) {
+                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
                     continue;
-                }
-                if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
+                if ((clusterType.supportMultiActiveDC() || dcClusterIsMasterType(cluster)) && !isClusterInCurrentIdc(cluster))
                     continue;
-                }
+
                 generateHealthCheckInstances(cluster);
             }
         }
@@ -155,9 +152,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return false;
     }
 
-    private boolean dcClusterIsMasterGroupType(ClusterMeta clusterMeta) {
-//        todo: cluster is hetero and current dc is master type
-        return false;
+    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
+        return clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
     }
 
 }

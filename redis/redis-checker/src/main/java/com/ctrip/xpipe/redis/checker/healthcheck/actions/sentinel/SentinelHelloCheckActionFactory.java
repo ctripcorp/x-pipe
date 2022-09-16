@@ -62,10 +62,11 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addListeners(collectorsByClusterType.get(clusterType));
-        action.addControllers(controllersByClusterType.get(clusterType));
+        action.addListeners(instance.getCheckInfo().getDcGroupType().isValue() ? collectorsByClusterType.get(clusterType) : collectorsByClusterType.get(ClusterType.SINGLE_DC));
+        action.addControllers(instance.getCheckInfo().getDcGroupType().isValue() ? controllersByClusterType.get(clusterType) : collectorsByClusterType.get(ClusterType.SINGLE_DC));
         return action;
     }
+
 
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -164,10 +165,9 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
-            return cluster.getActiveDc().equalsIgnoreCase(currentDcId) || dcClusterIsMasterGroupType(cluster);
-        }
-        if (clusterType.supportMultiActiveDC()) {
+        if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()))
+            return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
+        if ((clusterType.supportMultiActiveDC() || dcClusterIsMasterType(cluster))) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
             return Arrays.asList(dcs).contains(currentDcId.toLowerCase());
@@ -176,9 +176,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return true;
     }
 
-    private boolean dcClusterIsMasterGroupType(ClusterMeta clusterMeta) {
-//        todo: cluster is hetero and current dc is master type
-        return false;
+    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
+        return clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
     }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
