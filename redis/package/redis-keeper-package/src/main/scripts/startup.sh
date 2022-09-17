@@ -160,6 +160,11 @@ else
         USED_MEM=30720
         XMN=11520
         MAX_DIRECT=5120
+    elif [ $IDC = "UAT-AWS" ]; then
+        #MB
+        USED_MEM=6144
+        XMN=2400
+        MAX_DIRECT=300
     else
         #MB
         USED_MEM=1600
