@@ -150,7 +150,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId());
-        info.setDcGroupType(DcGroupType.valueOf(clusterMeta.getDcGroupType()));
+        info.setDcGroupType(DcGroupType.findByDesc(clusterMeta.getDcGroupType()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);

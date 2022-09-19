@@ -34,4 +34,14 @@ public enum DcGroupType {
         }
         throw new IllegalArgumentException("no DcGroupType for value " + value);
     }
+
+
+    public static DcGroupType findByDesc(String desc) {
+        for (DcGroupType dcGroupType : DcGroupType.values()) {
+            if (dcGroupType.desc.equalsIgnoreCase(desc)) {
+                return dcGroupType;
+            }
+        }
+        throw new IllegalArgumentException("no DcGroupType for desc " + desc);
+    }
 }
