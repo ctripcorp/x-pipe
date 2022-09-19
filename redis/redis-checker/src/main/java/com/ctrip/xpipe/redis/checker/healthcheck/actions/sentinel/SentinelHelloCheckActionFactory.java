@@ -68,7 +68,7 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addListeners(clusterType.equals(ClusterType.HETERO) ? getListenersForHetero(instance) : collectorsByClusterType.get(new Pair<>(clusterType, DcGroupType.DR_MASTER)));
-        action.addControllers(clusterType.equals(ClusterType.HETERO) ? getControllersForHetero(instance) : collectorsByClusterType.get(new Pair<>(clusterType, DcGroupType.DR_MASTER)));
+        action.addControllers(clusterType.equals(ClusterType.HETERO) ? getControllersForHetero(instance) : controllersByClusterType.get(new Pair<>(clusterType, DcGroupType.DR_MASTER)));
         return action;
     }
 
