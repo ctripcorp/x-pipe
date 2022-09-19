@@ -119,7 +119,9 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
                 if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
                     continue;
-                if ((clusterType.supportMultiActiveDC() || dcClusterIsMasterType(cluster)) && !isClusterInCurrentIdc(cluster))
+                if (dcClusterIsMasterType(cluster) && !clusterDcIsCurrentDc(cluster))
+                    continue;
+                if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster))
                     continue;
 
                 generateHealthCheckInstances(cluster);
@@ -152,8 +154,12 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return false;
     }
 
+    private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
+        return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+    }
+
     private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
-        return clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
+        return ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.HETERO) && clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
     }
 
 }
