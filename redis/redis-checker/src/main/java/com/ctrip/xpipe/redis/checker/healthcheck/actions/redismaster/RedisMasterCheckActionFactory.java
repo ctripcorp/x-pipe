@@ -19,7 +19,7 @@ import java.util.Map;
  * Oct 09, 2018
  */
 @Component
-public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
+public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, HeteroSupport {
 
     private Map<ClusterType, List<RedisMasterController>> controllersByClusterType;
 
