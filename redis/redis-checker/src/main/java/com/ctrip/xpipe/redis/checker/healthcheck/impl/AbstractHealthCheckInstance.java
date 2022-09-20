@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -44,6 +45,8 @@ public abstract class AbstractHealthCheckInstance<T extends CheckInfo> extends A
 
     @Override
     public void register(HealthCheckAction action) {
+        if (this instanceof ClusterHealthCheckInstance && instanceInfo.getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test register action, {}", action.getClass().getSimpleName());
         actions.add(action);
     }
 

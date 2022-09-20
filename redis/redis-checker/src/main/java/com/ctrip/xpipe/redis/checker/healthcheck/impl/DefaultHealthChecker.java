@@ -135,6 +135,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 instanceManager.getOrCreate(redis);
             }
         }
+        if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test {} generateHealthCheckInstances", clusterMeta.parent().getId());
         instanceManager.getOrCreate(clusterMeta);
     }
 

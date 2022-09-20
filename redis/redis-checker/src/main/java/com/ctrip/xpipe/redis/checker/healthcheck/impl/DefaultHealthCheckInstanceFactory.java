@@ -150,6 +150,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Override
     public ClusterHealthCheckInstance create(ClusterMeta clusterMeta) {
+        if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test {} create HealthCheckInstances", clusterMeta.parent().getId());
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
@@ -197,6 +199,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private void initActions(DefaultClusterHealthCheckInstance instance) {
+        if (instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test initActions");
         for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
             if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
                 installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
@@ -208,9 +212,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private void installActionIfNeeded(SiteLeaderAwareHealthCheckActionFactory factory, HealthCheckInstance instance) {
+        if (instance instanceof ClusterHealthCheckInstance && instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test installActionIfNeeded, {}",factory.getClass().getSimpleName());
         logger.debug("[try install action] {}", factory.support());
         if(clusterServer != null && clusterServer.amILeader()) {
             logger.debug("[cluster server not null][installed]");
+            if (instance instanceof ClusterHealthCheckInstance && instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
+                logger.info("xpipe-hetero-test isLeader,try create and register, {}", factory.getClass().getSimpleName());
             instance.register(factory.create(instance));
         }
     }

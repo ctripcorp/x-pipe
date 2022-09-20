@@ -63,6 +63,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
+        if (instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test create action, {}", getClass().getSimpleName());
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addListeners(instance.getCheckInfo().getDcGroupType().isValue() ? collectorsByClusterType.get(clusterType) : collectorsByClusterType.get(ClusterType.SINGLE_DC));
