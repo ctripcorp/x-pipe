@@ -127,8 +127,8 @@ then
     USED_MEM=`getSafeXmx`
     XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=1
-    META_SPACE=256
-    MAX_META_SPACE=256
+    META_SPACE=512
+    MAX_META_SPACE=512
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g  -XX:+AlwaysPreTouch -Xmn${XMN}g -XX:MaxDirectMemorySize=${MAX_DIRECT}g -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     #MB
