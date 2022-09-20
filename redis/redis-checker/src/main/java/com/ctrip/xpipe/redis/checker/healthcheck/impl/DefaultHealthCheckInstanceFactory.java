@@ -117,15 +117,20 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
-            for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
-                RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
-                if(redisCheckRuleMeta != null) {
-                    redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
-                    logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
-                            redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(),redisMeta.getIp(), redisMeta.getPort());
+        try {
+            if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
+                for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
+                    RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
+                    if (redisCheckRuleMeta != null) {
+                        redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
+                        logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
+                                redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(), redisMeta.getIp(), redisMeta.getPort());
+                    }
                 }
             }
+        } catch (Throwable th) {
+            logger.error("[createRedisInstanceInfo] add redis check rule to redis {}:{}",
+                    redisMeta.getIp(), redisMeta.getPort(), th);
         }
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
                 ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
