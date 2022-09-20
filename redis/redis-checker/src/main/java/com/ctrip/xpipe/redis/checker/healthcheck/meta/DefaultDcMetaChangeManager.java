@@ -167,7 +167,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         if (dcClusterIsMasterType(cluster))
             return clusterDcIsCurrentDc(cluster);
-        if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()))
+        if ((clusterType.supportSingleActiveDC() && !dcClusterIsMasterType(cluster) || clusterType.isCrossDc()))
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         if (clusterType.supportMultiActiveDC()) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;

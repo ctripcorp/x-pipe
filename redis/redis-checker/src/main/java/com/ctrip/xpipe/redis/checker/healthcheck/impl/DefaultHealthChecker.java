@@ -120,7 +120,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                     logger.info("xpipe-hetero-test {} try generateHealthCheckInstances", dcMeta.getId());
                 if (dcClusterIsMasterType(cluster) && !clusterDcIsCurrentDc(cluster))
                     continue;
-                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
+                if ((clusterType.supportSingleActiveDC() && !dcClusterIsMasterType(cluster) || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
                     continue;
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster))
                     continue;
@@ -160,7 +160,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         boolean result= clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
         if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
-            logger.info("xpipe-hetero-test {} {}  dcClusterIsMasterType {}", clusterMeta.parent().getId(),currentDcId,clusterMeta.getDcGroupType(),result);
+            logger.info("xpipe-hetero-test {} {}  dcClusterIsMasterType {}", clusterMeta.parent().getId(),currentDcId,result);
         return result;
     }
 
