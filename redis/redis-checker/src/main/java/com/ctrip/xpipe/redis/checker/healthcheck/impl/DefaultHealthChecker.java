@@ -116,7 +116,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
-
+                if (cluster.getId().equalsIgnoreCase("xpipe-hetero-test"))
+                    logger.info("xpipe-hetero-test {} try generateHealthCheckInstances", dcMeta.getId());
                 if (dcClusterIsMasterType(cluster) && !clusterDcIsCurrentDc(cluster))
                     continue;
                 if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
@@ -157,11 +158,17 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
-        return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+        boolean result= clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+        if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test {} {}  dcClusterIsMasterType {}", clusterMeta.parent().getId(),currentDcId,clusterMeta.getDcGroupType(),result);
+        return result;
     }
 
     private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
-        return ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.HETERO) && clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
+        boolean result = ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.HETERO) && clusterMeta.getDcGroupType().equals(DcGroupType.MASTER.getDesc());
+        if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
+            logger.info("xpipe-hetero-test {} {} {} dcClusterIsMasterType {}", clusterMeta.parent().getId(),clusterMeta.getType(),clusterMeta.getDcGroupType(),result);
+        return result;
     }
 
 }
