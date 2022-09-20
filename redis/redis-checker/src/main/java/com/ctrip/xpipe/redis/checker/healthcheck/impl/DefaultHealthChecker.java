@@ -117,9 +117,9 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
-                    continue;
                 if (dcClusterIsMasterType(cluster) && !clusterDcIsCurrentDc(cluster))
+                    continue;
+                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster))
                     continue;
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster))
                     continue;
