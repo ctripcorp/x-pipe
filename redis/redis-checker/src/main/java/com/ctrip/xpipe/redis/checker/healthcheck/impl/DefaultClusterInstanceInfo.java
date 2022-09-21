@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -12,8 +11,6 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements ClusterInstanceInfo {
 
     private int orgId;
-
-    private DcGroupType type;
 
     public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
         super(clusterId, activeDc, clusterType);
@@ -31,19 +28,8 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
     }
 
     @Override
-    public DcGroupType getDcGroupType() {
-        return type;
-    }
-
-    @Override
-    public ClusterInstanceInfo setDcGroupType(DcGroupType type) {
-        this.type = type;
-        return this;
-    }
-
-    @Override
     public String toString() {
-        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId);
+        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "dcGroupType:" + dcGroupType.getDesc());
     }
 
 }

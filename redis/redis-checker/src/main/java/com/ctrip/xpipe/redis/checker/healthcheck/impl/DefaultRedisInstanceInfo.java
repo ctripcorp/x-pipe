@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -27,8 +26,6 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     private boolean isMaster;
 
     private boolean crossRegion;
-
-    private DcGroupType dcGroupType;
 
     public DefaultRedisInstanceInfo() {
         super();
@@ -90,19 +87,9 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     }
 
     @Override
-    public void setDcGroupType(DcGroupType type) {
-        this.dcGroupType = type;
-    }
-
-    @Override
-    public DcGroupType dcGroupType() {
-        return this.dcGroupType;
-    }
-
-    @Override
     public String toString() {
         return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, isMaster ? "Master" : "Slave",
-                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal" ,dcGroupType);
+                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal" ,"dcGroupType:" + dcGroupType.getDesc());
     }
 
     public DefaultRedisInstanceInfo setCrossRegion(boolean crossRegion) {

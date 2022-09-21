@@ -76,7 +76,7 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
                         || clusterType.equals(ClusterType.LOCAL_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof LocalDcSupport
                         || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport
                         || clusterType.equals(ClusterType.CROSS_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof CrossDcSupport
-                        || clusterType.equals(ClusterType.HETERO) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof HeteroSupport)) {
+                        || clusterType.equals(ClusterType.HETERO) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport)) {
                     registerTo(instance);
                 }
             }

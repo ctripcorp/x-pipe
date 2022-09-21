@@ -118,21 +118,17 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        try {
-            if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
-                for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
-                    RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
-                    if (redisCheckRuleMeta != null) {
-                        redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
-                        logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
-                                redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(), redisMeta.getIp(), redisMeta.getPort());
-                    }
+        if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
+            for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
+                RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
+                if (redisCheckRuleMeta != null) {
+                    redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
+                    logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
+                            redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(), redisMeta.getIp(), redisMeta.getPort());
                 }
             }
-        } catch (Throwable th) {
-            logger.error("[createRedisInstanceInfo] add redis check rule to redis {}:{}",
-                    redisMeta.getIp(), redisMeta.getPort(), th);
         }
+
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
                 ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
                 ((ClusterMeta) redisMeta.parent().parent()).getId(),
@@ -151,8 +147,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Override
     public ClusterHealthCheckInstance create(ClusterMeta clusterMeta) {
-        if (clusterMeta.getId().equalsIgnoreCase("xpipe-hetero-test"))
-            logger.info("xpipe-hetero-test {} create HealthCheckInstances", clusterMeta.parent().getId());
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
@@ -200,8 +194,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private void initActions(DefaultClusterHealthCheckInstance instance) {
-        if (instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
-            logger.info("xpipe-hetero-test initActions");
         for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
             if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
                 installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
@@ -209,17 +201,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 instance.register(factory.create(instance));
             }
         }
-
     }
 
     private void installActionIfNeeded(SiteLeaderAwareHealthCheckActionFactory factory, HealthCheckInstance instance) {
-        if (instance instanceof ClusterHealthCheckInstance && instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
-            logger.info("xpipe-hetero-test installActionIfNeeded, {}",factory.getClass().getSimpleName());
         logger.debug("[try install action] {}", factory.support());
         if(clusterServer != null && clusterServer.amILeader()) {
             logger.debug("[cluster server not null][installed]");
-            if (instance instanceof ClusterHealthCheckInstance && instance.getCheckInfo().getClusterId().equalsIgnoreCase("xpipe-hetero-test"))
-                logger.info("xpipe-hetero-test isLeader,try create and register, {}", factory.getClass().getSimpleName());
             instance.register(factory.create(instance));
         }
     }
