@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
@@ -25,4 +26,8 @@ public interface RedisInstanceInfo extends CheckInfo {
     boolean isInActiveDc();
 
     boolean isCrossRegion();
+
+    void setDcGroupType(DcGroupType type);
+
+    DcGroupType dcGroupType();
 }

@@ -35,7 +35,7 @@ public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealt
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addControllers(controllersByClusterType.get(clusterType));
+        action.addControllers(instance.getCheckInfo().dcGroupType().isValue() ? controllersByClusterType.get(clusterType) : controllersByClusterType.get(ClusterType.SINGLE_DC));
         action.addListeners(listenersByClusterType.get(clusterType));
 
         return action;

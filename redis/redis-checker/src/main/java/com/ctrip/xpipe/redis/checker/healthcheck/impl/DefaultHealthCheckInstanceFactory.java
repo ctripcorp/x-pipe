@@ -100,6 +100,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
+        info.setDcGroupType(DcGroupType.findByDesc(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType()));
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
         HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig);
 
