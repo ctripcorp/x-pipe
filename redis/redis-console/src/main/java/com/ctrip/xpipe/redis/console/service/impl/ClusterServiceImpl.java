@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -246,7 +247,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		if(shards != null){
 			for (ShardModel shard : shards) {
-				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+				shardService.createShard(cluster.getClusterName(), shard.getShardTbl());
 			}
 		}
 
@@ -274,7 +275,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			for (Map.Entry<ShardTbl, List<DcClusterTbl>> shard2DcClustersEntry : shard2DcClustersMap.entrySet()) {
 				// create shard and dcClusterShard according to the dcClusterModel
 				shardService.findOrCreateShardIfNotExist(result.getClusterName(),
-						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue(), sentinelBalanceService.selectMultiDcSentinels(clusterType));
+						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue());
 			}
 		}
 
@@ -467,7 +468,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
 				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName()))
-					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType, dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER));
 				else
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
 			}

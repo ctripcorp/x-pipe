@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -17,7 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import sun.java2d.pipe.AAShapePipe;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -117,7 +115,7 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
 
         DcClusterTbl dcClusterTbl = dcClusterService.find("oy", "cluster7");
 
-        shardService.findOrCreateShardIfNotExist("cluster7", new ShardTbl().setShardName("shard3"), Lists.newArrayList(dcClusterTbl), null);
+        shardService.findOrCreateShardIfNotExist("cluster7", new ShardTbl().setShardName("shard3"), Lists.newArrayList(dcClusterTbl));
 
         ClusterTbl clusterTbl = clusterService.find("cluster7");
         List<ShardTbl> shards = shardService.findAllShardByDcCluster(dcClusterTbl.getDcId(), clusterTbl.getId());

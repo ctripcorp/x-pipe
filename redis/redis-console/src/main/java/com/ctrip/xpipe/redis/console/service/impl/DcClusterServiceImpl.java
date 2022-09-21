@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
@@ -224,7 +225,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		Map<Long, String> dcNameMap = dcService.dcNameMap();
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (ShardModel shard : dcClusterModel.getShards()) {
-			ShardTbl newShard = shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shard.getShardTbl(), null, null);
+			ShardTbl newShard = shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shard.getShardTbl(), null);
 
 			List<DcClusterShardTbl> relatedDcClusterShards = getRelatedDcClusterShards(newShard, relatedDcClusters, clusterTbl, dcNameMap);
 			dcClusterShardTbls.addAll(relatedDcClusterShards);
@@ -256,7 +257,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 			if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterTbl.getClusterName())) {
 				SentinelGroupModel sentinelGroupModel =
-						sentinelBalanceService.selectSentinel(dcNameMap.get(dcClusterTbl.getDcId()), clusterType);
+						sentinelBalanceService.selectSentinel(dcNameMap.get(dcClusterTbl.getDcId()), clusterType, dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
 				dcClusterShardTbl.setSetinelId(sentinelGroupModel == null ? 0L : sentinelGroupModel.getSentinelGroupId());
 			}
 			if (clusterType.isCrossDc()) {

@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -73,9 +72,6 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
-
-    @Autowired
-    private SentinelBalanceService sentinelBalanceService;
 
     @Autowired
     private DcClusterService dcClusterService;
@@ -421,7 +417,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ShardTbl shardTbl = new ShardTbl()
                         .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
                         .setShardName(shardCreateInfo.getShardName());
-                shardService.createShard(clusterName, shardTbl, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
+                shardService.createShard(clusterName, shardTbl);
                 successShards.add(shardCreateInfo.getShardName());
             } catch (Exception e) {
                 logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
@@ -616,7 +612,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
                 .setShardName(shardName);
-        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, dcClusterTbls);
 
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {

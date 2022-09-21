@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -57,6 +58,9 @@ public class SentinelUpdateController {
 
     @Autowired
     public DcClusterShardService dcClusterShardService;
+
+    @Autowired
+    public DcClusterService dcClusterService;
 
     @Autowired
     private DcService dcService;
@@ -466,7 +470,14 @@ public class SentinelUpdateController {
         String clusterType = clusterTbl.getClusterType();
         String clusterName = clusterTbl.getClusterName();
 
-        SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType));
+        SentinelGroupModel selected;
+        if (ClusterType.lookup(clusterType).equals(ClusterType.HETERO)) {
+            DcClusterTbl dcClusterTbl = dcClusterService.find(dcName, clusterName);
+            selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType), dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
+        } else {
+            selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType));
+        }
+
         if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
             return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
 

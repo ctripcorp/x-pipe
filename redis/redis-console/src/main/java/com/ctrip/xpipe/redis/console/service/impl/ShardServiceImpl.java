@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -69,6 +71,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
+
+	@Autowired
+	private SentinelBalanceService sentinelBalanceService;
 
 	@VisibleForTesting
 	public void setConsoleConfig(ConsoleConfig consoleConfig) {
@@ -127,10 +132,11 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	});
 	}
 
-	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels) {
+	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl, ShardTbl shard) {
 		DcClusterShardTbl dcClusterShardTbl = new DcClusterShardTbl();
 		dcClusterShardTbl.setDcClusterId(dcClusterTbl.getDcClusterId()).setShardId(shard.getId());
 		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+		Map<Long, SentinelGroupModel> sentinels = sentinelBalanceService.selectMultiDcSentinels(clusterType, dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
 		if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterTbl.getClusterName())) {
 			SentinelGroupModel sentinelGroupModel = sentinels == null ? null : sentinels.get(dcClusterTbl.getDcId());
 			dcClusterShardTbl.setSetinelId(sentinelGroupModel == null ? 0L : sentinelGroupModel.getSentinelGroupId());
@@ -145,8 +151,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@Override
-	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard,
-											 final Map<Long, SentinelGroupModel> sentinels) {
+	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard) {
 		ShardTbl shardTbl = queryHandler.handleQuery(new DalQuery<ShardTbl>() {
 			@Override
 			public ShardTbl doQuery() throws DalException {
@@ -158,7 +163,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
 		dcClusterShardService.insertBatch(dcClusterShardTbls);
@@ -168,8 +173,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 
 	@Override
-	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
-															 List<DcClusterTbl> dcClusterTbls, Map<Long, SentinelGroupModel> sentinels) {
+	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard, List<DcClusterTbl> dcClusterTbls) {
 
 		logger.info("[findOrCreateShardIfNotExist] Begin find or create shard: {}", shard);
 		String monitorName = shard.getSetinelMonitorName();
@@ -207,7 +211,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			DcClusterShardTbl exits = dcClusterShardService.find(dcClusterTbl.getDcClusterId(), shard.getId());
 			if (exits != null) continue;
 
-			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
 		if(!dcClusterShardTbls.isEmpty()) {
