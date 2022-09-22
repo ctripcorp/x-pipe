@@ -132,11 +132,10 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	});
 	}
 
-	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl, ShardTbl shard) {
+	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl, ShardTbl shard, final Map<Long, SentinelGroupModel> sentinels) {
 		DcClusterShardTbl dcClusterShardTbl = new DcClusterShardTbl();
 		dcClusterShardTbl.setDcClusterId(dcClusterTbl.getDcClusterId()).setShardId(shard.getId());
 		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
-		Map<Long, SentinelGroupModel> sentinels = sentinelBalanceService.selectMultiDcSentinels(clusterType, dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
 		if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterTbl.getClusterName())) {
 			SentinelGroupModel sentinelGroupModel = sentinels == null ? null : sentinels.get(dcClusterTbl.getDcId());
 			dcClusterShardTbl.setSetinelId(sentinelGroupModel == null ? 0L : sentinelGroupModel.getSentinelGroupId());
@@ -148,6 +147,27 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 
 		return dcClusterShardTbl;
+	}
+
+	@Override
+	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard, final Map<Long, SentinelGroupModel> sentinels) {
+		ShardTbl shardTbl = queryHandler.handleQuery(new DalQuery<ShardTbl>() {
+			@Override
+			public ShardTbl doQuery() throws DalException {
+				return shardDao.createShard(clusterName, shard);
+			}
+		});
+
+		ClusterTbl clusterTbl = clusterService.find(clusterName);
+		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
+		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
+			dcClusterShardTbls.add(dcClusterShardTbl);
+		}
+		dcClusterShardService.insertBatch(dcClusterShardTbls);
+
+		return shardTbl;
 	}
 
 	@Override
@@ -163,7 +183,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard);
+			Map<Long, SentinelGroupModel> sentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType()), dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
 		dcClusterShardService.insertBatch(dcClusterShardTbls);
@@ -210,8 +231,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
 			DcClusterShardTbl exits = dcClusterShardService.find(dcClusterTbl.getDcClusterId(), shard.getId());
 			if (exits != null) continue;
-
-			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard);
+			Map<Long, SentinelGroupModel> sentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType()), dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
 		if(!dcClusterShardTbls.isEmpty()) {
