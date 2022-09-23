@@ -118,8 +118,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private ExecutorService clientExecutors;
 
-    private static final int DEFAULT_SCHEDULED_CORE_POOL_SIZE = 1;
-
     //TODO change value
     private static final int DEFAULT_KEYED_CLIENT_POOL_SIZE = 100;
 
@@ -147,7 +145,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE,
+        scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE));
