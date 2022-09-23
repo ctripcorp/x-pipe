@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
@@ -11,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -27,22 +27,22 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @InstanceDependency
     public AtomicReference<GtidSet> gtidSet;
 
+    @InstanceDependency
+    public ScheduledExecutorService stateThread;
+
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
     SequenceCommand<?> obstacle;
 
-    ExecutorService stateThread;
     ExecutorService workerThreads;
 
     @Override
     protected void doInitialize() throws Exception {
-        stateThread = Executors.newSingleThreadExecutor();
         workerThreads = Executors.newFixedThreadPool(8);
     }
 
     @Override
     protected void doDispose() throws Exception {
-        stateThread.shutdown();
         workerThreads.shutdown();
     }
 
@@ -50,6 +50,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public void submit(RedisOpCommand<?> command) {
 
         stateThread.execute(()->{
+            if (logger.isDebugEnabled()) {
+                logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
+            }
             switch (command.type()) {
                 case SINGLE_KEY:
                     submitSingleKeyCommand((RedisOpDataCommand<?>) command);
