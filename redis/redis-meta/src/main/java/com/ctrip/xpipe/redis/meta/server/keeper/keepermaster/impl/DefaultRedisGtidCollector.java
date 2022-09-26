@@ -69,7 +69,7 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
         if (!dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
             String currentDc = dcMetaCache.getCurrentDc();
-            String srcDcName = dcMetaCache.getUpstreamDc(currentDc, clusterDbId, shardDbId);
+            String srcDcName = dcMetaCache.getSrcDc(currentDc, clusterDbId, shardDbId);
             String srcSids = multiDcService.getSids(currentDc, srcDcName, clusterDbId, shardDbId);
 
             String currentSrcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
