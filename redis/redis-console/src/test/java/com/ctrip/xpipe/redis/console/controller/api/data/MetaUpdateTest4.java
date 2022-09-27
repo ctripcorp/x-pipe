@@ -217,6 +217,13 @@ public class MetaUpdateTest4 {
         ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(replDirectionId).setSrcDcId(dcId1);
         doAnswer(invocationOnMock -> replDirectionTbl).when(replDirectionService).addReplDirectionByInfoModel(anyString(), any());
         doAnswer(invocationOnMock -> null).when(metaUpdate).addAppliers(anyString(), anyString(), any(), anyLong());
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+
+        DcClusterTbl dcClusterTbl1 = mock(DcClusterTbl.class);
+        when(dcClusterTbl1.getDcId()).thenReturn(dcId1);
+        when(dcClusterTbl1.isGroupType()).thenReturn(true);
+        when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl1);
 
         metaUpdate.createReplDirections(clusterName, Lists.newArrayList(replDirectionCreateInfo1));
         verify(metaUpdate).addAppliers(dc2, clusterName, shardTbl1, replDirectionId);
