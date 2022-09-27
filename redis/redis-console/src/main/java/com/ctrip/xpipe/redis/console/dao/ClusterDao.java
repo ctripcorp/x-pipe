@@ -78,7 +78,9 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			// related dc-cluster
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
-			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId());
+			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId())
+					// active dc is drMaster
+					.setGroupType(true);
 
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
