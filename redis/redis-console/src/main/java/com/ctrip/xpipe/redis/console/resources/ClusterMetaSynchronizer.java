@@ -12,11 +12,11 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterSyncMetaComparator;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -137,7 +137,11 @@ public class ClusterMetaSynchronizer {
         if (clusterType.supportSingleActiveDC()) {
             clusterTbl.setActivedcId(currentDcId);
         }else{
-            clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
+            List<DcClusterModel> dcClusterModels = new LinkedList<>();
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(DcMetaSynchronizer.currentDcId);
+            dcClusterModels.add(new DcClusterModel().setDc(dcModel));
+            clusterModel.setDcClusters(dcClusterModels);
         }
 
         logger.info("[ClusterMetaSynchronizer][createCluster]{}", toAdd);

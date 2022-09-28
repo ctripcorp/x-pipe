@@ -111,7 +111,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
-        Map<String, DcTbl> dcName2DcTblMap = new LinkedHashMap<>();
+        Map<String, DcClusterModel> dcName2DcClusterModelMap = new LinkedHashMap<>();
         try {
             clusterCreateInfo.check();
 
@@ -119,30 +119,33 @@ public class MetaUpdate extends AbstractConsoleController {
             if (clusterTbl != null) {
                 return RetMessage.createFailMessage(String.format("cluster:%s already exist", clusterCreateInfo.getClusterName()));
             }
+
             for (String dcName : clusterCreateInfo.getDcs()) {
                 DcTbl dcTbl = dcService.find(dcName);
                 if (dcTbl == null) {
                     return RetMessage.createFailMessage("dc not exist:" + dcName);
                 }
-                dcName2DcTblMap.put(dcName, dcTbl);
+                DcModel dcModel = new DcModel();
+                dcModel.setDc_name(dcName);
+                dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel));
             }
             if(clusterCreateInfo.getDcDetails() != null) {
                 for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {
                     String dcId = dcDetail.getDcId();
-                    if(!dcName2DcTblMap.containsKey(dcId)) {
+                    if(!dcName2DcClusterModelMap.containsKey(dcId)) {
                         return RetMessage.createFailMessage("dcs not contains dc detail info :" + dcDetail);
                     }
                     DcClusterTbl dcClusterTbl = new DcClusterTbl().setGroupType(true).setGroupName(dcDetail.getDcGroupName());
                     if(dcDetail.getDcGroupType() != null) {
                         dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()));
                     }
-                    dcName2DcTblMap.get(dcId).setDcClusterInfo(dcClusterTbl);
+                    dcName2DcClusterModelMap.get(dcId).setDcCluster(dcClusterTbl);
                 }
             }
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
-        List<DcTbl> dcs = new LinkedList<>(dcName2DcTblMap.values());
+        List<DcClusterModel> dcClusters = new LinkedList<>(dcName2DcClusterModelMap.values());
 
         ClusterModel clusterModel = new ClusterModel();
         ClusterType clusterType = ClusterType.lookup(clusterCreateInfo.getClusterType());
@@ -154,7 +157,7 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createFailMessage(e.getMessage());
         }
 
-        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcs.get(0).getId();
+        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcService.find(clusterCreateInfo.getDcs().get(0)).getId();
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(activeDcId)
                 .setClusterName(clusterCreateInfo.getClusterName())
@@ -167,7 +170,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
 
         try {
-            clusterModel.setDcs(dcs);
+            clusterModel.setDcClusters(dcClusters);
             clusterService.createCluster(clusterModel);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {

@@ -88,8 +88,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterAdminEmails("test@ctrip.com")
                 .setClusterDescription(randomString(20))
         );
-
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters.add(new DcClusterModel().setDc(dcModel));
+        });
+        clusterModel.setDcClusters(dcClusters);
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -107,7 +112,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDescription(randomString(20))
                 .setClusterDesignatedRouteIds("1,2")
         );
-        clusterModel.setDcs(dcTbls);
+        clusterModel.setDcClusters(dcClusters);
         clusterService.createCluster(clusterModel);
         clusterTbl = clusterService.find(clusterName2);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -168,7 +173,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
         clusterModel.setReplDirections(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
 
-        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName("oy"), new DcTbl().setDcName("fra"), new DcTbl().setDcName("jq")));
+//        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName("oy"), new DcTbl().setDcName("fra"), new DcTbl().setDcName("jq")));
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -722,6 +727,14 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterAdminEmails("test@ctrip.com")
                 .setClusterDescription(randomString(20))
         );
+
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters.add(new DcClusterModel().setDc(dcModel));
+        });
+        clusterModel.setDcClusters(dcClusters);
 
         clusterModel.setDcs(dcTbls);
         clusterService.createCluster(clusterModel);
