@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionTbl;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ReplDirectionService {
 
@@ -28,9 +29,17 @@ public interface ReplDirectionService {
 
     List<ReplDirectionInfoModel> findAllReplDirectionInfoModelsByCluster(String clusterName);
 
-    void updateClusterReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirections);
-
     void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections);
 
+    void createReplDirectionBatch(List<ReplDirectionTbl> replDirections);
+
     void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirectionTbls);
+
+    void validateReplDirection(ClusterTbl cluster, List<ReplDirectionTbl> replDirectionTbls);
+
+    List<ReplDirectionTbl> convertReplDirectionInfoModelsToReplDirectionTbls(
+            List<ReplDirectionInfoModel> replDirections, Map<String, Long> dcNameIdMap);
+
+    ReplDirectionTbl convertReplDirectionInfoModelToReplDirectionTbl(ReplDirectionInfoModel replDirection,
+                                                                     Map<String, Long> dcNameIdMap);
 }
