@@ -317,21 +317,24 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             throw new IllegalArgumentException("req cmd miss storeExcluded:" + storeExcludedGtidSet + " reqExcluded:" + excludedGtidSet);
         }
 
+        CommandFileOffsetGtidIndex preIndex = startIndex;
+        boolean contained = true;
         while (indexIterator.hasNext()) {
             CommandFileOffsetGtidIndex index = indexIterator.next();
-            GtidSet includedGtidSet = index.getExcludedGtidSet().filterGtid(interestedSrcIds)
-                    .subtract(startIndex.getExcludedGtidSet());
-            if (!includedGtidSet.isContainedWithin(excludedGtidSet)) {
-                endIndex = index;
-                if (!indexIterator.hasNext()) {
-                    // right bound open
-                    endIndex = null;
+            GtidSet gtidSetBetweenIndex = index.getExcludedGtidSet().filterGtid(interestedSrcIds)
+                    .subtract(preIndex.getExcludedGtidSet());
+
+            if (gtidSetBetweenIndex.isContainedWithin(excludedGtidSet)) {
+                if (!contained) {
+                    endIndex = preIndex;
+                    break;
                 }
-            } else if (null == endIndex) {
                 startIndex = index;
             } else {
-                break;
+                contained = false;
             }
+
+            preIndex = index;
         }
 
         return new CommandFileSegment(startIndex, endIndex);
