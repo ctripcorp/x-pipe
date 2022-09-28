@@ -264,10 +264,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public CommandFile findFileForOffset(long targetStartOffset) throws IOException {
+        //TODO ayq delete log
         File[] files = baseDir.listFiles(cmdFileFilter);
+        getLogger().info("baseDir={}, fileNum={}", baseDir, files.length);
         if (files != null) {
             for (File file : files) {
                 long startOffset = extractStartOffset(file);
+                //TODO ayq delete log
+                getLogger().info("[findFileForOffset] targetStartOffset={}, startOffset={}, file length={}, maxFileSize={}",
+                        targetStartOffset, startOffset, file.length(), maxFileSize);
                 if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length()
                         || targetStartOffset < startOffset + maxFileSize)) {
                     return new CommandFile(file, startOffset);
@@ -314,7 +319,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             getLogger().info("[findFirstFileSegment] startIndex=null, iterate to next");
             startIndex = indexIterator.next();
         }
-        getLogger().info("[findFirstFileSegment],startIndex={}", startIndex.getExcludedGtidSet());
+        getLogger().info("[findFirstFileSegment],startIndex={},fileName={}", startIndex.getExcludedGtidSet(), startIndex.getCommandFile().getFile().getName());
         CommandFileOffsetGtidIndex endIndex = null;
 
         GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
@@ -358,6 +363,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         CommandFile firstCommandFile = findFileForOffset(0L);
         if (null == firstCommandFile) return null;
 
+        //TODO ayq delete
+        getLogger().info("[getBaseIndex]baseGtidSet={}", getBaseGtidSet());
         return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, 0);
     }
 
