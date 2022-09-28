@@ -308,7 +308,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         Set<String> interestedSrcIds = excludedGtidSet.getUUIDs();
         Iterator<CommandFileOffsetGtidIndex> indexIterator = cmdIndexList.iterator();
         CommandFileOffsetGtidIndex startIndex = getBaseIndex();
-        if (null == startIndex) startIndex = indexIterator.next();
+        //TODO ayq delete logs
+        getLogger().info("[findFirstFileSegment],excluededGtidSet={}", excludedGtidSet);
+        if (null == startIndex) {
+            getLogger().info("[findFirstFileSegment] startIndex=null, iterate to next");
+            startIndex = indexIterator.next();
+        }
+        getLogger().info("[findFirstFileSegment],startIndex={}", startIndex.getExcludedGtidSet());
         CommandFileOffsetGtidIndex endIndex = null;
 
         GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
