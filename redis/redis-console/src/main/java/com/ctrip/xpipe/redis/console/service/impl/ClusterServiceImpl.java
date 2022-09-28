@@ -209,11 +209,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
-
+		String activeDcName = null;
 		if (clusterType.supportMultiActiveDC()) {
 			proto.setActivedcId(0L);
 		} else {
 			proto.setActivedcId(cluster.getActivedcId());
+			activeDcName = dcService.getDcName(cluster.getActivedcId());
 		}
 		if(!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
@@ -229,18 +230,49 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		if(allDcs != null){
-			for(DcTbl dc : allDcs) {
-				// single active dc cluster bind active dc when create
-				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
-				DcClusterTbl dcClusterInfo = dc.getDcClusterInfo();
-				DcClusterTbl dcProto =
-						dcClusterInfo == null ? new DcClusterTbl()
-								.setClusterName(cluster.getClusterName())
-								.setDcName(dc.getDcName())
-								.setGroupType(true) : dcClusterInfo;
+//		if(allDcs != null){
+//			for(DcTbl dc : allDcs) {
+//				// single active dc cluster bind active dc when create
+//				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
+//				DcClusterTbl dcClusterInfo = dc.getDcClusterInfo();
+//				DcClusterTbl dcProto =
+//						dcClusterInfo == null ? new DcClusterTbl()
+//								.setClusterName(cluster.getClusterName())
+//								.setDcName(dc.getDcName())
+//								.setGroupType(true) : dcClusterInfo;
+//
+//				bindDc(dcProto);
+//			}
+//		}
 
-				bindDc(dcProto);
+		if (dcClusters != null) {
+			Map<ShardTbl, List<DcClusterTbl>> shard2DcClustersMap = new HashMap<>();
+
+			for (DcClusterModel dcCluster : dcClusters) {
+				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
+				if (dcTbl == null) {
+					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
+				}
+				// single active dc cluster bind active dc when create
+				if (!clusterType.supportSingleActiveDC() || dcTbl.getId() != cluster.getActivedcId()) {
+					DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
+					DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl().setGroupType(true) : dcClusterInfo;
+					dcProto.setClusterName(cluster.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
+					bindDc(dcProto);
+				}
+				DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), cluster.getClusterName());
+				if (dcCluster.getShards() != null) {
+					dcCluster.getShards().forEach(shardModel ->
+							shard2DcClustersMap
+									.computeIfAbsent(shardModel.getShardTbl(), ignore -> new LinkedList<>())
+									.add(dcClusterTbl));
+				}
+			}
+
+			for (Map.Entry<ShardTbl, List<DcClusterTbl>> shard2DcClustersEntry : shard2DcClustersMap.entrySet()) {
+				// create shard and dcClusterShard according to the dcClusterModel
+				shardService.findOrCreateShardIfNotExist(result.getClusterName(),
+						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue(), sentinelBalanceService.selectMultiDcSentinels(clusterType));
 			}
 		}
 
@@ -253,28 +285,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (replDirections != null) {
 			for (ReplDirectionInfoModel replDirection : replDirections) {
 				replDirectionService.addReplDirectionByInfoModel(cluster.getClusterName(), replDirection);
-			}
-		}
-
-		if (dcClusters != null) {
-			Map<ShardTbl, List<DcClusterTbl>> shard2DcClustersMap = new HashMap<>();
-
-			for (DcClusterModel dcCluster : dcClusters) {
-				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
-				if (dcTbl == null) {
-					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
-				}
-				DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), cluster.getClusterName());
-				dcCluster.getShards().forEach(shardModel ->
-						shard2DcClustersMap
-								.computeIfAbsent(shardModel.getShardTbl(), ignore->new LinkedList<>())
-								.add(dcClusterTbl));
-			}
-
-			for (Map.Entry<ShardTbl, List<DcClusterTbl>> shard2DcClustersEntry : shard2DcClustersMap.entrySet()) {
-				// create shard and dcClusterShard according to the dcClusterModel
-				shardService.findOrCreateShardIfNotExist(result.getClusterName(),
-						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue(), sentinelBalanceService.selectMultiDcSentinels(clusterType));
 			}
 		}
 

@@ -5,15 +5,13 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +37,9 @@ public class ClusterController extends AbstractConsoleController {
     private DcClusterService dcClusterService;
     @Autowired
     private ClusterHealthMonitorManager clusterHealthMonitorManager;
+    @Autowired
+    private ReplDirectionService replDirectionService;
+
 
     private static final String DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT
             = "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s";
@@ -139,6 +140,15 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters", method = RequestMethod.POST)
     public ClusterTbl createCluster(@RequestBody ClusterModel cluster) {
         logger.info("[Create Cluster]{}", cluster);
+        if (cluster.getDcs() != null) {
+            List<DcClusterModel> dcClusters = new ArrayList<>();
+            cluster.getDcs().forEach(dcTbl -> {
+                DcModel dcModel = new DcModel();
+                dcModel.setDc_name(dcTbl.getDcName());
+                dcClusters.add(new DcClusterModel().setDc(dcModel));
+            });
+            cluster.setDcClusters(dcClusters);
+        }
         return clusterService.createCluster(cluster);
     }
 
@@ -248,5 +258,6 @@ public class ClusterController extends AbstractConsoleController {
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
+
 
 }

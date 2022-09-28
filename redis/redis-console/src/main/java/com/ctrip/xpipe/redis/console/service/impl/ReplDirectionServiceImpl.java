@@ -33,7 +33,8 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         @Override
         public int compare(ReplDirectionTbl o1, ReplDirectionTbl o2) {
             if (o1 != null && o2 != null
-                    && ObjectUtils.equals(o1.getId(), o2.getId())) {
+                    && ObjectUtils.equals(o1.getId(), o2.getId())
+                    && ObjectUtils.equals(o1.getTargetClusterName(), o2.getTargetClusterName())) {
                 return 0;
             }
             return -1;

@@ -16,7 +16,7 @@ public class ClusterModel implements java.io.Serializable{
 	 * */
 
 	/* version 1*/
-	private List<DcTbl> dcs;
+	private List<DcTbl> dcs; /* deprecated */
 	private List<ShardModel> shards;
 
 	/* version 2*/
