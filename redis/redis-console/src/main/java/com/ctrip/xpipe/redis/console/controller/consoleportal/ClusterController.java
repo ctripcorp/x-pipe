@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -12,6 +14,8 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
+import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +44,20 @@ public class ClusterController extends AbstractConsoleController {
     @Autowired
     private ReplDirectionService replDirectionService;
 
+    private SetOperationUtil setOperator = new SetOperationUtil();
+
+
+    private Comparator<ReplDirectionTbl> replDirectionTblComparator = new Comparator<ReplDirectionTbl>() {
+        @Override
+        public int compare(ReplDirectionTbl o1, ReplDirectionTbl o2) {
+            if (o1 != null && o2 != null
+                    && ObjectUtils.equals(o1.getId(), o2.getId())
+                    && ObjectUtils.equals(o1.getTargetClusterName(), o2.getTargetClusterName())) {
+                return 0;
+            }
+            return -1;
+        }
+    };
 
     private static final String DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT
             = "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s";
@@ -156,6 +174,10 @@ public class ClusterController extends AbstractConsoleController {
     public void updateCluster(@PathVariable String clusterName, @RequestBody ClusterModel cluster) {
         logger.info("[Update Cluster]{},{}", clusterName, cluster);
         clusterService.updateCluster(clusterName, cluster);
+
+        if (cluster.getReplDirections() != null) {
+            updateClusterReplDirections(cluster.getClusterTbl(), cluster.getReplDirections());
+        }
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
@@ -177,7 +199,7 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/allBind/{dcName}", method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByDcNameBind(@PathVariable String dcName){
+    public List<ClusterTbl> findClustersByDcNameBind(@PathVariable String dcName) {
         logger.info("[findClustersByDcId]dcName: {}", dcName);
         return clusterService.findAllClusterByDcNameBind(dcName);
     }
@@ -189,7 +211,7 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByActiveDcName(@PathVariable String dcName){
+    public List<ClusterTbl> findClustersByActiveDcName(@PathVariable String dcName) {
         logger.info("[findClustersByActiveDcName]dcName: {}", dcName);
         return clusterService.findActiveClustersByDcName(dcName);
     }
@@ -201,7 +223,7 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/master/unhealthy/{level}", method = RequestMethod.GET)
-    public Set<String> getMasterUnhealthyClusters(@PathVariable  String level) {
+    public Set<String> getMasterUnhealthyClusters(@PathVariable String level) {
         logger.info("[getMasterUnhealthyClusters]level: {}", level);
         ClusterHealthState state = null;
         try {
@@ -209,7 +231,7 @@ public class ClusterController extends AbstractConsoleController {
         } catch (Exception e) {
             logger.error("[getMasterUnhealthyClusters] level not matched: {}", level);
         }
-        if(state != null) {
+        if (state != null) {
             return clusterHealthMonitorManager.getWarningClusters(state);
         }
         return Sets.newHashSet();
@@ -225,17 +247,17 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/cluster/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/{clusterType}", method = RequestMethod.GET)
     public RetMessage getClusterHickwallUrl(@PathVariable String clusterName, @PathVariable String clusterType) {
         String hickwallAddress = config.getHickwallClusterMetricFormat().get(clusterType.toLowerCase());
-        if(StringUtil.isEmpty(hickwallAddress)) hickwallAddress = DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT;
+        if (StringUtil.isEmpty(hickwallAddress)) hickwallAddress = DEFAULT_HICKWALL_CLUSTER_METRIC_FORMAT;
         return RetMessage.createSuccessMessage(String.format(hickwallAddress, clusterName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/default-routes/{srcDcName}", method = RequestMethod.GET)
-    public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
+    public List<RouteInfoModel> getClusterDefaultRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
         return clusterService.findClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/used-routes/{srcDcName}", method = RequestMethod.GET)
-    public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
+    public List<RouteInfoModel> getClusterUsedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
         return clusterService.findClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
@@ -248,7 +270,7 @@ public class ClusterController extends AbstractConsoleController {
     public RetMessage updateClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable String srcDcName,
                                                                  @RequestBody(required = false) List<RouteInfoModel> newDesignatedRoutes) {
         try {
-            if(newDesignatedRoutes == null) newDesignatedRoutes = new ArrayList<>();
+            if (newDesignatedRoutes == null) newDesignatedRoutes = new ArrayList<>();
 
             clusterService.updateClusterDesignateRoutes(clusterName, srcDcName, newDesignatedRoutes);
             return RetMessage.createSuccessMessage();
@@ -260,4 +282,55 @@ public class ClusterController extends AbstractConsoleController {
     }
 
 
+    protected void updateClusterReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirections) {
+        if (clusterTbl == null) {
+            throw new BadRequestException("[updateClusterReplDirections] cluster can not be null!");
+        }
+        Map<String, Long> dcNameIdMap = dcService.dcNameIdMap();
+
+        List<ReplDirectionTbl> originReplDirections = replDirectionService.findAllReplDirectionTblsByCluster(clusterTbl.getId());
+        List<ReplDirectionTbl> targetReplDirections =
+                replDirectionService.convertReplDirectionInfoModelsToReplDirectionTbls(replDirections, dcNameIdMap);
+
+        replDirectionService.validateReplDirection(clusterTbl, targetReplDirections);
+        updateClusterReplDirections(originReplDirections, targetReplDirections);
+    }
+
+
+    private void updateClusterReplDirections(List<ReplDirectionTbl> originReplDirections,
+                                             List<ReplDirectionTbl> targetReplDirections) {
+
+        List<ReplDirectionTbl> toCreate = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
+                targetReplDirections, originReplDirections, replDirectionTblComparator);
+
+        List<ReplDirectionTbl> toDelete = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
+                originReplDirections, targetReplDirections, replDirectionTblComparator);
+
+        List<ReplDirectionTbl> toUpdate = (List<ReplDirectionTbl>) setOperator.intersection(ReplDirectionTbl.class,
+                originReplDirections, targetReplDirections, replDirectionTblComparator);
+
+        try {
+            handleUpdateReplDirecitons(toCreate, toDelete, toUpdate);
+        } catch (Exception e) {
+            throw new ServerException(e.getMessage());
+        }
+    }
+
+    private void handleUpdateReplDirecitons(List<ReplDirectionTbl> toCreate, List<ReplDirectionTbl> toDelete,
+                                            List<ReplDirectionTbl> toUpdate) {
+        if (toCreate != null && !toCreate.isEmpty()) {
+            logger.info("[updateClusterReplDirections] create repl direction {}", toCreate);
+            replDirectionService.createReplDirectionBatch(toCreate);
+        }
+
+        if (toDelete != null && !toDelete.isEmpty()) {
+            logger.info("[updateClusterReplDirections] delete repl direction {}", toDelete);
+            replDirectionService.deleteReplDirectionBatch(toDelete);
+        }
+
+        if (toUpdate != null && !toUpdate.isEmpty()) {
+            logger.info("[updateClusterReplDirections] update repl direction {}", toUpdate);
+            replDirectionService.updateReplDirectionBatch(toUpdate);
+        }
+    }
 }
