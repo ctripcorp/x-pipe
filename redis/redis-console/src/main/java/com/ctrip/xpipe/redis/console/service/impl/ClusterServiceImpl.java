@@ -211,12 +211,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
-		String activeDcName = null;
 		if (clusterType.supportMultiActiveDC()) {
 			proto.setActivedcId(0L);
 		} else {
 			proto.setActivedcId(cluster.getActivedcId());
-			activeDcName = dcService.getDcName(cluster.getActivedcId());
 		}
 		if(!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");

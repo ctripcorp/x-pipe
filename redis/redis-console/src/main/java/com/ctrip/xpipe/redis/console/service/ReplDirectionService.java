@@ -15,11 +15,9 @@ public interface ReplDirectionService {
 
     List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId);
 
-    ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName,
-                                                                         String srcDcName, String toDcName);
+    ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName);
 
-    ReplDirectionTbl findByClusterAndSrcToDc(String clusterName,
-                                             String srcDcName, String toDcName);
+    ReplDirectionTbl findByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName);
 
     List<ReplDirectionInfoModel> findReplDirectionInfoModelsByClusterAndToDc(String cluterName, String toDcName);
 
@@ -37,9 +35,7 @@ public interface ReplDirectionService {
 
     void validateReplDirection(ClusterTbl cluster, List<ReplDirectionTbl> replDirectionTbls);
 
-    List<ReplDirectionTbl> convertReplDirectionInfoModelsToReplDirectionTbls(
-            List<ReplDirectionInfoModel> replDirections, Map<String, Long> dcNameIdMap);
+    List<ReplDirectionTbl> convertReplDirectionInfoModelsToReplDirectionTbls(List<ReplDirectionInfoModel> replDirections, Map<String, Long> dcNameIdMap);
 
-    ReplDirectionTbl convertReplDirectionInfoModelToReplDirectionTbl(ReplDirectionInfoModel replDirection,
-                                                                     Map<String, Long> dcNameIdMap);
+    ReplDirectionTbl convertReplDirectionInfoModelToReplDirectionTbl(ReplDirectionInfoModel replDirection, Map<String, Long> dcNameIdMap);
 }
