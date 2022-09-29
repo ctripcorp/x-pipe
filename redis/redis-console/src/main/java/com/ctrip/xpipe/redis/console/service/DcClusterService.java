@@ -14,8 +14,10 @@ public interface DcClusterService {
 	void updateDcCluster(DcClusterCreateInfo dcClusterCreateInfo);
 	List<DcClusterTbl> findAllDcClusters();
 	DcClusterTbl addDcCluster(String dcName, String clusterName);
-    void updateDcClustersByDcClusterModels(List<DcClusterModel> dcClusterModels, ClusterTbl clusterTbl);
-    DcClusterTbl addDcCluster(String dcName, String clusterName, String redisConfigRule);
+	List<DcClusterModel> findRelatedDcClusterModels(long clusterId);
+	void validateDcClusters(List<DcClusterModel> dcClusterModels, ClusterTbl clusterTbl);
+	List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, boolean isDRMaster);
+	DcClusterTbl addDcCluster(String dcName, String clusterName, String redisConfigRule);
 	List<DcClusterTbl> findByClusterIds(List<Long> clusterIds);
 	List<DcClusterTbl> findAllByDcId(long dcId);
 	List<DcClusterTbl> findClusterRelated(long clusterId);

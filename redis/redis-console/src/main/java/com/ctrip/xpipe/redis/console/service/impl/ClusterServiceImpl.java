@@ -51,6 +51,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private RouteDao routeDao;
 	@Autowired
+	private ApplierService applierService;
+	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
 	@Autowired
 	private ShardService shardService;
@@ -229,21 +231,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				return clusterDao.createCluster(queryProto);
 			}
 		});
-
-//		if(allDcs != null){
-//			for(DcTbl dc : allDcs) {
-//				// single active dc cluster bind active dc when create
-//				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
-//				DcClusterTbl dcClusterInfo = dc.getDcClusterInfo();
-//				DcClusterTbl dcProto =
-//						dcClusterInfo == null ? new DcClusterTbl()
-//								.setClusterName(cluster.getClusterName())
-//								.setDcName(dc.getDcName())
-//								.setGroupType(true) : dcClusterInfo;
-//
-//				bindDc(dcProto);
-//			}
-//		}
 
 		if (dcClusters != null) {
 			Map<ShardTbl, List<DcClusterTbl>> shard2DcClustersMap = new HashMap<>();
@@ -499,6 +486,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
 				shardService.deleteShards(cluster, shardNames);
 			}
+			applierService.deleteAppliersByClusterAndToDc(dc.getId(), cluster.getId());
 		}
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
