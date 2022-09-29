@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -10,16 +11,15 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthS
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,9 +43,14 @@ public class ClusterController extends AbstractConsoleController {
     private ClusterHealthMonitorManager clusterHealthMonitorManager;
     @Autowired
     private ReplDirectionService replDirectionService;
+    @Autowired
+    private ShardService shardService;
+    @Autowired
+    private SentinelBalanceService sentinelBalanceService;
+    @Autowired
+    private ApplierService applierService;
 
     private SetOperationUtil setOperator = new SetOperationUtil();
-
 
     private Comparator<ReplDirectionTbl> replDirectionTblComparator = new Comparator<ReplDirectionTbl>() {
         @Override
@@ -53,6 +58,32 @@ public class ClusterController extends AbstractConsoleController {
             if (o1 != null && o2 != null
                     && ObjectUtils.equals(o1.getId(), o2.getId())
                     && ObjectUtils.equals(o1.getTargetClusterName(), o2.getTargetClusterName())) {
+                return 0;
+            }
+            return -1;
+        }
+    };
+
+    private Comparator<DcClusterModel> dcClusterModelComparator = new Comparator<DcClusterModel>() {
+        @Override
+        public int compare(DcClusterModel o1, DcClusterModel o2) {
+            if (o1 != null && o2 != null && o1.getDcCluster() != null && o2.getDcCluster() != null
+                    && ObjectUtils.equals(o1.getDcCluster().getDcId(), o2.getDcCluster().getDcId())
+                    && ObjectUtils.equals(o1.getDcCluster().getClusterId(), o2.getDcCluster().getClusterId())
+                    && ObjectUtils.equals(o1.getDcCluster().getGroupName(), o2.getDcCluster().getGroupName())
+                    && ObjectUtils.equals(o1.getDcCluster().isGroupType(), o2.getDcCluster().isGroupType())) {
+                return 0;
+            }
+            return -1;
+        }
+    };
+
+    private Comparator<ShardTbl> shardTblComparator = new Comparator<ShardTbl>() {
+        @Override
+        public int compare(ShardTbl o1, ShardTbl o2) {
+            if (o1 != null && o2 != null
+                    && ObjectUtils.equals(o1.getShardName(), o2.getShardName())
+                    && ObjectUtils.equals(o1.getSetinelMonitorName(), o2.getSetinelMonitorName())) {
                 return 0;
             }
             return -1;
@@ -175,6 +206,10 @@ public class ClusterController extends AbstractConsoleController {
         logger.info("[Update Cluster]{},{}", clusterName, cluster);
         clusterService.updateCluster(clusterName, cluster);
 
+        if (cluster.getDcClusters() != null) {
+            updateDcClustersByDcClusterModels(cluster.getDcClusters(), cluster.getClusterTbl());
+        }
+
         if (cluster.getReplDirections() != null) {
             updateClusterReplDirections(cluster.getClusterTbl(), cluster.getReplDirections());
         }
@@ -281,6 +316,125 @@ public class ClusterController extends AbstractConsoleController {
         }
     }
 
+    private void updateDcClustersByDcClusterModels(List<DcClusterModel> dcClusterModels, ClusterTbl clusterTbl) {
+        if (clusterTbl == null) {
+            throw new BadRequestException("[updateDcClustersByDcClusterModels] cluster can not be null!");
+        }
+        dcClusterService.validateDcClusters(dcClusterModels, clusterTbl);
+        List<DcClusterModel> originDcClusters = dcClusterService.findRelatedDcClusterModels(clusterTbl.getId());
+
+        updateDcClustersByDcClusterModels(originDcClusters, dcClusterModels, clusterTbl);
+    }
+
+    private void updateDcClustersByDcClusterModels(List<DcClusterModel> originDcClusters,
+                                                   List<DcClusterModel> targetDcClusters, ClusterTbl clusterTbl){
+        List<DcClusterModel> toCreates = (List<DcClusterModel>) setOperator.difference(DcClusterModel.class,
+                targetDcClusters, originDcClusters, dcClusterModelComparator);
+        List<DcClusterModel> toDeletes = (List<DcClusterModel>) setOperator.difference(DcClusterModel.class,
+                originDcClusters, targetDcClusters, dcClusterModelComparator);
+        List<DcClusterModel> left = (List<DcClusterModel>) setOperator.intersection(DcClusterModel.class,
+                originDcClusters, targetDcClusters, dcClusterModelComparator);
+
+        try {
+            handleUpdateDcClusters(toCreates, toDeletes, left, clusterTbl);
+        } catch (Exception e) {
+            throw new ServerException(e.getMessage());
+        }
+    }
+
+    private void handleUpdateDcClusters(List<DcClusterModel> toCreates, List<DcClusterModel> toDeletes,
+                                        List<DcClusterModel> toUpdates, ClusterTbl clusterTbl) throws DalException {
+        if (toDeletes != null && !toDeletes.isEmpty()) {
+            logger.info("[updateDcClustersByDcClusterModels] delete dc cluster {}, {}", toDeletes.size(), toDeletes);
+            deleteDcClusterBatch(toDeletes, clusterTbl);
+        }
+
+        if (toCreates != null && !toCreates.isEmpty()) {
+            logger.info("[updateDcClustersByDcClusterModels] create dc cluster {}, {}", toCreates.size(), toCreates);
+            createDcClusterBatch(toCreates, clusterTbl);
+        }
+
+        if (toUpdates != null && !toUpdates.isEmpty()) {
+            logger.info("[updateDcClustersByDcClusterModels] update dc cluster {}, {}", toUpdates.size(), toUpdates);
+            updateDcClusterBatch(toUpdates, clusterTbl);
+        }
+    }
+
+    private void createDcClusterBatch(List<DcClusterModel> toCreates, ClusterTbl clusterTbl) {
+        toCreates.forEach( toCreate ->{
+            toCreate.getDcCluster().setDcName(toCreate.getDc().getDc_name());
+            toCreate.getDcCluster().setClusterName(clusterTbl.getClusterName());
+            clusterService.bindDc(toCreate.getDcCluster());
+
+            if (!toCreate.getDcCluster().isGroupType() && toCreate.getShards() != null) {
+                List<DcClusterTbl> dcClusterTbls = new ArrayList<>();
+                dcClusterTbls.add(dcClusterService.find(toCreate.getDcCluster().getDcName(),
+                        toCreate.getDcCluster().getClusterName()));
+
+                ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+                toCreate.getShards().forEach(shardModel -> {
+                        shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shardModel.getShardTbl(),
+                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                    });
+            }
+        });
+    }
+
+    private void deleteDcClusterBatch(List<DcClusterModel> toDeletes, ClusterTbl clusterTbl) throws DalException {
+        for (DcClusterModel toDelete : toDeletes){
+            if (toDelete.getDcCluster().getDcId() == clusterTbl.getActivedcId()) {
+                throw new BadRequestException("can not unbind active dc");
+            }
+            clusterService.unbindDc(clusterTbl.getClusterName(), dcService.find(toDelete.getDcCluster().getDcId()).getDcName());
+        }
+    }
+
+    private void updateDcClusterBatch(List<DcClusterModel> toUpdates, ClusterTbl clusterTbl) throws DalException {
+
+        for (DcClusterModel toUpdate : toUpdates){
+            if (toUpdate.getDcCluster().isGroupType()
+                    && !ObjectUtils.equals(toUpdate.getDcCluster().getDcId(), clusterTbl.getActivedcId())) {
+                continue;
+            }
+
+            updateShardsByDcClusterModel(toUpdate, clusterTbl);
+        }
+    }
+
+    private void updateShardsByDcClusterModel(DcClusterModel dcClusterModel, ClusterTbl clusterTbl) throws DalException {
+        List<ShardTbl> targetShards = new ArrayList<>();
+        dcClusterModel.getShards().forEach(shardModel -> {
+            targetShards.add(shardModel.getShardTbl());
+        });
+
+        List<ShardTbl> originShards = shardService.findAllShardByDcCluster(dcClusterModel.getDcCluster().getDcId(),
+                dcClusterModel.getDcCluster().getClusterId());
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+        handleShardsUpdate(targetShards, originShards, clusterTbl, clusterType,
+                                                            dcClusterModel.getDcCluster().isGroupType());
+    }
+
+
+    private void handleShardsUpdate(List<ShardTbl> targetShards, List<ShardTbl> originShards, ClusterTbl clusterTbl,
+                                    ClusterType clusterType, boolean isDRMaster) throws DalException {
+        List<ShardTbl> toCreates = (List<ShardTbl>) setOperator.difference(ShardTbl.class, targetShards,
+                originShards, shardTblComparator);
+        List<ShardTbl> toDeletes = (List<ShardTbl>) setOperator.difference(ShardTbl.class, originShards,
+                targetShards, shardTblComparator);
+
+        List<String> toDeleteShardNames = new ArrayList<>();
+        toDeletes.forEach(toDelete -> {
+            toDeleteShardNames.add(toDelete.getShardName());
+        });
+        shardService.deleteShards(clusterTbl, toDeleteShardNames);
+
+        List<DcClusterTbl> dcClusterTbls =
+                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), isDRMaster);
+        toCreates.forEach(toCreate -> {
+            shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
+                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+        });
+    }
 
     protected void updateClusterReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirections) {
         if (clusterTbl == null) {
@@ -300,37 +454,45 @@ public class ClusterController extends AbstractConsoleController {
     private void updateClusterReplDirections(List<ReplDirectionTbl> originReplDirections,
                                              List<ReplDirectionTbl> targetReplDirections) {
 
-        List<ReplDirectionTbl> toCreate = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
+        List<ReplDirectionTbl> toCreates = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
                 targetReplDirections, originReplDirections, replDirectionTblComparator);
 
-        List<ReplDirectionTbl> toDelete = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
+        List<ReplDirectionTbl> toDeletes = (List<ReplDirectionTbl>) setOperator.difference(ReplDirectionTbl.class,
                 originReplDirections, targetReplDirections, replDirectionTblComparator);
 
-        List<ReplDirectionTbl> toUpdate = (List<ReplDirectionTbl>) setOperator.intersection(ReplDirectionTbl.class,
+        List<ReplDirectionTbl> toUpdates = (List<ReplDirectionTbl>) setOperator.intersection(ReplDirectionTbl.class,
                 originReplDirections, targetReplDirections, replDirectionTblComparator);
 
         try {
-            handleUpdateReplDirecitons(toCreate, toDelete, toUpdate);
+            handleUpdateReplDirecitons(toCreates, toDeletes, toUpdates);
         } catch (Exception e) {
             throw new ServerException(e.getMessage());
         }
     }
 
-    private void handleUpdateReplDirecitons(List<ReplDirectionTbl> toCreate, List<ReplDirectionTbl> toDelete,
-                                            List<ReplDirectionTbl> toUpdate) {
-        if (toCreate != null && !toCreate.isEmpty()) {
-            logger.info("[updateClusterReplDirections] create repl direction {}", toCreate);
-            replDirectionService.createReplDirectionBatch(toCreate);
+    private void handleUpdateReplDirecitons(List<ReplDirectionTbl> toCreates, List<ReplDirectionTbl> toDeletes,
+                                            List<ReplDirectionTbl> toUpdates) {
+        if (toCreates != null && !toCreates.isEmpty()) {
+            logger.info("[updateClusterReplDirections] create repl direction {}", toCreates);
+            replDirectionService.createReplDirectionBatch(toCreates);
         }
 
-        if (toDelete != null && !toDelete.isEmpty()) {
-            logger.info("[updateClusterReplDirections] delete repl direction {}", toDelete);
-            replDirectionService.deleteReplDirectionBatch(toDelete);
+        if (toDeletes != null && !toDeletes.isEmpty()) {
+            logger.info("[updateClusterReplDirections] delete repl direction {}", toDeletes);
+            replDirectionService.deleteReplDirectionBatch(toDeletes);
+            toCreates.forEach(toCreate -> {
+                List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(toCreate.getSrcDcId(), toCreate.getClusterId());
+                if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
+                    for (ShardTbl shardTbl : allSrcDcShards) {
+                        applierService.deleteAppliers(shardTbl, toCreate.getId());
+                    }
+                }
+            });
         }
 
-        if (toUpdate != null && !toUpdate.isEmpty()) {
-            logger.info("[updateClusterReplDirections] update repl direction {}", toUpdate);
-            replDirectionService.updateReplDirectionBatch(toUpdate);
+        if (toUpdates != null && !toUpdates.isEmpty()) {
+            logger.info("[updateClusterReplDirections] update repl direction {}", toUpdates);
+            replDirectionService.updateReplDirectionBatch(toUpdates);
         }
     }
 }

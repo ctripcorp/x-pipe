@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
@@ -200,7 +199,6 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
     }
 
-    @DalTransaction
     @Override
     public void deleteReplDirectionBatch(List<ReplDirectionTbl> replDirections) {
         queryHandler.handleBatchDelete(new DalQuery<int[]>() {

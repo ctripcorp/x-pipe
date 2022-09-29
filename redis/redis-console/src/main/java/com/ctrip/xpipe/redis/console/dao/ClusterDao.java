@@ -156,69 +156,6 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public int addDcCluster(final DcClusterModel dcClusterModel, final ClusterTbl cluster, final DcTbl dc, final List<ShardTbl> shards, SentinelGroupModel sentinel) throws DalException  {
-		DcClusterTbl existDcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
-			@Override
-			public DcClusterTbl doQuery() throws DalException {
-				return dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
-			}
-		});
-		if (existDcCluster != null) {
-			throw new BadRequestException(String.format("[addDcCluster] dc:%s cluster:%s has already exist",
-					dc.getDcName(), cluster.getClusterName()));
-		}
-
-		DcClusterTbl dcClusterProto = dcClusterTblDao.createLocal();
-		dcClusterProto.setDcId(dc.getId()).setClusterId(cluster.getId())
-				.setGroupName(dcClusterModel.getDcCluster().getGroupName())
-				.setGroupType(dcClusterModel.getDcCluster().isGroupType());
-		queryHandler.handleInsert(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return dcClusterTblDao.insert(dcClusterProto);
-			}
-		});
-
-		DcClusterTbl newDcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
-			@Override
-			public DcClusterTbl doQuery() throws DalException {
-				return dcClusterTblDao.findDcClusterByName(dc.getDcName(), cluster.getClusterName(), DcClusterTblEntity.READSET_FULL);
-			}
-		});
-
-		if(null != shards && !shards.isEmpty()) {
-			List<DcClusterShardTbl> dcClusterShards = new LinkedList<DcClusterShardTbl>();
-			for(ShardTbl shard : shards) {
-				DcClusterShardTbl dcClusterShard = dcClusterShardTblDao.createLocal();
-				dcClusterShard.setDcClusterId(newDcCluster.getDcClusterId()).setShardId(shard.getId());
-				if (sentinel != null) {
-					dcClusterShard.setSetinelId(sentinel.getSentinelGroupId());
-				}
-				if (ClusterType.lookup(cluster.getClusterType()).isCrossDc()) {
-					List<DcClusterShardTbl> allShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
-						@Override
-						public List<DcClusterShardTbl> doQuery() throws DalException {
-							return dcClusterShardTblDao.findAllByShardId(dcClusterShard.getShardId(), DcClusterShardTblEntity.READSET_FULL);
-						}
-					});
-					if (allShards != null && !allShards.isEmpty())
-						dcClusterShard.setSetinelId(allShards.get(0).getSetinelId());
-				}
-				dcClusterShards.add(dcClusterShard);
-			}
-			queryHandler.handleBatchInsert(new DalQuery<int[]>() {
-				@Override
-				public int[] doQuery() throws DalException {
-					return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
-				}
-			});
-
-		}
-
-		return 0;
-	}
-
-	@DalTransaction
 	public int bindDc(final ClusterTbl cluster, final DcTbl dc, DcClusterTbl dcClusterTbl, SentinelGroupModel sentinel) throws DalException {
 		
 		DcClusterTbl existingDcCluster = queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
