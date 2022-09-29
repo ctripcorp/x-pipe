@@ -92,7 +92,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         dcTbls.forEach(dcTbl -> {
             DcModel dcModel = new DcModel();
             dcModel.setDc_name(dcTbl.getDcName());
-            dcClusters.add(new DcClusterModel().setDc(dcModel));
+            dcClusters.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
         });
         clusterModel.setDcClusters(dcClusters);
         clusterService.createCluster(clusterModel);
@@ -112,7 +112,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDescription(randomString(20))
                 .setClusterDesignatedRouteIds("1,2")
         );
-        clusterModel.setDcClusters(dcClusters);
+        List<DcClusterModel> dcClusters1 = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters1.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters1);
         clusterService.createCluster(clusterModel);
         clusterTbl = clusterService.find(clusterName2);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -163,7 +169,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         DcModel fra = new DcModel();
         fra.setDc_name("fra");
         DcClusterModel fraDcCluster = new DcClusterModel().setDc(fra)
-                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(true))
+                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(false))
                 .setShards(Lists.newArrayList(shard4, shard5));
         clusterModel.setDcClusters(Lists.newArrayList(jqDcCluster, oyDcCluster, fraDcCluster));
 
@@ -173,7 +179,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
         clusterModel.setReplDirections(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
 
-//        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName("oy"), new DcTbl().setDcName("fra"), new DcTbl().setDcName("jq")));
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -281,11 +286,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         dcTbls.forEach(dcTbl -> {
             DcModel dcModel = new DcModel();
             dcModel.setDc_name(dcTbl.getDcName());
-            dcClusters.add(new DcClusterModel().setDc(dcModel));
+            dcClusters.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
         });
         clusterModel.setDcClusters(dcClusters);
-
-        clusterModel.setDcs(dcTbls);
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -303,7 +306,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDesignatedRouteIds("1,2")
         );
 
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters1 = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters1.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters1);
         clusterService.createCluster(clusterModel);
         clusterTbl = clusterService.find(clusterName2);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());

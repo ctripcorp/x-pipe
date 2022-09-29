@@ -189,12 +189,13 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters", method = RequestMethod.POST)
     public ClusterTbl createCluster(@RequestBody ClusterModel cluster) {
         logger.info("[Create Cluster]{}", cluster);
-        if (cluster.getDcs() != null) {
+        if (cluster.getDcs() != null && (cluster.getDcClusters() == null || cluster.getDcClusters().isEmpty())) {
             List<DcClusterModel> dcClusters = new ArrayList<>();
             cluster.getDcs().forEach(dcTbl -> {
                 DcModel dcModel = new DcModel();
                 dcModel.setDc_name(dcTbl.getDcName());
-                dcClusters.add(new DcClusterModel().setDc(dcModel));
+                dcClusters.add(new DcClusterModel().setDc(dcModel).
+                        setDcCluster(new DcClusterTbl().setGroupType(true).setGroupName(dcTbl.getDcName())));
             });
             cluster.setDcClusters(dcClusters);
         }
@@ -410,13 +411,12 @@ public class ClusterController extends AbstractConsoleController {
         List<ShardTbl> originShards = shardService.findAllShardByDcCluster(dcClusterModel.getDcCluster().getDcId(),
                 dcClusterModel.getDcCluster().getClusterId());
         ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
-        handleShardsUpdate(targetShards, originShards, clusterTbl, clusterType,
-                                                            dcClusterModel.getDcCluster().isGroupType());
+        handleShardsUpdate(targetShards, originShards, clusterTbl, clusterType, dcClusterModel.getDcCluster());
     }
 
 
     private void handleShardsUpdate(List<ShardTbl> targetShards, List<ShardTbl> originShards, ClusterTbl clusterTbl,
-                                    ClusterType clusterType, boolean isDRMaster) throws DalException {
+                                    ClusterType clusterType, DcClusterTbl dcClusterTbl) throws DalException {
         List<ShardTbl> toCreates = (List<ShardTbl>) setOperator.difference(ShardTbl.class, targetShards,
                 originShards, shardTblComparator);
         List<ShardTbl> toDeletes = (List<ShardTbl>) setOperator.difference(ShardTbl.class, originShards,
@@ -429,7 +429,7 @@ public class ClusterController extends AbstractConsoleController {
         shardService.deleteShards(clusterTbl, toDeleteShardNames);
 
         List<DcClusterTbl> dcClusterTbls =
-                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), isDRMaster);
+                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.isGroupType());
         toCreates.forEach(toCreate -> {
             shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
                     dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));

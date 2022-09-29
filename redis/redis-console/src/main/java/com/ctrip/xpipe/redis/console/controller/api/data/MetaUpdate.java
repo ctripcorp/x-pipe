@@ -127,7 +127,8 @@ public class MetaUpdate extends AbstractConsoleController {
                 }
                 DcModel dcModel = new DcModel();
                 dcModel.setDc_name(dcName);
-                dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel));
+                dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel)
+                        .setDcCluster(new DcClusterTbl().setGroupType(true).setGroupName(dcName)));
             }
             if(clusterCreateInfo.getDcDetails() != null) {
                 for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {
@@ -135,11 +136,11 @@ public class MetaUpdate extends AbstractConsoleController {
                     if(!dcName2DcClusterModelMap.containsKey(dcId)) {
                         return RetMessage.createFailMessage("dcs not contains dc detail info :" + dcDetail);
                     }
-                    DcClusterTbl dcClusterTbl = new DcClusterTbl().setGroupType(true).setGroupName(dcDetail.getDcGroupName());
+                    DcClusterTbl dcClusterTbl = dcName2DcClusterModelMap.get(dcId).getDcCluster();
+                    dcClusterTbl.setGroupName(dcDetail.getDcGroupName());
                     if(dcDetail.getDcGroupType() != null) {
                         dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()));
                     }
-                    dcName2DcClusterModelMap.get(dcId).setDcCluster(dcClusterTbl);
                 }
             }
         } catch (Exception e) {
