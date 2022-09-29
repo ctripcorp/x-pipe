@@ -108,13 +108,19 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
-	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, boolean isDRMaster) {
-		return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
-			@Override
-			public List<DcClusterTbl> doQuery() throws DalException {
-				return dao.findAllByClusterAndGroupType(clusterId, isDRMaster, DcClusterTblEntity.READSET_FULL);
-			}
-		});
+	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, boolean isDRMaster) {
+		if (isDRMaster) {
+			return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+				@Override
+				public List<DcClusterTbl> doQuery() throws DalException {
+					return dao.findAllByClusterAndGroupType(clusterId, isDRMaster, DcClusterTblEntity.READSET_FULL);
+				}
+			});
+		} else {
+			List<DcClusterTbl> result = new ArrayList<>();
+			result.add(find(dcId, clusterId));
+			return result;
+		}
 	}
 
 	@Override

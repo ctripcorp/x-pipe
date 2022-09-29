@@ -400,8 +400,8 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         DcModel dcModel2 = new DcModel();
         dcModel1.setDc_name(dcNames[0]);
         dcModel2.setDc_name(dcNames[1]);
-        dcClusters.add(new DcClusterModel().setDc(dcModel1));
-        dcClusters.add(new DcClusterModel().setDc(dcModel2));
+        dcClusters.add(new DcClusterModel().setDc(dcModel1).setDcCluster(new DcClusterTbl()));
+        dcClusters.add(new DcClusterModel().setDc(dcModel2).setDcCluster(new DcClusterTbl()));
         clusterModel.setDcClusters(dcClusters);
         redisService.clusterService.createCluster(clusterModel);
 
