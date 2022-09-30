@@ -78,14 +78,14 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			// related dc-cluster
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
-			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId())
-					// active dc is drMaster
-					.setGroupType(true);
+			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId());
 
 			if (dcClusterModels != null && !dcClusterModels.isEmpty()) {
 				dcClusterModels.forEach(dcClusterModel -> {
 					if (activeDc.getDcName().equalsIgnoreCase(dcClusterModel.getDc().getDc_name())) {
-						protoDcCluster.setGroupName(dcClusterModel.getDcCluster().getGroupName());
+						protoDcCluster.setGroupName(dcClusterModel.getDcCluster().getGroupName())
+								.setGroupType(dcClusterModel.getDcCluster().isGroupType());
+
 					}
 				});
 			}

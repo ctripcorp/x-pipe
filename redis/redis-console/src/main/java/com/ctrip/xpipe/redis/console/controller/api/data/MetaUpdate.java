@@ -128,7 +128,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 DcModel dcModel = new DcModel();
                 dcModel.setDc_name(dcName);
                 dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel)
-                        .setDcCluster(new DcClusterTbl().setGroupType(true).setGroupName(dcName)));
+                        .setDcCluster(new DcClusterTbl()));
             }
             if(clusterCreateInfo.getDcDetails() != null) {
                 for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {

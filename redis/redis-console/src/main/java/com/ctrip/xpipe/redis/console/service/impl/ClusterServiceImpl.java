@@ -242,8 +242,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 					continue;
 				}
 				DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
-				DcClusterTbl dcProto = dcClusterInfo == null ?
-						new DcClusterTbl().setGroupType(true).setGroupName(dcTbl.getDcName()) : dcClusterInfo;
+				DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl() : dcClusterInfo;
 				dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
 				bindDc(dcProto);
 			}
