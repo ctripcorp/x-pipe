@@ -140,7 +140,8 @@ public class ClusterMetaSynchronizer {
             List<DcClusterModel> dcClusterModels = new LinkedList<>();
             DcModel dcModel = new DcModel();
             dcModel.setDc_name(DcMetaSynchronizer.currentDcId);
-            dcClusterModels.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+            dcClusterModels.add(new DcClusterModel().setDc(dcModel)
+                    .setDcCluster(new DcClusterTbl().setGroupName(DcMetaSynchronizer.currentDcId).setGroupType(true)));
             clusterModel.setDcClusters(dcClusterModels);
         }
 
