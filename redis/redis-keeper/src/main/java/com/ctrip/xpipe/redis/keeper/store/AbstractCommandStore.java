@@ -92,6 +92,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
+        //TODO ayq delete
+        getLogger().info("[AbstractCommandStore][construct]baseGtidSet={}", baseGtidSet);
         this.baseGtidSet = baseGtidSet.clone();
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
@@ -270,9 +272,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (files != null) {
             for (File file : files) {
                 long startOffset = extractStartOffset(file);
-                //TODO ayq delete log
-                getLogger().info("[findFileForOffset] targetStartOffset={}, startOffset={}, file length={}, maxFileSize={}",
-                        targetStartOffset, startOffset, file.length(), maxFileSize);
                 if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length()
                         || targetStartOffset < startOffset + maxFileSize)) {
                     return new CommandFile(file, startOffset);
