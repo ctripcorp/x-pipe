@@ -141,7 +141,13 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
-    changeConfigLogFile $FULL_DIR log4j2-uat.xml
+    IDC=`getIdc`
+    if [ $IDC = "PTOY" ]
+    then
+        changeConfigLogFile $FULL_DIR log4j2-uat-ptoy.xml
+    else
+        changeConfigLogFile $FULL_DIR log4j2-uat.xml
+    fi
 
     ROLE=`getRole`
     if [ $ROLE = "REDIS" ]
