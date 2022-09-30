@@ -226,7 +226,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				return clusterDao.createCluster(queryProto);
+				return clusterDao.createCluster(queryProto, dcClusters);
 			}
 		});
 
@@ -238,12 +238,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
 				}
 				// single active dc cluster bind active dc when create
-				if (!clusterType.supportSingleActiveDC() || dcTbl.getId() != result.getActivedcId()) {
-					DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
-					DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl().setGroupType(true) : dcClusterInfo;
-					dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
-					bindDc(dcProto);
+				if (!clusterType.supportMultiActiveDC() && dcTbl.getId() == result.getActivedcId()) {
+					continue;
 				}
+				DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
+				DcClusterTbl dcProto = dcClusterInfo == null ?
+						new DcClusterTbl().setGroupType(true).setGroupName(dcTbl.getDcName()) : dcClusterInfo;
+				dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
+				bindDc(dcProto);
 			}
 
 			for (DcClusterModel dcCluster : dcClusters) {
