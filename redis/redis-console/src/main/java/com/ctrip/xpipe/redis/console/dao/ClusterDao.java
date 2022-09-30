@@ -54,7 +54,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	
 	
 	@DalTransaction
-	public ClusterTbl createCluster(final ClusterTbl cluster) throws DalException {
+	public ClusterTbl createCluster(final ClusterTbl cluster, final List<DcClusterModel> dcClusterModels) throws DalException {
 		// check for unique cluster name
 		ClusterTbl clusterWithSameName = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
@@ -81,6 +81,14 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId())
 					// active dc is drMaster
 					.setGroupType(true);
+
+			if (dcClusterModels != null && !dcClusterModels.isEmpty()) {
+				dcClusterModels.forEach(dcClusterModel -> {
+					if (activeDc.getDcName().equalsIgnoreCase(dcClusterModel.getDc().getDc_name())) {
+						protoDcCluster.setGroupName(dcClusterModel.getDcCluster().getGroupName());
+					}
+				});
+			}
 
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
