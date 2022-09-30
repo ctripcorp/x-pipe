@@ -193,8 +193,7 @@ public class ClusterController extends AbstractConsoleController {
             cluster.getDcs().forEach(dcTbl -> {
                 DcModel dcModel = new DcModel();
                 dcModel.setDc_name(dcTbl.getDcName());
-                dcClusters.add(new DcClusterModel().setDc(dcModel).
-                        setDcCluster(new DcClusterTbl().setGroupType(true).setGroupName(dcTbl.getDcName())));
+                dcClusters.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
             });
             cluster.setDcClusters(dcClusters);
         }
