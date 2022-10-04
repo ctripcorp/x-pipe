@@ -118,8 +118,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private ExecutorService clientExecutors;
 
-    private static final int DEFAULT_SCHEDULED_CORE_POOL_SIZE = 1;
-
     //TODO change value
     private static final int DEFAULT_KEYED_CLIENT_POOL_SIZE = 100;
 
@@ -147,7 +145,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE,
+        scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE));
@@ -209,12 +207,20 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     public void setStateActive(Endpoint endpoint, GtidSet gtidSet) {
+        if (STATE.ACTIVE == this.state) {
+            logger.info("[setState] {},{}, already active", endpoint, gtidSet);
+            return;
+        }
         this.state = STATE.ACTIVE;
         replication.connect(endpoint, gtidSet);
     }
 
     @Override
     public void setStateBackup() {
+        if (STATE.BACKUP == this.state) {
+            logger.info("[setState] already backup");
+            return;
+        }
         this.state = STATE.BACKUP;
         replication.disconnect();
     }

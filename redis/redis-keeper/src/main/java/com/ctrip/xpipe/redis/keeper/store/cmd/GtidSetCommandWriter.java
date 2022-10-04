@@ -65,7 +65,7 @@ public class GtidSetCommandWriter extends OffsetCommandWriter implements Command
             this.rotateIndexFile();
 
             this.lastSegment = getCommandStore().findLastFileSegment();
-            this.gtidSetContain = lastSegment.getStartIdx().getExcludedGtidSet();
+            this.gtidSetContain = lastSegment.getStartIdx().getExcludedGtidSet().clone();
             GtidCmdOneSegmentReader oneSegmentReader =
                     new GtidCmdOneSegmentReader(getCommandStore(), lastSegment, protocolParser, opParser);
             try {

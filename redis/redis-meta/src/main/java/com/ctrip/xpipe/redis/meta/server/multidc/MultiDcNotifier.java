@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
@@ -43,16 +44,19 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
-		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
-			if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-				notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
-			} else if (dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)) {
+
+		if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
 				logger.info("[keeperActiveElected][current dc backup, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
 				return;
-			} else {
-				notifyDownstreamDcs(clusterDbId, shardDbId, activeKeeper);
-			}
-		} else {
+            }
+
+			notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
+		} else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+				notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
+            }
+
 			notifyDownstreamDcs(clusterDbId, shardDbId, activeKeeper);
 		}
 	}

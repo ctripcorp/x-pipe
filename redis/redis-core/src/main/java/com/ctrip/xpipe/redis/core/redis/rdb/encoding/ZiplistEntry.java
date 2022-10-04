@@ -78,7 +78,7 @@ public class ZiplistEntry {
             this.length = input.readByte() & 0x3f;
             readStr(input, this.length);
         } else if (ZIP_STR_14B == encoding) {
-            this.length = ((input.readByte() & 0x3f) << 8) | input.readByte();
+            this.length = ((input.readByte() & 0x3f) << 8) | input.readUnsignedByte();
             readStr(input, this.length);
         } else if (ZIP_STR_32B == encoding) {
             input.readerIndex(input.readerIndex() + 1);
