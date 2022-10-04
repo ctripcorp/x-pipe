@@ -92,6 +92,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
+        //TODO ayq delete
+        getLogger().info("[AbstractCommandStore][construct]baseGtidSet={}", baseGtidSet);
         this.baseGtidSet = baseGtidSet.clone();
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
@@ -264,7 +266,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public CommandFile findFileForOffset(long targetStartOffset) throws IOException {
+        //TODO ayq delete log
         File[] files = baseDir.listFiles(cmdFileFilter);
+        getLogger().info("baseDir={}, fileNum={}", baseDir, files.length);
         if (files != null) {
             for (File file : files) {
                 long startOffset = extractStartOffset(file);
@@ -308,7 +312,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         Set<String> interestedSrcIds = excludedGtidSet.getUUIDs();
         Iterator<CommandFileOffsetGtidIndex> indexIterator = cmdIndexList.iterator();
         CommandFileOffsetGtidIndex startIndex = getBaseIndex();
-        if (null == startIndex) startIndex = indexIterator.next();
+        //TODO ayq delete logs
+        getLogger().info("[findFirstFileSegment],excluededGtidSet={}", excludedGtidSet);
+        if (null == startIndex) {
+            getLogger().info("[findFirstFileSegment] startIndex=null, iterate to next");
+            startIndex = indexIterator.next();
+        }
+        getLogger().info("[findFirstFileSegment],startIndex={},fileName={}", startIndex.getExcludedGtidSet(), startIndex.getCommandFile().getFile().getName());
         CommandFileOffsetGtidIndex endIndex = null;
 
         GtidSet storeExcludedGtidSet = startIndex.getExcludedGtidSet().filterGtid(interestedSrcIds);
@@ -317,21 +327,24 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             throw new IllegalArgumentException("req cmd miss storeExcluded:" + storeExcludedGtidSet + " reqExcluded:" + excludedGtidSet);
         }
 
+        CommandFileOffsetGtidIndex preIndex = startIndex;
+        boolean contained = true;
         while (indexIterator.hasNext()) {
             CommandFileOffsetGtidIndex index = indexIterator.next();
-            GtidSet includedGtidSet = index.getExcludedGtidSet().filterGtid(interestedSrcIds)
-                    .subtract(startIndex.getExcludedGtidSet());
-            if (!includedGtidSet.isContainedWithin(excludedGtidSet)) {
-                endIndex = index;
-                if (!indexIterator.hasNext()) {
-                    // right bound open
-                    endIndex = null;
+            GtidSet gtidSetBetweenIndex = index.getExcludedGtidSet().filterGtid(interestedSrcIds)
+                    .subtract(preIndex.getExcludedGtidSet());
+
+            if (gtidSetBetweenIndex.isContainedWithin(excludedGtidSet)) {
+                if (!contained) {
+                    endIndex = preIndex;
+                    break;
                 }
-            } else if (null == endIndex) {
                 startIndex = index;
             } else {
-                break;
+                contained = false;
             }
+
+            preIndex = index;
         }
 
         return new CommandFileSegment(startIndex, endIndex);
@@ -349,6 +362,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         CommandFile firstCommandFile = findFileForOffset(0L);
         if (null == firstCommandFile) return null;
 
+        //TODO ayq delete
+        getLogger().info("[getBaseIndex]baseGtidSet={}", getBaseGtidSet());
         return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, 0);
     }
 
