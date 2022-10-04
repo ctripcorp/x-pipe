@@ -43,6 +43,13 @@ public class GtidSetTest {
         Assert.assertEquals(clone, gtidSet);
     }
 
+    @Test
+    public void testLwm() {
+        Assert.assertEquals(5, new GtidSet("A:1-5").lwm("A"));
+        Assert.assertEquals(0, new GtidSet("A:2-5").lwm("A"));
+        Assert.assertEquals(1, new GtidSet("A:1").lwm("A"));
+        Assert.assertEquals(0, new GtidSet("A:1").lwm("B"));
+    }
 
     @Test
     public void testAdd() throws Exception {
@@ -55,6 +62,8 @@ public class GtidSetTest {
         gtidSet.add("00000000-0000-0000-0000-000000000000:0");
         Assert.assertEquals(gtidSet.toString(),
                 "00000000-0000-0000-0000-000000000000:0:2-5:7,00000000-0000-0000-0000-000000000001:9");
+        Assert.assertEquals(0, gtidSet.lwm("00000000-0000-0000-0000-000000000000"));
+        Assert.assertEquals(0, gtidSet.lwm("00000000-0000-0000-0000-000000000001"));
     }
 
     @Test
