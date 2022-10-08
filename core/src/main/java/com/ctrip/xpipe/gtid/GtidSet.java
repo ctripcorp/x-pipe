@@ -70,6 +70,15 @@ public class GtidSet {
 
     }
 
+    public long lwm(String uuid /* src id */) {
+
+        if (null == map.get(uuid)) {
+            return 0;
+        }
+
+        return map.get(uuid).lwm();
+    }
+
     /**
      * Get an immutable collection of the {@link UUIDSet range of GTIDs for a single server}.
      * @return the {@link UUIDSet GTID ranges for each server}; never null
@@ -454,6 +463,21 @@ public class GtidSet {
             }
 
             return index;
+        }
+
+        private long lwm() {
+
+            if (null == intervals || intervals.isEmpty()) {
+                return 0;
+            }
+
+            Interval first = intervals.get(0);
+
+            if (1 >= first.start) {
+                return first.end;
+            } else {
+                return 0;
+            }
         }
 
         private boolean add(long transactionId) {
