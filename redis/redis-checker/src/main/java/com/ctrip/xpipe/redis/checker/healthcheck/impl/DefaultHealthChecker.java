@@ -117,14 +117,17 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
 
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
-                if (dcClusterIsMasterType(cluster) && !clusterDcIsCurrentDc(cluster))
-                    continue;
-                if (hasSingleActiveDc(clusterType, cluster) && !isClusterActiveIdcCurrentIdc(cluster))
-                    continue;
-                if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster))
-                    continue;
 
-                generateHealthCheckInstances(cluster);
+                if (dcClusterIsMasterType(cluster) && clusterDcIsCurrentDc(cluster)){
+                    generateHealthCheckInstances(cluster);
+                }
+                if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
+                    generateHealthCheckInstances(cluster);
+                }
+                if (clusterType.supportMultiActiveDC() && isClusterInCurrentIdc(cluster)) {
+                    generateHealthCheckInstances(cluster);
+                }
+
             }
         }
     }
@@ -162,12 +165,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
     }
 
-    private boolean hasSingleActiveDc(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return supportSingleActiveDcAndIsDRMasterType(clusterType, clusterMeta) || clusterType.isCrossDc();
-    }
-
-    private boolean supportSingleActiveDcAndIsDRMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return clusterType.supportSingleActiveDC() && !dcClusterIsMasterType(clusterMeta);
+    private boolean hasSingleActiveDc(ClusterType clusterType) {
+        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
 }

@@ -167,7 +167,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         if (dcClusterIsMasterType(cluster))
             return clusterDcIsCurrentDc(cluster);
-        if (hasSingleActiveDc(clusterType, cluster))
+        if (hasSingleActiveDc(clusterType))
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         if (clusterType.supportMultiActiveDC()) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
@@ -186,12 +186,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
     }
 
-    private boolean hasSingleActiveDc(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return supportSingleActiveDcAndIsDRMasterType(clusterType, clusterMeta) || clusterType.isCrossDc();
-    }
-
-    private boolean supportSingleActiveDcAndIsDRMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return clusterType.supportSingleActiveDC() && !dcClusterIsMasterType(clusterMeta);
+    private boolean hasSingleActiveDc(ClusterType clusterType) {
+        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {

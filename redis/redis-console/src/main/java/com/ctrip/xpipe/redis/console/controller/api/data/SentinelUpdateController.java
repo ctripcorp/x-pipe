@@ -471,7 +471,7 @@ public class SentinelUpdateController {
         String clusterName = clusterTbl.getClusterName();
 
         SentinelGroupModel selected;
-        if (ClusterType.lookup(clusterType).equals(ClusterType.HETERO)) {
+        if (ClusterType.lookup(clusterType).equals(ClusterType.ONE_WAY)) {
             DcClusterTbl dcClusterTbl = dcClusterService.find(dcName, clusterName);
             selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType), dcClusterTbl.isGroupType() ? DcGroupType.DR_MASTER : DcGroupType.MASTER);
         } else {
