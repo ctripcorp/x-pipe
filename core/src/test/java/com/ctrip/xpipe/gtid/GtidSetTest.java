@@ -52,6 +52,114 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testRise0() {
+
+        GtidSet result;
+
+        result = new GtidSet("A:3-5");
+        result.rise("A:0");
+        Assert.assertEquals(new GtidSet("A:3-5"), result);
+
+        result = new GtidSet("A:3-5");
+        result.rise("B:5");
+        Assert.assertEquals(new GtidSet("A:3-5,B:1-5"), result);
+    }
+
+    @Test
+    public void testRise1() {
+
+        GtidSet result;
+
+        result = new GtidSet("A:1-5");
+        result.rise("A:5");
+        Assert.assertEquals(new GtidSet("A:1-5"), result);
+
+        result = new GtidSet("A:1-5");
+        result.rise("A:6");
+        Assert.assertEquals(new GtidSet("A:1-6"), result);
+
+        result = new GtidSet("A:3-5");
+        result.rise("A:7");
+        Assert.assertEquals(new GtidSet("A:1-7"), result);
+
+        result = new GtidSet("A:3-5,B:5");
+        result.rise("A:8");
+        Assert.assertEquals(new GtidSet("B:5,A:1-8"), result);
+    }
+
+    @Test
+    public void testRise2() {
+
+        GtidSet result;
+
+        result = new GtidSet("A:5-10");
+        result.rise("A:3");
+        Assert.assertEquals(new GtidSet("A:1-3:5-10"), result);
+
+        result = new GtidSet("A:5-11");
+        result.rise("A:4");
+        Assert.assertEquals(new GtidSet("A:1-11"), result);
+
+        result = new GtidSet("A:5-12,B:5");
+        result.rise("A:8");
+        Assert.assertEquals(new GtidSet("B:5,A:1-12"), result);
+    }
+
+    @Test
+    public void testRise3() {
+
+        GtidSet result;
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:3");
+        Assert.assertEquals(new GtidSet("A:1-3:5-10:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:4");
+        Assert.assertEquals(new GtidSet("A:1-10:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:5");
+        Assert.assertEquals(new GtidSet("A:1-10:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:10");
+        Assert.assertEquals(new GtidSet("A:1-10:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:11");
+        Assert.assertEquals(new GtidSet("A:1-11:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:15");
+        Assert.assertEquals(new GtidSet("A:1-15:20-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:19");
+        Assert.assertEquals(new GtidSet("A:1-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:20");
+        Assert.assertEquals(new GtidSet("A:1-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:25");
+        Assert.assertEquals(new GtidSet("A:1-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:30");
+        Assert.assertEquals(new GtidSet("A:1-30"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:31");
+        Assert.assertEquals(new GtidSet("A:1-31"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:35");
+        Assert.assertEquals(new GtidSet("A:1-35"), result);
+    }
+
+    @Test
     public void testAdd() throws Exception {
         GtidSet gtidSet = new GtidSet("00000000-0000-0000-0000-000000000000:3-5");
         gtidSet.add("00000000-0000-0000-0000-000000000000:2");
