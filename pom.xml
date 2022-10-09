@@ -45,7 +45,7 @@
         <netty4.version>4.1.52.Final</netty4.version>
         <ctrip-framework-foundation.version>1.8.11</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
-        <cat.version>3.3.18</cat.version>
+        <cat.version>3.3.37</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
