@@ -70,15 +70,6 @@ public class GtidSet {
 
     }
 
-    public long lwm(String uuid /* src id */) {
-
-        if (null == map.get(uuid)) {
-            return 0;
-        }
-
-        return map.get(uuid).lwm();
-    }
-
     /**
      * Get an immutable collection of the {@link UUIDSet range of GTIDs for a single server}.
      * @return the {@link UUIDSet GTID ranges for each server}; never null
@@ -108,6 +99,30 @@ public class GtidSet {
      */
     public UUIDSet putUUIDSet(UUIDSet uuidSet) {
         return map.put(uuidSet.getUUID(), uuidSet);
+    }
+
+    public long lwm(String uuid /* src id */) {
+
+        if (null == map.get(uuid)) {
+            return 0;
+        }
+
+        return map.get(uuid).lwm();
+    }
+
+    public boolean rise(String gtid) {
+        String[] split = gtid.split(":");
+        if (split.length != 2) {
+            return false;
+        }
+        String sourceId = split[0];
+        long transactionId = Long.parseLong(split[1]);
+        UUIDSet uuidSet = map.get(sourceId);
+        if (uuidSet == null) {
+            map.put(sourceId, uuidSet = new UUIDSet(sourceId, new ArrayList<Interval>()));
+        }
+        uuidSet.rise(transactionId);
+        return true;
     }
 
     /**
@@ -477,6 +492,37 @@ public class GtidSet {
                 return first.end;
             } else {
                 return 0;
+            }
+        }
+
+        private void rise(long transactionId) {
+
+            if (transactionId == 0) {
+                return;
+            }
+
+            int index = findInterval(transactionId);
+
+            if (index >= intervals.size()) {
+                intervals = new ArrayList<>();
+                intervals.add(new Interval(1, transactionId));
+                return;
+            }
+
+            Interval i = intervals.get(index);
+
+            if (i.start > transactionId + 1) {
+                removeTil(index);
+                intervals.add(0, new Interval(1, transactionId));
+            } else {
+                removeTil(index);
+                i.start = 1;
+            }
+        }
+
+        private void removeTil(int index) {
+            for (int i = 0; i < index; i++) {
+                intervals.remove(0);
             }
         }
 
