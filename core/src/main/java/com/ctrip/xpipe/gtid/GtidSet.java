@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.gtid;
 
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +11,20 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 public class GtidSet {
+
+    public static Pair<String, Long> parseGtid(String gtid) {
+        String[] split = gtid.split(":");
+        if (split.length != 2) {
+            return null;
+        }
+        String sourceId = split[0];
+        long transactionId = Long.parseLong(split[1]);
+        return Pair.of(sourceId, transactionId);
+    }
+
+    public static String composeGtid(String sourceId, Long transactionId) {
+        return sourceId + ":" + transactionId;
+    }
 
     private final Map<String, UUIDSet> map = new LinkedHashMap<>();
 
@@ -110,10 +125,10 @@ public class GtidSet {
         return map.get(uuid).lwm();
     }
 
-    public boolean rise(String gtid) {
+    public long rise(String gtid) {
         String[] split = gtid.split(":");
         if (split.length != 2) {
-            return false;
+            return -1;
         }
         String sourceId = split[0];
         long transactionId = Long.parseLong(split[1]);
@@ -121,8 +136,9 @@ public class GtidSet {
         if (uuidSet == null) {
             map.put(sourceId, uuidSet = new UUIDSet(sourceId, new ArrayList<Interval>()));
         }
+        long last = uuidSet.lwm();
         uuidSet.rise(transactionId);
-        return true;
+        return last;
     }
 
     /**
