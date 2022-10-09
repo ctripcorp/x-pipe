@@ -26,7 +26,7 @@ public class DefaultXsyncReplication
     public ApplierCommandDispatcher dispatcher;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtidSet;
+    public AtomicReference<GtidSet> gtid_executed;
 
     @InstanceDependency
     public XpipeNettyClientKeyedObjectPool pool;
@@ -60,7 +60,7 @@ public class DefaultXsyncReplication
         /* simple implementation */
 
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
-        Xsync xsync = new DefaultXsync(objectPool, gtidSet.get(), null, scheduled);
+        Xsync xsync = new DefaultXsync(objectPool, gtid_executed.get(), null, scheduled);
         xsync.addXsyncObserver(dispatcher);
         return xsync;
     }
@@ -83,7 +83,7 @@ public class DefaultXsyncReplication
     @Override
     public void initState(Endpoint endpoint, Object... states) {
         this.endpoint = endpoint;
-        this.gtidSet.set((GtidSet) states[0]);
+        this.gtid_executed.set((GtidSet) states[0]);
     }
 
     @Override

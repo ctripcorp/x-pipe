@@ -5,12 +5,14 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMSetCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSetCommand;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.Assert.assertEquals;
@@ -30,6 +32,8 @@ public class DefaultSequenceControllerTest extends AbstractTest {
     @Before
     public void setUp() throws Exception {
         controller.initialize();
+        controller.stateThread = Executors.newScheduledThreadPool(1,
+                ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "state-test-thread"));
     }
 
     @After

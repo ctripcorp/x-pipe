@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
@@ -55,13 +56,13 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertNotNull(server.parser);
 
         assertEquals(server.client, ((DefaultLwmManager) server.lwmManager).client);
-        assertEquals(server.sequence, ((DefaultLwmManager) server.lwmManager).sequence);
         assertEquals(server.lwmManager, ((DefaultSequenceController) server.sequence).lwmManager);
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
 
-        assertEquals(server.gtidSet, ((DefaultXsyncReplication) server.replication).gtidSet);
-        assertEquals(server.gtidSet, ((DefaultCommandDispatcher) server.dispatcher).gtidSet);
-        assertEquals(server.gtidSet, ((DefaultSequenceController) server.sequence).gtidSet);
+        assertEquals(server.gtid_executed, ((DefaultXsyncReplication) server.replication).gtid_executed);
+        assertEquals(server.gtid_received, ((DefaultCommandDispatcher) server.dispatcher).gtid_received);
+        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+        assertEquals(server.gtid_executed, ((DefaultLwmManager) server.lwmManager).gtid_executed);
 
         //server.client.close()
     }

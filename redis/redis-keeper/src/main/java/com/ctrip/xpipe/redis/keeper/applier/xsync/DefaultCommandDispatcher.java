@@ -14,8 +14,11 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,9 +38,17 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public RedisOpParser parser;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtidSet;
+    public AtomicReference<GtidSet> gtid_received;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> gtid_executed;
+
+    @InstanceDependency
+    public ScheduledExecutorService stateThread;
 
     private RdbParser<?> rdbParser;
+
+    private boolean firstReceived = true;
 
     public DefaultCommandDispatcher() {
         this.rdbParser = new DefaultRdbParser();
@@ -62,7 +73,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
         //merge.end [gtid]
-        this.gtidSet.set(rdbGtidSet);
+        this.gtid_received.set(rdbGtidSet);
     }
 
     @Override
@@ -78,7 +89,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        /* TODO: deal with leaping gtid when keeper filter data */
+        updateGtidState(redisOp.getOpGtid());
 
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
@@ -86,6 +97,28 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             sequenceController.submit(new DefaultExecCommand(client, redisOp));
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));
+        }
+    }
+
+    public void updateGtidState(String gtid) {
+
+        if (firstReceived) {
+            firstReceived = false;
+            gtid_received.get().rise(gtid);
+
+            stateThread.execute(()->{
+                gtid_executed.get().rise(gtid);
+            });
+        } else {
+            Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
+            long last = gtid_received.get().rise(gtid);
+
+            for (long i = last + 1; i < parsed.getValue(); i++) {
+                long leaped = i;
+                stateThread.execute(()->{
+                    gtid_executed.get().rise(GtidSet.composeGtid(parsed.getKey(), leaped));
+                });
+            }
         }
     }
 
