@@ -82,8 +82,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public AsyncRedisClient client;
 
     @InstanceDependency
-    //TODO: distinguish gtid_received, gtid_executed, gtid_in_request
-    public AtomicReference<GtidSet> gtidSet;
+    public AtomicReference<GtidSet> gtid_received;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> gtid_executed;
 
     public final int listeningPort;
 
@@ -104,7 +106,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public RedisOpParser parser;
 
     @InstanceDependency
-    public ScheduledExecutorService scheduled;
+    public ScheduledExecutorService stateThread;
 
     private long startTime;
 
@@ -139,14 +141,15 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
 
-        this.gtidSet = new AtomicReference<>();
+        this.gtid_received = new AtomicReference<>();
+        this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        scheduled = Executors.newScheduledThreadPool(1,
-                ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
+        stateThread = Executors.newScheduledThreadPool(1,
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE));
     }
@@ -191,7 +194,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         super.doDispose();
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        scheduled.shutdownNow();
+        stateThread.shutdownNow();
         clientExecutors.shutdownNow();
     }
 
