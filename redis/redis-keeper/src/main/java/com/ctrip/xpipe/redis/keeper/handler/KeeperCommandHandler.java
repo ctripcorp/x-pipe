@@ -86,7 +86,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 
 		if(containsProxyProtocol(args)) {
 			ProxyConnectProtocol protocol = getProxyProtocol(args);
-			ProxyRegistry.registerProxy(ip, port, protocol.getRouteInfo());
+			ProxyRegistry.registerProxy(ip, port, protocol.getContent());
 			return new DefaultEndPoint(ip, port, protocol);
 		} else {
 			ProxyRegistry.unregisterProxy(ip, port);
