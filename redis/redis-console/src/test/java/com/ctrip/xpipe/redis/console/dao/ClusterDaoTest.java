@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,7 +46,7 @@ public class ClusterDaoTest  extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testCreateCluster() throws DalException {
-        ClusterTbl newCluster = clusterDao.createCluster(clusterTbl);
+        ClusterTbl newCluster = clusterDao.createCluster(clusterTbl, new ArrayList<>());
         Assert.assertEquals(clusterTbl.getId(), newCluster.getId());
     }
 
@@ -74,7 +75,7 @@ public class ClusterDaoTest  extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testDeleteCluster() throws Exception {
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
         clusterDao.deleteCluster(clusterTbl);
     }
 
