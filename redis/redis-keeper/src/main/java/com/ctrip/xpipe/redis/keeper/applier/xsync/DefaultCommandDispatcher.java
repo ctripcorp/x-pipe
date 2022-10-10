@@ -116,7 +116,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             for (long i = last + 1; i < parsed.getValue(); i++) {
                 long leaped = i;
                 stateThread.execute(()->{
-                    gtid_executed.get().rise(GtidSet.composeGtid(parsed.getKey(), leaped));
+                    gtid_executed.get().add(GtidSet.composeGtid(parsed.getKey(), leaped));
                 });
             }
         }
