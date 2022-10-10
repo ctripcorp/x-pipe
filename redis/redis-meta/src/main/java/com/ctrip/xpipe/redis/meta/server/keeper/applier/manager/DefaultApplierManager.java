@@ -147,7 +147,9 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
-        return Collections.singleton(ClusterType.HETERO);
+//        return Collections.singleton(ClusterType.HETERO);
+        // TODO: 2022/10/10 remove hetero
+        return Collections.singleton(ClusterType.ONE_WAY);
     }
 
     protected List<ApplierMeta> getDeadAppliers(List<ApplierMeta> allAppliers, List<ApplierMeta> aliveAppliers) {

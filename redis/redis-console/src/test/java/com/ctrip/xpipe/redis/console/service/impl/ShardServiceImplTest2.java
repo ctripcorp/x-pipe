@@ -176,7 +176,9 @@ public class ShardServiceImplTest2 {
     @Test
     public void findOrCreateSHardIfNotExistWithCreateDcClusterShard() {
         String cluster = "cluster-test", shard = "shard1";
-        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.HETERO.toString());
+        // TODO: 2022/10/10 remove hetero
+//        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.HETERO.toString());
+        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.ONE_WAY.toString());
         ShardTbl proto = new ShardTbl().setShardName(shard).setSetinelMonitorName(shard);
 
         when(clusterService.find(cluster)).thenReturn(clusterTbl);
