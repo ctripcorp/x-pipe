@@ -395,7 +395,14 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
                 .setActivedcId(1)
                 .setClusterDescription("desc")
                 .setClusterAdminEmails("test@ctrip.com"));
-        clusterModel.setDcs(Arrays.asList(new DcTbl().setDcName("jq"), new DcTbl().setDcName("oy")));
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        DcModel dcModel1 = new DcModel();
+        DcModel dcModel2 = new DcModel();
+        dcModel1.setDc_name(dcNames[0]);
+        dcModel2.setDc_name(dcNames[1]);
+        dcClusters.add(new DcClusterModel().setDc(dcModel1).setDcCluster(new DcClusterTbl()));
+        dcClusters.add(new DcClusterModel().setDc(dcModel2).setDcCluster(new DcClusterTbl()));
+        clusterModel.setDcClusters(dcClusters);
         redisService.clusterService.createCluster(clusterModel);
 
         ClusterMetaModifiedNotifier notifier = Mockito.mock(ClusterMetaModifiedNotifier.class);

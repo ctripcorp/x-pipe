@@ -75,14 +75,4 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 			}
 		}, true);
 	}
-
-
-	public void insertDcClusterShardsBatch(List<DcClusterShardTbl> dcClusterShards) {
-		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
-			@Override
-			public int[] doQuery() throws DalException {
-				return dcClusterShardTblDao.insertBatch(dcClusterShards.toArray(new DcClusterShardTbl[dcClusterShards.size()]));
-			}
-		});
-	}
 }

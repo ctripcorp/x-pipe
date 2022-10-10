@@ -14,6 +14,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
+
 import static org.mockito.Mockito.when;
 
 
@@ -41,7 +43,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                                             .setStatus("normal")
                                             .setClusterDesignatedRouteIds("")
                                             .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
@@ -83,7 +85,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
@@ -113,7 +115,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
@@ -143,9 +145,9 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
         clusterTbl.setId(LATTER_ID).setClusterName(LATTER_NAME);
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         /* fail on param check. */
         RetMessage retMessage;
