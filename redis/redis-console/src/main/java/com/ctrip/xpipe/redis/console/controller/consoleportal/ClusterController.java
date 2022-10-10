@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -70,7 +71,7 @@ public class ClusterController extends AbstractConsoleController {
                     && ObjectUtils.equals(o1.getDcCluster().getDcId(), o2.getDcCluster().getDcId())
                     && ObjectUtils.equals(o1.getDcCluster().getClusterId(), o2.getDcCluster().getClusterId())
                     && ObjectUtils.equals(o1.getDcCluster().getGroupName(), o2.getDcCluster().getGroupName())
-                    && ObjectUtils.equals(o1.getDcCluster().isGroupType(), o2.getDcCluster().isGroupType())) {
+                    && ObjectUtils.equals(o1.getDcCluster().getGroupType(), o2.getDcCluster().getGroupType())) {
                 return 0;
             }
             return -1;
@@ -223,7 +224,7 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.POST)
     public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
         logger.info("[bindDc]{},{}", clusterName, dcName);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName).setGroupType(true));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName).setGroupType(DcGroupType.DR_MASTER.toString()));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
@@ -365,7 +366,7 @@ public class ClusterController extends AbstractConsoleController {
             toCreate.getDcCluster().setClusterName(clusterTbl.getClusterName());
             clusterService.bindDc(toCreate.getDcCluster());
 
-            if (!toCreate.getDcCluster().isGroupType() && toCreate.getShards() != null) {
+            if (DcGroupType.isSameGroupType(toCreate.getDcCluster().getGroupType(), DcGroupType.MASTER) && toCreate.getShards() != null) {
                 List<DcClusterTbl> dcClusterTbls = new ArrayList<>();
                 dcClusterTbls.add(dcClusterService.find(toCreate.getDcCluster().getDcName(),
                         toCreate.getDcCluster().getClusterName()));
@@ -391,7 +392,7 @@ public class ClusterController extends AbstractConsoleController {
     private void updateDcClusterBatch(List<DcClusterModel> toUpdates, ClusterTbl clusterTbl) {
 
         for (DcClusterModel toUpdate : toUpdates){
-            if (toUpdate.getDcCluster().isGroupType()
+            if (DcGroupType.isNullOrDrMaster(toUpdate.getDcCluster().getGroupType())
                     && !ObjectUtils.equals(toUpdate.getDcCluster().getDcId(), clusterTbl.getActivedcId())) {
                 continue;
             }
@@ -427,7 +428,7 @@ public class ClusterController extends AbstractConsoleController {
         shardService.deleteShards(clusterTbl, toDeleteShardNames);
 
         List<DcClusterTbl> dcClusterTbls =
-                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.isGroupType());
+                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.getGroupType());
         toCreates.forEach(toCreate -> {
             shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
                     dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));

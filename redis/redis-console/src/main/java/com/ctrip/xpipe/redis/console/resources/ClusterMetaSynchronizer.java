@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -114,7 +115,7 @@ public class ClusterMetaSynchronizer {
 
     void bindDc(ClusterMeta toAdd){
         logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", toAdd, DcMetaSynchronizer.currentDcId);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(DcMetaSynchronizer.currentDcId).setGroupType(true));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(DcMetaSynchronizer.currentDcId).setGroupType(DcGroupType.DR_MASTER.toString()));
         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
     }
 

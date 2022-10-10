@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -139,7 +140,7 @@ public class MetaUpdate extends AbstractConsoleController {
                     DcClusterTbl dcClusterTbl = dcName2DcClusterModelMap.get(dcId).getDcCluster();
                     dcClusterTbl.setGroupName(dcDetail.getDcGroupName());
                     if(dcDetail.getDcGroupType() != null) {
-                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()));
+                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()).toString());
                     }
                 }
             }
@@ -631,7 +632,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 if (dcClusterTbl == null) {
                     throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
                 }
-                if(dcClusterTbl.isGroupType()) {
+                if(DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
                     doAddKeepers(dcId, clusterName, shardTbl, dcId);
                 }
             }
@@ -702,11 +703,11 @@ public class MetaUpdate extends AbstractConsoleController {
         DcClusterTbl dcClusterTbl = new DcClusterTbl()
                 .setClusterName(clusterName)
                 .setDcName(dcName)
-                .setGroupType(true);
+                .setGroupType(DcGroupType.DR_MASTER.toString());
         if(dcDetailInfoOptional.isPresent()){
             DcDetailInfo dcDetailInfo = dcDetailInfoOptional.get();
             if(dcDetailInfo.getDcGroupType() != null){
-                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()));
+                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()).toString());
             }
             dcClusterTbl.setGroupName(dcDetailInfo.getDcGroupName());
         }
@@ -791,7 +792,7 @@ public class MetaUpdate extends AbstractConsoleController {
                     if(null!=allToDcShards && !allToDcShards.isEmpty()) {
                         addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
                     }
-                    if(clusterType.supportKeeper() && !dcClusterTbl.isGroupType()) {
+                    if(clusterType.supportKeeper() && DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
                         doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
                     }
                 }

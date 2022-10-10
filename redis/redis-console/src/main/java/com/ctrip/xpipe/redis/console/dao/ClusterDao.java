@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -84,7 +85,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				dcClusterModels.forEach(dcClusterModel -> {
 					if (activeDc.getDcName().equalsIgnoreCase(dcClusterModel.getDc().getDc_name())) {
 						protoDcCluster.setGroupName(dcClusterModel.getDcCluster().getGroupName())
-								.setGroupType(dcClusterModel.getDcCluster().isGroupType());
+								.setGroupType(dcClusterModel.getDcCluster().getGroupType());
 
 					}
 				});
@@ -184,13 +185,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				}
 			});
 
-			if(dcClusterTbl.isGroupType()) {
+			if(DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
 
 				List<DcClusterTbl> dcClusters = dcClusterTblDao.findAllByClusterId(cluster.getId(), DcClusterTblEntity.READSET_FULL);
 
 				Set<Long> shardIds = new HashSet<>();
 				for (DcClusterTbl dcCluster : dcClusters) {
-					if(dcCluster.isGroupType()) {
+					if(DcGroupType.isNullOrDrMaster(dcCluster.getGroupType())) {
 						List<ShardTbl> shardTbls = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 							@Override
 							public List<ShardTbl> doQuery() throws DalException {

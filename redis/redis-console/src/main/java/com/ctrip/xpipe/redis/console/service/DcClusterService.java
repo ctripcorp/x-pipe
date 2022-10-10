@@ -16,7 +16,7 @@ public interface DcClusterService {
 	DcClusterTbl addDcCluster(String dcName, String clusterName);
 	List<DcClusterModel> findRelatedDcClusterModels(long clusterId);
 	void validateDcClusters(List<DcClusterModel> dcClusterModels, ClusterTbl clusterTbl);
-	List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, boolean isDRMaster);
+	List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, String groupType);
 	DcClusterTbl addDcCluster(String dcName, String clusterName, String redisConfigRule);
 	List<DcClusterTbl> findByClusterIds(List<Long> clusterIds);
 	List<DcClusterTbl> findAllByDcId(long dcId);

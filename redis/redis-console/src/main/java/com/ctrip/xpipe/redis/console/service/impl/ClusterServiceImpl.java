@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -248,13 +249,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 
 			for (DcClusterModel dcCluster : dcClusters) {
-				if (dcCluster.getDcCluster().isGroupType()
+				if ((DcGroupType.isNullOrDrMaster(dcCluster.getDcCluster().getGroupType()))
 						&& dcCluster.getDcCluster().getDcId() != result.getActivedcId()) continue;
 
 				if (dcCluster.getShards() != null && !dcCluster.getShards().isEmpty()) {
 					List<DcClusterTbl> dcClusterTbls =
 							dcClusterService.findAllByClusterAndGroupType(result.getId(),
-									dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().isGroupType());
+									dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().getGroupType());
 
 					dcCluster.getShards().forEach(shardModel -> {
 						shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
@@ -481,7 +482,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
 
 		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
-		if(!dcClusterTbl.isGroupType()) {
+		if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
 			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
 			if(null != shardTbls && !shardTbls.isEmpty()) {
 				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());

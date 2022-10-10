@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -100,7 +101,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			}
 
 			if (clusterTbl.getActivedcId() == dcClusterModel.getDcCluster().getDcId()
-					&& !dcClusterModel.getDcCluster().isGroupType()) {
+					&& DcGroupType.isSameGroupType(dcClusterModel.getDcCluster().getGroupType(), DcGroupType.MASTER)) {
 				throw new BadRequestException(String.format("active dc %d of cluster %s must be DRMaster",
 						clusterTbl.getActivedcId(), clusterTbl.getClusterName()));
 			}
@@ -108,12 +109,12 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
-	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, boolean isDRMaster) {
-		if (isDRMaster) {
+	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, String groupType) {
+		if (DcGroupType.isNullOrDrMaster(groupType)) {
 			return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
 				@Override
 				public List<DcClusterTbl> doQuery() throws DalException {
-					return dao.findAllByClusterAndGroupType(clusterId, isDRMaster, DcClusterTblEntity.READSET_FULL);
+					return dao.findAllByClusterAndGroupType(clusterId, groupType, DcClusterTblEntity.READSET_FULL);
 				}
 			});
 		} else {
@@ -235,7 +236,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		result.setDcCluster(dcClusterTbl);
 
 		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
-		if (!dcClusterTbl.isGroupType()) {
+		if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
 			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
 		}
 		return result;
@@ -264,7 +265,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			dcClusterModel.setDc(dcModel);
 
 			dcClusterModel.setShards(shardModelService.getAllShardModel(dcModel.getDc_name(), clusterName));
-			if (!dcClusterTbl.isGroupType()) {
+			if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
 				dcClusterModel.setSources(sourceModelService.getAllSourceModels(dcModel.getDc_name(), clusterName));
 			}
 			result.add(dcClusterModel);

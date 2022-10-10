@@ -164,8 +164,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
                 clusterMeta.setDownstreamDcs("");
-                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.getDesc():
-                        DcGroupType.findByValue(dcClusterInfo.isGroupType()).getDesc());
+                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.toString(): dcClusterInfo.getGroupType());
                 clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
@@ -632,7 +631,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     //0: Master; 1: DRMaster
     private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
-        return DcGroupType.DR_MASTER.equals(DcGroupType.findByValue(dcClusterTbl.isGroupType()));
+        return DcGroupType.DR_MASTER.equals(DcGroupType.findByValue(dcClusterTbl.getGroupType()));
     }
 
     private String getDcGroupName(DcClusterTbl dcClusterInfo) {

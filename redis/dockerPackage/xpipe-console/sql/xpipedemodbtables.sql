@@ -103,7 +103,7 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
   `active_redis_check_rules` varchar(128) COMMENT 'active redis check rules',
   `group_name` varchar(20) COMMENT 'reference group name, null means same as dc name ',
-  `group_type` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'reference group type, 1 means DRMaster and 0 means Master',
+  `group_type` varchar(32) DEFAULT NULL COMMENT 'reference group type, 1 means DRMaster and 0 means Master',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_id`),
