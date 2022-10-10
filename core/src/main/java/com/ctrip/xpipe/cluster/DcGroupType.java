@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.cluster;
 
+import com.ctrip.xpipe.utils.StringUtil;
+
 /**
  * @author ayq
  * <p>
@@ -7,28 +9,22 @@ package com.ctrip.xpipe.cluster;
  */
 public enum DcGroupType {
 
-    MASTER(false, "MASTER"),
-    DR_MASTER(true, "DRMaster");
+    MASTER,
+    DR_MASTER;
 
-    private boolean value;
-    private String desc;
-
-    DcGroupType(boolean value, String desc) {
-        this.value = value;
-        this.desc = desc;
+    public static boolean isSameGroupType(String source, DcGroupType dcGroupType) {
+        return dcGroupType.toString().equalsIgnoreCase(source);
     }
 
-    public boolean isValue() {
-        return value;
+    public static boolean isNullOrDrMaster(String source) {
+        return source == null || DR_MASTER.toString().equalsIgnoreCase(source);
     }
 
-    public String getDesc() {
-        return desc;
-    }
-
-    public static DcGroupType findByValue(boolean value) {
+    public static DcGroupType findByValue(String value) {
+        if(StringUtil.isEmpty(value)) return null;
+        String upperValue = value.toUpperCase();
         for (DcGroupType dcGroupType : DcGroupType.values()) {
-            if (dcGroupType.value == value) {
+            if (dcGroupType.name().equals(upperValue)) {
                 return dcGroupType;
             }
         }

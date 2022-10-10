@@ -107,7 +107,7 @@
     <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" nullable="false" />
     <member name="active-redis-check-rules" field="active_redis_check_rules" value-type="String" length="128" />
     <member name="group-name" field="group_name" value-type="String" length="20" />
-    <member name="group-type" field="group_type" value-type="boolean" nullable="false" />
+    <member name="group-type" field="group_type" value-type="String" length="32" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-id" value-type="long" key-member="dc-cluster-id" />

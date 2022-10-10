@@ -85,7 +85,7 @@ create table DC_CLUSTER_TBL
     dc_cluster_phase int not null default 1,
     active_redis_check_rules varchar(128),
     group_name varchar(20),
-    group_type tinyint(1) NOT NULL DEFAULT 1,
+    group_type varchar(32) default null COMMENT 'reference group type, 1 means DRMaster and 0 means Master',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );

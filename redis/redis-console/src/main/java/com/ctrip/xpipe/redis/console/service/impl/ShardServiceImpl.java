@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -146,7 +147,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-			if(!dcClusterTbl.isGroupType()) continue;
+			if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) continue;
 			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
@@ -191,7 +192,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if (dcClusterTbls == null) {
 			dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId())
 					.stream()
-					.filter(DcClusterTbl::isGroupType)
+					.filter(dcClusterTbl -> DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType()))
 					.collect(Collectors.toList());
 		}
 

@@ -186,9 +186,9 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(22,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(23,'hetero-cluster_fra_1','hetero-cluster_fra_1', 7);
 
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (31,1,7,1,0,'jq',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (32,2,7,1,0,'oy',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (33,3,7,1,0,'fra',0);
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (31,1,7,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (32,2,7,1,0,'oy','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (33,3,7,1,0,'fra','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (51,31,21,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (52,31,22,1,1);
@@ -232,9 +232,9 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(24,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(25,'hetero-cluster1_2','hetero-cluster1_2', 8);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(26,'hetero-cluster1_fra_1','hetero-cluster1_fra_1', 8);
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (34,1,8,1,0,'jq',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (35,2,8,1,0,'oy',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (36,3,8,1,0,'fra',0);
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (34,1,8,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (35,2,8,1,0,'oy','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (36,3,8,1,0,'fra','MASTER');
 
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (56,34,24,1,1);
@@ -257,8 +257,8 @@ insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) va
 
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type) values (9,'hetero-local-cluster',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'HETERO');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (37,1,9,1,0,'jq',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (38,2,9,1,0,'oy',0);
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (37,1,9,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (38,2,9,1,0,'oy','MASTER');
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(27,'hetero-local-cluster_1','hetero-local-cluster_1', 9);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(28,'hetero-local-cluster_2','hetero-local-cluster_2', 9);
@@ -290,8 +290,8 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type) values (10,'hetero2-local-cluster',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'HETERO');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (39,1,10,1,0,'jq',1);
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (40,2,10,1,0,'oy',0);
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (39,1,10,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (40,2,10,1,0,'oy','MASTER');
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(30,'hetero2-local-cluster_1','hetero2-local-cluster_1', 10);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(31,'hetero2-local-cluster_2','hetero2-local-cluster_2', 10);

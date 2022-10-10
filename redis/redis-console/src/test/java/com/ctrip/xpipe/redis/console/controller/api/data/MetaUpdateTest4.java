@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ReplDirectionCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -225,7 +226,7 @@ public class MetaUpdateTest4 {
 
         DcClusterTbl dcClusterTbl1 = mock(DcClusterTbl.class);
         when(dcClusterTbl1.getDcId()).thenReturn(dcId1);
-        when(dcClusterTbl1.isGroupType()).thenReturn(true);
+        when(dcClusterTbl1.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
         when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl1);
 
         metaUpdate.createReplDirections(clusterName, Lists.newArrayList(replDirectionCreateInfo1));
@@ -239,7 +240,7 @@ public class MetaUpdateTest4 {
 //        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
         DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
-        when(dcClusterTbl.isGroupType()).thenReturn(false);
+        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.MASTER.toString());
         when(dcClusterTbl.getDcId()).thenReturn(dcId1);
         when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl);
 

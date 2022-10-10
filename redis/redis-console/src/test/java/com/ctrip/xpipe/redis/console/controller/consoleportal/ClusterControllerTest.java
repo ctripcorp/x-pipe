@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -109,17 +110,17 @@ public class ClusterControllerTest extends AbstractConsoleIntegrationTest {
 
         DcModel jq = new DcModel();
         jq.setDc_name("jq");
-        DcClusterTbl jqDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(1L).setGroupType(true).setGroupName("jq");
+        DcClusterTbl jqDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(1L).setGroupType(DcGroupType.DR_MASTER.toString()).setGroupName("jq");
         DcClusterModel jqDcClusterModel = new DcClusterModel().setDc(jq).setDcCluster(jqDcClusterTbl).setShards(Lists.newArrayList(shardModel1, shardModel2));
 
         DcModel oy = new DcModel();
         oy.setDc_name("oy");
-        DcClusterTbl oyDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(2L).setGroupType(true).setGroupName("oy");
+        DcClusterTbl oyDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(2L).setGroupType(DcGroupType.DR_MASTER.toString()).setGroupName("oy");
         DcClusterModel oyDcClusterModel = new DcClusterModel().setDc(oy).setDcCluster(oyDcClusterTbl).setShards(Lists.newArrayList(shardModel1, shardModel2));
 
         DcModel fra = new DcModel();
         fra.setDc_name("fra");
-        DcClusterTbl fraDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(3L).setGroupType(false).setGroupName("fra");
+        DcClusterTbl fraDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(3L).setGroupType(DcGroupType.MASTER.toString()).setGroupName("fra");
         DcClusterModel fraDcClusterModel = new DcClusterModel().setDc(fra).setDcCluster(fraDcClusterTbl).setShards(Lists.newArrayList(shardModel3));
 
         ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)
@@ -422,17 +423,17 @@ public class ClusterControllerTest extends AbstractConsoleIntegrationTest {
 
         DcModel jq = new DcModel();
         jq.setDc_name("jq");
-        DcClusterTbl jqDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(1L).setGroupType(true).setGroupName("jq");
+        DcClusterTbl jqDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(1L).setGroupType(DcGroupType.DR_MASTER.toString()).setGroupName("jq");
         DcClusterModel jqDcClusterModel = new DcClusterModel().setDc(jq).setDcCluster(jqDcClusterTbl).setShards(Lists.newArrayList(shardModel1));
 
         DcModel oy = new DcModel();
         oy.setDc_name("oy");
-        DcClusterTbl oyDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(2L).setGroupType(false).setGroupName("oy");
+        DcClusterTbl oyDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(2L).setGroupType(DcGroupType.MASTER.toString()).setGroupName("oy");
         DcClusterModel oyDcClusterModel = new DcClusterModel().setDc(oy).setDcCluster(oyDcClusterTbl).setShards(Lists.newArrayList(shardModel2, shardModel4));
 
         DcModel fra = new DcModel();
         fra.setDc_name("fra");
-        DcClusterTbl fraDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(3L).setGroupType(false).setGroupName("fra");
+        DcClusterTbl fraDcClusterTbl = new DcClusterTbl().setClusterId(heteroClusterId).setDcId(3L).setGroupType(DcGroupType.MASTER.toString()).setGroupName("fra");
         DcClusterModel fraDcClusterModel = new DcClusterModel().setDc(fra).setDcCluster(fraDcClusterTbl).setShards(Lists.newArrayList(shardModel3, shardModel5));
 
         ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)

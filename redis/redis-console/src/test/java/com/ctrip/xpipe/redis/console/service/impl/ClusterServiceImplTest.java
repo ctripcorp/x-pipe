@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -160,18 +161,18 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         DcModel jq = new DcModel();
         jq.setDc_name("jq");
         DcClusterModel jqDcCluster = new DcClusterModel().setDc(jq)
-                                            .setDcCluster(new DcClusterTbl().setGroupName("jq").setGroupType(true))
+                                            .setDcCluster(new DcClusterTbl().setGroupName("jq").setGroupType(DcGroupType.DR_MASTER.toString()))
                                             .setShards(Lists.newArrayList(shard1, shard2, shard3));
         DcModel oy = new DcModel();
         oy.setDc_name("oy");
         DcClusterModel oyDcCluster = new DcClusterModel().setDc(oy)
-                .setDcCluster(new DcClusterTbl().setGroupName("oy").setGroupType(true))
+                .setDcCluster(new DcClusterTbl().setGroupName("oy").setGroupType(DcGroupType.DR_MASTER.toString()))
                 .setShards(Lists.newArrayList(shard1, shard2, shard3));
 
         DcModel fra = new DcModel();
         fra.setDc_name("fra");
         DcClusterModel fraDcCluster = new DcClusterModel().setDc(fra)
-                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(false))
+                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(DcGroupType.MASTER.toString()))
                 .setShards(Lists.newArrayList(shard4, shard5));
         clusterModel.setDcClusters(Lists.newArrayList(jqDcCluster, oyDcCluster, fraDcCluster));
 
