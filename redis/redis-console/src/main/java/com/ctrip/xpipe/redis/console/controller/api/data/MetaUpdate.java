@@ -340,13 +340,6 @@ public class MetaUpdate extends AbstractConsoleController {
                 needUpdate = true;
                 clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
             }
-            if(!ObjectUtils.equals(clusterTbl.getClusterType(), clusterInfo.getClusterType())) {
-                // only support clusterType change from one way to hetero
-                if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.ONE_WAY) && ClusterType.isSameClusterType(clusterInfo.getClusterType(), ClusterType.HETERO)) {
-                    needUpdate = true;
-                    clusterTbl.setClusterType(clusterInfo.getClusterType());
-                }
-            }
             if(needUpdate) {
                 clusterService.update(clusterTbl);
             } else {
@@ -453,16 +446,11 @@ public class MetaUpdate extends AbstractConsoleController {
         }
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
         List<ShardCreateInfo> result = new LinkedList<>();
-        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
-            for (ShardTbl shardTbl : allByClusterName) {
-                List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
-                for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                    result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
-                }
+        for (ShardTbl shardTbl : allByClusterName) {
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
+            for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
             }
-        } else {
-            allByClusterName.forEach(shardTbl -> result.add(
-                    new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
         }
 
         return result;
@@ -793,13 +781,16 @@ public class MetaUpdate extends AbstractConsoleController {
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
             ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel);
             List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getSrcDcId(), clusterTbl.getId());
+            List<ShardTbl> allToDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getToDcId(), clusterTbl.getId());
             DcClusterTbl dcClusterTbl = dcName2DcClusterTblMap.computeIfAbsent(replDirectionInfoModel.getFromDcName().toUpperCase(), ignore -> dcClusterService.find(replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
             if(dcClusterTbl == null) {
                throw new CheckFailException(String.format("dc %s not exist in cluster %s", replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
             }
             if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
                 for (ShardTbl shardTbl : allSrcDcShards) {
-                    addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
+                    if(null!=allToDcShards && !allToDcShards.isEmpty()) {
+                        addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
+                    }
                     if(clusterType.supportKeeper() && !dcClusterTbl.isGroupType()) {
                         doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
                     }

@@ -146,6 +146,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
+			if(!dcClusterTbl.isGroupType()) continue;
 			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
@@ -187,8 +188,12 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		ClusterTbl clusterTbl = clusterService.find(clusterName);
 		// create dcClusterShard in all dcClusters of cluster if dcClusterTbls is null
-		if (dcClusterTbls == null)
-			dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+		if (dcClusterTbls == null) {
+			dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId())
+					.stream()
+					.filter(DcClusterTbl::isGroupType)
+					.collect(Collectors.toList());
+		}
 
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {

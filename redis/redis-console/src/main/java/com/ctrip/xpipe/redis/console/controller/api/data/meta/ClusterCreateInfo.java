@@ -70,22 +70,20 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
-        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
-            List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 
-            dcClusterTbls.forEach(dcClusterTbl -> {
-                DcDetailInfo dcDetailInfo = new DcDetailInfo()
-                        .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
-                        .setDcGroupName(dcClusterTbl.getGroupName())
-                        .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
-                if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
-                    clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
-                } else {
-                    clusterCreateInfo.addDcDetail(dcDetailInfo);
-                }
-            });
+        dcClusterTbls.forEach(dcClusterTbl -> {
+            DcDetailInfo dcDetailInfo = new DcDetailInfo()
+                    .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
+                    .setDcGroupName(dcClusterTbl.getGroupName())
+                    .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
+            if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
+                clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
+            } else {
+                clusterCreateInfo.addDcDetail(dcDetailInfo);
+            }
+        });
 
-        }
 
         return clusterCreateInfo;
     }
