@@ -152,7 +152,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
         ClusterMeta clusterMeta = dcMeta.getClusters().get("hetero2-local-cluster");
         Assert.assertNotNull(clusterMeta);
-        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO));
+        // TODO: 2022/10/10 remove hetero
+//        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO));
+        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
         Assert.assertEquals("jq", clusterMeta.getActiveDc());
         Assert.assertEquals("", clusterMeta.getBackupDcs());
     }
@@ -205,7 +207,12 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         DcMeta dcMeta = new DcMeta();
         long dcId = 1L;
 
-        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+        // TODO: 2022/10/10 remove hetero
+//        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+//                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+//                replDirectionService, zoneService, keeperContainerService, applierService,
+//                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
+        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -217,7 +224,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             } else {
                 continue;
             }
-            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            // TODO: 2022/10/10 remove hetero
+//            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
             Assert.assertEquals("jq", clusterMeta.getActiveDc());
             Assert.assertEquals("", clusterMeta.getBackupDcs());
             Assert.assertEquals("oy", clusterMeta.getDownstreamDcs());
@@ -241,7 +250,12 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         DcMeta dcMeta = new DcMeta();
         long dcId = 2L;
 
-        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+        // TODO: 2022/10/10 remove hetero
+//        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
+//                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+//                replDirectionService, zoneService, keeperContainerService, applierService,
+//                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
+        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -253,7 +267,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             } else {
                 continue;
             }
-            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            // TODO: 2022/10/10 remove hetero
+//            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+            Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
             Assert.assertEquals("jq", clusterMeta.getActiveDc());
             Assert.assertEquals("", clusterMeta.getBackupDcs());
             Assert.assertEquals("", clusterMeta.getDownstreamDcs());

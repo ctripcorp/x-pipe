@@ -76,7 +76,9 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-		return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
+//		return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
+		// TODO: 2022/10/10 remove hetero
+		return Stream.of(ClusterType.ONE_WAY).collect(Collectors.toSet());
 	}
 
 	private void addShard(Long clusterDbId, ShardMeta shardMeta) {

@@ -438,13 +438,14 @@ public class CurrentMeta implements Releasable {
 							logger.info("[addShard][default keeper master]{}", inetSocketAddress);
 							currentKeeperShardMeta.setKeeperMaster(inetSocketAddress);
 							return currentKeeperShardMeta;
-						case HETERO:
-							CurrentKeeperShardMeta keeperShardMeta = new CurrentKeeperShardMeta(clusterDbId, shardMeta.getDbId());
-							CurrentApplierShardMeta applierShardMeta = new CurrentApplierShardMeta(clusterDbId, shardMeta.getDbId());
-							CurrentHeteroShardMeta currentHeteroShardMeta = new CurrentHeteroShardMeta(
-									clusterDbId, shardMeta.getDbId(), keeperShardMeta, applierShardMeta,
-									(List<RedisMeta>) MetaClone.clone((Serializable) shardMeta.getRedises()));
-							return currentHeteroShardMeta;
+						// TODO: 2022/10/10 remove hetero
+//						case HETERO:
+//							CurrentKeeperShardMeta keeperShardMeta = new CurrentKeeperShardMeta(clusterDbId, shardMeta.getDbId());
+//							CurrentApplierShardMeta applierShardMeta = new CurrentApplierShardMeta(clusterDbId, shardMeta.getDbId());
+//							CurrentHeteroShardMeta currentHeteroShardMeta = new CurrentHeteroShardMeta(
+//									clusterDbId, shardMeta.getDbId(), keeperShardMeta, applierShardMeta,
+//									(List<RedisMeta>) MetaClone.clone((Serializable) shardMeta.getRedises()));
+//							return currentHeteroShardMeta;
 						default:
 							throw new IllegalArgumentException("unknow type:" + clusterType);
 					}

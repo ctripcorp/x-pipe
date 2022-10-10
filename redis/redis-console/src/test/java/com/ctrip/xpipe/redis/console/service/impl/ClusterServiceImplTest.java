@@ -138,7 +138,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(1)
                 .setClusterName(clusterName)
-                .setClusterType(ClusterType.HETERO.toString())
+                // TODO: 2022/10/10 remove hetero
+//                .setClusterType(ClusterType.HETERO.toString())
+                .setClusterType(ClusterType.ONE_WAY.toString())
                 .setClusterAdminEmails("test@1111.com")
                 .setClusterDescription(randomString(20))
         );

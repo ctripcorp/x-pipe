@@ -52,13 +52,15 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
             }
 
 			notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
-		} else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
-			if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-				notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
-            }
-
-			notifyDownstreamDcs(clusterDbId, shardDbId, activeKeeper);
 		}
+		// TODO: 2022/10/10 remove hetero
+//		else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
+//			if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+//				notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
+//            }
+//
+//			notifyDownstreamDcs(clusterDbId, shardDbId, activeKeeper);
+//		}
 	}
 
 	private void notifyBackupDcs(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
