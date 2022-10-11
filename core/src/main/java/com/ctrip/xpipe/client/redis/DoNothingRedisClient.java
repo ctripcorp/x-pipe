@@ -36,6 +36,11 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
+    public CommandFuture<Object> selectDB(int db) {
+        return resultFuture("OK");
+    }
+
+    @Override
     public CommandFuture<Object> write(Object resource, Object... rawArgs) {
         return resultFuture("OK");
     }

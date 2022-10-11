@@ -39,6 +39,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     boolean isInMulti = false;
 
+    int db = 0;
+
     public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
@@ -82,10 +84,21 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     @Override
+    public CommandFuture<Object> selectDB(int db) {
+        try {
+            this.db = db;
+            return resultFuture("OK");
+        } catch (Throwable t) {
+            return errorFuture(t);
+        }
+    }
+
+    @Override
     public CommandFuture<Object> write(Object resource, Object... rawArgs) {
         if (isInMulti) {
             try {
                 RedisClient client = (RedisClient) resource;
+                client.selectDB(db);
                 RedisTransactionClient txnClient = clients2TxnClients.get(client);
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
@@ -98,7 +111,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         for (Object rawArg : rawArgs) {
             command.write(rawArg);
         }
-        CRedisAsyncRequest<Object> request = CRedisAsyncRequest.from(new ValueResult<>(), 0 /* this should be ignored */);
+        CRedisAsyncRequest<Object> request = CRedisAsyncRequest.from(new ValueResult<>(), db);
         DefaultCommandFuture<Object> commandFuture = new DefaultCommandFuture<>();
         channel.dispatch(request, command).addListener(new FutureCallback<Object>() {
             @Override

@@ -18,6 +18,8 @@ public interface AsyncRedisClient {
 
     Map<Object /* resource */, List<Object> /* keys */> selectMulti(List<Object> keys);
 
+    CommandFuture<Object> selectDB(int db);
+
     CommandFuture<Object> write(Object resource, Object... rawArgs);
 
     CommandFuture<Object> multi();
