@@ -82,8 +82,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public AsyncRedisClient client;
 
     @InstanceDependency
-    //TODO: distinguish gtid_received, gtid_executed, gtid_in_request
-    public AtomicReference<GtidSet> gtidSet;
+    public AtomicReference<GtidSet> gtid_executed;
 
     public final int listeningPort;
 
@@ -102,6 +101,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public RedisOpParser parser;
+
+    @InstanceDependency
+    public ExecutorService stateThread;
 
     @InstanceDependency
     public ScheduledExecutorService scheduled;
@@ -139,11 +141,14 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
 
-        this.gtidSet = new AtomicReference<>();
+        this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
         this.shardId = shardId;
         this.applierMeta = applierMeta;
+
+        stateThread = Executors.newFixedThreadPool(1,
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
         scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
@@ -191,7 +196,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         super.doDispose();
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        scheduled.shutdownNow();
+        stateThread.shutdownNow();
         clientExecutors.shutdownNow();
     }
 

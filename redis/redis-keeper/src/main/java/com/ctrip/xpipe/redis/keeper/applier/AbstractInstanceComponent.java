@@ -20,6 +20,7 @@ public class AbstractInstanceComponent extends AbstractLifecycle {
 
                 Class<?> type = field.getType();
 
+                //TODO: compare NAME
                 for (Object dependency : dependencies) {
                     if (type.isAssignableFrom(dependency.getClass())) {
                         field.set(this, dependency);

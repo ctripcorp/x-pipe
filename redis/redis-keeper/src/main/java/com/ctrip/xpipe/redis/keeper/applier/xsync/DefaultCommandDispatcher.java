@@ -14,8 +14,14 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,13 +41,32 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public RedisOpParser parser;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtidSet;
+    public ExecutorService stateThread;
 
-    private RdbParser<?> rdbParser;
+    @InstanceDependency
+    public AtomicReference<GtidSet> gtid_executed;
+
+    /* why not a global resource */
+    @VisibleForTesting
+    RdbParser<?> rdbParser;
+
+    @VisibleForTesting
+    Set<String> receivedSids;
+
+    @VisibleForTesting
+    GtidSet gtid_received;
 
     public DefaultCommandDispatcher() {
         this.rdbParser = new DefaultRdbParser();
         this.rdbParser.registerListener(this);
+
+        this.receivedSids = new HashSet<>();
+    }
+
+    @VisibleForTesting
+    void resetGtidReceived(GtidSet rdbGtidSet) {
+        this.gtid_received = rdbGtidSet;
+        this.receivedSids = new HashSet<>();
     }
 
     @Override
@@ -62,7 +87,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
         //merge.end [gtid]
-        this.gtidSet.set(rdbGtidSet);
+        this.resetGtidReceived(rdbGtidSet);
     }
 
     @Override
@@ -78,7 +103,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        /* TODO: deal with leaping gtid when keeper filter data */
+        updateGtidState(redisOp.getOpGtid());
 
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
@@ -86,6 +111,30 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             sequenceController.submit(new DefaultExecCommand(client, redisOp));
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));
+        }
+    }
+
+    public void updateGtidState(String gtid) {
+
+        Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
+
+        if (receivedSids.add(parsed.getKey())) {
+            //sid first received
+            gtid_received.rise(gtid);
+
+            stateThread.execute(()->{
+                gtid_executed.get().rise(gtid);
+            });
+        } else {
+            //sid already received, transactionId may leap
+            long last = gtid_received.rise(gtid);
+
+            for (long i = last + 1; i < parsed.getValue(); i++) {
+                long leaped = i;
+                stateThread.execute(()->{
+                    gtid_executed.get().add(GtidSet.composeGtid(parsed.getKey(), leaped));
+                });
+            }
         }
     }
 
