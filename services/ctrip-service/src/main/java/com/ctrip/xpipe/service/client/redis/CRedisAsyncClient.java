@@ -84,13 +84,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     @Override
-    public CommandFuture<Object> selectDB(int db) {
-        try {
-            this.db = db;
-            return resultFuture("OK");
-        } catch (Throwable t) {
-            return errorFuture(t);
-        }
+    public void selectDB(int db) {
+        this.db = db;
     }
 
     @Override
