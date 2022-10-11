@@ -489,9 +489,10 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
                     RedisTbl redis = dcClusterShard.getRedisInfo();
                     if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
-                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
+                        //TODO ayq
+//                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
                             shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
-                        }
+//                        }
                     } else {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
