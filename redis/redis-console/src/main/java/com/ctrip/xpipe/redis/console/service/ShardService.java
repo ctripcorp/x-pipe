@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
-import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,6 @@ public interface ShardService {
 	void deleteShard(String clusterName, String shardName);
 	void deleteShards(ClusterTbl cluster, List<String> shardNames);
 	List<ShardListModel> findAllUnhealthy();
-    void updateShardsByDcClusterModel(DcClusterModel dcClusterModel, ClusterTbl clusterTbl) throws DalException;
     List<ShardTbl> findAllShardByDcCluster(long dcId, long clusterId);
 	void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl);
 }

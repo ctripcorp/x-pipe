@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
@@ -102,10 +103,12 @@ public class MetaUpdateTest2 {
     public void addKeepersWithIsDRMasterDc() throws Exception {
         ClusterTbl clusterTbl = mock(ClusterTbl.class);
         when(clusterTbl.getClusterName()).thenReturn("cluster-test");
-        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+        // TODO: 2022/10/10 remove hetero
+//        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
         when(clusterTbl.getId()).thenReturn(1L);
         DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
-        when(dcClusterTbl.isGroupType()).thenReturn(true);
+        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
         when(dcClusterTbl.getDcId()).thenReturn(2L);
         when(dcClusterService.find("SHAJQ", "cluster-test")).thenReturn(dcClusterTbl);
         ShardTbl shardTbl = mock(ShardTbl.class);

@@ -17,6 +17,8 @@ public interface ApplierService {
 
     List<ApplierTbl> findApplierTblByShardAndReplDirection(long shardId, long replDirectionId);
 
+    List<ApplierTbl> findAppliersByClusterAndToDc(long shardId, long replDirectionId);
+
     List<ApplierTbl> findAllApplierTblsWithSameIp(String ip);
 
     void updateAppliersAndKeepers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
@@ -27,6 +29,8 @@ public interface ApplierService {
     int createAppliers(List<ApplierTbl> applierTbls, ShardTbl shardTbl, long replDirectionId);
 
     void deleteAppliers(ShardTbl shardTbl, long replDirectionId);
+
+    void deleteAppliersByClusterAndToDc(long toDcId, long clusterId);
 
     List<ApplierTbl> findAllAppliercontainerCountInfo();
 

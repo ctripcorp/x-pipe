@@ -4,11 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.google.common.collect.Lists;
+import com.ctrip.xpipe.redis.console.service.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +31,9 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private DcService dcService;
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
@@ -64,7 +63,14 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
         clusterModel.setShards(createShards(shardNames));
 
-        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName(dcNames[0]), new DcTbl().setDcName(dcNames[1])));
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        DcModel dcModel1 = new DcModel();
+        DcModel dcModel2 = new DcModel();
+        dcModel1.setDc_name(dcNames[0]);
+        dcModel2.setDc_name(dcNames[1]);
+        dcClusters.add(new DcClusterModel().setDc(dcModel1).setDcCluster(new DcClusterTbl()));
+        dcClusters.add(new DcClusterModel().setDc(dcModel2).setDcCluster(new DcClusterTbl()));
+        clusterModel.setDcClusters(dcClusters);
 
         clusterService.createCluster(clusterModel);
 
@@ -81,7 +87,14 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
         if (clusterType.equals(ClusterType.ONE_WAY)) clusterTbl.setActivedcId(dcIds[0]);
         clusterModel.setClusterTbl(clusterTbl);
         clusterModel.setShards(createShards(shardNames, clusterType));
-        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName(dcNames[0]), new DcTbl().setDcName(dcNames[1])));
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        DcModel dcModel1 = new DcModel();
+        DcModel dcModel2 = new DcModel();
+        dcModel1.setDc_name(dcNames[0]);
+        dcModel2.setDc_name(dcNames[1]);
+        dcClusters.add(new DcClusterModel().setDc(dcModel1).setDcCluster(new DcClusterTbl()));
+        dcClusters.add(new DcClusterModel().setDc(dcModel2).setDcCluster(new DcClusterTbl()));
+        clusterModel.setDcClusters(dcClusters);
 
         clusterService.createCluster(clusterModel);
     }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -50,6 +51,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ClusterDao clusterDao;
 	@Autowired
 	private RouteDao routeDao;
+	@Autowired
+	private ApplierService applierService;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
 	@Autowired
@@ -209,7 +212,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
-
 		if (clusterType.supportMultiActiveDC()) {
 			proto.setActivedcId(0L);
 		} else {
@@ -225,56 +227,53 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				return clusterDao.createCluster(queryProto);
+				return clusterDao.createCluster(queryProto, dcClusters);
 			}
 		});
 
-		if(allDcs != null){
-			for(DcTbl dc : allDcs) {
+		if (dcClusters != null) {
+			for (DcClusterModel dcCluster : dcClusters) {
+				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
+				dcCluster.getDcCluster().setDcId(dcTbl.getId());
+				if (dcTbl == null) {
+					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
+				}
 				// single active dc cluster bind active dc when create
-				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
-				DcClusterTbl dcClusterInfo = dc.getDcClusterInfo();
-				DcClusterTbl dcProto =
-						dcClusterInfo == null ? new DcClusterTbl()
-								.setClusterName(cluster.getClusterName())
-								.setDcName(dc.getDcName())
-								.setGroupType(true) : dcClusterInfo;
-
+				if (!clusterType.supportMultiActiveDC() && dcTbl.getId() == result.getActivedcId()) {
+					continue;
+				}
+				DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
+				DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl() : dcClusterInfo;
+				dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
 				bindDc(dcProto);
+			}
+
+			for (DcClusterModel dcCluster : dcClusters) {
+				if ((DcGroupType.isNullOrDrMaster(dcCluster.getDcCluster().getGroupType()))
+						&& dcCluster.getDcCluster().getDcId() != result.getActivedcId()) continue;
+
+				if (dcCluster.getShards() != null && !dcCluster.getShards().isEmpty()) {
+					List<DcClusterTbl> dcClusterTbls =
+							dcClusterService.findAllByClusterAndGroupType(result.getId(),
+									dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().getGroupType());
+
+					dcCluster.getShards().forEach(shardModel -> {
+						shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
+								dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+					});
+				}
 			}
 		}
 
 		if(shards != null){
 			for (ShardModel shard : shards) {
-				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+				shardService.createShard(result.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 			}
 		}
 
 		if (replDirections != null) {
 			for (ReplDirectionInfoModel replDirection : replDirections) {
-				replDirectionService.addReplDirectionByInfoModel(cluster.getClusterName(), replDirection);
-			}
-		}
-
-		if (dcClusters != null) {
-			Map<ShardTbl, List<DcClusterTbl>> shard2DcClustersMap = new HashMap<>();
-
-			for (DcClusterModel dcCluster : dcClusters) {
-				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
-				if (dcTbl == null) {
-					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
-				}
-				DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), cluster.getClusterName());
-				dcCluster.getShards().forEach(shardModel ->
-						shard2DcClustersMap
-								.computeIfAbsent(shardModel.getShardTbl(), ignore->new LinkedList<>())
-								.add(dcClusterTbl));
-			}
-
-			for (Map.Entry<ShardTbl, List<DcClusterTbl>> shard2DcClustersEntry : shard2DcClustersMap.entrySet()) {
-				// create shard and dcClusterShard according to the dcClusterModel
-				shardService.findOrCreateShardIfNotExist(result.getClusterName(),
-						shard2DcClustersEntry.getKey(), shard2DcClustersEntry.getValue(), sentinelBalanceService.selectMultiDcSentinels(clusterType));
+				replDirectionService.addReplDirectionByInfoModel(result.getClusterName(), replDirection);
 			}
 		}
 
@@ -483,12 +482,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
 
 		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
-		if(!dcClusterTbl.isGroupType()) {
+		if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
 			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
 			if(null != shardTbls && !shardTbls.isEmpty()) {
 				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
 				shardService.deleteShards(cluster, shardNames);
 			}
+			applierService.deleteAppliersByClusterAndToDc(dc.getId(), cluster.getId());
 		}
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {

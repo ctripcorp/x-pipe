@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -111,7 +112,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
 
         logger.info("[createCluster]{}", clusterCreateInfo);
-        Map<String, DcTbl> dcName2DcTblMap = new LinkedHashMap<>();
+        Map<String, DcClusterModel> dcName2DcClusterModelMap = new LinkedHashMap<>();
         try {
             clusterCreateInfo.check();
 
@@ -119,30 +120,34 @@ public class MetaUpdate extends AbstractConsoleController {
             if (clusterTbl != null) {
                 return RetMessage.createFailMessage(String.format("cluster:%s already exist", clusterCreateInfo.getClusterName()));
             }
+
             for (String dcName : clusterCreateInfo.getDcs()) {
                 DcTbl dcTbl = dcService.find(dcName);
                 if (dcTbl == null) {
                     return RetMessage.createFailMessage("dc not exist:" + dcName);
                 }
-                dcName2DcTblMap.put(dcName, dcTbl);
+                DcModel dcModel = new DcModel();
+                dcModel.setDc_name(dcName);
+                dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel)
+                        .setDcCluster(new DcClusterTbl()));
             }
             if(clusterCreateInfo.getDcDetails() != null) {
                 for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {
                     String dcId = dcDetail.getDcId();
-                    if(!dcName2DcTblMap.containsKey(dcId)) {
+                    if(!dcName2DcClusterModelMap.containsKey(dcId)) {
                         return RetMessage.createFailMessage("dcs not contains dc detail info :" + dcDetail);
                     }
-                    DcClusterTbl dcClusterTbl = new DcClusterTbl().setGroupType(true).setGroupName(dcDetail.getDcGroupName());
+                    DcClusterTbl dcClusterTbl = dcName2DcClusterModelMap.get(dcId).getDcCluster();
+                    dcClusterTbl.setGroupName(dcDetail.getDcGroupName());
                     if(dcDetail.getDcGroupType() != null) {
-                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()));
+                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()).toString());
                     }
-                    dcName2DcTblMap.get(dcId).setDcClusterInfo(dcClusterTbl);
                 }
             }
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
-        List<DcTbl> dcs = new LinkedList<>(dcName2DcTblMap.values());
+        List<DcClusterModel> dcClusters = new LinkedList<>(dcName2DcClusterModelMap.values());
 
         ClusterModel clusterModel = new ClusterModel();
         ClusterType clusterType = ClusterType.lookup(clusterCreateInfo.getClusterType());
@@ -154,7 +159,7 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createFailMessage(e.getMessage());
         }
 
-        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcs.get(0).getId();
+        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcService.find(clusterCreateInfo.getDcs().get(0)).getId();
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(activeDcId)
                 .setClusterName(clusterCreateInfo.getClusterName())
@@ -167,7 +172,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
 
         try {
-            clusterModel.setDcs(dcs);
+            clusterModel.setDcClusters(dcClusters);
             clusterService.createCluster(clusterModel);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
@@ -336,13 +341,6 @@ public class MetaUpdate extends AbstractConsoleController {
                 needUpdate = true;
                 clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
             }
-            if(!ObjectUtils.equals(clusterTbl.getClusterType(), clusterInfo.getClusterType())) {
-                // only support clusterType change from one way to hetero
-                if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.ONE_WAY) && ClusterType.isSameClusterType(clusterInfo.getClusterType(), ClusterType.HETERO)) {
-                    needUpdate = true;
-                    clusterTbl.setClusterType(clusterInfo.getClusterType());
-                }
-            }
             if(needUpdate) {
                 clusterService.update(clusterTbl);
             } else {
@@ -449,16 +447,11 @@ public class MetaUpdate extends AbstractConsoleController {
         }
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
         List<ShardCreateInfo> result = new LinkedList<>();
-        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
-            for (ShardTbl shardTbl : allByClusterName) {
-                List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
-                for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                    result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
-                }
+        for (ShardTbl shardTbl : allByClusterName) {
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
+            for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
             }
-        } else {
-            allByClusterName.forEach(shardTbl -> result.add(
-                    new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName())));
         }
 
         return result;
@@ -639,7 +632,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 if (dcClusterTbl == null) {
                     throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
                 }
-                if(dcClusterTbl.isGroupType()) {
+                if(DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
                     doAddKeepers(dcId, clusterName, shardTbl, dcId);
                 }
             }
@@ -710,11 +703,11 @@ public class MetaUpdate extends AbstractConsoleController {
         DcClusterTbl dcClusterTbl = new DcClusterTbl()
                 .setClusterName(clusterName)
                 .setDcName(dcName)
-                .setGroupType(true);
+                .setGroupType(DcGroupType.DR_MASTER.toString());
         if(dcDetailInfoOptional.isPresent()){
             DcDetailInfo dcDetailInfo = dcDetailInfoOptional.get();
             if(dcDetailInfo.getDcGroupType() != null){
-                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()));
+                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()).toString());
             }
             dcClusterTbl.setGroupName(dcDetailInfo.getDcGroupName());
         }
@@ -789,14 +782,17 @@ public class MetaUpdate extends AbstractConsoleController {
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
             ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel);
             List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getSrcDcId(), clusterTbl.getId());
+            List<ShardTbl> allToDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getToDcId(), clusterTbl.getId());
             DcClusterTbl dcClusterTbl = dcName2DcClusterTblMap.computeIfAbsent(replDirectionInfoModel.getFromDcName().toUpperCase(), ignore -> dcClusterService.find(replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
             if(dcClusterTbl == null) {
                throw new CheckFailException(String.format("dc %s not exist in cluster %s", replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
             }
             if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
                 for (ShardTbl shardTbl : allSrcDcShards) {
-                    addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
-                    if(clusterType.supportKeeper() && !dcClusterTbl.isGroupType()) {
+                    if(null!=allToDcShards && !allToDcShards.isEmpty()) {
+                        addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
+                    }
+                    if(clusterType.supportKeeper() && DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
                         doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
                     }
                 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.model.impl;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -123,7 +124,7 @@ public class ShardModelServiceImpl implements ShardModelService{
 			return null;
 		}
 
-		if (isSourceShard && dcClusterInfo.isGroupType()) {
+		if (isSourceShard && DcGroupType.isNullOrDrMaster(dcClusterInfo.getGroupType())) {
 			return null;
 		}
 

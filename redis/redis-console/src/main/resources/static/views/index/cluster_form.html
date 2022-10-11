@@ -47,10 +47,8 @@
                         <select
                                 allow_single_deselect=true
                                 style="width:330px;"
-                                ng-required="true"
                                 ng-disabled="operateType == 'update'"
                                 ng-model="activeDcName"
-                                ng-required="true"
                                 ng-change="activeDcNameChange()"
                         >
                             <option ng-repeat = "dc in drMasterDcs" value="{{dc}}">{{dc}}</option>
@@ -61,7 +59,7 @@
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
                                    ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
                                    ng-change="activeDcSelected(dc)"
-                                   ng-disabled="operateType == 'update'" ng-required="true"/>
+                                   ng-disabled="operateType == 'update'"/>
                             <span class="lbl" ng-bind="dc.dcName"></span>
                             &nbsp&nbsp&nbsp&nbsp
                         </label>

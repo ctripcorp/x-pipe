@@ -117,6 +117,16 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     }
 
     @Override
+    public List<ApplierTbl> findAppliersByClusterAndToDc(long toDcId, long clusterId) {
+        return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+            @Override
+            public List<ApplierTbl> doQuery() throws DalException {
+                return dao.findAppliersByClusterAndToDc(toDcId, clusterId, ApplierTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    @Override
     public List<ApplierTbl> findAllApplierTblsWithSameIp(String ip) {
         return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
             @Override
@@ -175,6 +185,21 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     public void deleteAppliers(ShardTbl shardTbl, long replDirectionId) {
         List<ApplierTbl> applierTbls = findApplierTblByShardAndReplDirection(shardTbl.getId(), replDirectionId);
         applierDao.deleteApplierBatch(applierTbls);
+    }
+
+    @Override
+    public void deleteAppliersByClusterAndToDc(long toDcId, long clusterId) {
+        List<ApplierTbl> toDeleteAppliers = findAppliersByClusterAndToDc(toDcId, clusterId);
+        if (toDeleteAppliers != null && !toDeleteAppliers.isEmpty()) {
+            queryHandler.handleBatchDelete(new DalQuery<int[]>() {
+                @Override
+                public int[] doQuery() throws DalException {
+                    return dao.deleteBatch(toDeleteAppliers.toArray(new ApplierTbl[toDeleteAppliers.size()]),
+                            ApplierTblEntity.UPDATESET_FULL);
+                }
+            }, true);
+        }
+
     }
 
     private void updateAppliers(List<ApplierTbl> originAppliers, List<ApplierTbl> targetAppliers) {
