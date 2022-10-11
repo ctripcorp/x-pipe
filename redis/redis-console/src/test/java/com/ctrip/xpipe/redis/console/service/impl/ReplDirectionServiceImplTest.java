@@ -102,6 +102,17 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2), replDirectionInfoModels);
     }
 
+    @Test
+    public void testFindAllReplDirectionInfoModels() {
+        List<ReplDirectionInfoModel> allReplDirectionInfoModels = replDirectionService.findAllReplDirectionInfoModels();
+        Assert.assertEquals(5, allReplDirectionInfoModels.size());
+        Assert.assertEquals(2, allReplDirectionInfoModels.get(1).getSrcShardCount());
+        Assert.assertEquals(1, allReplDirectionInfoModels.get(1).getToShardCount());
+        Assert.assertEquals(8, allReplDirectionInfoModels.get(1).getKeeperCount());
+        Assert.assertEquals(4, allReplDirectionInfoModels.get(1).getApplierCount());
+
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return  prepareDatasFromFile("src/test/resources/hetero-cluster-test.sql");
