@@ -14,6 +14,11 @@ function ReplDirectionService($resource, $q) {
             method: 'GET',
             url: '/console/repl-direction/cluster/:clusterName',
             isArray: true
+        },
+        get_all_repl_direction_infos: {
+            method: 'GET',
+            url: '/console/repl-direction/infos/all',
+            isArray : true
         }
     });
 
@@ -45,8 +50,20 @@ function ReplDirectionService($resource, $q) {
         return d.promise;
     }
 
+    function getAllReplDirectionInfos() {
+        var d = $q.defer();
+        resource.get_all_repl_direction_infos({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findReplDirectionByClusterAndSrcToDc : findReplDirectionByClusterAndSrcToDc,
         findReplDirectionByCluster : findReplDirectionByCluster,
+        getAllReplDirectionInfos: getAllReplDirectionInfos,
     }
 }
