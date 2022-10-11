@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.dianping.cat</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.12</version>
+    <version>3.0.9</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cat-client</artifactId>
@@ -75,12 +75,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>19.0</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>io.projectreactor</groupId>
       <artifactId>reactor-core</artifactId>
       <version>3.2.5.RELEASE</version>
@@ -104,7 +98,6 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
-      <version>2.16.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -118,14 +111,6 @@
       <artifactId>reflections</artifactId>
       <version>0.9.12</version>
       <scope>test</scope>
-    </dependency>
-      <dependency>
-          <groupId>org.aspectj</groupId>
-          <artifactId>aspectjweaver</artifactId>
-      </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
   <build>
