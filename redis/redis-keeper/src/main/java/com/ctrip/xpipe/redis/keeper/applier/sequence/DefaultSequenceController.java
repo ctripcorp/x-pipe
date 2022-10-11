@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -10,8 +9,6 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -25,10 +22,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ApplierLwmManager lwmManager;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtidSet;
-
-    @InstanceDependency
-    public ScheduledExecutorService stateThread;
+    public ExecutorService stateThread;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
@@ -197,9 +191,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         sequenceCommand.future().addListener((f)->{
             if (f.isSuccess()) {
                 if (gtid != null) {
-                    if (gtidSet != null) {
-                        gtidSet.get().add(gtid);
-                    }
                     if (lwmManager != null) {
                         lwmManager.submit(gtid);
                     }

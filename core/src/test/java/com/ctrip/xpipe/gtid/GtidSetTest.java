@@ -57,11 +57,12 @@ public class GtidSetTest {
         GtidSet result;
 
         result = new GtidSet("A:3-5");
-        result.rise("A:0");
+        Assert.assertEquals(0, result.rise("A:0"));
         Assert.assertEquals(new GtidSet("A:3-5"), result);
 
         result = new GtidSet("A:3-5");
-        result.rise("B:5");
+
+        Assert.assertEquals(0, result.rise("B:5"));
         Assert.assertEquals(new GtidSet("A:3-5,B:1-5"), result);
     }
 
@@ -71,19 +72,19 @@ public class GtidSetTest {
         GtidSet result;
 
         result = new GtidSet("A:1-5");
-        result.rise("A:5");
+        Assert.assertEquals(5, result.rise("A:5"));
         Assert.assertEquals(new GtidSet("A:1-5"), result);
 
         result = new GtidSet("A:1-5");
-        result.rise("A:6");
+        Assert.assertEquals(5, result.rise("A:6"));
         Assert.assertEquals(new GtidSet("A:1-6"), result);
 
         result = new GtidSet("A:3-5");
-        result.rise("A:7");
+        Assert.assertEquals(0, result.rise("A:7"));
         Assert.assertEquals(new GtidSet("A:1-7"), result);
 
         result = new GtidSet("A:3-5,B:5");
-        result.rise("A:8");
+        Assert.assertEquals(0, result.rise("A:8"));
         Assert.assertEquals(new GtidSet("B:5,A:1-8"), result);
     }
 
@@ -93,15 +94,15 @@ public class GtidSetTest {
         GtidSet result;
 
         result = new GtidSet("A:5-10");
-        result.rise("A:3");
+        Assert.assertEquals(0, result.rise("A:3"));
         Assert.assertEquals(new GtidSet("A:1-3:5-10"), result);
 
         result = new GtidSet("A:5-11");
-        result.rise("A:4");
+        Assert.assertEquals(0, result.rise("A:4"));
         Assert.assertEquals(new GtidSet("A:1-11"), result);
 
         result = new GtidSet("A:5-12,B:5");
-        result.rise("A:8");
+        Assert.assertEquals(0, result.rise("A:8"));
         Assert.assertEquals(new GtidSet("B:5,A:1-12"), result);
     }
 
