@@ -6,10 +6,13 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeEnd;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeStart;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
+import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
@@ -76,7 +79,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
-        //merge.start
+        //ctrip.merge_start
+        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()));
     }
 
     @Override
@@ -86,8 +90,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
-        //merge.end [gtid]
         this.resetGtidReceived(rdbGtidSet);
+
+        //ctrip.merge_start [gtid_set]
+        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
     }
 
     @Override
