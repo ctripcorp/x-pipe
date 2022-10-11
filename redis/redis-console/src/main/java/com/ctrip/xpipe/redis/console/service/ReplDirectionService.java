@@ -11,7 +11,9 @@ public interface ReplDirectionService {
 
     ReplDirectionTbl findReplDirectionTblById(long id);
 
-    List<ReplDirectionTbl> findAllReplDirection();
+    List<ReplDirectionTbl> findAllReplDirectionJoinClusterTbl();
+
+    List<ReplDirectionTbl> findAllReplDirections();
 
     List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId);
 

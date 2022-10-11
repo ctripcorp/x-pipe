@@ -43,11 +43,21 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
-    public List<ReplDirectionTbl> findAllReplDirection() {
+    public List<ReplDirectionTbl> findAllReplDirectionJoinClusterTbl() {
         return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
             @Override
             public List<ReplDirectionTbl> doQuery() throws DalException {
-                return dao.findAllReplDirection(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+                return dao.findAllReplDirectionJoinClusterTbl(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+            }
+        });
+    }
+
+    @Override
+    public List<ReplDirectionTbl> findAllReplDirections() {
+        return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
+            @Override
+            public List<ReplDirectionTbl> doQuery() throws DalException {
+                return dao.findAllReplDirections(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
             }
         });
     }
@@ -83,7 +93,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
 
     @Override
     public List<ReplDirectionInfoModel> findAllReplDirectionInfoModels() {
-        List<ReplDirectionTbl> allReplDirectionTbls = findAllReplDirection();
+        List<ReplDirectionTbl> allReplDirectionTbls = findAllReplDirections();
         HashMap<Long, ReplDirectionInfoModel> replDirectionIdInfoMap = new HashMap<>();
 
         Map<Long, String> dcNameMap = dcService.dcNameMap();

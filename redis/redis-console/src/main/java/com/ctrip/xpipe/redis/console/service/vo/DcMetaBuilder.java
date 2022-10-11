@@ -403,7 +403,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         @Override
         protected void doExecute() throws Exception {
             try {
-                replDirectionTblList = replDirectionService.findAllReplDirection();
+                replDirectionTblList = replDirectionService.findAllReplDirectionJoinClusterTbl();
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
