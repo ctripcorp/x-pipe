@@ -3090,7 +3090,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-all-repl-direction" type="SELECT" multiple="true">
+			<query name="find-all-repl-direction-join-cluster-tbl" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
