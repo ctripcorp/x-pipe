@@ -60,7 +60,6 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
 
         assertEquals(server.gtid_executed, ((DefaultXsyncReplication) server.replication).gtid_executed);
-        assertEquals(server.gtid_received, ((DefaultCommandDispatcher) server.dispatcher).gtid_received);
         assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
         assertEquals(server.gtid_executed, ((DefaultLwmManager) server.lwmManager).gtid_executed);
 
