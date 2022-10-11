@@ -76,12 +76,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void onFullSync(GtidSet rdbGtidSet) {
 
+        logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
     }
 
     @Override
     public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
-        logger.debug("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
+        logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
 
         //ctrip.merge_start
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()));
@@ -95,7 +96,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
-        logger.debug("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
+        logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
         this.resetGtidReceived(rdbGtidSet);
 
         //ctrip.merge_start [gtid_set]
@@ -104,7 +105,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onContinue() {
-
+        logger.info("[onContinue]");
     }
 
     @Override
