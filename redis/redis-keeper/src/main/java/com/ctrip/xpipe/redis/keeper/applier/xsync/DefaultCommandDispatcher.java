@@ -15,10 +15,13 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
+import java.util.HashSet;
 import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -38,21 +41,32 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public RedisOpParser parser;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_received;
+    public ExecutorService stateThread;
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
 
-    @InstanceDependency
-    public ScheduledExecutorService stateThread;
+    /* why not a global resource */
+    @VisibleForTesting
+    RdbParser<?> rdbParser;
 
-    private RdbParser<?> rdbParser;
+    @VisibleForTesting
+    Set<String> receivedSids;
 
-    private boolean firstReceived = true;
+    @VisibleForTesting
+    GtidSet gtid_received;
 
     public DefaultCommandDispatcher() {
         this.rdbParser = new DefaultRdbParser();
         this.rdbParser.registerListener(this);
+
+        this.receivedSids = new HashSet<>();
+    }
+
+    @VisibleForTesting
+    void resetGtidReceived(GtidSet rdbGtidSet) {
+        this.gtid_received = rdbGtidSet;
+        this.receivedSids = new HashSet<>();
     }
 
     @Override
@@ -73,7 +87,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
         //merge.end [gtid]
-        this.gtid_received.set(rdbGtidSet);
+        this.resetGtidReceived(rdbGtidSet);
     }
 
     @Override
@@ -102,16 +116,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     public void updateGtidState(String gtid) {
 
-        if (firstReceived) {
-            firstReceived = false;
-            gtid_received.get().rise(gtid);
+        Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
+
+        if (receivedSids.add(parsed.getKey())) {
+            //sid first received
+            gtid_received.rise(gtid);
 
             stateThread.execute(()->{
                 gtid_executed.get().rise(gtid);
             });
         } else {
-            Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
-            long last = gtid_received.get().rise(gtid);
+            //sid already received, transactionId may leap
+            long last = gtid_received.rise(gtid);
 
             for (long i = last + 1; i < parsed.getValue(); i++) {
                 long leaped = i;

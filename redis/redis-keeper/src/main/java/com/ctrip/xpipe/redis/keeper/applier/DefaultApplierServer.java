@@ -82,9 +82,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public AsyncRedisClient client;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_received;
-
-    @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
 
     public final int listeningPort;
@@ -106,7 +103,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public RedisOpParser parser;
 
     @InstanceDependency
-    public ScheduledExecutorService stateThread;
+    public ExecutorService stateThread;
+
+    @InstanceDependency
+    public ScheduledExecutorService scheduled;
 
     private long startTime;
 
@@ -141,15 +141,17 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
 
-        this.gtid_received = new AtomicReference<>();
         this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        stateThread = Executors.newScheduledThreadPool(1,
+        stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
+
+        scheduled = Executors.newScheduledThreadPool(1,
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE));
     }

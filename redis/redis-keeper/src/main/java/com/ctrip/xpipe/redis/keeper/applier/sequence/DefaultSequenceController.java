@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 /**
@@ -23,7 +22,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ApplierLwmManager lwmManager;
 
     @InstanceDependency
-    public ScheduledExecutorService stateThread;
+    public ExecutorService stateThread;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
