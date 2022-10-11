@@ -19,6 +19,9 @@ public interface RedisService {
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);
 
 	List<RedisTbl> findAllRedisesByDcClusterName(String dcId, String clusterId);
+
+	List<RedisTbl> findAllKeepersByDcClusterName(String dcId, String clusterId);
+
 	List<RedisTbl> findAllByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 
 	List<RedisTbl> findRedisesByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
