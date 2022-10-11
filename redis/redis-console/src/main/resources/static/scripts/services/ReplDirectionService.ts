@@ -1,42 +1,18 @@
 angular
     .module('services')
-    .service('ReplDirectionService', ReplDirectionService);
+    .service('ReplDirectionService', ['$resource', '$q', function ($resource, $q) {
 
-ReplDirectionService.$inject = ['$resource', '$q'];
-
-function ReplDirectionService($resource, $q) {
     var resource = $resource('', {}, {
-        find_repl_direction_by_cluster_and_src_to_dc: {
+        get_all_repl_direction_infos: {
             method: 'GET',
-            url: '/console/repl-direction/cluster/:clusterName/src-dc/:srcDcName/to-dc/:toDcName',
-        },
-        find_repl_direction_by_cluster: {
-            method: 'GET',
-            url: '/console/repl-direction/cluster/:clusterName',
-            isArray: true
+            url: '/console/repl-direction/infos/all',
+            isArray : true
         }
     });
 
-    function findReplDirectionByClusterAndSrcToDc(clusterName, srcDcName, toDcName) {
+    function getAllReplDirectionInfos() {
         var d = $q.defer();
-        resource.find_repl_direction_by_cluster_and_src_to_dc({
-                clusterName: clusterName,
-                srcDcName: srcDcName,
-                toDcName: toDcName
-            },
-            function (result) {
-                d.resolve(result);
-            }, function (result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
-
-    function findReplDirectionByCluster(clusterName) {
-        var d = $q.defer();
-        resource.find_repl_direction_by_cluster({
-                clusterName: clusterName
-            },
+        resource.get_all_repl_direction_infos({},
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -46,7 +22,6 @@ function ReplDirectionService($resource, $q) {
     }
 
     return {
-        findReplDirectionByClusterAndSrcToDc : findReplDirectionByClusterAndSrcToDc,
-        findReplDirectionByCluster : findReplDirectionByCluster,
+        getAllReplDirectionInfos: getAllReplDirectionInfos,
     }
-}
+}]);

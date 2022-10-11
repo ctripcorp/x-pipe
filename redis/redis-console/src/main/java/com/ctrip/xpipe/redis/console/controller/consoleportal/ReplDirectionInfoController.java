@@ -27,4 +27,9 @@ public class ReplDirectionInfoController extends AbstractConsoleController {
     public List<ReplDirectionInfoModel> getAllReplDirectionInfoModelsByCluster(@PathVariable String clusterName) {
         return replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
     }
+
+    @RequestMapping("/repl-direction/infos/all")
+    public List<ReplDirectionInfoModel> getAllReplDirectionInfoModels() {
+        return replDirectionService.findAllReplDirectionInfoModels();
+    }
 }

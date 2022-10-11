@@ -109,6 +109,17 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public List<RedisTbl> findAllKeepersByDcClusterName(String dcId, String clusterId) {
+
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.findAllByDcClusterName(dcId, clusterId, XPipeConsoleConstant.ROLE_KEEPER, RedisTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    @Override
     public List<RedisTbl> findAllByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException {
 
         return doFindAllByDcClusterShard(dcId, clusterId, shardId, null);

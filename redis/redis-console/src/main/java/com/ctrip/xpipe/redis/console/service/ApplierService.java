@@ -17,7 +17,7 @@ public interface ApplierService {
 
     List<ApplierTbl> findApplierTblByShardAndReplDirection(long shardId, long replDirectionId);
 
-    List<ApplierTbl> findAppliersByClusterAndToDc(long shardId, long replDirectionId);
+    List<ApplierTbl> findAppliersByClusterAndToDc(long toDcId, long clusterId);
 
     List<ApplierTbl> findAllApplierTblsWithSameIp(String ip);
 
