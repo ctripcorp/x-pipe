@@ -21,6 +21,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -79,6 +80,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+
+        logger.debug("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
+
         //ctrip.merge_start
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()));
     }
@@ -90,6 +94,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+
+        logger.debug("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
         this.resetGtidReceived(rdbGtidSet);
 
         //ctrip.merge_start [gtid_set]
@@ -103,24 +109,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onCommand(Object[] rawCmdArgs) {
-        RedisOp redisOp = parser.parse(rawCmdArgs);
-        logger.debug("[onCommand] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
-        if (RedisOpType.PING.equals(redisOp.getOpType()) || RedisOpType.SELECT.equals(redisOp.getOpType())) {
-            return;
-        }
-
-        updateGtidState(redisOp.getOpGtid());
-
-        if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
-            sequenceController.submit(new DefaultMultiCommand(client, redisOp));
-        } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
-            sequenceController.submit(new DefaultExecCommand(client, redisOp));
-        } else {
-            sequenceController.submit(new DefaultDataCommand(client, redisOp));
+        try {
+            onRedisOp(parser.parse(rawCmdArgs));
+        } catch (Throwable unlikely) {
+            logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
         }
     }
 
     public void updateGtidState(String gtid) {
+
+        if (null == gtid) {
+            return;
+        }
 
         Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
 
@@ -146,10 +146,32 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onRedisOp(RedisOp redisOp) {
-        if (RedisOpType.PING.equals(redisOp.getOpType()) || RedisOpType.SELECT.equals(redisOp.getOpType())) {
+
+        logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
+
+        if (RedisOpType.PING.equals(redisOp.getOpType())) {
             return;
         }
-        sequenceController.submit(new DefaultDataCommand(client, redisOp));
+        if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
+            try {
+                int db = Integer.parseInt(Arrays.toString(redisOp.buildRawOpArgs()[1]));
+                client.selectDB(db);
+            } catch (Throwable unlikely) {
+                logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
+                logger.error("[onRedisOp] unlikely - fail to select db]", unlikely);
+            }
+            return;
+        }
+
+        updateGtidState(redisOp.getOpGtid());
+
+        if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
+            sequenceController.submit(new DefaultMultiCommand(client, redisOp));
+        } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
+            sequenceController.submit(new DefaultExecCommand(client, redisOp));
+        } else {
+            sequenceController.submit(new DefaultDataCommand(client, redisOp));
+        }
     }
 
     @Override
