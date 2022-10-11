@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
@@ -40,12 +41,22 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<DcDetailInfo> dcDetails = new LinkedList<>();
 
-    public static String innerGroupType2OuterGroupType(boolean groupType) {
-        return groupType ? "drMaster":"master";
+    public static String innerGroupType2OuterGroupType(String groupType) {
+        if(DcGroupType.isSameGroupType(groupType, DcGroupType.DR_MASTER)){
+            return "drMaster";
+        }else if(DcGroupType.isSameGroupType(groupType, DcGroupType.MASTER)) {
+            return "master";
+        }
+        return "drMaster";
     }
 
-    public static boolean outerGroupType2InnerGroupType(String groupType) {
-        return null == groupType || "drMaster".equals(groupType);
+    public static DcGroupType outerGroupType2InnerGroupType(String groupType) {
+         if(null == groupType || "drMaster".equals(groupType)){
+             return DcGroupType.DR_MASTER;
+         }else if("master".equals(groupType)){
+             return DcGroupType.MASTER;
+         }
+         throw new IllegalArgumentException("unknown group type:"+groupType);
     }
 
     public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
@@ -70,22 +81,20 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
-        if(ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
-            List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 
-            dcClusterTbls.forEach(dcClusterTbl -> {
-                DcDetailInfo dcDetailInfo = new DcDetailInfo()
-                        .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
-                        .setDcGroupName(dcClusterTbl.getGroupName())
-                        .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.isGroupType()));
-                if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
-                    clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
-                } else {
-                    clusterCreateInfo.addDcDetail(dcDetailInfo);
-                }
-            });
+        dcClusterTbls.forEach(dcClusterTbl -> {
+            DcDetailInfo dcDetailInfo = new DcDetailInfo()
+                    .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
+                    .setDcGroupName(dcClusterTbl.getGroupName())
+                    .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.getGroupType()));
+            if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
+                clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
+            } else {
+                clusterCreateInfo.addDcDetail(dcDetailInfo);
+            }
+        });
 
-        }
 
         return clusterCreateInfo;
     }

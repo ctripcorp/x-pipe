@@ -135,11 +135,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	private void addKeeper(String clusterType, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		try {
 			KeeperTransMeta keeperTransMeta;
-			if (Objects.equals(ClusterType.HETERO.name(), clusterType.toUpperCase())) {
-				keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, keeperMeta);
-			} else {
+			// TODO: 2022/10/10 remove hetero
+//			if (Objects.equals(ClusterType.HETERO.name(), clusterType.toUpperCase())) {
+//				keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, keeperMeta);
+//			} else {
 				keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta);
-			}
+//			}
 			keeperStateController.addKeeper(keeperTransMeta);
 		} catch (Exception e) {
 			logger.error(String.format("[addKeeper]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, keeperMeta), e);
@@ -158,7 +159,9 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-	    return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
+//	    return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
+		// TODO: 2022/10/10 remove hetero
+		return Stream.of(ClusterType.ONE_WAY).collect(Collectors.toSet());
 	}
 
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
@@ -195,11 +198,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
 					KeeperTransMeta keeperTransMeta;
-					if (Objects.equals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase())) {
+					// TODO: 2022/10/10 remove hetero
+//					if (Objects.equals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase())) {
 						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, deadKeeper);
-					} else {
-						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
-					}
+//					} else {
+//						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
+//					}
 					keeperStateController.addKeeper(keeperTransMeta);
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,

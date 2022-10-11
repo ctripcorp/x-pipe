@@ -6,7 +6,8 @@ public enum ClusterType {
     ONE_WAY(true, true, true, false),
     BI_DIRECTION(false, false, true, true),
     //TODO ayq ensure these variables
-    HETERO(true, true, true, false, false, true),
+    //TODO remove hetero
+//    HETERO(true, true, true, false, false, true),
     // TODO: single_dc and local_dc support health check
     //
     // Currently, sentinel health check is on for single_dc & local_dc via config/console.sentinel.check.outer.clusters
