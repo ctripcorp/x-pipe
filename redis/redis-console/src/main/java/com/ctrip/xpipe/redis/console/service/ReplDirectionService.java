@@ -27,6 +27,8 @@ public interface ReplDirectionService {
 
     List<ReplDirectionInfoModel> findAllReplDirectionInfoModelsByCluster(String clusterName);
 
+    List<ReplDirectionInfoModel> findAllReplDirectionInfoModels();
+
     void updateReplDirectionBatch(List<ReplDirectionTbl> replDirections);
 
     void createReplDirectionBatch(List<ReplDirectionTbl> replDirections);

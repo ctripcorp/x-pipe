@@ -9,6 +9,8 @@ public class ReplDirectionInfoModel implements Serializable {
 
     private long id;
 
+    private long clusterId;
+
     private String clusterName;
 
     private String srcDcName;
@@ -18,6 +20,14 @@ public class ReplDirectionInfoModel implements Serializable {
     private String toDcName;
 
     private String targetClusterName;
+
+    private int srcShardCount;
+
+    private int toShardCount;
+
+    private int keeperCount;
+
+    private int applierCount;
 
     public ReplDirectionInfoModel() {
 
@@ -74,6 +84,51 @@ public class ReplDirectionInfoModel implements Serializable {
 
     public ReplDirectionInfoModel setTargetClusterName(String targetClusterName) {
         this.targetClusterName = targetClusterName;
+        return this;
+    }
+
+    public long getClusterId() {
+        return clusterId;
+    }
+
+    public ReplDirectionInfoModel setClusterId(long clusterId) {
+        this.clusterId = clusterId;
+        return this;
+    }
+
+    public int getSrcShardCount() {
+        return srcShardCount;
+    }
+
+    public ReplDirectionInfoModel setSrcShardCount(int srcShardCount) {
+        this.srcShardCount = srcShardCount;
+        return this;
+    }
+
+    public int getToShardCount() {
+        return toShardCount;
+    }
+
+    public ReplDirectionInfoModel setToShardCount(int toShardCount) {
+        this.toShardCount = toShardCount;
+        return this;
+    }
+
+    public int getKeeperCount() {
+        return keeperCount;
+    }
+
+    public ReplDirectionInfoModel setKeeperCount(int keeperCount) {
+        this.keeperCount = keeperCount;
+        return this;
+    }
+
+    public int getApplierCount() {
+        return applierCount;
+    }
+
+    public ReplDirectionInfoModel setApplierCount(int applierCount) {
+        this.applierCount = applierCount;
         return this;
     }
 
