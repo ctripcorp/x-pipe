@@ -186,7 +186,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
         StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
-            if(dcClusterTbl.getDcId() != activeDcId && isDRMaster(dcClusterTbl)) {
+            if(dcClusterTbl.getDcId() != activeDcId && DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
                 sb.append(dcNameMap.get(dcClusterTbl.getDcId())).append(",");
             }
         });
@@ -519,7 +519,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                     continue;
                 }
                 if (replDirection.getToDcId() == dcId) {
-                    if (!isDRMaster(dcClusterTbl)) {
+                    if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupName(), DcGroupType.MASTER)) {
                         SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirection.getSrcDcId(), replDirection.getFromDcId());
                         buildSourceShardMetas(sourceMeta, clusterMeta.getId(), clusterId, replDirection.getSrcDcId());
                     }
@@ -627,11 +627,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         public String getName() {
             return BuildDcMetaCommand.class.getSimpleName();
         }
-    }
-
-    //0: Master; 1: DRMaster
-    private boolean isDRMaster(DcClusterTbl dcClusterTbl) {
-        return DcGroupType.DR_MASTER.equals(DcGroupType.findByValue(dcClusterTbl.getGroupType()));
     }
 
     private String getDcGroupName(DcClusterTbl dcClusterInfo) {
