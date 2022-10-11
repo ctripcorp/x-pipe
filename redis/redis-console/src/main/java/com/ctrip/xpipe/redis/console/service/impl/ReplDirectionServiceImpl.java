@@ -57,7 +57,7 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
             @Override
             public List<ReplDirectionTbl> doQuery() throws DalException {
-                return dao.findAllReplDirections(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+                return dao.findAllReplDirections(ReplDirectionTblEntity.READSET_FULL);
             }
         });
     }
