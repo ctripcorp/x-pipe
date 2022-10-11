@@ -110,14 +110,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
         ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors, false);
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetAllDcClusterShardDetailCommand(dcId)));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new Cluster2DcClusterMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcIdNameMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
+        //TODO ayq
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
 
         sequenceCommandChain.add(parallelCommandChain);
         sequenceCommandChain.add(retry3TimesUntilSuccess(new BuildDcMetaCommand()));
@@ -495,7 +496,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
                 }
-                buildHeteroMeta();
+                //TODO ayq
+//                buildHeteroMeta();
 
                 future().setSuccess();
             } catch (Exception e) {
