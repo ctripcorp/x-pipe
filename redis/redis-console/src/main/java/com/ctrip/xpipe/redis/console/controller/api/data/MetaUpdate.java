@@ -446,11 +446,13 @@ public class MetaUpdate extends AbstractConsoleController {
             throw new CheckFailException("cluster not found:" + clusterName);
         }
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
         List<ShardCreateInfo> result = new LinkedList<>();
         for (ShardTbl shardTbl : allByClusterName) {
             List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
             for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
+                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(),
+                        dcIdNameMap.get(dcClusterShardTbl.getDcId())));
             }
         }
 
