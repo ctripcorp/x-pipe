@@ -165,8 +165,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
                 clusterMeta.setDownstreamDcs("");
-                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.toString(): dcClusterInfo.getGroupType());
                 clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
+
+                if (ClusterType.ONE_WAY.name().equalsIgnoreCase(cluster.getClusterType())) {
+                    if (dcClusterInfo == null || dcClusterInfo.getGroupType() == null) {
+                        clusterMeta.setDcGroupType(DcGroupType.DR_MASTER.toString());
+                    } else {
+                        clusterMeta.setDcGroupType(dcClusterInfo.getGroupType());
+                    }
+                }
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
