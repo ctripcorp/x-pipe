@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,7 +21,11 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
 
     private String[] nextNodes;
 
+    private boolean isNextHopProxy = true;
+
     private AtomicBoolean nextNodesRemoved = new AtomicBoolean(false);
+
+    private static final String PROXY_PREFIX = "PROXY";
 
     @Override
     public PROXY_OPTION option() {
@@ -64,13 +69,27 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
     }
 
     @Override
+    public boolean isNextHopProxy() {
+        return isNextHopProxy;
+    }
+
+    @Override
     public RouteOptionParser read(String option) {
-        if(option == null || option.isEmpty() || option.length() <= option().name().length() + 1) {
+        if (option == null || option.isEmpty() || option.length() <= option().name().length() + 1) {
+            this.isNextHopProxy = false;
             return this;
         }
         this.originOptionString = option.substring(option().name().length() + 1);
         this.nodes = originOptionString.split(ELEMENT_SPLITTER);
         this.nextNodes = nodes[0].split(ARRAY_SPLITTER);
+        if (this.nextNodes != null && this.nextNodes.length > 0) {
+            for (String nextNode : this.nextNodes) {
+                if (!nextNode.startsWith(PROXY_PREFIX)) {
+                    this.isNextHopProxy = false;
+                }
+            }
+        }
+
         return this;
     }
 
