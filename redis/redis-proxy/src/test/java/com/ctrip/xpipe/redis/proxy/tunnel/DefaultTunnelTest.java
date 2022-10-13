@@ -31,7 +31,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
@@ -111,6 +114,25 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         frontChannel = null;
         tunnel = null;
         tunnelManager = null;
+    }
+
+    @Test
+    public void testAddCompressOptionToProtocolIfNeeded() {
+        ((TestProxyConfig)config).setCompress(true);
+        ProxyConnectProtocol proxyConnectProtocol1 =
+                new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
+
+        DefaultTunnel tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+        tunnel1.addCompressOptionToProtocolIfNeeded();
+        Assert.assertNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
+
+        proxyConnectProtocol1 = new DefaultProxyConnectProtocolParser()
+                .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n");
+        tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+        tunnel1.addCompressOptionToProtocolIfNeeded();
+        Assert.assertNotNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
     }
 
     @Test
