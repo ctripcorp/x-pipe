@@ -52,6 +52,9 @@ public class AdvancedDcMetaService implements DcMetaService {
     private ZoneService zoneService;
 
     @Autowired
+    private ReplDirectionService replDirectionService;
+
+    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -61,6 +64,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     private KeeperContainerService keeperContainerService;
 
     @Autowired
+    private AppliercontainerService appliercontainerService;
+
+    @Autowired
+    private ApplierService applierService;
+
+    @Autowired
     private AzService azService;
 
     @Autowired
@@ -68,6 +77,9 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     private KeepercontainerMetaService keepercontainerMetaService;
+
+    @Autowired
+    private AppliercontainerMetaService appliercontainerMetaService;
 
     @Autowired
     private RedisMetaService redisMetaService;
@@ -117,11 +129,13 @@ public class AdvancedDcMetaService implements DcMetaService {
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, factory, consoleConfig);
+                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
@@ -237,6 +251,37 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doReset() {
             dcMeta.getKeeperContainers().clear();
+        }
+
+        @Override
+        public String getName() {
+            return this.getClass().getSimpleName();
+        }
+    }
+
+    class GetAllApplierContainerCommand extends AbstractCommand<Void> {
+
+        private DcMeta dcMeta;
+
+        public GetAllApplierContainerCommand(DcMeta dcMeta) {
+            this.dcMeta = dcMeta;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainerTblsByDc(dcMeta.getId());
+                appliercontainers.forEach(appliercontainer -> dcMeta.addApplierContainer(
+                        appliercontainerMetaService.encodeAppliercontainerMeta(appliercontainer, dcMeta)));
+                future().setSuccess();
+            } catch (Throwable th) {
+                future().setFailure(th);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcMeta.getApplierContainers().clear();
         }
 
         @Override

@@ -30,6 +30,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	private DefaultXpipeMetaManager metaManager;
 
 	private String dc = "jq", clusterId1 = "cluster1", clusterId2 = "cluster2", shardId = "shard1";
+	private String clusterHeteroId1 = "cluster-hetero1";
 	@SuppressWarnings("unused")
 	private String dcBak1 = "fq", dcBak2 = "fra";
 
@@ -62,7 +63,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testGetSpecificActiveDcClusters() {
 
 		List<ClusterMeta> specificActiveDcClusters1 = metaManager.getSpecificActiveDcClusters(dcBak2, dc);
-		Assert.assertEquals(2, specificActiveDcClusters1.size());
+		Assert.assertEquals(3, specificActiveDcClusters1.size());
 		Assert.assertEquals(clusterId1, specificActiveDcClusters1.get(0).getId());
 		Assert.assertEquals(clusterId2, specificActiveDcClusters1.get(1).getId());
 
@@ -178,6 +179,51 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		}
 
 	}
+
+	@Test
+	public void testGetDownstreamDcs() {
+
+		Set<String> real = metaManager.getDownstreamDcs(dc, clusterHeteroId1, shardId);
+
+		logger.info("[testGetDownstreamDcs]{}", real);
+
+		Set<String> expected = new HashSet<>();
+		expected.add("oy");
+		expected.add("fra");
+		Assert.assertEquals(expected, real);
+
+		try {
+			metaManager.getDownstreamDcs(dc, randomString(), shardId);
+			Assert.fail();
+		} catch (Exception e) {
+
+		}
+	}
+
+	@Test
+	public void testGetUpstreamDc() {
+
+		String real = metaManager.getUpstreamDc(dcBak2, clusterHeteroId1, shardId);
+
+		logger.info("[testGetUpstreamDc]{}", real);
+
+		String expected = dc;
+		Assert.assertEquals(expected, real);
+
+		try {
+			metaManager.getUpstreamDc(dcBak2, randomString(), shardId);
+			Assert.fail();
+		} catch (Exception e) {
+
+		}
+	}
+
+	@Test
+	public void testDoGetAppliersNull(){
+		List<ApplierMeta> list = metaManager.doGetAppliers(dc, "111", "111");
+		Assert.assertEquals(null, list);
+	}
+
 
 	@Test
 	public void testHas() {

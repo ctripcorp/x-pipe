@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
+import com.ctrip.xpipe.redis.console.model.AzInfoModel;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author: Song_Yu
@@ -28,4 +30,7 @@ public interface AzService {
 
     void deleteAvailableZoneByName(String azName);
 
+    List<AzInfoModel> getAllAvailableZoneInfoModelsByDc(long dcId);
+
+    Map<Long, String> azNameMap();
 }

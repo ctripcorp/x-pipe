@@ -1,13 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.tuple.Pair;
 import org.assertj.core.util.Lists;
 import org.junit.After;
@@ -32,7 +35,7 @@ import static org.mockito.Mockito.*;
  *
  * Jan 4, 2017
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	
 	private DefaultKeeperStateChangeHandler handler;
@@ -42,20 +45,26 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	
 	@Mock
 	private DcMetaCache dcMetaCache;
-	
+
+	@Mock
+	private MultiDcService multiDcService;
+
 	private String clusterId, shardId;
 	private Long clusterDbId, shardDbId;
 	
 	private List<KeeperMeta> keepers;
 
+	private List<ApplierMeta> appliers;
+
 	private RedisMeta redis;
-	
+
 	private Pair<String, Integer> keeperMaster;
 	
 	private int setStateTimeMilli = 1500;
 	
 	private AtomicInteger calledCount = new AtomicInteger();
 	private AtomicInteger redisCall = new AtomicInteger();
+	private AtomicInteger applierCall = new AtomicInteger();
 
 	@Before
 	public void beforeDefaultKeeperStateChangeHandlerTest() throws Exception{
@@ -66,6 +75,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		handler.setDcMetaCache(dcMetaCache);
 		handler.setScheduled(scheduled);
 		handler.setExecutors(executors);
+		handler.setMultiDcService(multiDcService);
 
 		clusterId = getClusterId();
 		shardId = getShardId();
@@ -73,8 +83,10 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		shardDbId = getShardDbId();
 		
 		keepers = createRandomKeepers(2);
+		appliers = createRandomAppliers(1);
 		redis = newRandomFakeRedisMeta("localhost", randomPort());
-		
+
+
 		keeperMaster = new Pair<>("localhost", randomPort());
 		
 		LifecycleHelper.initializeIfPossible(handler);
@@ -101,6 +113,15 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 			}
 		});
 
+		startServer(appliers.get(0).getPort(), new Function<String, String>() {
+			@Override
+			public String apply(String s) {
+				int current = applierCall.incrementAndGet();
+				logger.info("applier1, callCount:{}, msg:{}", current, s);
+				return "+OK\r\n";
+			}
+		});
+
 		startServer(redis.getPort(), new Callable<String>() {
 			@Override
 			public String call() throws Exception {
@@ -113,6 +134,8 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(keeperMaster);
 		when(currentMetaManager.getClusterMeta(clusterDbId)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
 		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(true);
+		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(false);
+		when(dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)).thenReturn(true);
 		when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Collections.singletonList(redis));
 	}
 	
@@ -127,6 +150,10 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		when(currentMetaManager.getKeeperMaster(clusterDbId1, shardDbId1)).thenReturn(keeperMaster);
 		when(currentMetaManager.getClusterMeta(clusterDbId1)).thenReturn(new ClusterMeta().setActiveDc(getDc()));
 		when(dcMetaCache.isCurrentDcPrimary(clusterDbId1, shardDbId1)).thenReturn(true);
+		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(false);
+
+		when(dcMetaCache.isCurrentDcBackUp(clusterDbId1)).thenReturn(false);
+		when(dcMetaCache.isCurrentShardParentCluster(clusterDbId1, shardDbId1)).thenReturn(true);
 
 
 		handler.keeperActiveElected(clusterDbId, shardDbId, null);
@@ -149,7 +176,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	@Test
 	public void testBackupDcAdjust() throws Exception {
 		setStateTimeMilli = 1;
-		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(true);
 
 		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
@@ -157,9 +184,23 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	}
 
 	@Test
+	public void testDownstreamDcAdjust() throws Exception {
+		setStateTimeMilli = 1;
+		when(dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)).thenReturn(false);
+		when(dcMetaCache.getCurrentDc()).thenReturn("currentdc");
+		when(dcMetaCache.getShardAppliers(clusterDbId, shardDbId)).thenReturn(appliers);
+		when(currentMetaManager.getGtidSet(anyLong(), anyString())).thenReturn(new GtidSet(""));
+		when(currentMetaManager.getSrcSids(anyLong(), anyLong())).thenReturn("");
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
+		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
+		waitConditionUntilTimeOut(() -> 1 <= applierCall.get());
+	}
+
+	@Test
 	public void testBackupDcBecomePrimaryDc() throws Exception {
 		setStateTimeMilli = 1;
-		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false, true);
+		when(dcMetaCache.isCurrentDcBackUp(clusterDbId)).thenReturn(true, false);
 
 		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);

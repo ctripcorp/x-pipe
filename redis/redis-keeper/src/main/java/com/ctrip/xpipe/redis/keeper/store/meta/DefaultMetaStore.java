@@ -58,6 +58,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			metaDup.setReplId(replId);
 			metaDup.setBeginOffset(beginOffset);
 			metaDup.setRdbFile(rdbFile);
+			metaDup.setRdbGtidSet(null);
 			setRdbFileInfo(metaDup, eofType);
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
 			metaDup.setRdbLastOffset(beginOffset - 1);
@@ -66,6 +67,20 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			
 			saveMeta(metaDup);
 			return metaDup;
+		}
+	}
+
+	@Override
+	public boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			if (metaDup.getRdbFile().equals(rdbFile)) {
+				metaDup.setRdbGtidSet(gtidSet);
+				saveMeta(metaDup);
+				return true;
+			}
+
+			return false;
 		}
 	}
 

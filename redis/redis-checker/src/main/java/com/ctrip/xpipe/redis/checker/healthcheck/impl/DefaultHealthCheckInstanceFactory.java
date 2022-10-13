@@ -114,11 +114,11 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
+        ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        if (!StringUtil.isEmpty(redisMeta.parent().parent().getActiveRedisCheckRules())) {
-            for (String ruleId : redisMeta.parent().parent().getActiveRedisCheckRules().split(",")) {
+        if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
+            for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
                 RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
                 if(redisCheckRuleMeta != null) {
                     redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
@@ -128,8 +128,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             }
         }
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
-                redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);

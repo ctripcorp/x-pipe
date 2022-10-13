@@ -28,6 +28,8 @@ public class AbstractDcKeeperMasterChooserTest extends AbstractMetaServerTest{
 
 	protected Long clusterDbId = 1L;
 
+	protected Long clusterHeteroId = 7L;
+
 	protected Long shardDbId = 1L;
 	
 	@Mock

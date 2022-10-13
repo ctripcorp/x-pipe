@@ -7,8 +7,10 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.Unpooled;
@@ -29,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.*;
 
 /**
@@ -51,6 +52,9 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Mock
     private ReplicationStore replicationStore;
 
+    @Mock
+    private KeeperRepl keeperRepl;
+
     public DefaultRedisSlave redisSlave;
 
     @Before
@@ -58,6 +62,8 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
         when(channel.remoteAddress()).thenReturn(localhostInetAdress(randomPort()));
+        when(keeperRepl.replId()).thenReturn("test-repl-id");
+        when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
         redisSlave= new DefaultRedisSlave(redisClient);
@@ -77,16 +83,16 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         //should fail
         shouldThrowException(() -> redisSlave.onCommand(mock(ReferenceFileRegion.class)));
-        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), 0L));
-        shouldThrowException(() -> redisSlave.beginWriteCommands(0L));
+        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
+        shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
         redisSlave.markPsyncProcessed();
         //all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
         shouldThrowException(() -> redisSlave.onCommand(mock(ReferenceFileRegion.class)));
-        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), 0L));
-        shouldThrowException(() -> redisSlave.beginWriteCommands(0L));
+        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
+        shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
     }
 
@@ -176,7 +182,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         sleep(waitDumpMilli / 2);
 
-        redisSlave.beginWriteRdb(new LenEofType(1000), 2);
+        redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(2));
 
         sleep(waitDumpMilli);
 
@@ -224,9 +230,9 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Test
     public void testSlaveClosedWhenSendCommandFail() throws Exception {
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
-        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(anyLong(), any());
+        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(any(), any());
 
-        redisSlave.beginWriteRdb(new LenEofType(1000), 0);
+        redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(0));
         Assert.assertTrue(redisSlave.isOpen());
         redisSlave.sendCommandForFullSync();
         waitConditionUntilTimeOut(() -> !redisSlave.isOpen());
@@ -235,10 +241,10 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Test
     public void testMultiBeginWritingCmds() throws Exception {
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
-        redisSlave.beginWriteCommands(0L);
-        redisSlave.beginWriteCommands(0L);
+        redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
+        redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
 
-        verify(replicationStore).addCommandsListener(anyLong(), any());
+        verify(replicationStore).addCommandsListener(any(), any());
     }
 
 }

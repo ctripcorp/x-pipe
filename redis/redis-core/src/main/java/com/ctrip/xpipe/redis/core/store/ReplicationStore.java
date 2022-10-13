@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import io.netty.buffer.ByteBuf;
 
@@ -25,15 +26,17 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException;
 
+	void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException;
+
 	// command related
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
 	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
 
 	// full sync
-	boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
+	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
-	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
+	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 
 	// meta related
 	MetaStore getMetaStore();
@@ -43,6 +46,10 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long getEndOffset();
 	
 	long firstAvailableOffset();
+
+	GtidSet getBeginGtidSet() throws IOException;
+
+	GtidSet getEndGtidSet();
 
 	long beginOffsetWhenCreated();
 

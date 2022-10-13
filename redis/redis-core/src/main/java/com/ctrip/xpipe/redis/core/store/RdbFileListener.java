@@ -11,10 +11,9 @@ import java.io.IOException;
  * 2016年5月9日 下午5:28:47
  */
 public interface RdbFileListener {
-	
-	
-	void setRdbFileInfo(EofType eofType, long rdbOffset);
-	
+
+	void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress);
+
 	/**
 	 * 
 	 * @param fileChannel
@@ -39,5 +38,7 @@ public interface RdbFileListener {
     * called before any other methods to provide a hook to do some initialization
     */
    void beforeFileData();
-   
+
+   default boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {return false;};
+
 }

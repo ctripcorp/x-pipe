@@ -28,7 +28,7 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	
 	private CommandHandlerManager commandHandlerManager;
 	
-	private RedisClient redisClient;
+	private RedisClient<RedisKeeperServer> redisClient;
 	
 	public NettyMasterHandler(RedisKeeperServer redisKeeperServer, CommandHandlerManager commandHandlerManager, long trafficReportIntervalMillis) {
 		super(trafficReportIntervalMillis);

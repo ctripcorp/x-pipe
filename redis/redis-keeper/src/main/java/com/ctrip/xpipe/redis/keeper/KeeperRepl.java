@@ -1,5 +1,9 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.gtid.GtidSet;
+
+import java.io.IOException;
+
 /**
  * @author wenchao.meng
  *
@@ -15,5 +19,10 @@ public interface KeeperRepl {
 	
 	long getBeginOffset();
 	
-	long getEndOffset();	
+	long getEndOffset();
+
+	GtidSet getBeginGtidSet() throws IOException;
+
+	GtidSet getEndGtidSet();
+
 }

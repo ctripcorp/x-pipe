@@ -1,15 +1,21 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -32,7 +38,28 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String clusterAdminEmails;
 
-    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService) {
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<DcDetailInfo> dcDetails = new LinkedList<>();
+
+    public static String innerGroupType2OuterGroupType(String groupType) {
+        if(DcGroupType.isSameGroupType(groupType, DcGroupType.DR_MASTER)){
+            return "drMaster";
+        }else if(DcGroupType.isSameGroupType(groupType, DcGroupType.MASTER)) {
+            return "master";
+        }
+        return "drMaster";
+    }
+
+    public static DcGroupType outerGroupType2InnerGroupType(String groupType) {
+         if(null == groupType || "drMaster".equals(groupType)){
+             return DcGroupType.DR_MASTER;
+         }else if("master".equals(groupType)){
+             return DcGroupType.MASTER;
+         }
+         throw new IllegalArgumentException("unknown group type:"+groupType);
+    }
+
+    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
 
@@ -44,15 +71,30 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
         clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
 
+        Map<Long, String> dcId2DcNameMap = new HashMap<>();
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
         clusterRelatedDc.forEach(dcTbl -> {
-
+            dcId2DcNameMap.put(dcTbl.getId(), dcTbl.getDcName());
             if (dcTbl.getId() == clusterTbl.getActivedcId()) {
                 clusterCreateInfo.addFirstDc(dcTbl.getDcName());
             } else {
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
+        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+
+        dcClusterTbls.forEach(dcClusterTbl -> {
+            DcDetailInfo dcDetailInfo = new DcDetailInfo()
+                    .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
+                    .setDcGroupName(dcClusterTbl.getGroupName())
+                    .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.getGroupType()));
+            if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
+                clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
+            } else {
+                clusterCreateInfo.addDcDetail(dcDetailInfo);
+            }
+        });
+
 
         return clusterCreateInfo;
     }
@@ -108,6 +150,22 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         dcs.add(0, dcName);
     }
 
+    public void addDcDetail(DcDetailInfo dcDetailInfo) {
+        boolean exist = dcDetails.stream().anyMatch(dcDetail -> dcDetail.getDcId().equals(dcDetailInfo.getDcId()));
+        if(exist) {
+            logger.info("[addDcDetail][already exist]{}", dcDetailInfo);
+            return;
+        }
+        dcDetails.add(dcDetailInfo);
+    }
+
+    public void addFirstDcDetail(DcDetailInfo dcDetailInfo) {
+        boolean remove = dcDetails.removeIf(dcDetail -> dcDetail.getDcId().equals(dcDetailInfo.getDcId()));
+        if(remove) {
+            logger.info("[addFirstDcDetail][already exist, remove]", clusterName);
+        }
+        dcDetails.add(0, dcDetailInfo);
+    }
 
     public String getDesc() {
         return desc;
@@ -131,6 +189,15 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     public void setClusterType(String clusterType) {
         this.clusterType = clusterType;
+    }
+
+    public List<DcDetailInfo> getDcDetails() {
+        return dcDetails;
+    }
+
+    public ClusterCreateInfo setDcDetails(List<DcDetailInfo> dcDetails) {
+        this.dcDetails = dcDetails;
+        return this;
     }
 
     @Override

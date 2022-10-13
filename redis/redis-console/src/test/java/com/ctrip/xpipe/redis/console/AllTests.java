@@ -99,6 +99,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DcServiceImplTest.class,
         ConfigServiceImplTest.class,
         AutoMigrationOffCheckerTest.class,
+        AppliercontainerServiceImplTest.class,
+        ReplDirectionServiceImplTest.class,
+        ApplierServiceImplTest.class,
 
         StateMachineTest.class,
         MigrationStatusTest.class,

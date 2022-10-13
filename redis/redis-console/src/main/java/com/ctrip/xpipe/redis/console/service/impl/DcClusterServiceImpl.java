@@ -1,22 +1,21 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -24,9 +23,16 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	
 	@Autowired
 	private DcService dcService;
+
 	@Autowired
 	private ClusterService clusterService;
-	
+
+	@Autowired
+	private ShardModelService shardModelService;
+
+	@Autowired
+	private SourceModelService sourceModelService;
+
 	@Override
 	public DcClusterTbl find(final long dcId, final long clusterId) {
 		return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
@@ -75,6 +81,50 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
+	public List<DcClusterModel> findRelatedDcClusterModels(long clusterId) {
+		List<DcClusterTbl> dcClusterTbls = findClusterRelated(clusterId);
+
+		List<DcClusterModel> result = new ArrayList<>();
+		dcClusterTbls.forEach(dcClusterTbl -> {
+			result.add(new DcClusterModel().setDcCluster(dcClusterTbl));
+		});
+
+		return result;
+	}
+
+	@Override
+	public void validateDcClusters(List<DcClusterModel> dcClusterModels, ClusterTbl clusterTbl) {
+		dcClusterModels.forEach(dcClusterModel -> {
+			if (clusterTbl.getId() != dcClusterModel.getDcCluster().getClusterId()) {
+				throw new BadRequestException(String.format("dc cluster:{} should belong to cluster:{}, but belong to cluster:{}",
+						dcClusterModel.getDcCluster(), dcClusterModel.getDcCluster().getClusterId(), clusterTbl.getId()));
+			}
+
+			if (clusterTbl.getActivedcId() == dcClusterModel.getDcCluster().getDcId()
+					&& DcGroupType.isSameGroupType(dcClusterModel.getDcCluster().getGroupType(), DcGroupType.MASTER)) {
+				throw new BadRequestException(String.format("active dc %d of cluster %s must be DRMaster",
+						clusterTbl.getActivedcId(), clusterTbl.getClusterName()));
+			}
+		});
+	}
+
+	@Override
+	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, String groupType) {
+		if (DcGroupType.isNullOrDrMaster(groupType)) {
+			return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+				@Override
+				public List<DcClusterTbl> doQuery() throws DalException {
+					return dao.findAllByClusterAndGroupType(clusterId, groupType, DcClusterTblEntity.READSET_FULL);
+				}
+			});
+		} else {
+			List<DcClusterTbl> result = new ArrayList<>();
+			result.add(find(dcId, clusterId));
+			return result;
+		}
+	}
+
+	@Override
 	public DcClusterTbl addDcCluster(String dcName, String clusterName, String redisRule) {
 		DcTbl dcInfo = dcService.find(dcName);
 		ClusterTbl clusterInfo = clusterService.find(clusterName);
@@ -104,6 +154,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	public DcClusterTbl addDcCluster(String dcName, String clusterName) {
 		return addDcCluster(dcName, clusterName, null);
 	}
+
 
 	@Override
 	public List<DcClusterTbl> findAllDcClusters() {
@@ -169,4 +220,58 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		}));
 	}
 
+	@Override
+	public DcClusterModel findDcClusterModelByClusterAndDc(String clusterName, String dcName) {
+		DcClusterModel result = new DcClusterModel();
+		DcModel dcModel = dcService.findDcModelByDcName(dcName);
+		if (dcModel == null) {
+			throw new BadRequestException(String.format("dc %s does not exist", dcName));
+		}
+		result.setDc(dcModel);
+
+		DcClusterTbl dcClusterTbl = find(dcName, clusterName);
+		if (dcClusterTbl == null) {
+			throw new BadRequestException(String.format("cluster %s does not have dc %s", clusterName, dcName));
+		}
+		result.setDcCluster(dcClusterTbl);
+
+		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
+		if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
+		}
+		return result;
+	}
+
+	@Override
+	public List<DcClusterModel> findDcClusterModelsByCluster(String clusterName) {
+		ClusterTbl clusterTbl = clusterService.find(clusterName);
+		if(clusterTbl == null)
+			throw new BadRequestException(String.format("cluster %s does not exist", clusterName));
+
+		List<DcClusterTbl> dcClusterTbls = queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+			@Override
+			public List<DcClusterTbl> doQuery() throws DalException {
+				return dao.findAllByClusterId(clusterTbl.getId(), DcClusterTblEntity.READSET_FULL);
+			}
+		});
+
+		List<DcClusterModel> result = new ArrayList<>();
+		dcClusterTbls.forEach(dcClusterTbl -> {
+			DcClusterModel dcClusterModel = new DcClusterModel().setDcCluster(dcClusterTbl);
+			DcModel dcModel = dcService.findDcModelByDcId(dcClusterTbl.getDcId());
+			if (dcModel == null) {
+				throw new BadRequestException(String.format("dc %s does not exist", dcClusterTbl.getDcId()));
+			}
+			dcClusterModel.setDc(dcModel);
+
+			dcClusterModel.setShards(shardModelService.getAllShardModel(dcModel.getDc_name(), clusterName));
+			if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+				dcClusterModel.setSources(sourceModelService.getAllSourceModels(dcModel.getDc_name(), clusterName));
+			}
+			result.add(dcClusterModel);
+		});
+
+
+		return result;
+	}
 }

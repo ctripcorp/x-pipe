@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -51,6 +52,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private RouteDao routeDao;
 	@Autowired
+	private ApplierService applierService;
+	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
 	@Autowired
 	private ShardService shardService;
@@ -81,6 +84,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
+
+	@Autowired
+	private ReplDirectionService replDirectionService;
 
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
@@ -191,6 +197,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<DcTbl> allDcs = clusterModel.getDcs();
 		List<ShardModel> shards = clusterModel.getShards();
 		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+		List<ReplDirectionInfoModel> replDirections = clusterModel.getReplDirections();
+		List<DcClusterModel> dcClusters = clusterModel.getDcClusters();
 
 		// ensure active dc assigned
 		if(!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
@@ -204,7 +212,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
-
 		if (clusterType.supportMultiActiveDC()) {
 			proto.setActivedcId(0L);
 		} else {
@@ -220,21 +227,53 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				return clusterDao.createCluster(queryProto);
+				return clusterDao.createCluster(queryProto, dcClusters);
 			}
 		});
 
-		if(allDcs != null){
-			for(DcTbl dc : allDcs) {
+		if (dcClusters != null) {
+			for (DcClusterModel dcCluster : dcClusters) {
+				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
+				dcCluster.getDcCluster().setDcId(dcTbl.getId());
+				if (dcTbl == null) {
+					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
+				}
 				// single active dc cluster bind active dc when create
-				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
-				bindDc(cluster.getClusterName(), dc.getDcName());
+				if (!clusterType.supportMultiActiveDC() && dcTbl.getId() == result.getActivedcId()) {
+					continue;
+				}
+				DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
+				DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl() : dcClusterInfo;
+				dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
+				bindDc(dcProto);
+			}
+
+			for (DcClusterModel dcCluster : dcClusters) {
+				if ((DcGroupType.isNullOrDrMaster(dcCluster.getDcCluster().getGroupType()))
+						&& dcCluster.getDcCluster().getDcId() != result.getActivedcId()) continue;
+
+				if (dcCluster.getShards() != null && !dcCluster.getShards().isEmpty()) {
+					List<DcClusterTbl> dcClusterTbls =
+							dcClusterService.findAllByClusterAndGroupType(result.getId(),
+									dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().getGroupType());
+
+					dcCluster.getShards().forEach(shardModel -> {
+						shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
+								dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+					});
+				}
 			}
 		}
 
 		if(shards != null){
 			for (ShardModel shard : shards) {
-				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+				shardService.createShard(result.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+			}
+		}
+
+		if (replDirections != null) {
+			for (ReplDirectionInfoModel replDirection : replDirections) {
+				replDirectionService.addReplDirectionByInfoModel(result.getClusterName(), replDirection);
 			}
 		}
 
@@ -327,26 +366,26 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void updateCluster(String clusterName, ClusterTbl cluster) {
+	@DalTransaction
+	public void updateCluster(String clusterName, ClusterModel cluster) {
 		ClusterTbl proto = find(clusterName);
 		if(null == proto) throw new BadRequestException("Cannot find cluster");
 
-		if(proto.getId() != cluster.getId()) {
+		if(proto.getId() != cluster.getClusterTbl().getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
-		proto.setClusterDescription(cluster.getClusterDescription());
+		proto.setClusterDescription(cluster.getClusterTbl().getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-		if(!checkEmails(cluster.getClusterAdminEmails())) {
+		if(!checkEmails(cluster.getClusterTbl().getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
-		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+		proto.setClusterAdminEmails(cluster.getClusterTbl().getClusterAdminEmails());
+		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster.getClusterTbl()));
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
 
-		final ClusterTbl queryProto = proto;
-		clusterDao.updateCluster(queryProto);
+		clusterDao.updateCluster(proto);
 	}
 
 	@Override
@@ -417,28 +456,40 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void bindDc(String clusterName, String dcName) {
-		final ClusterTbl cluster = find(clusterName);
-		final DcTbl dc = dcService.find(dcName);
+	public void bindDc(DcClusterTbl dcClusterTbl) {
+		final ClusterTbl cluster = find(dcClusterTbl.getClusterName());
+		final DcTbl dc = dcService.find(dcClusterTbl.getDcName());
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
-				if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
+				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName()))
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
 				else
-					return clusterDao.bindDc(cluster, dc, null);
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
 			}
 		});
 	}
 
+
+	@DalTransaction
 	@Override
 	public void unbindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
 		final DcTbl dc = dcService.find(dcName);
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
+
+		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
+		if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
+			if(null != shardTbls && !shardTbls.isEmpty()) {
+				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
+				shardService.deleteShards(cluster, shardNames);
+			}
+			applierService.deleteAppliersByClusterAndToDc(dc.getId(), cluster.getId());
+		}
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override

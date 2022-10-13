@@ -4,8 +4,10 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -101,21 +103,26 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 					store.fullSyncIfPossible(new FullSyncListener() {
 						
 						@Override
-						public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+						public ChannelFuture onCommand(Object cmd) {
 							
 							return null;
 						}
-						
+
 						@Override
 						public void beforeCommand() {
 							
 						}
-						
+
 						@Override
-						public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
-							
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
+
 						}
-						
+
+						@Override
+						public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+							return true;
+						}
+
 						@Override
 						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 							sleep(10);

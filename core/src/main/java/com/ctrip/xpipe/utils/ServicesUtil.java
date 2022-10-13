@@ -11,6 +11,8 @@ import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
+import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
 import com.ctrip.xpipe.metric.MetricProxy;
 import org.slf4j.Logger;
@@ -68,6 +70,10 @@ public class ServicesUtil {
 
 	public static EmailService getEmailService() {
 		return load(EmailService.class);
+	}
+
+	public static AsyncRedisClientFactory getAsyncRedisClientFactory() {
+	    return load(AsyncRedisClientFactory.class);
 	}
 
 	public static MonitorServiceFactory getMonitorServiceFactory() {

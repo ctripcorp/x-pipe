@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * date 2021/11/18
  */
 @Component
-public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
+public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, HeteroSupport {
 
     @Autowired
     private MetaCache metaCache;

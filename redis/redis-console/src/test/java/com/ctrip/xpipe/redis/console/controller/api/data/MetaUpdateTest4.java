@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ReplDirectionCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MetaUpdateTest4 {
+    @Spy
     @InjectMocks
     private MetaUpdate metaUpdate;
 
@@ -45,6 +47,12 @@ public class MetaUpdateTest4 {
 
     @Mock
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
+
+    @Mock
+    private ReplDirectionService replDirectionService;
+
+    @Mock
+    private DcClusterService dcClusterService;
 
     private Logger logger = LoggerFactory.getLogger(MetaUpdateTest4.class);
 
@@ -70,6 +78,11 @@ public class MetaUpdateTest4 {
     @Mock
     ClusterTbl clusterTbl;
 
+    long clusterId = 100;
+
+    long dcId1 = 1000;
+    long dcId2 = 1001;
+
     MetaServerConsoleService metaServerConsoleService1 = mock(MetaServerConsoleService.class);
     MetaServerConsoleService metaServerConsoleService2 = mock(MetaServerConsoleService.class);
 
@@ -83,6 +96,13 @@ public class MetaUpdateTest4 {
                 .thenReturn(dc1);
         when(dcTbl2.getDcName())
                 .thenReturn(dc2);
+        when(dcTbl1.getId())
+                .thenReturn(dcId1);
+        when(dcTbl2.getId())
+                .thenReturn(dcId2);
+        when(clusterTbl.getId())
+                .thenReturn(clusterId);
+        when(clusterTbl.getClusterName()).thenReturn(clusterName);
         when(shardTbl1.getShardName()).thenReturn(shardName1);
         when(shardTbl2.getShardName()).thenReturn(shardName2);
 
@@ -186,5 +206,67 @@ public class MetaUpdateTest4 {
         } catch (Throwable t) {
             fail();
         }
+    }
+
+    @Test
+    public void addReplDirections() {
+        long replDirectionId = 10;
+        ReplDirectionCreateInfo replDirectionCreateInfo1 = new ReplDirectionCreateInfo().setFromDcName(dc1).setSrcDcName(dc1).setToDcName(dc2);
+
+        when(shardService.findAllShardByDcCluster(dcTbl1.getId(), clusterTbl.getId())).thenReturn(Lists.newArrayList(shardTbl1));
+        when(shardService.findAllShardByDcCluster(dcTbl2.getId(), clusterTbl.getId())).thenReturn(Lists.newArrayList(shardTbl2));
+
+        ReplDirectionTbl replDirectionTbl = new ReplDirectionTbl().setId(replDirectionId).setSrcDcId(dcId1).setToDcId(dcId2);
+        doAnswer(invocationOnMock -> replDirectionTbl).when(replDirectionService).addReplDirectionByInfoModel(anyString(), any());
+        doAnswer(invocationOnMock -> null).when(metaUpdate).addAppliers(anyString(), anyString(), any(), anyLong());
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
+        // TODO: 2022/10/10 remove hetero
+//        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
+
+        DcClusterTbl dcClusterTbl1 = mock(DcClusterTbl.class);
+        when(dcClusterTbl1.getDcId()).thenReturn(dcId1);
+        when(dcClusterTbl1.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
+        when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl1);
+
+        metaUpdate.createReplDirections(clusterName, Lists.newArrayList(replDirectionCreateInfo1));
+        verify(metaUpdate).addAppliers(dc2, clusterName, shardTbl1, replDirectionId);
+        verify(metaUpdate, never()).addAppliers(dc2, clusterName, shardTbl2, replDirectionId);
+    }
+
+    @Test
+    public void addReplDirectionWithMasterDcAndIsFromDc() throws Exception {
+        // TODO: 2022/10/10 remove hetero
+//        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
+        DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
+        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.MASTER.toString());
+        when(dcClusterTbl.getDcId()).thenReturn(dcId1);
+        when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl);
+
+        ReplDirectionInfoModel replDirectionInfoModel = mock(ReplDirectionInfoModel.class);
+        when(replDirectionInfoModel.getToDcName()).thenReturn("SHARB");
+        when(replDirectionInfoModel.getFromDcName()).thenReturn(dc1);
+        when(replDirectionInfoModel.getSrcDcName()).thenReturn(dc2);
+
+        ReplDirectionTbl replDirectionTbl = mock(ReplDirectionTbl.class);
+        when(replDirectionTbl.getSrcDcId()).thenReturn(dcId2);
+        when(replDirectionTbl.getId()).thenReturn(4L);
+        when(replDirectionTbl.getToDcId()).thenReturn(dcId1);
+        when(replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel))
+                .thenReturn(replDirectionTbl);
+
+        ShardTbl shardTbl = mock(ShardTbl.class);
+        when(shardService.findAllShardByDcCluster(dcId2, clusterId)).thenReturn(Lists.newArrayList(shardTbl));
+
+        ShardTbl toDcShardTbl = mock(ShardTbl.class);
+        when(shardService.findAllShardByDcCluster(dcId1, clusterId)).thenReturn(Lists.newArrayList(toDcShardTbl));
+
+        doAnswer(invocationOnMock -> null).when(metaUpdate).addAppliers(anyString(), anyString(), any(), anyLong());
+        doAnswer(invocationOnMock -> null).when(metaUpdate).doAddKeepers(anyString(), anyString(), any(), anyString());
+
+        metaUpdate.doCreateReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel));
+        verify(metaUpdate).doAddKeepers(dc2, clusterName, shardTbl, dc1);
+        verify(metaUpdate).addAppliers("SHARB", clusterName, shardTbl, 4L);
     }
 }

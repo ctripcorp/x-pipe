@@ -39,6 +39,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	long getCommandReaderFlyingThreshold();
 
+	int getCommandIndexBytesInterval();
+
 	int getRdbDumpMinIntervalMilli();
 	
 	int getDelayLogLimitMicro();

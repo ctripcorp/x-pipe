@@ -4,6 +4,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -76,10 +77,15 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 				try {
 					rdbStore.readRdbFile(new RdbFileListener() {
 						@Override
-						public void setRdbFileInfo(EofType eofType, long rdbFileKeeperOffset) {
-							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbFileKeeperOffset);
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
+							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbProgress);
 						}
-						
+
+						@Override
+						public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+							return true;
+						}
+
 						@Override
 						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 							

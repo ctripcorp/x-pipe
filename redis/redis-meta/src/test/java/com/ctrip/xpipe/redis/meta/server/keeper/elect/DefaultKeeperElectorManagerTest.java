@@ -105,7 +105,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 		Long clusterDbId = clusterMeta.getDbId();
 		Long shardDbId = shardMeta.getDbId();
 
-		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+		when(currentMetaManager.watchKeeperIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 		keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
 		addKeeperZkNode(clusterDbId, shardDbId, getZkClient());
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
@@ -113,7 +113,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 			verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
 		}));
 
-		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(false);
+		when(currentMetaManager.watchKeeperIfNotWatched(anyLong(), anyLong())).thenReturn(false);
 		keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
 			verify(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
@@ -125,7 +125,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testAddWatch() throws Exception{
 
-		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+		when(currentMetaManager.watchKeeperIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 		//change notify
@@ -140,7 +140,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testRemoveWatch() throws Exception{
 
-		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+		when(currentMetaManager.watchKeeperIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 		
 		final AtomicReference<Releasable>  release = new AtomicReference<Releasable>(null);
 		doAnswer(new Answer<Void>() {

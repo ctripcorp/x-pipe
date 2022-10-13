@@ -10,7 +10,7 @@ import java.io.Serializable;
  *         <p>
  *         Jul 17, 2016
  */
-public interface Redis extends Serializable {
+public interface Redis extends Serializable, InstanceNode {
 
     String getId();
 

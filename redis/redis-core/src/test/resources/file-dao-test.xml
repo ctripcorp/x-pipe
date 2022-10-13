@@ -18,6 +18,11 @@
 				<redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000" />
 			</shard>
 		</cluster>
+
+		<cluster id="cluster-hetero1" active-dc="jq" downstream-dcs="oy, fra" type="hetero">
+			<shard id="shard1">
+			</shard>
+		</cluster>
 	</dc>
 	<dc id="fq">
 		<zkServer address="127.0.0.1:2281" />
@@ -78,6 +83,12 @@
 				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
+		</cluster>
+		<cluster id="cluster-hetero1" active-dc="jq" backup-dcs="" type="hetero">
+			<source src-dc="jq" upstream-dc="jq" region="FRA">
+				<shard id="shard1">
+				</shard>
+			</source>
 		</cluster>
 		<cluster id="bi-cluster1" db-id="2" dcs="oy, jq, fra" type="bi_direction" clusterDesignatedRouteIds="5,9">
 			<shard id="shard1" db-id="2">

@@ -57,7 +57,8 @@ public class ConsoleController extends AbstractConsoleController {
 
 		return (format != null && format.equals("xml"))? result.toString() : coder.encode(result);
 	}
-	
+
+	//TODO ayq support hetero
 	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcClusterMeta(@PathVariable String dcId,@PathVariable String clusterId, @RequestParam(value="format", required = false) String format) {
 		ClusterMeta result = clusterMetaService.getClusterMeta(dcId, clusterId);

@@ -53,6 +53,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
+  public List<KeepercontainerTbl> findAll() {
+    return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+      @Override
+      public List<KeepercontainerTbl> doQuery() throws DalException {
+        return dao.findAll(KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
+  }
+
+  @Override
   public List<KeepercontainerTbl> findAllByDcName(final String dcName) {
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
@@ -294,6 +304,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     }, true);
+  }
+
+  @Override
+  public Map<Long, Long> keeperContainerIdDcMap() {
+    Map<Long, Long> keeperContainerIdDcMap = new HashMap<>();
+    List<KeepercontainerTbl> allKeeperContainers = findAll();
+    allKeeperContainers.forEach((keeperContainer) -> {
+      keeperContainerIdDcMap.put(keeperContainer.getKeyKeepercontainerId(), keeperContainer.getKeepercontainerDc());
+    });
+    return keeperContainerIdDcMap;
   }
 
 
