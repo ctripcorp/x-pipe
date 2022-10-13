@@ -64,7 +64,7 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
             activeKeeper.set(inv.getArgument(3, KeeperMeta.class));
             return null;
         }).when(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
-        when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+        when(currentMetaManager.watchKeeperIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 
         clusterId = clusterMeta.getId();
         shardId = shardMeta.getId();

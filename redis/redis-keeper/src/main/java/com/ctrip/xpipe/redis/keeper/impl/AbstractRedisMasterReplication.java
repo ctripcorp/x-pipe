@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -432,6 +433,18 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public void reFullSync() {
 		doReFullSync();
+	}
+
+	@Override
+	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
+		try {
+			logger.info("[readRdbGtidSet] {}", gtidSet);
+			redisMaster.getCurrentReplicationStore().checkAndUpdateRdbGtidSet(rdbStore, gtidSet);
+		} catch (IOException e) {
+			logger.error("[readRdbGtidSet][fail]", e);
+		}
+
+		getRdbDumper().rdbGtidSetParsed();
 	}
 
 	protected abstract void doReFullSync();

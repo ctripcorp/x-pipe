@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -19,6 +20,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
 
@@ -158,8 +160,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		rdbStore.readRdbFile(new RdbFileListener() {
 
 			@Override
-			public void setRdbFileInfo(EofType eofType, long rdbFileOffset) {
+			public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
 
+			}
+
+			@Override
+			public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+				return true;
 			}
 
 			@Override
@@ -209,7 +216,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException{
-				replicationStore.addCommandsListener(replicationStore.beginOffsetWhenCreated() + beginOffset, new CommandsListener() {
+				replicationStore.addCommandsListener(new OffsetReplicationProgress(replicationStore.beginOffsetWhenCreated() + beginOffset), new CommandsListener() {
 					
 					@Override
 					public boolean isOpen() {
@@ -226,13 +233,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes(referenceFileRegion);
+							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
-							logger.error("[onCommand]" + referenceFileRegion, e);
+							logger.error("[onCommand]" + cmd, e);
 						}
 						return null;
 					}

@@ -14,6 +14,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
+
 import static org.mockito.Mockito.when;
 
 
@@ -41,18 +43,24 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                                             .setStatus("normal")
                                             .setClusterDesignatedRouteIds("")
                                             .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
         clusterInfo.setClusterAdminEmails("test@ctrip.com");
         clusterInfo.setOrganizationId(ORG_ID);
+        // TODO: 2022/10/10 remove hetero
+//        clusterInfo.setClusterType(ClusterType.HETERO.toString());
+        clusterInfo.setClusterType(ClusterType.ONE_WAY.toString());
         RetMessage retMessage = clusterController.updateCluster(clusterInfo);
         logger.info("{}", retMessage.getMessage());
         Assert.assertEquals(SUCCESS_STATE, retMessage.getState());
 
         ClusterTbl cluster = clusterDao.findClusterAndOrgByName(CLUSTER_NAME);
         Assert.assertEquals(ORG_ID, cluster.getOrganizationInfo().getOrgId());
+        // TODO: 2022/10/10 remove hetero
+//        Assert.assertEquals(ClusterType.HETERO.toString(), cluster.getClusterType());
+        Assert.assertEquals(ClusterType.ONE_WAY.toString(), cluster.getClusterType());
     }
 
     @Test
@@ -81,7 +89,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
@@ -111,7 +119,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
@@ -141,9 +149,9 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
         clusterTbl.setId(LATTER_ID).setClusterName(LATTER_NAME);
-        clusterDao.createCluster(clusterTbl);
+        clusterDao.createCluster(clusterTbl, new ArrayList<>());
 
         /* fail on param check. */
         RetMessage retMessage;

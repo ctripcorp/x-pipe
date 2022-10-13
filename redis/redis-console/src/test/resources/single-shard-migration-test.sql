@@ -19,7 +19,6 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(8,'unknown',2,'127.0.0.1',7379,'redis',0,-1,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(9,'unknown',2,'127.0.0.1',7380,'redis',0,-1,null);
 
-
 insert into MIGRATION_EVENT_TBL (id,event_tag) values (1,'cluster1-111');
 
 insert into MIGRATION_CLUSTER_TBL (id,migration_event_id,cluster_id,source_dc_id, destination_dc_id,status) values (1,1,1,1,2,'Initiated');

@@ -2,22 +2,30 @@ angular
     .module('index')
     .controller('ClusterDcShardUpdateCtl', ClusterDcShardUpdateCtl);
 
-ClusterDcShardUpdateCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window', '$location',
-    'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'RedisService', 'KeeperContainerService', 'ClusterType'];
+ClusterDcShardUpdateCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil',
+    'ClusterService', 'DcClusterService', 'ShardService', 'RedisService', 'ApplierService',
+    'AppliercontainerService', 'ReplDirectionService', 'KeeperContainerService', 'ClusterType'];
 
-function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $location,
-                    toastr, AppUtil, ClusterService, ShardService, RedisService, KeeperContainerService, ClusterType) {
+function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService,
+        DcClusterService, ShardService, RedisService, ApplierService, AppliercontainerService,
+        ReplDirectionService, KeeperContainerService, ClusterType) {
 
     $scope.dcs,$scope.hasMasterRedis = false, $scope.createKeeperErrorMsg = '';
+    $scope.createApplierErrorMsg = '';
     $scope.dcShards = {};
+    $scope.dcSourceShards = {};
+    $scope.replDirection = {};
     $scope.clusterName = $stateParams.clusterName;
     $scope.shardName = $stateParams.shardName;
     $scope.currentDcName = $stateParams.currentDcName;
+    $scope.srcDcName = $stateParams.srcDcName;
+
     $scope.masterDcName;
 
     $scope.switchDc = switchDc;
     $scope.loadCluster = loadCluster;
     $scope.loadShard = loadShard;
+    $scope.loadSourceShard = loadSourceShard;
 
     $scope.preCreateRedis = preCreateRedis;
     $scope.createRedis = createRedis;
@@ -30,11 +38,25 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     $scope.preDeleteRedis = preDeleteRedis;
     $scope.deleteRedis = deleteRedis;
 
+    $scope.preCreateApplier = preCreateApplier;
+    $scope.createApplier = createApplier;
+    $scope.preDeleteApplier = preDeleteApplier;
+    $scope.deleteApplier = deleteApplier;
+
+    $scope.addCreateBackupApplierForm = addCreateBackupApplierForm;
+    $scope.removeCreateBackupApplierForm = removeCreateBackupApplierForm;
+
+
     $scope.submitUpdates = submitUpdates;
 
     $scope.hasRedisMaster = false;
     $scope.useKeeper = false;
     $scope.multiActiveDcs = false;
+    $scope.isSource = false;
+
+    if ($scope.srcDcName) {
+        $scope.isSource = true;
+    }
 
     if ($scope.clusterName) {
         loadCluster();
@@ -50,15 +72,36 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
                })
     }
 
+    function findActiveApplierContainersByCluster(dcName, clusterName) {
+        AppliercontainerService.getActiveAppliercontainersByDcCluster(dcName, clusterName)
+            .then(function(result) {
+                result.sort(function(applierA, applierB) {
+                    return applierA.count - applierB.count;
+                });
+
+                $scope.appliercontainers = result;
+            });
+    }
+
     function switchDc(dc) {
         $scope.currentDcName = dc.dcName;
         if ($scope.useKeeper) findActiveKeeperContainersByCluster($scope.currentDcName, $scope.clusterName);
-        var shard = $scope.dcShards[$scope.currentDcName];
 
-        if (!shard){
-            loadShard($scope.clusterName, dc.dcName, $scope.shardName);
+        if ($scope.isSource) {
+            loadReplDirection($scope.clusterName, $scope.srcDcName, $scope.currentDcName);
+            if ($scope.supportApplier) findActiveApplierContainersByCluster($scope.currentDcName, $scope.clusterName);
+            var sourceShard = $scope.dcSourceShards[$scope.currentDcName];
+            if (!sourceShard) {
+                loadSourceShard($scope.clusterName, $scope.srcDcName, $scope.currentDcName, $scope.shardName);
+            }
         } else {
-            refreshShardStatus();
+            var shard = $scope.dcShards[$scope.currentDcName];
+
+            if (!shard){
+                loadShard($scope.clusterName, dc.dcName, $scope.shardName);
+            } else {
+                refreshShardStatus();
+            }
         }
 
     }
@@ -77,7 +120,8 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
         	 			var clusterType = ClusterType.lookup(result.clusterType);
         	 			$scope.cluster = result;
         	 			$scope.useKeeper = clusterType && clusterType.useKeeper;
-                       $scope.multiActiveDcs = clusterType && clusterType.multiActiveDcs;
+        	 			$scope.supportApplier = clusterType && clusterType.supportApplier;
+                        $scope.multiActiveDcs = clusterType && clusterType.multiActiveDcs;
         	 			for(var i = 0 ; i != $scope.dcs.length; ++i) {
         	 				if($scope.dcs[i].id === $scope.cluster.activedcId) {
         	 					$scope.masterDcName = $scope.dcs[i].dcName;
@@ -90,7 +134,14 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
 
                 if(!$scope.currentDcName) $scope.currentDcName = $scope.dcs[0].dcName;
                 findActiveKeeperContainersByCluster($scope.currentDcName, $scope.clusterName);
-                loadShard($scope.clusterName, $scope.currentDcName, $scope.shardName);
+                findActiveApplierContainersByCluster($scope.currentDcName, $scope.clusterName);
+
+                if ($scope.isSource) {
+                    loadReplDirection($scope.clusterName, $scope.srcDcName, $scope.currentDcName);
+                    loadSourceShard($scope.clusterName, $scope.srcDcName, $scope.currentDcName, $scope.shardName);
+                } else {
+                    loadShard($scope.clusterName, $scope.currentDcName, $scope.shardName);
+                }
 
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
@@ -109,20 +160,38 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             });
     }
 
+    function loadSourceShard(clusterName, srcDcName, toDcName, shardName) {
+        ShardService.findClusterDcSourceShard(clusterName, srcDcName, toDcName, shardName)
+            .then(function (result) {
+                $scope.dcSourceShards[toDcName] = result;
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
+
+    function loadReplDirection(clusterName, srcDcName, toDcName) {
+        ReplDirectionService.findReplDirectionByClusterAndSrcToDc(clusterName, srcDcName, toDcName)
+            .then(function (result) {
+                $scope.replDirection = result;
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
+
     function preCreateRedis() {
         $scope.toCreateRedis = {
        		 redisPort : 6379,
        		 master : false
         };
 
-        $('#createRedisModal').modal('show');
+        $('#createRedisModel').modal('show');
     }
 
     function createRedis() {
         var shard = $scope.dcShards[$scope.currentDcName];
         shard.redises.push($scope.toCreateRedis);
         $scope.toCreateRedis = {};
-        $('#createRedisModal').modal('hide');
+        $('#createRedisModel').modal('hide');
 
         refreshShardStatus();
     }
@@ -161,12 +230,17 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             }
          });
 
-        $('#createKeeperModal').modal('show');
+        $('#createKeeperModel').modal('show');
     }
 
     function createKeeper() {
         $scope.createKeeperErrorMsg = '';
-        var shard = $scope.dcShards[$scope.currentDcName];
+        if ($scope.isSource) {
+            var shard = $scope.dcSourceShards[$scope.currentDcName];
+        } else {
+            var shard = $scope.dcShards[$scope.currentDcName];
+        }
+
 
             if (!validKeeper($scope.toCreateFirstKeeper)){
                 $scope.createKeeperErrorMsg = "valid form content please check";
@@ -199,7 +273,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
         });
 
         if (!$scope.createKeeperErrorMsg){
-            $('#createKeeperModal').modal('hide');
+            $('#createKeeperModel').modal('hide');
             refreshShardStatus();
         }
 
@@ -216,7 +290,12 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function deleteRedis() {
-        var shard = $scope.dcShards[$scope.currentDcName];
+        if ($scope.isSource) {
+            var shard = $scope.dcSourceShards[$scope.currentDcName];
+        } else {
+            var shard = $scope.dcShards[$scope.currentDcName];
+        }
+
         var index = -1;
         for (var cnt_redis = 0; cnt_redis != shard.redises.length; ++cnt_redis) {
             if ($scope.toDeleteRedis == shard.redises[cnt_redis]) {
@@ -246,18 +325,135 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
 
     }
 
+    function preCreateApplier() {
+        $scope.orgSpecifiedAppliers = [];
+        $scope.toCreateFirstApplier = {};
+        $scope.toCreateOtherAppliers = [];
+
+        var sourceShard = $scope.dcSourceShards[$scope.currentDcName];
+
+        ApplierService.findAvailableAppliersByDc($scope.currentDcName, sourceShard)
+            .then(function(appliers) {
+                var applier = appliers.shift();
+                if (applier) {
+                    $scope.toCreateFirstApplier = {
+                        containerId : applier.containerId.toString(),
+                        port : applier.port
+                    };
+                }
+
+                while (applier = appliers.shift()) {
+                    $scope.toCreateOtherAppliers.push( {
+                        containerId : applier.containerId.toString(),
+                        port : applier.port
+                    });
+                }
+            });
+
+        $('#createApplierModel').modal('show');
+    }
+
+    function createApplier() {
+        $scope.createApplierErrorMsg = '';
+        var sourceShard = $scope.dcSourceShards[$scope.currentDcName];
+
+        if (!validApplier($scope.toCreateFirstApplier)){
+            $scope.createApplierErrorMsg = "valid form content please check";
+            return;
+        }else {
+             var appliercontainerId = $scope.toCreateFirstApplier.containerId;
+             for(var i = 0 ; i != $scope.appliercontainers.length; ++i) {
+                 if($scope.appliercontainers[i].appliercontainerId === parseInt(appliercontainerId)) {
+                     $scope.toCreateFirstApplier.ip = $scope.appliercontainers[i].appliercontainerIp;
+                     break;
+                 }
+             }
+            sourceShard.appliers.push($scope.toCreateFirstApplier);
+        }
+
+        $scope.toCreateOtherAppliers.forEach(function (otherApplier) {
+            if (!validApplier(otherApplier)){
+                $scope.createApplierErrorMsg = "valid form content please check";
+                return;
+            }else {
+                 var appliercontainerId = otherApplier.containerId;
+                 for(var i = 0 ; i != $scope.appliercontainers.length; ++i) {
+                     if($scope.appliercontainers[i].appliercontainerId === parseInt(appliercontainerId)) {
+                         otherApplier.ip = $scope.appliercontainers[i].appliercontainerIp;
+                         break;
+                     }
+                 }
+                sourceShard.appliers.push(otherApplier);
+            }
+        });
+
+        if (!$scope.createApplierErrorMsg){
+            $('#createApplierModel').modal('hide');
+        }
+    }
+
+    function validApplier(applier) {
+        return applier && applier.port;
+    }
+
+    function addCreateBackupApplierForm() {
+        $scope.toCreateOtherAppliers.push({});
+    }
+
+    function removeCreateBackupApplierForm(index) {
+        $scope.toCreateOtherAppliers.splice(index, 1);
+    }
+
+    function preDeleteApplier(applier) {
+        $scope.toDeleteApplier = {};
+        $scope.toDeleteApplier = applier;
+        $('#deleteApplierConfirm').modal('show');
+    }
+
+    function deleteApplier() {
+        var source = $scope.dcSourceShards[$scope.currentDcName];
+        var index = -1;
+        for (var cnt_applier = 0; cnt_applier != source.appliers.length; ++cnt_applier) {
+            if ($scope.toDeleteApplier == source.appliers[cnt_applier]) {
+                index = cnt_applier;
+                break;
+            }
+        }
+        if (index != -1) {
+            source.appliers.splice(index, 1);
+            $scope.toDeleteApplier = {};
+            return;
+        }
+    }
+
     function submitUpdates() {
 
-        var shard = $scope.dcShards[$scope.currentDcName];
+        if ($scope.isSource) {
+            var sourceShard = $scope.dcSourceShards[$scope.currentDcName];
+            ApplierService.updateAppliers($scope.currentDcName, $scope.clusterName, sourceShard.shardTbl.shardName, $scope.replDirection.id, sourceShard)
+                .then(function (result) {
+                    if(result.message == 'success' ) {
+                    toastr.success("operation success");
+                    $window.location.href =
+                        "#/cluster_dc_shards/" + $scope.clusterName + "/" + $scope.currentDcName;
+                    } else {
+                        toastr.error(result.message, "operation fail");
+                    }
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), "operation fail");
+                });
+        } else {
+            var shard = $scope.dcShards[$scope.currentDcName];
 
-        RedisService.updateShardRedis($scope.clusterName, $scope.currentDcName, shard.shardTbl.shardName, shard)
-            .then(function (result) {
-                toastr.success("operation success");
-                $window.location.href =
-                    "#/cluster_dc_shards/" + $scope.clusterName + "/" + $scope.currentDcName;
-            }, function (result) {
-                toastr.error(AppUtil.errorMsg(result), "operation fail");
-            });
+            RedisService.updateShardRedis($scope.clusterName, $scope.currentDcName, shard.shardTbl.shardName, shard)
+                .then(function (result) {
+                    toastr.success("operation success");
+                    $window.location.href =
+                        "#/cluster_dc_shards/" + $scope.clusterName + "/" + $scope.currentDcName;
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), "operation fail");
+                });
+        }
     }
 
     function refreshShardStatus() {

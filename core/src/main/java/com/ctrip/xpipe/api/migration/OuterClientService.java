@@ -690,7 +690,15 @@ public interface OuterClientService extends Ordered{
 			public com.ctrip.xpipe.cluster.ClusterType innerType() {
 				return com.ctrip.xpipe.cluster.ClusterType.CROSS_DC;
 			}
-		};
+		},
+		// todo remote hetero
+//		HETERO(6){
+//			@Override
+//			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+//				return com.ctrip.xpipe.cluster.ClusterType.HETERO;
+//			}
+//		}
+     	;
 
 		private Integer intVal;
 

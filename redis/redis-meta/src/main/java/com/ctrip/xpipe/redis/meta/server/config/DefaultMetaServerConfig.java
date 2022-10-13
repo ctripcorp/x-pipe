@@ -45,6 +45,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_PORT = "server.port";
 
 	private static final String KEY_KEEPER_INFO_CHECK_INTERVAL = "meta.keeper.info.check.interval";
+	private static final String KEY_APPLIER_INFO_CHECK_INTERVAL = "meta.applier.info.check.interval";
 	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
 
 	private static final String KEY_OWN_CLUSTER_TYPES = "meta.cluster.types";
@@ -151,6 +152,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getKeeperInfoCheckInterval() {
 		return getIntProperty(KEY_KEEPER_INFO_CHECK_INTERVAL, 30 * 1000);
+	}
+
+	@Override
+	public int getApplierInfoCheckInterval() {
+		return getIntProperty(KEY_APPLIER_INFO_CHECK_INTERVAL, 30 * 1000);
 	}
 
 	@Override

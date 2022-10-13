@@ -58,5 +58,15 @@
 			<scope>test</scope>
 		</dependency>
     </dependencies>
-
+    <profiles>
+        <profile>
+            <id>services</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.ctrip.framework.xpipe</groupId>
+                    <artifactId>ctrip-service</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

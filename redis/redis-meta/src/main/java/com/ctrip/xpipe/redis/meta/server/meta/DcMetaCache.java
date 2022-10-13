@@ -38,11 +38,25 @@ public interface DcMetaCache extends Observable {
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
+
 	boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId);
 
 	boolean isCurrentDcPrimary(Long clusterDbId);
 
+	boolean isCurrentDcBackUp(Long clusterDbId, Long shardDbId);
+
+	boolean isCurrentDcBackUp(Long clusterDbId);
+
+	boolean isCurrentShardParentCluster(Long clusterDbId, Long shardDbId);
+
 	Set<String> getBakupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 
@@ -50,12 +64,16 @@ public interface DcMetaCache extends Observable {
 
 	List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId);
 
+	List<ApplierMeta> getShardAppliers(Long clusterDbId, Long shardDbId);
+
+	List<RedisMeta> getClusterRedises(Long clusterDbId);
+
 	List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId);
 
 	SentinelMeta getSentinel(Long clusterDbId, Long shardDbId);
 
 	String getSentinelMonitorName(Long clusterDbId, Long shardDbId);
-	
+
 	void clusterAdded(ClusterMeta clusterMeta);
 
 	void clusterModified(ClusterMeta clusterMeta);

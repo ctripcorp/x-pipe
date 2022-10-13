@@ -16,6 +16,7 @@ import java.util.Set;
  */
 public class RedisCreateInfo extends AbstractCreateInfo {
     private String dcId;
+    private String shardName;
     private String redises;
 
     @Override
@@ -32,6 +33,15 @@ public class RedisCreateInfo extends AbstractCreateInfo {
 
     public RedisCreateInfo setDcId(String dcId) {
         this.dcId = dcId;
+        return this;
+    }
+
+    public String getShardName() {
+        return shardName;
+    }
+
+    public RedisCreateInfo setShardName(String shardName) {
+        this.shardName = shardName;
         return this;
     }
 

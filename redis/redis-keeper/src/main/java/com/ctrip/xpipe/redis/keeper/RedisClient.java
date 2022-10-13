@@ -15,7 +15,7 @@ import java.util.Set;
  *
  * 2016年4月22日 上午11:25:07
  */
-public interface RedisClient extends Observable, Infoable, Closeable, RedisRole, Releasable, Keeperable{
+public interface RedisClient<T extends RedisServer> extends Observable, Infoable, Closeable, RedisRole, Releasable, Keeperable{
 	
 	public static enum CLIENT_ROLE{
 		NORMAL,
@@ -23,8 +23,11 @@ public interface RedisClient extends Observable, Infoable, Closeable, RedisRole,
 	}
 	
 	RedisSlave becomeSlave();
+
+	// for xsync
+	RedisSlave becomeXSlave();
 	
-	RedisKeeperServer getRedisKeeperServer();
+	T getRedisServer();
 
 	void setSlaveListeningPort(int port);
 

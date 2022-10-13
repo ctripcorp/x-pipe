@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.model.DcModel;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
@@ -114,6 +115,16 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
+	public Map<String, Long> dcNameIdMap() {
+		List<DcTbl> allDcs = findAllDcs();
+		Map<String, Long> result = new HashMap<>();
+
+		allDcs.forEach(dcTbl -> result.put(dcTbl.getDcName(), dcTbl.getId()));
+		return result;
+	}
+
+
+	@Override
 	public Map<String, Long> dcNameZoneMap() {
 		List<DcTbl> allDcs = findAllDcs();
 		Map<String, Long> result = new HashMap<>();
@@ -165,6 +176,30 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				);
 			}
 		});
+	}
+
+	@Override
+	public DcModel findDcModelByDcName(String dcName) {
+		DcTbl dcTbl = find(dcName);
+		return convertDcTblToDcModel(find(dcName));
+	}
+
+	@Override
+	public DcModel findDcModelByDcId(long dcId) {
+		return convertDcTblToDcModel(find(dcId));
+	}
+
+	private DcModel convertDcTblToDcModel(DcTbl dcTbl) {
+		if (dcTbl == null) {
+			return null;
+		}
+
+		DcModel dcModel = new DcModel();
+		dcModel.setDc_name(dcTbl.getDcName());
+		dcModel.setDescription(dcTbl.getDcDescription());
+		dcModel.setZone_id(dcTbl.getZoneId());
+
+		return dcModel;
 	}
 
 	private List<DcClusterTypeStatisticsModel> clusterTypesStatistics(DcMeta dcMeta,Map<String, List<ClusterMeta>> typeClusters) {

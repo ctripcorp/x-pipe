@@ -141,7 +141,13 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
-    changeConfigLogFile $FULL_DIR log4j2-uat.xml
+    IDC=`getIdc`
+    if [ $IDC = "PTOY" ]
+    then
+        changeConfigLogFile $FULL_DIR log4j2-uat-ptoy.xml
+    else
+        changeConfigLogFile $FULL_DIR log4j2-uat.xml
+    fi
 
     ROLE=`getRole`
     if [ $ROLE = "REDIS" ]
@@ -154,11 +160,17 @@ else
     fi
 
     IDC=`getIdc`
-    if [ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ];then
+    total=`getTotalMem`
+    if ([ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ]) && ([ "$total" -gt 30720 ]);then
         #MB
         USED_MEM=30720
         XMN=11520
         MAX_DIRECT=5120
+    elif [ $IDC = "UAT-AWS" ]; then
+        #MB
+        USED_MEM=6144
+        XMN=2400
+        MAX_DIRECT=300
     else
         #MB
         USED_MEM=1600

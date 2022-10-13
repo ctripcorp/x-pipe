@@ -136,6 +136,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.ctrip.credis</groupId>
+            <artifactId>credis</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>qunar.common</groupId>
             <artifactId>common-core</artifactId>
         </dependency>

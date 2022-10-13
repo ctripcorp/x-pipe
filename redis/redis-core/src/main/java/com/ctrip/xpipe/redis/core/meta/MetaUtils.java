@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.Redis;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -31,19 +29,25 @@ public class MetaUtils {
 		
 	}
 
-	public static boolean theSame(Redis redisMeta1, Redis redisMeta2) {
+	public static boolean same(ApplierMeta applierMeta1, ApplierMeta applierMeta2){
+
+		return theSame(applierMeta1, applierMeta2);
+
+	}
+
+	public static boolean theSame(InstanceNode instanceNode1, InstanceNode instanceNode2) {
 		
-		if(redisMeta1== null){
-			return redisMeta2 == null;
-		}else if(redisMeta2 == null){
+		if(instanceNode1 == null){
+			return instanceNode2 == null;
+		}else if(instanceNode2 == null){
 			return false;
 		}
 		
-		if(!ObjectUtils.equals(redisMeta1.getIp(), redisMeta2.getIp())){
+		if(!ObjectUtils.equals( instanceNode1.getIp(), instanceNode2.getIp())){
 			return false;
 		}
 
-		if(!ObjectUtils.equals(redisMeta1.getPort(), redisMeta2.getPort())){
+		if(!ObjectUtils.equals( instanceNode1.getPort(), instanceNode2.getPort())){
 			return false;
 		}
 		

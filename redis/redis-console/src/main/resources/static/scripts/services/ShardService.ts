@@ -15,6 +15,10 @@ function ShardService($resource, $q) {
         	method: 'GET',
         	url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName'
         },
+        find_cluster_dc_source_shard: {
+            method: 'GET',
+            url: '/console/clusters/:clusterName/src-dc/:srcDcName/to-dc/:toDcName/shards/:shardName'
+        },
         find_cluster_shards: {
             method: 'GET',
             url: '/console/clusters/:clusterName/shards',
@@ -66,6 +70,22 @@ function ShardService($resource, $q) {
                                         function (result) {
                                             d.resolve(result);
                                         }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findClusterDcSourceShard(clusterName, srcDcName, toDcName, shardName) {
+        var d = $q.defer();
+        resource.find_cluster_dc_source_shard({
+                clusterName: clusterName,
+                srcDcName: srcDcName,
+                toDcName: toDcName,
+                shardName: shardName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -162,6 +182,7 @@ function ShardService($resource, $q) {
     return {
         findClusterDcShards: findClusterDcShards,
         findClusterDcShard: findClusterDcShard,
+        findClusterDcSourceShard: findClusterDcSourceShard,
         findClusterShards: findClusterShards,
         createShard: create_shard,
         deleteShard: delete_shard,

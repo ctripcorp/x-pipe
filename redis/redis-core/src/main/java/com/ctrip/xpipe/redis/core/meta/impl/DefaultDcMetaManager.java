@@ -80,8 +80,18 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<ApplierMeta> getAppliers(String clusterId, String shardId) {
+		return metaManager.getAppliers(currentDc, clusterId, shardId);
+	}
+
+	@Override
 	public List<RedisMeta> getRedises(String clusterId, String shardId) {
 		return metaManager.getRedises(currentDc, clusterId, shardId);
+	}
+
+	@Override
+	public List<RedisMeta> getRedises(String clusterId) {
+	    return metaManager.getRedises(currentDc, clusterId);
 	}
 
 	@Override
@@ -151,7 +161,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return metaManager.getKeeperContainer(currentDc, keeperMeta);
 	}
-	
+
+	@Override
+	public ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta) {
+	    return metaManager.getApplierContainer(currentDc, applierMeta);
+	}
+
 	protected void update(DcMeta dcMeta) {
 		metaManager.update(dcMeta);
 	}
@@ -201,6 +216,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public void setRedisGtidAndSids(String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids) {
+		metaManager.setRedisGtidAndSids(currentDc, clusterId, shardId, redisMeta, gtid, sids);
+	}
+
+	@Override
 	public String toString() {
 		
 		DcMeta dcMeta = metaManager.getDcMeta(currentDc);
@@ -227,6 +247,22 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public Set<String> getBackupDcs(String clusterId, String shardId) {
 		
 		return metaManager.getBackupDcs(clusterId, shardId);
+	}
+
+	@Override
+	public Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) {
+		return metaManager.getDownstreamDcs(dc, clusterId, shardId);
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, String clusterId, String shardId) {
+
+	    return metaManager.getUpstreamDc(dc, clusterId, shardId);
+	}
+
+	public String getSrcDc(String dc, String clusterId, String shardId) {
+
+		return metaManager.getSrcDc(dc, clusterId, shardId);
 	}
 
 	@Override
@@ -268,7 +304,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		DcMeta dcMeta = this.metaManager.getDcMeta(currentDc);
 		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
 			ClusterSummary clusterSummary = new ClusterSummary(clusterMeta.getId());
-			for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+			for (ShardMeta shardMeta: clusterMeta.getAllShards().values()) {
 				clusterSummary.shards.put(shardMeta.getDbId(), shardMeta.getId());
 			}
 
@@ -308,10 +344,10 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterId);
-		if (null == clusterMeta || !clusterMeta.getShards().containsKey(shardId)) {
+		if (null == clusterMeta || !clusterMeta.getAllShards().containsKey(shardId)) {
 			throw new IllegalArgumentException(String.format("unknown clusterId shardId %s %s", clusterId, shardId));
 		}
-		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		ShardMeta shardMeta = clusterMeta.getAllShards().get(shardId);
 		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
 	}
 
@@ -371,9 +407,21 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getAppliers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
 	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getRedises(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public List<RedisMeta> getRedises(Long clusterDbId) {
+	    String clusterId = clusterDbId2Name(clusterDbId);
+	    return getRedises(clusterId);
 	}
 
 	@Override
@@ -430,9 +478,32 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
+	public void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getBackupDcs(clusterShard.getKey(), clusterShard.getValue());
+		setRedisGtidAndSids(clusterShard.getKey(), clusterShard.getValue(), redisMeta, gtid, sids);
+	}
+
+	@Override
+	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
+		return getBackupDcs(clusterDbId2Name(clusterDbId), null);
+	}
+
+	@Override
+	public Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getDownstreamDcs(dc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getUpstreamDc(dc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getSrcDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getSrcDc(dc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override

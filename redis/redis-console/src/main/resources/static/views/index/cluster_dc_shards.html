@@ -21,14 +21,14 @@
             </button>
         </div>
 
-        <div class="tab-content" ng-if="dcs && dcs.length">
+        <div class="tab-content" ng-if="dcs && dcs.length" >
             <div>
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
                             <div class="col-md-6">{{shard.shardTbl.shardName}}(cluster_{{shard.shardTbl.clusterId}}.shard_{{shard.shardTbl.id}})</div>
                             <div class="col-md-6 text-right">
-                                <a class="btn btn-primary btn-sm" ng-if="routeAvail === true" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
+                                <a class="btn btn-primary btn-sm" ng-if="routeAvail === true && (clusterType == 'bi_direction'|| clusterType == 'one_way')" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                             	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>
                         </div>
@@ -45,10 +45,10 @@
                             <th>
                                 端口
                             </th>
-                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
+                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' ||clusterType == 'hetero'">
                             	状态
                             </th>
-                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
+                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' ||clusterType == 'hetero'">
                                 延迟
                             </th>
                             <th ng-if="clusterType == 'bi_direction'" title="发送给其他master的流量">
@@ -75,7 +75,7 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
                                 <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
                                     <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
                                             ng-click="shard.showCrossMasters = !shard.showCrossMasters">
@@ -83,7 +83,7 @@
                                 </button>
                                 </span>
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
                                 <span  class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
@@ -121,6 +121,78 @@
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, redis.redisDc)"></span></td>
                             <td></td>
                             <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div ng-repeat="source in sources">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-if="clusterType == 'hetero'" ng-repeat="shard in source.shards">
+                    <header class="panel-heading" style="background: #C7EDCC">
+                        <div class="row">
+
+                            <div class="col-md-10">
+                                <font color="black" class="col-md-10">
+                                    src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}})
+                                </font>
+                            </div>
+                            <div class="col-md-2 text-right">
+                                <a class="btn btn-success btn-sm" style="background: #CCFF33" ng-if="routeAvail === true" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
+                                <a class="btn btn-success btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}&srcDcName={{source.replDirectionInfoModel.srcDcName}}">编辑</a>
+                            </div>
+                        </div>
+                    </header>
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>
+                                角色
+                            </th>
+                            <th>
+                                IP
+                            </th>
+                            <th>
+                                端口
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                                状态
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                                延迟
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="applier in shard.appliers">
+                            <td>
+                                <span class="label label-success" ng-if="applier.active === true">
+                                    active</span>  Applier
+                            </td>
+                            <td ng-bind="applier.ip">
+                            </td>
+                            <td ng-bind="applier.port">
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'">
+                                <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
+                                    <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
+                                            ng-click="shard.showCrossMasters = !shard.showCrossMasters">
+                                        {{shard.showCrossMasters ? '折叠延迟' : '展开延迟'}}
+                                </button>
+                                </span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                        </tr>
+                        <tr ng-repeat="keeper in shard.keepers">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-success" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
+                            </td>
+                            <td ng-bind="keeper.redisIp">
+                            </td>
+                            <td ng-bind="keeper.redisPort">
+                            </td>
                             <td></td>
                             <td></td>
                         </tr>

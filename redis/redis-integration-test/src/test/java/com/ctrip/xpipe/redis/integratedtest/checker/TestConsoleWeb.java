@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
@@ -73,8 +74,8 @@ public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
 
 
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(1000);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.BI_DIRECTION);
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();

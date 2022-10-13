@@ -18,6 +18,8 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	private String  upstreamPeerPath;
 	private String  metaServerAddress;
 	private String peerMasterPath;
+	private String sidsPath;
+	private String sidsChangePath;
 	
 	public DefaultMetaServerMultiDcService(String metaServerAddress) {
 		this(metaServerAddress, DEFAULT_RETRY_TIMES, DEFAULT_RETRY_INTERVAL_MILLI);
@@ -29,6 +31,8 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 		upstreamchangePath = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(metaServerAddress);
 		upstreamPeerPath = META_SERVER_SERVICE.UPSTREAM_PEER_CHANGE.getRealPath(metaServerAddress);
 		peerMasterPath = META_SERVER_SERVICE.GET_PEER_MASTER.getRealPath(metaServerAddress);
+		sidsPath = META_SERVER_SERVICE.GET_SIDS.getRealPath(metaServerAddress);
+		sidsChangePath = META_SERVER_SERVICE.SIDS_CHANGE.getRealPath(metaServerAddress);
 	}
 
 	@Override
@@ -45,6 +49,16 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	@Override
 	public RedisMeta getPeerMaster(String clusterId, String shardId) {
 		return restTemplate.getForObject(peerMasterPath, RedisMeta.class, clusterId, shardId);
+	}
+
+	@Override
+	public String getSids(String dcId, String clusterId, String shardId) {
+	    return restTemplate.getForObject(sidsPath, String.class, dcId, clusterId, shardId);
+	}
+
+	@Override
+	public void sidsChange(String clusterId, String shardId, String sids) {
+		restTemplate.put(sidsChangePath, null, clusterId, shardId);
 	}
 
 	@Override

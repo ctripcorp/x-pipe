@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.handler.PsyncHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.PsyncHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +109,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 
 			if(updateArgs instanceof KeeperServerStateChanged){
 
-				redisClient.getRedisKeeperServer().processCommandSequentially(()-> {
+				redisClient.getRedisServer().processCommandSequentially(()-> {
 					if (released) {
 						logger.info("[update][{}] update but released", redisClient);
 						return;
@@ -139,7 +139,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		public void release() throws Exception {
 			logger.info("[release]{}", this);
 			released = true;
-			this.redisClient.getRedisKeeperServer().removeObserver(this);
+			this.redisClient.getRedisServer().removeObserver(this);
 		}
 	}
 

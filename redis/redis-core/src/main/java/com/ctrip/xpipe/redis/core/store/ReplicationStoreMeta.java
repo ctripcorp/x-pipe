@@ -36,6 +36,7 @@ public class ReplicationStoreMeta implements Serializable{
 	private Long rdbLastOffset;
 	private long rdbFileSize;
 	private String rdbEofMark;
+	private String rdbGtidSet;
 	
 	// last offset of rdb in keeper coordinate
 	private String cmdFilePrefix;
@@ -68,6 +69,7 @@ public class ReplicationStoreMeta implements Serializable{
 		
 		this.rdbFileSize = proto.rdbFileSize;
 		this.rdbEofMark = proto.rdbEofMark;
+		this.rdbGtidSet = proto.rdbGtidSet;
 		
 		this.cmdFilePrefix = proto.cmdFilePrefix;
 		this.keeperState = proto.keeperState;
@@ -80,6 +82,14 @@ public class ReplicationStoreMeta implements Serializable{
 	
 	public String getRdbEofMark() {
 		return rdbEofMark;
+	}
+
+	public String getRdbGtidSet() {
+		return rdbGtidSet;
+	}
+
+	public void setRdbGtidSet(String rdbGtidSet) {
+		this.rdbGtidSet = rdbGtidSet;
 	}
 
 	public void setRdbFileSize(long rdbFileSize) {
