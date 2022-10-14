@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -62,8 +63,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addListeners(collectorsByClusterType.get(clusterType));
-        action.addControllers(controllersByClusterType.get(clusterType));
+        action.addListeners(instance.getCheckInfo().getDcGroupType().equals(DcGroupType.DR_MASTER) ? collectorsByClusterType.get(clusterType) : collectorsByClusterType.get(ClusterType.SINGLE_DC));
+        action.addControllers(instance.getCheckInfo().getDcGroupType().equals(DcGroupType.DR_MASTER) ? controllersByClusterType.get(clusterType) : controllersByClusterType.get(ClusterType.SINGLE_DC));
         return action;
     }
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
@@ -61,8 +62,11 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType) {
+    public List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+            clusterType = ClusterType.SINGLE_DC;
+
         if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
             return Collections.emptyList();
         }
@@ -76,8 +80,12 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType) {
+    public SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
+
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+            clusterType = ClusterType.SINGLE_DC;
+
         if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
             return null;
         }
@@ -90,11 +98,14 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType) {
+    public SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(true);
         if (StringUtil.isEmpty(dcId)) {
             return null;
         }
+
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+            clusterType = ClusterType.SINGLE_DC;
 
         SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
         if (sentinelsCache == null)
@@ -108,9 +119,12 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType) {
+    public Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
         Map<Long, SentinelGroupModel> sentinelMap = new HashMap<>();
+
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+            clusterType = ClusterType.SINGLE_DC;
 
         SentinelsCache typeSentinelsCache = sentinels.get(clusterType.name().toUpperCase());
         if (typeSentinelsCache == null) {

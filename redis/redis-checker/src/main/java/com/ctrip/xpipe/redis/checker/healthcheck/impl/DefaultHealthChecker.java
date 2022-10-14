@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -114,18 +115,19 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
+
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                // console monitors only cluster with active idc in current idc
-                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc())
-                        && !isClusterActiveIdcCurrentIdc(cluster)
-                        && !dcClusterIsMasterGroupType(cluster)) {
-                    continue;
+                if (dcClusterIsMasterType(cluster) && clusterDcIsCurrentDc(cluster)){
+                    generateHealthCheckInstances(cluster);
                 }
-                if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
-                    continue;
+                if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
+                    generateHealthCheckInstances(cluster);
                 }
-                generateHealthCheckInstances(cluster);
+                if (clusterType.supportMultiActiveDC() && isClusterInCurrentIdc(cluster)) {
+                    generateHealthCheckInstances(cluster);
+                }
+
             }
         }
     }
@@ -155,9 +157,16 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return false;
     }
 
-    private boolean dcClusterIsMasterGroupType(ClusterMeta clusterMeta) {
-//        todo: cluster is hetero and current dc is master type
-        return false;
+    private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
+        return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+    }
+
+    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
+        return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
+    }
+
+    private boolean hasSingleActiveDc(ClusterType clusterType) {
+        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
 }

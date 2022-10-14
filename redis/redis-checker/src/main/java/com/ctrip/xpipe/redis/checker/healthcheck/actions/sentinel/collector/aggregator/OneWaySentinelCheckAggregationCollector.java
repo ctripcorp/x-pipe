@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator;
 
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -62,6 +63,7 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             if (!dcMeta.getClusters().containsKey(clusterId)) continue;
             if (dcMeta.getClusters().get(clusterId).getActiveDc().equalsIgnoreCase(dcMeta.getId())) continue;
+            if (dcMeta.getClusters().get(clusterId).getDcGroupType().equals(DcGroupType.MASTER.getDesc())) continue;
             ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
             if (null == shardMeta) continue; // cluster missing shard when no instances in it
             redisCnt += shardMeta.getRedises().size();
@@ -76,6 +78,7 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
         int redisCnt = 0;
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             if (!dcMeta.getClusters().containsKey(clusterId)) continue;
+            if (dcMeta.getClusters().get(clusterId).getDcGroupType().equals(DcGroupType.MASTER.getDesc())) continue;
             ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
             if (null == shardMeta) continue; // cluster missing shard when no instances in it
             redisCnt += shardMeta.getRedises().stream().filter(redisMeta -> !redisMeta.isMaster()).count();

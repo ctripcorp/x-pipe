@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -161,12 +162,13 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         this.clustersToDelete.add(removed);
     }
 
-    private boolean isInterestedInCluster(ClusterMeta cluster) {
+    protected boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
-            return cluster.getActiveDc().equalsIgnoreCase(currentDcId) || dcClusterIsMasterGroupType(cluster);
-        }
+        if (dcClusterIsMasterType(cluster))
+            return clusterDcIsCurrentDc(cluster);
+        if (hasSingleActiveDc(clusterType))
+            return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         if (clusterType.supportMultiActiveDC()) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
@@ -176,9 +178,16 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return true;
     }
 
-    private boolean dcClusterIsMasterGroupType(ClusterMeta clusterMeta) {
-//        todo: cluster is hetero and current dc is master type
-        return false;
+    private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
+        return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+    }
+
+    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
+        return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
+    }
+
+    private boolean hasSingleActiveDc(ClusterType clusterType) {
+        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
