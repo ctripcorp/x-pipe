@@ -59,7 +59,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
          throw new IllegalArgumentException("unknown group type:"+groupType);
     }
 
-    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
+    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, Map<Long, List<DcClusterTbl>> clusterId2DcClusterTblsMap) {
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
 
@@ -81,7 +81,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
-        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+        List<DcClusterTbl> dcClusterTbls = clusterId2DcClusterTblsMap.get(clusterTbl.getId());
 
         dcClusterTbls.forEach(dcClusterTbl -> {
             DcDetailInfo dcDetailInfo = new DcDetailInfo()
