@@ -19,4 +19,6 @@ public interface ProxyRouteParser extends ProxyOptionParser {
     List<ProxyEndpoint> getNextEndpoints();
 
     String getFinalStation();
+
+    boolean isNextHopProxy();
 }

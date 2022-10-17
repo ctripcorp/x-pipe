@@ -365,9 +365,14 @@ public class MetaUpdate extends AbstractConsoleController {
 
         List<ClusterTbl> allClusters = clusterService.findClustersWithOrgInfoByClusterType(clusterType);
 
+        List<DcClusterTbl> dcClusters = dcClusterService.findAllDcClusters();
+        Map<Long, List<DcClusterTbl>> dcClusterId2DcClusterMap = new HashMap<>();
+        dcClusters.forEach(dcClusterTbl -> dcClusterId2DcClusterMap.computeIfAbsent(dcClusterTbl.getClusterId(),
+                ignore-> new LinkedList<>()).add(dcClusterTbl));
+
         List<ClusterCreateInfo> result = new LinkedList<>();
         allClusters.forEach(clusterTbl -> {
-            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterService));
+            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterId2DcClusterMap));
         });
 
         return transformFromInner(result);
@@ -379,7 +384,10 @@ public class MetaUpdate extends AbstractConsoleController {
         logger.info("[getCluster]{}", clusterName);
 
         ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
-        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterService);
+        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+        Map<Long, List<DcClusterTbl>> clusterId2DcClusterTblsMap = new HashMap<>();
+        clusterId2DcClusterTblsMap.put(clusterTbl.getId(), dcClusterTbls);
+        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, clusterId2DcClusterTblsMap);
 
         return transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER);
     }
@@ -446,11 +454,13 @@ public class MetaUpdate extends AbstractConsoleController {
             throw new CheckFailException("cluster not found:" + clusterName);
         }
         List<ShardTbl> allByClusterName = shardService.findAllByClusterName(clusterName);
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
         List<ShardCreateInfo> result = new LinkedList<>();
         for (ShardTbl shardTbl : allByClusterName) {
             List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
             for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(), dcClusterShardTbl.getDcName()));
+                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(),
+                        dcIdNameMap.get(dcClusterShardTbl.getDcClusterInfo().getDcId())));
             }
         }
 

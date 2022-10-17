@@ -18,7 +18,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import sun.java2d.pipe.AAShapePipe;
 
 import java.util.LinkedList;
 import java.util.List;
