@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
@@ -350,4 +351,10 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(2, dcTbls.size());
     }
 
+    @Test
+    public void getClusters() throws CheckFailException {
+        List<ClusterCreateInfo> clusters = metaUpdate.getClusters(ClusterType.ONE_WAY.toString());
+        Assert.assertNotNull(clusters.get(0).getDcDetails());
+        logger.info("{}", clusters);
+    }
 }
