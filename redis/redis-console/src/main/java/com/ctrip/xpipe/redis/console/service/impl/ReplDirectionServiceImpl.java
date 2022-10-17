@@ -3,15 +3,13 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
+import com.ctrip.xpipe.redis.console.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +23,15 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     @Autowired
     DcService dcService;
 
+    @Autowired
+    DcClusterShardService dcClusterShardService;
+
+    @Autowired
+    RedisService redisService;
+
+    @Autowired
+    ApplierService applierService;
+
     @Override
     public ReplDirectionTbl findReplDirectionTblById(long id) {
         return queryHandler.handleQuery(new DalQuery<ReplDirectionTbl>() {
@@ -36,11 +43,21 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     }
 
     @Override
-    public List<ReplDirectionTbl> findAllReplDirection() {
+    public List<ReplDirectionTbl> findAllReplDirectionJoinClusterTbl() {
         return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
             @Override
             public List<ReplDirectionTbl> doQuery() throws DalException {
-                return dao.findAllReplDirection(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+                return dao.findAllReplDirectionJoinClusterTbl(ReplDirectionTblEntity.READSET_REPL_DIRECTION_CLUSTER_INFO);
+            }
+        });
+    }
+
+    @Override
+    public List<ReplDirectionTbl> findAllReplDirections() {
+        return queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
+            @Override
+            public List<ReplDirectionTbl> doQuery() throws DalException {
+                return dao.findAllReplDirections(ReplDirectionTblEntity.READSET_FULL);
             }
         });
     }
@@ -72,6 +89,48 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         }
 
         return result;
+    }
+
+    @Override
+    public List<ReplDirectionInfoModel> findAllReplDirectionInfoModels() {
+        List<ReplDirectionTbl> allReplDirectionTbls = findAllReplDirections();
+        HashMap<Long, ReplDirectionInfoModel> replDirectionIdInfoMap = new HashMap<>();
+
+        Map<Long, String> dcNameMap = dcService.dcNameMap();
+
+        allReplDirectionTbls.forEach(replDirectionTbl -> {
+            ReplDirectionInfoModel replDirectionInfoModel = new ReplDirectionInfoModel();
+            replDirectionInfoModel.setId(replDirectionTbl.getId())
+                    .setClusterId(replDirectionTbl.getClusterId())
+                    .setSrcDcName(dcNameMap.get(replDirectionTbl.getSrcDcId()))
+                    .setFromDcName(dcNameMap.get(replDirectionTbl.getSrcDcId()))
+                    .setToDcName(dcNameMap.get(replDirectionTbl.getToDcId()))
+                    .setTargetClusterName(replDirectionTbl.getTargetClusterName());
+
+            ClusterTbl clusterTbl = clusterService.find(replDirectionTbl.getClusterId());
+            if (clusterTbl != null) {
+                replDirectionInfoModel.setClusterName(clusterTbl.getClusterName());
+
+                List<DcClusterShardTbl> srcDcClusterShards =
+                        dcClusterShardService.findAllByDcCluster(dcNameMap.get(replDirectionTbl.getSrcDcId()), clusterTbl.getClusterName());
+                replDirectionInfoModel.setSrcShardCount(srcDcClusterShards == null ? 0: srcDcClusterShards.size());
+
+                List<DcClusterShardTbl> toDcClusterShards =
+                        dcClusterShardService.findAllByDcCluster(dcNameMap.get(replDirectionTbl.getToDcId()), clusterTbl.getClusterName());
+                replDirectionInfoModel.setToShardCount(toDcClusterShards == null ? 0 : toDcClusterShards.size());
+
+                List<RedisTbl> allKeepers =
+                        redisService.findAllKeepersByDcClusterName(dcNameMap.get(replDirectionTbl.getSrcDcId()), clusterTbl.getClusterName());
+                replDirectionInfoModel.setKeeperCount(allKeepers == null ? 0 : allKeepers.size());
+
+                List<ApplierTbl> allAppliers =
+                        applierService.findAppliersByClusterAndToDc(replDirectionTbl.getToDcId(), clusterTbl.getId());
+                replDirectionInfoModel.setApplierCount(allAppliers == null ? 0 : allAppliers.size());
+            }
+            replDirectionIdInfoMap.put(replDirectionTbl.getId(), replDirectionInfoModel);
+        });
+
+        return new ArrayList<>(replDirectionIdInfoMap.values());
     }
 
     @Override

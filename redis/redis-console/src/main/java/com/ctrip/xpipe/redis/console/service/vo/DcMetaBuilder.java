@@ -110,14 +110,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
         ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors, false);
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetAllDcClusterShardDetailCommand(dcId)));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new Cluster2DcClusterMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcIdNameMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
-        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
+        //TODO ayq
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
+//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
 
         sequenceCommandChain.add(parallelCommandChain);
         sequenceCommandChain.add(retry3TimesUntilSuccess(new BuildDcMetaCommand()));
@@ -164,8 +165,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
                 clusterMeta.setDownstreamDcs("");
-                clusterMeta.setDcGroupType(dcClusterInfo == null? DcGroupType.DR_MASTER.toString(): dcClusterInfo.getGroupType());
                 clusterMeta.setDcGroupName(getDcGroupName(dcClusterInfo));
+
+                if (ClusterType.ONE_WAY.name().equalsIgnoreCase(cluster.getClusterType())) {
+                    if (dcClusterInfo == null || dcClusterInfo.getGroupType() == null) {
+                        clusterMeta.setDcGroupType(DcGroupType.DR_MASTER.toString());
+                    } else {
+                        clusterMeta.setDcGroupType(dcClusterInfo.getGroupType());
+                    }
+                }
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
@@ -403,7 +411,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         @Override
         protected void doExecute() throws Exception {
             try {
-                replDirectionTblList = replDirectionService.findAllReplDirection();
+                replDirectionTblList = replDirectionService.findAllReplDirectionJoinClusterTbl();
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
@@ -488,14 +496,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
                     RedisTbl redis = dcClusterShard.getRedisInfo();
                     if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
-                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
+                        //TODO ayq
+//                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
                             shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
-                        }
+//                        }
                     } else {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
                 }
-                buildHeteroMeta();
+                //TODO ayq
+//                buildHeteroMeta();
 
                 future().setSuccess();
             } catch (Exception e) {

@@ -726,6 +726,10 @@
 				<readset-ref name="FULL" relation-name="redis-info"/>
 				<readset-ref name="FULL" relation-name="shard-info"/>
 			</readset>
+			<readset name="FULL_WITH_DC_INFO">
+				<readset-ref name="FULL"/>
+				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -3086,7 +3090,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-all-repl-direction" type="SELECT" multiple="true">
+			<query name="find-all-repl-direction-join-cluster-tbl" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>

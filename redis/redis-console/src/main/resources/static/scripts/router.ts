@@ -179,6 +179,11 @@ function router($stateProvider, $urlRouterProvider) {
         	templateUrl: 'views/index/migration_details_content.html',
         	controller : 'ActiveDcMigrationEventDetailsContentCtl'
         })
+        .state('repl_direction_list', {
+            url: '/repl_directions',
+            templateUrl: 'views/index/repl_direction_list.html',
+            controller : 'ReplDirectionListCtl',
+        })
         .state('keepercontainer_list', {
             url: '/keepercontainers',
             templateUrl: 'views/index/keepercontainer_list.html',
