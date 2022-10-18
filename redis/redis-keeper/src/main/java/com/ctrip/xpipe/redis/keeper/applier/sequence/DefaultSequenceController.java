@@ -54,8 +54,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                 case MULTI_KEY:
                     submitMultiKeyCommand((RedisOpDataCommand<?>) command);
                     break;
-                case MULTI:
-                case EXEC:
+                case OTHER:
                     submitObstacle(command);
                     break;
             }

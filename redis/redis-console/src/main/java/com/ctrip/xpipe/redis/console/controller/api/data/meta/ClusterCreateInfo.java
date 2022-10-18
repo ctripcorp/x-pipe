@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -59,7 +58,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
          throw new IllegalArgumentException("unknown group type:"+groupType);
     }
 
-    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, DcClusterService dcClusterService) {
+    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, DcService dcService, Map<Long, List<DcClusterTbl>> clusterId2DcClusterTblsMap) {
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
 
@@ -81,7 +80,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                 clusterCreateInfo.addDc(dcTbl.getDcName());
             }
         });
-        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+        List<DcClusterTbl> dcClusterTbls = clusterId2DcClusterTblsMap.get(clusterTbl.getId());
 
         dcClusterTbls.forEach(dcClusterTbl -> {
             DcDetailInfo dcDetailInfo = new DcDetailInfo()
