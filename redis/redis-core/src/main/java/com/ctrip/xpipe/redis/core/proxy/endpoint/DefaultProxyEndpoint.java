@@ -21,7 +21,7 @@ public class DefaultProxyEndpoint extends DefaultEndPoint implements ProxyEndpoi
     }
 
     public DefaultProxyEndpoint(InetSocketAddress address) {
-        this(address.getHostName(), address.getPort());
+        this(address.getHostString(), address.getPort());
     }
 
     public DefaultProxyEndpoint() {
