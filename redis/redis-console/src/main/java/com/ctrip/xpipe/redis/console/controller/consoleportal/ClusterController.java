@@ -224,7 +224,7 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.POST)
     public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
         logger.info("[bindDc]{},{}", clusterName, dcName);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName).setGroupType(DcGroupType.DR_MASTER.toString()));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
