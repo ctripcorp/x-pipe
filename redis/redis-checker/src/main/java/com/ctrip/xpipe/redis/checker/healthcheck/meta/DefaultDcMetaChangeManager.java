@@ -165,7 +165,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     protected boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        if (dcClusterIsMasterType(cluster))
+        if (dcClusterIsMasterType(clusterType,cluster))
             return clusterDcIsCurrentDc(cluster);
         if (hasSingleActiveDc(clusterType))
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
@@ -182,8 +182,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
     }
 
-    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
-        return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
+    private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
+        return clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(clusterMeta.getDcGroupType());
     }
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {

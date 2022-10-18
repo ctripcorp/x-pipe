@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
@@ -70,7 +69,5 @@ public interface MetaCache {
     ClusterType getClusterType(String clusterId);
 
     boolean isMetaChain(HostPort src, HostPort dst);
-
-    DcGroupType getDcGroupType(HostPort hostPort);
 
 }

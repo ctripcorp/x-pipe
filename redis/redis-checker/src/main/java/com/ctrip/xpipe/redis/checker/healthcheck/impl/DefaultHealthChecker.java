@@ -118,7 +118,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                if (dcClusterIsMasterType(cluster) && clusterDcIsCurrentDc(cluster)){
+                if (dcClusterIsMasterType(clusterType, cluster) && clusterDcIsCurrentDc(cluster)){
                     generateHealthCheckInstances(cluster);
                 }
                 if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
@@ -161,8 +161,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
     }
 
-    private boolean dcClusterIsMasterType(ClusterMeta clusterMeta) {
-        return clusterMeta.getDcGroupType().equalsIgnoreCase(DcGroupType.MASTER.getDesc());
+    private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
+        return clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(clusterMeta.getDcGroupType());
     }
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {

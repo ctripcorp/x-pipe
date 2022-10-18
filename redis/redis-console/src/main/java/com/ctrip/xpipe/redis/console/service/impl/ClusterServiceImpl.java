@@ -259,7 +259,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 					dcCluster.getShards().forEach(shardModel -> {
 						shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
-								dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+								dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcCluster.getDcCluster().getGroupType())));
 					});
 				}
 			}
@@ -465,9 +465,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			@Override
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
-				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName()))
-					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
-				else
+				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName())) {
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
+				} else
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
 			}
 		});

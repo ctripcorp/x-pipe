@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -374,7 +374,7 @@ public class ClusterController extends AbstractConsoleController {
                 ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
                 toCreate.getShards().forEach(shardModel -> {
                         shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shardModel.getShardTbl(),
-                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.MASTER));
                     });
             }
         });
@@ -431,7 +431,7 @@ public class ClusterController extends AbstractConsoleController {
                 dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.getGroupType());
         toCreates.forEach(toCreate -> {
             shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
-                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
         });
     }
 

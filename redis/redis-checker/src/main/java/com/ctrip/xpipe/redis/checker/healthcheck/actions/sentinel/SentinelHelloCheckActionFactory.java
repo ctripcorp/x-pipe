@@ -31,7 +31,7 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_SCHEDU
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, HeteroSupport {
+public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
@@ -63,8 +63,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addListeners(instance.getCheckInfo().getDcGroupType().equals(DcGroupType.DR_MASTER) ? collectorsByClusterType.get(clusterType) : collectorsByClusterType.get(ClusterType.SINGLE_DC));
-        action.addControllers(instance.getCheckInfo().getDcGroupType().equals(DcGroupType.DR_MASTER) ? controllersByClusterType.get(clusterType) : controllersByClusterType.get(ClusterType.SINGLE_DC));
+        action.addListeners(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? collectorsByClusterType.get(ClusterType.SINGLE_DC) : collectorsByClusterType.get(clusterType));
+        action.addControllers(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? controllersByClusterType.get(ClusterType.SINGLE_DC) : controllersByClusterType.get(clusterType));
         return action;
     }
 

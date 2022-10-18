@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.core.meta;
 
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
@@ -51,10 +50,6 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 
 		public Redis getRedis() {
 			return redis;
-		}
-
-		public DcGroupType getDcGroupType(){
-			return DcGroupType.findByDesc(clusterMeta.getDcGroupType());
 		}
 	}
 	

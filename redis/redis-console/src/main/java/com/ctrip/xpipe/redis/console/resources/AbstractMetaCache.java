@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
@@ -442,17 +441,6 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
 
         throw new IllegalStateException("[getClusterType] unfound cluster for name:" + clusterId);
-    }
-
-    @Override
-    public DcGroupType getDcGroupType(HostPort hostPort) {
-        XpipeMetaManager xpipeMetaManager = meta.getValue();
-        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
-
-        if (metaDesc == null) {
-            throw new IllegalStateException("unfound metaDesc for instance:" + hostPort);
-        }
-        return metaDesc.getDcGroupType();
     }
 
     @Override

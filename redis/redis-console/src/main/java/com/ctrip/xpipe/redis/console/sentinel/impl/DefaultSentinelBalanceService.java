@@ -64,7 +64,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     @Override
     public List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
-        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0] != null && dcGroupTypes[0].equals(DcGroupType.MASTER))
             clusterType = ClusterType.SINGLE_DC;
 
         if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
@@ -83,7 +83,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     public SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType, DcGroupType... dcGroupTypes) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
 
-        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0] != null && dcGroupTypes[0].equals(DcGroupType.MASTER))
             clusterType = ClusterType.SINGLE_DC;
 
         if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
@@ -104,7 +104,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
             return null;
         }
 
-        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0] != null && dcGroupTypes[0].equals(DcGroupType.MASTER))
             clusterType = ClusterType.SINGLE_DC;
 
         SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
@@ -123,7 +123,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
         Map<Long, SentinelGroupModel> sentinelMap = new HashMap<>();
 
-        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0].equals(DcGroupType.MASTER))
+        if (dcGroupTypes != null && clusterType.equals(ClusterType.ONE_WAY) && dcGroupTypes[0] != null && dcGroupTypes[0].equals(DcGroupType.MASTER))
             clusterType = ClusterType.SINGLE_DC;
 
         SentinelsCache typeSentinelsCache = sentinels.get(clusterType.name().toUpperCase());

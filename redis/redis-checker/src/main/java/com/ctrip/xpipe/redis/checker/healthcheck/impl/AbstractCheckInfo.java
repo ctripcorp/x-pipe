@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 
@@ -21,7 +20,7 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected List<RedisCheckRule> redisCheckRules;
 
-    protected DcGroupType dcGroupType;
+    protected String dcGroupType;
 
     public AbstractCheckInfo() {
 
@@ -74,12 +73,12 @@ public abstract class AbstractCheckInfo implements CheckInfo {
     }
 
     @Override
-    public DcGroupType getDcGroupType() {
+    public String getDcGroupType() {
         return dcGroupType;
     }
 
     @Override
-    public void setDcGroupType(DcGroupType type) {
+    public void setDcGroupType(String type) {
         this.dcGroupType = type;
     }
 }

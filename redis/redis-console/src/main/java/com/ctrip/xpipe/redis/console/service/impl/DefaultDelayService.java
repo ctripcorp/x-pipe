@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -70,11 +69,10 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
         if (null == clusterShard) return -1L;
 
         ClusterType clusterType = metaCache.getClusterType(clusterShard.getKey());
-        DcGroupType dcGroupType = metaCache.getDcGroupType(hostPort);
         String dcId = null;
-        if (clusterType.supportSingleActiveDC() && dcGroupType.isValue()) {
+        if (clusterType.supportSingleActiveDC()) {
             dcId = metaCache.getActiveDc(hostPort);
-        } else if (clusterType.supportMultiActiveDC() || !dcGroupType.isValue()) {
+        } else if (clusterType.supportMultiActiveDC()) {
             dcId = metaCache.getDc(hostPort);
         }
 

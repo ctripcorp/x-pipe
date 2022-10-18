@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 
 import java.util.List;
@@ -22,7 +21,7 @@ public interface CheckInfo {
 
     List<RedisCheckRule> getRedisCheckRules();
 
-    void setDcGroupType(DcGroupType type);
+    void setDcGroupType(String type);
 
-    DcGroupType getDcGroupType();
+    String getDcGroupType();
 }
