@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -224,7 +224,7 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.POST)
     public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
         logger.info("[bindDc]{},{}", clusterName, dcName);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName).setGroupType(DcGroupType.DR_MASTER.toString()));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
