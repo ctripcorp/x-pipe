@@ -115,6 +115,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         RedisOp redisOp = parser.parse(rawCmdArgs);
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
 
+        sequenceController.submit(command);
 //        switch (command.type()) {
 //            case MULTI:
 //                inTransaction = true;
