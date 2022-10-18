@@ -34,7 +34,13 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public void doStart() throws Exception {
 
         scheduled = Executors.newSingleThreadScheduledExecutor();
-        scheduled.scheduleAtFixedRate(this::send, 1, 1, TimeUnit.SECONDS);
+        scheduled.scheduleAtFixedRate(()-> {
+            try {
+                send();
+            }catch (Throwable t){
+                logger.info("[send] error", t);
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
