@@ -51,6 +51,8 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
         GtidSet gtidSet = gtid_executed.get();
 
+        logger.debug("[send] send lwm, gtidSet {}", gtidSet);
+
         Set<String> sids = gtidSet.getUUIDs();
 
         for (String sid : sids) {
