@@ -43,10 +43,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.clusterType = $stateParams.clusterType;
     $scope.clusterTypes = ClusterType.selectData()
     $scope.gotoClusterHickwall = gotoClusterHickwall;
-    $scope.showClusterAdminEmails = false;
-    $scope.openClusterAdminEmails = openClusterAdminEmails;
-    $scope.showClusterDescription = false;
-    $scope.openClusterDescription = openClusterDescription;
+    $scope.showDetails = false;
+    $scope.showClusterDetails = showClusterDetails;
 
     $scope.displayedClusters = [];
     $scope.filteredClusters = [];
@@ -323,11 +321,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         });
     }
 
-    function openClusterAdminEmails() {
-        $scope.showClusterAdminEmails = !$scope.showClusterAdminEmails;
-    }
-
-    function openClusterDescription() {
-        $scope.showClusterDescription = !$scope.showClusterDescription;
+    function showClusterDetails() {
+        $scope.showDetails = !$scope.showDetails;
     }
 }

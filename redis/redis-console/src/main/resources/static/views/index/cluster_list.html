@@ -16,6 +16,7 @@
                 </div>
                 <div class="col-md-4 text-right" ng-if="showAll">
                     <a ng-if="showAll" type="button" class="btn btn-info btn-xs" href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>
+                    <a class="btn btn-info btn-xs" ng-click="showClusterDetails()">详细信息</a>
                     <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
                 </div>
                 <div class="col-md-4 text-right" ng-if="showUnhealthy">
@@ -57,17 +58,9 @@
                 <td ng-if="showErrorMigrating || showMigrating" data-title="'MigrationStatus'" ng-bind="cluster.migrationClusters.status"></td>
                 <td ng-if="true" data-title="'主数据中心'" filter="{activedcId: 'select'}" filter-data="dcsFilterData" ng-bind="getClusterActiveDc(cluster)"></td>
                 <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(cluster.clusterType)"></td>
-                <td ng-if="true" data-title="'描述'">
-                    <a ng-if="!showClusterDescription" ng-click="openClusterDescription()" >展开</a>
-                    <a ng-if="showClusterDescription"  ng-click="openClusterDescription()" >收起</a><br/>
-                    <a ng-if="showClusterDescription" ng-bind="cluster.clusterDescription" ></a>
-                </td>
+                <td ng-if="showDetails" data-title="'描述'" ng-bind="cluster.clusterDescription"></td>
                 <td ng-if="true" data-title="'组织'" filter="{clusterOrgName: 'select'}" filter-data="organizationNames" ng-bind="cluster.clusterOrgName" ></td>
-                <td ng-if="true" data-title="'联系人邮箱'" >
-                    <a ng-if="!showClusterAdminEmails" ng-click="openClusterAdminEmails()" >展开</a>
-                    <a ng-if="showClusterAdminEmails"  ng-click="openClusterAdminEmails()" >收起</a><br/>
-                    <a ng-if="showClusterAdminEmails" ng-bind="cluster.clusterAdminEmails" ></a>
-                </td>
+                <td ng-if="showDetails" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails"></td>
                 <td data-title="'操作'">
                 	<a ng-if="showAll" href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=retrieve" class="btn btn-info btn-xs">Cluster</a>&nbsp;
