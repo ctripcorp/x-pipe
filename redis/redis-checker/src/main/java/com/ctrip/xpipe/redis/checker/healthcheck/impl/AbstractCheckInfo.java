@@ -20,6 +20,8 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected List<RedisCheckRule> redisCheckRules;
 
+    protected String dcGroupType;
+
     public AbstractCheckInfo() {
 
     }
@@ -68,5 +70,15 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     public void setRedisCheckRules(List<RedisCheckRule>  redisCheckRules) {
         this.redisCheckRules = redisCheckRules;
+    }
+
+    @Override
+    public String getDcGroupType() {
+        return dcGroupType;
+    }
+
+    @Override
+    public void setDcGroupType(String type) {
+        this.dcGroupType = type;
     }
 }

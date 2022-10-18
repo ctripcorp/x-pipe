@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
@@ -35,7 +36,7 @@ public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealt
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addControllers(controllersByClusterType.get(clusterType));
+        action.addControllers(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? controllersByClusterType.get(ClusterType.SINGLE_DC) : controllersByClusterType.get(clusterType));
         action.addListeners(listenersByClusterType.get(clusterType));
 
         return action;
