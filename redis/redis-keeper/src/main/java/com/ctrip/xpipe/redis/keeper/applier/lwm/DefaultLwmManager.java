@@ -69,6 +69,8 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     @Override
     public void submit(String gtid) {
 
+        logger.debug("[submit] submit lwm, gtidSet {}", gtid);
+
         gtid_executed.get().add(gtid);
     }
 }
