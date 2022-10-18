@@ -113,12 +113,12 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         parallelCommandChain.add(retry3TimesUntilSuccess(new Cluster2DcClusterMapCommand()));
         parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcIdNameMapCommand()));
         //TODO ayq
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
-//        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new DcCluster2dcClusterShardMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplDirectionListCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetReplId2ApplierMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetDcNameToZoneIdMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetZoneIdNameMapCommand()));
+        parallelCommandChain.add(retry3TimesUntilSuccess(new GetKeeperContainerIdDcMapCommand()));
 
         sequenceCommandChain.add(parallelCommandChain);
         sequenceCommandChain.add(retry3TimesUntilSuccess(new BuildDcMetaCommand()));
@@ -497,15 +497,15 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                     RedisTbl redis = dcClusterShard.getRedisInfo();
                     if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
                         //TODO ayq
-//                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
+                        if (dcId == keeperContainerIdDcMap.get(redis.getKeepercontainerId())) {
                             shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
-//                        }
+                        }
                     } else {
                         shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                     }
                 }
                 //TODO ayq
-//                buildHeteroMeta();
+                buildHeteroMeta();
 
                 future().setSuccess();
             } catch (Exception e) {
@@ -529,7 +529,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                     continue;
                 }
                 if (replDirection.getToDcId() == dcId) {
-                    if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupName(), DcGroupType.MASTER)) {
+                    if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
                         SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirection.getSrcDcId(), replDirection.getFromDcId());
                         buildSourceShardMetas(sourceMeta, clusterMeta.getId(), clusterId, replDirection.getSrcDcId());
                     }

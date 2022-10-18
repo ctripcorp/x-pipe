@@ -719,12 +719,10 @@
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 <!--				<readset-ref name="APPLIER_META_INFO" relation-name="applier-info"/>-->
 			</readset>
-			<readset name="FULL_CLUSTER_SHARD_REDIS_META_INFO">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="cluster-info"/>
-                <readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
+			<readset name="CLUSTER_SHARD_REDIS_META_INFO_WITHOUT_SENTINEL">
+                <readset-ref name="CLUSTER_ID" relation-name="dc-cluster-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
+				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 			</readset>
 			<readset name="FULL_WITH_DC_INFO">
 				<readset-ref name="FULL"/>
