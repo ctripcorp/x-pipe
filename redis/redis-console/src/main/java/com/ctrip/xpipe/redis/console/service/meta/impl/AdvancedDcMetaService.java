@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -125,6 +126,8 @@ public class AdvancedDcMetaService implements DcMetaService {
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
         DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+        dcMetaMap.put(dcMeta.getId(), dcMeta);
 
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
@@ -133,7 +136,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, allowTypes, executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
@@ -145,6 +148,39 @@ public class AdvancedDcMetaService implements DcMetaService {
         }
 
         return dcMeta;
+    }
+
+    @Override
+    public Map<String, DcMeta> getAllDcMetas() {
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        ParallelCommandChain chain = new ParallelCommandChain(executors, false);
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+
+        for (DcTbl dcTbl : dcTblList) {
+            ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
+
+            DcMeta dcMeta = new DcMeta().setId(dcTbl.getDcName()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+            dcMetaMap.put(dcMeta.getId(), dcMeta);
+
+            chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
+        }
+
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
+                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                applierService, factory, consoleConfig);
+        chain.add(retry3TimesUntilSuccess(builder));
+
+        try {
+            chain.execute().get();
+        } catch (Exception e) {
+            logger.error("[queryAllDcMetas] ", e);
+        }
+
+        return dcMetaMap;
     }
 
     @VisibleForTesting
