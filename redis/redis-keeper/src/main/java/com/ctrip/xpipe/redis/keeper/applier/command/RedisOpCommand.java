@@ -37,22 +37,13 @@ public interface RedisOpCommand<V> extends Command<V> {
 
     default RedisOpCommandType type() {
         RedisOp op = redisOp();
-        if (RedisOpType.MULTI.equals(op.getOpType())) {
-            return RedisOpCommandType.MULTI;
-        }
-        if (RedisOpType.EXEC.equals(op.getOpType())) {
-            return RedisOpCommandType.EXEC;
-        }
-        if (RedisOpType.LWM.equals(op.getOpType())) {
-            return RedisOpCommandType.BROADCAST;
-        }
         if (op instanceof RedisSingleKeyOp) {
             return RedisOpCommandType.SINGLE_KEY;
         }
         if (op instanceof RedisMultiKeyOp) {
             return RedisOpCommandType.MULTI_KEY;
         }
-        return RedisOpCommandType.UNKNOWN;
+        return RedisOpCommandType.OTHER;
     }
 
     default RedisKey key() {
