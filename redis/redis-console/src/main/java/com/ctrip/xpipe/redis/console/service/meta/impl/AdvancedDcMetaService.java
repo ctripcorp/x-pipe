@@ -125,9 +125,9 @@ public class AdvancedDcMetaService implements DcMetaService {
         DcTbl dcTbl = dcService.find(dcName);
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
-        DcMeta dcMeta = new DcMeta().setId(dcName.toUpperCase()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+        DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
-        dcMetaMap.put(dcMeta.getId(), dcMeta);
+        dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
 
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
@@ -160,7 +160,7 @@ public class AdvancedDcMetaService implements DcMetaService {
             ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
             DcMeta dcMeta = new DcMeta().setId(dcTbl.getDcName()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
-            dcMetaMap.put(dcMeta.getId(), dcMeta);
+            dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
 
             chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
             chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
