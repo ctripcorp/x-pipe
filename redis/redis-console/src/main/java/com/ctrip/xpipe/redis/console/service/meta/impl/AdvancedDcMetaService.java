@@ -125,7 +125,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         DcTbl dcTbl = dcService.find(dcName);
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
-        DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+        DcMeta dcMeta = new DcMeta().setId(dcName.toUpperCase()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
         dcMetaMap.put(dcMeta.getId(), dcMeta);
 
