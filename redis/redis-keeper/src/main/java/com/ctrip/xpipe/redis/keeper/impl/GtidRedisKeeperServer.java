@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -39,17 +37,5 @@ public class GtidRedisKeeperServer extends DefaultRedisKeeperServer implements R
                                                                     KeeperMonitor keeperMonitor) {
         return new GtidReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(),
                 baseDir, keeperMonitor, redisOpParser);
-    }
-
-    @Override
-    public KeeperTransMeta.KeeperReplType getKeeperReplType() {
-        return KeeperTransMeta.KeeperReplType.REPL_HYTERO;
-    }
-
-    @Override
-    public KeeperInstanceMeta getKeeperInstanceMeta() {
-        KeeperInstanceMeta meta = super.getKeeperInstanceMeta();
-        meta.setKeeperReplType(getKeeperReplType());
-        return meta;
     }
 }
