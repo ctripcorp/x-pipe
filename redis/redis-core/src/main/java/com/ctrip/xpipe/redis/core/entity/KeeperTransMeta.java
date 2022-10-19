@@ -10,44 +10,19 @@ import java.util.Objects;
  */
 public class KeeperTransMeta {
 
-	public enum KeeperReplType {
-		REPL_DEFAULT(false),
-		REPL_HYTERO(true);
-
-		private final boolean supportGtidSet;
-		KeeperReplType(boolean supportGtidSet) {
-			this.supportGtidSet = supportGtidSet;
-		}
-
-		public boolean supportGtidSet() {
-			return supportGtidSet;
-		}
-
-		public static KeeperReplType defaultType() {
-			return REPL_DEFAULT;
-		}
-	}
-
 	private Long clusterDbId;
 
 	private Long shardDbId;
 	
 	private KeeperMeta keeperMeta;
 
-	private KeeperReplType keeperReplType = KeeperReplType.defaultType();
-
 	//for json conversion
 	public KeeperTransMeta() {}
 
-	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperReplType keeperReplType, KeeperMeta keeperMeta) {
+	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		this.clusterDbId = clusterDbId;
 		this.shardDbId = shardDbId;
-		this.keeperReplType = keeperReplType;
 		this.keeperMeta = keeperMeta;
-	}
-
-	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
-		this(clusterDbId, shardDbId, KeeperReplType.defaultType(), keeperMeta);
 	}
 
 	public KeeperMeta getKeeperMeta() {
@@ -74,14 +49,6 @@ public class KeeperTransMeta {
 		this.shardDbId = shardDbId;
 	}
 
-	public KeeperReplType getKeeperReplType() {
-		return keeperReplType;
-	}
-
-	public void setKeeperReplType(KeeperReplType keeperReplType) {
-		this.keeperReplType = keeperReplType;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -89,17 +56,16 @@ public class KeeperTransMeta {
 		KeeperTransMeta that = (KeeperTransMeta) o;
 		return Objects.equals(clusterDbId, that.clusterDbId) &&
 				Objects.equals(shardDbId, that.shardDbId) &&
-				Objects.equals(keeperMeta, that.keeperMeta) &&
-				keeperReplType == that.keeperReplType;
+				Objects.equals(keeperMeta, that.keeperMeta);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(clusterDbId, shardDbId, keeperMeta, keeperReplType);
+		return Objects.hash(clusterDbId, shardDbId, keeperMeta);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("[%d,%d-%s:%d-%s]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort(), keeperReplType);
+		return String.format("[%d,%d-%s:%d-%s]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
 	}
 }
