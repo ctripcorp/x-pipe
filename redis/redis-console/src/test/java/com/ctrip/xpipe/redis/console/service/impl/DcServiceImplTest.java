@@ -14,8 +14,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -177,8 +179,11 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testFindAllDcsRichinfo() {
-        when(dcMetaService.getDcMeta("jq")).thenReturn(xpipeMeta.findDc("jq"));
-        when(dcMetaService.getDcMeta("oy")).thenReturn(xpipeMeta.findDc("oy"));
+
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+        dcMetaMap.put("jq", xpipeMeta.findDc("jq"));
+        dcMetaMap.put("oy", xpipeMeta.findDc("oy"));
+        when(dcMetaService.getAllDcMetas()).thenReturn(dcMetaMap);
         dcService = spy(dcService);
         Mockito.doReturn(toBuildTbl()).when(dcService).findAllDcs();
         List<DcListDcModel> result = dcService.findAllDcsRichInfo();
