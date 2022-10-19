@@ -115,7 +115,7 @@ public class ClusterMetaSynchronizer {
 
     void bindDc(ClusterMeta toAdd){
         logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", toAdd, DcMetaSynchronizer.currentDcId);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(DcMetaSynchronizer.currentDcId).setGroupType(DcGroupType.DR_MASTER.toString()));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(DcMetaSynchronizer.currentDcId));
         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
     }
 

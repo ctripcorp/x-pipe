@@ -8,8 +8,5 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 public enum RedisOpCommandType {
     SINGLE_KEY,
     MULTI_KEY,
-    MULTI,
-    EXEC,
-    BROADCAST,
-    UNKNOWN,
+    OTHER,
 }
