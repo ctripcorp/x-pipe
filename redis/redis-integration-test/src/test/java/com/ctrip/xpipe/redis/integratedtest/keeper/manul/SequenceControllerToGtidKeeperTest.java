@@ -68,8 +68,6 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         sequenceController.dispose();
     }
 
-//    private boolean inTransaction = false;
-
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
@@ -78,13 +76,5 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         }
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
         sequenceController.submit(command);
-//        switch (command.type()) {
-//            case MULTI:
-//                inTransaction = true;
-//            case EXEC:
-//                inTransaction = false;
-//            default:
-//                sequenceController.submit(command);
-//        }
     }
 }

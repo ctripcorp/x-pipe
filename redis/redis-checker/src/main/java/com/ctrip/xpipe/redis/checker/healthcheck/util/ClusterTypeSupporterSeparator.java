@@ -19,8 +19,6 @@ public class ClusterTypeSupporterSeparator {
         clusterTypeToSupporter.put(ClusterType.SINGLE_DC, allSupporter.stream().filter(supporter -> supporter instanceof SingleDcSupport).collect(Collectors.toList()));
         clusterTypeToSupporter.put(ClusterType.LOCAL_DC, allSupporter.stream().filter(supporter -> supporter instanceof LocalDcSupport).collect(Collectors.toList()));
         clusterTypeToSupporter.put(ClusterType.CROSS_DC, allSupporter.stream().filter(supporter -> supporter instanceof CrossDcSupport).collect(Collectors.toList()));
-        // TODO: 2022/10/10 remove hetero
-//        clusterTypeToSupporter.put(ClusterType.HETERO, allSupporter.stream().filter(supporter -> supporter instanceof HeteroSupport).collect(Collectors.toList()));
         return clusterTypeToSupporter;
     }
 
