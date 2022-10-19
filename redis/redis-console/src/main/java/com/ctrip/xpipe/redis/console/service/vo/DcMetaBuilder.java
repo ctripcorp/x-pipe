@@ -469,7 +469,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 for (Map.Entry<Long, List<DcClusterShardTbl>> entry : dc2DcClusterShardMap.entrySet()) {
                     Long dcId = entry.getKey();
-                    DcMeta dcMeta = dcMetaMap.get(dcNameMap.get(dcId));
+                    DcMeta dcMeta = dcMetaMap.get(dcNameMap.get(dcId).toUpperCase());
                     if (dcMeta == null) {
                         continue;
                     }
