@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.ping;
 
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
@@ -62,9 +63,9 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
     public PingAction create(RedisHealthCheckInstance instance) {
         PingAction pingAction = new PingAction(scheduled, instance, executors);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
-
+        String dcGroupType = instance.getCheckInfo().getDcGroupType();
         pingAction.addListeners(listenerByClusterType.get(clusterType));
-        pingAction.addControllers(controllersByClusterType.get(clusterType));
+        pingAction.addControllers(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(dcGroupType) ? controllersByClusterType.get(ClusterType.SINGLE_DC) : controllersByClusterType.get(clusterType));
         if(instance instanceof DefaultRedisHealthCheckInstance) {
             pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createPingListener());
         }

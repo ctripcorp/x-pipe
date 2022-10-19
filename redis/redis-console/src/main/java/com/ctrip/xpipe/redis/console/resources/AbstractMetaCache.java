@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
@@ -178,7 +179,8 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         String instanceInDc = metaDesc.getDcId();
         String activeDc = metaDesc.getActiveDc();
-        return !activeDc.equalsIgnoreCase(instanceInDc);
+        String dcGroupType = metaDesc.getDcGroupType();
+        return !activeDc.equalsIgnoreCase(instanceInDc) && DcGroupType.isNullOrDrMaster(dcGroupType);
     }
 
     @Override
