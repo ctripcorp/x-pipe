@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentHeteroShardMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentOneWayShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -294,7 +294,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 
         List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
         CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
-		List<RedisMeta> redisMetas = ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas();
+		List<RedisMeta> redisMetas = ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
 		setRedisesSidsAndGtids(redisMetas);
 
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "a1");
@@ -311,7 +311,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 
 		List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
 		CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
-		List<RedisMeta> redisMetas = ((CurrentHeteroShardMeta) currentShardMeta).getRedisMetas();
+		List<RedisMeta> redisMetas = ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
 		setRedisesSidsAndGtids(redisMetas);
 
 		Set<String> sidSet = new HashSet(Arrays.asList(currentMeta.getSids(heteroClusterDbId, heteroShardDbId).split(",")));

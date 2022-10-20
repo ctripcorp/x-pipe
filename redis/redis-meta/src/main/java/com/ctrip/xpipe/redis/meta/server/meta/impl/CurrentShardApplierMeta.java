@@ -18,14 +18,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * 2022/4/6 21:26
  */
-public class CurrentApplierShardMeta extends AbstractCurrentShardMeta {
+public class CurrentShardApplierMeta extends AbstractCurrentShardInstanceMeta {
 
     private AtomicBoolean watched = new AtomicBoolean(false);
     private List<ApplierMeta> surviveAppliers = new LinkedList<>();
     private Pair<String, Integer> applierMaster;
     private String srcSids;
 
-    public CurrentApplierShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
+    public CurrentShardApplierMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
         super(clusterDbId, shardDbId);
     }
 

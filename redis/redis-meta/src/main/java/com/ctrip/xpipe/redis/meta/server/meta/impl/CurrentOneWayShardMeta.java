@@ -10,29 +10,29 @@ import java.util.*;
  * <p>
  * 2022/4/6 21:02
  */
-public class CurrentHeteroShardMeta extends AbstractCurrentShardMeta {
+public class CurrentOneWayShardMeta extends AbstractCurrentShardMeta {
 
-    private CurrentKeeperShardMeta keeperShardMeta;
-    private CurrentApplierShardMeta applierShardMeta;
+    private CurrentShardKeeperMeta shardKeeperMeta;
+    private CurrentShardApplierMeta shardApplierMeta;
     private List<RedisMeta> redisMetas;
 
     @SuppressWarnings("unchecked")
-    public CurrentHeteroShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId,
-                                  @JsonProperty("keeperShardMeta") CurrentKeeperShardMeta keeperShardMeta,
-                                  @JsonProperty("applierShardMeta") CurrentApplierShardMeta applierShardMeta,
+    public CurrentOneWayShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId,
+                                  @JsonProperty("shardKeeperMeta") CurrentShardKeeperMeta shardKeeperMeta,
+                                  @JsonProperty("shardApplierMeta") CurrentShardApplierMeta shardApplierMeta,
                                   @JsonProperty("redisMetas") List<RedisMeta> redisMetas) {
         super(clusterDbId, shardDbId);
-        this.keeperShardMeta = keeperShardMeta;
-        this.applierShardMeta = applierShardMeta;
+        this.shardKeeperMeta = shardKeeperMeta;
+        this.shardApplierMeta = shardApplierMeta;
         this.redisMetas = redisMetas;
     }
 
-    public CurrentKeeperShardMeta getKeeperShardMeta() {
-        return keeperShardMeta;
+    public CurrentShardKeeperMeta getShardKeeperMeta() {
+        return shardKeeperMeta;
     }
 
-    public CurrentApplierShardMeta getApplierShardMeta() {
-        return applierShardMeta;
+    public CurrentShardApplierMeta getShardApplierMeta() {
+        return shardApplierMeta;
     }
 
     public List<RedisMeta> getRedisMetas() {
@@ -64,5 +64,4 @@ public class CurrentHeteroShardMeta extends AbstractCurrentShardMeta {
         }
         return result.toString();
     }
-
 }
