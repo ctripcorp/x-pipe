@@ -67,8 +67,6 @@ public class DefaultApplierMasterChooserManager extends AbstractCurrentMetaObser
 
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
-//        return Collections.singleton(ClusterType.HETERO);
-        // TODO: 2022/10/10 remove hetero
         return Collections.singleton(ClusterType.ONE_WAY);
     }
 

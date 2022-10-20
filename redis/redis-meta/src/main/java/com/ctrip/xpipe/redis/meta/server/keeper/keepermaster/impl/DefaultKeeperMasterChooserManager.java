@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -76,9 +77,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-//		return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
-		// TODO: 2022/10/10 remove hetero
-		return Stream.of(ClusterType.ONE_WAY).collect(Collectors.toSet());
+		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
 	private void addShard(Long clusterDbId, ShardMeta shardMeta) {
