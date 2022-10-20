@@ -15,16 +15,6 @@ function ClusterType() {
                 isCrossDc:false,
                 supportApplier:false,
             },
-            'hetero': {
-                name: '单向异构',
-                value: 'hetero',
-                multiActiveDcs: false,
-                useKeeper: true,
-                healthCheck: true,
-                supportMigration: true,
-                isCrossDc:false,
-                supportApplier:true,
-            },
             'bi_direction': {
                 name: '双向同步',
                 value: 'bi_direction',
