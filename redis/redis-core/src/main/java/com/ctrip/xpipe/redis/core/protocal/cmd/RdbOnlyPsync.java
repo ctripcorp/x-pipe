@@ -16,8 +16,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 
-	public RdbOnlyPsync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store, boolean supportGtid, ScheduledExecutorService scheduled) {
-		super(clientPool, false, supportGtid, scheduled);
+	public RdbOnlyPsync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store, ScheduledExecutorService scheduled) {
+		super(clientPool, false, scheduled);
 		currentReplicationStore = store;
 	}
 
