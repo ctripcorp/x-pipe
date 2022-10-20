@@ -33,6 +33,11 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
         GtidSet reqExcludedGtidSet = new GtidSet(args[1]);
 
+        if (reqExcludedGtidSet.isZero()) {
+            doFullSync(redisSlave);
+            return;
+        }
+
         GtidSet localBeginGtidSet = keeperRepl.getBeginGtidSet().filterGtid(interestedSids);
         GtidSet localEndGtidSet = keeperRepl.getEndGtidSet().filterGtid(interestedSids);
 

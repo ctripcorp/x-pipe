@@ -107,7 +107,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("localhost", redisServer.getPort());
-		defaultPsync = new DefaultPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, true, false, scheduled);
+		defaultPsync = new DefaultPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, true, scheduled);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 

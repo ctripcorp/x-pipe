@@ -495,11 +495,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public KeeperTransMeta.KeeperReplType getKeeperReplType() {
-		return KeeperTransMeta.KeeperReplType.REPL_DEFAULT;
-	}
-
-	@Override
 	public void beginWriteRdb(EofType eofType, String replId, long offset) {
 	}
 
