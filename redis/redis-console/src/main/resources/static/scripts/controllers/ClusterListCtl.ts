@@ -43,6 +43,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.clusterType = $stateParams.clusterType;
     $scope.clusterTypes = ClusterType.selectData()
     $scope.gotoClusterHickwall = gotoClusterHickwall;
+    $scope.showDetails = false;
+    $scope.showClusterDetails = showClusterDetails;
 
     $scope.displayedClusters = [];
     $scope.filteredClusters = [];
@@ -317,5 +319,9 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
             filterDelay:100,
             dataset: $scope.sourceClusters,
         });
+    }
+
+    function showClusterDetails() {
+        $scope.showDetails = !$scope.showDetails;
     }
 }

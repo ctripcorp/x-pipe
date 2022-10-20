@@ -107,8 +107,6 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
 
     }
 
-    private boolean inTransaction = false;
-
     @Override
     public void onCommand(Object[] rawCmdArgs) {
 

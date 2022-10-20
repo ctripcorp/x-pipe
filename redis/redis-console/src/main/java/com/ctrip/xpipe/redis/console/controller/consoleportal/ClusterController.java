@@ -224,7 +224,7 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.POST)
     public void bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
         logger.info("[bindDc]{},{}", clusterName, dcName);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName).setGroupType(DcGroupType.DR_MASTER.toString()));
+        clusterService.bindDc(new DcClusterTbl().setClusterName(clusterName).setDcName(dcName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
@@ -374,7 +374,7 @@ public class ClusterController extends AbstractConsoleController {
                 ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
                 toCreate.getShards().forEach(shardModel -> {
                         shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shardModel.getShardTbl(),
-                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.MASTER));
                     });
             }
         });
@@ -431,7 +431,7 @@ public class ClusterController extends AbstractConsoleController {
                 dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.getGroupType());
         toCreates.forEach(toCreate -> {
             shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
-                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
         });
     }
 
