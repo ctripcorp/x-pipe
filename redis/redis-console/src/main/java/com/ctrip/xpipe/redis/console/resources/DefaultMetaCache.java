@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -24,10 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -46,9 +42,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     @Autowired
     private DcMetaService dcMetaService;
-
-    @Autowired
-    private DcService dcService;
 
     @Autowired
     private ClusterService clusterService;
@@ -100,11 +93,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
             @Override
             public void go() throws Exception {
 
-                List<DcTbl> dcs = dcService.findAllDcNames();
-                List<DcMeta> dcMetas = new LinkedList<>();
-                for (DcTbl dc : dcs) {
-                    dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
-                }
+                Map<String, DcMeta> dcMetaMap = dcMetaService.getAllDcMetas();
+                List<DcMeta> dcMetas = new ArrayList<>(dcMetaMap.values());
 
                 List<RedisCheckRuleTbl> redisCheckRuleTbls = redisCheckRuleService.getAllRedisCheckRules();
                 List<RedisCheckRuleMeta> redisCheckRuleMetas = new LinkedList<>();

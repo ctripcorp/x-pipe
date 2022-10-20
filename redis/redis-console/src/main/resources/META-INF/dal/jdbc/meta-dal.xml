@@ -428,7 +428,6 @@
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
 		<var name="cluster-ids" value-type="java.util.List&lt;Long&gt;" />
-		
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
@@ -440,6 +439,10 @@
 			</readset>
 			<readset name="CLUSTER_ID">
 				<member name="cluster-id" />
+			</readset>
+            <readset name="ID_AND_DC_ID">
+				<member name="dc-cluster-id"/>
+				<member name="dc-id"/>
 			</readset>
 			<readset name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES">
 				<member name="active-redis-check-rules"/>
@@ -719,12 +722,12 @@
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 <!--				<readset-ref name="APPLIER_META_INFO" relation-name="applier-info"/>-->
 			</readset>
-			<readset name="FULL_CLUSTER_SHARD_REDIS_META_INFO">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="cluster-info"/>
-                <readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
+			<readset name="DC_CLUSTER_SHARD_REDIS_META_INFO">
+				<readset-ref name="SENTINEL_ID"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
+                <readset-ref name="ID_AND_DC_ID" relation-name="dc-cluster-info"/>
 			</readset>
 			<readset name="FULL_WITH_DC_INFO">
 				<readset-ref name="FULL"/>
@@ -1585,9 +1588,13 @@
 			<readset name="AZ_INFO">
 				<member name="az-id"/>
 			</readset>
+			<readset name="CONTAINER_ACTIVE">
+				<member name="keepercontainer-active"/>
+			</readset>
 
 			<readset name="BASE_INFO">
 				<readset-ref name="CONTAINER_ADDRESS" />
+				<readset-ref name="CONTAINER_ACTIVE"/>
 				<readset-ref name="AZ_INFO"/>
 				<readset-ref name="NAME" relation-name="org-info" />
 				<readset-ref name="NAME" relation-name="dc-info" />

@@ -712,8 +712,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
         DcClusterTbl dcClusterTbl = new DcClusterTbl()
                 .setClusterName(clusterName)
-                .setDcName(dcName)
-                .setGroupType(DcGroupType.DR_MASTER.toString());
+                .setDcName(dcName);
         if(dcDetailInfoOptional.isPresent()){
             DcDetailInfo dcDetailInfo = dcDetailInfoOptional.get();
             if(dcDetailInfo.getDcGroupType() != null){

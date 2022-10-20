@@ -325,6 +325,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     baseInfos.forEach(baseInfo -> {
       KeeperContainerInfoModel model = new KeeperContainerInfoModel();
       model.setId(baseInfo.getKeepercontainerId());
+      model.setActive(baseInfo.isKeepercontainerActive());
       model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
       model.setDcName(baseInfo.getDcInfo().getDcName());
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
