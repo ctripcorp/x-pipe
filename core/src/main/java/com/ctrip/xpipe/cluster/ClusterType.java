@@ -5,7 +5,6 @@ import com.ctrip.xpipe.utils.StringUtil;
 public enum ClusterType {
     ONE_WAY(true, true, true, false),
     BI_DIRECTION(false, false, true, true),
-    //TODO ayq ensure these variables
     //TODO remove hetero
 //    HETERO(true, true, true, false, false, true),
     // TODO: single_dc and local_dc support health check
