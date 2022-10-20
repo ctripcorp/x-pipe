@@ -200,11 +200,11 @@ public class KeeperContainerService {
 
         File baseDir = getReplicationStoreDir(keeperMeta);
 
-        if (keeperTransMeta.getKeeperReplType().supportGtidSet()) {
+        //if (keeperTransMeta.getKeeperReplType().supportGtidSet()) {
             return createGtidRedisKeeperServer(keeperMeta, baseDir);
-        } else {
-            return createRedisKeeperServer(keeperMeta, baseDir);
-        }
+        //} else {
+            //return createRedisKeeperServer(keeperMeta, baseDir);
+        //}
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {

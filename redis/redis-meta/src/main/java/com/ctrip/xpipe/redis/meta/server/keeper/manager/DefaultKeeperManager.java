@@ -200,7 +200,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 					KeeperTransMeta keeperTransMeta;
 					// TODO: 2022/10/10 remove hetero
 //					if (Objects.equals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase())) {
-						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, deadKeeper);
+						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
 //					} else {
 //						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
 //					}
