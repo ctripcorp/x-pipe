@@ -31,17 +31,20 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     $scope.dcClusterModels = [];
     $scope.toCreateDcGroups = [];
-    $scope.groupTypes = ['Master', 'DRMaster'];
+    $scope.groupTypes = ['MASTER', 'DR_MASTER'];
     $scope.groupNames = {};
     $scope.allDcNames = [];
     $scope.toUpdateDcGroup = [];
     $scope.toCreateReplDirections = [];
     $scope.replDirections = [];
+    $scope.updateReplDirectionIndex = 0;
+    $scope.toUpdateReplDirection = [];
     $scope.drMasterShards = [];
     $scope.masterShards = [];
     $scope.masterShardNum = {};
     $scope.drMasterDcs = [];
     $scope.activeDcName = '';
+    $scope.isHeteroCluster = false;
 
     $scope.doCluster = doCluster;
     $scope.getDcName = getDcName;
@@ -82,6 +85,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.deleteReplDirection = deleteReplDirection;
     $scope.removeToCreateReplDirections = removeToCreateReplDirections;
     $scope.addOtherReplDirection = addOtherReplDirection;
+    $scope.preUpdateReplDirection = preUpdateReplDirection;
+    $scope.confirmUpdateReplDirection = confirmUpdateReplDirection;
+
+    $scope.changeIsHeteroCluster = changeIsHeteroCluster;
 
     init();
 
@@ -147,8 +154,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                 $scope.test = result;
                 $scope.dcClusterModels.forEach(function(dcClusterModel){
                     $scope.clusterRelatedDcNames.push(dcClusterModel.dc.dc_name);
-                    if (dcClusterModel.dcCluster.groupType == true ) {
-                        dcClusterModel.dcCluster.groupType = $scope.groupTypes[1];
+                    if (dcClusterModel.dcCluster.groupType == $scope.groupTypes[1]) {
                         dcClusterModel.shardNum = dcClusterModel.shards.length;
                         if (dcClusterModel.dc.dc_name == $scope.activeDcName) {
                             $scope.drMasterShards=[];
@@ -156,9 +162,11 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                                 $scope.drMasterShards.push(shard.shardTbl);
                             });
                         }
-                    } else if (dcClusterModel.dcCluster.groupType == false) {
+                    } else if (dcClusterModel.dcCluster.groupType == $scope.groupTypes[0]) {
+                        if ($scope.selectedType == 'one_way'){
+                            $scope.isHeteroCluster = true;
+                        }
                         $scope.masterShards[dcClusterModel.dcCluster.groupName] = [];
-                        dcClusterModel.dcCluster.groupType = $scope.groupTypes[0];
                         dcClusterModel.shardNum = dcClusterModel.shards.length;
                         var index = 0;
                         dcClusterModel.shards.forEach(function(shard){
@@ -185,29 +193,36 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     function doCluster() {
         if ($scope.operateType == OPERATE_TYPE.CREATE) {
-             $scope.shards.forEach(function(shard) {
-                shard.shardTbl = {};
-                shard.shardTbl.shardName = shard.shardName;
-                shard.shardTbl.setinelMonitorName = shard.setinelMonitorName;
-             });
+            if ($scope.isHeteroCluster) {
+                 $scope.clusterRelatedDcs = [];
+                 $scope.shards = [];
 
-             $scope.dcClusterModels.forEach(function (dcClusterModel) {
-                addShardToDcModel(dcClusterModel);
-             });
+                 $scope.dcClusterModels.forEach(function (dcClusterModel) {
+                    addShardToDcModel(dcClusterModel);
+                 });
 
-             $scope.replDirections.forEach(function(replDirection) {
-                replDirection.clusterName = $scope.cluster.clusterName;
-             });
+                 $scope.replDirections.forEach(function(replDirection) {
+                    replDirection.clusterName = $scope.cluster.clusterName;
+                 });
 
-             if ($scope.activeDcName != '' && $scope.selectedType == 'hetero') {
-                var dcId = getDcId($scope.activeDcName);
-                if (dcId == -1) {
-                    toastr.error("activeDcName" + $scope.activeDcName + "is not exist", "创建失败");
-                }
-                $scope.cluster.activedcId = getDcId($scope.activeDcName);
-             }
+                 if ($scope.activeDcName != '' && $scope.isHeteroCluster) {
+                    var dcId = getDcId($scope.activeDcName);
+                    if (dcId == -1) {
+                        toastr.error("activeDcName" + $scope.activeDcName + "is not exist", "创建失败");
+                    }
+                    $scope.cluster.activedcId = getDcId($scope.activeDcName);
+                 }
+            } else {
+                 $scope.shards.forEach(function(shard) {
+                    shard.shardTbl = {};
+                    shard.shardTbl.shardName = shard.shardName;
+                    shard.shardTbl.setinelMonitorName = shard.setinelMonitorName;
+                 });
+                 $scope.replDirections = [];
+                 $scope.dcClusterModels = [];
+            }
 
-            $scope.cluster.clusterType = $scope.selectedType
+            $scope.cluster.clusterType = $scope.selectedType;
             ClusterService.createCluster($scope.cluster, $scope.clusterRelatedDcs, $scope.shards, $scope.dcClusterModels, $scope.replDirections)
                 .then(function (result) {
                     toastr.success("创建成功");
@@ -215,24 +230,19 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                         "/#/cluster_form?clusterName=" + $scope.cluster.clusterName+ "&type=retrieve";
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result), "创建失败");
-                    $scope.dcClusterModels.forEach(function (dcClusterModel) {
-                        if (dcClusterModel.dcCluster.groupType == true) {
-                            dcClusterModel.dcCluster.groupType = $scope.groupTypes[1];
-                        } else if (dcClusterModel.dcCluster.groupType == false) {
-                            dcClusterModel.dcCluster.groupType = $scope.groupTypes[0];
-                        }
-                    });
                 });
         } else {
-            $scope.dcClusterModels.forEach(function (dcClusterModel) {
-               if (dcClusterModel.dcCluster.clusterId == undefined) {
-                    dcClusterModel.dcCluster.clusterId = $scope.cluster.id;
-               }
-               if (dcClusterModel.dcCluster.dcId == undefined) {
-                    dcClusterModel.dcCluster.dcId = getDcId(dcClusterModel.dc.dc_name);
-               }
-               addShardToDcModel(dcClusterModel);
-            });
+            if ($scope.isHeteroCluster) {
+                $scope.dcClusterModels.forEach(function (dcClusterModel) {
+                   if (dcClusterModel.dcCluster.clusterId == undefined) {
+                        dcClusterModel.dcCluster.clusterId = $scope.cluster.id;
+                   }
+                   if (dcClusterModel.dcCluster.dcId == undefined) {
+                        dcClusterModel.dcCluster.dcId = getDcId(dcClusterModel.dc.dc_name);
+                   }
+                   addShardToDcModel(dcClusterModel);
+                });
+            }
 
             ClusterService.updateCluster($scope.cluster.clusterName, $scope.cluster, $scope.dcClusterModels, $scope.replDirections)
                 .then(function (result) {
@@ -248,7 +258,6 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     function addShardToDcModel(dcClusterModel) {
        if (dcClusterModel.dcCluster.groupType == $scope.groupTypes[1]) {
-           dcClusterModel.dcCluster.groupType = true;
            dcClusterModel.shards = [];
            $scope.drMasterShards.forEach(function(shard){
                dcClusterModel.shards.push({
@@ -259,7 +268,6 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                })
            });
        } else if (dcClusterModel.dcCluster.groupType == $scope.groupTypes[0]){
-           dcClusterModel.dcCluster.groupType = false;
            dcClusterModel.shards = [];
            $scope.masterShards[dcClusterModel.dcCluster.groupName].forEach(function(shard){
               dcClusterModel.shards.push({
@@ -392,14 +400,14 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
 
     function shardNameChanged() {
    	 if ($scope.cluster) {
-   	     if ($scope.selectedType != 'hetero' && $scope.currentShard) {
+   	     if (!$scope.isHeteroCluster && $scope.currentShard) {
    		     if ($scope.currentShard.shardName.indexOf($scope.cluster.clusterName) >=0 ){
    			    $scope.currentShard.setinelMonitorName = $scope.currentShard.shardName;
    			 } else {
    			    $scope.currentShard.setinelMonitorName = $scope.cluster.clusterName + $scope.currentShard.shardName;
    			 }
    	     }
-   		 if ($scope.selectedType == 'hetero' && $scope.toUpdateShardModel) {
+   		 if ($scope.isHeteroCluster && $scope.toUpdateShardModel) {
    		     if ($scope.toUpdateShardModel.shardName.indexOf($scope.cluster.clusterName) >=0 ){
    			    $scope.toUpdateShardModel.setinelMonitorName = $scope.toUpdateShardModel.shardName;
    			 } else {
@@ -423,6 +431,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             }
             $scope.cluster.activedcId = undefined
         }
+        if ($scope.isHeteroCluster) {
+            clearHeteroInfo();
+        }
+        $scope.isHeteroCluster = false;
     }
 
     function preCreateDcGroup() {
@@ -615,7 +627,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         }
 
         $scope.dcClusterModels.forEach(function(dcClusterModel) {
-            if (dcClusterModel.dcCluster.groupType == 'DRMaster') {
+            if (dcClusterModel.dcCluster.groupType == $scope.groupTypes[1]) {
                 dcClusterModel.shardNum = $scope.drMasterShardNum;
             }
         });
@@ -754,6 +766,19 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         $('#createReplDirectionModal').modal('hide');
     }
 
+    function preUpdateReplDirection(index) {
+        $scope.updateReplDirectionIndex = index;
+        $scope.toUpdateReplDirection = $scope.replDirections[index];
+        $('#updateReplDirectionModal').modal('show');
+    }
+
+    function confirmUpdateReplDirection() {
+        $scope.replDirections[$scope.updateReplDirectionIndex] = $scope.toUpdateReplDirection;
+        $scope.updateReplDirectionIndex = 0;
+        $scope.toUpdateReplDirection = [];
+        $('#updateReplDirectionModal').modal('hide');
+    }
+
     function confirmDeleteReplDirection(index) {
         $scope.toDeleteReplDirectionIndex = index;
         if ($scope.operateType == OPERATE_TYPE.CREATE) {
@@ -781,5 +806,26 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             "fromDcName": $scope.activeDcName,
             "toDcName": $scope.activeDcName,
         });
+    }
+
+    function changeIsHeteroCluster() {
+        $scope.isHeteroCluster = !$scope.isHeteroCluster;
+        clearHeteroInfo();
+        clearShardInfo();
+    }
+
+
+    function clearHeteroInfo() {
+        $scope.drMasterDcs = [];
+        $scope.replDirections = [];
+        $scope.dcClusterModels = [];
+        $scope.allMasterShards = [];
+        $scope.drMasterShards = [];
+        $scope.masterShards = [];
+
+    }
+
+    function clearShardInfo() {
+        $scope.shards = [];
     }
 }
