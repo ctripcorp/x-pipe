@@ -192,6 +192,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 		else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
 			refreshKeeperMaster(clusterMeta);
+			refreshApplierMaster(clusterMeta);
 		}
 	}
 
@@ -390,7 +391,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void routeChanges() {
-	    //TODO ayq route
 		for(Long clusterDbId : allClusters()) {
 			clusterRoutesChange(clusterDbId);
 		}
@@ -411,6 +411,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
+	protected void refreshApplierMaster(ClusterMeta clusterMeta) {
+		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
+		Long clusterDbId = clusterMeta.getDbId();
+		for (ShardMeta shard : shards) {
+		    String sids = this.getSids(clusterDbId, shard.getDbId());
+			notifyApplierMasterChanged(clusterDbId, shard.getDbId(), getApplierMaster(clusterDbId, shard.getDbId()), sids);
+		}
+	}
 	
 	@Override
 	public boolean hasCluster(Long clusterDbId) {

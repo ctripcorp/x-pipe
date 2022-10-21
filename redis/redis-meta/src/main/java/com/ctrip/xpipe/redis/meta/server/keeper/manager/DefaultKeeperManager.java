@@ -130,7 +130,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
-	private void addKeeper(String clusterType, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
+	private void addKeeper(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		try {
 			KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta);
 			keeperStateController.addKeeper(keeperTransMeta);
@@ -144,7 +144,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-				addKeeper(clusterMeta.getType(), clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
+				addKeeper(clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
 			}
 		}
 	}
@@ -214,7 +214,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(ShardMeta added) {
 			logger.info("[visitAdded][add shard]{}", added);
 			for (KeeperMeta keeperMeta : added.getKeepers()) {
-				addKeeper(clusterType, clusterDbId, added.getDbId(), keeperMeta);
+				addKeeper(clusterDbId, added.getDbId(), keeperMeta);
 			}
 		}
 
@@ -252,7 +252,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(InstanceNode added) {
 
 			if (added instanceof KeeperMeta) {
-				addKeeper(clusterType, clusterDbId, shardDbId, (KeeperMeta) added);
+				addKeeper(clusterDbId, shardDbId, (KeeperMeta) added);
 			} else {
 				logger.debug("[visitAdded][do nothng]{}", added);
 			}
@@ -368,7 +368,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
-			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, survivedKeepers,
+			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, shardDbId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
@@ -429,10 +429,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers,
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, Long shardDbId,
+															List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+		String dstDcId;
+		if (metaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+			dstDcId = currentMetaManager.getClusterMeta(clusterDbId).getActiveDc();
+		} else {
+			dstDcId = metaCache.getUpstreamDc(metaCache.getCurrentDc(), clusterDbId, shardDbId);
+		}
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
+
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 

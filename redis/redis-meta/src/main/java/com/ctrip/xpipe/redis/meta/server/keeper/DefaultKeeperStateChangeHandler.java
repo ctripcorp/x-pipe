@@ -90,12 +90,18 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		
 		keyedOneThreadTaskExecutor.execute(
 				new Pair<>(clusterDbId, shardDbId),
-				createKeeperStateChangeJob(clusterDbId, keepers, newMaster));
+				createKeeperStateChangeJob(clusterDbId, shardDbId, keepers, newMaster));
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+		String dstDcId;
+		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+			dstDcId = currentMetaManager.getClusterMeta(clusterDbId).getActiveDc();
+		} else {
+			dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+		}
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 
@@ -111,7 +117,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		}
 		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 
-		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, keepers, activeKeeperMaster);
+		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, shardDbId, keepers, activeKeeperMaster);
 
 		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
 			if (dcMetaCache.isCurrentDcBackUp(clusterDbId)) {
