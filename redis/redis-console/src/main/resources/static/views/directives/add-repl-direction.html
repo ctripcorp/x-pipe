@@ -1,123 +1,210 @@
 <div>
-  <a class="btn btn-warning" type="button" ng-click="preCreateReplDirection()">
-    增加 repl_direction
-  </a>
-  <table class="table table-bordered table-hover">
-    <thead>
-        <tr>
-            <td> 源DC </td>
-            <td> 上游DC </td>
-            <td> 下游DC </td>
-            <td> 目标集群 </td>
-            <td> 操作 </td>
-        </tr>
-    </thead>
-    <tbody>
-    	<tr ng-repeat="replDirection in replDirections">
-			<td>{{replDirection.srcDcName}}</td>
-			<td>{{replDirection.fromDcName}}</td>
-			<td>{{replDirection.toDcName}}</td>
-            <td>{{replDirection.targetClusterName}}</td>
-            <td>
-	        	<a ng-click="confirmDeleteReplDirection($index)" style="color:red">删除</a>
-			</td>
-		</tr>
-    </tbody>
-  </table>
-  
-  <form class="modal fade form-horizontal" id="createReplDirectionModal" tabindex="-1" role="dialog"
-      ng-submit="createReplDirection()">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header panel-primary">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                <div class="modal-title">
-                    <span> 创建复制方向 </span>
-                </div>
-            </div>
+    <a class="btn btn-warning" type="button" ng-click="preCreateReplDirection()">
+        增加 repl_direction
+    </a>
 
-            <div class="modal-body form-horizontal">
-                <div ng-repeat = "toCreateReplDirection in toCreateReplDirections">
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label no-padding-right"> cluster </label>
-                        <div class="col-sm-6">
-                            <input type="text" class="form-control" style="width:200px;" ng-diabled="true"
-                                   ng-model="toCreateReplDirection.clusterName" value="cluster.clusterName"
-                            >
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label no-padding-right"> 源DC </label>
-                        <div class="col-sm-6">
-                            <select
-                                    ng-model="toCreateReplDirection.srcDcName"
-                                    allow_single_deselect=true
-                                    style="width:200px;"
-                                    ng-required="true"
-                                    ng-options="dcName for dcName in clusterRelatedDcNames"
-                            >
-                                <option value=""/>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label no-padding-right"> 上游DC </label>
-                        <div class="col-sm-6">
-                            <select
-                                    ng-model="toCreateReplDirection.fromDcName"
-                                    allow_single_deselect=true
-                                    style="width:200px;"
-                                    ng-required="true"
-                                    ng-options="dcName for dcName in clusterRelatedDcNames"
-                            >
-                                <option value=""/>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label no-padding-right"> 下游DC </label>
-                        <div class="col-sm-6">
-                            <select
-                                    ng-model="toCreateReplDirection.toDcName"
-                                    allow_single_deselect=true
-                                    style="width:200px;"
-                                    ng-required="true"
-                                    ng-options="dcName for dcName in clusterRelatedDcNames"
-                            >
-                                <option value=""/>
-                            </select>
-                        </div>
-                        <div class="col-md-2" ng-show="$index >= 1">
-                            <button class="btn btn-danger btn-xs" type="button"
-                                    ng-click="removeToCreateReplDirections($index)">remove
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-sm-4 control-label no-padding-right">目标集群</label>
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <td> 源DC </td>
+                <td> 上游DC </td>
+                <td> 下游DC </td>
+                <td> 目标集群 </td>
+                <td> 操作 </td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="replDirection in replDirections">
+                <td>{{replDirection.srcDcName}}</td>
+                <td>{{replDirection.fromDcName}}</td>
+                <td>{{replDirection.toDcName}}</td>
+                <td>{{replDirection.targetClusterName}}</td>
+                <td>
+                    <a ng-click="preUpdateReplDirection($index)">修改</a>
+                    <a ng-click="confirmDeleteReplDirection($index)" style="color:red">删除</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
-                        <div class="col-sm-6">
-                            <input type="text" placeholder="目标集群"
-                                   ng-model="toCreateReplDirection.targetClusterName" style="width:200px"
-                                   pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"/>
-                        </div>
+    <form class="modal fade form-horizontal" id="createReplDirectionModal" tabindex="-1" role="dialog"
+          ng-submit="createReplDirection()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header panel-primary">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <div class="modal-title">
+                        <span> 创建复制方向 </span>
                     </div>
-
                 </div>
 
-                <div class="form-group text-center">
-                    <button class="btn btn-default btn-xs" type="button" ng-click="addOtherReplDirection()">
-                        add Other Repl Direction
-                    </button>
-                </div>
-            </div>
+                <div class="modal-body form-horizontal">
+                    <div ng-repeat = "toCreateReplDirection in toCreateReplDirections">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> cluster </label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" style="width:200px;" ng-diabled="true"
+                                       ng-model="toCreateReplDirection.clusterName" value="cluster.clusterName"
+                                >
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 源DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateReplDirection.srcDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 上游DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateReplDirection.fromDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 下游DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toCreateReplDirection.toDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right">目标集群</label>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal"> 取消 </button>
-                <button type="submit" class="btn btn-primary"> 创建 </button>
+                            <div class="col-sm-6">
+                                <input type="text" placeholder="目标集群"
+                                       ng-model="toCreateReplDirection.targetClusterName" style="width:200px"
+                                       pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"/>
+                            </div>
+                            <div class="col-md-2" ng-show="$index >= 1">
+                                <button class="btn btn-danger btn-xs" type="button"
+                                        ng-click="removeToCreateReplDirections($index)">remove
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="form-group text-center">
+                        <button class="btn btn-default btn-xs" type="button" ng-click="addOtherReplDirection()">
+                            add Other Repl Direction
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"> 取消 </button>
+                    <button type="submit" class="btn btn-primary"> 创建 </button>
+                </div>
             </div>
         </div>
-    </div>
-  </form>
+    </form>
+
+    <form class="modal fade form-horizontal" id="updateReplDirectionModal" tabindex="-1" role="dialog"
+          ng-submit="confirmUpdateReplDirection()">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header panel-primary">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <div class="modal-title">
+                        <span> 更新复制方向 </span>
+                    </div>
+                </div>
+
+                <div class="modal-body form-horizontal">
+                    <div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> cluster </label>
+                            <div class="col-sm-6">
+                                <input type="text" class="form-control" style="width:200px;" ng-diabled="true"
+                                       ng-model="toUpdateReplDirection.clusterName"
+                                >
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 源DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateReplDirection.srcDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 上游DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateReplDirection.fromDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right"> 下游DC </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toUpdateReplDirection.toDcName"
+                                        allow_single_deselect=true
+                                        style="width:200px;"
+                                        ng-required="true"
+                                        ng-options="dcName for dcName in clusterRelatedDcNames"
+                                >
+                                    <option value=""/>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right">目标集群</label>
+
+                            <div class="col-sm-6">
+                                <input type="text" placeholder="目标集群"
+                                       ng-model="toUpdateReplDirection.targetClusterName" style="width:200px"
+                                       pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"/>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"> 取消 </button>
+                    <button type="submit" class="btn btn-primary"> 修改 </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>

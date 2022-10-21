@@ -37,6 +37,8 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.toUpdateDcGroup = [];
     $scope.toCreateReplDirections = [];
     $scope.replDirections = [];
+    $scope.updateReplDirectionIndex = 0;
+    $scope.toUpdateReplDirection = [];
     $scope.drMasterShards = [];
     $scope.masterShards = [];
     $scope.masterShardNum = {};
@@ -83,6 +85,8 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.deleteReplDirection = deleteReplDirection;
     $scope.removeToCreateReplDirections = removeToCreateReplDirections;
     $scope.addOtherReplDirection = addOtherReplDirection;
+    $scope.preUpdateReplDirection = preUpdateReplDirection;
+    $scope.confirmUpdateReplDirection = confirmUpdateReplDirection;
 
     $scope.changeIsHeteroCluster = changeIsHeteroCluster;
 
@@ -760,6 +764,19 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         });
 
         $('#createReplDirectionModal').modal('hide');
+    }
+
+    function preUpdateReplDirection(index) {
+        $scope.updateReplDirectionIndex = index;
+        $scope.toUpdateReplDirection = $scope.replDirections[index];
+        $('#updateReplDirectionModal').modal('show');
+    }
+
+    function confirmUpdateReplDirection() {
+        $scope.replDirections[$scope.updateReplDirectionIndex] = $scope.toUpdateReplDirection;
+        $scope.updateReplDirectionIndex = 0;
+        $scope.toUpdateReplDirection = [];
+        $('#updateReplDirectionModal').modal('hide');
     }
 
     function confirmDeleteReplDirection(index) {
