@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
+import java.util.List;
+
 /**
  * @author chen.zhu
  * <p>
@@ -25,5 +27,9 @@ public interface RedisInstanceInfo extends CheckInfo {
     boolean isInActiveDc();
 
     boolean isCrossRegion();
+
+    Long getShardDbId();
+
+    List<Long> getActiveDcAllShardIds();
 
 }

@@ -161,8 +161,8 @@ public class DelayActionTest extends AbstractRedisTest {
         futureMap = new HashMap<>();
 
         Mockito.doAnswer(invocationOnMock -> {
-            String channel = invocationOnMock.getArgument(0, String.class);
-            RedisSession.SubscribeCallback callback = invocationOnMock.getArgument(1, RedisSession.SubscribeCallback.class);
+            String channel = invocationOnMock.getArgument(1, String.class);
+            RedisSession.SubscribeCallback callback = invocationOnMock.getArgument(0, RedisSession.SubscribeCallback.class);
 
             if (futureMap.containsKey(channel)) futureMap.get(channel).cancel(false);
             futureMap.put(channel, scheduled.scheduleWithFixedDelay(() -> {
@@ -173,7 +173,7 @@ public class DelayActionTest extends AbstractRedisTest {
                 }
             }, 10, 100, TimeUnit.MILLISECONDS));
             return null;
-        }).when(session).subscribeIfAbsent(Mockito.anyString(), Mockito.any());
+        }).when(session).subscribeIfAbsent(Mockito.any(), Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
             String channel = invocationOnMock.getArgument(0, String.class);
