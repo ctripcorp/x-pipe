@@ -94,7 +94,7 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
 
         keyedOneThreadTaskExecutor.execute(
                 new Pair<>(clusterDbId, shardDbId),
-                createApplierStateChangeJob(clusterDbId, appliers, newMaster, srcSids, gtidSet));
+                createApplierStateChangeJob(clusterDbId, shardDbId, appliers, newMaster, srcSids, gtidSet));
     }
 
     @Override
@@ -110,17 +110,22 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
         Pair<String, Integer> activeApplierMaster = currentMetaManager.getApplierMaster(clusterDbId, shardDbId);
 
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
-        ApplierStateChangeJob applierStateChangeJob = createApplierStateChangeJob(clusterDbId, appliers,
+        ApplierStateChangeJob applierStateChangeJob = createApplierStateChangeJob(clusterDbId, shardDbId, appliers,
                 activeApplierMaster, srcSids, gtidSet);
 
         keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), applierStateChangeJob);
     }
 
-    private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, List<ApplierMeta> appliers,
+    private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, Long shardDbId, List<ApplierMeta> appliers,
               Pair<String, Integer> master, String sids, GtidSet gtidSet) {
 
-        //TODO ayq route
-        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+        String dstDcId;
+        if (dcMetaCache.getShardKeepers(clusterDbId, shardDbId).isEmpty()) {
+            dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        } else {
+            dstDcId = dcMetaCache.getCurrentDc();
+        }
+        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
         return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }
 

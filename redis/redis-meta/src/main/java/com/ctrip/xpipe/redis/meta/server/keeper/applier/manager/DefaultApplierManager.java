@@ -394,8 +394,13 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
     private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, Long shardDbId, List<ApplierMeta> appliers,
                                                             Pair<String, Integer> master) {
 
-        //TODO ayq route
-        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+        String dstDcId;
+        if (dcMetaCache.getShardKeepers(clusterDbId, shardDbId).isEmpty()) {
+            dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        } else {
+            dstDcId = dcMetaCache.getCurrentDc();
+        }
+        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
         String srcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
