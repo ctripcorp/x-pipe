@@ -34,7 +34,13 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public void doStart() throws Exception {
 
         scheduled = Executors.newSingleThreadScheduledExecutor();
-        scheduled.scheduleAtFixedRate(this::send, 1, 1, TimeUnit.SECONDS);
+        scheduled.scheduleAtFixedRate(()-> {
+            try {
+                send();
+            }catch (Throwable t){
+                logger.info("[send] error", t);
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -51,6 +57,8 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
         GtidSet gtidSet = gtid_executed.get();
 
+        logger.debug("[send] send lwm, gtidSet {}", gtidSet);
+
         Set<String> sids = gtidSet.getUUIDs();
 
         for (String sid : sids) {
@@ -66,6 +74,8 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
     @Override
     public void submit(String gtid) {
+
+        logger.debug("[submit] submit lwm, gtidSet {}", gtid);
 
         gtid_executed.get().add(gtid);
     }
