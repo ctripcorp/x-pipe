@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author lishanglin
  * date 2021/3/12
  */
-public class CheckerRedisDelayManager implements RedisDelayManager, DelayActionListener, OneWaySupport, BiDirectionSupport {
+public class CheckerRedisDelayManager extends AbstractDelayActionListener implements RedisDelayManager, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     protected ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
     protected Map<Long, Long> upstreamShardsDelay = new ConcurrentHashMap<>();

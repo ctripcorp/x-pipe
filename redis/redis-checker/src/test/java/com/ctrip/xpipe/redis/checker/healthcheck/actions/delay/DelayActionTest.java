@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
@@ -146,6 +143,11 @@ public class DelayActionTest extends AbstractRedisTest {
             @Override
             public void stopWatch(HealthCheckAction action) {
 
+            }
+
+            @Override
+            public boolean supportInstance(RedisHealthCheckInstance instance) {
+                return true;
             }
         });
         action.doTask();

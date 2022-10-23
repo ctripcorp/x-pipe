@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
@@ -77,7 +78,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     }
 
 
-    protected class CollectorDelayActionListener implements DelayActionListener {
+    protected class CollectorDelayActionListener extends AbstractDelayActionListener implements DelayActionListener {
 
         @Override
         public void onAction(DelayActionContext context) {
