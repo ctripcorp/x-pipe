@@ -41,6 +41,8 @@
                         </select>
                         <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && !isHeteroCluster">增加异构集群</a>
                         <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && isHeteroCluster">增加对称集群</a>
+                        <a ng-click="changeSymmetryToHeteroCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && !isHeteroCluster">修改为异构集群</a>
+                        <a ng-click="changeHeteroToSymmetryCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && isHeteroCluster">修改为对称集群</a>
                     </div>
                 </div>
                 <div class="form-group" ng-show="showActiveDc">
