@@ -33,8 +33,9 @@ public class CheckerRedisDelayManager extends AbstractDelayActionListener implem
 
     @Override
     public void onAction(DelayActionContext delayActionContext) {
-        hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
-                delayActionContext.getResult());
+        if (delayActionContext.getResult() != null)
+            hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
+                    delayActionContext.getResult());
         upstreamShardsDelay.putAll(delayActionContext.getUpstreamShardsDelay());
     }
 
