@@ -9,6 +9,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,7 +31,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     private Long shardDbId;
 
-    private List<Long> activeDcShardIds;
+    private List<Long> activeDcShardIds = new ArrayList<>();
 
     public DefaultRedisInstanceInfo() {
         super();
