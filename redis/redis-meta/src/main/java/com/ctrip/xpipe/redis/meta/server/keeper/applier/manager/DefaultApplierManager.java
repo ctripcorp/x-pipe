@@ -340,8 +340,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         }
 
         protected void doCorrect(Long clusterDbId, Long shardDbId, List<ApplierMeta> survivedAppliers) {
-            //TODO ayq should stop always false
-            //TODO ayq change applier master when jvm restart
 
             ApplierStateChangeJob job = createApplierStateChangeJob(clusterDbId, shardDbId, survivedAppliers,
                     currentMetaManager.getApplierMaster(clusterDbId, shardDbId));
@@ -363,12 +361,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public ActiveApplierInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
             super(extractor, clusterDbId, shardDbId);
             master = currentMetaManager.getApplierMaster(clusterDbId, shardDbId);
-        }
-
-        @Override
-        protected boolean shouldStop() {
-            //TODO ayq false or others?
-            return false;
         }
 
         @Override
