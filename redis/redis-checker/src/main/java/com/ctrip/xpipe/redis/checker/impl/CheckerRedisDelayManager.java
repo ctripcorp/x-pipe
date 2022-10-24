@@ -27,6 +27,11 @@ public class CheckerRedisDelayManager extends AbstractDelayActionListener implem
     }
 
     @Override
+    public Map<Long, Long> getAllUpstreamShardsDelays() {
+        return new HashMap<>(upstreamShardsDelay);
+    }
+
+    @Override
     public void onAction(DelayActionContext delayActionContext) {
         hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
                 delayActionContext.getResult());

@@ -83,8 +83,8 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         });
 
         delayAction.addControllers(controllersByClusterType.get(clusterType));
-        if(instance instanceof DefaultRedisHealthCheckInstance) {
-            delayAction.addListener(((DefaultRedisHealthCheckInstance)instance).createDelayListener());
+        if (instance instanceof DefaultRedisHealthCheckInstance) {
+            delayAction.addListener(((DefaultRedisHealthCheckInstance) instance).createDelayListener());
         }
 
         List<DelayPingActionCollector> delayPingActionCollectors = delayPingCollectorByClusterType.get(clusterType);

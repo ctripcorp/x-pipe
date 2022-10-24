@@ -65,6 +65,32 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     }
 
     @Override
+    public void updateUpstreamShardsDelays(Map<Long, Long> upstreamShardsDelays) {
+        upstreamShardsDelay.putAll(upstreamShardsDelays);
+    }
+
+    @Override
+    public long getShardDelay(String clusterId, String shardId, Long shardDbId) {
+        String dcId = metaCache.getActiveDc(clusterId,shardId);
+
+        if (StringUtil.isEmpty(dcId)) {
+            return -1L;
+        }
+
+        long result;
+        if(!foundationService.getDataCenter().equals(dcId)) {
+            try {
+                result = consoleServiceManager.getShardDelay(shardDbId, dcId);
+            } catch (Exception e) {
+                return -1L;
+            }
+        } else {
+            result = upstreamShardsDelay.getOrDefault(shardDbId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+        }
+        return TimeUnit.NANOSECONDS.toMillis(result);
+    }
+
+    @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
         if (null == clusterShard) return -1L;
@@ -108,6 +134,11 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     @Override
     public long getLocalCachedDelay(HostPort hostPort) {
         return hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+    }
+
+    @Override
+    public long getLocalCachedShardDelay(long shardId) {
+        return upstreamShardsDelay.getOrDefault(shardId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
     }
 
     @Override

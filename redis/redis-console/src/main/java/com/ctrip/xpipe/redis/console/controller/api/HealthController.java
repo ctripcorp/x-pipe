@@ -53,6 +53,11 @@ public class HealthController extends AbstractConsoleController{
         return infoService.getGlobalAllInfosRetMessage();
     }
 
+    @RequestMapping(value = "/shard/inner/delay/{shardId}", method = RequestMethod.GET)
+    public Long getInnerShardDelayMillis(@PathVariable Long shardId) {
+        return delayService.getLocalCachedShardDelay(shardId);
+    }
+
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
         return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
