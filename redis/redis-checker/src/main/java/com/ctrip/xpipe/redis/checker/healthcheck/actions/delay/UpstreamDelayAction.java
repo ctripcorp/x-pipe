@@ -36,6 +36,11 @@ public class UpstreamDelayAction extends DelayAction {
 
     @Override
     protected void notifyDelay() {
+        if (INIT_CONTEXT.equals(context.get())) {
+            // no receive any messages but not expire just on init time
+            logger.info("[expire][{}] init but not expire", instance.getCheckInfo().getHostPort());
+            return;
+        }
         notifyListeners(context.get());
     }
 

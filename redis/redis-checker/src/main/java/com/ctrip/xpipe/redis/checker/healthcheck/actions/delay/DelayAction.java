@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInstance> {
 
-    private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
+    protected static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
     protected static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
 
