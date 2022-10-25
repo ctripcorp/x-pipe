@@ -45,57 +45,31 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
-		if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId))) {
-			if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-				logger.info("[keeperActiveElected][current dc backup, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
-				return;
-            }
+		boolean primary = dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId);
+		logger.info("[keeperActiveElected][current dc]primary={}, cluster_{}, shard_{}, {}", primary, clusterDbId, shardDbId, activeKeeper);
 
-			notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
-		}
-		// TODO: 2022/10/10 remove hetero
-//		else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
-//			if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-//				notifyBackupDcs(clusterDbId, shardDbId, activeKeeper);
-//            }
-//
-//			notifyDownstreamDcs(clusterDbId, shardDbId, activeKeeper);
-//		}
-	}
-
-	private void notifyBackupDcs(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
-
-		if(activeKeeper == null){
-			return;
+		if (primary) {
+			keeperActiveElectedNotifyDcs(clusterDbId, shardDbId, activeKeeper, dcMetaCache.getBakupDcs(clusterDbId, shardDbId));
 		}
 
-		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
-		Set<String> backupDcs = dcMetaCache.getBakupDcs(clusterDbId, shardDbId);
-		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
-
-		logger.info("[keeperActiveElected][current dc primary, notify backup dc]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
-				shardDbId, clusterShard.getValue(), backupDcs, activeKeeper);
-
-		executeNotifyTask(backupDcs, activeKeeper, dcInfos, clusterShard);
+		keeperActiveElectedNotifyDcs(clusterDbId, shardDbId, activeKeeper, dcMetaCache.getDownstreamDcs(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId));
 	}
 
-	private void notifyDownstreamDcs(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
-
+	private void keeperActiveElectedNotifyDcs(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper, Set<String> dcs) {
 		if(activeKeeper == null){
 			return;
 		}
 
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
 		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
-		Set<String> downstreamDcs = dcMetaCache.getDownstreamDcs(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 
-		logger.info("[keeperActiveElected][current dc upstream, notify downstream dcs]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
-				shardDbId, clusterShard.getValue(), downstreamDcs, activeKeeper);
+		logger.info("[keeperActiveElected][notify dcs]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
+				shardDbId, clusterShard.getValue(), dcs, activeKeeper);
 
-		executeNotifyTask(downstreamDcs, activeKeeper, dcInfos, clusterShard);
+		executeKeeperActiveElectedNotifyTask(dcs, activeKeeper, dcInfos, clusterShard);
 	}
 
-	private void executeNotifyTask(Set<String> dcs, KeeperMeta activeKeeper, Map<String, DcInfo> dcInfos, Pair<String, String> clusterShard) {
+	private void executeKeeperActiveElectedNotifyTask(Set<String> dcs, KeeperMeta activeKeeper, Map<String, DcInfo> dcInfos, Pair<String, String> clusterShard) {
 
 		for (String dc : dcs) {
 

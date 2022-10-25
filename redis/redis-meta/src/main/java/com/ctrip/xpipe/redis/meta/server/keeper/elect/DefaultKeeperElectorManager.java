@@ -32,8 +32,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author wenchao.meng
@@ -217,9 +215,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-//		return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
-		// TODO: 2022/10/10 remove hetero
-		return Stream.of(ClusterType.ONE_WAY).collect(Collectors.toSet());
+		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
 	public void setKeeperActiveElectAlgorithmManager(

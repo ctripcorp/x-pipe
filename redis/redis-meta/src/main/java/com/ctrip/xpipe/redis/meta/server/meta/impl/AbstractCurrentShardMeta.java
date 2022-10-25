@@ -43,17 +43,4 @@ public abstract class AbstractCurrentShardMeta implements CurrentShardMeta {
             }
         }
     }
-
-    public Long getClusterDbId() {
-        return clusterDbId;
-    }
-
-    public Long getShardDbId() {
-        return shardDbId;
-    }
-
-    public boolean watchIfNotWatched() {
-        return false;
-    }
-
 }

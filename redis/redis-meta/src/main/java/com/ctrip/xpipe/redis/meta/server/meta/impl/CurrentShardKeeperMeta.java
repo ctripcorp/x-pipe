@@ -13,13 +13,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
+public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
 
     private AtomicBoolean watched = new AtomicBoolean(false);
     private List<KeeperMeta> surviveKeepers = new LinkedList<>();
     private Pair<String, Integer> keeperMaster;
 
-    public CurrentKeeperShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
+    public CurrentShardKeeperMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
         super(clusterDbId, shardDbId);
     }
 

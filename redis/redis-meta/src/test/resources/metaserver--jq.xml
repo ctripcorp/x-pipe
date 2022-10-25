@@ -21,7 +21,7 @@
 				<redis ip="10.0.0.1" port="6379" />
 			</shard>
 		</cluster>
-		<cluster id="hetero-cluster1" db-id="3" active-dc="jq" downstream-dcs="oy" type="hetero">
+		<cluster id="hetero-cluster1" db-id="3" active-dc="jq" downstream-dcs="oy" type="one_way">
 			<shard id="hetero-shard1" db-id="3">
 			</shard>
 		</cluster>
@@ -37,7 +37,7 @@
 				<redis ip="10.0.0.2" port="6379" />
 			</shard>
 		</cluster>
-		<cluster id="hetero-cluster1" db-id="3" upstream-dc="jq" type="hetero">
+		<cluster id="hetero-cluster1" db-id="3" upstream-dc="jq" type="one_way">
 			<source src-dc="jq" upstream-dc="jq" region="SHANGHAI">
 				<shard id="hetero-shard1" db-id="3">
 					<applier id="0123456789012345678901234567890123456789"  ip="127.0.0.1" port="7200" active="true" applierContainerId="1" />
