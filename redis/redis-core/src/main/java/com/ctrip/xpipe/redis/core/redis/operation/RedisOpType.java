@@ -86,6 +86,8 @@ public enum RedisOpType {
     SELECT(false, 2),
     PUBLISH(false, 3),
     LWM(false, 3),
+    MERGE_START(false, 1),
+    MERGE_END(false, 2),
     PING(false, -1),
     MULTI(false, 1),
     EXEC(false, 1),

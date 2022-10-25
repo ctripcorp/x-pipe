@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -41,6 +42,8 @@ public class OneWaySentinelHelloCheckController implements OneWaySupport, Sentin
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();
+        if (!DcGroupType.isNullOrDrMaster(info.getDcGroupType())) return false;
+
         return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheckFromRedis(instance);
     }
 

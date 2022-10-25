@@ -25,4 +25,5 @@ public interface RedisInstanceInfo extends CheckInfo {
     boolean isInActiveDc();
 
     boolean isCrossRegion();
+
 }

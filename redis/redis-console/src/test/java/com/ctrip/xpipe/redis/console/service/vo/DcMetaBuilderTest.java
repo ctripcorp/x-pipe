@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -24,10 +25,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -37,9 +35,13 @@ import java.util.concurrent.ExecutionException;
  */
 public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
+    private Map<String, DcMeta> dcMetaMap = new HashMap<>();
+
     private DcMeta dcMeta = new DcMeta();
 
     private Map<Long, String> dcNameMap;
+
+    private long dcId;
 
     @Autowired
     private RedisMetaService redisMetaService;
@@ -90,8 +92,8 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     @Before
     public void beforeDcMetaBuilderTest() throws Exception {
         dcNameMap = dcService.dcNameMap();
-        long dcId = dcNameMap.keySet().iterator().next();
-        builder = new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.toString()),
+        dcId = dcNameMap.keySet().iterator().next();
+        builder = new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
@@ -103,13 +105,13 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildMetaForClusterType() throws Exception {
-        testBuildMetaForClusterType(ClusterType.ONE_WAY, 1);
+        testBuildMetaForClusterType(ClusterType.ONE_WAY, 5);
         testBuildMetaForClusterType(ClusterType.BI_DIRECTION, 1);
     }
 
     private void tryCreateClusterMeta(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl) {
         try {
-            builder.getOrCreateClusterMeta(clusterTbl, dcClusterTbl);
+            builder.getOrCreateClusterMeta(dcMeta, dcId, clusterTbl, dcClusterTbl);
         } catch (Exception e) {
             logger.info("[tryCreateClusterMeta] create fail", e);
             throw e;
@@ -152,8 +154,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
         ClusterMeta clusterMeta = dcMeta.getClusters().get("hetero2-local-cluster");
         Assert.assertNotNull(clusterMeta);
-        // TODO: 2022/10/10 remove hetero
-//        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO));
+
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
         Assert.assertEquals("jq", clusterMeta.getActiveDc());
         Assert.assertEquals("", clusterMeta.getBackupDcs());
@@ -170,7 +171,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         logger.info("{}", dcClusterShard.getShardInfo());
 
-        builder.getOrCreateShardMeta(clusterMeta.getId(), dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
+        builder.getOrCreateShardMeta(dcMeta, clusterMeta.getId(), dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
 
 
         String clusterId = dcClusterShard.getClusterInfo().getClusterName(), shardId = dcClusterShard.getShardInfo().getShardName();
@@ -186,7 +187,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         ClusterModel clusterModel = new ClusterModel();
         ClusterTbl clusterTbl = new ClusterTbl();
-        clusterTbl.setActivedcId(1).setClusterAdminEmails("test@test.com").setClusterName("test-one-dc-cluster")
+        clusterTbl.setActivedcId(1).setClusterAdminEmails("test@ctrip.com").setClusterName("test-one-dc-cluster")
                 .setClusterType(ClusterType.ONE_WAY.toString())
                 .setClusterOrgId(1).setClusterDescription("not null").setStatus("Normal");
         clusterModel.setClusterTbl(clusterTbl);
@@ -205,14 +206,10 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testHeteroPrimaryDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
-        long dcId = 1L;
+        dcMetaMap.clear();
+        dcMetaMap.put("JQ", dcMeta);
 
-        // TODO: 2022/10/10 remove hetero
-//        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
-//                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-//                replDirectionService, zoneService, keeperContainerService, applierService,
-//                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
-        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.name()),
+        new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -224,13 +221,12 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             } else {
                 continue;
             }
-            // TODO: 2022/10/10 remove hetero
-//            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
+
             Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
             Assert.assertEquals("jq", clusterMeta.getActiveDc());
             Assert.assertEquals("", clusterMeta.getBackupDcs());
             Assert.assertEquals("oy", clusterMeta.getDownstreamDcs());
-            Assert.assertEquals("DRMaster", clusterMeta.getDcGroupType());
+            Assert.assertEquals(DcGroupType.DR_MASTER.name(), clusterMeta.getDcGroupType());
             Assert.assertEquals("jq", clusterMeta.getDcGroupName());
             Collection<ShardMeta> shardMetas = clusterMeta.getShards().values();
             Assert.assertEquals(2, shardMetas.size());
@@ -248,14 +244,10 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
-        long dcId = 2L;
+        dcMetaMap.clear();
+        dcMetaMap.put("OY", dcMeta);
 
-        // TODO: 2022/10/10 remove hetero
-//        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.HETERO.name()),
-//                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-//                replDirectionService, zoneService, keeperContainerService, applierService,
-//                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
-        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.name()),
+        new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -267,8 +259,6 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             } else {
                 continue;
             }
-            // TODO: 2022/10/10 remove hetero
-//            Assert.assertEquals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase());
             Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
             Assert.assertEquals("jq", clusterMeta.getActiveDc());
             Assert.assertEquals("", clusterMeta.getBackupDcs());
@@ -294,9 +284,11 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     private void testBuildMetaForClusterType(ClusterType clusterType, int clusterSize) throws Exception {
         DcMeta dcMeta = new DcMeta();
+        dcMetaMap.clear();
         long dcId = dcNameMap.keySet().iterator().next();
+        dcMetaMap.put(dcNameMap.get(dcId).toUpperCase(), dcMeta);
 
-        new DcMetaBuilder(dcMeta, dcId, Collections.singleton(clusterType.toString()),
+        new DcMetaBuilder(dcMetaMap, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
