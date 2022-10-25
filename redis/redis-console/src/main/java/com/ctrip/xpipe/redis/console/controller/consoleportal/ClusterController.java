@@ -429,6 +429,7 @@ public class ClusterController extends AbstractConsoleController {
 
         List<DcClusterTbl> dcClusterTbls =
                 dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.getGroupType());
+
         toCreates.forEach(toCreate -> {
             shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
                     dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
