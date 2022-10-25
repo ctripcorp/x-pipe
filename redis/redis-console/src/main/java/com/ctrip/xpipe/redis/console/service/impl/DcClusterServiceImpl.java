@@ -17,6 +17,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao> implements DcClusterService {
@@ -111,12 +112,16 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	@Override
 	public List<DcClusterTbl> findAllByClusterAndGroupType(long clusterId, long dcId, String groupType) {
 		if (DcGroupType.isNullOrDrMaster(groupType)) {
-			return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
-				@Override
-				public List<DcClusterTbl> doQuery() throws DalException {
-					return dao.findAllByClusterAndGroupType(clusterId, groupType, DcClusterTblEntity.READSET_FULL);
-				}
-			});
+//			return queryHandler.handleQuery(new DalQuery<List<DcClusterTbl>>() {
+//				@Override
+//				public List<DcClusterTbl> doQuery() throws DalException {
+//					return dao.findAllByClusterAndGroupType(clusterId, groupType, DcClusterTblEntity.READSET_FULL);
+//				}
+//			});
+			return findClusterRelated(clusterId)
+					.stream()
+					.filter(dcClusterTbl -> DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType()))
+					.collect(Collectors.toList());
 		} else {
 			List<DcClusterTbl> result = new ArrayList<>();
 			result.add(find(dcId, clusterId));
