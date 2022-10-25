@@ -130,6 +130,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 
 	@Override
 	public void onAux(String key, String value) {
+		//this part should be in AbstractPsync
 		if (REDIS_RDB_AUX_KEY_GTID.equalsIgnoreCase(key)) {
 			readRdbGtidSet(value);
 		}

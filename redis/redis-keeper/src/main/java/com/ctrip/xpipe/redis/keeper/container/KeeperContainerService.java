@@ -199,12 +199,7 @@ public class KeeperContainerService {
     private RedisKeeperServer doAdd(KeeperTransMeta keeperTransMeta, KeeperMeta keeperMeta) throws Exception {
 
         File baseDir = getReplicationStoreDir(keeperMeta);
-
-        //if (keeperTransMeta.getKeeperReplType().supportGtidSet()) {
-            return createGtidRedisKeeperServer(keeperMeta, baseDir);
-        //} else {
-            //return createRedisKeeperServer(keeperMeta, baseDir);
-        //}
+        return createGtidRedisKeeperServer(keeperMeta, baseDir);
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {

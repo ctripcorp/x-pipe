@@ -346,7 +346,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		if (!fullSyncListener.supportProgress(OffsetReplicationProgress.class)) {
-			throw new UnsupportedOperationException("listener not support offset progress");
+		    return FULLSYNC_FAIL_CAUSE.FULLSYNC_TYPE_NOT_SUPPORTED;
 		}
 
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();

@@ -62,6 +62,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_TYPE_NOT_SUPPORTED;
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
 
 /**
@@ -641,7 +642,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if(null != failCause){
 				//go dump rdb
 				try{
-					if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
+					if (FULLSYNC_TYPE_NOT_SUPPORTED.equals(failCause) && redisSlave instanceof XsyncRedisSlave) {
+						replicationStoreManager.setOpenIndexing(true);
+						dumpNewRdb();
+						redisSlave.waitForGtidParse();
+					} else if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
 						redisSlave.waitForGtidParse();
 					} else {
 						dumpNewRdb();
