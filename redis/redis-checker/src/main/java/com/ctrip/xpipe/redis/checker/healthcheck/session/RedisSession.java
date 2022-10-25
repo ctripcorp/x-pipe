@@ -13,10 +13,12 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.*;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -38,7 +40,7 @@ public class RedisSession {
 
     private Endpoint endpoint;
 
-    private ConcurrentMap<String, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
+    private ConcurrentMap<Set<String>, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
     private ScheduledExecutorService scheduled;
 
@@ -62,9 +64,9 @@ public class RedisSession {
 
     public void check() {
 
-        for (Map.Entry<String, PubSubConnectionWrapper> entry : subscribConns.entrySet()) {
+        for (Map.Entry<Set<String>, PubSubConnectionWrapper> entry : subscribConns.entrySet()) {
 
-            String channel = entry.getKey();
+            Set<String> channel = entry.getKey();
             PubSubConnectionWrapper pubSubConnectionWrapper = entry.getValue();
 
             if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > config.subscribeTimeoutMilli()) {
@@ -73,38 +75,39 @@ public class RedisSession {
                 pubSubConnectionWrapper.closeAndClean();
                 subscribConns.remove(channel);
 
-                subscribeIfAbsent(channel, pubSubConnectionWrapper.getCallback(), pubSubConnectionWrapper.getSubCommandSupplier());
+                String[] channelArray = channel.toArray(new String[0]);
+                subscribeIfAbsent(pubSubConnectionWrapper.getCallback(), pubSubConnectionWrapper.getSubCommandSupplier(), channelArray);
                 Subscribe command = pubSubConnectionWrapper.command.get();
                 if (command instanceof CRDTSubscribeCommand) {
-                    crdtsubscribeIfAbsent(channel, pubSubConnectionWrapper.getCallback());
+                    crdtsubscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
                 } else {
-                    subscribeIfAbsent(channel, pubSubConnectionWrapper.getCallback());
+                    subscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
                 }
             }
         }
 
     }
 
-    public synchronized void closeSubscribedChannel(String channel) {
+    public synchronized void closeSubscribedChannel(String... channel) {
 
-        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
+        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(Sets.newHashSet(channel));
         if (pubSubConnectionWrapper != null) {
             logger.debug("[closeSubscribedChannel]{}, {}", endpoint, channel);
             pubSubConnectionWrapper.closeAndClean();
-            subscribConns.remove(channel);
+            subscribConns.remove(Sets.newHashSet(channel));
         }
     }
 
-    public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
+    public synchronized void subscribeIfAbsent(SubscribeCallback callback, String... channel) {
+        subscribeIfAbsent(callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
-    public synchronized void crdtsubscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
+    public synchronized void crdtsubscribeIfAbsent(SubscribeCallback callback, String... channel) {
+        subscribeIfAbsent(callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
-    private synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier) {
-        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(channel);
+    private synchronized void subscribeIfAbsent(SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier, String... channel) {
+        PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(Sets.newHashSet(channel));
         if (pubSubConnectionWrapper == null || pubSubConnectionWrapper.shouldCreateNewSession()) {
             if(pubSubConnectionWrapper != null) {
                 pubSubConnectionWrapper.closeAndClean();
@@ -115,11 +118,11 @@ public class RedisSession {
             command.future().addListener(new CommandFutureListener<Object>() {
                 @Override
                 public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-                    subscribConns.remove(channel);
+                    subscribConns.remove(Sets.newHashSet(channel));
                 }
             });
             PubSubConnectionWrapper wrapper = new PubSubConnectionWrapper(command, callback, subCommandSupplier);
-            subscribConns.put(channel, wrapper);
+            subscribConns.put(Sets.newHashSet(channel), wrapper);
         } else {
             pubSubConnectionWrapper.replace(callback);
         }
