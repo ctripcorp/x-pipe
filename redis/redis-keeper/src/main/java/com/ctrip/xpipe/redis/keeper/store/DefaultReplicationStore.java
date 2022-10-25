@@ -215,14 +215,25 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
-		throw new UnsupportedOperationException("rdb gtidset unsupported");
+
+		makeSureOpen();
+
+		if (rdbGtidSet == null) {
+		    return;
+		}
+
+		synchronized (lock) {
+		    // when switching to GtidReplicationStore via rdb only repl, rdbStore is of GtidRdbStore and this is of DefaultReplicationStore
+			// which maybe it is not a elegant way
+			rdbStore.updateRdbGtidSet(rdbGtidSet);
+			getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), rdbGtidSet);
+		}
 	}
 
 	public CommandStore getCommandStore() {
 		return cmdStore;
 	}
 
-	// for test only
 	public RdbStore getRdbStore() {
 		return rdbStoreRef.get();
 	}

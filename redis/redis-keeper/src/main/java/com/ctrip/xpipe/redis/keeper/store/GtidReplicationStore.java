@@ -127,18 +127,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         return logger;
     }
 
-    @Override
-    public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
-
-        makeSureOpen();
-
-        synchronized (lock) {
-            rdbStore.updateRdbGtidSet(rdbGtidSet);
-            getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), rdbGtidSet);
-        }
-
-    }
-
     public class GtidReplicationStoreRdbFileListener extends ReplicationStoreRdbFileListener implements RdbStoreListener {
 
         public GtidReplicationStoreRdbFileListener(RdbStore rdbStore) {

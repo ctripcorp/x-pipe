@@ -159,7 +159,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	@Override
 	public boolean updateRdbGtidSet(String gtidSet) {
-		throw new UnsupportedOperationException("rdb.gtidset unsupported");
+		//just ignore
+	    return true;
 	}
 
 	@Override
