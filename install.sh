@@ -10,8 +10,6 @@ for _Version in `ls com/ctrip/framework/framework-bom/`; do
 	mvn install:install-file -Dfile=com/ctrip/framework/framework-bom/$_Version/framework-bom-$_Version.pom -DpomFile=com/ctrip/framework/framework-bom/$_Version/framework-bom-$_Version.pom -Dpackaging=pom
 done
 
-
-
 for _Version in `ls com/ctrip/framework/framework-foundation/`; do
 	mvn install:install-file -Dfile=com/ctrip/framework/framework-foundation/$_Version/framework-foundation-$_Version.jar -DpomFile=com/ctrip/framework/framework-foundation/$_Version/framework-foundation-$_Version.pom
 done
@@ -21,6 +19,9 @@ for _Version in `ls com/ctrip/framework/framework-parent/ `; do
 	mvn install:install-file -Dfile=com/ctrip/framework/framework-parent/$_Version/framework-parent-$_Version.pom -DpomFile=com/ctrip/framework/framework-parent/$_Version/framework-parent-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls com/ctrip/super-pom/`; do
+	mvn install:install-file -Dfile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -DpomFile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -Dpackaging=pom
+done
 
 for _Version in `ls com/dianping/cat/cat-client/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.jar -DpomFile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.pom
