@@ -20,4 +20,8 @@ public interface CheckInfo {
     void setActiveDc(String activeDc);
 
     List<RedisCheckRule> getRedisCheckRules();
+
+    void setDcGroupType(String type);
+
+    String getDcGroupType();
 }
