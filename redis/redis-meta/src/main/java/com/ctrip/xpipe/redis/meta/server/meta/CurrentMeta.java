@@ -226,18 +226,16 @@ public class CurrentMeta implements Releasable {
 		return currentCRDTShardMeta.getCurrentMaster();
 	}
 
-	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId) {
+	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId, boolean hasKeeperMeta) {
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
 		if (currentShardMeta instanceof CurrentCRDTShardMeta) {
 			return ((CurrentCRDTShardMeta) currentShardMeta).getCurrentMaster();
-		} else if (currentShardMeta instanceof CurrentShardKeeperMeta) {
-			Pair<String, Integer> master = ((CurrentShardKeeperMeta) currentShardMeta).getKeeperMaster();
-			if (null == master) return null;
-			return new RedisMeta().setIp(master.getKey()).setPort(master.getValue());
 		} else if (currentShardMeta instanceof CurrentOneWayShardMeta) {
 			CurrentOneWayShardMeta currentOneWayShardMeta = ((CurrentOneWayShardMeta) currentShardMeta);
-			Pair<String, Integer> master = currentOneWayShardMeta.getShardKeeperMeta().getKeeperMaster();
-			if (currentOneWayShardMeta.getShardKeeperMeta().getSurviveKeepers().isEmpty()) {
+			Pair<String, Integer> master;
+			if (hasKeeperMeta) {
+				master = currentOneWayShardMeta.getShardKeeperMeta().getKeeperMaster();
+			} else {
 				master = currentOneWayShardMeta.getShardApplierMeta().getApplierMaster();
 			}
 			if (null == master) return null;
