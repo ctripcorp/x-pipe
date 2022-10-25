@@ -29,6 +29,7 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -600,7 +601,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@Override
 	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId) {
-		return currentMeta.getCurrentMaster(clusterDbId, shardDbId);
+		List<KeeperMeta> keeperMetaList = dcMetaCache.getShardKeepers(clusterDbId, shardDbId);
+		boolean hasKeeperMeta = keeperMetaList != null && !keeperMetaList.isEmpty();
+		return currentMeta.getCurrentMaster(clusterDbId, shardDbId, hasKeeperMeta);
 	}
 
 	@Override

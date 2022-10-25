@@ -277,11 +277,11 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 
 	@Test
 	public void testGetCurrentMaster() {
-		Assert.assertEquals(new RedisMeta().setIp("127.0.0.1").setPort(6379), currentMeta.getCurrentMaster(clusterDbId, shardDbId));
-		Assert.assertNull(currentMeta.getCurrentMaster(biClusterDbId, bishardDbId));
+		Assert.assertEquals(new RedisMeta().setIp("127.0.0.1").setPort(6379), currentMeta.getCurrentMaster(clusterDbId, shardDbId, true));
+		Assert.assertNull(currentMeta.getCurrentMaster(biClusterDbId, bishardDbId, true));
 
 		currentMeta.setCurrentCRDTMaster(biClusterDbId, bishardDbId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterDbId, bishardDbId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterDbId, bishardDbId, true));
 	}
 
 	@Test
