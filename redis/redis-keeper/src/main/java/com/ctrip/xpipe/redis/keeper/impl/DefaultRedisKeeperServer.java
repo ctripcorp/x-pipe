@@ -644,7 +644,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				try{
 					if (FULLSYNC_TYPE_NOT_SUPPORTED.equals(failCause) && redisSlave instanceof XsyncRedisSlave) {
 						replicationStoreManager.setOpenIndexing(true);
-						dumpNewRdb();
+						resetDefaultReplication();
 						redisSlave.waitForGtidParse();
 					} else if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
 						redisSlave.waitForGtidParse();
@@ -821,6 +821,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public int getTryConnectMasterCnt() {
 		return tryConnectMasterCnt.get();
+	}
+
+	@Override
+	public void resetDefaultReplication() {
+
+		try {
+			replicationStoreManager.create();
+		} catch (IOException e) {
+			throw new XpipeRuntimeException("[RedisKeeperServer][RedisMasterNewRdbDumper][RdbOffsetNotContinuous][RecreateStore]" + replicationStoreManager, e);
+		}
+		keeperRedisMaster.reconnect();
+		closeSlaves("replication reset");
 	}
 
 	@VisibleForTesting
