@@ -2,12 +2,11 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
@@ -19,7 +18,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Callable;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -77,7 +75,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         // Build two types connection
         // if ping first, subscribe will reuse connection for ping
         try {
-            session.subscribeIfAbsent("xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp(), new RedisSession.SubscribeCallback() {
+            session.subscribeIfAbsent(new RedisSession.SubscribeCallback() {
                 @Override
                 public void message(String channel, String message) {
 
@@ -87,7 +85,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
                 public void fail(Throwable e) {
 
                 }
-            });
+            },"xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp());
             session.ping(new PingCallback() {
                 @Override
                 public void pong(String pongMsg) {

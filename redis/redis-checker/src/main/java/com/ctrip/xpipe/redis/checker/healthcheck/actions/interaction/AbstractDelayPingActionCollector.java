@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
@@ -13,6 +15,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractDelayPingActionCollector implements DelayPingActionCollector {
+
+    protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     protected Map<RedisHealthCheckInstance, HealthStatus> allHealthStatus = Maps.newConcurrentMap();
 
@@ -77,7 +81,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     }
 
 
-    protected class CollectorDelayActionListener implements DelayActionListener {
+    protected class CollectorDelayActionListener extends AbstractDelayActionListener implements DelayActionListener {
 
         @Override
         public void onAction(DelayActionContext context) {

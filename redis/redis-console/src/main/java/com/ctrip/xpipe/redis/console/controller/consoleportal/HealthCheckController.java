@@ -2,12 +2,11 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.ImmutableMap;
@@ -19,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -50,6 +47,11 @@ public class HealthCheckController extends AbstractConsoleController {
     private static final String PEER_SYNC_PARTIAL_TEMPLATE = "&panelId=%d&var-address=%s:%d";
     
     private static final String ENDCODE_TYPE = "UTF-8";
+
+    @RequestMapping(value = "/shard/delay/{clusterId}/{shardId}/{shardDbId}", method = RequestMethod.GET)
+    public Map<String, Long> getShardDelayMillis(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable Long shardDbId) {
+        return ImmutableMap.of("delay", delayService.getShardDelay(clusterId, shardId, shardDbId));
+    }
 
     @RequestMapping(value = "/redis/health/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Map<String, Boolean> isRedisHealth(@PathVariable String redisIp, @PathVariable int redisPort) {
