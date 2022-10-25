@@ -40,8 +40,6 @@ import org.springframework.web.client.ResourceAccessException;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author wenchao.meng
@@ -132,15 +130,9 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
-	private void addKeeper(String clusterType, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
+	private void addKeeper(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		try {
-			KeeperTransMeta keeperTransMeta;
-			// TODO: 2022/10/10 remove hetero
-//			if (Objects.equals(ClusterType.HETERO.name(), clusterType.toUpperCase())) {
-//				keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, KeeperTransMeta.KeeperReplType.REPL_HYTERO, keeperMeta);
-//			} else {
-				keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta);
-//			}
+			KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta);
 			keeperStateController.addKeeper(keeperTransMeta);
 		} catch (Exception e) {
 			logger.error(String.format("[addKeeper]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, keeperMeta), e);
@@ -152,16 +144,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-				addKeeper(clusterMeta.getType(), clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
+				addKeeper(clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
 			}
 		}
 	}
 
 	@Override
 	public Set<ClusterType> getSupportClusterTypes() {
-//	    return Stream.of(ClusterType.ONE_WAY, ClusterType.HETERO).collect(Collectors.toSet());
-		// TODO: 2022/10/10 remove hetero
-		return Stream.of(ClusterType.ONE_WAY).collect(Collectors.toSet());
+		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
@@ -197,13 +187,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			}
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
-					KeeperTransMeta keeperTransMeta;
-					// TODO: 2022/10/10 remove hetero
-//					if (Objects.equals(ClusterType.HETERO.name(), clusterMeta.getType().toUpperCase())) {
-						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
-//					} else {
-//						keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
-//					}
+					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
 					keeperStateController.addKeeper(keeperTransMeta);
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
@@ -230,7 +214,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(ShardMeta added) {
 			logger.info("[visitAdded][add shard]{}", added);
 			for (KeeperMeta keeperMeta : added.getKeepers()) {
-				addKeeper(clusterType, clusterDbId, added.getDbId(), keeperMeta);
+				addKeeper(clusterDbId, added.getDbId(), keeperMeta);
 			}
 		}
 
@@ -268,7 +252,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitAdded(InstanceNode added) {
 
 			if (added instanceof KeeperMeta) {
-				addKeeper(clusterType, clusterDbId, shardDbId, (KeeperMeta) added);
+				addKeeper(clusterDbId, shardDbId, (KeeperMeta) added);
 			} else {
 				logger.debug("[visitAdded][do nothng]{}", added);
 			}
@@ -384,7 +368,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
-			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, survivedKeepers,
+			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, shardDbId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
@@ -445,10 +429,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers,
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, Long shardDbId,
+															List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+		String dstDcId;
+		if (metaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+			dstDcId = currentMetaManager.getClusterMeta(clusterDbId).getActiveDc();
+		} else {
+			dstDcId = metaCache.getUpstreamDc(metaCache.getCurrentDc(), clusterDbId, shardDbId);
+		}
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
+
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 

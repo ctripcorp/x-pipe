@@ -29,6 +29,7 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -192,6 +193,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 		else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
 			refreshKeeperMaster(clusterMeta);
+			refreshApplierMaster(clusterMeta);
 		}
 	}
 
@@ -390,7 +392,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void routeChanges() {
-	    //TODO ayq route
 		for(Long clusterDbId : allClusters()) {
 			clusterRoutesChange(clusterDbId);
 		}
@@ -411,6 +412,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
+	protected void refreshApplierMaster(ClusterMeta clusterMeta) {
+		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
+		Long clusterDbId = clusterMeta.getDbId();
+		for (ShardMeta shard : shards) {
+		    String sids = this.getSids(clusterDbId, shard.getDbId());
+			notifyApplierMasterChanged(clusterDbId, shard.getDbId(), getApplierMaster(clusterDbId, shard.getDbId()), sids);
+		}
+	}
 	
 	@Override
 	public boolean hasCluster(Long clusterDbId) {
@@ -592,7 +601,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@Override
 	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId) {
-		return currentMeta.getCurrentMaster(clusterDbId, shardDbId);
+		List<KeeperMeta> keeperMetaList = dcMetaCache.getShardKeepers(clusterDbId, shardDbId);
+		boolean hasKeeperMeta = keeperMetaList != null && !keeperMetaList.isEmpty();
+		return currentMeta.getCurrentMaster(clusterDbId, shardDbId, hasKeeperMeta);
 	}
 
 	@Override
