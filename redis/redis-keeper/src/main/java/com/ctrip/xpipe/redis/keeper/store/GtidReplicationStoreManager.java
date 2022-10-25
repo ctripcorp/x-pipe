@@ -17,6 +17,8 @@ import java.io.IOException;
  */
 public class GtidReplicationStoreManager extends DefaultReplicationStoreManager implements ReplicationStoreManager {
 
+    private boolean openIndexing = false;
+
     private RedisOpParser redisOpParser;
 
     public GtidReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, String keeperRunid,
@@ -27,6 +29,15 @@ public class GtidReplicationStoreManager extends DefaultReplicationStoreManager 
 
     @Override
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid, KeeperMonitor keeperMonitor) throws IOException {
-        return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser);
+        if (openIndexing) {
+            return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser);
+        } else {
+            return new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
+        }
+    }
+
+    @Override
+    public void setOpenIndexing(boolean openIndexing) {
+        this.openIndexing = openIndexing;
     }
 }

@@ -255,6 +255,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return shardId;
     }
 
+    @Override
+    public void setOpenIndexing(boolean openIndexing) {
+        throw new UnsupportedOperationException("DefaultReplicationStore does not support indexing.");
+    }
+
     protected synchronized void gc() throws IOException {
 
         logger.debug("[gc]{}", this);

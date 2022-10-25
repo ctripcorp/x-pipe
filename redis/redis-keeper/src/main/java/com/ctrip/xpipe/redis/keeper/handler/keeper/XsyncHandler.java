@@ -34,6 +34,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         GtidSet reqExcludedGtidSet = new GtidSet(args[1]);
 
         if (reqExcludedGtidSet.isZero()) {
+            logger.info("[innerDoHandle][reqExcludedGtidSet is zero]");
             doFullSync(redisSlave);
             return;
         }
