@@ -66,6 +66,6 @@ public class KeeperTransMeta {
 
 	@Override
 	public String toString() {
-		return String.format("[%d,%d-%s:%d-%s]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
+		return String.format("[%d,%d-%s:%d]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
 	}
 }
