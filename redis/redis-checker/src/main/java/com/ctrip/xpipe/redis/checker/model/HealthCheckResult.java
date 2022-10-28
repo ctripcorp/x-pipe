@@ -16,6 +16,8 @@ public class HealthCheckResult {
 
     private List<RedisDelay> redisDelays;
 
+    private Map<Long, Long> upstreamShardsDelay;
+
     private List<CrossMasterDelay> crossMasterDelays;
 
     private Map<String, Set<String>> warningClusterShards;
@@ -95,6 +97,14 @@ public class HealthCheckResult {
 
     public List<RedisHealthState> getRedisStates() {
         return redisStates;
+    }
+
+    public Map<Long, Long> getUpstreamShardsDelay() {
+        return upstreamShardsDelay;
+    }
+
+    public void setUpstreamShardsDelay(Map<Long, Long> upstreamShardsDelay) {
+        this.upstreamShardsDelay = upstreamShardsDelay;
     }
 
     @Override

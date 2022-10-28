@@ -16,8 +16,8 @@ public class CRDTDelayAction extends DelayAction {
     }
 
     @Override
-    protected void doSubscribe(RedisSession session, String channel, SubscribeCallback callback) {
-        session.crdtsubscribeIfAbsent(channel, callback);
+    protected void doSubscribe(RedisSession session, SubscribeCallback callback, String... channel) {
+        session.crdtsubscribeIfAbsent(callback, channel);
     }
 
     @Override

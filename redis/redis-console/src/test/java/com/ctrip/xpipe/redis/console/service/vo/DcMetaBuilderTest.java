@@ -93,7 +93,6 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void beforeDcMetaBuilderTest() throws Exception {
         dcNameMap = dcService.dcNameMap();
         dcId = dcNameMap.keySet().iterator().next();
-        dcMetaMap.put(dcMeta.getId(), dcMeta);
         builder = new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(), consoleConfig);
@@ -188,7 +187,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         ClusterModel clusterModel = new ClusterModel();
         ClusterTbl clusterTbl = new ClusterTbl();
-        clusterTbl.setActivedcId(1).setClusterAdminEmails("test@test.com").setClusterName("test-one-dc-cluster")
+        clusterTbl.setActivedcId(1).setClusterAdminEmails("test@ctrip.com").setClusterName("test-one-dc-cluster")
                 .setClusterType(ClusterType.ONE_WAY.toString())
                 .setClusterOrgId(1).setClusterDescription("not null").setStatus("Normal");
         clusterModel.setClusterTbl(clusterTbl);
@@ -208,7 +207,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void testHeteroPrimaryDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
-        dcMetaMap.put("jq", dcMeta);
+        dcMetaMap.put("JQ", dcMeta);
 
         new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
@@ -246,7 +245,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
-        dcMetaMap.put("oy", dcMeta);
+        dcMetaMap.put("OY", dcMeta);
 
         new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
@@ -287,7 +286,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
         long dcId = dcNameMap.keySet().iterator().next();
-        dcMetaMap.put(dcNameMap.get(dcId), dcMeta);
+        dcMetaMap.put(dcNameMap.get(dcId).toUpperCase(), dcMeta);
 
         new DcMetaBuilder(dcMetaMap, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,

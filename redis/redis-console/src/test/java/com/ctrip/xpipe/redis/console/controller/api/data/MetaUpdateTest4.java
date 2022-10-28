@@ -225,7 +225,6 @@ public class MetaUpdateTest4 {
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
 
         DcClusterTbl dcClusterTbl1 = mock(DcClusterTbl.class);
-        when(dcClusterTbl1.getDcId()).thenReturn(dcId1);
         when(dcClusterTbl1.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
         when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl1);
 
@@ -241,7 +240,6 @@ public class MetaUpdateTest4 {
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
         DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
         when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.MASTER.toString());
-        when(dcClusterTbl.getDcId()).thenReturn(dcId1);
         when(dcClusterService.find(dc1, clusterName)).thenReturn(dcClusterTbl);
 
         ReplDirectionInfoModel replDirectionInfoModel = mock(ReplDirectionInfoModel.class);
