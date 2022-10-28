@@ -32,11 +32,8 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 	
 	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;
 
-	private boolean parseRdb;
-	
-	public AbstractReplicationStorePsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, boolean parseRdb, ScheduledExecutorService scheduled) {
+	public AbstractReplicationStorePsync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
 		super(clientPool, saveCommands, scheduled);
-		this.parseRdb = parseRdb;
 	}
 	
 
@@ -98,12 +95,9 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 	protected RdbBulkStringParser createRdbReader() {
 
 		inOutPayloadReplicationStore = new InOutPayloadReplicationStore();
-		if (parseRdb) {
-			AuxOnlyRdbParser rdbParser = new AuxOnlyRdbParser();
-			rdbParser.registerListener(this);
-			return new RdbBulkStringParser(inOutPayloadReplicationStore, rdbParser);
-		}
-		else return new RdbBulkStringParser(inOutPayloadReplicationStore);
+		AuxOnlyRdbParser rdbParser = new AuxOnlyRdbParser();
+		rdbParser.registerListener(this);
+		return new RdbBulkStringParser(inOutPayloadReplicationStore, rdbParser);
 	}
 
 	@Override
@@ -136,6 +130,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 
 	@Override
 	public void onAux(String key, String value) {
+		//this part should be in AbstractPsync
 		if (REDIS_RDB_AUX_KEY_GTID.equalsIgnoreCase(key)) {
 			readRdbGtidSet(value);
 		}

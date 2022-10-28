@@ -3,7 +3,7 @@ package com.ctrip.xpipe.cluster;
 import com.ctrip.xpipe.utils.StringUtil;
 
 public enum ClusterType {
-    ONE_WAY(true, true, true, false),
+    ONE_WAY(true, true, true, false, false, true),
     BI_DIRECTION(false, false, true, true),
     //TODO remove hetero
 //    HETERO(true, true, true, false, false, true),

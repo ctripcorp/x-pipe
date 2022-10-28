@@ -62,6 +62,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_TYPE_NOT_SUPPORTED;
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
 
 /**
@@ -495,11 +496,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public KeeperTransMeta.KeeperReplType getKeeperReplType() {
-		return KeeperTransMeta.KeeperReplType.REPL_DEFAULT;
-	}
-
-	@Override
 	public void beginWriteRdb(EofType eofType, String replId, long offset) {
 	}
 
@@ -646,7 +642,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if(null != failCause){
 				//go dump rdb
 				try{
-					if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
+					if (FULLSYNC_TYPE_NOT_SUPPORTED.equals(failCause) && redisSlave instanceof XsyncRedisSlave) {
+						replicationStoreManager.setOpenIndexing(true);
+						resetDefaultReplication();
+						redisSlave.waitForGtidParse();
+					} else if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
 						redisSlave.waitForGtidParse();
 					} else {
 						dumpNewRdb();
@@ -821,6 +821,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public int getTryConnectMasterCnt() {
 		return tryConnectMasterCnt.get();
+	}
+
+	@Override
+	public void resetDefaultReplication() {
+
+		try {
+			replicationStoreManager.create();
+		} catch (IOException e) {
+			throw new XpipeRuntimeException("[RedisKeeperServer][RedisMasterNewRdbDumper][RdbOffsetNotContinuous][RecreateStore]" + replicationStoreManager, e);
+		}
+		keeperRedisMaster.reconnect();
+		closeSlaves("replication reset");
 	}
 
 	@VisibleForTesting

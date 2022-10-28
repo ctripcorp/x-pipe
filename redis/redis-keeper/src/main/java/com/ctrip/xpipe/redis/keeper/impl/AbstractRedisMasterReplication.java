@@ -437,8 +437,10 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@Override
 	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
+		// maybe this part should be in AbstractReplicationStorePsync
 		try {
 			logger.info("[readRdbGtidSet] {}", gtidSet);
+			//use rdbStore kept in RdbOnlyReplication if possible
 			redisMaster.getCurrentReplicationStore().checkAndUpdateRdbGtidSet(rdbStore, gtidSet);
 		} catch (IOException e) {
 			logger.error("[readRdbGtidSet][fail]", e);

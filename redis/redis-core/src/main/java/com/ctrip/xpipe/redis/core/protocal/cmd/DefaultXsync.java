@@ -71,6 +71,14 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
     }
 
     @Override
+    public void close() {
+        if (nettyClient != null && nettyClient.channel() != null) {
+            nettyClient.channel().close();
+        }
+        future().setFailure(new XpipeRuntimeException("[xsync] closed"));
+    }
+
+    @Override
     // XSYNC <sidno interested> <gtid.set excluded> [vectorclock excluded]
     public ByteBuf getRequest() {
         String interestedSidno = String.join(SIDNO_SEPARATOR, this.gitdSetExcluded.getUUIDs());

@@ -147,8 +147,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
-//        return Collections.singleton(ClusterType.HETERO);
-        // TODO: 2022/10/10 remove hetero
         return Collections.singleton(ClusterType.ONE_WAY);
     }
 
@@ -342,8 +340,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         }
 
         protected void doCorrect(Long clusterDbId, Long shardDbId, List<ApplierMeta> survivedAppliers) {
-            //TODO ayq should stop always false
-            //TODO ayq change applier master when jvm restart
 
             ApplierStateChangeJob job = createApplierStateChangeJob(clusterDbId, shardDbId, survivedAppliers,
                     currentMetaManager.getApplierMaster(clusterDbId, shardDbId));
@@ -365,12 +361,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public ActiveApplierInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
             super(extractor, clusterDbId, shardDbId);
             master = currentMetaManager.getApplierMaster(clusterDbId, shardDbId);
-        }
-
-        @Override
-        protected boolean shouldStop() {
-            //TODO ayq false or others?
-            return false;
         }
 
         @Override
@@ -396,8 +386,13 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
     private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, Long shardDbId, List<ApplierMeta> appliers,
                                                             Pair<String, Integer> master) {
 
-        //TODO ayq route
-        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId);
+        String dstDcId;
+        if (dcMetaCache.getShardKeepers(clusterDbId, shardDbId).isEmpty()) {
+            dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        } else {
+            dstDcId = dcMetaCache.getCurrentDc();
+        }
+        RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
         String srcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
