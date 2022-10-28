@@ -523,6 +523,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterDbId)).thenReturn(true);
 		doNothing().when(currentMetaServerMetaManager).refreshKeeperMaster(futureClusterMeta);
+		doNothing().when(currentMetaServerMetaManager).refreshApplierMaster(futureClusterMeta);
 		doAnswer(invocation -> {
 			Object clusterMetaComparator = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(clusterMetaComparator instanceof ClusterMetaComparator);
