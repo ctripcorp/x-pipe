@@ -177,6 +177,17 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     			});
     		});
     	}
+
+        if ($scope.sources) {
+            $scope.sources.forEach(function (source) {
+                source.shards.forEach(function (shard) {
+                    HealthCheckService.getShardDelay($scope.clusterName, shard.shardTbl.shardName, shard.shardTbl.id)
+                        .then(function (result) {
+                            shard.delay = result.delay;
+                        });
+                });
+            });
+        }
     }
 
     function isShardHealthy(shard) {

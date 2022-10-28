@@ -16,11 +16,17 @@ public interface DelayService extends RedisDelayManager {
 
     void updateRedisDelays(Map<HostPort, Long> redisDelays);
 
+    void updateUpstreamShardsDelays(Map<Long,Long> upstreamShardsDelays);
+
+    long getShardDelay(String clusterId,String shardId,Long shardDbId);
+
     long getDelay(HostPort hostPort);
 
     long getDelay(ClusterType clusterType, HostPort hostPort);
 
     long getLocalCachedDelay(HostPort hostPort);
+
+    long getLocalCachedShardDelay(long shardId);
 
     Map<HostPort, Long> getDcCachedDelay(String dc);
 

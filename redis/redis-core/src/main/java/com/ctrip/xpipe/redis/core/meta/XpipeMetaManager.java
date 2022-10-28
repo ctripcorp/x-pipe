@@ -51,6 +51,10 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 		public Redis getRedis() {
 			return redis;
 		}
+
+		public String getDcGroupType() {
+			return clusterMeta != null ? clusterMeta.getDcGroupType() : null;
+		}
 	}
 	
 	default boolean dcExists(String dc) { return read(()-> doDcExists(dc)); }

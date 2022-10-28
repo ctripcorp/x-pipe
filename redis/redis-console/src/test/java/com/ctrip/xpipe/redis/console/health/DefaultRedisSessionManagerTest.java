@@ -56,7 +56,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
         RedisSession redisSession = redisSessionManager.findOrCreateSession(new HostPort(host, port));
 
         for(int i=0;i<channels;i++){
-            redisSession.subscribeIfAbsent(channelName(channel, i), new RedisSession.SubscribeCallback() {
+            redisSession.subscribeIfAbsent(new RedisSession.SubscribeCallback() {
                 @Override
                 public void message(String channel, String message) {
                     logger.info("[message]{}, {}", channel, message);
@@ -65,7 +65,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
                 public void fail(Throwable e) {
                     logger.error("[fail]", e);
                 }
-            });
+            }, channelName(channel, i));
         }
 
 
