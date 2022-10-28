@@ -212,20 +212,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     public void setStateActive(Endpoint endpoint, GtidSet gtidSet) {
-        if (STATE.ACTIVE == this.state) {
-            logger.info("[setState] {},{}, already active", endpoint, gtidSet);
-            return;
-        }
         this.state = STATE.ACTIVE;
         replication.connect(endpoint, gtidSet);
     }
 
     @Override
     public void setStateBackup() {
-        if (STATE.BACKUP == this.state) {
-            logger.info("[setState] already backup");
-            return;
-        }
         this.state = STATE.BACKUP;
         replication.disconnect();
     }

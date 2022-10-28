@@ -14,9 +14,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.assertj.core.util.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -525,6 +523,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterDbId)).thenReturn(true);
 		doNothing().when(currentMetaServerMetaManager).refreshKeeperMaster(futureClusterMeta);
+		doNothing().when(currentMetaServerMetaManager).refreshApplierMaster(futureClusterMeta);
 		doAnswer(invocation -> {
 			Object clusterMetaComparator = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(clusterMetaComparator instanceof ClusterMetaComparator);

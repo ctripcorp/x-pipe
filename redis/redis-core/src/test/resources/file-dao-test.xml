@@ -19,7 +19,7 @@
 			</shard>
 		</cluster>
 
-		<cluster id="cluster-hetero1" active-dc="jq" downstream-dcs="oy, fra" type="hetero">
+		<cluster id="cluster-hetero1" active-dc="jq" downstream-dcs="oy, fra" type="one_way">
 			<shard id="shard1">
 			</shard>
 		</cluster>
@@ -84,7 +84,7 @@
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
-		<cluster id="cluster-hetero1" active-dc="jq" backup-dcs="" type="hetero">
+		<cluster id="cluster-hetero1" active-dc="jq" backup-dcs="" type="one_way">
 			<source src-dc="jq" upstream-dc="jq" region="FRA">
 				<shard id="shard1">
 				</shard>

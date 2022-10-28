@@ -39,4 +39,14 @@ public class InfoGtidCommand extends AbstractRedisCommand<GtidSet> {
     public ByteBuf getRequest() {
         return new InfoCommand(null, InfoCommand.INFO_TYPE.GTID, null).getRequest();
     }
+
+    @Override
+    protected boolean logRequest() {
+        return false;
+    }
+
+    @Override
+    protected boolean logResponse() {
+        return false;
+    }
 }

@@ -56,11 +56,11 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
     @Override
     protected void work() {
         List<RedisMeta> redises = currentMetaManager.getRedises(clusterDbId, shardDbId);
-        logger.info("[work][collect gtid]cluster_{}, shard_{}", clusterDbId, shardDbId);
+        logger.debug("[work][collect gtid]cluster_{}, shard_{}", clusterDbId, shardDbId);
 
         for (RedisMeta redisMeta : redises) {
             try {
-                logger.info("[work][collect gtid][redis]ip={}, port={}", redisMeta.getIp(), redisMeta.getPort());
+                logger.debug("[work][collect gtid][redis]ip={}, port={}", redisMeta.getIp(), redisMeta.getPort());
                 collectGtidAndSids(redisMeta);
             } catch (Throwable th) {
                 logger.warn("[work][collect gtid][redis] failed, ip={}, port={}", redisMeta.getIp(), redisMeta.getPort(), th);
@@ -105,13 +105,13 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
         Command<GtidSet> command = new InfoGtidCommand(simpleObjectPool, scheduled);
         command.execute().addListener(commandFuture -> {
-            logger.info("[info gtid command Complete], cluster_{}, shard_{}", clusterDbId, shardDbId);
             if (commandFuture.isSuccess()) {
                 GtidSet gtidSet = commandFuture.get();
                 if (gtidSet == null) {
                     logger.warn("[info gtid command return null], cluster_{}, shard_{}", clusterDbId, shardDbId);
                     return;
                 }
+                logger.debug("[info gtid command], cluster_{}, shard_{}, gtidSet={}", clusterDbId, shardDbId, gtidSet);
                 String sids = null;
                 if (!gtidSet.getUUIDs().isEmpty()) {
                     for(String sid: gtidSet.getUUIDs()) {

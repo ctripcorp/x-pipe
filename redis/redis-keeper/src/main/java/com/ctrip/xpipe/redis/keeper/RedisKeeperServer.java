@@ -29,8 +29,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	KeeperRepl getKeeperRepl();
 
-	KeeperTransMeta.KeeperReplType getKeeperReplType();
-
 	void clientDisconnected(Channel channel);
 	
 	String getKeeperRunid();
@@ -95,4 +93,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void tryConnectMaster();
 
 	int getTryConnectMasterCnt();
+
+	void resetDefaultReplication();
 }

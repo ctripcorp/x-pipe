@@ -82,8 +82,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected Psync createPsync() {
 
-		boolean supportGtid = redisKeeperServer.getKeeperReplType().supportGtidSet();
-		Psync psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, supportGtid, scheduled);
+		Psync psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
 		psync.addPsyncObserver(this);
 		return psync;
 	}

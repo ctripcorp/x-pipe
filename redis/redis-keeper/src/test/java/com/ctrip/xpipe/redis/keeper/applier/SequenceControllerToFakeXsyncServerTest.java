@@ -107,8 +107,6 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
 
     }
 
-//    private boolean inTransaction = false;
-
     @Override
     public void onCommand(Object[] rawCmdArgs) {
 
@@ -116,13 +114,5 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
 
         sequenceController.submit(command);
-//        switch (command.type()) {
-//            case MULTI:
-//                inTransaction = true;
-//            case EXEC:
-//                inTransaction = false;
-//            default:
-//                sequenceController.submit(command);
-//        }
     }
 }

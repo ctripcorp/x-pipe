@@ -36,7 +36,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                               KeeperMonitor keeperMonitor, RdbStore rdbStore) throws IOException {
 
         String replRdbGtidSet = replMeta.getRdbGtidSet();
-        //TODO ayq delete log
         logger.info("[createCommandStore], replRdbGtidSet={}", replRdbGtidSet);
         GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 new GtidSet(replRdbGtidSet), config::getReplicationStoreCommandFileKeepTimeSeconds,
@@ -125,18 +124,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     protected Logger getLogger() {
         return logger;
-    }
-
-    @Override
-    public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
-
-        makeSureOpen();
-
-        synchronized (lock) {
-            rdbStore.updateRdbGtidSet(rdbGtidSet);
-            getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), rdbGtidSet);
-        }
-
     }
 
     public class GtidReplicationStoreRdbFileListener extends ReplicationStoreRdbFileListener implements RdbStoreListener {

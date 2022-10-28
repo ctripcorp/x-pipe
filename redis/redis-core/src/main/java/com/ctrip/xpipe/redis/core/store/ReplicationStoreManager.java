@@ -34,4 +34,6 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 
 	ShardId getShardId();
 
+	void setOpenIndexing(boolean openIndexing);
+
 }

@@ -93,6 +93,22 @@ public class GtidSet {
         return Collections.unmodifiableCollection(map.values());
     }
 
+    public boolean isZero() {
+        for (UUIDSet value : map.values()) {
+            int size = value.intervals.size();
+            if (size > 1) {
+                return false;
+            }
+            if (size == 1) {
+                Interval interval = value.intervals.get(0);
+                if (interval.start > 0 || interval.end > 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public Set<String> getUUIDs() {
         return Collections.unmodifiableSet(map.keySet());
     }

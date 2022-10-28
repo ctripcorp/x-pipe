@@ -16,6 +16,8 @@ public interface Xsync extends Command<Object> /*, Closeable */ {
 
     void addXsyncObserver(XsyncObserver observer);
 
+    void close();
+
     enum XSYNC_STATE {
         XSYNC_COMMAND_WAIT_RESPONSE,
         READING_RDB,

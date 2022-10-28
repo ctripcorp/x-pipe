@@ -34,6 +34,8 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
+    private Xsync currentXsync;
+
     @Override
     protected void doStart() throws Exception {
         //do nothing
@@ -62,12 +64,16 @@ public class DefaultXsyncReplication
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
         Xsync xsync = new DefaultXsync(objectPool, gtid_executed.get(), null, scheduled);
         xsync.addXsyncObserver(dispatcher);
+
+        this.currentXsync = xsync;
         return xsync;
     }
 
     @Override
     public void doDisconnect() throws Exception {
-
+        if (currentXsync != null) {
+            currentXsync.close();
+        }
     }
 
     @Override
