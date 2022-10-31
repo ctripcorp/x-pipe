@@ -60,10 +60,10 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
         for (RedisMeta redisMeta : redises) {
             try {
-                logger.debug("[work][collect gtid][redis]ip={}, port={}", redisMeta.getIp(), redisMeta.getPort());
+                logger.info("[work][collect gtid][cluster_{}][shard_{}][redis]ip={}, port={}", clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort());
                 collectGtidAndSids(redisMeta);
             } catch (Throwable th) {
-                logger.warn("[work][collect gtid][redis] failed, ip={}, port={}", redisMeta.getIp(), redisMeta.getPort(), th);
+                logger.warn("[work][collect gtid][cluster_{}][shard_{}][redis] failed, ip={}, port={}", clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), th);
             }
         }
 
