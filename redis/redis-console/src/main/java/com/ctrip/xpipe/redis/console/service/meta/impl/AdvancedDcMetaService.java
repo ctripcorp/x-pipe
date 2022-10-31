@@ -122,7 +122,13 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) {
-        DcTbl dcTbl = dcService.find(dcName);
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        DcTbl dcTbl = null;
+        for (DcTbl dt : dcTblList) {
+            if (dcName.equalsIgnoreCase(dt.getDcName())) {
+                dcTbl = dt;
+            }
+        }
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
         DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
@@ -136,7 +142,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, allowTypes, executors, redisMetaService, dcClusterService,
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
@@ -169,7 +175,7 @@ public class AdvancedDcMetaService implements DcMetaService {
             chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
         }
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
