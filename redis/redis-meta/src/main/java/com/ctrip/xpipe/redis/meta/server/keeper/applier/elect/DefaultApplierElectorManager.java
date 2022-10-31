@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -14,8 +15,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgori
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -55,6 +54,9 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     private void observeLeader(final ClusterMeta cluster) {
         logger.info("[observeLeader]{}", cluster.getDbId());
         for (final ShardMeta shard : cluster.getAllShards().values()) {
+            if (shard.getAppliers() == null || shard.getAppliers().isEmpty()) {
+                continue;
+            }
             observerShardLeader(cluster.getDbId(), shard.getDbId());
         }
     }
@@ -195,6 +197,10 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     @Override
     protected void handleClusterAdd(ClusterMeta clusterMeta) {
         try {
+            if (DcGroupType.DR_MASTER.name().equals(clusterMeta.getDcGroupType())) {
+                return;
+            }
+
             observeLeader(clusterMeta);
         } catch (Exception e) {
             logger.error("[handleClusterAdd]cluster_" + clusterMeta.getDbId(), e);
@@ -203,8 +209,15 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
 
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
+        if (DcGroupType.DR_MASTER.name().equals(comparator.getFuture().getDcGroupType())) {
+            return;
+        }
+
         Long clusterDbId = comparator.getCurrent().getDbId();
         for(ShardMeta shardMeta : comparator.getAdded()){
+            if (shardMeta.getAppliers() == null || shardMeta.getAppliers().isEmpty()) {
+                continue;
+            }
             try {
                 observerShardLeader(clusterDbId, shardMeta.getDbId());
             } catch (Exception e) {
