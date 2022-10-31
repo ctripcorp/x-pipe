@@ -50,12 +50,6 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     private ZkClient zkClient;
 
     @Autowired
-    private MultiDcService multiDcService;
-
-    @Autowired
-    private DcMetaCache dcMetaCache;
-
-    @Autowired
     private ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager;
 
     private void observeLeader(final ClusterMeta cluster) {
@@ -134,7 +128,7 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
         final String leaderLatchPath = MetaZkConfig.getApplierLeaderLatchPath(clusterDbId, shardDbId);
         logger.info("[observerShardLeader][add PathChildrenCache]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, leaderLatchPath);
         return new PathChildrenCache(client, leaderLatchPath, true,
-                XpipeThreadFactory.create(String.format("PathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
+                XpipeThreadFactory.create(String.format("ApplierPathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
     }
 
     private List<List<ChildData>> aggregateChildData(List<PathChildrenCache> pathChildrenCaches) {
@@ -232,15 +226,5 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     @VisibleForTesting
     public void setApplierActiveElectAlgorithmManager(ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager) {
         this.applierActiveElectAlgorithmManager = applierActiveElectAlgorithmManager;
-    }
-
-    @VisibleForTesting
-    public void setDcMetaCache(DcMetaCache dcMetaCache) {
-        this.dcMetaCache = dcMetaCache;
-    }
-
-    @VisibleForTesting
-    public void setMultiDcService(MultiDcService multiDcService) {
-        this.multiDcService = multiDcService;
     }
 }
