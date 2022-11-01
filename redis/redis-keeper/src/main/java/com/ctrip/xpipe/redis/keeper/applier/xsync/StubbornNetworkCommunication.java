@@ -29,16 +29,16 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
     @Override
     default void connect(Endpoint endpoint, Object... states) {
 
-        changeTarget(endpoint, states);
+        if (!changeTarget(endpoint, states)) return;
 
         try {
             Command<Object> command = connectCommand();
-            command.future().addListener((f)->{
+            command.future().addListener((f) -> {
                 scheduleReconnect();
             });
             command.execute();
         } catch (Throwable t) {
-            logger.error("[doConnect() fail] " + endpoint());
+            logger.error("[doConnect() fail] {}", endpoint(), t);
             scheduleReconnect();
         }
     }
