@@ -18,28 +18,29 @@ public interface NetworkCommunication extends NetworkCommunicationState {
 
     void doDisconnect() throws Exception;
 
-    default void changeTarget(Endpoint endpoint, Object... states) {
+    default boolean changeTarget(Endpoint endpoint, Object... states) {
         if (isConnected()) {
             if (endpoint().equals(endpoint)) {
-                return;
+                return false;
             } else {
                 disconnect();
             }
         }
 
         initState(endpoint, states);
+        return true;
     }
 
     /* API */
 
     default void connect(Endpoint endpoint, Object... states) {
 
-        changeTarget(endpoint, states);
+        if (!changeTarget(endpoint, states)) return;
 
         try {
             connectCommand().execute();
         } catch (Throwable t) {
-            logger.error("[doConnect() fail] " + endpoint());
+            logger.error("[doConnect() fail] {}", endpoint(), t);
         }
     }
 
@@ -47,7 +48,7 @@ public interface NetworkCommunication extends NetworkCommunicationState {
         try {
             doDisconnect();
         } catch (Throwable t) {
-            logger.error("[doDisconnect() fail] " + endpoint());
+            logger.error("[doDisconnect() fail]  {}", endpoint(), t);
         }
     }
 }
