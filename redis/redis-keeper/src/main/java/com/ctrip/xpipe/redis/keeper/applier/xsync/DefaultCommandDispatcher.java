@@ -90,7 +90,11 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onRdbData(ByteBuf rdbData) {
-        rdbParser.read(rdbData);
+        try {
+            rdbParser.read(rdbData);
+        } catch (Throwable t){
+            logger.error("[onRdbData] unlikely - error", t);
+        }
     }
 
     @Override
