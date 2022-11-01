@@ -186,7 +186,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         getLogger().debug("[doOnContinue] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onContinue();
+                observer.onContinue(gitdSetExcluded);
             } catch (Throwable th) {
                 getLogger().debug("[doOnContinue][fail] {}", observer, th);
             }

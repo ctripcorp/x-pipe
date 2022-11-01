@@ -77,6 +77,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void onFullSync(GtidSet rdbGtidSet) {
 
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
+
+        this.resetGtidReceived(rdbGtidSet);
     }
 
     @Override
@@ -101,15 +103,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-        this.resetGtidReceived(rdbGtidSet);
 
         //ctrip.merge_start [gtid_set]
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSetExcluded) {
         logger.info("[onContinue]");
+        this.resetGtidReceived(gtidSetExcluded);
     }
 
     @Override
@@ -125,12 +127,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         if (null == gtid) {
             return;
-        }
-
-        // TODO: 2022/11/1 temp fix npe
-        if (gtid_received == null) {
-            // the initial value of gtid_executed is the downstream gtidset when setstate
-            resetGtidReceived(gtid_executed.get());
         }
 
         Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
