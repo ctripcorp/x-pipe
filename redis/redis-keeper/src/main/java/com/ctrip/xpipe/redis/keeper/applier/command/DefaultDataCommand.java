@@ -47,11 +47,13 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
             getLogger().debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
         }
 
+        long startTime = System.nanoTime();
+
         client
                 .write(rc, rawArgs)
                 .addListener(f -> {
                     if (getLogger().isDebugEnabled()) {
-                        getLogger().debug("[command] write key {} end", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
+                        getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
                     }
                     if (f.isSuccess()) {
                         future().setSuccess(true);
