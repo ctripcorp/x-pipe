@@ -127,6 +127,12 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
+        // TODO: 2022/11/1 temp fix npe
+        if (gtid_received == null) {
+            // the initial value of gtid_executed is the downstream gtidset when setstate
+            resetGtidReceived(gtid_executed.get());
+        }
+
         Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
 
         if (receivedSids.add(parsed.getKey())) {
