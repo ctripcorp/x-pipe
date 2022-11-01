@@ -22,8 +22,6 @@ public interface NetworkCommunication extends NetworkCommunicationState {
         if (isConnected()) {
             if (endpoint().equals(endpoint)) {
                 return false;
-            } else {
-                disconnect();
             }
         }
 
@@ -36,6 +34,8 @@ public interface NetworkCommunication extends NetworkCommunicationState {
     default void connect(Endpoint endpoint, Object... states) {
 
         if (!changeTarget(endpoint, states)) return;
+
+        disconnect();
 
         try {
             connectCommand().execute();
