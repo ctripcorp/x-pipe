@@ -64,10 +64,13 @@ public interface MetaCache {
 
     String getActiveDc(HostPort hostPort);
 
+    String getDcGroupType(HostPort hostPort);
+
     long getLastUpdateTime();
 
     ClusterType getClusterType(String clusterId);
 
     boolean isMetaChain(HostPort src, HostPort dst);
 
+    List<Long> dcShardIds(String clusterId, String dcId);
 }

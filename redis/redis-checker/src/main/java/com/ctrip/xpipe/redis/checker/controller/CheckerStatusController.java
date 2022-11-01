@@ -83,6 +83,7 @@ public class CheckerStatusController {
     public HealthCheckResult getCheckResult() {
         HealthCheckResult result = new HealthCheckResult();
         result.encodeRedisDelays(redisDelayManager.getAllDelays());
+        result.setUpstreamShardsDelay(redisDelayManager.getAllUpstreamShardsDelays());
         result.encodeCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
         result.encodeRedisAlives(pingService.getAllRedisAlives());
         result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());

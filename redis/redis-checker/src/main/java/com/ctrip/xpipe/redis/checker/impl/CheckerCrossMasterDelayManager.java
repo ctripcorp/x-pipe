@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
@@ -20,16 +20,12 @@ import java.util.Map;
  * @author lishanglin
  * date 2021/3/12
  */
-public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, DelayActionListener, BiDirectionSupport {
-
-//    protected static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
+public class CheckerCrossMasterDelayManager extends AbstractDelayActionListener implements CrossMasterDelayManager, DelayActionListener, BiDirectionSupport {
 
     protected Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> crossMasterDelays = Maps.newConcurrentMap();
 
-    protected String currentDcId;
-
     public CheckerCrossMasterDelayManager(String currentDcId) {
-        this.currentDcId = currentDcId;
+        super(currentDcId);
     }
     
     @Override
