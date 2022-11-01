@@ -159,7 +159,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     logger.debug("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
                             info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
                 }
-                redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
+                redisInstanceToCheck.getRedisSession().subscribeIfAbsent(new RedisSession.SubscribeCallback() {
                     @Override
                     public void message(String channel, String message) {
                         if (!collecting)
@@ -184,7 +184,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                         logger.warn("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         errors.put(redisInstanceToCheck, e);
                     }
-                });
+                }, HELLO_CHANNEL);
             } catch (Exception e) {
                 logger.warn("[{}-{}]subscribe redis instance {}:{} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), redisInstanceToCheck.getEndpoint().getHost(), redisInstanceToCheck.getEndpoint().getPort(), e);
             }

@@ -77,6 +77,6 @@ public class UserAccessFilter extends AbstractFilter implements Filter {
 
     	return  exclude(uri) || uri.endsWith(".html")
     			|| uri.endsWith(".css") || uri.endsWith(".js")
-    			|| uri.endsWith(".woff") || uri.endsWith(".ttf");
+    			|| uri.endsWith(".woff") || uri.endsWith(".ttf") || uri.endsWith(".svg");
     }
 }

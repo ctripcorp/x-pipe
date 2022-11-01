@@ -112,8 +112,8 @@ public class ApplierStateChangeJob extends AbstractCommand<Void> implements Requ
             return;
         }
 
-        if (gtidSet == null || sids == null) {
-            future().setFailure(new Exception("gtidSet or sid null, gtidSet:" + gtidSet + " sids:" + sids));
+        if (gtidSet == null || sids == null || sids.isEmpty()) {
+            future().setFailure(new Exception("gtidSet or sid null or empty, gtidSet:" + gtidSet + " sids:" + sids));
             return;
         }
 

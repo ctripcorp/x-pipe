@@ -19,6 +19,8 @@ public interface ConsoleService extends CheckerService {
 
     Long getInstanceDelayStatus(String ip, int port);
 
+    Long getShardDelay(long shardId);
+
     Long getInstanceDelayStatusFromParallelService(String ip, int port);
 
     Map<HostPort, Long> getAllInstanceDelayStatus();
