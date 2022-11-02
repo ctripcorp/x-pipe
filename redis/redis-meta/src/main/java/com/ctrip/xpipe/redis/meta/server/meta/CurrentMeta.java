@@ -156,6 +156,13 @@ public class CurrentMeta implements Releasable {
 		return ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
 	}
 
+	public void setRedises(Long clusterDbId, Long shardDbId, List<RedisMeta> redises) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		((CurrentOneWayShardMeta) currentShardMeta).setRedisMetas(redises);
+	}
+
 	public boolean setKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		checkClusterSupportKeeper(clusterDbId);
 
