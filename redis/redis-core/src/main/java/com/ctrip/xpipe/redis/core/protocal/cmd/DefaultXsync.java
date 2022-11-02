@@ -72,17 +72,8 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     @Override
     public void close() {
-        if (nettyClient != null && nettyClient.channel() != null && nettyClient.channel().isOpen()) {
-            nettyClient.channel().close().addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    try {
-                        getClientPool().returnObject(nettyClient);
-                    } catch (ReturnObjectException e) {
-                        getLogger().error("[close]", e);
-                    }
-                }
-            });
+        if (nettyClient != null && nettyClient.channel() != null) {
+            nettyClient.channel().close();
         }
         if (!future().isDone()) {
             future().setFailure(new XpipeRuntimeException("[xsync] closed"));
