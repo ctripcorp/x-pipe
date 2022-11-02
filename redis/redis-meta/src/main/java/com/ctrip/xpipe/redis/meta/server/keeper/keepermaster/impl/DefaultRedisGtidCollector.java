@@ -137,7 +137,8 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
                     redisMeta.setSid(sids);
                 }
             } else {
-                logger.error("[info gtid command failed], cluster_{}, shard_{}", clusterDbId, shardDbId, commandFuture.cause());
+                logger.error("[info gtid command failed], cluster_{}, shard_{}, ip={}, port={}",
+                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), commandFuture.cause());
             }
         });
     }
