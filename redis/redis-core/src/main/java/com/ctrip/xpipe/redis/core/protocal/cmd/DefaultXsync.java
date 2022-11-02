@@ -287,11 +287,10 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                     });
                 }
 
-                // TODO: 2022/11/2 temp fix
-//                if(isPoolCreated()) {
-//                    LifecycleHelper.stopIfPossible(getClientPool());
-//                    LifecycleHelper.disposeIfPossible(getClientPool());
-//                }
+                if(isPoolCreated()) {
+                    LifecycleHelper.stopIfPossible(getClientPool());
+                    LifecycleHelper.disposeIfPossible(getClientPool());
+                }
             }
         });
     }
