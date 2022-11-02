@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -351,6 +352,65 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
 
     return new ArrayList<>(containerInfoMap.values());
+  }
+
+  @Override
+  public KeeperContainerInfoModel findKeeperContainerInfoModelById(long id) {
+    Map<Long, String> dcNameMap = dcService.dcNameMap();
+    Map<Long, String> azNameMap = azService.azNameMap();
+
+    KeepercontainerTbl keepercontainerTbl = find(id);
+    KeeperContainerInfoModel keeperContainerInfoModel = new KeeperContainerInfoModel();
+    keeperContainerInfoModel.setId(keepercontainerTbl.getKeepercontainerId());
+    keeperContainerInfoModel.setActive(keepercontainerTbl.isKeepercontainerActive());
+    keeperContainerInfoModel.setDcName(dcNameMap.get(keepercontainerTbl.getKeepercontainerDc()));
+    keeperContainerInfoModel.setAzName(azNameMap.get(keepercontainerTbl.getAzId()));
+    keeperContainerInfoModel.setAddr(new HostPort(keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
+
+    OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
+    if (organizationTbl != null) {
+      keeperContainerInfoModel.setOrgName(organizationTbl.getOrgName());
+    }
+
+    return keeperContainerInfoModel;
+  }
+
+  @Override
+  public List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzAndOrg(String dcName, String azName, String orgName) {
+    long azId = 0;
+    long orgId = 0;
+
+    if (!StringUtil.isEmpty(azName)) {
+      AzTbl azTbl = azService.getAvailableZoneTblByAzName(azName);
+      azId = azTbl == null ? 0 : azTbl.getId();
+    }
+    if (!StringUtil.isEmpty(orgName)) {
+      OrganizationTbl org = organizationService.getOrgByName(orgName);
+      orgId = org == null ? 0 : org.getId();
+    }
+
+    List<KeeperContainerInfoModel> result = new ArrayList<>();
+
+    List<KeepercontainerTbl> activeKeepercontainers = findAllActiveByDcName(dcName);
+    for (KeepercontainerTbl keepercontainer : activeKeepercontainers) {
+      if (azId != 0 && azId != keepercontainer.getAzId()) {
+        continue;
+      }
+      if (orgId != keepercontainer.getKeepercontainerOrgId()) {
+        continue;
+      }
+
+      KeeperContainerInfoModel keeperContainerInfoModel = new KeeperContainerInfoModel();
+      keeperContainerInfoModel.setId(keepercontainer.getKeepercontainerId());
+      keeperContainerInfoModel.setActive(keepercontainer.isKeepercontainerActive());
+      keeperContainerInfoModel.setDcName(dcName);
+      keeperContainerInfoModel.setAzName(azName);
+      keeperContainerInfoModel.setAddr(new HostPort(keepercontainer.getKeepercontainerIp(), keepercontainer.getKeepercontainerPort()));
+      keeperContainerInfoModel.setOrgName(orgName);
+      result.add(keeperContainerInfoModel);
+     }
+
+    return result;
   }
 
   private List<KeepercontainerTbl> findContainerBaseInfos() {
