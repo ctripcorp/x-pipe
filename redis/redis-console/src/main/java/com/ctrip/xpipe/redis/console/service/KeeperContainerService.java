@@ -18,6 +18,8 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
 
 	List<KeeperContainerInfoModel> findAllInfos();
+	KeeperContainerInfoModel findKeeperContainerInfoModelById(long id);
+	List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzAndOrg(String dcName, String azName, String orgName);
 
 	void addKeeperContainer(KeeperContainerCreateInfo createInfo);
 

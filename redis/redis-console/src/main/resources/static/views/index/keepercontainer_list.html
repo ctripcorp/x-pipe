@@ -22,6 +22,9 @@
                     <a ui-sref="cluster_list({ keepercontainer: info.id })">{{info.clusterCount}}</a>
                 </td>
                 <td data-title="'shard'" sortable="'shardCount'">{{info.shardCount}}</td>
+                <td data-title="'操作'" >
+                    <a href="/#/keeper_migration?keepercontainer={{info.id}}" class="btn btn-warning btn-xs" type="button">迁移</a>&nbsp;
+                </td>
             </tr>
         </table>
 
