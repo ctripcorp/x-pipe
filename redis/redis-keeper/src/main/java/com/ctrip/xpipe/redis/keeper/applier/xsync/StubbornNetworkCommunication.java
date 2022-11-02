@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.endpoint.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +28,22 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
     @Override
     default void connect(Endpoint endpoint, Object... states) {
 
-        changeTarget(endpoint, states);
+        if (!changeTarget(endpoint, states)) return;
 
-        try {
-            Command<Object> command = connectCommand();
-            command.future().addListener((f)->{
+        // close and reconnect later by scheduleReconnect()
+        disconnect();
+
+        if (!isConnected()) {
+            try {
+                Command<Object> command = connectCommand();
+                command.future().addListener((f) -> {
+                    scheduleReconnect();
+                });
+                command.execute();
+            } catch (Throwable t) {
+                logger.error("[doConnect() fail] {}", endpoint(), t);
                 scheduleReconnect();
-            });
-            command.execute();
-        } catch (Throwable t) {
-            logger.error("[doConnect() fail] " + endpoint());
-            scheduleReconnect();
+            }
         }
     }
 

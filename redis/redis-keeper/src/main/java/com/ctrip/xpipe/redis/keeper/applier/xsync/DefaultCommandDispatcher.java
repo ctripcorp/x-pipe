@@ -68,8 +68,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @VisibleForTesting
-    void resetGtidReceived(GtidSet rdbGtidSet) {
-        this.gtid_received = rdbGtidSet;
+    void resetGtidReceived(GtidSet gtidSet) {
+        this.gtid_received = gtidSet;
         this.receivedSids = new HashSet<>();
     }
 
@@ -77,6 +77,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void onFullSync(GtidSet rdbGtidSet) {
 
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
+
+        this.resetGtidReceived(rdbGtidSet);
     }
 
     @Override
@@ -90,22 +92,26 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onRdbData(ByteBuf rdbData) {
-        rdbParser.read(rdbData);
+        try {
+            rdbParser.read(rdbData);
+        } catch (Throwable t){
+            logger.error("[onRdbData] unlikely - error", t);
+        }
     }
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-        this.resetGtidReceived(rdbGtidSet);
 
         //ctrip.merge_start [gtid_set]
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSetExcluded) {
         logger.info("[onContinue]");
+        this.resetGtidReceived(gtidSetExcluded);
     }
 
     @Override
@@ -145,6 +151,16 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
+    protected int toInt(byte[] value) {
+        int rt = 0;
+        for (byte b : value) {
+            int add = b - '0';
+            rt = rt * 10;
+            rt += add;
+        }
+        return rt;
+    }
+
     @Override
     public void onRedisOp(RedisOp redisOp) {
 
@@ -155,7 +171,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
             try {
-                int db = Integer.parseInt(Arrays.toString(redisOp.buildRawOpArgs()[1]));
+                int db = toInt(redisOp.buildRawOpArgs()[1]);
                 client.selectDB(db);
             } catch (Throwable unlikely) {
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
