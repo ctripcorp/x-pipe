@@ -10,6 +10,10 @@ function RedisService($resource, $q) {
         update_shard_redis: {
             method: 'POST',
             url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName',
+        },
+        migrate_keepers: {
+            method: 'POST',
+            url: '/console/keepercontainer/migration',
         }
     });
 
@@ -28,7 +32,25 @@ function RedisService($resource, $q) {
         return d.promise;
     }
 
+    function migrateKeepers(maxMigrationKeeperNum, targetKeeperContainer, srcKeeperContainer, migrationClusters) {
+        var d = $q.defer();
+        resource.migrate_keepers({},
+                                {
+                                    maxMigrationKeeperNum : maxMigrationKeeperNum,
+                                    srcKeeperContainer : srcKeeperContainer,
+                                    targetKeeperContainer : targetKeeperContainer,
+                                    migrationClusters : migrationClusters
+                                },
+                                function (result) {
+                                    d.resolve(result);
+                                }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
-        updateShardRedis: updateShardRedis
+        updateShardRedis : updateShardRedis,
+        migrateKeepers : migrateKeepers
     }
 }

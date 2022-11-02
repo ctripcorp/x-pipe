@@ -44,6 +44,11 @@ public class ShardModel implements java.io.Serializable{
 		return this;
 	}
 
+	public ShardModel setKeepers(List<RedisTbl> keepers) {
+		this.m_keepers = keepers;
+		return this;
+	}
+
 	public List<ApplierTbl> getAppliers() {
 		return m_appliers;
 	}

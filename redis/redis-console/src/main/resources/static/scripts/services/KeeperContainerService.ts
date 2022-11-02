@@ -13,6 +13,15 @@ angular
             url: '/console/dcs/:dcName/cluster/:clusterName/activekeepercontainers',
             isArray : true
         },
+        find_keepercontainer_by_id: {
+            method: 'GET',
+            url: '/console/keepercontainer/:id',
+        },
+        find_available_keepers_by_dc_az_and_org: {
+            method: 'GET',
+            url: '/console/keepercontainers/dc/:dcName/az/:azName/org/:orgName',
+            isArray : true
+        },
         get_all_infos: {
             method: 'GET',
             url: '/console/keepercontainer/infos/all',
@@ -38,6 +47,34 @@ angular
         resource.find_availablekeepers_by_dc({
                             dcName: dcName
                         },shard,
+                        function (result) {
+                            d.resolve(result);
+                        }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findKeepercontainerById(id) {
+        var d = $q.defer();
+        resource.find_keepercontainer_by_id({
+                            id: id
+                        },
+                        function (result) {
+                            d.resolve(result);
+                        }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findAvailableKeepersByDcAzAndOrg(dcName, azName, orgName) {
+        var d = $q.defer();
+        resource.find_available_keepers_by_dc_az_and_org({
+                            dcName: dcName,
+                            azName: azName,
+                            orgName: orgName
+                        },
                         function (result) {
                             d.resolve(result);
                         }, function (result) {
@@ -74,6 +111,8 @@ angular
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
+        findKeepercontainerById : findKeepercontainerById,
+        findAvailableKeepersByDcAzAndOrg : findAvailableKeepersByDcAzAndOrg,
         getAllInfos: getAllInfos,
     }
 }]);
