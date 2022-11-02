@@ -68,8 +68,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @VisibleForTesting
-    void resetGtidReceived(GtidSet rdbGtidSet) {
-        this.gtid_received = rdbGtidSet;
+    void resetGtidReceived(GtidSet gtidSet) {
+        this.gtid_received = gtidSet;
         this.receivedSids = new HashSet<>();
     }
 
