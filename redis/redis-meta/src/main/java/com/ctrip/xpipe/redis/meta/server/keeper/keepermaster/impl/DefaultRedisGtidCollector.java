@@ -64,7 +64,6 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
         for (RedisMeta redisMeta : redises) {
             try {
-                logger.info("[work][collect gtid][cluster_{}][shard_{}][redis]ip={}, port={}", clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort());
                 collectGtidAndSids(redisMeta);
             } catch (Throwable th) {
                 logger.warn("[work][collect gtid][cluster_{}][shard_{}][redis] failed, ip={}, port={}", clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), th);
@@ -75,8 +74,8 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
     private void collectSids() {
 
         if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId) ||
-            dcMetaCache.getShardAppliers(clusterDbId, shardDbId) == null ||
-            dcMetaCache.getShardAppliers(clusterDbId, shardDbId).isEmpty()) {
+                dcMetaCache.getShardAppliers(clusterDbId, shardDbId) == null ||
+                dcMetaCache.getShardAppliers(clusterDbId, shardDbId).isEmpty()) {
             return;
         }
 
@@ -85,8 +84,10 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
         String srcDcName = dcMetaCache.getSrcDc(currentDc, clusterDbId, shardDbId);
         String srcSids = multiDcService.getSids(currentDc, srcDcName, clusterDbId, shardDbId);
 
-        String currentSrcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
-        if (sidsChanged(srcSids, currentSrcSids)) {
+        String cachedSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
+        logger.info("[work][collect sid]cluster_{}, shard_{}, srcSids_{}, cachedSids_{}",
+                clusterDbId, shardDbId, srcSids, cachedSids);
+        if (sidsChanged(srcSids, cachedSids)) {
             currentMetaManager.setSrcSidsAndNotify(clusterDbId, shardDbId, srcSids);
         }
     }
@@ -123,7 +124,8 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
                     logger.warn("[info gtid command return null], cluster_{}, shard_{}", clusterDbId, shardDbId);
                     return;
                 }
-                logger.info("[info gtid command], cluster_{}, shard_{}, gtidSet={}", clusterDbId, shardDbId, gtidSet);
+                logger.info("[info gtid command], cluster_{}, shard_{}, ip={}, port={} gtidSet={}",
+                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), gtidSet);
                 String sids = null;
                 if (!gtidSet.getUUIDs().isEmpty()) {
                     for(String sid: gtidSet.getUUIDs()) {
