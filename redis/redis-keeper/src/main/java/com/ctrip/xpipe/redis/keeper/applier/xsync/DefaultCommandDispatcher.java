@@ -71,6 +71,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     void resetGtidReceived(GtidSet gtidSet) {
         this.gtid_received = gtidSet;
         this.receivedSids = new HashSet<>();
+        // TODO: 2022/11/2 temp fix
+        this.gtid_executed.set(gtidSet);
     }
 
     @Override
