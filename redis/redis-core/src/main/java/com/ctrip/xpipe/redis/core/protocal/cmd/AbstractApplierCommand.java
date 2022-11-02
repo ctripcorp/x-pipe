@@ -93,7 +93,10 @@ public abstract class AbstractApplierCommand<T> extends AbstractRedisCommand<T> 
         @Override
         public ByteBuf getRequest() {
 
-            //TODO ayq delete
+            if (!state.isActive()) {
+                return new RequestStringParser(getName(), SET_STATE, state.toString()).format();
+            }
+
             GtidSet gtidSetToBeSend = new GtidSet(gtidSet);
             Set<String> sidSet = new HashSet<>(Arrays.asList(sids.split(",")));
             GtidSet filteredGtidSet = gtidSetToBeSend.filterGtid(sidSet);
@@ -102,6 +105,8 @@ public abstract class AbstractApplierCommand<T> extends AbstractRedisCommand<T> 
                     filteredGtidSet.add(sid+":0");
                 }
             }
+
+            //TODO ayq delete
             return new RequestStringParser(
                     getName(),
                     SET_STATE,

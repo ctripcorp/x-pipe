@@ -39,6 +39,11 @@ public class CurrentOneWayShardMeta extends AbstractCurrentShardMeta {
         return redisMetas;
     }
 
+    public synchronized void setRedisMetas(List<RedisMeta> redises) {
+        logger.info("[setRedisMetas]cluster_{}, shard_{}, redises={}", clusterDbId, shardDbId, redises);
+        this.redisMetas = redises;
+    }
+
     public String getSids(){
 
         logger.debug("[getSids]{}, {}", clusterDbId, shardDbId);
