@@ -34,16 +34,20 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
         disconnect();
 
         if (!isConnected()) {
-            try {
-                Command<Object> command = connectCommand();
-                command.future().addListener((f) -> {
-                    scheduleReconnect();
-                });
-                command.execute();
-            } catch (Throwable t) {
-                logger.error("[doConnect() fail] {}", endpoint(), t);
+           doConnect();
+        }
+    }
+
+    default void doConnect() {
+        try {
+            Command<Object> command = connectCommand();
+            command.future().addListener((f) -> {
                 scheduleReconnect();
-            }
+            });
+            command.execute();
+        } catch (Throwable t) {
+            logger.error("[doConnect() fail] {}", endpoint(), t);
+            scheduleReconnect();
         }
     }
 
@@ -51,7 +55,7 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
 
         scheduled().schedule(() -> {
             if (!closed()) {
-                connect(endpoint());
+                doConnect();
             }
         }, reconnectDelayMillis(), TimeUnit.MILLISECONDS);
     }
