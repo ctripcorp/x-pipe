@@ -30,6 +30,7 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
 
         if (!changeTarget(endpoint, states)) return;
 
+        // close and reconnect later by scheduleReconnect()
         disconnect();
 
         if (!isConnected()) {
