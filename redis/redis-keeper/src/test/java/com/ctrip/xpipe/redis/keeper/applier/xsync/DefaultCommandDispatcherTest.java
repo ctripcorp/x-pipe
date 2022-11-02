@@ -24,7 +24,7 @@ public class DefaultCommandDispatcherTest {
         dispatcher.gtid_executed = new AtomicReference<>(new GtidSet(""));
         dispatcher.stateThread = MoreExecutors.newDirectExecutorService();
 
-        dispatcher.resetGtidReceived(new GtidSet(""));
+        dispatcher.resetState(new GtidSet(""));
     }
 
     @Test

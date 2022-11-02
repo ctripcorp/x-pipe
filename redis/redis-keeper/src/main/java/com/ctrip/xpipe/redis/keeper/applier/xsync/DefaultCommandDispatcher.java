@@ -68,10 +68,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @VisibleForTesting
-    void resetGtidReceived(GtidSet gtidSet) {
+    void resetState(GtidSet gtidSet) {
         this.gtid_received = gtidSet;
         this.receivedSids = new HashSet<>();
-        // TODO: 2022/11/2 temp fix
         this.gtid_executed.set(gtidSet);
     }
 
@@ -80,7 +79,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
 
-        this.resetGtidReceived(rdbGtidSet);
+        this.resetState(rdbGtidSet);
     }
 
     @Override
@@ -113,7 +112,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void onContinue(GtidSet gtidSetExcluded) {
         logger.info("[onContinue]");
-        this.resetGtidReceived(gtidSetExcluded);
+        this.resetState(gtidSetExcluded);
     }
 
     @Override
