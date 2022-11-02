@@ -489,9 +489,15 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected Set<Integer> getCurrentSlots() {
 		return currentSlots;
 	}
-	
-	
+
+
 	/*******************update dynamic info*************************/
+
+	@Override
+	public void setRedises(Long clusterDbId, Long shardDbId, List<RedisMeta> redises) {
+		currentMeta.setRedises(clusterDbId, shardDbId, redises);
+	}
+
 	@Override
 	public boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, activeKeeper);

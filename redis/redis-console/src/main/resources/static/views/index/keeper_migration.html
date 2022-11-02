@@ -1,0 +1,68 @@
+<div class="col-md-12">
+	<h3 class="header smaller lighter blue">
+		<a>迁移keeper</a>
+		<span> > </span>
+		<span>{{srcKeepercontainer.dcName}}</span>
+		<span> > </span>
+		<a>{{srcKeepercontainer.addr.host}}:{{srcKeepercontainer.addr.port}}</a>
+	</h3>
+
+	<div class="panel panel-primary">
+		<header class="panel-heading">
+			<div class="row">
+				<div class="col-sm-3">
+					<td>
+						<input type="checkbox" ng-checked="isChecked()" md-indeterminate="isIndeterminate()" ng-click="toggleAll()">
+					</td>
+					<span ng-if="isChecked()">取消全选</span> <span ng-if="!isChecked()">全选</span>
+				</div>
+				<div class="col-sm-6">
+					<span class="col-md-5">
+						<md-select allow_single_deselect=true
+								   ng-model="maxMigrationKeeperNum"
+								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="最大迁移keeper数量">
+							<md-option ng-repeat="availableMigrationKeeperNum in availableMigrationKeeperNums" value="{{availableMigrationKeeperNum}}">{{availableMigrationKeeperNum}}</md-option>
+						</md-select>
+					</span>
+					<span class="col-md-5">
+						<md-select md-on-close="targetKeeperContainerSelected()"
+								   allow_single_deselect=true
+								   ng-model="targetKeeperContainer"
+								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="目标Keeper Container">
+							<md-option ng-repeat="availableKeeperContainer in availableKeeperContainers" value="{{availableKeeperContainer.addr.host}}:{{availableKeeperContainer.addr.port}}">{{availableKeeperContainer.addr.host}}:{{availableKeeperContainer.addr.port}}</md-option>
+						</md-select>
+					</span>
+				</div>
+				<div class="col-md-3 text-right	">
+					<a type="button" ng-click="preMigrateKeepers()" class="btn btn-danger radius-border-fat"><strong>迁移</strong></a>
+					&nbsp&nbsp
+					<a type="button" class="btn btn-primary radius-border-fat" href="/#/keepercontainers"><strong>取消</strong></a>
+				</div>
+				<div class="col-md-1"></div>
+			</div>
+		</header>
+
+		<table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" >
+			<tr ng-repeat="cluster in $data">
+				<td data-title="'确认框'">
+					<td>
+						<input type="checkbox"  ng-checked="cluster.selected" ng-click="cluster.selected = !cluster.selected">
+					</td>
+				</td>
+				<td data-title="'cluster'" filter="{'clusterName':'text'}">
+					<a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{cluster.clusterName}}</a>
+				</td>
+				<td data-title="'id'" filter="{'id':'text'}" >
+					<a ng-click="gotoClusterHickwall(cluster.clusterName)" style="width:70px" >{{cluster.id}}</a>
+				</td>
+				<td data-title="'cluster部门'">{{cluster.clusterOrgName}}</td>
+				<td data-title="'cluster描述'">{{cluster.clusterDescription}}</td>
+			</tr>
+		</table>
+
+	</div>
+</div>
+
+<xpipeconfirmdialog xpipe-dialog-id="'migrateKeepersConfirm'" xpipe-title="'确认迁移Keeper'"
+                    xpipe-detail="'是否确认迁移该Keeper Container的keeper?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="doMigrateKeepers"></xpipeconfirmdialog>
