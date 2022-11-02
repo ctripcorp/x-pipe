@@ -46,9 +46,7 @@ public class DefaultXsyncReplication
 
     @Override
     protected void doStop() throws Exception {
-        if (isConnected()) {
-            disconnect();
-        }
+        disconnect();
     }
 
     //all below are definition to invoke StubbornNetworkCommunication functionality
@@ -57,8 +55,6 @@ public class DefaultXsyncReplication
     public Endpoint endpoint;
 
     public Xsync xsync;
-
-    private boolean isConnected;
 
     @Override
     public Command<Object> connectCommand() throws Exception {
@@ -74,12 +70,6 @@ public class DefaultXsyncReplication
     }
 
     @Override
-    public void connect(Endpoint endpoint, Object... states) {
-        StubbornNetworkCommunication.super.connect(endpoint, states);
-        isConnected = true;
-    }
-
-    @Override
     public void doDisconnect() throws Exception {
         if (isConnected()) {
             currentXsync.close();
@@ -88,7 +78,7 @@ public class DefaultXsyncReplication
 
     @Override
     public boolean isConnected() {
-        return isConnected;
+        return currentXsync != null;
     }
 
     @Override

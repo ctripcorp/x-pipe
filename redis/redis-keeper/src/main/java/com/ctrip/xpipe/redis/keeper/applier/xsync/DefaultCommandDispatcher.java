@@ -151,6 +151,16 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
+    protected int toInt(byte[] value) {
+        int rt = 0;
+        for (byte b : value) {
+            int add = b - '0';
+            rt = rt * 10;
+            rt += add;
+        }
+        return rt;
+    }
+
     @Override
     public void onRedisOp(RedisOp redisOp) {
 
@@ -161,7 +171,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
             try {
-                int db = Integer.parseInt(Arrays.toString(redisOp.buildRawOpArgs()[1]));
+                int db = toInt(redisOp.buildRawOpArgs()[1]);
                 client.selectDB(db);
             } catch (Throwable unlikely) {
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
