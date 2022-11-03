@@ -55,6 +55,15 @@ public class ApplierDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<ApplierTbl> findByShard(long shardId) {
+        return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+            @Override
+            public List<ApplierTbl> doQuery() throws DalException {
+                return applierTblDao.findAllByShard(shardId, ApplierTblEntity.READSET_FULL);
+            }
+        });
+    }
+
     @DalTransaction
     public int[] createApplierBatch(List<ApplierTbl> appliers) {
         if (null != appliers && !appliers.isEmpty()) {
