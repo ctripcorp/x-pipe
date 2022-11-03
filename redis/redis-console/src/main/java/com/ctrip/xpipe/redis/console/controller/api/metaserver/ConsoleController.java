@@ -6,14 +6,8 @@ import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.console.service.meta.*;
+import com.ctrip.xpipe.redis.core.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -44,6 +38,8 @@ public class ConsoleController extends AbstractConsoleController {
 	private ShardMetaService shardMetaService;
 	@Autowired
 	private RedisMetaService redisMetaService;
+	@Autowired
+	private ApplierMetaService applierMetaService;
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
@@ -116,6 +112,22 @@ public class ConsoleController extends AbstractConsoleController {
 			}
 		} catch (Exception e) {
 			logger.error("[updateKeeperStatus][failed]dc:{} cluster:{} shard:{} newActiveKeeper:{} Exception:{}",dcId, clusterId, shardId, newActiveKeeper,e);
+		}
+	}
+
+	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/appliers/adjustment", method = RequestMethod.PUT)
+	public void updateApplierStatus(@PathVariable String dcId, @PathVariable String clusterId,
+									@PathVariable String shardId, @RequestBody(required = false) ApplierMeta newActiveApplier){
+		try {
+			if(null != newActiveApplier) {
+				logger.info("[updateApplierStatus][construct]dc:{} cluster:{} shard:{} newActiveApplier:{}", dcId, clusterId, shardId, newActiveApplier);
+				applierMetaService.updateApplierStatus(dcId, clusterId, shardId, newActiveApplier);
+				logger.info("[updateApplierStatus][success]dc:{} cluster:{} shard:{} newActiveApplier:{}", dcId, clusterId, shardId, newActiveApplier);
+			} else {
+				logger.error("[updateApplierStatus][Null Active Applier]dc:{} cluster:{} shard:{}", dcId, clusterId, shardId);
+			}
+		} catch (Exception e) {
+			logger.error("[updateApplierStatus][failed]dc:{} cluster:{} shard:{} newActiveApplier:{} Exception:{}", dcId, clusterId, shardId, newActiveApplier,e);
 		}
 	}
 
