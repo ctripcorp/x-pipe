@@ -282,4 +282,29 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertTrue(keeperContainerService.keeperContainerAlreadyExists(existKeeperContainer));
         Assert.assertFalse(keeperContainerService.keeperContainerAlreadyExists(newKeeperContainer));
     }
+
+    @Test
+    public void testFindKeeperContainerById() {
+        KeeperContainerInfoModel keeperContainer = keeperContainerService.findKeeperContainerInfoModelById(11L);
+
+        Assert.assertEquals(11L, keeperContainer.getId());
+        Assert.assertEquals("127.0.1.2:7083", keeperContainer.getAddr().toString());
+        Assert.assertEquals("org-5", keeperContainer.getOrgName());
+        Assert.assertEquals("jq", keeperContainer.getDcName());
+    }
+
+    @Test
+    public void testFindKeeperContainerByDcAzAndOrg() {
+        List<KeeperContainerInfoModel> keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("fra", "A", "org-1");
+        Assert.assertEquals(0, keeperContainers.size());
+
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("fra", "A", "");
+        Assert.assertEquals(2, keeperContainers.size());
+
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("jq", "", "org-1");
+        Assert.assertEquals(2, keeperContainers.size());
+
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("jq", "", "");
+        Assert.assertEquals(3, keeperContainers.size());
+    }
 }

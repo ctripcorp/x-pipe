@@ -92,6 +92,11 @@ public class ConsoleServiceImpl extends AbstractService implements ConsoleServic
 	}
 
 	@Override
+	public void applierActiveChanged(String dc, String clusterId, String shardId, ApplierMeta newActiveApplier) {
+		restTemplate.put(host + "/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/appliers/adjustment", newActiveApplier, dc, clusterId, shardId);
+	}
+
+	@Override
 	public void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster) {
 
 	}
