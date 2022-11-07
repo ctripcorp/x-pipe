@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.google.common.collect.Lists;
 
 import java.util.List;
@@ -41,9 +43,18 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
 
+        if (getLogger().isDebugEnabled()) {
+            getLogger().debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
+        }
+
+        long startTime = System.nanoTime();
+
         client
                 .write(rc, rawArgs)
                 .addListener(f -> {
+                    if (getLogger().isDebugEnabled()) {
+                        getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
+                    }
                     if (f.isSuccess()) {
                         future().setSuccess(true);
                     } else {

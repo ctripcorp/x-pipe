@@ -34,6 +34,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private Map<String, DcMeta> dcMetaMap;
 
+    private List<DcTbl> allDcsTblList;
+
     private Map<Long, String> dcNameMap;
 
     private Map<String, Long> dcNameZoneMap;
@@ -80,11 +82,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private static final String DC_NAME_DELIMITER = ",";
 
-    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
+    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, List<DcTbl> allDcsList, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService,
                          ReplDirectionService replDirectionService, ZoneService zoneService, KeeperContainerService keeperContainerService, ApplierService applierService,
                          RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMetaMap = dcMetaMap;
+        this.allDcsTblList = allDcsList;
         this.interestClusterTypes = clusterTypes;
         this.executors = executors;
         this.redisMetaService = redisMetaService;
@@ -248,7 +251,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 dcCluster2DcClusterShardMap = Maps.newHashMap();
                 dc2DcClusterShardMap = Maps.newHashMap();
-                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByClusterTypes(interestClusterTypes);
+
+                List<DcClusterShardTbl> allDcClusterShards = new LinkedList<>();
+                for (DcTbl dcTbl : allDcsTblList) {
+                    allDcClusterShards.addAll(dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), interestClusterTypes));
+                }
 
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
@@ -263,6 +270,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                             dcClusterShardTbl.getDcClusterInfo().getDcId(), LinkedList::new);
                     dc2ClusterShardTbls.add(dcClusterShardTbl);
                 }
+
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);

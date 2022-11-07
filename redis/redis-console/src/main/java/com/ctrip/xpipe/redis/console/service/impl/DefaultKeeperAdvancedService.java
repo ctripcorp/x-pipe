@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -63,6 +63,17 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
     return result;
 
+  }
+
+
+  @Override
+  public List<KeeperBasicInfo> findBestKeepersByKeeperContainer(KeeperContainerInfoModel targetKeeperContainer,
+                                              int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
+    List<KeeperBasicInfo> result = new LinkedList<>();
+    List<KeepercontainerTbl> keepercontainerTbls = new LinkedList<>();
+    keepercontainerTbls.add(keeperContainerService.find(targetKeeperContainer.getId()));
+    fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
+    return result;
   }
 
 

@@ -189,6 +189,11 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/keepercontainer_list.html',
             controller : 'KeeperContainerListCtl',
         })
+        .state('keeper_migration', {
+            url: '/keeper_migration?keepercontainer',
+            templateUrl: 'views/index/keeper_migration.html',
+            controller: 'KeeperMigrationCtl'
+        })
         .state('appliercontainer_list', {
             url: '/appliercontainers',
             templateUrl: 'views/index/appliercontainer_list.html',
