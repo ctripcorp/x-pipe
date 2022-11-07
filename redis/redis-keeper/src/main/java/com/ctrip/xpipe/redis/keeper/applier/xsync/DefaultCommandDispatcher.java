@@ -137,6 +137,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             gtid_received.rise(gtid);
 
             stateThread.execute(()->{
+                logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
                 gtid_executed.get().rise(gtid);
             });
         } else {
@@ -146,6 +147,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             for (long i = last + 1; i < parsed.getValue(); i++) {
                 long leaped = i;
                 stateThread.execute(()->{
+                    logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", parsed.getKey(), leaped, gtid_executed.get());
                     gtid_executed.get().add(GtidSet.composeGtid(parsed.getKey(), leaped));
                 });
             }
