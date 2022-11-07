@@ -10,7 +10,6 @@ import com.ctrip.xpipe.utils.OffsetNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -19,9 +18,11 @@ import java.io.IOException;
  */
 public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<ReferenceFileRegion> implements CommandReader<ReferenceFileRegion> {
 
-    private File curFile;
+    private CommandFile curCmdFile;
 
     private long curPosition;
+
+    private long filePosition;
 
     private ReferenceFileChannel referenceFileChannel;
 
@@ -31,15 +32,15 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
-    public OffsetCommandReader(File curFile, long globalPosition, long filePosition, CommandStore commandStore,
+    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long filePosition, CommandStore commandStore,
                                OffsetNotifier offsetNotifier, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);
         this.commandStore = commandStore;
         this.offsetNotifier = offsetNotifier;
-        this.curFile = curFile;
+        this.curCmdFile = commandFile;
         curPosition = globalPosition;
-        referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curFile), filePosition);
+        referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()), filePosition);
     }
 
     @Override
@@ -56,6 +57,8 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
         curPosition += referenceFileRegion.count();
 
+        filePosition = referenceFileRegion.position() + referenceFileRegion.count();
+
         referenceFileRegion.setTotalPos(curPosition);
 
         if (referenceFileRegion.count() < 0) {
@@ -70,18 +73,23 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
         if (!referenceFileChannel.hasAnythingToRead()) {
             // TODO notify when next file ready
-            CommandFile nextCommandFile = commandStore.findNextFile(curFile);
+            CommandFile nextCommandFile = commandStore.findNextFile(curCmdFile.getFile());
             if (nextCommandFile != null) {
-                curFile = nextCommandFile.getFile();
+                curCmdFile = nextCommandFile;
                 referenceFileChannel.close();
-                referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curFile));
+                referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()));
             }
         }
     }
 
     @Override
-    public File getCurFile() {
-        return curFile;
+    public long filePosition() throws IOException {
+        return filePosition;
+    }
+
+    @Override
+    public CommandFile getCurCmdFile() {
+        return curCmdFile;
     }
 
     @Override
@@ -97,7 +105,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     @Override
     public String toString() {
-        return "curFile:" + curFile;
+        return "curFile:" + curCmdFile.getFile();
     }
 
 }

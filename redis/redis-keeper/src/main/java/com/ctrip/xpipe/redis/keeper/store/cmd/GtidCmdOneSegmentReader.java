@@ -113,7 +113,8 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
         if (cmdBuffer.position() < cmdBuffer.capacity()) curBuf.capacity(cmdBuffer.position());
     }
 
-    private long filePosition() throws IOException {
+    @Override
+    public long filePosition() throws IOException {
         return controllableFile.getFileChannel().position();
     }
 
@@ -162,7 +163,7 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
     }
 
     @Override
-    public File getCurFile() {
-        return curCmdFile.getFile();
+    public CommandFile getCurCmdFile() {
+        return curCmdFile;
     }
 }
