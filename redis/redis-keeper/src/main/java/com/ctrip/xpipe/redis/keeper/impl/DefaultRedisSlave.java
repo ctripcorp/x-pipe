@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ShardId;
@@ -343,7 +344,13 @@ public class DefaultRedisSlave implements RedisSlave {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
 
-		ChannelFuture future = channel().writeAndFlush(cmd);
+		Object command = cmd;
+
+		if (cmd instanceof RedisOp) {
+		    command = ((RedisOp) cmd).buildRESP();
+		}
+
+		ChannelFuture future = channel().writeAndFlush(command);
 		future.addListener(writeExceptionListener);
 		return future;
 	}
