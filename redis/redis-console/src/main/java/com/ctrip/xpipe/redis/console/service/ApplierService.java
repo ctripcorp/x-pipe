@@ -21,6 +21,10 @@ public interface ApplierService {
 
     List<ApplierTbl> findAllApplierTblsWithSameIp(String ip);
 
+    List<ApplierTbl> findAppliersByDcAndShard(String dcName, String clusterName, String shardName);
+
+    void updateBatchApplierActive(List<ApplierTbl> applierTbls);
+
     void updateAppliersAndKeepers(String dcName, String clusterName, String shardName, ShardModel sourceShard,
                                   long replDirectionId);
 
