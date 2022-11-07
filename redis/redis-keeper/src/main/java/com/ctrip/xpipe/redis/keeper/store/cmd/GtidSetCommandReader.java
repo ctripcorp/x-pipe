@@ -14,7 +14,6 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
@@ -147,7 +146,8 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         }
     }
 
-    private long filePosition() throws IOException {
+    @Override
+    public long filePosition() throws IOException {
         return controllableFile.getFileChannel().position();
     }
 
@@ -186,8 +186,8 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
     }
 
     @Override
-    public File getCurFile() {
-        return curCmdFile.getFile();
+    public CommandFile getCurCmdFile() {
+        return curCmdFile;
     }
 
 
