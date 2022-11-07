@@ -664,7 +664,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			rdbDumper.get().tryFullSync(redisSlave);
 		}
 	}
-	
+
+	@Override
+	public void startIndexing() throws IOException {
+		logger.info("[startIndexing]{}, {}", this, rdbDumper.get());
+
+	}
+
 	private RdbDumper dumpNewRdb() throws CreateRdbDumperException, SetRdbDumperException {
 		
 		RdbDumper rdbDumper = keeperRedisMaster.createRdbDumper();

@@ -11,6 +11,7 @@ public interface CommandsListener {
 
 	boolean isOpen();
 
+	//CommandsListener.onCommand() support ByteBuf, FileRegion, RedisOp as input
 	ChannelFuture onCommand(Object cmd);
 	
 	void beforeCommand();
