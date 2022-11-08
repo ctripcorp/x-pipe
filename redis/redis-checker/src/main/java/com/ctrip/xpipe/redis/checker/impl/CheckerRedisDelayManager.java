@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 public class CheckerRedisDelayManager extends AbstractDelayActionListener implements RedisDelayManager, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     protected ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
-    protected Map<Long, Long> upstreamShardsDelay = new ConcurrentHashMap<>();
+    protected Map<Long, Long> heteroShardsDelay = new ConcurrentHashMap<>();
 
     @Override
     public Map<HostPort, Long> getAllDelays() {
@@ -27,15 +28,17 @@ public class CheckerRedisDelayManager extends AbstractDelayActionListener implem
     }
 
     @Override
-    public Map<Long, Long> getAllUpstreamShardsDelays() {
-        return new HashMap<>(upstreamShardsDelay);
+    public Map<Long, Long> getAllHeteroShardsDelays() {
+        return new HashMap<>(heteroShardsDelay);
     }
 
     @Override
     public void onAction(DelayActionContext delayActionContext) {
-        hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
+        if (delayActionContext instanceof HeteroDelayActionContext)
+            heteroShardsDelay.put(((HeteroDelayActionContext) delayActionContext).getShardDbId(), delayActionContext.getResult());
+        else
+            hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
                     delayActionContext.getResult());
-        upstreamShardsDelay.putAll(delayActionContext.getUpstreamShardsDelay());
     }
 
     @Override
