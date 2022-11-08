@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -66,6 +67,10 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
 
     @Override
     public RedisOp doRead() throws IOException {
+        if (opParser == null) {
+            throw new XpipeRuntimeException("unlikely: opParser is null");
+        }
+
         rollToNextSegmentIfNecessary();
         readNextFileIfNecessary();
         refillBufIfNecessary();

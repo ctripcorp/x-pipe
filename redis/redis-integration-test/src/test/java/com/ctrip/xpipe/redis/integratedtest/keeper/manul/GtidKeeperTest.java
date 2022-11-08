@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -16,17 +15,13 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
-import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
-import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
-import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author lishanglin
@@ -35,7 +30,7 @@ import java.util.stream.Stream;
  */
 public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
 
-    private GtidRedisKeeperServer gtidKeeperServer;
+    private RedisKeeperServer gtidKeeperServer;
 
     private LeaderElectorManager leaderElectorManager;
 
