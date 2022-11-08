@@ -81,6 +81,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
     }
 
     protected void doPublish(RedisSession session, String channel, String message) {
+        logger.info("{}-{}-{}-{}-{}", "testDebug", instance.getEndpoint().getHost(), instance.getEndpoint().getPort(), channel, message);
         session.publish(channel, message);
     }
 
