@@ -33,13 +33,12 @@ public class HeteroDelayActionContext extends DelayActionContext {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
         HeteroDelayActionContext context = (HeteroDelayActionContext) o;
         return shardDbId.equals(context.shardDbId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), shardDbId);
+        return Objects.hash(shardDbId);
     }
 }
