@@ -26,7 +26,8 @@ public class DefaultRedisGtidCollectorTest {
     public void setUp() throws Exception {
         defaultRedisGtidCollector = new DefaultRedisGtidCollector(1L,1L, Mockito.mock(DcMetaCache.class),
                 Mockito.mock(CurrentMetaManager.class), Mockito.mock(MultiDcService.class),
-                Mockito.mock(ScheduledExecutorService.class), Mockito.mock(XpipeNettyClientKeyedObjectPool.class));
+                Mockito.mock(ScheduledExecutorService.class), Mockito.mock(XpipeNettyClientKeyedObjectPool.class),
+                DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP);
     }
 
     @Test

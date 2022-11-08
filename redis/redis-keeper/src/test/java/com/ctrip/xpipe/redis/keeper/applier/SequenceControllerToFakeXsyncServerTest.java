@@ -103,7 +103,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSet) {
 
     }
 

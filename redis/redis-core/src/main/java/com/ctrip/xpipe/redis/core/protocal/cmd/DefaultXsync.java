@@ -75,7 +75,9 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         if (nettyClient != null && nettyClient.channel() != null) {
             nettyClient.channel().close();
         }
-        future().setFailure(new XpipeRuntimeException("[xsync] closed"));
+        if (!future().isDone()) {
+            future().setFailure(new XpipeRuntimeException("[xsync] closed"));
+        }
     }
 
     @Override
@@ -186,7 +188,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         getLogger().debug("[doOnContinue] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onContinue();
+                observer.onContinue(gitdSetExcluded);
             } catch (Throwable th) {
                 getLogger().debug("[doOnContinue][fail] {}", observer, th);
             }

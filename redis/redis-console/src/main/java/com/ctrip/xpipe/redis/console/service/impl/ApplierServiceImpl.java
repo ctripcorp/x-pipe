@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.MathUtil;
@@ -49,6 +50,9 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private ShardService shardService;
 
     @Autowired
     private ApplierDao applierDao;
@@ -134,6 +138,34 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
                 return dao.findByIp(ip, ApplierTblEntity.READSET_FULL);
             }
         });
+    }
+
+    @Override
+    public List<ApplierTbl> findAppliersByDcAndShard(String dcName, String clusterName, String shardName) {
+
+        DcTbl dcTbl = dcService.find(dcName);
+        ShardTbl shardTbl = shardService.find(clusterName, shardName);
+        if (dcTbl == null) {
+            throw new BadRequestException(String.format("[findAppliersByDcAndShard]dc %s does not exist", dcName));
+        }
+        if (shardTbl == null) {
+            throw new BadRequestException(String.format("[findAppliersByDcAndShard]cluster %s shard %s does not exist", clusterName, shardName));
+        }
+
+        List<ApplierTbl> applierTbls = applierDao.findByShard(shardTbl.getId());
+        for (ApplierTbl applierTbl : applierTbls) {
+            AppliercontainerTbl appliercontainerTbl = appliercontainerService.findAppliercontainerTblById(applierTbl.getContainerId());
+            if (dcTbl.getId() != appliercontainerTbl.getAppliercontainerDc()) {
+                applierTbls.remove(applierTbl);
+            }
+        }
+
+        return applierTbls;
+    }
+
+    @Override
+    public void updateBatchApplierActive(List<ApplierTbl> applierTbls) {
+        applierDao.updateBatchApplierActive(applierTbls);
     }
 
     @Override

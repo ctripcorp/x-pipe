@@ -1017,6 +1017,8 @@
 					AND <FIELD name='deleted' /> = 0
 					AND <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id
 					AND dcst.dc_cluster_id=dct.dc_cluster_id
+					AND dct.deleted = 0
+					AND dcst.deleted = 0
         			]]>
 				</statement>
 			</query>
