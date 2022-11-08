@@ -21,7 +21,6 @@ import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
-import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;

@@ -25,8 +25,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author lishanglin
@@ -57,7 +55,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     public void testPsyncAndXsync() throws Exception {
         KeeperConfig keeperConfig = newTestKeeperConfig();
         KeeperMeta keeperMeta = createKeeperMeta();
-        GtidRedisKeeperServer keeperServer = new GtidRedisKeeperServer(keeperMeta, keeperConfig,
+        DefaultRedisKeeperServer keeperServer = new DefaultRedisKeeperServer(keeperMeta, keeperConfig,
                 getReplicationStoreManagerBaseDir(keeperMeta), getRegistry().getComponent(LeaderElectorManager.class),
                 createkeepersMonitorManager(), getResourceManager(), parser);
         keeperServer.initialize();

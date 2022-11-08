@@ -22,11 +22,11 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -128,9 +128,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private AtomicInteger tryConnectMasterCnt = new AtomicInteger();
 
+	private RedisOpParser redisOpParser;
+
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
+
+		this(currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, null);
+	}
+
+	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
+									LeaderElectorManager leaderElectorManager,
+									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager, RedisOpParser redisOpParser){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
@@ -141,11 +150,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
+		this.redisOpParser = redisOpParser;
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
-		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
+		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor, redisOpParser);
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -643,7 +653,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				//go dump rdb
 				try{
 					if (FULLSYNC_TYPE_NOT_SUPPORTED.equals(failCause) && redisSlave instanceof XsyncRedisSlave) {
-						replicationStoreManager.setOpenIndexing(true);
+					    //TODO: keeper support lazy indexing
 						resetDefaultReplication();
 						redisSlave.waitForGtidParse();
 					} else if (RDB_GTIDSET_NOT_READY.equals(failCause)) {

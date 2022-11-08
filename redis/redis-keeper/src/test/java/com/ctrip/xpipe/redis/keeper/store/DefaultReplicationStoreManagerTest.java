@@ -48,37 +48,6 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	}
 
 	@Test
-	public void testRenameDeprecatedStore() throws IOException {
-		String insideMessage = randomString();
-
-		String tmpDir = getTestFileDir();
-		String deprecatedClusterName = "deprecatedClusterName";
-		String deprecatedShardName = "deprecatedShardName";
-
-		File deprecatedInside = new File(tmpDir, deprecatedClusterName + "/" + deprecatedShardName + "/1.txt");
-		File deprecated = new File(tmpDir, deprecatedClusterName + "/" + deprecatedShardName);
-		File deprecatedParent = new File(tmpDir, deprecatedClusterName);
-
-		File inside = new File(tmpDir, getClusterId() + "/" + getShardId() + "/1.txt");
-		File dest = new File(tmpDir, getClusterId() + "/" + getShardId());
-		File destParent = new File(tmpDir, getClusterId().toString());
-
-		deprecated.mkdirs();
-		FileUtils.writeStringToFile(deprecatedInside.getAbsolutePath(), insideMessage);
-
-		DefaultReplicationStoreManager.IdAndDbIdCompatible compatible = (DefaultReplicationStoreManager.IdAndDbIdCompatible) createReplicationStoreManager(keeperConfig);
-		compatible.setDeprecatedClusterAndShardName(deprecatedClusterName, deprecatedShardName);
-		compatible.renameDeprecatedStore();
-
-		assertFalse(deprecated.exists());
-		assertFalse(deprecatedParent.exists());
-		assertTrue(dest.exists());
-		assertTrue(destParent.exists());
-
-		assertEquals(insideMessage, FileUtils.readFileAsString(inside.getAbsolutePath()));
-	}
-
-	@Test
 	public void testNotCreateWhileNotInitialized() throws Exception {
 
 		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
