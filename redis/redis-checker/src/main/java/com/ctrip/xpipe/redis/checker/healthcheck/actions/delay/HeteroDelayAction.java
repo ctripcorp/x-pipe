@@ -41,7 +41,9 @@ public class HeteroDelayAction extends DelayAction {
     @Override
     protected void reportDelay() {
         logger.info("{}-{}", "testDebug", "reportDelay");
-        contexts.get().getContexts().forEach(innerContext -> {
+        if (contexts.get().getContexts().isEmpty())
+            return;
+        contexts.get().getContexts().values().forEach(innerContext -> {
             if (isExpired(innerContext)) {
                 if (!innerContext.isExpired()) {
                     innerContext.setExpired(true);

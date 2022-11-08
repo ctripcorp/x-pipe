@@ -1,17 +1,17 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HeteroDelayActionContexts {
 
-    private Set<HeteroDelayActionContext> contexts=new HashSet<>();
+    private Map<Long, HeteroDelayActionContext> contexts = new ConcurrentHashMap<>();
 
-    public Set<HeteroDelayActionContext> getContexts() {
+    public Map<Long, HeteroDelayActionContext> getContexts() {
         return contexts;
     }
 
     public void addContext(HeteroDelayActionContext context) {
-        this.contexts.add(context);
+        this.contexts.put(context.getShardDbId(),context);
     }
 }
