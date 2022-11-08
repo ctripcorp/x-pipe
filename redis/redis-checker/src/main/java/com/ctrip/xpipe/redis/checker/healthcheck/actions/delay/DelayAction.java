@@ -163,6 +163,8 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     protected boolean isExpired(DelayActionContext context) {
         long lastDelay = System.currentTimeMillis() - context.getRecvTimeMilli();
+        if (context instanceof HeteroDelayActionContext)
+            logger.info("{}-{}-{}-{}", "testDebug",((HeteroDelayActionContext) context).getShardDbId(), context.getRecvTimeMilli(), lastDelay);
         return lastDelay >= expireInterval;
     }
 

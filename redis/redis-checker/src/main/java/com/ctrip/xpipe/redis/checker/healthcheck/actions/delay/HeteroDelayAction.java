@@ -32,23 +32,28 @@ public class HeteroDelayAction extends DelayAction {
         String[] channelParts = channel.split("-");
         Long shardId = Long.parseLong(channelParts[channelParts.length - 1]);
 
-        contexts.get().addContext(new HeteroDelayActionContext(instance, shardId, currentTime - lastDelayPubTimeNano));
+        HeteroDelayActionContext context = new HeteroDelayActionContext(instance, shardId, currentTime - lastDelayPubTimeNano);
+        contexts.get().addContext(context);
+
+        logger.info("{}-{}-{}-{}-{}", "testDebug", channel, message, context.getResult(), context.getRecvTimeMilli());
     }
 
     @Override
     protected void reportDelay() {
+        logger.info("{}-{}", "testDebug", "reportDelay");
         contexts.get().getContexts().forEach(innerContext -> {
             if (isExpired(innerContext)) {
                 if (!innerContext.isExpired()) {
                     innerContext.setExpired(true);
+                    logger.info("{}-{}-{}-{}", "testDebug", "setExpired-true", innerContext.getShardDbId(),  innerContext.getRecvTimeMilli());
                     logger.warn("[expire][{}->{}] last update time: {}",innerContext.getShardDbId(), instance.getCheckInfo().getHostPort(),
                             DateTimeUtils.timeAsString(innerContext.getRecvTimeMilli()));
                 }
-
                 onExpired(innerContext);
             } else {
                 if (innerContext.isExpired()) {
                     innerContext.setExpired(false);
+                    logger.info("{}-{}-{}-{}", "testDebug", "onExpired-false",innerContext.getShardDbId(), innerContext.getRecvTimeMilli());
                     logger.info("[expire][{}->{}] recovery",innerContext.getShardDbId(), instance.getCheckInfo().getHostPort());
                 }
                 onNotExpired(innerContext);
@@ -58,11 +63,13 @@ public class HeteroDelayAction extends DelayAction {
 
     @Override
     protected void onExpired(DelayActionContext context) {
+        logger.info("{}-{}-{}-{}", "testDebug", "onExpired",((HeteroDelayActionContext)context).getShardDbId(), context.getRecvTimeMilli());
         notifyListeners(new HeteroDelayActionContext(instance, ((HeteroDelayActionContext) context).getShardDbId(), SAMPLE_LOST_AND_NO_PONG));
     }
 
     @Override
     protected void onNotExpired(DelayActionContext context) {
+        logger.info("{}-{}-{}-{}", "testDebug", "onNotExpired",((HeteroDelayActionContext)context).getShardDbId(), context.getRecvTimeMilli());
         notifyListeners(context);
     }
 
