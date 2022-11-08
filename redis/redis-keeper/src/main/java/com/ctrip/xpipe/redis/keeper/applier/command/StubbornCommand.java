@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Slight
  * <p>
@@ -35,6 +37,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
             } else {
                 getLogger().warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
+                TimeUnit.MILLISECONDS.sleep(100);
                 executeTilSuccess();
             }
         });
