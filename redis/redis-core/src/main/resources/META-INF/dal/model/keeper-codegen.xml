@@ -64,6 +64,7 @@
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="type" value-type="String" />
+    <attribute name="hints" value-type="String" />
     <attribute name="admin-emails" value-type="String" />
     <attribute name="dcs" value-type="String" />
     <attribute name="activeRedisCheckRules" value-type="String" />

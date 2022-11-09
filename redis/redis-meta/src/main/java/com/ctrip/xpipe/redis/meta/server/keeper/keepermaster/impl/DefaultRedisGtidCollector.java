@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -51,12 +52,15 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
     @Override
     protected void work() {
-
-        collectCurrentDcGtidAndSids();
-        collectSids();
+        String hints = dcMetaCache.getClusterMeta(clusterDbId).getHints();
+        if (Hints.parse(hints).contains(Hints.APPLIER_IN_CLUSTER)) {
+            collectCurrentDcGtidAndSids();
+            collectSids();
+        }
     }
 
-    private void collectCurrentDcGtidAndSids() {
+    @VisibleForTesting
+    protected void collectCurrentDcGtidAndSids() {
 
         /* redis shard */
         List<RedisMeta> redises = currentMetaManager.getRedises(clusterDbId, shardDbId);
@@ -71,7 +75,8 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
         }
     }
 
-    private void collectSids() {
+    @VisibleForTesting
+    protected void collectSids() {
 
         if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId) ||
                 dcMetaCache.getShardAppliers(clusterDbId, shardDbId) == null ||
@@ -125,7 +130,8 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
                     return;
                 }
                 logger.info("[info gtid command], cluster_{}, shard_{}, ip={}, port={} gtidSet={}",
-                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), gtidSet);
+                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(),
+                        gtidSet.toString().substring(0, Math.min(1000, gtidSet.toString().length())));
                 String sids = null;
                 if (!gtidSet.getUUIDs().isEmpty()) {
                     for(String sid: gtidSet.getUUIDs()) {
