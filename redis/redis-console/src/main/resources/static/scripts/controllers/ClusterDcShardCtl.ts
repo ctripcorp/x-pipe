@@ -184,6 +184,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                     HealthCheckService.getShardDelay($scope.clusterName, shard.shardTbl.shardName, shard.shardTbl.id)
                         .then(function (result) {
                             shard.delay = result.delay;
+                            shard.heteroDelayhealthy = isHeteroDelayHealthy(shard);
                         });
                 });
             });
@@ -256,6 +257,12 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         if (redis.delay === null || redis.delay === undefined) return false;
 
         return redis.delay >= 0 && redis.delay !== 99999;
+    }
+
+    function isHeteroDelayHealthy(shard) {
+        if (shard.delay === null || shard.delay === undefined) return false;
+
+        return shard.delay >= 0 && shard.delay !== 99999;
     }
 
     function unfoldAllUnhealthyDelay() {

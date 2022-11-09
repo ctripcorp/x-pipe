@@ -76,7 +76,6 @@ public class RedisSession {
                 subscribConns.remove(channel);
 
                 String[] channelArray = channel.toArray(new String[0]);
-//                subscribeIfAbsent(pubSubConnectionWrapper.getCallback(), pubSubConnectionWrapper.getSubCommandSupplier(), channelArray);
                 Subscribe command = pubSubConnectionWrapper.command.get();
                 if (command instanceof CRDTSubscribeCommand) {
                     crdtsubscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
