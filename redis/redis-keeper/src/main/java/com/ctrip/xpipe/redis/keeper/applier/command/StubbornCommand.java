@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.google.common.util.concurrent.MoreExecutors;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -15,8 +17,15 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
 
     private final Command<V> inner;
 
+    private final Executor retryExecutor;
+
     public StubbornCommand(Command<V> inner) {
+        this(inner, MoreExecutors.directExecutor());
+    }
+
+    public StubbornCommand(Command<V> inner, Executor retryExecutor) {
         this.inner = inner;
+        this.retryExecutor = retryExecutor;
     }
 
     @Override
@@ -38,7 +47,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
                 getLogger().warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
                 TimeUnit.MILLISECONDS.sleep(100);
-                executeTilSuccess();
+                retryExecutor.execute(this::executeTilSuccess);
             }
         });
     }
