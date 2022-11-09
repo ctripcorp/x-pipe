@@ -40,6 +40,7 @@ public class HealthCheckController extends AbstractConsoleController {
     private DefaultCrossMasterDelayService crossMasterDelayService;
 
     private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d&var-delayType=%s";
+    private static final String HETERO_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-srcShardId=%d&var-delayType=%s";
     private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";
     private static final String OUTCOMING_TRAFFIC_TO_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
     private static final String INCOMING_TRAFFIC_FROM_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
@@ -98,6 +99,17 @@ public class HealthCheckController extends AbstractConsoleController {
              url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort, delayType));
         } catch (Exception e) {
             logger.error("[getHickwallUrl]", e);
+        }
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/hetero/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/{srcShardId}/{delayType}", method = RequestMethod.GET)
+    public Map<String, String> getHeteroDelayHickwallAddress(@PathVariable String clusterName, @PathVariable int srcShardId, @PathVariable String delayType) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(HETERO_DELAY_TEMPLATE, info.getHeteroDelayPanelId(), clusterName, srcShardId, delayType));
+        } catch (Exception e) {
+            logger.error("[getHeteroDelayHickwallAddress]", e);
         }
         return ImmutableMap.of("addr", url);
     }

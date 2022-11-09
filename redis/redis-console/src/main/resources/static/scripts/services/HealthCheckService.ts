@@ -9,6 +9,7 @@ function HealthCheckService($resource, $q) {
 	const GET_REPL_DELAY = "get_repl_delay";
 	const GET_SHARD_DELAY = "get_shard_delay";
 	const GET_HICKWALL_ADDR = "get_hickwall_addr";
+	const GET_HETERO_HICKWALL_ADDR = "get_hetero_hickwall_addr";
 	const GET_CROSS_MASTER_DELAY = "get_cross_master_delay";
 	const GET_CROSS_MASTER_HICKWALL_ADDR = "get_cross_master_hickwall_addr";
 	const GET_PEER_OUTCOMING = "get_peer_outcoming";
@@ -33,6 +34,10 @@ function HealthCheckService($resource, $q) {
 		apis[GET_HICKWALL_ADDR] = {
 			method: 'GET',
 			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort/:delayType'
+		};
+		apis[GET_HETERO_HICKWALL_ADDR] = {
+			method: 'GET',
+			url: '/console/hetero/health/hickwall/:cluster/:srcShardId/:delayType'
 		};
 		apis[GET_CROSS_MASTER_DELAY] = {
 			method: 'GET',
@@ -104,6 +109,14 @@ function HealthCheckService($resource, $q) {
 		});
 	}
 
+	function getHeteroHickwallAddr(cluster, srcShardId, delayType) {
+		return request($q.defer(), GET_HETERO_HICKWALL_ADDR, {
+			cluster : cluster,
+			srcShardId : srcShardId,
+			delayType: delayType
+		});
+	}
+
 	function getCrossMasterDelay(dc, cluster, shard, clusterType) {
 		return request($q.defer(), GET_CROSS_MASTER_DELAY, {
 			dc, cluster, shard, clusterType
@@ -150,6 +163,7 @@ function HealthCheckService($resource, $q) {
 		getReplDelay : getReplDelay,
 		getShardDelay: getShardDelay,
 		getHickwallAddr : getHickwallAddr,
+		getHeteroHickwallAddr: getHeteroHickwallAddr,
 		getCrossMasterDelay : getCrossMasterDelay,
 		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr,
 		getOutComingTrafficToPeerHickwallAddr: getOutComingTrafficToPeerHickwallAddr,

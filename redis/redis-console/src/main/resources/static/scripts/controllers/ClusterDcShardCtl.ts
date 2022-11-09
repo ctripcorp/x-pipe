@@ -18,6 +18,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.switchDc = switchDc;
     $scope.loadCluster = loadCluster;
     $scope.gotoHickwall = gotoHickwall;
+    $scope.gotoHeteroHickwall = gotoHeteroHickwall;
     $scope.gotoOutComingTrafficToPeerHickwall = gotoOutComingTrafficToPeerHickwall;
     $scope.gotoInComingTrafficFromPeerHickwall = gotoInComingTrafficFromPeerHickwall;
     $scope.gotoPeerSyncFullHickwall = gotoPeerSyncFullHickwall;
@@ -213,6 +214,10 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     
     function gotoHickwall(clusterName, shardName, redisIp, redisPort, delayType) {
         openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort, delayType));
+    }
+
+    function gotoHeteroHickwall(clusterName, srcShardId, delayType) {
+        openHickwall(HealthCheckService.getHeteroHickwallAddr(clusterName, srcShardId, delayType));
     }
 
     function gotoCrossMasterHickwall(shardName, destDc) {
