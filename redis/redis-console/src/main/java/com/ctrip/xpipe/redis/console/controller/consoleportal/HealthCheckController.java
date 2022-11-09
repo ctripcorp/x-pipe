@@ -39,7 +39,7 @@ public class HealthCheckController extends AbstractConsoleController {
     @Autowired
     private DefaultCrossMasterDelayService crossMasterDelayService;
 
-    private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
+    private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d&var-delayType=%s";
     private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";
     private static final String OUTCOMING_TRAFFIC_TO_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
     private static final String INCOMING_TRAFFIC_FROM_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
@@ -91,11 +91,11 @@ public class HealthCheckController extends AbstractConsoleController {
         return url;
     }
     
-    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}/{delayType}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort, @PathVariable String delayType) {
         String url = "";
         try {
-             url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort));
+             url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort, delayType));
         } catch (Exception e) {
             logger.error("[getHickwallUrl]", e);
         }

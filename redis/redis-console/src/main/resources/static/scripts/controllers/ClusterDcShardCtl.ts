@@ -211,8 +211,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         });
     }
     
-    function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
-        openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort));
+    function gotoHickwall(clusterName, shardName, redisIp, redisPort, delayType) {
+        openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort, delayType));
     }
 
     function gotoCrossMasterHickwall(shardName, destDc) {

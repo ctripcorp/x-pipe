@@ -32,7 +32,7 @@ function HealthCheckService($resource, $q) {
 		};
 		apis[GET_HICKWALL_ADDR] = {
 			method: 'GET',
-			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort'
+			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort/:delayType'
 		};
 		apis[GET_CROSS_MASTER_DELAY] = {
 			method: 'GET',
@@ -94,12 +94,13 @@ function HealthCheckService($resource, $q) {
 		});
 	}
 	
-	function getHickwallAddr(cluster, shard, redisIp, redisPort) {
+	function getHickwallAddr(cluster, shard, redisIp, redisPort, delayType) {
 		return request($q.defer(), GET_HICKWALL_ADDR, {
 			cluster : cluster,
 			shard : shard,
 			redisIp : redisIp,
-			redisPort : redisPort
+			redisPort : redisPort,
+			delayType: delayType
 		});
 	}
 
