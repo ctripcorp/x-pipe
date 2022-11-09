@@ -75,7 +75,7 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'">
                                 <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
                                     <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
                                             ng-click="shard.showCrossMasters = !shard.showCrossMasters">
@@ -83,7 +83,7 @@
                                 </button>
                                 </span>
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort, 'default')"></span></td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
                                 <span  class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
@@ -135,7 +135,7 @@
 
                             <div class="col-md-10">
                                 <font color="black" class="col-md-10">
-                                    src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}}) 上下游延迟:{{shard.delay}}
+                                    src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}}) 上下游延迟:{{shard.delay}}ms
                                 </font>
                             </div>
                             <div class="col-md-2 text-right">
@@ -156,10 +156,10 @@
                             <th>
                                 端口
                             </th>
-                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'">
                                 状态
                             </th>
-                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                            <th ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'">
                                 延迟
                             </th>
                         </tr>
@@ -174,15 +174,15 @@
                             </td>
                             <td ng-bind="applier.port">
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'">
-                                <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
-                                    <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
-                                            ng-click="shard.showCrossMasters = !shard.showCrossMasters">
-                                        {{shard.showCrossMasters ? '折叠延迟' : '展开延迟'}}
-                                </button>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
+                                <span style="position: relative" ng-if="undefined !== shard.heteroDelayhealthy && applier.active === true" class="{{shard.heteroDelayhealthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
+<!--                                    <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"-->
+<!--                                            ng-click="shard.showCrossMasters = !shard.showCrossMasters">-->
+<!--                                        {{shard.showCrossMasters ? '折叠延迟' : '展开延迟'}}-->
+<!--                                </button>-->
                                 </span>
                             </td>
-                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way' || clusterType == 'hetero'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span ng-if="applier.active === true" class="hickwall" aria-hidden="true" ng-click="gotoHeteroHickwall(clusterName, shard.shardTbl.id, 'hetero')"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
