@@ -16,9 +16,9 @@ public interface DelayService extends RedisDelayManager {
 
     void updateRedisDelays(Map<HostPort, Long> redisDelays);
 
-    void updateUpstreamShardsDelays(Map<Long,Long> upstreamShardsDelays);
+    void updateHeteroShardsDelays(Map<Long, Long> heteroShardsDelays);
 
-    long getShardDelay(String clusterId,String shardId,Long shardDbId);
+    long getShardDelay(String clusterId, String shardId, Long shardDbId);
 
     long getDelay(HostPort hostPort);
 
