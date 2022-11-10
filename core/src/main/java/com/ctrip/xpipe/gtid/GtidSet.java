@@ -162,6 +162,9 @@ public class GtidSet {
      * @return whether or not gtid was added to the set (false if it was already there)
      */
     public boolean add(String gtid) {
+        if (gtid == null) {
+            return false;
+        }
         String[] split = gtid.split(":");
         if (split.length != 2) {
             return false;

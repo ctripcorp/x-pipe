@@ -5,6 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.Gtid2OffsetIndexGenerator;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
@@ -22,6 +23,8 @@ import java.io.IOException;
 public class GtidReplicationStore extends DefaultReplicationStore {
 
     private static final Logger logger = LoggerFactory.getLogger(GtidReplicationStore.class);
+
+    private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024; // 50MB
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) throws IOException {
@@ -144,4 +147,33 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     }
 
+    @Override
+    public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+
+        FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
+        if (ctx.isFullSyncPossible() && StringUtil.isEmpty(ctx.getRdbStore().getGtidSet())) {
+            return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
+        }
+
+        if (ctx.isFullSyncPossible()) {
+            return tryCreateIndex(ctx);
+        } else {
+            return ctx.getCause();
+        }
+    }
+
+    protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx) throws IOException {
+        //TODO 1: how about gc() invoked at the same time ?
+        //TODO 2: find latest index
+
+        String rdbGtidSetString = ctx.getRdbStore().getGtidSet();
+        GtidSet rdbGtidSet = new GtidSet(rdbGtidSetString);
+
+        //TODO 3: deal with thread leak
+        addCommandsListener(
+                new GtidSetReplicationProgress(rdbGtidSet),
+                new Gtid2OffsetIndexGenerator(cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, rdbGtidSetString)
+        );
+        return null;
+    }
 }

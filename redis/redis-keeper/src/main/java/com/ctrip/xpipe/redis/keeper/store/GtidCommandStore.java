@@ -72,12 +72,13 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
             while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
                 final RedisOp redisOp = cmdReader.read();
+
                 if (null == redisOp) continue;
 
                 logger.debug("[addCommandsListener] {}", redisOp);
 
                 // TODO: monitor send delay
-                ChannelFuture future = listener.onCommand(redisOp);
+                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.filePosition(), redisOp);
 
                 if(future != null){
                     CommandReader<RedisOp> finalCmdReader = cmdReader;

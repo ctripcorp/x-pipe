@@ -218,6 +218,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean checkOk() {
 		return dumpedRdbStore.checkOk();
 	}
