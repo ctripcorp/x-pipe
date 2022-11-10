@@ -151,9 +151,13 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         }
     }
 
-    @Override
     public long filePosition() throws IOException {
         return controllableFile.getFileChannel().position();
+    }
+
+    @Override
+    public long position() throws IOException {
+        return filePosition() - curBuf.readableBytes();
     }
 
     private synchronized void setCmdFile(CommandFile cmdFile, long filePosition, boolean clearBuf) throws IOException {

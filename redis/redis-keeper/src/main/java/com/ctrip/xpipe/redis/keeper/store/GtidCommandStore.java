@@ -78,7 +78,7 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                 logger.debug("[addCommandsListener] {}", redisOp);
 
                 // TODO: monitor send delay
-                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.filePosition(), redisOp);
+                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), redisOp);
 
                 if(future != null){
                     CommandReader<RedisOp> finalCmdReader = cmdReader;
