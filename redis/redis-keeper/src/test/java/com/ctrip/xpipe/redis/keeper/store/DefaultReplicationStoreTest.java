@@ -4,13 +4,12 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -103,7 +102,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 					store.fullSyncIfPossible(new FullSyncListener() {
 						
 						@Override
-						public ChannelFuture onCommand(Object cmd) {
+						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 							
 							return null;
 						}

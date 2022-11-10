@@ -43,9 +43,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
-	private CommandStore cmdStore;
+	protected CommandStore cmdStore;
 
-	private MetaStore metaStore;
+	protected MetaStore metaStore;
 
 	private int cmdFileSize;
 
@@ -397,6 +397,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			getCommandStore().addCommandsListener(progress, commandsListener);
 		}
+	}
+
+	@Override
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

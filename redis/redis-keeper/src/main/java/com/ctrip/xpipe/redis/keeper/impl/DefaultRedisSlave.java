@@ -11,15 +11,12 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
@@ -340,7 +337,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture onCommand(Object cmd) {
+	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
 

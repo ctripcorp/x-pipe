@@ -164,6 +164,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
+	public String getGtidSet() {
+		return null;
+	}
+
+	@Override
 	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
 		
 		makeSureOpen();

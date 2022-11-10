@@ -386,7 +386,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long lowestReadingOffset = Long.MAX_VALUE;
 
         for (CommandReader reader : readers.keySet()) {
-            File readingFile = reader.getCurFile();
+            File readingFile = reader.getCurCmdFile().getFile();
             if (readingFile != null) {
                 lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
             }
