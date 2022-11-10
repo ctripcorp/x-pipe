@@ -18,6 +18,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.switchDc = switchDc;
     $scope.loadCluster = loadCluster;
     $scope.gotoHickwall = gotoHickwall;
+    $scope.gotoHeteroHickwall = gotoHeteroHickwall;
     $scope.gotoOutComingTrafficToPeerHickwall = gotoOutComingTrafficToPeerHickwall;
     $scope.gotoInComingTrafficFromPeerHickwall = gotoInComingTrafficFromPeerHickwall;
     $scope.gotoPeerSyncFullHickwall = gotoPeerSyncFullHickwall;
@@ -184,6 +185,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                     HealthCheckService.getShardDelay($scope.clusterName, shard.shardTbl.shardName, shard.shardTbl.id)
                         .then(function (result) {
                             shard.delay = result.delay;
+                            shard.heteroDelayhealthy = isHeteroDelayHealthy(shard);
                         });
                 });
             });
@@ -210,8 +212,12 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         });
     }
     
-    function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
-        openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort));
+    function gotoHickwall(clusterName, shardName, redisIp, redisPort, delayType) {
+        openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort, delayType));
+    }
+
+    function gotoHeteroHickwall(clusterName, srcShardId, delayType) {
+        openHickwall(HealthCheckService.getHeteroHickwallAddr(clusterName, srcShardId, delayType));
     }
 
     function gotoCrossMasterHickwall(shardName, destDc) {
@@ -256,6 +262,12 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         if (redis.delay === null || redis.delay === undefined) return false;
 
         return redis.delay >= 0 && redis.delay !== 99999;
+    }
+
+    function isHeteroDelayHealthy(shard) {
+        if (shard.delay === null || shard.delay === undefined) return false;
+
+        return shard.delay >= 0 && shard.delay !== 99999;
     }
 
     function unfoldAllUnhealthyDelay() {
