@@ -8,8 +8,7 @@ public interface CommandReader<R> {
 
 	CommandFile getCurCmdFile();
 
-	//The filePosition is right after cmd is read
-	long filePosition() throws IOException;
+	long position() throws IOException;
 
 	void flushed(R cmdContent);
 

@@ -22,8 +22,6 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private long curPosition;
 
-    private long filePosition;
-
     private ReferenceFileChannel referenceFileChannel;
 
     private CommandStore commandStore;
@@ -57,8 +55,6 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
         curPosition += referenceFileRegion.count();
 
-        filePosition = referenceFileRegion.position() + referenceFileRegion.count();
-
         referenceFileRegion.setTotalPos(curPosition);
 
         if (referenceFileRegion.count() < 0) {
@@ -83,8 +79,8 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     }
 
     @Override
-    public long filePosition() throws IOException {
-        return filePosition;
+    public long position() throws IOException {
+        return referenceFileChannel.position();
     }
 
     @Override

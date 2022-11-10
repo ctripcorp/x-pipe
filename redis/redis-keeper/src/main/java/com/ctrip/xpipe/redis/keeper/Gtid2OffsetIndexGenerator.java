@@ -97,6 +97,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     private void tryInsertIndex(CommandFileOffsetGtidIndex index) {
         try {
+            //generator
             this.indexControllableFile.getFileChannel().write(ByteBuffer.wrap((index.buildIdxStr() + LINE_SEPARATOR).getBytes()));
         } catch (Throwable throwable) {
             logger.info("[tryInsertIndex][fail] {}", index, throwable);
