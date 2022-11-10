@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -45,6 +46,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     private Map<Long, Long> keeperContainerIdDcMap;
 
     private Map<Long, List<ApplierTbl>> replId2AppliersMap;
+
+    private Set<Long> shardIdWithAppliers;
 
     private List<ReplDirectionTbl> replDirectionTblList;
 
@@ -422,7 +425,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 List<ApplierTbl> applierTblList = applierService.findAll();
                 replId2AppliersMap = new HashMap<>();
+                shardIdWithAppliers = new HashSet<>();
                 for (ApplierTbl applierTbl : applierTblList) {
+                    shardIdWithAppliers.add(applierTbl.getShardId());
                     List<ApplierTbl> applierTbls = MapUtils.getOrCreate(replId2AppliersMap, applierTbl.getReplDirectionId(), ArrayList::new);
                     applierTbls.add(applierTbl);
                 }
@@ -500,10 +505,28 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                         buildHeteroMeta(dcMeta, dcId);
                     }
                 }
+                addClusterHints();
 
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
+            }
+        }
+
+        private void addClusterHints() {
+            for (DcMeta dcMeta: dcMetaMap.values()) {
+                for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                    boolean hasApplier = false;
+                    for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
+                        if (shardIdWithAppliers.contains(shardMeta.getDbId())) {
+                            hasApplier = true;
+                            break;
+                        }
+                    }
+                    if (hasApplier) {
+                        clusterMeta.setHints(Hints.APPLIER_IN_CLUSTER.name());
+                    }
+                }
             }
         }
 
