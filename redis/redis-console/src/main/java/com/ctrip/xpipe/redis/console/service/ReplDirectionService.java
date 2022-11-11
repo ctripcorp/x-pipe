@@ -9,11 +9,7 @@ import java.util.Map;
 
 public interface ReplDirectionService {
 
-    ReplDirectionTbl findReplDirectionTblById(long id);
-
     List<ReplDirectionTbl> findAllReplDirectionJoinClusterTbl();
-
-    List<ReplDirectionTbl> findAllReplDirections();
 
     List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId);
 
