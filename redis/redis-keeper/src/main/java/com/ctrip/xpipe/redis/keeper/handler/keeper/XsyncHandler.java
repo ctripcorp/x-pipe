@@ -45,7 +45,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         GtidSet neededGtidSet = localEndGtidSet.subtract(reqExcludedGtidSet);
         GtidSet missingGtidSet = localBeginGtidSet.retainAll(neededGtidSet);
 
-        if (!missingGtidSet.isEmpty()) {
+        if (!missingGtidSet.isEmpty() && !missingGtidSet.isZero()) {
             logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
                     reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
             ((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();

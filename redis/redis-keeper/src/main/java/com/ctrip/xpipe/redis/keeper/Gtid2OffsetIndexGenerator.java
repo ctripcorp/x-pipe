@@ -72,7 +72,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
             rotateIndexFileIfNecessary(currentFile);
 
             if (shouldInsert()) {
-                CommandFileOffsetGtidIndex index = new CommandFileOffsetGtidIndex(gtid_received, currentFile, filePosition);
+                CommandFileOffsetGtidIndex index = new CommandFileOffsetGtidIndex(gtid_received.clone(), currentFile, filePosition);
                 tryInsertIndex(index);
             }
 
