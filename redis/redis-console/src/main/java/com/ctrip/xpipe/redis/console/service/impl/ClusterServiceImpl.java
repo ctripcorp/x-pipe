@@ -100,6 +100,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<ClusterTbl> findClustersByGroupType(final String groupType) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersByGroupType(groupType, ClusterTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public List<ClusterTbl> findAllByNames(List<String> clusterNames) {
 		return clusterDao.findClustersWithName(clusterNames);
 	}

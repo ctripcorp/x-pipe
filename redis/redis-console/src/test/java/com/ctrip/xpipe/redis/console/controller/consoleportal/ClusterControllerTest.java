@@ -12,8 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 public class ClusterControllerTest extends AbstractConsoleIntegrationTest {
     @Autowired
     ClusterController controller;
@@ -46,10 +44,10 @@ public class ClusterControllerTest extends AbstractConsoleIntegrationTest {
         long heteroClusterId = 7;
         ClusterTbl clusterTbl = clusterService.find(heteroClusterName);
 
-        ReplDirectionTbl replDirectionTbl = replDirectionService.findReplDirectionTblById(1L);
-        Assert.assertEquals(2, replDirectionTbl.getToDcId());
-        replDirectionTbl = replDirectionService.findReplDirectionTblById(2L);
-        Assert.assertEquals(3, replDirectionTbl.getToDcId());
+        ReplDirectionInfoModel replDirection= replDirectionService.findReplDirectionInfoModelById(1L);
+        Assert.assertEquals("oy", replDirection.getToDcName());
+        replDirection= replDirectionService.findReplDirectionInfoModelById(2L);
+        Assert.assertEquals("fra",replDirection.getToDcName());
 
         ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(heteroClusterName)
                 .setSrcDcName("jq").setFromDcName("jq").setToDcName("oy").setId(2L);
@@ -58,11 +56,10 @@ public class ClusterControllerTest extends AbstractConsoleIntegrationTest {
 
         controller.updateClusterReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
 
-        replDirectionTbl = replDirectionService.findReplDirectionTblById(1L);
-        Assert.assertEquals(3, replDirectionTbl.getToDcId());
-        replDirectionTbl = replDirectionService.findReplDirectionTblById(2L);
-        Assert.assertEquals(2, replDirectionTbl.getToDcId());
-
+        replDirection= replDirectionService.findReplDirectionInfoModelById(1L);
+        Assert.assertEquals("fra", replDirection.getToDcName());
+        replDirection= replDirectionService.findReplDirectionInfoModelById(2L);
+        Assert.assertEquals("oy",replDirection.getToDcName());
         try {
             controller.updateClusterReplDirections(null, Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
         } catch (Exception e) {
