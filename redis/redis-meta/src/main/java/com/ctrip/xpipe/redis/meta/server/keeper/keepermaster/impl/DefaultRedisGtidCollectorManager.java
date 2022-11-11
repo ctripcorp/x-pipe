@@ -96,8 +96,6 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
 
         if (DcGroupType.DR_MASTER.name().equals(clusterMeta.getDcGroupType())) {
             collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP;
-        } else if (CollectionUtils.isEmpty(shardMeta.getAppliers()) && CollectionUtils.isEmpty(shardMeta.getRedises())) {
-            collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP;
         } else {
             collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_MASTER_GROUP;
         }

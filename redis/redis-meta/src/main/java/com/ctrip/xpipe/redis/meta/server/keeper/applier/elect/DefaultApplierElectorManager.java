@@ -54,9 +54,6 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     private void observeLeader(final ClusterMeta cluster) {
         logger.info("[observeLeader]{}", cluster.getDbId());
         for (final ShardMeta shard : cluster.getAllShards().values()) {
-            if (shard.getAppliers() == null || shard.getAppliers().isEmpty()) {
-                continue;
-            }
             observerShardLeader(cluster.getDbId(), shard.getDbId());
         }
     }
@@ -215,9 +212,6 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
 
         Long clusterDbId = comparator.getCurrent().getDbId();
         for(ShardMeta shardMeta : comparator.getAdded()){
-            if (shardMeta.getAppliers() == null || shardMeta.getAppliers().isEmpty()) {
-                continue;
-            }
             try {
                 observerShardLeader(clusterDbId, shardMeta.getDbId());
             } catch (Exception e) {
