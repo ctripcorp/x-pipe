@@ -290,7 +290,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
             }
 
             ApplierTbl applierWithSameIpPort = findApplierTblByIpPort(applier.getIp(), applier.getPort());
-            if (applierWithSameIpPort != null && !ObjectUtils.equals(applier.getId(), applier.getPort())) {
+            if (applierWithSameIpPort != null && !ObjectUtils.equals(applier.getId(), applierWithSameIpPort.getId())) {
                 throw new BadRequestException(
                         String.format("Already int use for applier`s port:%d", applierWithSameIpPort.getPort()));
             }
@@ -313,6 +313,10 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
 
         for (ApplierTbl applier : appliers) {
             ApplierTbl proto = dao.createLocal();
+
+            if (applier.getId() != 0) {
+                proto.setId(applier.getId());
+            }
             proto.setIp(applier.getIp()).setPort(applier.getPort())
                     .setContainerId(applier.getContainerId()).setActive(applier.isActive());
 
