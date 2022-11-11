@@ -68,15 +68,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @VisibleForTesting
-    void resetGtidReceived(GtidSet rdbGtidSet) {
-        this.gtid_received = rdbGtidSet;
+    void resetState(GtidSet gtidSet) {
+        this.gtid_received = gtidSet;
         this.receivedSids = new HashSet<>();
+        this.gtid_executed.set(gtidSet);
     }
 
     @Override
     public void onFullSync(GtidSet rdbGtidSet) {
 
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
+
+        this.resetState(rdbGtidSet);
     }
 
     @Override
@@ -90,22 +93,26 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onRdbData(ByteBuf rdbData) {
-        rdbParser.read(rdbData);
+        try {
+            rdbParser.read(rdbData);
+        } catch (Throwable t){
+            logger.error("[onRdbData] unlikely - error", t);
+        }
     }
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-        this.resetGtidReceived(rdbGtidSet);
 
         //ctrip.merge_start [gtid_set]
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSetExcluded) {
         logger.info("[onContinue]");
+        this.resetState(gtidSetExcluded);
     }
 
     @Override
@@ -130,6 +137,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             gtid_received.rise(gtid);
 
             stateThread.execute(()->{
+                logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
                 gtid_executed.get().rise(gtid);
             });
         } else {
@@ -139,10 +147,21 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             for (long i = last + 1; i < parsed.getValue(); i++) {
                 long leaped = i;
                 stateThread.execute(()->{
+                    logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", parsed.getKey(), leaped, gtid_executed.get());
                     gtid_executed.get().add(GtidSet.composeGtid(parsed.getKey(), leaped));
                 });
             }
         }
+    }
+
+    protected int toInt(byte[] value) {
+        int rt = 0;
+        for (byte b : value) {
+            int add = b - '0';
+            rt = rt * 10;
+            rt += add;
+        }
+        return rt;
     }
 
     @Override
@@ -155,7 +174,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
             try {
-                int db = Integer.parseInt(Arrays.toString(redisOp.buildRawOpArgs()[1]));
+                int db = toInt(redisOp.buildRawOpArgs()[1]);
                 client.selectDB(db);
             } catch (Throwable unlikely) {
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));

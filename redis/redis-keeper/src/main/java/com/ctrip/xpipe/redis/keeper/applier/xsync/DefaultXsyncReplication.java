@@ -36,6 +36,8 @@ public class DefaultXsyncReplication
 
     private Xsync currentXsync;
 
+    private GtidSet gtidSetExcluded;
+
     @Override
     protected void doStart() throws Exception {
         //do nothing
@@ -44,9 +46,7 @@ public class DefaultXsyncReplication
 
     @Override
     protected void doStop() throws Exception {
-        if (isConnected()) {
-            disconnect();
-        }
+        disconnect();
     }
 
     //all below are definition to invoke StubbornNetworkCommunication functionality
@@ -62,7 +62,7 @@ public class DefaultXsyncReplication
         /* simple implementation */
 
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
-        Xsync xsync = new DefaultXsync(objectPool, gtid_executed.get(), null, scheduled);
+        Xsync xsync = new DefaultXsync(objectPool, gtidSetExcluded, null, scheduled);
         xsync.addXsyncObserver(dispatcher);
 
         this.currentXsync = xsync;
@@ -71,14 +71,14 @@ public class DefaultXsyncReplication
 
     @Override
     public void doDisconnect() throws Exception {
-        if (currentXsync != null) {
+        if (isConnected()) {
             currentXsync.close();
         }
     }
 
     @Override
     public boolean isConnected() {
-        return false;
+        return currentXsync != null;
     }
 
     @Override
@@ -89,7 +89,7 @@ public class DefaultXsyncReplication
     @Override
     public void initState(Endpoint endpoint, Object... states) {
         this.endpoint = endpoint;
-        this.gtid_executed.set((GtidSet) states[0]);
+        this.gtidSetExcluded = (GtidSet) states[0];
     }
 
     @Override

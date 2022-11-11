@@ -4,6 +4,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
+import redis.clients.util.SafeEncoder;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,7 +24,7 @@ public class DefaultCommandDispatcherTest {
         dispatcher.gtid_executed = new AtomicReference<>(new GtidSet(""));
         dispatcher.stateThread = MoreExecutors.newDirectExecutorService();
 
-        dispatcher.resetGtidReceived(new GtidSet(""));
+        dispatcher.resetState(new GtidSet(""));
     }
 
     @Test
@@ -60,6 +61,18 @@ public class DefaultCommandDispatcherTest {
 
         assertEquals(new GtidSet("A:1-6:8"), dispatcher.gtid_executed.get());
         assertEquals(new GtidSet("A:1-9"), dispatcher.gtid_received);
+
+    }
+
+    @Test
+    public void toInt() {
+        for (int i = 0; i < 257; i++) {
+
+            byte[] bytes = SafeEncoder.encode(i+"");
+
+            int rt = dispatcher.toInt(bytes);
+            assertEquals(i, rt);
+        }
 
     }
 }

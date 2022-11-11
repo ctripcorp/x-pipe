@@ -2,10 +2,17 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.InstanceNode;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.RedisGtidCollector;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.RedisGtidCollectorManager;
@@ -15,9 +22,12 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -51,9 +61,10 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
 
-        Long clusterDbId = comparator.getCurrent().getDbId();
+        ClusterMeta clusterMeta = comparator.getCurrent();
+        comparator.accept(new ClusterComparatorVisitor(clusterMeta));
         for (ShardMeta shardMeta : comparator.getAdded()) {
-            addShard(clusterDbId, shardMeta);
+            addShard(clusterMeta, shardMeta);
         }
 
     }
@@ -67,7 +78,7 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
     protected void handleClusterAdd(ClusterMeta clusterMeta) {
 
         for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
-            addShard(clusterMeta.getDbId(), shardMeta);
+            addShard(clusterMeta, shardMeta);
         }
 
     }
@@ -77,12 +88,20 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
         return Collections.singleton(ClusterType.ONE_WAY);
     }
 
-    private void addShard(Long clusterDbId, ShardMeta shardMeta) {
+    private void addShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
 
+        Long clusterDbId = clusterMeta.getDbId();
         Long shardDbId = shardMeta.getDbId();
+        int collectInterval;
+
+        if (DcGroupType.DR_MASTER.name().equals(clusterMeta.getDcGroupType())) {
+            collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP;
+        } else {
+            collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_MASTER_GROUP;
+        }
 
         RedisGtidCollector redisGtidCollector = new DefaultRedisGtidCollector(clusterDbId, shardDbId, dcMetaCache,
-                currentMetaManager, multiDcService, scheduled, clientPool);
+                currentMetaManager, multiDcService, scheduled, clientPool, collectInterval);
 
         try {
             logger.info("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId);
@@ -92,6 +111,93 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
             logger.error("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId, e);
         }
     }
+
+    protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
+
+        private ClusterMeta clusterMeta;
+
+        public ClusterComparatorVisitor(ClusterMeta clusterMeta) {
+            this.clusterMeta = clusterMeta;
+        }
+
+        @Override
+        public void visitAdded(ShardMeta added) {
+            logger.info("[visitAdded][add shard]{}", added);
+            addShard(clusterMeta, added);
+        }
+
+        @Override
+        public void visitModified(MetaComparator comparator) {
+
+            ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
+            ShardComparatorVisitor shardComparatorVisitor = new ShardComparatorVisitor();
+            shardMetaComparator.accept(shardComparatorVisitor);
+
+            Long clusterDbId = clusterMeta.getDbId();
+            ShardMeta shardMeta = shardMetaComparator.getFuture();
+
+            if (shardComparatorVisitor.isRedisMetaChanged()) {
+                List<RedisMeta> oldRedisMetas = currentMetaManager.getRedises(clusterDbId, shardMeta.getDbId());
+                List<RedisMeta> newRedisMetas = shardMeta.getRedises();
+                List<RedisMeta> redises = generateNewRedises(oldRedisMetas, newRedisMetas);
+
+                currentMetaManager.setRedises(clusterDbId, shardMeta.getDbId(), redises);
+            }
+        }
+
+        @Override
+        public void visitRemoved(ShardMeta removed) {}
+
+        private List<RedisMeta> generateNewRedises(List<RedisMeta> oldRedisMetas, List<RedisMeta> newRedisMetas) {
+
+            List<RedisMeta> result = new LinkedList<>();
+
+            for (RedisMeta newRedisMeta : newRedisMetas) {
+                boolean found = false;
+                for (RedisMeta oldRedisMeta : oldRedisMetas) {
+                    if (oldRedisMeta.getIp().equals(newRedisMeta.getIp()) &&
+                        oldRedisMeta.getPort().equals(newRedisMeta.getPort())) {
+                        result.add(oldRedisMeta);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    result.add(MetaClone.clone(newRedisMeta));
+                }
+            }
+            return result;
+        }
+    }
+
+    protected class ShardComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
+
+        private boolean redisMetaChanged = false;
+
+        @Override
+        public void visitAdded(InstanceNode added) {
+            if (added instanceof RedisMeta) {
+                redisMetaChanged = true;
+            }
+        }
+
+        @Override
+        public void visitModified(MetaComparator comparator) {
+            // nothing to do
+        }
+
+        @Override
+        public void visitRemoved(InstanceNode removed) {
+            if (removed instanceof RedisMeta) {
+                redisMetaChanged = true;
+            }
+        }
+
+        public boolean isRedisMetaChanged() {
+            return redisMetaChanged;
+        }
+    }
+
 
     @Override
     protected void doDispose() throws Exception {

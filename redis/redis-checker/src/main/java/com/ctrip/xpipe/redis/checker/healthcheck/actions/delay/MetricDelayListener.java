@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +33,10 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
         data.setTimestampMilli(context.getRecvTimeMilli());
         data.setHostPort(info.getHostPort());
         data.setClusterType(info.getClusterType());
+        data.addTag("delayType", context.getDelayType());
+        if (context instanceof HeteroDelayActionContext) {
+            data.addTag("srcShardId", String.valueOf(((HeteroDelayActionContext) context).getShardDbId()));
+        }
         return data;
     }
 
@@ -51,5 +52,10 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
     @Override
     public void stopWatch(HealthCheckAction action) {
         //do nothing
+    }
+
+    @Override
+    public boolean supportInstance(RedisHealthCheckInstance instance) {
+        return true;
     }
 }
