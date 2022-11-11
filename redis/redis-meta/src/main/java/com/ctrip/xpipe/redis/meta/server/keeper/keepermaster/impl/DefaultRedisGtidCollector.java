@@ -29,11 +29,11 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask implements RedisGtidCollector {
 
-    public static int REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP = Integer
-            .parseInt(System.getProperty("REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP", "30"));
+    public static int DEFAULT_INTERVAL_SECONDS = Integer
+            .parseInt(System.getProperty("DEFAULT_INTERVAL_SECONDS", "30"));
 
-    public static int REDIS_INFO_GTID_INTERVAL_SECONDS_MASTER_GROUP  = Integer
-            .parseInt(System.getProperty("REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP", "2"));
+    public static int MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS = Integer
+            .parseInt(System.getProperty("MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS", "2"));
 
     private MultiDcService multiDcService;
 
@@ -53,8 +53,12 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
     @Override
     protected void work() {
         String hints = dcMetaCache.getClusterMeta(clusterDbId).getHints();
-        if (Hints.parse(hints).contains(Hints.APPLIER_IN_CLUSTER)) {
+        if (!Hints.parse(hints).contains(Hints.MASTER_DC_IN_CLUSTER)) {
+            return;
+        }
+        if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
             collectCurrentDcGtidAndSids();
+        } else {
             collectSids();
         }
     }
