@@ -392,7 +392,7 @@ public class GtidSet {
     }
 
     public boolean isEmpty() {
-         if (map.isEmpty()) return true;
+        if (map.isEmpty()) return true;
         for (UUIDSet uuidSet : map.values()) {
             if (!uuidSet.isEmpty()) {
                 return false;
@@ -666,6 +666,9 @@ public class GtidSet {
             }
             // every interval in this must be within an interval of the other ...
             for (Interval thisInterval : this.intervals) {
+                if (thisInterval.end == 0) {
+                    continue;
+                }
                 boolean found = false;
                 for (Interval otherInterval : other.intervals) {
                     if (thisInterval.isContainedWithin(otherInterval)) {
