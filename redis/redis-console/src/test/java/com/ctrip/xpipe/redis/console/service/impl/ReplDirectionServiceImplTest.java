@@ -20,17 +20,18 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
     ClusterServiceImpl clusterService;
 
     @Test
-    public void testFindReplDirectionTblById(){
-        ReplDirectionTbl replDirectionTbl = replDirectionService.findReplDirectionTblById(1);
-        Assert.assertNotNull(replDirectionTbl);
-        Assert.assertEquals(1, replDirectionTbl.getId());
-        Assert.assertEquals(7,replDirectionTbl.getClusterId());
-        Assert.assertEquals(1,replDirectionTbl.getSrcDcId());
-        Assert.assertEquals(1,replDirectionTbl.getFromDcId());
-        Assert.assertEquals(2,replDirectionTbl.getToDcId());
+    public void testFindReplDirectionInfoModelById(){
+        ReplDirectionInfoModel replDirection = replDirectionService.findReplDirectionInfoModelById(1);
 
-        replDirectionTbl = replDirectionService.findReplDirectionTblById(30);
-        Assert.assertNull(replDirectionTbl);
+        Assert.assertNotNull(replDirection);
+        Assert.assertEquals(1, replDirection.getId());
+        Assert.assertEquals(7,replDirection.getClusterId());
+        Assert.assertEquals("jq",replDirection.getSrcDcName());
+        Assert.assertEquals("jq",replDirection.getFromDcName());
+        Assert.assertEquals("oy",replDirection.getToDcName());
+
+        replDirection = replDirectionService.findReplDirectionInfoModelById(30);
+        Assert.assertNull(replDirection);
     }
 
     @Test
@@ -110,6 +111,27 @@ public class ReplDirectionServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(1, allReplDirectionInfoModels.get(1).getToShardCount());
         Assert.assertEquals(8, allReplDirectionInfoModels.get(1).getKeeperCount());
         Assert.assertEquals(4, allReplDirectionInfoModels.get(1).getApplierCount());
+
+    }
+
+    @Test
+    public void testFindAllReplDirectionJoinClusterTbl() {
+        List<ReplDirectionTbl> allReplDirectionJoinClusterTbl = replDirectionService.findAllReplDirectionJoinClusterTbl();
+        Assert.assertEquals(5, allReplDirectionJoinClusterTbl.size());
+        allReplDirectionJoinClusterTbl.forEach(replDirectionTbl -> {
+            Assert.assertNotEquals(0, replDirectionTbl.getSrcDcId());
+            Assert.assertNotEquals(0, replDirectionTbl.getFromDcId());
+            Assert.assertNotNull(replDirectionTbl.getClusterInfo());
+        });
+    }
+
+    @Test
+    public void testFindByClusterAndSrcToDc() {
+        ReplDirectionTbl replication = replDirectionService.findByClusterAndSrcToDc("hetero-cluster", "jq", "fra");
+        Assert.assertEquals(2, replication.getId());
+
+        replication = replDirectionService.findByClusterAndSrcToDc("hetero-cluster", "jq", "oy");
+        Assert.assertEquals(1, replication.getId());
 
     }
 

@@ -12,7 +12,8 @@ import java.util.Set;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
-	List<ClusterTbl> findAllByNames(List<String> clusterNames);
+    List<ClusterTbl> findClustersByGroupType(String groupType);
+    List<ClusterTbl> findAllByNames(List<String> clusterNames);
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 	List<DcTbl> getClusterRelatedDcs(String clusterName);
