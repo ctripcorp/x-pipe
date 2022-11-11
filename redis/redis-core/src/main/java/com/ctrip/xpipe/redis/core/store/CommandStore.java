@@ -51,8 +51,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	GtidSet getBeginGtidSet() throws IOException;
 
-	GtidSet getEndGtidSet();
-
 	String simpleDesc();
 
 	void addReader(CommandReader<?> reader);

@@ -102,9 +102,4 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
         this.baseGtidSet = new GtidSet(baseGtidSet);
     }
 
-    @Override
-    public GtidSet getEndGtidSet() {
-        makeSureOpen();
-        return ((GtidSetCommandWriter)getCmdWriter()).getGtidSetContain();
-    }
 }

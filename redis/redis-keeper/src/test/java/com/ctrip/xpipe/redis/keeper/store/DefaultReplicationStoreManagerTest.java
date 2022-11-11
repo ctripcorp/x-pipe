@@ -269,7 +269,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		ByteBuf cmdBuf = Unpooled.buffer();
 		cmdBuf.writeByte(9);
-		newCurrentStore.getCommandStore().appendCommands(cmdBuf);
+		newCurrentStore.cmdStore.appendCommands(cmdBuf);
 
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
 		LifecycleHelper.initializeIfPossible(mgr2);
