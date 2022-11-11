@@ -10,6 +10,7 @@ import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.OneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -94,6 +95,31 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 			protected void doReset() {
 				
 			}
+		};
+		oneThreadTaskExecutor.executeCommand(command);
+	}
+
+	@Override
+	public void applierActiveElected(final Long clusterDbId, final Long shardDbId, final ApplierMeta activeApplier, String srcSids) {
+		logger.info("[applierActiveElected][called]cluster_{},shard_{},{}", clusterDbId, shardDbId, activeApplier);
+		Command<Void> command = new AbstractCommand<Void>() {
+
+			@Override
+			public String getName() {
+			    return "[applierActiveElected notify]";
+			}
+
+			@Override
+			protected void doExecute() throws Throwable {
+				Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+				logger.info("[applierActiveElected][execute]cluster_{}:{},shard_{}:{},{}", clusterDbId, clusterShard.getKey(),
+						shardDbId, clusterShard.getValue(), activeApplier);
+				consoleService.applierActiveChanged(dc, clusterShard.getKey(), clusterShard.getValue(), activeApplier);
+				future().setSuccess();
+			}
+
+			@Override
+			protected void doReset() {}
 		};
 		oneThreadTaskExecutor.executeCommand(command);
 	}

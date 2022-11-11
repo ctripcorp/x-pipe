@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -34,6 +35,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private Map<String, DcMeta> dcMetaMap;
 
+    private List<DcTbl> allDcsTblList;
+
     private Map<Long, String> dcNameMap;
 
     private Map<String, Long> dcNameZoneMap;
@@ -43,6 +46,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     private Map<Long, Long> keeperContainerIdDcMap;
 
     private Map<Long, List<ApplierTbl>> replId2AppliersMap;
+
+    private Set<Long> shardIdWithAppliers;
 
     private List<ReplDirectionTbl> replDirectionTblList;
 
@@ -80,11 +85,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private static final String DC_NAME_DELIMITER = ",";
 
-    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
+    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, List<DcTbl> allDcsList, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService,
                          ReplDirectionService replDirectionService, ZoneService zoneService, KeeperContainerService keeperContainerService, ApplierService applierService,
                          RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMetaMap = dcMetaMap;
+        this.allDcsTblList = allDcsList;
         this.interestClusterTypes = clusterTypes;
         this.executors = executors;
         this.redisMetaService = redisMetaService;
@@ -248,7 +254,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 dcCluster2DcClusterShardMap = Maps.newHashMap();
                 dc2DcClusterShardMap = Maps.newHashMap();
-                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByClusterTypes(interestClusterTypes);
+
+                List<DcClusterShardTbl> allDcClusterShards = new LinkedList<>();
+                for (DcTbl dcTbl : allDcsTblList) {
+                    allDcClusterShards.addAll(dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), interestClusterTypes));
+                }
 
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
@@ -263,6 +273,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                             dcClusterShardTbl.getDcClusterInfo().getDcId(), LinkedList::new);
                     dc2ClusterShardTbls.add(dcClusterShardTbl);
                 }
+
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
@@ -414,7 +425,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 List<ApplierTbl> applierTblList = applierService.findAll();
                 replId2AppliersMap = new HashMap<>();
+                shardIdWithAppliers = new HashSet<>();
                 for (ApplierTbl applierTbl : applierTblList) {
+                    shardIdWithAppliers.add(applierTbl.getShardId());
                     List<ApplierTbl> applierTbls = MapUtils.getOrCreate(replId2AppliersMap, applierTbl.getReplDirectionId(), ArrayList::new);
                     applierTbls.add(applierTbl);
                 }
@@ -492,10 +505,28 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                         buildHeteroMeta(dcMeta, dcId);
                     }
                 }
+                addClusterHints();
 
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
+            }
+        }
+
+        private void addClusterHints() {
+            for (DcMeta dcMeta: dcMetaMap.values()) {
+                for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                    boolean hasApplier = false;
+                    for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
+                        if (shardIdWithAppliers.contains(shardMeta.getDbId())) {
+                            hasApplier = true;
+                            break;
+                        }
+                    }
+                    if (hasApplier) {
+                        clusterMeta.setHints(Hints.APPLIER_IN_CLUSTER.name());
+                    }
+                }
             }
         }
 

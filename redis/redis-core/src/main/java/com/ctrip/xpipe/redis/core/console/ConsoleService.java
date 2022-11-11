@@ -27,6 +27,8 @@ public interface ConsoleService {
 
 	/***********************POST***********************/
 	void keeperActiveChanged(String dc, String clusterId, String shardId, KeeperMeta newActiveKeeper);
+
+	void applierActiveChanged(String dc, String clusterId, String shardId, ApplierMeta newActiveApplier);
 	
 	void redisMasterChanged(String dc, String clusterId, String shardId, RedisMeta newRedisMaster);
 	

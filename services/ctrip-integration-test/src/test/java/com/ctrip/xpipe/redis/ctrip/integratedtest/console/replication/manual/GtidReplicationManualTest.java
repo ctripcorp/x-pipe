@@ -122,7 +122,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSet) {
         logger.info("[onContinue]");
     }
 

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -14,8 +15,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgori
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -48,12 +47,6 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
 
     @Autowired
     private ZkClient zkClient;
-
-    @Autowired
-    private MultiDcService multiDcService;
-
-    @Autowired
-    private DcMetaCache dcMetaCache;
 
     @Autowired
     private ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager;
@@ -134,7 +127,7 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
         final String leaderLatchPath = MetaZkConfig.getApplierLeaderLatchPath(clusterDbId, shardDbId);
         logger.info("[observerShardLeader][add PathChildrenCache]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, leaderLatchPath);
         return new PathChildrenCache(client, leaderLatchPath, true,
-                XpipeThreadFactory.create(String.format("PathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
+                XpipeThreadFactory.create(String.format("ApplierPathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
     }
 
     private List<List<ChildData>> aggregateChildData(List<PathChildrenCache> pathChildrenCaches) {
@@ -201,6 +194,10 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     @Override
     protected void handleClusterAdd(ClusterMeta clusterMeta) {
         try {
+            if (DcGroupType.DR_MASTER.name().equals(clusterMeta.getDcGroupType())) {
+                return;
+            }
+
             observeLeader(clusterMeta);
         } catch (Exception e) {
             logger.error("[handleClusterAdd]cluster_" + clusterMeta.getDbId(), e);
@@ -209,6 +206,10 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
 
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
+        if (DcGroupType.DR_MASTER.name().equals(comparator.getFuture().getDcGroupType())) {
+            return;
+        }
+
         Long clusterDbId = comparator.getCurrent().getDbId();
         for(ShardMeta shardMeta : comparator.getAdded()){
             try {
@@ -232,15 +233,5 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     @VisibleForTesting
     public void setApplierActiveElectAlgorithmManager(ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager) {
         this.applierActiveElectAlgorithmManager = applierActiveElectAlgorithmManager;
-    }
-
-    @VisibleForTesting
-    public void setDcMetaCache(DcMetaCache dcMetaCache) {
-        this.dcMetaCache = dcMetaCache;
-    }
-
-    @VisibleForTesting
-    public void setMultiDcService(MultiDcService multiDcService) {
-        this.multiDcService = multiDcService;
     }
 }
