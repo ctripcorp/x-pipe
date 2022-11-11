@@ -33,14 +33,16 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     private GtidSet gtid_received;
 
+    private volatile GtidSet endGtidSet;
+
     private CommandFile currentFile;
 
     private ControllableFile indexControllableFile;
 
-    public Gtid2OffsetIndexGenerator(CommandStore cmdStore, int maxFileSize, String gtidSet) {
+    public Gtid2OffsetIndexGenerator(CommandStore cmdStore, int maxFileSize, GtidSet initGtidSet) {
         this.cmdStore = cmdStore;
         this.maxFileSize = maxFileSize;
-        this.gtid_received = new GtidSet(gtidSet);
+        this.gtid_received = initGtidSet;
     }
 
     @Override
@@ -60,6 +62,10 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
         String cmdGtid = redisOp.getOpGtid();
 
         gtid_received.add(cmdGtid);
+
+        //avoid currency-problem
+        //TODO: enhance performance
+        endGtidSet = gtid_received.clone();
 
         try {
 
@@ -127,6 +133,10 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     @Override
     public Long processedOffset() {
-        return null;
+        return Long.MAX_VALUE;
+    }
+
+    public GtidSet getEndGtidSet() {
+        return endGtidSet;
     }
 }

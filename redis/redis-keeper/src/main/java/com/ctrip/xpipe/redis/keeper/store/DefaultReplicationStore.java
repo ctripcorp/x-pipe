@@ -230,10 +230,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-	public CommandStore getCommandStore() {
-		return cmdStore;
-	}
-
 	public RdbStore getRdbStore() {
 		return rdbStoreRef.get();
 	}
@@ -393,9 +389,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (progress instanceof OffsetReplicationProgress) {
 			long realOffset = ((OffsetReplicationProgress) progress).getProgress() - metaStore.beginOffset();
-			getCommandStore().addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
+			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
 		} else {
-			getCommandStore().addCommandsListener(progress, commandsListener);
+			cmdStore.addCommandsListener(progress, commandsListener);
 		}
 	}
 
@@ -406,12 +402,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public GtidSet getBeginGtidSet() throws IOException {
-		return getCommandStore().getBeginGtidSet();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public GtidSet getEndGtidSet() {
-		return getCommandStore().getEndGtidSet();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

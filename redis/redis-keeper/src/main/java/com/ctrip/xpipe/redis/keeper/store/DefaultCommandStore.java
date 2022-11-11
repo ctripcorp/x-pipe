@@ -125,8 +125,4 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		return logger;
 	}
 
-	@Override
-	public GtidSet getEndGtidSet() {
-		return new GtidSet("");
-	}
 }

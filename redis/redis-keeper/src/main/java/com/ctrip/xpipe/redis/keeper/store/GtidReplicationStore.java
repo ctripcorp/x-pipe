@@ -26,6 +26,8 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024; // 50MB
 
+    private Gtid2OffsetIndexGenerator indexGenerator;
+
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) throws IOException {
         super(baseDir, config, keeperRunid,
@@ -162,18 +164,27 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         }
     }
 
+
     protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx) throws IOException {
         //TODO 1: how about gc() invoked at the same time ?
         //TODO 2: find latest index
 
         String rdbGtidSetString = ctx.getRdbStore().getGtidSet();
-        GtidSet rdbGtidSet = new GtidSet(rdbGtidSetString);
+
+        indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, new GtidSet(rdbGtidSetString));
 
         //TODO 3: deal with thread leak
-        addCommandsListener(
-                new GtidSetReplicationProgress(rdbGtidSet),
-                new Gtid2OffsetIndexGenerator(cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, rdbGtidSetString)
-        );
+        addCommandsListener(new GtidSetReplicationProgress(new GtidSet(rdbGtidSetString)), indexGenerator);
         return null;
+    }
+
+    @Override
+    public GtidSet getBeginGtidSet() throws IOException {
+        return cmdStore.getBeginGtidSet();
+    }
+
+    @Override
+    public GtidSet getEndGtidSet() {
+        return indexGenerator.getEndGtidSet();
     }
 }
