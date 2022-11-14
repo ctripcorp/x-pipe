@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgori
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -49,11 +50,17 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     private ZkClient zkClient;
 
     @Autowired
+    private DcMetaCache dcMetaCache;
+
+    @Autowired
     private ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager;
 
     private void observeLeader(final ClusterMeta cluster) {
         logger.info("[observeLeader]{}", cluster.getDbId());
         for (final ShardMeta shard : cluster.getAllShards().values()) {
+            if (dcMetaCache.isCurrentShardParentCluster(cluster.getDbId(), shard.getDbId())) {
+                continue;
+            }
             observerShardLeader(cluster.getDbId(), shard.getDbId());
         }
     }
@@ -206,12 +213,15 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
 
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
-        if (DcGroupType.DR_MASTER.name().equals(comparator.getFuture().getDcGroupType())) {
+        if (!DcGroupType.MASTER.name().equals(comparator.getFuture().getDcGroupType())) {
             return;
         }
 
         Long clusterDbId = comparator.getCurrent().getDbId();
         for(ShardMeta shardMeta : comparator.getAdded()){
+            if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardMeta.getDbId())) {
+                continue;
+            }
             try {
                 observerShardLeader(clusterDbId, shardMeta.getDbId());
             } catch (Exception e) {
