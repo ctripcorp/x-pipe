@@ -13,7 +13,8 @@ import java.util.Set;
  */
 public enum Hints {
 
-    APPLIER_IN_CLUSTER;
+    APPLIER_IN_CLUSTER,
+    MASTER_DC_IN_CLUSTER;
 
     public static Hints lookup(String name) {
         if (StringUtil.isEmpty(name)) throw new IllegalArgumentException("no Hints for name " + name);
@@ -29,5 +30,12 @@ public enum Hints {
             result.add(lookup(s));
         }
         return result;
+    }
+
+    public static String append(String str, Hints hints) {
+        if (StringUtils.isEmpty(str)) {
+            return hints.toString();
+        }
+        return str + "," + hints.toString();
     }
 }

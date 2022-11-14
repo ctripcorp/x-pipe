@@ -22,7 +22,6 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -94,10 +93,11 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
         Long shardDbId = shardMeta.getDbId();
         int collectInterval;
 
-        if (DcGroupType.DR_MASTER.name().equals(clusterMeta.getDcGroupType())) {
-            collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_DR_MASTER_GROUP;
+        if (DcGroupType.MASTER.name().equals(clusterMeta.getDcGroupType()) &&
+            dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+            collectInterval = DefaultRedisGtidCollector.MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS;
         } else {
-            collectInterval = DefaultRedisGtidCollector.REDIS_INFO_GTID_INTERVAL_SECONDS_MASTER_GROUP;
+            collectInterval = DefaultRedisGtidCollector.DEFAULT_INTERVAL_SECONDS;
         }
 
         RedisGtidCollector redisGtidCollector = new DefaultRedisGtidCollector(clusterDbId, shardDbId, dcMetaCache,
