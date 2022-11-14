@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 
 import java.util.*;
@@ -623,7 +624,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         }
 
         private String getTargetClusterName(ApplierTbl applierTbl, String clusterName) {
-            if (applierTbl.getReplDirectionInfo() == null || applierTbl.getReplDirectionInfo().getTargetClusterName() == null) {
+            if (applierTbl.getReplDirectionInfo() == null || StringUtils.isEmpty(applierTbl.getReplDirectionInfo().getTargetClusterName())) {
                 return clusterName;
             }
             return applierTbl.getReplDirectionInfo().getTargetClusterName();
