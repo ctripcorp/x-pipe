@@ -310,19 +310,19 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (66,40,32,3,1);
 
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(89,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.1',8020,'keeper',0,0,1,1);
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(90,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.2',8021,'keeper',0,0,2,0);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(90,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.1',8021,'keeper',0,0,2,0);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(91,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.1',9020,'keeper',0,0,1,1);
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(92,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.2',9021,'keeper',0,0,2,0);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(92,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.1',9021,'keeper',0,0,2,0);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(93,'unknown',64,'127.0.0.1',8380,'redis',0,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(94,'unknown',64,'127.0.0.1',8480,'redis',0,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(95,'unknown',65,'127.0.0.1',9380,'redis',0,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(96,'unknown',65,'127.0.0.1',9480,'redis',0,0,null);
 
 
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(97,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.4',9100,'keeper',0,0,4,1);
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(98,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.5',9101,'keeper',0,0,5,0);
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(99,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.4',9200,'keeper',0,0,4,1);
-insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(100,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.5',9201,'keeper',0,0,5,0);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(97,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.1',9100,'keeper',0,0,4,1);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(98,'ffffffffffffffffffffffffffffffffffffffff',64,'127.0.0.1',9101,'keeper',0,0,5,0);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(99,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.1',9200,'keeper',0,0,4,1);
+insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(100,'ffffffffffffffffffffffffffffffffffffffff',65,'127.0.0.1',9201,'keeper',0,0,5,0);
 
 insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, container_id) values(13, 30, 7, '127.0.0.1', 16200, 1, 5);
 insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, container_id) values(14, 30, 7, '127.0.0.1', 16201, 0, 6);
