@@ -822,7 +822,7 @@ public class MetaUpdate extends AbstractConsoleController {
             }
             List<ReplDirectionInfoModel> replDirectionInfoModels = new LinkedList<>();
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
-                ReplDirectionTbl exist = replDirectionService.findByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                 if (exist != null) {
                     String message = String.format("cluster %s srcDc %s toDc %s repl direction already exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                     return RetMessage.createFailMessage(message);

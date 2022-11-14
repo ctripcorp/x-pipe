@@ -145,7 +145,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			Map<String, DcMeta> dcMetaMap = dcMetaService.getAllDcMetas();
 
 			dcTbls.forEach(dcTbl -> {
-				DcMeta dcMeta = dcMetaMap.get(dcTbl.getDcName());
+				DcMeta dcMeta = dcMetaMap.get(dcTbl.getDcName().toUpperCase());
 
 				Map<String, List<ClusterMeta>> typeClusters = new HashMap<>();
 				for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {

@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 
 import java.util.*;
@@ -516,18 +517,33 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         private void addClusterHints() {
             for (DcMeta dcMeta: dcMetaMap.values()) {
                 for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                    boolean hasApplier = false;
-                    for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
-                        if (shardIdWithAppliers.contains(shardMeta.getDbId())) {
-                            hasApplier = true;
-                            break;
-                        }
+                    if (clusterHasApplier(clusterMeta)) {
+                        clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.APPLIER_IN_CLUSTER));
                     }
-                    if (hasApplier) {
-                        clusterMeta.setHints(Hints.APPLIER_IN_CLUSTER.name());
+                    if (clusterHasMasterDc(clusterMeta)) {
+                        clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.MASTER_DC_IN_CLUSTER));
                     }
                 }
             }
+        }
+
+        private boolean clusterHasApplier(ClusterMeta clusterMeta) {
+            for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
+                if (shardIdWithAppliers.contains(shardMeta.getDbId())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean clusterHasMasterDc(ClusterMeta clusterMeta) {
+            List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterMeta.getDbId());
+            for (DcClusterTbl dcClusterTbl : dcClusterTblList) {
+                if (DcGroupType.MASTER.name().equals(dcClusterTbl.getGroupType())) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void buildHeteroMeta(DcMeta dcMeta, Long dcId) {
@@ -608,7 +624,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         }
 
         private String getTargetClusterName(ApplierTbl applierTbl, String clusterName) {
-            if (applierTbl.getReplDirectionInfo() == null || applierTbl.getReplDirectionInfo().getTargetClusterName() == null) {
+            if (applierTbl.getReplDirectionInfo() == null || StringUtils.isEmpty(applierTbl.getReplDirectionInfo().getTargetClusterName())) {
                 return clusterName;
             }
             return applierTbl.getReplDirectionInfo().getTargetClusterName();

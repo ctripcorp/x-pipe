@@ -181,8 +181,8 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
     public void testFindAllDcsRichinfo() {
 
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
-        dcMetaMap.put("jq", xpipeMeta.findDc("jq"));
-        dcMetaMap.put("oy", xpipeMeta.findDc("oy"));
+        dcMetaMap.put("jq".toUpperCase(), xpipeMeta.findDc("jq"));
+        dcMetaMap.put("oy".toUpperCase(), xpipeMeta.findDc("oy"));
         when(dcMetaService.getAllDcMetas()).thenReturn(dcMetaMap);
         dcService = spy(dcService);
         Mockito.doReturn(toBuildTbl()).when(dcService).findAllDcs();
