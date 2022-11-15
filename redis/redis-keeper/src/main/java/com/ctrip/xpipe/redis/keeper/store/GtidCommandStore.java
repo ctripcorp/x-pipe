@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandWriter;
@@ -75,6 +76,14 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                 if (null == redisOp) continue;
 
                 logger.debug("[addCommandsListener] {}", redisOp);
+
+                if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+                    String channel = new String(redisOp.buildRawOpArgs()[4]);
+                    if (!channel.startsWith("xpipe-hetero-")) {
+                        logger.debug("publish channel: [{}] filtered", channel);
+                        continue;
+                    }
+                }
 
                 // TODO: monitor send delay
                 ChannelFuture future = listener.onCommand(redisOp.buildRESP());
