@@ -38,6 +38,8 @@ public class DefaultXsyncReplication
 
     private GtidSet gtidSetExcluded;
 
+    private boolean closed;
+
     @Override
     protected void doStart() throws Exception {
         //do nothing
@@ -46,6 +48,7 @@ public class DefaultXsyncReplication
 
     @Override
     protected void doStop() throws Exception {
+        closed = true;
         disconnect();
     }
 
@@ -104,6 +107,6 @@ public class DefaultXsyncReplication
 
     @Override
     public boolean closed() {
-        return false;
+        return closed;
     }
 }
