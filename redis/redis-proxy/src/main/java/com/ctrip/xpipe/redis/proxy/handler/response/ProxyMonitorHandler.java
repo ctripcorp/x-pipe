@@ -1,15 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.handler.response;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.error.ProxyError;
-import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SessionTrafficResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.*;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.ProxyMonitorParser;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
@@ -17,7 +12,6 @@ import com.ctrip.xpipe.redis.proxy.monitor.session.SessionStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -86,7 +80,9 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
                 Object[] resultSet = new Object[samples.size()];
                 int index = 0;
                 for (T t : samples) {
-                    resultSet[index++] = format(t);
+                    Object result = format(t);
+                    if (result != null)
+                        resultSet[index++] = result;
                 }
                 channel.writeAndFlush(new ArrayParser(resultSet).format());
             } catch (Throwable t) {
@@ -111,6 +107,10 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
         @Override
         protected Object format(Tunnel tunnel) {
             String tunnelId = tunnel.identity().toString();
+            if (tunnel.getTunnelMonitor() == null || tunnel.getTunnelMonitor().getBackendSessionMonitor() == null
+                    || tunnel.getTunnelMonitor().getFrontendSessionMonitor() == null) {
+                return null;
+            }
             SocketStatsResult frontendSocketStats = tunnel.getTunnelMonitor().getFrontendSessionMonitor()
                     .getSocketStats().getSocketStatsResult();
             SocketStatsResult backendSocketStats = tunnel.getTunnelMonitor().getBackendSessionMonitor()
@@ -143,7 +143,11 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
 
         @Override
         Object format(Tunnel tunnel) {
-            return tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult().toArrayObject();
+            if (tunnel.getTunnelMonitor() == null || tunnel.getTunnelMonitor().getTunnelStats() == null) {
+                return null;
+            }
+            TunnelStatsResult tunnelStatsResult = tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult();
+            return  tunnelStatsResult == null ? null :tunnelStatsResult.toArrayObject();
         }
     }
 
@@ -157,6 +161,10 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
         @Override
         protected Object format(Tunnel tunnel) {
             String tunnelId = tunnel.identity().toString();
+            if (tunnel.getTunnelMonitor() == null || tunnel.getTunnelMonitor().getBackendSessionMonitor() == null
+                    || tunnel.getTunnelMonitor().getFrontendSessionMonitor() == null) {
+                return null;
+            }
             SessionStats frontendStats = tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats();
             SessionStats backendStats = tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats();
             SessionTrafficResult frontend = new SessionTrafficResult(frontendStats.lastUpdateTime(),

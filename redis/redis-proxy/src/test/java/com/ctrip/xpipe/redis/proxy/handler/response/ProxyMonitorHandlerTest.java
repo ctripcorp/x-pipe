@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.proxy.handler.response;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.monitor.*;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
@@ -33,11 +31,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -190,6 +186,19 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
             logger.info("{}", other.getFrontend());
             logger.info("{}", other.getBackend());
         }
+    }
+
+    @Test
+    public void testTunnelStatsResponserWhenBackendNull() throws TimeoutException {
+        AtomicReference<ByteBuf> result = new AtomicReference<>();
+        Channel channel = getWriteBackChannel(result);
+        TunnelStats tunnelStats = mock(TunnelStats.class);
+        when(tunnelStats.getTunnelStatsResult()).thenReturn(null);
+        when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
+
+        handler.handle(channel, new String[]{"TunnelStats"});
+        RedisError error = new RedisErrorParser().read(result.get()).getPayload();
+        assertTrue(error.getMessage().startsWith("-PROXY THROWABLE java.lang.NullPointerException"));
     }
 
     @Test
