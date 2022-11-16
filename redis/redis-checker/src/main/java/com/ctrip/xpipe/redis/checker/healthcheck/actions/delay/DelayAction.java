@@ -62,7 +62,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         this.subscribe_channel = getSubscribeChannel();
     }
 
-    private String publishChannelPrefix() {
+    protected String publishChannelPrefix() {
         return instance.getCheckInfo().isHeteroCluster() ? "xpipe-hetero-health-check-" : "xpipe-health-check-";
     }
 
