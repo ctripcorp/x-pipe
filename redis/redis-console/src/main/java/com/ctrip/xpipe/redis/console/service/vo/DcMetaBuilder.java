@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
@@ -78,7 +79,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private Set<String> interestClusterTypes;
 
-    private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
+    @VisibleForTesting
+    protected Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
     private Map<Long, List<DcClusterShardTbl>> dcCluster2DcClusterShardMap;
 
@@ -651,14 +653,22 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             return sourceMeta;
         }
 
-        private DcClusterTbl getDcClusterInfo(long clusterId, long dcId) {
-            for(DcClusterTbl dcClusterTbl: cluster2DcClusterMap.get(clusterId)) {
+        @VisibleForTesting
+        protected DcClusterTbl getDcClusterInfo(long clusterId, long dcId) {
+
+            List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterId);
+
+            if (dcClusterTblList == null) {
+                EventMonitor.DEFAULT.logAlertEvent("[getDcClusterInfo] dcCluster not found, clusterId=" + clusterId);
+                return null;
+            }
+
+            for(DcClusterTbl dcClusterTbl: dcClusterTblList) {
                 if (dcClusterTbl.getDcId() == dcId) {
                     return dcClusterTbl;
                 }
             }
             return null;
-
         }
 
         @Override
@@ -670,6 +680,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         public String getName() {
             return BuildDcMetaCommand.class.getSimpleName();
         }
+    }
+
+    @VisibleForTesting
+    BuildDcMetaCommand createBuildDcMetaCommand() {
+        return new BuildDcMetaCommand();
     }
 
     private String getDcGroupName(DcMeta dcMeta, DcClusterTbl dcClusterInfo) {
