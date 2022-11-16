@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.proxy.monitor.stats.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
@@ -71,8 +70,12 @@ public class DefaultTunnelStats implements TunnelStats {
 
     @Override
     public TunnelStatsResult getTunnelStatsResult() {
+        if (tunnel.backend().getChannel() == null) {
+            return null;
+        }
         HostPort frontend = HostPort.fromString(ChannelUtil.getSimpleIpport(tunnel.frontend().getChannel().localAddress()));
         HostPort backend = HostPort.fromString(ChannelUtil.getSimpleIpport(tunnel.backend().getChannel().localAddress()));
+
         if(closeFrom != null) {
             return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), frontend, backend, getProtocolRecTime(),
                     getProtocolSendTime(), getCloseTime(), closeFrom.name());
