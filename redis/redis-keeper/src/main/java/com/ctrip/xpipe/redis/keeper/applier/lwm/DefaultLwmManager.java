@@ -38,7 +38,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
             try {
                 send();
             } catch (Throwable t) {
-                logger.info("[send] error", t);
+                logger.error("[send] error", t);
             }
         }, 1, 1, TimeUnit.SECONDS);
     }
