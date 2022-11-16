@@ -197,8 +197,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
 
         handler.handle(channel, new String[]{"TunnelStats"});
-        RedisError error = new RedisErrorParser().read(result.get()).getPayload();
-        assertTrue(error.getMessage().startsWith("-PROXY THROWABLE java.lang.NullPointerException"));
+        Assert.assertEquals("*0\r\n", ByteBufUtils.readToString(result.get()));
     }
 
     @Test

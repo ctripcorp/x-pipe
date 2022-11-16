@@ -84,6 +84,10 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
                     if (result != null)
                         resultSet[index++] = result;
                 }
+                if (index == 0) {
+                    resultSet = new Object[0];
+                }
+
                 channel.writeAndFlush(new ArrayParser(resultSet).format());
             } catch (Throwable t) {
                 logger.warn("[response] {}", channel, t);
