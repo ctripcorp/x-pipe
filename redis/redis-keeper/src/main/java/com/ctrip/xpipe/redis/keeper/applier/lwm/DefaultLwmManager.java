@@ -57,6 +57,11 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
         GtidSet gtidSet = gtid_executed.get();
 
+        if (gtidSet == null) {
+            logger.debug("[send] gitSet is null");
+            return;
+        }
+
         logger.debug("[send] send lwm, gtidSet {}", gtidSet);
 
         if (gtidSet.isEmpty() || gtidSet.isZero()) {
