@@ -241,6 +241,22 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void testGetDcClusterInfoWhenClusterNotExist() {
+
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+
+        DcMetaBuilder dcMetaBuilder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                replDirectionService, zoneService, keeperContainerService, applierService,
+                new DefaultRetryCommandFactory(),consoleConfig);
+
+        dcMetaBuilder.cluster2DcClusterMap = new HashMap<>();
+
+        DcMetaBuilder.BuildDcMetaCommand buildDcMetaCommand = dcMetaBuilder.createBuildDcMetaCommand();
+        Assert.assertNull(buildDcMetaCommand.getDcClusterInfo(1L, 1L));
+    }
+
+    @Test
     public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
