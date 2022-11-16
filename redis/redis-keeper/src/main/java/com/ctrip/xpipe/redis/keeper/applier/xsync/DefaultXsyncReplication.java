@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
+import com.ctrip.xpipe.utils.CloseState;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,7 +39,7 @@ public class DefaultXsyncReplication
 
     private GtidSet gtidSetExcluded;
 
-    private boolean closed;
+    private CloseState closeState = new CloseState();
 
     @Override
     protected void doStart() throws Exception {
@@ -48,8 +49,13 @@ public class DefaultXsyncReplication
 
     @Override
     protected void doStop() throws Exception {
-        closed = true;
+        this.closeState.setClosing();
+
         disconnect();
+
+        synchronized (closeState) {
+            this.closeState.setClosed();
+        }
     }
 
     //all below are definition to invoke StubbornNetworkCommunication functionality
@@ -107,6 +113,6 @@ public class DefaultXsyncReplication
 
     @Override
     public boolean closed() {
-        return closed;
+        return closeState.isClosed();
     }
 }
