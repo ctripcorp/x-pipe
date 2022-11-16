@@ -199,6 +199,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     @VisibleForTesting
     protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+        if (relatedDcClusters == null) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
             if(dcClusterTbl.getDcId() != activeDcId && DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
@@ -214,6 +217,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     protected String getDcs(ClusterTbl cluster) {
         List<String> allDcs = new ArrayList<>();
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+        if (relatedDcClusters == null) {
+            return null;
+        }
 
         relatedDcClusters.forEach(dcClusterTbl ->
             allDcs.add(dcNameMap.get(dcClusterTbl.getDcId()))
@@ -540,6 +546,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
         private boolean clusterHasMasterDc(ClusterMeta clusterMeta) {
             List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterMeta.getDbId());
+            if (dcClusterTblList == null) {
+                return false;
+            }
             for (DcClusterTbl dcClusterTbl : dcClusterTblList) {
                 if (DcGroupType.MASTER.name().equals(dcClusterTbl.getGroupType())) {
                     return true;
