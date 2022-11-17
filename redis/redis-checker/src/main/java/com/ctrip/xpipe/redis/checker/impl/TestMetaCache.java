@@ -157,4 +157,9 @@ public class TestMetaCache implements MetaCache {
     public List<RedisMeta> getAllInstancesOfShard(String cluster, String shard) {
         return null;
     }
+
+    @Override
+    public boolean isHeteroCluster(String clusterName) {
+        return false;
+    }
 }
