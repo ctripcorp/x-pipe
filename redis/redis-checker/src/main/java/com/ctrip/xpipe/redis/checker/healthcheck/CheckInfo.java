@@ -24,4 +24,8 @@ public interface CheckInfo {
     void setDcGroupType(String type);
 
     String getDcGroupType();
+
+    void setIsHeteroCluster(boolean isHeteroCluster);
+
+    boolean isHeteroCluster();
 }

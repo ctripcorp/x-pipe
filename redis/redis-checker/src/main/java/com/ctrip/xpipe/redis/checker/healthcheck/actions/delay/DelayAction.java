@@ -58,8 +58,12 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         this.foundationService = foundationService;
         expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
         this.currentDcId = foundationService.getDataCenter();
-        this.publish_channel = "xpipe-health-check-" + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
+        this.publish_channel =  publishChannelPrefix() + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
         this.subscribe_channel = getSubscribeChannel();
+    }
+
+    protected String publishChannelPrefix() {
+        return instance.getCheckInfo().isHeteroCluster() ? "xpipe-hetero-health-check-" : "xpipe-health-check-";
     }
 
     @Override

@@ -198,10 +198,10 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-			DcClusterShardTbl exits = dcClusterShardService.find(dcClusterTbl.getDcClusterId(), shard.getId());
+			DcClusterShardTbl exits = dcClusterShardService.find(dcClusterTbl.getDcClusterId(), shardTbl.getId());
 			if (exits != null) continue;
 
-			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
+			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shardTbl, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
 		if(!dcClusterShardTbls.isEmpty()) {
