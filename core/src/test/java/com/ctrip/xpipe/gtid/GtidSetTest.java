@@ -434,6 +434,27 @@ public class GtidSetTest {
     }
 
     @Test
+    public void test0to1() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.add("A:1");
+        Assert.assertEquals("A:1", zero.toString());
+    }
+
+    @Test
+    public void test0toN() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.add("A:5");
+        Assert.assertEquals("A:5", zero.toString());
+    }
+
+    @Test
+    public void test0raiseN() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.rise("A:5");
+        Assert.assertEquals("A:1-5", zero.toString());
+    }
+
+    @Test
     public void testIntersectionGtidSet() {
         String current = "24b9c5bc-070f-11ec-aa01-b8cef6507418:153148495-153445256,c4fff537-2a2a-11eb-aae0-506b4b4791b4:1855122466-1855571751,c8331da3-512d-11e9-b435-48df3717a518:1068450202-1068695137,9c26dd63-3709-11ec-af66-1c34da7c121a:1881903-2107029,47e5a666-3708-11ec-895b-0c42a1002ff0:1747429-1969043";
         String executed = "34b4ecc5-3675-11ea-a598-b8599ffdbbb4:1-362422,5e279430-512e-11e9-b439-48df3717a524:1-128957648,9c26dd63-3709-11ec-af66-1c34da7c121a:1-13500738,c17c9fa6-c322-11e9-a0a2-98039bad5d88:1-13870,c200a3d7-3131-11ea-b1e7-e4434b6b0ae0:1-1198619808,c4fff537-2a2a-11eb-aae0-506b4b4791b4:1-1853256173:1853256176-1936745715,935066db-454b-11eb-bcfe-506b4b2af01e:1-271601355";
