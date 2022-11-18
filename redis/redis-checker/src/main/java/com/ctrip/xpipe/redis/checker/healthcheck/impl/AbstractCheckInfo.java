@@ -85,7 +85,7 @@ public abstract class AbstractCheckInfo implements CheckInfo {
     }
 
     @Override
-    public void setIsHeteroCluster(boolean isHeteroCluster) {
+    public void setHeteroCluster(boolean isHeteroCluster) {
         this.isHeteroCluster = isHeteroCluster;
     }
 
