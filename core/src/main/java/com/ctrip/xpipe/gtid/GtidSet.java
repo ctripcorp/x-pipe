@@ -562,6 +562,11 @@ public class GtidSet {
         }
 
         private boolean add(long transactionId) {
+            if (intervals.size() == 1 && intervals.get(0).end == 0) {
+                intervals.get(0).start = transactionId;
+                intervals.get(0).end = transactionId;
+            }
+
             int index = findInterval(transactionId);
             boolean addedToExisting = false;
             if (index < intervals.size()) {
