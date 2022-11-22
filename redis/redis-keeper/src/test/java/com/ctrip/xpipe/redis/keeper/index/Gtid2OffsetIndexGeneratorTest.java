@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.AppTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -31,7 +32,15 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 6379)));
         redisKeeperServer.reconnectMaster();
 
-        redisKeeperServer.getReplicationStore().createIndexIfPossible();
+        //redisKeeperServer.startIndexing();
+
+        sleep(5000);
+
+        RedisMeta redis = new RedisMeta();
+        redis.setIp("127.0.0.1");
+        redis.setPort(6379);
+
+        sendRandomMessage(redis, 30);
 
         waitForAnyKey();
     }

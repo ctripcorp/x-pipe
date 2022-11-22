@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -66,6 +67,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private List<CommandFileOffsetGtidIndex> cmdIndexList = new CopyOnWriteArrayList<>();
 
     protected GtidSet baseGtidSet;
+
+    protected long baseStartOffset;
 
     private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
 
@@ -263,7 +266,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         cmdWriter.rotateFileIfNecessary();
     }
 
-    public CommandFile findFileForOffset(long targetStartOffset) throws IOException {
+    public CommandFile findFileForOffset(long targetStartOffset) {
         File[] files = baseDir.listFiles(cmdFileFilter);
         if (files != null) {
             for (File file : files) {
@@ -352,11 +355,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     protected CommandFileOffsetGtidIndex getBaseIndex() throws IOException {
-        CommandFile firstCommandFile = findFileForOffset(0L);
+        CommandFile firstCommandFile = findFileForOffset(baseStartOffset);
         if (null == firstCommandFile) return null;
 
         getLogger().debug("[getBaseIndex]baseGtidSet={}", getBaseGtidSet());
-        return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, 0);
+        return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, baseStartOffset - firstCommandFile.getStartOffset());
     }
 
     public CommandFile findNextFile(File curFile) {

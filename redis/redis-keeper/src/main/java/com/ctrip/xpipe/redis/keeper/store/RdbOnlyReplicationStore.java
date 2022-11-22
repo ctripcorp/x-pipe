@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author marsqing
@@ -218,7 +219,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
 		throw new UnsupportedOperationException();
 	}
 

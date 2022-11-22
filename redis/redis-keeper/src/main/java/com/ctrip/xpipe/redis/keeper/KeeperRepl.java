@@ -23,6 +23,6 @@ public interface KeeperRepl {
 
 	GtidSet getBeginGtidSet() throws IOException;
 
-	GtidSet getEndGtidSet();
+	GtidSet getEndGtidSet() throws IOException;
 
 }
