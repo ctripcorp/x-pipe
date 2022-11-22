@@ -691,7 +691,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(rdbDumper.get() == null) {
 
-
 			if (failCause != null) {
 				try {
 					dumpNewRdb();

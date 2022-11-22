@@ -42,25 +42,34 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
             return;
         }
 
-        GtidSet localBeginGtidSet = keeperRepl.getBeginGtidSet().filterGtid(interestedSids);
-        GtidSet localEndGtidSet = keeperRepl.getEndGtidSet().filterGtid(interestedSids);
+        GtidSet localBegin = keeperRepl.getBeginGtidSet();
+        GtidSet localEnd = keeperRepl.getEndGtidSet();
 
-        GtidSet neededGtidSet = localEndGtidSet.subtract(reqExcludedGtidSet);
-        GtidSet missingGtidSet = localBeginGtidSet.retainAll(neededGtidSet);
+        if (null == localBegin) {
+            logger.info("[innerDoHandle][localBegin is null]");
+            doFullSync(redisSlave);
+            return;
+        }
+
+        GtidSet filteredLocalBegin = localBegin.filterGtid(interestedSids);
+        GtidSet filteredLocalEnd = localEnd.filterGtid(interestedSids);
+
+        GtidSet neededGtidSet = filteredLocalEnd.subtract(reqExcludedGtidSet);
+        GtidSet missingGtidSet = filteredLocalBegin.retainAll(neededGtidSet);
 
         if (!missingGtidSet.isEmpty() && !missingGtidSet.isZero()) {
             logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
+                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
             redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
             doFullSync(redisSlave);
-        } else if (localEndGtidSet.isContainedWithin(reqExcludedGtidSet)) {
+        } else if (filteredLocalEnd.isContainedWithin(reqExcludedGtidSet)) {
             logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
+                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
             doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
         } else {
             // TODO: do full sync if too much data to send for partial sync
             logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
+                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
             doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
         }
     }
