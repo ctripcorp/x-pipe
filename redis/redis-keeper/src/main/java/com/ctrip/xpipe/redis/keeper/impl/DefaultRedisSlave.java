@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -344,6 +345,9 @@ public class DefaultRedisSlave implements RedisSlave {
 		Object command = cmd;
 
 		if (cmd instanceof RedisOp) {
+			if (shouldFilter((RedisOp) cmd)) {
+				return null;
+			}
 		    command = ((RedisOp) cmd).buildRESP();
 		}
 
@@ -351,6 +355,17 @@ public class DefaultRedisSlave implements RedisSlave {
 		future.addListener(writeExceptionListener);
 		return future;
 	}
+
+	private boolean shouldFilter(RedisOp redisOp) {
+		if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+			String channel = new String(redisOp.buildRawOpArgs()[4]);
+			if (!channel.startsWith("xpipe-hetero-")) {
+				logger.debug("publish channel: [{}] filtered", channel);
+				return true;
+            }
+        }
+		return false;
+    }
 
 	@Override
 	public String info() {
