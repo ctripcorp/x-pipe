@@ -351,7 +351,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         CommandFileOffsetGtidIndex baseIndex = getBaseIndex();
         if (null != baseIndex) return baseIndex.getExcludedGtidSet();
         if (!cmdIndexList.isEmpty()) return cmdIndexList.get(0).getExcludedGtidSet();
-        return new GtidSet("");
+        return null;
     }
 
     protected CommandFileOffsetGtidIndex getBaseIndex() throws IOException {
