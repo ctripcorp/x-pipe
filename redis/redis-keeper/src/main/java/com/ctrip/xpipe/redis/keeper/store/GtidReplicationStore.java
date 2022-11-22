@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -15,6 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * @author lishanglin
@@ -26,7 +30,11 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024; // 50MB
 
-    private Gtid2OffsetIndexGenerator indexGenerator;
+    private volatile Gtid2OffsetIndexGenerator indexGenerator;
+
+    private volatile Future indexingFuture;
+
+    protected final Object indexingLock = new Object();
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) throws IOException {
@@ -62,7 +70,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 public void onRdbGtidSet(String gtidSet) {
                     try {
                         getLogger().info("[onRdbGtidSet][update cmdstore] {} {}", rdbStore.getRdbFileName(), gtidSet);
-                        cmdStore.setBaseGtidSet(gtidSet);
                         cmdStore.initialize();
                     } catch (Exception e) {
                         getLogger().error("[onRdbGtidSet][update cmdstore]", e);
@@ -98,6 +105,15 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     protected RdbStoreListener createRdbStoreListener(RdbStore rdbStore) {
         return new GtidReplicationStoreRdbFileListener(rdbStore);
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+        if (indexingFuture != null) {
+            indexingFuture.cancel(true);
+            indexingFuture = null;
+        }
     }
 
     @Override
@@ -142,6 +158,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             try {
                 getLogger().info("[onRdbGtidSet][update metastore] {} {}", rdbStore.getRdbFileName(), gtidSet);
                 getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), gtidSet);
+
+                getLogger().info("[onRdbGtidSet][update metastore] info to init first index {} - ({} - 1) = {} : {}",
+                        rdbStore.rdbOffset(), getMetaStore().beginOffset(), rdbStore.rdbOffset() - (getMetaStore().beginOffset() - 1), gtidSet);
+                cmdStore.setBaseIndex(gtidSet, rdbStore.rdbOffset() - (getMetaStore().beginOffset() - 1));
             } catch (IOException e) {
                 getLogger().error("[onRdbGtidSet][update metastore]", e);
             }
@@ -150,31 +170,48 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     }
 
     @Override
-    public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+    public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
 
-        FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
-        if (ctx.isFullSyncPossible() && StringUtil.isEmpty(ctx.getRdbStore().getGtidSet())) {
-            return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
-        }
+        synchronized (indexingLock) {
 
-        if (ctx.isFullSyncPossible()) {
-            return tryCreateIndex(ctx);
-        } else {
-            return ctx.getCause();
+            if (indexingFuture != null) {
+                return null;
+            }
+
+            FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
+            if (ctx.isFullSyncPossible() && StringUtil.isEmpty(ctx.getRdbStore().getGtidSet())) {
+                return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
+            }
+
+            if (ctx.isFullSyncPossible()) {
+                return tryCreateIndex(ctx, indexingExecutors);
+            } else {
+                return ctx.getCause();
+            }
         }
     }
 
 
-    protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx) throws IOException {
+    protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx, ExecutorService indexingExecutors) {
         //TODO 1: how about gc() invoked at the same time ?
         //TODO 2: find latest index
-
         String rdbGtidSetString = ctx.getRdbStore().getGtidSet();
 
         indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, new GtidSet(rdbGtidSetString));
 
-        //TODO 3: deal with thread leak
-        addCommandsListener(new GtidSetReplicationProgress(new GtidSet(rdbGtidSetString)), indexGenerator);
+        indexingFuture = indexingExecutors.submit(()->{
+
+            try {
+                addCommandsListener(new GtidSetReplicationProgress(new GtidSet(rdbGtidSetString)), indexGenerator);
+            } catch (Throwable t) {
+                EventMonitor.DEFAULT.logAlertEvent("[tryCreateIndex] probably creating reader error: " + this);
+
+                logger.error("[tryCreateIndex] probably creating reader error - " + this);
+                logger.error("[tryCreateIndex]", t);
+            } finally {
+                indexingFuture = null;
+            }
+        });
         return null;
     }
 
@@ -185,6 +222,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     @Override
     public GtidSet getEndGtidSet() {
-        return indexGenerator.getEndGtidSet();
+        if (indexGenerator != null) {
+            return indexGenerator.getEndGtidSet();
+        } else {
+            return null;
+        }
     }
 }

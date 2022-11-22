@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -226,6 +227,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		    // when switching to GtidReplicationStore via rdb only repl, rdbStore is of GtidRdbStore and this is of DefaultReplicationStore
 			// which maybe it is not a elegant way
 			rdbStore.updateRdbGtidSet(rdbGtidSet);
+			//probably redundant
 			getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), rdbGtidSet);
 		}
 	}
@@ -396,7 +398,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public FULLSYNC_FAIL_CAUSE createIndexIfPossible() throws IOException {
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
 		throw new UnsupportedOperationException();
 	}
 

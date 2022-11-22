@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -62,7 +63,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_TYPE_NOT_SUPPORTED;
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
 
 /**
@@ -100,10 +100,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private final Map<Channel, RedisClient<RedisKeeperServer>>  redisClients = new ConcurrentHashMap<>();
-	
+
+	private String threadPoolName;
+
+	private volatile boolean isStartIndexing;
+	private volatile ExecutorService indexingExecutors; //also treated as a state
+
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
-	
+
 	private final ClusterId clusterId;
 	private final ShardId shardId;
 	private final File baseDir;
@@ -175,7 +180,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
 		
-		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));
+		threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
 		clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "RedisClient-" + threadPoolName));
@@ -652,11 +657,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if(null != failCause){
 				//go dump rdb
 				try{
-					if (FULLSYNC_TYPE_NOT_SUPPORTED.equals(failCause) && redisSlave instanceof XsyncRedisSlave) {
-					    //TODO: keeper support lazy indexing
-						resetDefaultReplication();
-						redisSlave.waitForGtidParse();
-					} else if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
+					if (RDB_GTIDSET_NOT_READY.equals(failCause)) {
 						redisSlave.waitForGtidParse();
 					} else {
 						dumpNewRdb();
@@ -676,9 +677,30 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void startIndexing() throws IOException {
+	public synchronized void startIndexing() throws IOException {
+
 		logger.info("[startIndexing]{}, {}", this, rdbDumper.get());
 
+		if (indexingExecutors == null) {
+			indexingExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "Indexing-" + threadPoolName));
+		}
+
+		isStartIndexing = true;
+
+		FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().createIndexIfPossible(indexingExecutors);
+
+		if(rdbDumper.get() == null) {
+
+
+			if (failCause != null) {
+				try {
+					dumpNewRdb();
+				} catch (Throwable t) {
+					logger.error("[startIndexing][dumpNewRdb] fail {}, {}", this, rdbDumper.get());
+					logger.error("[startIndexing][dumpNewRdb] fail", t);
+				}
+			}
+		}
 	}
 
 	private RdbDumper dumpNewRdb() throws CreateRdbDumperException, SetRdbDumperException {
@@ -849,6 +871,54 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		keeperRedisMaster.reconnect();
 		closeSlaves("replication reset");
+	}
+
+	@Override
+	public PsyncObserver createPsyncObserverForRdbOnlyRepl() {
+		return new PsyncObserver() {
+
+			@Override
+			public void onFullSync(long masterRdbOffset) {
+
+			}
+
+			@Override
+			public void reFullSync() {
+
+			}
+
+			@Override
+			public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
+
+			}
+
+			@Override
+			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
+				try {
+					if (isStartIndexing) {
+						EventMonitor.DEFAULT.logEvent("INDEX.START", clusterId + "." + shardId + " - " + gtidSet);
+						startIndexing();
+					}
+				} catch (Throwable t) {
+					EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + clusterId + "." + shardId + " - " + gtidSet);
+				}
+			}
+
+			@Override
+			public void endWriteRdb() {
+
+			}
+
+			@Override
+			public void onContinue(String requestReplId, String responseReplId) {
+
+			}
+
+			@Override
+			public void onKeeperContinue(String replId, long beginOffset) {
+
+			}
+		};
 	}
 
 	@VisibleForTesting

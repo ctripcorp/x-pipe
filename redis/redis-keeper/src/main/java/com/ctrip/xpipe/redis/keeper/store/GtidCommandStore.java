@@ -98,8 +98,11 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
         logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
     }
 
-    public void setBaseGtidSet(String baseGtidSet) {
+    @Override
+    public void setBaseIndex(String baseGtidSet, long localOffset) {
+
         this.baseGtidSet = new GtidSet(baseGtidSet);
+        this.baseStartOffset = localOffset;
     }
 
 }

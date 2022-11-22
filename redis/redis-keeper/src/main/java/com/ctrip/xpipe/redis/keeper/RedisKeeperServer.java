@@ -97,4 +97,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	int getTryConnectMasterCnt();
 
 	void resetDefaultReplication();
+
+	PsyncObserver createPsyncObserverForRdbOnlyRepl();
 }

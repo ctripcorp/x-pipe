@@ -28,6 +28,9 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
 
     // xsync <sidno interested> <gtid.set excluded> [vc excluded]
     protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
+
+        redisKeeperServer.startIndexing();
+
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
         Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
@@ -48,7 +51,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         if (!missingGtidSet.isEmpty() && !missingGtidSet.isZero()) {
             logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
                     reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
-            ((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+            redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
             doFullSync(redisSlave);
         } else if (localEndGtidSet.isContainedWithin(reqExcludedGtidSet)) {
             logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
@@ -60,7 +63,6 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
                     reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
             doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
         }
-
     }
 
     // +CONTINUE
