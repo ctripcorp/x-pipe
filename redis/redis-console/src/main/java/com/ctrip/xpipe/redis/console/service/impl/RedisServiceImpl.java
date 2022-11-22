@@ -354,8 +354,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         for (RedisTbl redis : redises) {
             if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
                 result.add(redis);
-            } else if (ObjectUtils.equals(Long.valueOf(dcId),
-                        keeperContainerIdDcMap.get(Long.valueOf(redis.getKeepercontainerId())))) {
+            } else if (ObjectUtils.equals(Long.valueOf(dcId), keeperContainerIdDcMap.get(Long.valueOf(redis.getKeepercontainerId())))) {
                 result.add(redis);
             }
         }

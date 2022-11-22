@@ -122,6 +122,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
         ClusterServiceImplTest3.class,
+        ClusterServiceImplTest4.class,
 
         CheckPrepareRequestTest.class,
         ConfigDaoTest.class,

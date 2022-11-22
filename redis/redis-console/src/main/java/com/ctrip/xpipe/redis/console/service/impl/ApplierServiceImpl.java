@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.MathUtil;
