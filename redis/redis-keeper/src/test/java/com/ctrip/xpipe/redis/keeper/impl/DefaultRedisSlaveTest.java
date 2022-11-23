@@ -4,6 +4,11 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -246,4 +251,32 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         verify(replicationStore).addCommandsListener(any(), any());
     }
 
+    @Test
+    public void testFilterPublish() {
+        RedisSingleKeyOp op1 = new RedisOpSingleKey(RedisOpType.SET, string2Bytes("set a 1"), null, null);
+        RedisOp gtidOp1 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op1);
+        Assert.assertFalse(redisSlave.shouldFilter(gtidOp1));
+
+        RedisSingleKeyOp op2 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish xpipe-hetero-ppp 222"), null, null);
+        RedisOp gtidOp2 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op2);
+        Assert.assertFalse(redisSlave.shouldFilter(gtidOp2));
+
+        RedisSingleKeyOp op3 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish ppp 222"), null, null);
+        RedisOp gtidOp3 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op3);
+        Assert.assertTrue(redisSlave.shouldFilter(gtidOp3));
+        Assert.assertTrue(redisSlave.shouldFilter(op3));
+    }
+
+    private byte[][] string2Bytes(String s) {
+
+        String[] ss = s.split(" ");
+        int length = ss.length;
+        byte[][] b = new byte[length][];
+
+        for (int i = 0; i < length; i++) {
+            b[i] = ss[i].getBytes();
+        }
+
+        return b;
+    }
 }
