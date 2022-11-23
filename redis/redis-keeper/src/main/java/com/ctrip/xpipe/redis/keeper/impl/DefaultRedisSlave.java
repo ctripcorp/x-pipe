@@ -22,9 +22,7 @@ import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -346,7 +344,9 @@ public class DefaultRedisSlave implements RedisSlave {
 
 		if (cmd instanceof RedisOp) {
 			if (shouldFilter((RedisOp) cmd)) {
-				return null;
+				DefaultChannelPromise result = new DefaultChannelPromise(channel());
+			    result.setSuccess();
+			    return result;
 			}
 		    command = ((RedisOp) cmd).buildRESP();
 		}
@@ -356,8 +356,14 @@ public class DefaultRedisSlave implements RedisSlave {
 		return future;
 	}
 
-	private boolean shouldFilter(RedisOp redisOp) {
-		if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+	@VisibleForTesting
+	protected boolean shouldFilter(RedisOp redisOp) {
+	 	if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+			int length = redisOp.buildRawOpArgs().length;
+			if (length < 5) {
+				logger.warn("publish command length={} < 5, filtered", length);
+				return true;
+			}
 			String channel = new String(redisOp.buildRawOpArgs()[4]);
 			if (!channel.startsWith("xpipe-hetero-")) {
 				logger.debug("publish channel: [{}] filtered", channel);
