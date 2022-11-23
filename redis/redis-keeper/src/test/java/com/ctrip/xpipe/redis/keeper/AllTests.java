@@ -37,7 +37,7 @@ import org.junit.runners.Suite.SuiteClasses;
         AbstractRdbDumperTest.class,
         DefaultRedisKeeperServerConnectToFakeRedisTest.class,
         FakeRedisHalfRdbServerFail.class,
-//        PsyncTest.class,
+        PsyncTest.class,
         DefaultRedisClientTest.class,
         CommandHandlerManagerTest.class,
         RedisKeeperServerStateBackupTest.class,
