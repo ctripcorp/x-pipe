@@ -98,7 +98,9 @@ public class DefaultXsyncReplication
     @Override
     public void initState(Endpoint endpoint, Object... states) {
         this.endpoint = endpoint;
-        this.gtidSetExcluded = (GtidSet) states[0];
+        if (states.length > 0) {
+            this.gtidSetExcluded = (GtidSet) states[0];
+        }
     }
 
     @Override
