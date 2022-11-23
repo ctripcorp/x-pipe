@@ -535,7 +535,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-
+		try {
+			if (isStartIndexing) {
+				EventMonitor.DEFAULT.logEvent("INDEX.START", clusterId + "." + shardId + " - " + gtidSet);
+				startIndexing();
+			}
+		} catch (Throwable t) {
+			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + clusterId + "." + shardId + " - " + gtidSet);
+		}
 	}
 
 	@Override
@@ -874,6 +881,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public PsyncObserver createPsyncObserverForRdbOnlyRepl() {
+	    RedisKeeperServer redisKeeperServer = this;
 		return new PsyncObserver() {
 
 			@Override
@@ -893,14 +901,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			@Override
 			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-				try {
-					if (isStartIndexing) {
-						EventMonitor.DEFAULT.logEvent("INDEX.START", clusterId + "." + shardId + " - " + gtidSet);
-						startIndexing();
-					}
-				} catch (Throwable t) {
-					EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + clusterId + "." + shardId + " - " + gtidSet);
-				}
+				redisKeeperServer.readRdbGtidSet(rdbStore, gtidSet);
 			}
 
 			@Override
