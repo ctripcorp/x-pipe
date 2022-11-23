@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.AppTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import org.junit.Test;
@@ -32,8 +34,6 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 6379)));
         redisKeeperServer.reconnectMaster();
 
-        //redisKeeperServer.startIndexing();
-
         sleep(5000);
 
         RedisMeta redis = new RedisMeta();
@@ -41,6 +41,8 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         redis.setPort(6379);
 
         sendRandomMessage(redis, 30);
+
+        //redisKeeperServer.startIndexing();
 
         waitForAnyKey();
     }
@@ -67,5 +69,15 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
     @Override
     protected String getXpipeMetaConfigFile() {
         return "keeper-test.xml";
+    }
+
+    @Override
+    protected KeeperConfig getKeeperConfig() {
+        KeeperConfig config = super.getKeeperConfig();
+        if (config instanceof TestKeeperConfig) {
+            TestKeeperConfig modified = (TestKeeperConfig)config;
+            modified.setReplicationStoreCommandFileSize(1024 * 128 /* 128 K */);
+        }
+        return config;
     }
 }

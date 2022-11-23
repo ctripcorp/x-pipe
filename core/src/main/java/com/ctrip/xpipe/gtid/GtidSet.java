@@ -178,6 +178,22 @@ public class GtidSet {
         return uuidSet.add(transactionId);
     }
 
+    public long lwmDistance(GtidSet other /* small */ ) {
+        long sum = 0;
+        for (String sourceId : map.keySet()) {
+            UUIDSet o = null;
+            if (other != null) {
+                o = other.getUUIDSet(sourceId);
+            }
+            if (o != null) {
+                sum = sum + (map.get(sourceId).lwm() - o.lwm());
+            } else {
+                sum = sum + map.get(sourceId).lwm();
+            }
+        }
+        return sum;
+    }
+
     public GtidSet subtract(GtidSet other) {
         if (other == null || other.map == null || other.map.size() == 0) {
             return clone();

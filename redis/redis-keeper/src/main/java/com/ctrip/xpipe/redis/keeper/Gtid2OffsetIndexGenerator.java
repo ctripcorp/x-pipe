@@ -27,11 +27,15 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     private final CommandStore cmdStore;
 
-    private final int maxFileSize;
+    private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024;
+
+    private static final int DEFAULT_LWM_DISTANCE_BETWEEN_INDEX = 1024;
 
     private CloseState closeState = new CloseState();
 
     private GtidSet gtid_received;
+
+    private GtidSet last_indexed_gtid;
 
     private volatile GtidSet endGtidSet;
 
@@ -39,9 +43,8 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     private ControllableFile indexControllableFile;
 
-    public Gtid2OffsetIndexGenerator(CommandStore cmdStore, int maxFileSize, GtidSet initGtidSet) {
+    public Gtid2OffsetIndexGenerator(CommandStore cmdStore, GtidSet initGtidSet) {
         this.cmdStore = cmdStore;
-        this.maxFileSize = maxFileSize;
         this.gtid_received = initGtidSet;
     }
 
@@ -97,7 +100,10 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
     }
 
     private boolean shouldInsert() {
-        //TODO
+        if (gtid_received.lwmDistance(last_indexed_gtid) < DEFAULT_LWM_DISTANCE_BETWEEN_INDEX) {
+            return false;
+        }
+        last_indexed_gtid = gtid_received.clone();
         return true;
     }
 
