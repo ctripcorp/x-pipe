@@ -39,11 +39,15 @@
                         >
                             <option ng-repeat="type in clusterTypes" value="{{type.value}}">{{type.name}}</option>
                         </select>
+                        <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && !isHeteroCluster">增加异构集群</a>
+                        <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && isHeteroCluster">增加对称集群</a>
+                        <a ng-click="changeSymmetryToHeteroCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && !isHeteroCluster">修改为异构集群</a>
+                        <a ng-click="changeHeteroToSymmetryCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && isHeteroCluster">修改为对称集群</a>
                     </div>
                 </div>
                 <div class="form-group" ng-show="showActiveDc">
                     <label class="col-sm-4 control-label no-padding-right"> 主数据中心 </label>
-                    <div class="col-sm-6" ng-show="selectedType == 'hetero'">
+                    <div class="col-sm-6" ng-show="selectedType == 'one_way' && isHeteroCluster">
                         <select
                                 allow_single_deselect=true
                                 style="width:330px;"
@@ -54,7 +58,7 @@
                             <option ng-repeat = "dc in drMasterDcs" value="{{dc}}">{{dc}}</option>
                         </select>
                     </div>
-                    <div class="col-sm-7" ng-if="selectedType !== 'hetero'">
+                    <div class="col-sm-7" ng-if="!isHeteroCluster">
                         <label ng-repeat="dc in allDcs" ng-show="!slaveExists(dc)">
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
                                    ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
@@ -65,9 +69,8 @@
                         </label>
                     </div>
                 </div>
-                <div class="form-group" ng-show="operateType == 'create' && selectedType !== 'hetero'">
+                <div class="form-group" ng-show="operateType == 'create' && !isHeteroCluster">
                     <label class="col-sm-4 control-label no-padding-right"> 从数据中心 </label>
-
                     <div class="col-sm-7">
                         <label ng-repeat="dc in allDcs" ng-show="cluster.activedcId != dc.id">
                             <md-checkbox ng-checked="slaveExists(dc)" ng-click="toggle(dc)"></md-checkbox>
@@ -109,13 +112,13 @@
                 </div>
 
                 <addshard xpipe-pre-create-shard="preCreateShard" xpipe-create-shard="createShard"
-                          ng-show="operateType == 'create' && selectedType !== 'hetero'" />
+                          ng-show="operateType == 'create' && !isHeteroCluster" />
 
                 <adddcgroup xpipe-pre-create-dc-group="preCreateDcGroup" xpipe-create-dc-group="createDcGroup"
-                            ng-show="selectedType == 'hetero'"/>
+                            ng-show="isHeteroCluster"/>
 
                 <addrepldirction xpipe-pre-create-repl-direction="preCreateReplDirection" xpipe-create-repl-direction="createReplDirection"
-                                  ng-show="selectedType == 'hetero'"/>
+                                  ng-show="isHeteroCluster"/>
 
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"></label>

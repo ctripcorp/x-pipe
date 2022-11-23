@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -35,8 +34,6 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
 public class CRDTDelayPingActionCollector extends AbstractDelayPingActionCollector implements DelayPingActionCollector, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(CRDTDelayPingActionCollector.class);
-
-    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
     private AlertManager alertManager;

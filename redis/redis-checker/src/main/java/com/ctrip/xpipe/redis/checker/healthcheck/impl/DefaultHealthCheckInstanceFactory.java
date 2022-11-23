@@ -99,7 +99,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
-        info.setDcGroupType(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType());
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
         HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig);
 
@@ -135,8 +134,11 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
         info.isMaster(redisMeta.isMaster());
+        info.setDcGroupType(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType());
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
+            info.setShardDbId(redisMeta.parent().getDbId());
+            info.setActiveDcShardIds(metaCache.dcShardIds(info.getClusterId(), info.getActiveDc()));
         } else if (clusterType.supportMultiActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(currentDcId, info.getDcId()));
         }

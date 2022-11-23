@@ -175,31 +175,35 @@
                         </div>
                         <div class="form-group">
                             <label class="col-sm-4 control-label no-padding-right"> group_name </label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <select
                                         ng-model="toUpdateDcGroup.dcCluster.groupName"
                                         allow_single_deselect="true"
                                         style="width:200px;"
-                                        ng-required="true"
                                         ng-options="groupName for groupName in groupNames[toUpdateDcGroup.dc.dc_name]"
                                 >
                                     <option value=""/>
 
                                 </select>
                             </div>
+                            <div class="col-sm-4" >
+                                <a style="color:red;font-size:10px">&nbsp;&nbsp;修改会导致DC下Redis会全部删除 <br>&nbsp;&nbsp;请谨慎操作!!!</a>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="col-sm-4 control-label no-padding-right"> group_type</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-4">
                                 <select
                                         ng-model="toUpdateDcGroup.dcCluster.groupType"
                                         allow_single_deselect="true"
                                         style="width:200px;"
-                                        ng-required="true"
                                         ng-options="groupType for groupType in groupTypes"
                                 >
                                     <option value=""/>
                                 </select>
+                            </div>
+                            <div class="col-sm-4" >
+                                <a style="color:red;font-size:10px">&nbsp;&nbsp;修改会导致DC下Redis会全部删除 <br>&nbsp;&nbsp;请谨慎操作!!!</a>
                             </div>
                         </div>
                         <div class="form-group">

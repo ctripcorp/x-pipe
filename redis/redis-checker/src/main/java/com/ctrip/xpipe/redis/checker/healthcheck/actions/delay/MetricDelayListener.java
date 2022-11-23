@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  * Aug 29, 2018
  */
 @Component
-public class MetricDelayListener implements DelayActionListener, OneWaySupport, BiDirectionSupport {
+public class MetricDelayListener extends AbstractDelayActionListener implements DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricDelayListener.class);
 

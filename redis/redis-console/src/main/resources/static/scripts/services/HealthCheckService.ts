@@ -7,6 +7,7 @@ HealthCheckService.$inject = ['$resource', '$q'];
 function HealthCheckService($resource, $q) {
 	const IS_REDIS_HEALTH = "is_redis_health";
 	const GET_REPL_DELAY = "get_repl_delay";
+	const GET_SHARD_DELAY = "get_shard_delay";
 	const GET_HICKWALL_ADDR = "get_hickwall_addr";
 	const GET_CROSS_MASTER_DELAY = "get_cross_master_delay";
 	const GET_CROSS_MASTER_HICKWALL_ADDR = "get_cross_master_hickwall_addr";
@@ -24,6 +25,10 @@ function HealthCheckService($resource, $q) {
 		apis[GET_REPL_DELAY] = {
 			method: 'GET',
 			url: '/console/redis/delay/:clusterType/:redisIp/:redisPort'
+		};
+		apis[GET_SHARD_DELAY] = {
+			method: 'GET',
+			url: '/console/shard/delay/:clusterId/:shardId/:shardDbId'
 		};
 		apis[GET_HICKWALL_ADDR] = {
 			method: 'GET',
@@ -80,6 +85,14 @@ function HealthCheckService($resource, $q) {
 			redisPort : port
 		});
 	}
+
+	function getShardDelay(clusterId, shardId, shardDbId) {
+		return request($q.defer(), GET_SHARD_DELAY, {
+			clusterId: clusterId,
+			shardId: shardId,
+			shardDbId: shardDbId
+		});
+	}
 	
 	function getHickwallAddr(cluster, shard, redisIp, redisPort) {
 		return request($q.defer(), GET_HICKWALL_ADDR, {
@@ -134,6 +147,7 @@ function HealthCheckService($resource, $q) {
 	return {
 		isRedisHealth : isRedisHealth,
 		getReplDelay : getReplDelay,
+		getShardDelay: getShardDelay,
 		getHickwallAddr : getHickwallAddr,
 		getCrossMasterDelay : getCrossMasterDelay,
 		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr,
