@@ -129,13 +129,13 @@
                 </div>
             </div>
             <div ng-repeat="source in sources">
-                <div class="panel panel-primary" style="margin-top: 15px;" ng-if="clusterType == 'hetero'" ng-repeat="shard in source.shards">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-if="clusterType == 'one_way'" ng-repeat="shard in source.shards">
                     <header class="panel-heading" style="background: #C7EDCC">
                         <div class="row">
 
                             <div class="col-md-10">
                                 <font color="black" class="col-md-10">
-                                    src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}})
+                                    src-dc:{{source.replDirectionInfoModel.srcDcName}} upstream-dc:{{source.replDirectionInfoModel.fromDcName}} {{shard.shardTbl.shardName}} (clusterId:{{shard.shardTbl.clusterId}},shardId:{{shard.shardTbl.id}}) 上下游延迟:{{shard.delay}}
                                 </font>
                             </div>
                             <div class="col-md-2 text-right">

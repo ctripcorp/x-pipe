@@ -16,7 +16,7 @@ import org.junit.runners.Suite;
         CtripFoundationServiceTest.class,
         HickwallMetricTest.class,
         CRedisServiceHttpTest.class,
-        CRedisAsyncClientTest.class
+        //CRedisAsyncClientTest.class
 })
 public class AllTests {
 }

@@ -34,10 +34,10 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public void doStart() throws Exception {
 
         scheduled = Executors.newSingleThreadScheduledExecutor();
-        scheduled.scheduleAtFixedRate(()-> {
+        scheduled.scheduleAtFixedRate(() -> {
             try {
                 send();
-            }catch (Throwable t){
+            } catch (Throwable t) {
                 logger.info("[send] error", t);
             }
         }, 1, 1, TimeUnit.SECONDS);
@@ -58,6 +58,11 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
         GtidSet gtidSet = gtid_executed.get();
 
         logger.debug("[send] send lwm, gtidSet {}", gtidSet);
+
+        if (gtidSet.isEmpty() || gtidSet.isZero()) {
+            logger.debug("[send] lwm {} is empty or zero skip send lwm", gtidSet);
+            return;
+        }
 
         Set<String> sids = gtidSet.getUUIDs();
 
