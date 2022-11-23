@@ -64,7 +64,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 					doPartialSync(redisSlave, keeperRepl.replId(), offsetRequest);
 				} else {
 					logger.info("[innerDoHandle][too much commands to transfer]{} - {} < {}", endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
-					((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+					redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 					doFullSync(redisSlave);
 				}
 			}

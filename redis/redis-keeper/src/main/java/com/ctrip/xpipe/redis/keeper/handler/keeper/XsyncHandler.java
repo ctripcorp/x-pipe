@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
@@ -30,6 +31,8 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
     protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
 
         redisKeeperServer.startIndexing();
+
+        KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
@@ -67,10 +70,16 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
                     reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
             doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
         } else {
-            // TODO: do full sync if too much data to send for partial sync
-            logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
-                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
-            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+            if (filteredLocalEnd.lwmDistance(reqExcludedGtidSet) < keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb()) {
+                logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {} {}",
+                        reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
+                doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+            } else {
+                logger.info("[innerDoHandle][too much commands to transfer] {} {} {} {}",
+                        reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
+                redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+                doFullSync(redisSlave);
+            }
         }
     }
 
