@@ -35,10 +35,9 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
         AbstractRdbDumperTest.class,
-        //TODO: to fix
-        //DefaultRedisKeeperServerConnectToFakeRedisTest.class,
-        //FakeRedisHalfRdbServerFail.class,
-        //PsyncTest.class,
+        DefaultRedisKeeperServerConnectToFakeRedisTest.class,
+        FakeRedisHalfRdbServerFail.class,
+//        PsyncTest.class,
         DefaultRedisClientTest.class,
         CommandHandlerManagerTest.class,
         RedisKeeperServerStateBackupTest.class,
