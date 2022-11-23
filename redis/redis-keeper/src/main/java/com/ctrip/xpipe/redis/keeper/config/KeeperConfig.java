@@ -35,6 +35,8 @@ public interface KeeperConfig extends CoreConfig{
 	 */
 	long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 
+	long getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb();
+
 	int getReplicationStoreMinTimeMilliToGcAfterCreate();
 
 	long getCommandReaderFlyingThreshold();

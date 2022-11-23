@@ -14,6 +14,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private long replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private long replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb = 10000;
 	private int minTimeMilliToGcAfterCreate = 2000;
 	private int rdbDumpMinIntervalMilli = 1000;
 	private int maxPartialSyncKeepTokenRounds = 3;
@@ -76,7 +77,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb() {
 		return replicationStoreMaxCommandsToTransferBeforeCreateRdb;
 	}
-	
+
+	@Override
+	public long getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb() {
+		return replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb;
+	}
+
 	public void setReplicationStoreCommandFileNumToKeep(int replicationStoreCommandFileNumToKeep) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
 	}
@@ -88,6 +94,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public void setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
+	}
+
+	public void setReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb(
+			int replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb) {
+		this.replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb = replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb;
 	}
 
 	@Override
