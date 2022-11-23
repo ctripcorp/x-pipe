@@ -44,6 +44,16 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testDistanceFrom() {
+        Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3")));
+        Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3")));
+        Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3,B:1-5")));
+
+        Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3,C:1-5")));
+        Assert.assertEquals(7, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3,B:1-5")));
+    }
+
+    @Test
     public void testLwm() {
         Assert.assertEquals(5, new GtidSet("A:1-5").lwm("A"));
         Assert.assertEquals(0, new GtidSet("A:2-5").lwm("A"));

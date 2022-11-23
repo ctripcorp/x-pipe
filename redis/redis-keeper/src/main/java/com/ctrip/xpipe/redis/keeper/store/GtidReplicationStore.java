@@ -28,7 +28,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     private static final Logger logger = LoggerFactory.getLogger(GtidReplicationStore.class);
 
-    private static final int DEFAULT_BYTES_BETWEEN_INDEX = 50 * 1024 * 1024; // 50MB
 
     private volatile Gtid2OffsetIndexGenerator indexGenerator;
 
@@ -169,7 +168,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         //TODO 2: find latest index
         String rdbGtidSetString = ctx.getRdbStore().getGtidSet();
 
-        indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, DEFAULT_BYTES_BETWEEN_INDEX, new GtidSet(rdbGtidSetString));
+        indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, new GtidSet(rdbGtidSetString));
 
         indexingFuture = indexingExecutors.submit(()->{
 
