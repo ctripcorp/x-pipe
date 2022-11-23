@@ -55,40 +55,12 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(), config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor);
 
-        if (null != replRdbGtidSet) {
-            try {
-                cmdStore.initialize();
-            } catch (Exception e) {
-                logger.info("[createCommandStore] init fail", e);
-                cmdStore.close();
-                throw new XpipeRuntimeException("cmdStore init fail", e);
-            }
-        } else if (null != rdbStore) {
-            logger.info("[createCommandStore] init after rdb gtid set ready");
-            rdbStore.addListener(new RdbStoreListener() {
-                @Override
-                public void onRdbGtidSet(String gtidSet) {
-                    try {
-                        getLogger().info("[onRdbGtidSet][update cmdstore] {} {}", rdbStore.getRdbFileName(), gtidSet);
-                        cmdStore.initialize();
-                    } catch (Exception e) {
-                        getLogger().error("[onRdbGtidSet][update cmdstore]", e);
-                        try {
-                            cmdStore.close();
-                        } catch (Throwable th) {
-                            getLogger().error("[onRdbGtidSet] fail and close fail", th);
-                        }
-                    }
-                }
-
-                @Override
-                public void onEndRdb() {
-                }
-            });
-        } else {
-            throw new IllegalStateException("no rdb.gtidset for GtidCommandStore to init");
+        try {
+            cmdStore.initialize();
+        } catch (Exception e) {
+            logger.info("[createCommandStore] init fail", e);
+            throw new XpipeRuntimeException("cmdStore init fail", e);
         }
-
         return cmdStore;
     }
 
