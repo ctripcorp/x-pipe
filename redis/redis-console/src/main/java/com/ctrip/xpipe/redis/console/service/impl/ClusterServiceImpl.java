@@ -24,6 +24,8 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -41,6 +43,9 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.APPLIER_PORT_DEFAULT;
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -88,6 +93,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private ReplDirectionService replDirectionService;
 
+	@Autowired
+	private SourceModelService sourceModelService;
+
+	@Autowired
+	private ShardModelService shardModelService;
+
+	@Autowired
+	private KeeperAdvancedService keeperAdvancedService;
+
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
 	private static final String PROXY_SPLITTER = "\\s*-\\s*";
@@ -100,6 +114,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<ClusterTbl> findClustersByGroupType(final String groupType) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersByGroupType(groupType, ClusterTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public List<ClusterTbl> findAllByNames(List<String> clusterNames) {
 		return clusterDao.findClustersWithName(clusterNames);
 	}
@@ -108,7 +132,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public ClusterStatus clusterStatus(String clusterName) {
 
 		ClusterTbl clusterTbl = find(clusterName);
-		if(clusterTbl == null){
+		if (clusterTbl == null) {
 			throw new IllegalArgumentException("cluster not found:" + clusterName);
 		}
 		return ClusterStatus.valueOf(clusterTbl.getStatus());
@@ -123,7 +147,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcTbl> result = Lists.newLinkedList();
-		for(DcClusterTbl dcClusterTbl : dcClusterTbls) {
+		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
 			result.add(dcService.find(dcClusterTbl.getDcId()));
 		}
 		return result;
@@ -153,7 +177,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		List<String> clusterNames = new ArrayList<>(clusterTbls.size());
 
-		clusterTbls.forEach( clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
+		clusterTbls.forEach(clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
 
 		return clusterNames;
 	}
@@ -201,7 +225,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<DcClusterModel> dcClusters = clusterModel.getDcClusters();
 
 		// ensure active dc assigned
-		if(!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
+		if (!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
 			throw new BadRequestException("No active dc assigned.");
 		}
 		ClusterTbl proto = dao.createLocal();
@@ -217,14 +241,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		} else {
 			proto.setActivedcId(cluster.getActivedcId());
 		}
-		if(!checkEmails(cluster.getClusterAdminEmails())) {
+		if (!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
 		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
 		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
 
 		final ClusterTbl queryProto = proto;
-		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
+		ClusterTbl result = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterDao.createCluster(queryProto, dcClusters);
@@ -265,7 +289,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		}
 
-		if(shards != null){
+		if (shards != null) {
 			for (ShardModel shard : shards) {
 				shardService.createShard(result.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 			}
@@ -283,7 +307,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {
 		String orgName = cluster.getClusterOrgName();
 		OrganizationTbl organizationTbl = organizationService.getOrgByName(orgName);
-		if(organizationTbl == null)
+		if (organizationTbl == null)
 			return 0L;
 		Long id = organizationTbl.getId();
 		return id == null ? 0L : id;
@@ -293,11 +317,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public ClusterTbl findClusterAndOrg(String clusterName) {
 		ClusterTbl clusterTbl = clusterDao.findClusterAndOrgByName(clusterName);
 		OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
-		if(organizationTbl != null) {
+		if (organizationTbl != null) {
 			clusterTbl.setClusterOrgName(organizationTbl.getOrgName());
 		}
 		// Set null if no organization bind with cluster
-		if(organizationTbl == null || organizationTbl.getId() == null) {
+		if (organizationTbl == null || organizationTbl.getId() == null) {
 			clusterTbl.setOrganizationInfo(null);
 		}
 		return clusterTbl;
@@ -336,29 +360,31 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return setOrgNullIfNoOrgIdExsits(result);
 	}
 
-	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
+	@Override
+	public List<ClusterTbl> findAllClustersWithOrgInfo() {
 		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
 	}
 
-	@Override public List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType) {
+	@Override
+	public List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType) {
 		List<ClusterTbl> result = clusterDao.findClusterWithOrgInfoByClusterType(clusterType);
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
 	}
 
 	private List<ClusterTbl> fillClusterOrgName(List<ClusterTbl> clusterTblList) {
-		for(ClusterTbl cluster : clusterTblList) {
+		for (ClusterTbl cluster : clusterTblList) {
 			cluster.setClusterOrgName(cluster.getOrganizationInfo().getOrgName());
 		}
 		return clusterTblList;
 	}
 
 	private List<ClusterTbl> setOrgNullIfNoOrgIdExsits(List<ClusterTbl> clusterTblList) {
-		for(ClusterTbl cluster : clusterTblList) {
+		for (ClusterTbl cluster : clusterTblList) {
 			OrganizationTbl organizationTbl = cluster.getOrganizationInfo();
-			if(organizationTbl.getId() == null) {
+			if (organizationTbl.getId() == null) {
 				cluster.setOrganizationInfo(null);
 			}
 		}
@@ -369,14 +395,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@DalTransaction
 	public void updateCluster(String clusterName, ClusterModel cluster) {
 		ClusterTbl proto = find(clusterName);
-		if(null == proto) throw new BadRequestException("Cannot find cluster");
+		if (null == proto) throw new BadRequestException("Cannot find cluster");
 
-		if(proto.getId() != cluster.getClusterTbl().getId()) {
+		if (proto.getId() != cluster.getClusterTbl().getId()) {
 			throw new BadRequestException("Cluster not match.");
 		}
 		proto.setClusterDescription(cluster.getClusterTbl().getClusterDescription());
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-		if(!checkEmails(cluster.getClusterTbl().getClusterAdminEmails())) {
+		if (!checkEmails(cluster.getClusterTbl().getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
 		proto.setClusterAdminEmails(cluster.getClusterTbl().getClusterAdminEmails());
@@ -433,7 +459,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public void deleteCluster(String clusterName) {
 		ClusterTbl proto = find(clusterName);
-		if(null == proto) throw new BadRequestException("Cannot find cluster");
+		if (null == proto) throw new BadRequestException("Cannot find cluster");
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
 
@@ -459,12 +485,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public void bindDc(DcClusterTbl dcClusterTbl) {
 		final ClusterTbl cluster = find(dcClusterTbl.getClusterName());
 		final DcTbl dc = dcService.find(dcClusterTbl.getDcName());
-		if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
+		if (null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
 
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
+				ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
 				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName())) {
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
 				} else
@@ -479,12 +505,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public void unbindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
 		final DcTbl dc = dcService.find(dcName);
-		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
+		if (null == dc || null == cluster)
+			throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
 
 		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
-		if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+		if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
 			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
-			if(null != shardTbls && !shardTbls.isEmpty()) {
+			if (null != shardTbls && !shardTbls.isEmpty()) {
 				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
 				shardService.deleteShards(cluster, shardNames);
 			}
@@ -531,8 +558,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		if (former == null)  throw new BadRequestException("former cluster not found");
-		if (latter == null)  throw new BadRequestException("latter cluster not found");
+		if (former == null) throw new BadRequestException("former cluster not found");
+		if (latter == null) throw new BadRequestException("latter cluster not found");
 		if (former.getId() != formerClusterId) throw new BadRequestException("former cluster name Id not match");
 		if (latter.getId() != latterClusterId) throw new BadRequestException("latter cluster name Id not match");
 
@@ -563,14 +590,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	public boolean checkEmails(String emails) {
-		if(emails == null || emails.trim().isEmpty()) {
+		if (emails == null || emails.trim().isEmpty()) {
 			return false;
 		}
 		String splitter = "\\s*(,|;)\\s*";
 		String[] emailStrs = StringUtil.splitRemoveEmpty(splitter, emails);
-		for(String email : emailStrs) {
+		for (String email : emailStrs) {
 			EmailService.CheckEmailResponse response = EmailService.DEFAULT.checkEmailAddress(email);
-			if(!response.isOk())
+			if (!response.isOk())
 				return false;
 		}
 		return true;
@@ -586,8 +613,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public List<ClusterTbl> findErrorMigratingClusters() {
 		List<ClusterTbl> errorClusters = Lists.newArrayList();
 		List<ClusterTbl> clustersWithEvents = clusterDao.findMigratingClustersWithEvents();
-		for (ClusterTbl clusterWithEvent: clustersWithEvents) {
-		    if (clusterWithEvent.getMigrationEvent().getId() == 0) {
+		for (ClusterTbl clusterWithEvent : clustersWithEvents) {
+			if (clusterWithEvent.getMigrationEvent().getId() == 0) {
 				errorClusters.add(clusterWithEvent);
 			}
 		}
@@ -617,7 +644,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
 		try {
 			XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-			if(xpipeMeta == null || xpipeMeta.getDcs() == null) {
+			if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
 				return Collections.emptyList();
 			}
 
@@ -644,7 +671,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@VisibleForTesting
 	protected List<ClusterListUnhealthyClusterModel> richClusterInfo(Map<String, ClusterListUnhealthyClusterModel> clusters) {
 
-		if(clusters.isEmpty()) {
+		if (clusters.isEmpty()) {
 			return Collections.emptyList();
 		}
 		List<String> clusterNames = Lists.newArrayListWithExpectedSize(clusters.size());
@@ -653,7 +680,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		List<ClusterListUnhealthyClusterModel> result = Lists.newArrayListWithExpectedSize(clusterTbls.size());
 
-		for(ClusterTbl clusterTbl : clusterTbls) {
+		for (ClusterTbl clusterTbl : clusterTbls) {
 			ClusterListUnhealthyClusterModel cluster = clusters.get(clusterTbl.getClusterName());
 			cluster.setActivedcId(clusterTbl.getActivedcId())
 					.setClusterAdminEmails(clusterTbl.getClusterAdminEmails())
@@ -665,7 +692,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<ClusterTbl> findAllClusterByDcNameBind(String dcName){
+	public List<ClusterTbl> findAllClusterByDcNameBind(String dcName) {
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
@@ -685,12 +712,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType) {
 		List<ClusterTbl> dcClusters = findAllClusterByDcNameBind(dcName);
-		if(clusterType.isEmpty()) return dcClusters;
+		if (clusterType.isEmpty()) return dcClusters;
 		return dcClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
 	}
 
 	@Override
-	public List<ClusterTbl> findActiveClustersByDcName(String dcName){
+	public List<ClusterTbl> findActiveClustersByDcName(String dcName) {
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
@@ -700,7 +727,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType) {
 		List<ClusterTbl> dcActiveClusters = findActiveClustersByDcName(dcName);
-		if(clusterType.isEmpty()) return dcActiveClusters;
+		if (clusterType.isEmpty()) return dcActiveClusters;
 		return dcActiveClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
 	}
 
@@ -751,8 +778,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (!needCheckClusterRouteInfo(clusterTbl.getClusterType())) return defaultRoutes;
 
 		List<String> dstDcNames = parseDstDcs(clusterTbl);
-		Map<String, RouteMeta> chooseRoutes = metaCache.chooseDefaultRoutes(clusterName, srcDcName, dstDcNames, (int)clusterTbl.getClusterOrgId());
-		if (chooseRoutes == null || chooseRoutes.isEmpty())  return defaultRoutes;
+		Map<String, RouteMeta> chooseRoutes = metaCache.chooseDefaultRoutes(clusterName, srcDcName, dstDcNames, (int) clusterTbl.getClusterOrgId());
+		if (chooseRoutes == null || chooseRoutes.isEmpty()) return defaultRoutes;
 
 		Map<Long, RouteInfoModel> routeIdInfoModelMap = routeService.getRouteIdInfoModelMap();
 		for (RouteMeta routeMeta : chooseRoutes.values()) {
@@ -769,7 +796,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
 
 		List<String> dstDcs = new ArrayList<>();
-		if (ClusterType.lookup(clusterTbl.getClusterType()).supportMultiActiveDC()){
+		if (ClusterType.lookup(clusterTbl.getClusterType()).supportMultiActiveDC()) {
 			List<DcClusterTbl> clusterRelated = dcClusterService.findClusterRelated(clusterTbl.getId());
 			if (clusterRelated == null || clusterRelated.isEmpty()) return dstDcs;
 
@@ -792,7 +819,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Set<RouteInfoModel> result = new HashSet<>();
 		for (Map.Entry<String, List<ProxyChain>> shardChains : proxyChains.entrySet()) {
 			List<ProxyChain> peerChains = shardChains.getValue();
-			for (ProxyChain chain: peerChains) {
+			for (ProxyChain chain : peerChains) {
 				result.add(getRouteInfoModelFromProxyChainModel(allRoutes, new ProxyChainModel(chain, chain.getPeerDcId(), srcDcName)));
 			}
 		}
@@ -830,7 +857,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			ips = StringUtil.splitRemoveEmpty(PROXY_SPLITTER, proxyChainModel.getOptionalTunnel().getTunnelId());
 
 		logger.debug("[getDstProxy] get dst proxy from tunnel:{}", proxyChainModel.getOptionalTunnel() == null ?
-					proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
+				proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
 		String[] results = ips[3].substring(3).split(":");
 		return String.format(PROXYTLS, results[0]);
 	}
@@ -877,7 +904,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			for (String routeId : oldClusterDesignatedRoutes) {
 				RouteInfoModel routeInfoModel = allRoutesMap.get(Long.parseLong(routeId));
 				if (routeInfoModel == null) continue;
-				if(srcDcName.equalsIgnoreCase(routeInfoModel.getSrcDcName())) continue;
+				if (srcDcName.equalsIgnoreCase(routeInfoModel.getSrcDcName())) continue;
 
 				newDesignatedRouteIds.add(routeId);
 			}
@@ -1006,4 +1033,126 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 	}
 
+	@Override
+	public void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
+		if (DcGroupType.isNullOrDrMaster(dcClusterService.find(replDirection.getToDcName(), cluster.getClusterName()).getGroupType())) {
+			addKeepersWhenToDcIsDrMasterType(cluster, replDirection);
+		} else if (ObjectUtils.equals(replDirection.getSrcDcName(), replDirection.getFromDcName())) {
+			addKeepersAndAppliersWithNoTransitDc(cluster, replDirection);
+		} else {
+			addKeepersAndAppliersWithTransitDc(cluster, replDirection);
+		}
+	}
+
+	private void addKeepersAndAppliersWithNoTransitDc(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
+		if (!DcGroupType.isNullOrDrMaster(dcClusterService.find(replDirection.getSrcDcName(), cluster.getClusterName()).getGroupType())) {
+			doAddShardKeepersByDcAndCluster(replDirection.getSrcDcName(), cluster.getClusterName(), replDirection);
+		}
+		doAddSourceAppliersByDcAndCluster(replDirection.getToDcName(), cluster.getClusterName(), replDirection);
+	}
+
+	private void addKeepersWhenToDcIsDrMasterType(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
+		String msg = String.format("to dc %s is Dr master Dc in cluster %s", replDirection.getToDcName(), cluster.getClusterName());
+		logger.warn("[completeReplicationByReplDirection] {}", msg);
+		throw new BadRequestException(msg);
+	}
+
+	private void addKeepersAndAppliersWithTransitDc(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
+		if (!DcGroupType.isSameGroupType(dcClusterService.find(replDirection.getFromDcName(), cluster.getClusterName()).getGroupType(), DcGroupType.MASTER)) {
+			throw new BadRequestException(String.format("transit dc %s in cluster %s is not MASTER type", replDirection.getFromDcName(), cluster.getClusterName()));
+		}
+
+		ReplDirectionInfoModel upstreamReplDirection = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(cluster.getClusterName(), replDirection.getSrcDcName(), replDirection.getFromDcName());
+		addUpstreamSourceKeepers(replDirection, upstreamReplDirection);
+
+		doAddSourceKeepersByDcAndCluster(replDirection.getFromDcName(), cluster.getClusterName(), replDirection);
+		doAddSourceAppliersByDcAndCluster(replDirection.getToDcName(), cluster.getClusterName(), replDirection);
+	}
+
+	private void addUpstreamSourceKeepers(ReplDirectionInfoModel replDirection, ReplDirectionInfoModel upstreamReplDirection) {
+		if (upstreamReplDirection == null || upstreamReplDirection.getSrcDcName().equalsIgnoreCase(upstreamReplDirection.getFromDcName())) {
+			return ;
+		}
+		addUpstreamSourceKeepers(upstreamReplDirection, replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(
+				upstreamReplDirection.getClusterName(), upstreamReplDirection.getSrcDcName(), upstreamReplDirection.getFromDcName()));
+		doAddSourceKeepersByDcAndCluster(upstreamReplDirection.getFromDcName(), upstreamReplDirection.getClusterName(), upstreamReplDirection);
+	}
+
+	private void doAddSourceAppliersByDcAndCluster(String dcName, String clusterName, ReplDirectionInfoModel replDirection) {
+		List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, clusterName);
+		if (dcClusterShards == null || dcClusterShards.isEmpty()) return;
+
+		SourceModel sourceModel = sourceModelService.getAllSourceModelsByClusterAndReplDirection(dcName, clusterName, replDirection);
+		if (sourceModel == null || sourceModel.getShards() == null || sourceModel.getShards().isEmpty()) {
+			throw new BadRequestException(String.format("cluster:%s  does not exist or has no source shard in dc:%s", clusterName, dcName));
+		}
+
+		for (ShardModel shardModel : sourceModel.getShards()) {
+			if (shardModel.getAppliers() != null && shardModel.getAppliers().size() != 0) {
+				continue;
+			}
+
+			List<ApplierBasicInfo> bestAppliers = applierService.findBestAppliers(dcName, APPLIER_PORT_DEFAULT, (ip, port) -> true, clusterName);
+			List<ApplierTbl> newAppliers = new LinkedList<>();
+			bestAppliers.forEach(bestApplier -> {
+				newAppliers.add(new ApplierTbl().setContainerId(bestApplier.getAppliercontainerId())
+						.setIp(bestApplier.getHost()).setPort(bestApplier.getPort()));
+			});
+			shardModel.setAppliers(newAppliers);
+			try {
+				logger.info("[Update source appliers][construct]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel);
+				applierService.updateAppliersAndKeepers(dcName, clusterName, shardModel.getShardTbl().getShardName(), shardModel, replDirection.getId());
+				logger.info("[Update source appliers][success]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel);
+			} catch (Throwable th) {
+				logger.error("[Update source appliers][failed]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel, th);
+				throw th;
+			}
+		}
+	}
+
+	private void doAddSourceKeepersByDcAndCluster(String dcName, String clusterName, ReplDirectionInfoModel replDirection) {
+		SourceModel sourceModel = sourceModelService.getAllSourceModelsByClusterAndReplDirection(dcName, clusterName, replDirection);
+		if (sourceModel == null || sourceModel.getShards() == null || sourceModel.getShards().isEmpty()) {
+			throw new BadRequestException(String.format("cluster:%s  does not exist or has no source shard in dc:%s", clusterName, dcName));
+		}
+		doAddKeepersForShards(dcName, clusterName, sourceModel.getShards(), replDirection, true);
+
+	}
+
+	private void doAddShardKeepersByDcAndCluster(String dcName, String clusterName, ReplDirectionInfoModel replDirection) {
+		List<ShardModel> shards = shardModelService.getAllShardModel(dcName, clusterName);
+		if (shards == null || shards.isEmpty()) {
+			throw new BadRequestException(String.format("cluster:%s  does not exist or has no shard in dc:%s", clusterName, dcName));
+		}
+		doAddKeepersForShards(dcName, clusterName, shards, replDirection, false);
+	}
+
+	private void doAddKeepersForShards(String dcName, String clusterName, List<ShardModel> shardModels, ReplDirectionInfoModel replDirection, boolean isSource) {
+		final Map<String, Long> dcNameIdMap = dcService.dcNameIdMap();
+		for (ShardModel shardModel : shardModels) {
+			if (shardModel.getKeepers() != null && shardModel.getKeepers().size() != 0) {
+				continue;
+			}
+			List<KeeperBasicInfo> newKeeperBasicInfos
+					= keeperAdvancedService.findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterName);
+			List<RedisTbl> newKeepers = new ArrayList<>();
+			newKeeperBasicInfos.forEach(keeperBasicInfo -> newKeepers.add(new RedisTbl()
+					.setKeepercontainerId(keeperBasicInfo.getKeeperContainerId())
+					.setRedisIp(keeperBasicInfo.getHost()).setRedisPort(keeperBasicInfo.getPort())));
+			shardModel.setKeepers(newKeepers);
+
+			try {
+				logger.info("[Update keepers][construct]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel);
+				if (isSource) {
+					redisService.updateSourceKeepers(replDirection.getSrcDcName(), clusterName, shardModel.getShardTbl().getShardName(), dcNameIdMap.get(dcName), shardModel);
+				} else {
+					redisService.updateRedises(dcName, clusterName, shardModel.getShardTbl().getShardName(), shardModel);
+				}
+				logger.info("[Update keepers][success]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel);
+			} catch (Exception e) {
+				logger.error("[Update keepers][failed]{},{},{},{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModel, e);
+				throw e;
+			}
+		}
+	}
 }

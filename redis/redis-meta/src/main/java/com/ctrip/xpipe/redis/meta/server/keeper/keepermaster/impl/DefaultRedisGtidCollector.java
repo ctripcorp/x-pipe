@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -28,21 +29,17 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask implements RedisGtidCollector {
 
-    public static int DEFAULT_REDIS_GTID_COLLECT_INTERVAL_SECONDS = Integer
-            .parseInt(System.getProperty("REDIS_GTID_COLLECT_INTERVAL_SECONDS", "2"));
+    public static int DEFAULT_INTERVAL_SECONDS = Integer
+            .parseInt(System.getProperty("DEFAULT_INTERVAL_SECONDS", "30"));
+
+    public static int MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS = Integer
+            .parseInt(System.getProperty("MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS", "2"));
 
     private MultiDcService multiDcService;
 
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private int collectIntervalSeconds;
-
-    public DefaultRedisGtidCollector(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
-                                     CurrentMetaManager currentMetaManager, MultiDcService multiDcService,
-                                     ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool) {
-        this(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled, keyedObjectPool,
-                DEFAULT_REDIS_GTID_COLLECT_INTERVAL_SECONDS);
-    }
 
     public DefaultRedisGtidCollector(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
                                      CurrentMetaManager currentMetaManager, MultiDcService multiDcService,
@@ -55,41 +52,66 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
 
     @Override
     protected void work() {
+        String hints = dcMetaCache.getClusterMeta(clusterDbId).getHints();
+        if (!Hints.parse(hints).contains(Hints.MASTER_DC_IN_CLUSTER)) {
+            return;
+        }
+        if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+            collectCurrentDcGtidAndSids();
+        } else {
+            collectSids();
+        }
+    }
+
+    @VisibleForTesting
+    protected void collectCurrentDcGtidAndSids() {
+
+        /* redis shard */
         List<RedisMeta> redises = currentMetaManager.getRedises(clusterDbId, shardDbId);
         logger.debug("[work][collect gtid]cluster_{}, shard_{}", clusterDbId, shardDbId);
 
         for (RedisMeta redisMeta : redises) {
             try {
-                logger.debug("[work][collect gtid][redis]ip={}, port={}", redisMeta.getIp(), redisMeta.getPort());
                 collectGtidAndSids(redisMeta);
             } catch (Throwable th) {
-                logger.warn("[work][collect gtid][redis] failed, ip={}, port={}", redisMeta.getIp(), redisMeta.getPort(), th);
-            }
-        }
-
-        if (!dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
-            String currentDc = dcMetaCache.getCurrentDc();
-            String srcDcName = dcMetaCache.getSrcDc(currentDc, clusterDbId, shardDbId);
-            String srcSids = multiDcService.getSids(currentDc, srcDcName, clusterDbId, shardDbId);
-
-            String currentSrcSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
-            if (sidsChanged(srcSids, currentSrcSids)) {
-                currentMetaManager.setSrcSidsAndNotify(clusterDbId, shardDbId, srcSids);
+                logger.warn("[work][collect gtid][cluster_{}][shard_{}][redis] failed, ip={}, port={}", clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), th);
             }
         }
     }
 
     @VisibleForTesting
-    public boolean sidsChanged(String sids, String currentSids) {
+    protected void collectSids() {
+
+        if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId) ||
+                dcMetaCache.getShardAppliers(clusterDbId, shardDbId) == null ||
+                dcMetaCache.getShardAppliers(clusterDbId, shardDbId).isEmpty()) {
+            return;
+        }
+
+        /* applier shard */
+        String currentDc = dcMetaCache.getCurrentDc();
+        String srcDcName = dcMetaCache.getSrcDc(currentDc, clusterDbId, shardDbId);
+        String srcSids = multiDcService.getSids(currentDc, srcDcName, clusterDbId, shardDbId);
+
+        String cachedSids = currentMetaManager.getSrcSids(clusterDbId, shardDbId);
+        logger.info("[work][collect sid]cluster_{}, shard_{}, srcSids_{}, cachedSids_{}",
+                clusterDbId, shardDbId, srcSids, cachedSids);
+        if (sidsChanged(srcSids, cachedSids)) {
+            currentMetaManager.setSrcSidsAndNotify(clusterDbId, shardDbId, srcSids);
+        }
+    }
+
+    @VisibleForTesting
+    public boolean sidsChanged(String sids, String cachedSids) {
         if (StringUtils.isEmpty(sids)) {
             return false;
         }
-        if (StringUtils.isEmpty(currentSids)) {
+        if (StringUtils.isEmpty(cachedSids)) {
             return true;
         }
 
         Set<String> sidSet = new HashSet<>(Arrays.asList(sids.split(",")));
-        Set<String> currentSidSet = new HashSet<>(Arrays.asList(currentSids.split(",")));
+        Set<String> currentSidSet = new HashSet<>(Arrays.asList(cachedSids.split(",")));
 
         return sidSet.retainAll(currentSidSet) || currentSidSet.retainAll(sidSet);
     }
@@ -111,17 +133,24 @@ public class DefaultRedisGtidCollector extends AbstractClusterShardPeriodicTask 
                     logger.warn("[info gtid command return null], cluster_{}, shard_{}", clusterDbId, shardDbId);
                     return;
                 }
-                logger.debug("[info gtid command], cluster_{}, shard_{}, gtidSet={}", clusterDbId, shardDbId, gtidSet);
+                logger.info("[info gtid command], cluster_{}, shard_{}, ip={}, port={} gtidSet={}",
+                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(),
+                        gtidSet.toString().substring(0, Math.min(1000, gtidSet.toString().length())));
                 String sids = null;
                 if (!gtidSet.getUUIDs().isEmpty()) {
                     for(String sid: gtidSet.getUUIDs()) {
                         sids = sids == null? sid: sids + "," + sid;
                     }
                 }
-                redisMeta.setGtid(gtidSet.toString());
-                redisMeta.setSid(sids);
+                if (!gtidSet.toString().isEmpty()) {
+                    redisMeta.setGtid(gtidSet.toString());
+                }
+                if (sidsChanged(sids, redisMeta.getSid())) {
+                    redisMeta.setSid(sids);
+                }
             } else {
-                logger.error("[info gtid command failed], cluster_{}, shard_{}", clusterDbId, shardDbId, commandFuture.cause());
+                logger.error("[info gtid command failed], cluster_{}, shard_{}, ip={}, port={}",
+                        clusterDbId, shardDbId, redisMeta.getIp(), redisMeta.getPort(), commandFuture.cause());
             }
         });
     }

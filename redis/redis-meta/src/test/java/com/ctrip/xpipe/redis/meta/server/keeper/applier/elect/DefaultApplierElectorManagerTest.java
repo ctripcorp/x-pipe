@@ -47,12 +47,6 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
     @Mock
     private ApplierActiveElectAlgorithm applierActiveElectAlgorithm;
 
-    @Mock
-    private DcMetaCache dcMetaCache;
-
-    @Mock
-    private MultiDcService multiDcService;
-
     private DefaultApplierElectorManager applierElectorManager;
     private ClusterMeta clusterMeta;
     private ShardMeta shardMeta;
@@ -68,8 +62,6 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
 
         applierElectorManager.setCurrentMetaManager(currentMetaManager);
         applierElectorManager.setApplierActiveElectAlgorithmManager(applierActiveElectAlgorithmManager);
-        applierElectorManager.setDcMetaCache(dcMetaCache);
-        applierElectorManager.setMultiDcService(multiDcService);
 
         clusterMeta = differentCluster("oy", 2);
         shardMeta = (ShardMeta) clusterMeta.getAllShards().values().toArray()[0];

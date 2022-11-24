@@ -53,6 +53,8 @@ public interface CurrentMetaManager extends Observable {
 
 	/************* update support *****************/
 
+	void setRedises(Long clusterDbId, Long shardDbId, List<RedisMeta> redises);
+
 	void addResource(Long clusterDbId, Long shardDbId, Releasable releasable);
 
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);

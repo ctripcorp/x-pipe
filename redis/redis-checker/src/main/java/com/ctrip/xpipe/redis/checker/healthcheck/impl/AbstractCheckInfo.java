@@ -22,6 +22,8 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected String dcGroupType;
 
+    protected boolean isHeteroCluster;
+
     public AbstractCheckInfo() {
 
     }
@@ -81,4 +83,15 @@ public abstract class AbstractCheckInfo implements CheckInfo {
     public void setDcGroupType(String type) {
         this.dcGroupType = type;
     }
+
+    @Override
+    public void setHeteroCluster(boolean isHeteroCluster) {
+        this.isHeteroCluster = isHeteroCluster;
+    }
+
+    @Override
+    public boolean isHeteroCluster() {
+        return isHeteroCluster;
+    }
+
 }

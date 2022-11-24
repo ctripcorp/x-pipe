@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
@@ -12,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.*;
 
 /**
  * @author ayq
@@ -20,13 +23,17 @@ import static org.junit.Assert.assertTrue;
  */
 public class DefaultRedisGtidCollectorTest {
 
+    private DcMetaCache dcMetaCache;
+
     private DefaultRedisGtidCollector defaultRedisGtidCollector;
 
     @Before
     public void setUp() throws Exception {
-        defaultRedisGtidCollector = new DefaultRedisGtidCollector(1L,1L, Mockito.mock(DcMetaCache.class),
+        dcMetaCache = Mockito.mock(DcMetaCache.class);
+        defaultRedisGtidCollector = new DefaultRedisGtidCollector(1L,1L, dcMetaCache,
                 Mockito.mock(CurrentMetaManager.class), Mockito.mock(MultiDcService.class),
-                Mockito.mock(ScheduledExecutorService.class), Mockito.mock(XpipeNettyClientKeyedObjectPool.class));
+                Mockito.mock(ScheduledExecutorService.class), Mockito.mock(XpipeNettyClientKeyedObjectPool.class),
+                DefaultRedisGtidCollector.DEFAULT_INTERVAL_SECONDS);
     }
 
     @Test
@@ -39,6 +46,31 @@ public class DefaultRedisGtidCollectorTest {
         assertTrue(defaultRedisGtidCollector.sidsChanged("a,b", ""));
         assertTrue(defaultRedisGtidCollector.sidsChanged("a,b,c", "b,a"));
         assertTrue(defaultRedisGtidCollector.sidsChanged("a,b", "a,b,c"));
+    }
+
+    @Test
+    public void testHintsApplierInCluster() {
+        ClusterMeta clusterMeta = new ClusterMeta();
+        clusterMeta.setHints(Hints.APPLIER_IN_CLUSTER.name());
+        when(dcMetaCache.getClusterMeta(1L)).thenReturn(clusterMeta);
+
+        DefaultRedisGtidCollector collector = spy(defaultRedisGtidCollector);
+
+        collector.work();
+        verify(collector,Mockito.times(1)).collectCurrentDcGtidAndSids();
+        verify(collector,Mockito.times(1)).collectSids();
+    }
+
+    @Test
+    public void testHintsApplierNotInCluster() {
+        ClusterMeta clusterMeta = new ClusterMeta();
+        when(dcMetaCache.getClusterMeta(1L)).thenReturn(clusterMeta);
+
+        DefaultRedisGtidCollector collector = spy(defaultRedisGtidCollector);
+
+        collector.work();
+        verify(collector,Mockito.times(0)).collectCurrentDcGtidAndSids();
+        verify(collector,Mockito.times(0)).collectSids();
     }
 
 }

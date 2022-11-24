@@ -131,6 +131,7 @@
 		<var name="dc-id" value-type="long"/>
 		<var name="ids" value-type="java.util.List&lt;Long&gt;" />
 		<var name="origin-status" value-type="String"/>
+		<var name="group-type" value-type="String"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
@@ -335,6 +336,21 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='cluster-name'/> IN <IN>${cluster-names}</IN>
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-clusters-by-group-type" type="SELECT" multiple="true">
+				<param name="group-type"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE
+					id in (
+							SELECT cluster_id FROM <TABLE name='dc-cluster-info' />
+							WHERE dct.group_type = ${group-type} AND dct.deleted = 0
+						)
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
@@ -713,7 +729,6 @@
 				<readset-ref name="SENTINEL_ID"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
-<!--				<readset-ref name="APPLIER_META_INFO" relation-name="applier-info"/>-->
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 			<readset name="FULL_WITH_SHARD_REDIS">
@@ -1017,6 +1032,8 @@
 					AND <FIELD name='deleted' /> = 0
 					AND <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id
 					AND dcst.dc_cluster_id=dct.dc_cluster_id
+					AND dct.deleted = 0
+					AND dcst.deleted = 0
         			]]>
 				</statement>
 			</query>
@@ -2887,15 +2904,18 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS />
-					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='repl-direction-info' />, <TABLE name='dc-cluster-info' />
+					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='repl-direction-info' />,
+					 <TABLE name='dc-cluster-info' />, <TABLE name='cluster-info' />
 					WHERE <FIELD name='shard-id' /> = dcst.shard_id
 					AND <FIELD name='repl-direction-id' /> = rdt.id
-					AND rdt.src_dc_id = dct.dc_id
+					AND ct.id = rdt.cluster_id
+					AND ct.activedc_id = dct.dc_id
 					AND dct.dc_cluster_id = dcst.dc_cluster_id
 					AND dct.deleted = 0
 					AND rdt.deleted = 0
 					AND <FIELD name='deleted' /> = 0
 					AND dcst.deleted = 0
+					AND ct.deleted = 0
 					GROUP BY <FIELD name='container-id' />
         			]]>
 				</statement>
@@ -2907,16 +2927,18 @@
 					<![CDATA[
 					SELECT DISTINCT <FIELDS />
 					FROM <TABLE />, <TABLE name='dc-cluster-shard-info'/>,
-					<TABLE name='repl-direction-info'/>, <TABLE name='dc-cluster-info'/>
+					<TABLE name='repl-direction-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='cluster-info' />
 					WHERE dcst.dc_cluster_shard_id = ${dc-cluster-shard-id}
 					AND <FIELD name='shard-id' /> = dcst.shard_id
 					AND dcst.dc_cluster_id = dct.dc_cluster_id
-					AND dct.dc_id = rdt.src_dc_id
+					AND ct.id = rdt.cluster_id
+					AND ct.activedc_id = dct.dc_id
 					AND <FIELD name='repl-direction-id'/> = rdt.id
 					AND dct.deleted = 0
 					AND rdt.deleted = 0
 					AND <FIELD name='deleted' /> = 0
 					AND dcst.deleted = 0
+					AND ct.deleted = 0
         			]]>
 				</statement>
 			</query>
@@ -2932,10 +2954,12 @@
 						SELECT id from <TABLE name='repl-direction-info' />
 						WHERE rdt.to_dc_id = ${to-dc-id}
 						AND rdt.cluster_id = ${cluster-id}
+						AND rdt.deleted = 0
 					)
 					AND <FIELD name='shard-id' /> in (
 						SELECT id from <TABLE name='shard-info' />
 						WHERE st2.cluster_id = ${cluster-id}
+						AND st2.deleted = 0
 					)
 					AND <FIELD name='deleted' /> = 0
         			]]>
@@ -3089,8 +3113,9 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='src-dc-id'/> = ${src-dc-id}
+					FROM <TABLE/>, <TABLE name='cluster-info'/>
+					WHERE  <FIELD name='cluster-id'/> = ct.id
+					AND ct.activedc_id =
 					AND <FIELD name='to-dc-id'/> = ${to-dc-id}
 					AND <FIELD name='cluster-id'/> = ${cluster-id}
 					AND <FIELD name='deleted'/> = 0

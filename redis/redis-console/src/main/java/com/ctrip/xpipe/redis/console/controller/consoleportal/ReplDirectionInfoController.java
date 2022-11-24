@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,9 +18,13 @@ public class ReplDirectionInfoController extends AbstractConsoleController {
     @Autowired
     ReplDirectionService replDirectionService;
 
+    @Autowired
+    ClusterService clusterService;
+
+
     @RequestMapping("/repl-direction/cluster/" + CLUSTER_NAME_PATH_VARIABLE + "/src-dc/{srcDcName}/to-dc/{toDcName}")
     public ReplDirectionInfoModel getReplDirectionInfoModelByClusterAndSrcToDc(@PathVariable String clusterName,
-                                                                               @PathVariable String srcDcName, @PathVariable String toDcName){
+                                                                               @PathVariable String srcDcName, @PathVariable String toDcName) {
         return replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, srcDcName, toDcName);
     }
 
@@ -31,5 +36,24 @@ public class ReplDirectionInfoController extends AbstractConsoleController {
     @RequestMapping("/repl-direction/infos/all")
     public List<ReplDirectionInfoModel> getAllReplDirectionInfoModels() {
         return replDirectionService.findAllReplDirectionInfoModels();
+    }
+
+    @RequestMapping(value = "/repl-direction/repl-completion", method = RequestMethod.POST)
+    public RetMessage completeReplicationByReplDirection(@RequestBody ReplDirectionInfoModel replDirection) {
+        logger.info("[completeReplicationByReplDirection] {}", replDirection);
+        ClusterTbl cluster = clusterService.find(replDirection.getClusterName());
+        if (cluster == null) {
+            String msg = String.format("cluster %s does not exist", replDirection.getClusterName());
+            logger.warn("[completeReplicationByReplDirection] {}", msg);
+            return RetMessage.createFailMessage(msg);
+        }
+
+        try {
+            clusterService.completeReplicationByClusterAndReplDirection(cluster, replDirection);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[completeReplicationByReplDirection] fail {}, {}", replDirection, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
     }
 }
