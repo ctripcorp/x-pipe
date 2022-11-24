@@ -5,6 +5,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperIndexState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
@@ -23,7 +24,11 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 
 	public static String SET_STATE = "setstate";
 
-	
+	public static String GET_INDEX = "getindex";
+
+	public static String SET_INDEX = "setindex";
+
+
 	public AbstractKeeperCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 	}
@@ -57,7 +62,7 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 			return new RequestStringParser(getName(), GET_STATE).format();
 		}
 	}
-	
+
 	public static class KeeperSetStateCommand extends AbstractKeeperCommand<String>{
 
 		private KeeperState state;
@@ -122,6 +127,65 @@ public abstract class AbstractKeeperCommand<T> extends AbstractRedisCommand<T> {
 		@Override
 		public String toString() {
 			return String.format("(to:%s) %s %s %s %s %s", getClientPool().desc(), getName(), SET_STATE, state.toString(), masterAddress.getKey(), masterAddress.getValue());
+		}
+	}
+
+	public static class KeeperGetIndexCommand extends AbstractKeeperCommand<KeeperIndexState> {
+
+		public KeeperGetIndexCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		public KeeperGetIndexCommand(KeeperMeta keeperMeta, ScheduledExecutorService scheduled) {
+			super(keeperMeta, scheduled);
+		}
+
+		@Override
+		protected KeeperIndexState format(Object payload) {
+			return KeeperIndexState.valueOf(payloadToString(payload));
+		}
+
+		@Override
+		public ByteBuf getRequest() {
+			return new RequestStringParser(getName(), GET_INDEX).format();
+		}
+	}
+
+	public static class KeeperSetIndexCommand extends AbstractKeeperCommand<String> {
+
+		private KeeperIndexState indexState;
+
+		public KeeperSetIndexCommand(SimpleObjectPool<NettyClient> clientPool,
+									 KeeperIndexState indexState,
+									 ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+			this.indexState = indexState;
+		}
+
+		public KeeperSetIndexCommand(KeeperMeta keeperMeta,
+									 KeeperIndexState indexState,
+									 ScheduledExecutorService scheduled)	 {
+			super(keeperMeta, scheduled);
+			this.indexState = indexState;
+		}
+
+		@Override
+		protected String format(Object payload) {
+			return payloadToString(payload);
+		}
+
+		@Override
+		public ByteBuf getRequest() {
+			return new RequestStringParser(
+					getName(),
+					SET_INDEX,
+					indexState.toString()
+			).format();
+		}
+
+		@Override
+		public String toString() {
+			return String.format("(to:%s) %s %s %s", getClientPool().desc(), getName(), SET_INDEX, indexState.toString());
 		}
 	}
 }

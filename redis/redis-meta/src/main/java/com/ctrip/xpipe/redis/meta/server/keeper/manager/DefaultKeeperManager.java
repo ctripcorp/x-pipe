@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperIndexState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
@@ -22,6 +24,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.exception.KeeperStateInCorrectException;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperIndexChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
@@ -74,6 +77,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 	private ScheduledFuture<?> keeperInfoCheckFuture;
 
+	private ScheduledFuture<?> keeperSetIndexFuture;
+
 	private ExecutorService executors;
 
 	@Override
@@ -94,6 +99,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		keeperInfoCheckFuture = scheduled.scheduleWithFixedDelay(new KeeperStateAlignChecker(), config.getKeeperInfoCheckInterval(),
 				config.getKeeperInfoCheckInterval(), TimeUnit.MILLISECONDS);
 
+		keeperSetIndexFuture = scheduled.scheduleWithFixedDelay(new KeeperIndexChecker(), config.getKeeperSetIndexInterval(),
+				config.getKeeperSetIndexInterval(), TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -101,6 +108,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		super.doStop();
 		deadCheckFuture.cancel(true);
 		keeperInfoCheckFuture.cancel(true);
+		keeperSetIndexFuture.cancel(true);
 		executors.shutdownNow();
 	}
 
@@ -325,6 +333,36 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected abstract void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta);
 	}
 
+	public class KeeperIndexChecker extends AbstractKeeperStateChecker {
+		@Override
+		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
+
+			long clusterDbId = clusterMeta.getDbId();
+			long shardDbId = shardMeta.getDbId();
+
+			if (metaCache.getClusterMeta(clusterDbId) == null) {
+				return;
+			}
+			String hints = metaCache.getClusterMeta(clusterDbId).getHints();
+			if (!Hints.parse(hints).contains(Hints.APPLIER_IN_CLUSTER)) {
+				return;
+			}
+
+			List<KeeperMeta> survivedKeepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
+
+			KeeperIndexChangeJob job = createKeeperIndexChangeJob(survivedKeepers);
+
+			job.future().addListener(new CommandFutureListener<Void>() {
+				@Override
+				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+					logger.info("[{}][KeeperSetIndex]cluster_{}, shard_{}, result: {}",
+							getClass(), clusterDbId, shardDbId, commandFuture.isSuccess());
+				}
+			});
+			clusterShardExecutor.execute(Pair.from(clusterDbId, shardDbId), job);
+		}
+	}
+
 	private final String STATE = "state";
 	private final String MASTER_HOST = "master_host";
 	private final String MASTER_PORT = "master_port";
@@ -427,6 +465,11 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		} else {
 			return new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId);
 		}
+	}
+
+	private KeeperIndexChangeJob createKeeperIndexChangeJob(List<KeeperMeta> keepers) {
+        KeeperIndexState indexState = KeeperIndexState.ON;
+		return new KeeperIndexChangeJob(keepers, indexState, clientPool, scheduled, executors);
 	}
 
 	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, Long shardDbId,
