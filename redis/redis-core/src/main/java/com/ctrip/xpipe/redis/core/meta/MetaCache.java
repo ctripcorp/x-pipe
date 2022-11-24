@@ -73,4 +73,6 @@ public interface MetaCache {
     boolean isMetaChain(HostPort src, HostPort dst);
 
     List<Long> dcShardIds(String clusterId, String dcId);
+
+    boolean isHeteroCluster(String clusterName);
 }

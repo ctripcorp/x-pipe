@@ -8,6 +8,8 @@ public class HickwallMetricInfo {
 
     private String domain;
 
+    private int heteroDelayPanelId;
+
     private int delayPanelId;
 
     private int crossDcDelayPanelId;
@@ -32,6 +34,14 @@ public class HickwallMetricInfo {
 
     public void setDomain(String domain) {
         this.domain = domain;
+    }
+
+    public int getHeteroDelayPanelId() {
+        return heteroDelayPanelId;
+    }
+
+    public void setHeteroDelayPanelId(int heteroDelayPanelId) {
+        this.heteroDelayPanelId = heteroDelayPanelId;
     }
 
     public int getDelayPanelId() {

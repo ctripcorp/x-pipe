@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -19,6 +21,7 @@ import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 
 import java.util.*;
@@ -34,6 +37,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private Map<String, DcMeta> dcMetaMap;
 
+    private List<DcTbl> allDcsTblList;
+
     private Map<Long, String> dcNameMap;
 
     private Map<String, Long> dcNameZoneMap;
@@ -43,6 +48,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     private Map<Long, Long> keeperContainerIdDcMap;
 
     private Map<Long, List<ApplierTbl>> replId2AppliersMap;
+
+    private Set<Long> shardIdWithAppliers;
 
     private List<ReplDirectionTbl> replDirectionTblList;
 
@@ -72,7 +79,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private Set<String> interestClusterTypes;
 
-    private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
+    @VisibleForTesting
+    protected Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
     private Map<Long, List<DcClusterShardTbl>> dcCluster2DcClusterShardMap;
 
@@ -80,11 +88,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private static final String DC_NAME_DELIMITER = ",";
 
-    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
+    public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, List<DcTbl> allDcsList, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService,
                          ReplDirectionService replDirectionService, ZoneService zoneService, KeeperContainerService keeperContainerService, ApplierService applierService,
                          RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMetaMap = dcMetaMap;
+        this.allDcsTblList = allDcsList;
         this.interestClusterTypes = clusterTypes;
         this.executors = executors;
         this.redisMetaService = redisMetaService;
@@ -190,6 +199,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     @VisibleForTesting
     protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+        if (relatedDcClusters == null) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
             if(dcClusterTbl.getDcId() != activeDcId && DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
@@ -205,6 +217,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     protected String getDcs(ClusterTbl cluster) {
         List<String> allDcs = new ArrayList<>();
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+        if (relatedDcClusters == null) {
+            return null;
+        }
 
         relatedDcClusters.forEach(dcClusterTbl ->
             allDcs.add(dcNameMap.get(dcClusterTbl.getDcId()))
@@ -248,7 +263,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 dcCluster2DcClusterShardMap = Maps.newHashMap();
                 dc2DcClusterShardMap = Maps.newHashMap();
-                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByClusterTypes(interestClusterTypes);
+
+                List<DcClusterShardTbl> allDcClusterShards = new LinkedList<>();
+                for (DcTbl dcTbl : allDcsTblList) {
+                    allDcClusterShards.addAll(dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), interestClusterTypes));
+                }
 
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
@@ -263,6 +282,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                             dcClusterShardTbl.getDcClusterInfo().getDcId(), LinkedList::new);
                     dc2ClusterShardTbls.add(dcClusterShardTbl);
                 }
+
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
@@ -414,7 +434,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 List<ApplierTbl> applierTblList = applierService.findAll();
                 replId2AppliersMap = new HashMap<>();
+                shardIdWithAppliers = new HashSet<>();
                 for (ApplierTbl applierTbl : applierTblList) {
+                    shardIdWithAppliers.add(applierTbl.getShardId());
                     List<ApplierTbl> applierTbls = MapUtils.getOrCreate(replId2AppliersMap, applierTbl.getReplDirectionId(), ArrayList::new);
                     applierTbls.add(applierTbl);
                 }
@@ -492,11 +514,47 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                         buildHeteroMeta(dcMeta, dcId);
                     }
                 }
+                addClusterHints();
 
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);
             }
+        }
+
+        private void addClusterHints() {
+            for (DcMeta dcMeta: dcMetaMap.values()) {
+                for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                    if (clusterHasApplier(clusterMeta)) {
+                        clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.APPLIER_IN_CLUSTER));
+                    }
+                    if (clusterHasMasterDc(clusterMeta)) {
+                        clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.MASTER_DC_IN_CLUSTER));
+                    }
+                }
+            }
+        }
+
+        private boolean clusterHasApplier(ClusterMeta clusterMeta) {
+            for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
+                if (shardIdWithAppliers.contains(shardMeta.getDbId())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean clusterHasMasterDc(ClusterMeta clusterMeta) {
+            List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterMeta.getDbId());
+            if (dcClusterTblList == null) {
+                return false;
+            }
+            for (DcClusterTbl dcClusterTbl : dcClusterTblList) {
+                if (DcGroupType.MASTER.name().equals(dcClusterTbl.getGroupType())) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void buildHeteroMeta(DcMeta dcMeta, Long dcId) {
@@ -577,7 +635,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         }
 
         private String getTargetClusterName(ApplierTbl applierTbl, String clusterName) {
-            if (applierTbl.getReplDirectionInfo() == null || applierTbl.getReplDirectionInfo().getTargetClusterName() == null) {
+            if (applierTbl.getReplDirectionInfo() == null || StringUtils.isEmpty(applierTbl.getReplDirectionInfo().getTargetClusterName())) {
                 return clusterName;
             }
             return applierTbl.getReplDirectionInfo().getTargetClusterName();
@@ -604,14 +662,22 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             return sourceMeta;
         }
 
-        private DcClusterTbl getDcClusterInfo(long clusterId, long dcId) {
-            for(DcClusterTbl dcClusterTbl: cluster2DcClusterMap.get(clusterId)) {
+        @VisibleForTesting
+        protected DcClusterTbl getDcClusterInfo(long clusterId, long dcId) {
+
+            List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterId);
+
+            if (dcClusterTblList == null) {
+                EventMonitor.DEFAULT.logAlertEvent("[getDcClusterInfo] dcCluster not found, clusterId=" + clusterId);
+                return null;
+            }
+
+            for(DcClusterTbl dcClusterTbl: dcClusterTblList) {
                 if (dcClusterTbl.getDcId() == dcId) {
                     return dcClusterTbl;
                 }
             }
             return null;
-
         }
 
         @Override
@@ -623,6 +689,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         public String getName() {
             return BuildDcMetaCommand.class.getSimpleName();
         }
+    }
+
+    @VisibleForTesting
+    BuildDcMetaCommand createBuildDcMetaCommand() {
+        return new BuildDcMetaCommand();
     }
 
     private String getDcGroupName(DcMeta dcMeta, DcClusterTbl dcClusterInfo) {

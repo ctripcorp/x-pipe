@@ -51,6 +51,9 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     private DcService dcService;
 
     @Autowired
+    private ShardService shardService;
+
+    @Autowired
     private ApplierDao applierDao;
 
     @Autowired
@@ -134,6 +137,34 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
                 return dao.findByIp(ip, ApplierTblEntity.READSET_FULL);
             }
         });
+    }
+
+    @Override
+    public List<ApplierTbl> findAppliersByDcAndShard(String dcName, String clusterName, String shardName) {
+
+        DcTbl dcTbl = dcService.find(dcName);
+        ShardTbl shardTbl = shardService.find(clusterName, shardName);
+        if (dcTbl == null) {
+            throw new BadRequestException(String.format("[findAppliersByDcAndShard]dc %s does not exist", dcName));
+        }
+        if (shardTbl == null) {
+            throw new BadRequestException(String.format("[findAppliersByDcAndShard]cluster %s shard %s does not exist", clusterName, shardName));
+        }
+
+        List<ApplierTbl> applierTbls = applierDao.findByShard(shardTbl.getId());
+        for (ApplierTbl applierTbl : applierTbls) {
+            AppliercontainerTbl appliercontainerTbl = appliercontainerService.findAppliercontainerTblById(applierTbl.getContainerId());
+            if (dcTbl.getId() != appliercontainerTbl.getAppliercontainerDc()) {
+                applierTbls.remove(applierTbl);
+            }
+        }
+
+        return applierTbls;
+    }
+
+    @Override
+    public void updateBatchApplierActive(List<ApplierTbl> applierTbls) {
+        applierDao.updateBatchApplierActive(applierTbls);
     }
 
     @Override
@@ -258,7 +289,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
             }
 
             ApplierTbl applierWithSameIpPort = findApplierTblByIpPort(applier.getIp(), applier.getPort());
-            if (applierWithSameIpPort != null && !ObjectUtils.equals(applier.getId(), applier.getPort())) {
+            if (applierWithSameIpPort != null && !ObjectUtils.equals(applier.getId(), applierWithSameIpPort.getId())) {
                 throw new BadRequestException(
                         String.format("Already int use for applier`s port:%d", applierWithSameIpPort.getPort()));
             }
@@ -281,6 +312,10 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
 
         for (ApplierTbl applier : appliers) {
             ApplierTbl proto = dao.createLocal();
+
+            if (applier.getId() != 0) {
+                proto.setId(applier.getId());
+            }
             proto.setIp(applier.getIp()).setPort(applier.getPort())
                     .setContainerId(applier.getContainerId()).setActive(applier.isActive());
 

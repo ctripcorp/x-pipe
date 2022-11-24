@@ -5,10 +5,7 @@ import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
@@ -93,7 +90,8 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void beforeDcMetaBuilderTest() throws Exception {
         dcNameMap = dcService.dcNameMap();
         dcId = dcNameMap.keySet().iterator().next();
-        builder = new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.toString()),
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        builder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
@@ -208,8 +206,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
         dcMetaMap.put("JQ", dcMeta);
+        List<DcTbl> dcTblList = dcService.findAllDcs();
 
-        new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
+        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -242,12 +241,29 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void testGetDcClusterInfoWhenClusterNotExist() {
+
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+
+        DcMetaBuilder dcMetaBuilder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                replDirectionService, zoneService, keeperContainerService, applierService,
+                new DefaultRetryCommandFactory(),consoleConfig);
+
+        dcMetaBuilder.cluster2DcClusterMap = new HashMap<>();
+
+        DcMetaBuilder.BuildDcMetaCommand buildDcMetaCommand = dcMetaBuilder.createBuildDcMetaCommand();
+        Assert.assertNull(buildDcMetaCommand.getDcClusterInfo(1L, 1L));
+    }
+
+    @Test
     public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
         DcMeta dcMeta = new DcMeta();
         dcMetaMap.clear();
         dcMetaMap.put("OY", dcMeta);
+        List<DcTbl> dcTblList = dcService.findAllDcs();
 
-        new DcMetaBuilder(dcMetaMap, Collections.singleton(ClusterType.ONE_WAY.name()),
+        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
@@ -288,7 +304,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         long dcId = dcNameMap.keySet().iterator().next();
         dcMetaMap.put(dcNameMap.get(dcId).toUpperCase(), dcMeta);
 
-        new DcMetaBuilder(dcMetaMap, Collections.singleton(clusterType.toString()),
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+
+        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();

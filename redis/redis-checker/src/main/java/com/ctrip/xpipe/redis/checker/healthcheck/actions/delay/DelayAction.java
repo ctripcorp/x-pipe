@@ -39,7 +39,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     private PingService pingService;
 
-    private final long expireInterval;
+    protected final long expireInterval;
 
     private volatile boolean isContextInited = false;
 
@@ -58,8 +58,12 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         this.foundationService = foundationService;
         expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
         this.currentDcId = foundationService.getDataCenter();
-        this.publish_channel = "xpipe-health-check-" + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
+        this.publish_channel =  publishChannelPrefix() + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
         this.subscribe_channel = getSubscribeChannel();
+    }
+
+    protected String publishChannelPrefix() {
+        return instance.getCheckInfo().isHeteroCluster() ? "xpipe-hetero-health-check-" : "xpipe-health-check-";
     }
 
     @Override
@@ -72,7 +76,6 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
         RedisInstanceInfo info = instance.getCheckInfo();
         if (currentDcId.equalsIgnoreCase(info.getDcId()) && info.isMaster()) {
-//            logger.info("[doTask][pub][{}]", instance.getCheckInfo().getClusterShardHostport());
             doPublish(session, publish_channel, Long.toHexString(System.nanoTime()));
         }
     }
@@ -94,24 +97,19 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         return logger;
     }
 
-    private void reportDelay() {
+    protected void reportDelay() {
         if (INIT_CONTEXT.equals(context.get()) && !isContextInited) {
             isContextInited = true;
             return;
         }
-
-        notifyDelay();
-    }
-
-    protected void notifyDelay(){
-        if (isExpired()) {
+        if (isExpired(context.get())) {
             if (!isExpired) {
                 isExpired = true;
                 logger.warn("[expire][{}] last update time: {}", instance.getCheckInfo().getHostPort(),
                         DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
             }
 
-            onExpired();
+            onExpired(context.get());
         } else {
             if (INIT_CONTEXT.equals(context.get())) {
                 // no receive any messages but not expire just on init time
@@ -122,11 +120,11 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
                 isExpired = false;
                 logger.info("[expire][{}] recovery", instance.getCheckInfo().getHostPort());
             }
-            onNotExpired();
+            onNotExpired(context.get());
         }
     }
 
-    protected void onExpired() {
+    protected void onExpired(DelayActionContext context) {
         long result = SAMPLE_LOST_AND_NO_PONG;
         if(pingService.isRedisAlive(instance.getCheckInfo().getHostPort())) {
             result = SAMPLE_LOST_BUT_PONG;
@@ -134,8 +132,8 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         notifyListeners(new DelayActionContext(instance, result));
     }
 
-    protected void onNotExpired() {
-        notifyListeners(context.get());
+    protected void onNotExpired(DelayActionContext context) {
+        notifyListeners(context);
     }
 
     protected class SubscribeCallback implements RedisSession.SubscribeCallback {
@@ -167,8 +165,8 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         super.doStop();
     }
 
-    private boolean isExpired() {
-        long lastDelay = System.currentTimeMillis() - context.get().getRecvTimeMilli();
+    protected boolean isExpired(DelayActionContext context) {
+        long lastDelay = System.currentTimeMillis() - context.getRecvTimeMilli();
         return lastDelay >= expireInterval;
     }
 

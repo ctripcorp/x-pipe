@@ -19,7 +19,11 @@ function ReplDirectionService($resource, $q) {
             method: 'GET',
             url: '/console/repl-direction/infos/all',
             isArray : true
-        }
+        },
+        complete_replication_by_repl_direction: {
+            method: 'POST',
+            url: '/console/repl-direction/repl-completion',
+        },
     });
 
     function findReplDirectionByClusterAndSrcToDc(clusterName, srcDcName, toDcName) {
@@ -61,9 +65,22 @@ function ReplDirectionService($resource, $q) {
         return d.promise;
     }
 
+    function completeReplicationByReplDirection(replDirection) {
+        var d = $q.defer();
+        resource.complete_replication_by_repl_direction({},
+                replDirection,
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findReplDirectionByClusterAndSrcToDc : findReplDirectionByClusterAndSrcToDc,
         findReplDirectionByCluster : findReplDirectionByCluster,
         getAllReplDirectionInfos: getAllReplDirectionInfos,
+        completeReplicationByReplDirection: completeReplicationByReplDirection,
     }
 }

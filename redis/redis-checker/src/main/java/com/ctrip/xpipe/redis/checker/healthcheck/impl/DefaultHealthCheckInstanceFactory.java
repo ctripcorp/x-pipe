@@ -135,6 +135,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
         info.isMaster(redisMeta.isMaster());
         info.setDcGroupType(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType());
+        info.setHeteroCluster(metaCache.isHeteroCluster(info.getClusterId()));
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
             info.setShardDbId(redisMeta.parent().getDbId());
@@ -154,6 +155,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId());
         info.setDcGroupType(clusterMeta.getDcGroupType());
+        info.setHeteroCluster(metaCache.isHeteroCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);

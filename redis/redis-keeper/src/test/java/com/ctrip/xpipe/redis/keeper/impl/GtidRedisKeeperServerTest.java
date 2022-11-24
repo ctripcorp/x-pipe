@@ -105,7 +105,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     }
 
     @Override
-    public void onContinue() {
+    public void onContinue(GtidSet gtidSet) {
 
     }
 

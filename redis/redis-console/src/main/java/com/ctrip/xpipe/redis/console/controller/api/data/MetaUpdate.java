@@ -822,7 +822,7 @@ public class MetaUpdate extends AbstractConsoleController {
             }
             List<ReplDirectionInfoModel> replDirectionInfoModels = new LinkedList<>();
             for (ReplDirectionCreateInfo replDirectionCreateInfo : replDirectionCreateInfos) {
-                ReplDirectionTbl exist = replDirectionService.findByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
+                ReplDirectionInfoModel exist = replDirectionService.findReplDirectionInfoModelByClusterAndSrcToDc(clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                 if (exist != null) {
                     String message = String.format("cluster %s srcDc %s toDc %s repl direction already exist", clusterName, replDirectionCreateInfo.getSrcDcName(), replDirectionCreateInfo.getToDcName());
                     return RetMessage.createFailMessage(message);
@@ -939,6 +939,32 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-completion", method = RequestMethod.POST)
+    public RetMessage completeReplicationByCluster(@PathVariable String clusterName) {
+        logger.info("[completeReplicationByCluster]{}", clusterName);
+        ClusterTbl cluster = clusterService.find(clusterName);
+        if (cluster == null) {
+            String msg = String.format("cluster %s does not exist", clusterName);
+            logger.warn("[completeReplicationByCluster] fail {}", msg);
+            return RetMessage.createFailMessage(msg);
+        }
+
+        List<ReplDirectionInfoModel> replDirections = replDirectionService.findAllReplDirectionInfoModelsByCluster(clusterName);
+        if (replDirections == null || replDirections.isEmpty()) {
+            String msg = String.format("cluster %s has no repl dirction", clusterName);
+            logger.warn("[completeReplicationByCluster] fail {}", msg);
+            return RetMessage.createFailMessage(msg);
+        }
+
+        try {
+            replDirections.forEach(replDirection -> clusterService.completeReplicationByClusterAndReplDirection(cluster, replDirection));
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[completeReplicationByCluster][fail] {}", clusterName, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

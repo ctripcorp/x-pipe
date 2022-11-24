@@ -65,8 +65,8 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     }
 
     @Override
-    public void updateUpstreamShardsDelays(Map<Long, Long> upstreamShardsDelays) {
-        upstreamShardsDelay.putAll(upstreamShardsDelays);
+    public void updateHeteroShardsDelays(Map<Long, Long> heteroShardsDelays) {
+        heteroShardsDelay.putAll(heteroShardsDelays);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
                 return -1L;
             }
         } else {
-            result = upstreamShardsDelay.getOrDefault(shardDbId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+            result = heteroShardsDelay.getOrDefault(shardDbId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
         }
         return TimeUnit.NANOSECONDS.toMillis(result);
     }
@@ -138,7 +138,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
     @Override
     public long getLocalCachedShardDelay(long shardId) {
-        return upstreamShardsDelay.getOrDefault(shardId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+        return heteroShardsDelay.getOrDefault(shardId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
     }
 
     @Override

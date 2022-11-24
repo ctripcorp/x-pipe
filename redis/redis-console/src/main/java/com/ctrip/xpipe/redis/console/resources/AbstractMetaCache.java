@@ -480,6 +480,22 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public boolean isHeteroCluster(String clusterName) {
+        XpipeMeta xpipeMeta = meta.getKey();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta != null) {
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                String dcGroupType = clusterMeta.getDcGroupType();
+                if (clusterType.supportSingleActiveDC() && !DcGroupType.isNullOrDrMaster(dcGroupType)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
     public List<Long> dcShardIds(String clusterId, String dcId) {
         return meta.getKey().findDc(dcId).findCluster(clusterId).getShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toList());
     }

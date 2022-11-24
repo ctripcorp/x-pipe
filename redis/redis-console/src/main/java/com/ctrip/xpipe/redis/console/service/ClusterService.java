@@ -12,7 +12,8 @@ import java.util.Set;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
-	List<ClusterTbl> findAllByNames(List<String> clusterNames);
+    List<ClusterTbl> findClustersByGroupType(String groupType);
+    List<ClusterTbl> findAllByNames(List<String> clusterNames);
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 	List<DcTbl> getClusterRelatedDcs(String clusterName);
@@ -62,4 +63,6 @@ public interface ClusterService {
 	List<RouteInfoModel> findClusterDesignateRoutesBySrcDcNameAndClusterName(String dcName, String clusterName);
 	void updateClusterDesignateRoutes(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
 	UnexpectedRouteUsageInfoModel findUnexpectedRouteUsageInfoModel();
+
+    void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
 }
