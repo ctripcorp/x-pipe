@@ -2,12 +2,16 @@ angular
     .module('index')
     .controller('ReplDirectionListCtl', ReplDirectionListCtl);
 
-ReplDirectionListCtl.$inject = ['$rootScope', '$scope', 'ReplDirectionService', 'NgTableParams'];
+ReplDirectionListCtl.$inject = ['$rootScope', '$scope', 'ReplDirectionService', 'NgTableParams', '$window', 'toastr'];
 
-function ReplDirectionListCtl($rootScope, $scope, ReplDirectionService, NgTableParams) {
+function ReplDirectionListCtl($rootScope, $scope, ReplDirectionService, NgTableParams, $window, toastr) {
     $scope.originData = []
+    $scope.toCompleteReplDirection = [];
 
     $scope.tableParams = new NgTableParams({}, {});
+
+    $scope.preCompleteReplicationByReplDirection = preCompleteReplicationByReplDirection;
+    $scope.doCompleteReplicationByReplDirection = doCompleteReplicationByReplDirection;
 
     ReplDirectionService.getAllReplDirectionInfos().then(function (response) {
         if (Array.isArray(response)) $scope.originData = response
@@ -21,4 +25,25 @@ function ReplDirectionListCtl($rootScope, $scope, ReplDirectionService, NgTableP
             dataset: $scope.originData
         });
     })
+
+    function preCompleteReplicationByReplDirection(replDireciotn) {
+        $scope.preCompleteReplicationByReplDirection = replDireciotn;
+        $('#completeReplicationByReplDirectionConfirm').modal('show');
+    }
+
+    function doCompleteReplicationByReplDirection() {
+        console.log($scope.preCompleteReplicationByReplDirection);
+        ReplDirectionService.completeReplicationByReplDirection($scope.preCompleteReplicationByReplDirection)
+            .then(function (result) {
+                 $('#completeReplicationByReplDirectionConfirm').modal('hide');
+                if (result.message == 'success') {
+                     toastr.success("补全成功");
+                } else {
+                    toastr.error(result.message, "补全失败");
+                }
+                setTimeout(function () {
+                    $window.location.reload();
+                },1000);
+            });
+    }
 }
