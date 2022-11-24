@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -79,8 +79,8 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public ChannelFuture onCommand(Object cmd) {
-		return redisSlave.onCommand(cmd);
+	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+		return redisSlave.onCommand(currentFile, filePosition, cmd);
 	}
 
 	@Override

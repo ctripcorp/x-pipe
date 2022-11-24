@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
@@ -28,6 +29,11 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
 
     // xsync <sidno interested> <gtid.set excluded> [vc excluded]
     protected void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException {
+
+        redisKeeperServer.startIndexing();
+
+        KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
+
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
         Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
@@ -39,28 +45,42 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
             return;
         }
 
-        GtidSet localBeginGtidSet = keeperRepl.getBeginGtidSet().filterGtid(interestedSids);
-        GtidSet localEndGtidSet = keeperRepl.getEndGtidSet().filterGtid(interestedSids);
+        GtidSet localBegin = keeperRepl.getBeginGtidSet();
+        GtidSet localEnd = keeperRepl.getEndGtidSet();
 
-        GtidSet neededGtidSet = localEndGtidSet.subtract(reqExcludedGtidSet);
-        GtidSet missingGtidSet = localBeginGtidSet.retainAll(neededGtidSet);
-
-        if (!missingGtidSet.isEmpty()) {
-            logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
-            ((RedisKeeperServer)redisSlave.getRedisServer()).getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+        if (null == localBegin) {
+            logger.info("[innerDoHandle][localBegin is null]");
             doFullSync(redisSlave);
-        } else if (localEndGtidSet.isContainedWithin(reqExcludedGtidSet)) {
-            logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
-            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
-        } else {
-            // TODO: do full sync if too much data to send for partial sync
-            logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
-                    reqExcludedGtidSet, localBeginGtidSet, localEndGtidSet);
-            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+            return;
         }
 
+        GtidSet filteredLocalBegin = localBegin.filterGtid(interestedSids);
+        GtidSet filteredLocalEnd = localEnd.filterGtid(interestedSids);
+
+        GtidSet neededGtidSet = filteredLocalEnd.subtract(reqExcludedGtidSet);
+        GtidSet missingGtidSet = filteredLocalBegin.retainAll(neededGtidSet);
+
+        if (!missingGtidSet.isEmpty() && !missingGtidSet.isZero()) {
+            logger.info("[innerDoHandle][neededGtidSet is excluded][req-excluded loc-begin loc-end] {} {} {}",
+                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
+            redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+            doFullSync(redisSlave);
+        } else if (filteredLocalEnd.isContainedWithin(reqExcludedGtidSet)) {
+            logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
+                    reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
+            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+        } else {
+            if (filteredLocalEnd.lwmDistance(reqExcludedGtidSet) < keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb()) {
+                logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {} {}",
+                        reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
+                doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+            } else {
+                logger.info("[innerDoHandle][too much commands to transfer] {} {} {} {}",
+                        reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
+                redisSlave.getRedisServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
+                doFullSync(redisSlave);
+            }
+        }
     }
 
     // +CONTINUE

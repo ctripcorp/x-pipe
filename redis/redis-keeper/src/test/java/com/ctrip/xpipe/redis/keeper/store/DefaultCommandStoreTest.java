@@ -2,13 +2,9 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.store.CommandFileOffsetGtidIndex;
-import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -199,7 +195,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(Object referenceFileRegion) {
+					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
 
 						sb.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
 						semaphore.release();
@@ -338,7 +334,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
-						public ChannelFuture onCommand(Object referenceFileRegion) {
+						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
 							result.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
@@ -502,7 +498,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public ChannelFuture onCommand(Object cmd) {
+			public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 				return null;
 			}
 

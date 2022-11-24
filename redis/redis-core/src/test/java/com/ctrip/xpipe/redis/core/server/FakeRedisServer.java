@@ -107,7 +107,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 		rdbOffset += commands.length();
 		
 		String prefix = String.format("rdb_rdboffset:%d--", rdbOffset);
-		rdbContent = prefix + AbstractTest.randomString(rdbSize - prefix.length());
+		rdbContent = "REDIS0009" + '\0' + prefix + AbstractTest.randomString(rdbSize - prefix.length());
 
 		if (commandsLength < 0) return;
 		prefix = String.format("cmd_rdboffset:%d--", rdbOffset);

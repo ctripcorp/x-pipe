@@ -162,6 +162,9 @@ public class GtidSet {
      * @return whether or not gtid was added to the set (false if it was already there)
      */
     public boolean add(String gtid) {
+        if (gtid == null) {
+            return false;
+        }
         String[] split = gtid.split(":");
         if (split.length != 2) {
             return false;
@@ -173,6 +176,22 @@ public class GtidSet {
             map.put(sourceId, uuidSet = new UUIDSet(sourceId, new ArrayList<Interval>()));
         }
         return uuidSet.add(transactionId);
+    }
+
+    public long lwmDistance(GtidSet other /* small */ ) {
+        long sum = 0;
+        for (String sourceId : map.keySet()) {
+            UUIDSet o = null;
+            if (other != null) {
+                o = other.getUUIDSet(sourceId);
+            }
+            if (o != null) {
+                sum = sum + (map.get(sourceId).lwm() - o.lwm());
+            } else {
+                sum = sum + map.get(sourceId).lwm();
+            }
+        }
+        return sum;
     }
 
     public GtidSet subtract(GtidSet other) {
@@ -389,7 +408,7 @@ public class GtidSet {
     }
 
     public boolean isEmpty() {
-         if (map.isEmpty()) return true;
+        if (map.isEmpty()) return true;
         for (UUIDSet uuidSet : map.values()) {
             if (!uuidSet.isEmpty()) {
                 return false;
@@ -559,6 +578,11 @@ public class GtidSet {
         }
 
         private boolean add(long transactionId) {
+            if (intervals.size() == 1 && intervals.get(0).end == 0) {
+                intervals.get(0).start = transactionId;
+                intervals.get(0).end = transactionId;
+            }
+
             int index = findInterval(transactionId);
             boolean addedToExisting = false;
             if (index < intervals.size()) {
@@ -663,6 +687,9 @@ public class GtidSet {
             }
             // every interval in this must be within an interval of the other ...
             for (Interval thisInterval : this.intervals) {
+                if (thisInterval.end == 0) {
+                    continue;
+                }
                 boolean found = false;
                 for (Interval otherInterval : other.intervals) {
                     if (thisInterval.isContainedWithin(otherInterval)) {

@@ -51,8 +51,12 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
-	public GtidSet getEndGtidSet() {
-		return replicationStore.getEndGtidSet();
+	public GtidSet getEndGtidSet() throws IOException {
+		GtidSet end = replicationStore.getEndGtidSet();
+		if (null == end) {
+		    end = getBeginGtidSet();
+		}
+		return end;
 	}
 
 	@Override

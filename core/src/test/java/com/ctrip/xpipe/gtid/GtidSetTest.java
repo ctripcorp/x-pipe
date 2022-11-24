@@ -44,6 +44,16 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testDistanceFrom() {
+        Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3")));
+        Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3")));
+        Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3,B:1-5")));
+
+        Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3,C:1-5")));
+        Assert.assertEquals(7, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3,B:1-5")));
+    }
+
+    @Test
     public void testLwm() {
         Assert.assertEquals(5, new GtidSet("A:1-5").lwm("A"));
         Assert.assertEquals(0, new GtidSet("A:2-5").lwm("A"));
@@ -431,6 +441,27 @@ public class GtidSetTest {
         GtidSet master = new GtidSet(gtidSetStringMaster);
         boolean res = filtered.isContainedWithin(master);
         Assert.assertEquals(res, true);
+    }
+
+    @Test
+    public void test0to1() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.add("A:1");
+        Assert.assertEquals("A:1", zero.toString());
+    }
+
+    @Test
+    public void test0toN() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.add("A:5");
+        Assert.assertEquals("A:5", zero.toString());
+    }
+
+    @Test
+    public void test0raiseN() {
+        GtidSet zero = new GtidSet("A:0");
+        zero.rise("A:5");
+        Assert.assertEquals("A:1-5", zero.toString());
     }
 
     @Test

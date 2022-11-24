@@ -36,6 +36,7 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
         this.waitAuxListener = new ArrayList<>();
     }
 
+    @Override
     public String getGtidSet() {
         return gtidSet.get();
     }
