@@ -13,7 +13,7 @@ public interface DcClusterShardService {
     DcClusterShardTbl findByPk(long dcClusterShardId);
 	DcClusterShardTbl find(long dcClusterId, long shardId);
 	DcClusterShardTbl find(String dcName, String clusterName, String shardName);
-	List<DcClusterShardTbl> find(String clusterName, String shardName);
+    List<DcClusterShardTbl> find(String clusterName, String shardName);
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
