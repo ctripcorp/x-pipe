@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
 import io.netty.buffer.ByteBuf;
@@ -37,7 +38,7 @@ import java.util.List;
  */
 public class GtidReplicationManualTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
 
-    private GtidRedisKeeperServer gtidKeeperServer;
+    private RedisKeeperServer gtidKeeperServer;
 
     private LeaderElectorManager leaderElectorManager;
 
