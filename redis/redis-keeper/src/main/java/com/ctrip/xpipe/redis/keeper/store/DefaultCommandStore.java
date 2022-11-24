@@ -87,7 +87,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				}
 				getCommandStoreDelay().beginSend(listener, referenceFileRegion.getTotalPos());
 
-				ChannelFuture future = listener.onCommand(referenceFileRegion);
+				ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), referenceFileRegion);
 
 				if(future != null){
 					CommandReader<ReferenceFileRegion> finalCmdReader = cmdReader;
@@ -125,8 +125,4 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		return logger;
 	}
 
-	@Override
-	public GtidSet getEndGtidSet() {
-		return new GtidSet("");
-	}
 }

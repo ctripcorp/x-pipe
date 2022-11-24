@@ -4,13 +4,12 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -103,7 +102,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 					store.fullSyncIfPossible(new FullSyncListener() {
 						
 						@Override
-						public ChannelFuture onCommand(Object cmd) {
+						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 							
 							return null;
 						}
@@ -183,7 +182,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			String cmd = UUID.randomUUID().toString().substring(0, cmdLen);
 			exp.append(cmd);
 			buf.writeBytes(cmd.getBytes());
-			store.getCommandStore().appendCommands(buf);
+			store.cmdStore.appendCommands(buf);
 		}
 		String result = readCommandFileTilEnd(store, exp.length());
 		assertEquals(exp.toString(), result);
@@ -204,7 +203,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 		IntStream.range(0,5).forEach(i -> {
 			try {
-				store.getCommandStore().appendCommands(Unpooled.wrappedBuffer(randomString(100).getBytes()));
+				store.cmdStore.appendCommands(Unpooled.wrappedBuffer(randomString(100).getBytes()));
 			} catch (Exception e) {
 				logger.info("[testGcNotContinueRdb][append cmd fail]", e);
 			}

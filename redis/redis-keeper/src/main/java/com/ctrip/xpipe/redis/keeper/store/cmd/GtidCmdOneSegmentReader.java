@@ -12,7 +12,6 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,6 +116,11 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
         return controllableFile.getFileChannel().position();
     }
 
+    @Override
+    public long position() throws IOException {
+        return filePosition() - curBuf.readableBytes();
+    }
+
     private synchronized void setCmdFile(CommandFile cmdFile, long filePosition) throws IOException {
         tryCloseFile(controllableFile);
         this.curCmdFile = cmdFile;
@@ -162,7 +166,7 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
     }
 
     @Override
-    public File getCurFile() {
-        return curCmdFile.getFile();
+    public CommandFile getCurCmdFile() {
+        return curCmdFile;
     }
 }

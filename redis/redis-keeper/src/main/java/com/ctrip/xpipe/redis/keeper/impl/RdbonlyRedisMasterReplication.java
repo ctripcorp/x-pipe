@@ -84,6 +84,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 		Psync psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
 		psync.addPsyncObserver(this);
+		psync.addPsyncObserver(redisKeeperServer.createPsyncObserverForRdbOnlyRepl());
 		return psync;
 	}
 

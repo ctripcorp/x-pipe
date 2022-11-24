@@ -7,6 +7,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author wenchao.meng
@@ -36,8 +37,10 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	// full sync
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
-	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
+	//create index
+	FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors);
 
+	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 	// meta related
 	MetaStore getMetaStore();
 
