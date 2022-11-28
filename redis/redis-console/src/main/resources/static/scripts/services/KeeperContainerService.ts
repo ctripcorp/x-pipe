@@ -26,6 +26,19 @@ angular
             method: 'GET',
             url: '/console/keepercontainer/infos/all',
             isArray : true
+        },
+        get_all_organizations: {
+            method: 'GET',
+            url: '/console/organizations',
+            isArray: true
+        },
+        add_keepercontainer:{
+            method:'POST',
+            url:'/console/keepercontainer'
+        },
+        update_keepercontainer:{
+            method:'PUT',
+            url:'/console/keepercontainer'
         }
     });
 
@@ -108,11 +121,60 @@ angular
         return d.promise;
     }
 
+    function getAllOrganizations() {
+        var d = $q.defer();
+        resource.get_all_organizations({},
+                function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function addKeepercontainer(addr, dcName, orgName, azName, active) {
+        var d = $q.defer();
+        resource.add_keepercontainer({}, {
+                    addr : addr,
+                    dcName : dcName,
+                    orgName : orgName,
+                    azName : azName,
+                    active :active
+                },
+                function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function updateKeepercontainer(addr, dcName, orgName, azName, active) {
+        var d = $q.defer();
+        resource.update_keepercontainer({}, {
+                    addr : addr,
+                    dcName : dcName,
+                    orgName : orgName,
+                    azName : azName,
+                    active :active
+                },
+                function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
         findKeepercontainerById : findKeepercontainerById,
         findAvailableKeepersByDcAzAndOrg : findAvailableKeepersByDcAzAndOrg,
         getAllInfos: getAllInfos,
+        getAllOrganizations: getAllOrganizations,
+        addKeepercontainer: addKeepercontainer,
+        updateKeepercontainer: updateKeepercontainer,
     }
 }]);

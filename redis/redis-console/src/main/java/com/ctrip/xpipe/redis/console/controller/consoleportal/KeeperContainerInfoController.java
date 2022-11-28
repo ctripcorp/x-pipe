@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,6 +25,30 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     @RequestMapping(value = "/keepercontainer/{id}", method = RequestMethod.GET)
     public KeeperContainerInfoModel getKeeperContainerById(@PathVariable long id) {
         return keeperContainerService.findKeeperContainerInfoModelById(id);
+    }
+
+    @RequestMapping(value = "/keepercontainer", method = RequestMethod.POST)
+    public RetMessage addKeeperContainer(@RequestBody KeeperContainerInfoModel keeperContainer) {
+        logger.info("[addKeeperContainer]{}", keeperContainer);
+        try {
+            keeperContainerService.addKeeperContainerByInfoModel(keeperContainer);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[addKeeperContainer] {} fail", keeperContainer, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/keepercontainer", method = RequestMethod.PUT)
+    public RetMessage updateKeeperContainer(@RequestBody KeeperContainerInfoModel keeperContainer) {
+        logger.info("[updateKeeperContainer]{}", keeperContainer);
+        try {
+            keeperContainerService.updateKeeperContainerByInfoModel(keeperContainer);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[updateKeeperContainer] {} fail", keeperContainer, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
     }
 
     @RequestMapping(value = {"/keepercontainers/dc/{dcName}/az/{azName}/org/{orgName}",
