@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
@@ -668,7 +667,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             List<DcClusterTbl> dcClusterTblList = cluster2DcClusterMap.get(clusterId);
 
             if (dcClusterTblList == null) {
-                EventMonitor.DEFAULT.logAlertEvent("[getDcClusterInfo] dcCluster not found, clusterId=" + clusterId);
+                getLogger().warn("[getDcClusterInfo] dcCluster not found, clusterId={}", clusterId);
                 return null;
             }
 
