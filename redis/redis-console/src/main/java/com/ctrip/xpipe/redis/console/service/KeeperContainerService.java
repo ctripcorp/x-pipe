@@ -29,5 +29,9 @@ public interface KeeperContainerService {
 
 	void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort);
 
+	void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
+
+	void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
+
 	Map<Long, Long> keeperContainerIdDcMap();
 }
