@@ -26,14 +26,13 @@ function ReplDirectionListCtl($rootScope, $scope, ReplDirectionService, NgTableP
         });
     })
 
-    function preCompleteReplicationByReplDirection(replDireciotn) {
-        $scope.preCompleteReplicationByReplDirection = replDireciotn;
+    function preCompleteReplicationByReplDirection(replDirection) {
+        $scope.toCompleteReplDirection = replDirection;
         $('#completeReplicationByReplDirectionConfirm').modal('show');
     }
 
     function doCompleteReplicationByReplDirection() {
-        console.log($scope.preCompleteReplicationByReplDirection);
-        ReplDirectionService.completeReplicationByReplDirection($scope.preCompleteReplicationByReplDirection)
+        ReplDirectionService.completeReplicationByReplDirection($scope.toCompleteReplDirection)
             .then(function (result) {
                  $('#completeReplicationByReplDirectionConfirm').modal('hide');
                 if (result.message == 'success') {

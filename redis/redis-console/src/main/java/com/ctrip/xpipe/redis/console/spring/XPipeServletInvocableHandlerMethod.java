@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.redis.console.controller.Health;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationInfoApi;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.MigrationController;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.context.request.async.DeferredResult;
@@ -39,6 +41,8 @@ public class XPipeServletInvocableHandlerMethod extends ServletInvocableHandlerM
             /* <<-- ONLY THIS PART IS MODIFIED -- */
             if (getBean() instanceof MigrationApi
                     || getBean() instanceof MigrationApi4Beacon
+                    || getBean() instanceof Health
+                    || getBean() instanceof MigrationInfoApi
                     || getBean() instanceof MigrationController) {
 
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE_SERVLET_HANDLER, "Sync");

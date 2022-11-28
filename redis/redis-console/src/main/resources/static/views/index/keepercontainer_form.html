@@ -1,0 +1,109 @@
+<div class="col-md-10 col-md-offset-1">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <span ng-if="operateType == 'create'">创建KeeperContainer</span>
+            <h4 ng-if="operateType == 'update'">修改KeeperContainer</h4>
+        </div>
+
+        <div class="panel-body">
+            <form class="form-horizontal" ng-submit="doAddKeepercontainer()">
+
+                <div class="form-group" >
+                    <label class="col-sm-4 control-label no-padding-right"> DC </label>
+                    <div class="col-sm-7">
+                        <select
+                                ng-model="keepercontainer.dcName"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-disabled="operateType == 'update'"
+                                ng-options="dcName for dcName in dcNames"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> ip </label>
+                    <div class="col-sm-6">
+                        <textarea rows="1" style="width: 330px;"
+                                  ng-model="keepercontainer.addr.host"
+                                  ng-required="true"
+                                  ng-disabled="operateType == 'update'">
+
+                        </textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> port </label>
+
+                    <div class="col-sm-6">
+                        <textarea rows="1" style="width: 330px;"
+                                  ng-model="keepercontainer.addr.port"
+                                  ng-required="true"
+                                  ng-disabled="operateType == 'update'">
+
+                        </textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> active </label>
+
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="keepercontainer.active"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="bool for bool in bools"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> 组织 </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="keepercontainer.orgName"
+                                allow_single_deselect=true
+                                ng-options="orgName for orgName in organizationNames"
+                                style="width:330px;"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> 可用区 </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="keepercontainer.azName"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-options="azName for azName in dcAzs[keepercontainer.dcName]"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"></label>
+                    <div class="col-sm-7">
+                        <button class="btn btn-info" type="submit">
+                            <i class="icon-ok bigger-110"></i>
+                            提交
+                        </button>
+                        <a href="/#/keepercontainers" class="btn btn-warning" type="button">
+                            返回
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
