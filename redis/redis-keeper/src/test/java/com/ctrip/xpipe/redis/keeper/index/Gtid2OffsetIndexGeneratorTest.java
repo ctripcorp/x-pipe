@@ -77,6 +77,7 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         if (config instanceof TestKeeperConfig) {
             TestKeeperConfig modified = (TestKeeperConfig)config;
             modified.setReplicationStoreCommandFileSize(1024 * 128 /* 128 K */);
+            modified.setCommandReaderFlyingThreshold(10);
             //modified.setReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb(0);
         }
         return config;
