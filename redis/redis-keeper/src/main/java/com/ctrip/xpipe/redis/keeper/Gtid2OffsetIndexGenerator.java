@@ -6,7 +6,11 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.utils.CloseState;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.DefaultChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +46,8 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
     private CommandFile currentFile;
 
     private ControllableFile indexControllableFile;
+
+    private EmbeddedChannel channel = new EmbeddedChannel();
 
     public Gtid2OffsetIndexGenerator(CommandStore cmdStore, GtidSet initGtidSet) {
         this.cmdStore = cmdStore;
@@ -83,7 +89,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
             logger.warn("[onCommand] maybe, DefaultControllableFile is not created.", ignore);
         }
 
-        return null;
+        return channel.newSucceededFuture();
     }
 
     private void rotateIndexFileIfNecessary(CommandFile comingFile) throws IOException {
