@@ -219,7 +219,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @Override
     public void setStateBackup() {
         this.state = STATE.BACKUP;
-        replication.disconnect();
+        replication.connect(null);
     }
 
     @Override
