@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
@@ -239,6 +240,24 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         redisSlave.beginWriteCommands(0L);
 
         verify(replicationStore).addCommandsListener(anyLong(), any());
+    }
+
+    @Test
+    public void testAckPutOnline() {
+        DefaultRedisSlave rs = Mockito.spy(redisSlave);
+        Mockito.doNothing().when(rs).sendCommandForFullSync();
+
+        rs.setPutOnLineOnAck(false);
+        rs.ack(1L, false);
+        verify(rs, times(0)).sendCommandForFullSync();
+
+        rs.setPutOnLineOnAck(true);
+        rs.ack(1L, false);
+        verify(rs, times(0)).sendCommandForFullSync();
+
+        rs.setPutOnLineOnAck(true);
+        rs.ack(1L, true);
+        verify(rs, times(1)).sendCommandForFullSync();
     }
 
 }

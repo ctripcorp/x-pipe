@@ -149,13 +149,13 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public void ack(Long ackOff) {
+	public void ack(Long ackOff, boolean putOnline) {
 		
 		if(logger.isDebugEnabled()){
 			logger.debug("[ack]{}, {}", this , ackOff);
 		}
 		
-		if(putOnLineOnAck){
+		if(putOnline && putOnLineOnAck){
 			
 			putOnLineOnAck = false;
 			logger.info("[ack][put slave online]{}", this);
@@ -542,5 +542,10 @@ public class DefaultRedisSlave implements RedisSlave {
 	@VisibleForTesting
 	protected CloseState getCloseState() {
 		return closeState;
+	}
+
+	@VisibleForTesting
+	protected void setPutOnLineOnAck(boolean putOnLineOnAck) {
+		this.putOnLineOnAck = putOnLineOnAck;
 	}
 }
