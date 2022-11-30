@@ -69,9 +69,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @VisibleForTesting
     void resetState(GtidSet gtidSet) {
-        this.gtid_received = gtidSet;
+        this.gtid_received = gtidSet.clone();
         this.receivedSids = new HashSet<>();
-        this.gtid_executed.set(gtidSet);
+        this.gtid_executed.set(gtidSet.clone());
     }
 
     @Override

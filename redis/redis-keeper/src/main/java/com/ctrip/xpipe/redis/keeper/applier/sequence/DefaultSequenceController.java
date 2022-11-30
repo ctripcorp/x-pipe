@@ -79,7 +79,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
 
         /* make self a dependency */
 
@@ -111,7 +111,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
             /* make command */
 
-            SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(subCommand), stateThread, workerThreads);
+            SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(subCommand, workerThreads), stateThread, workerThreads);
 
             /* make self a dependency */
 
@@ -148,7 +148,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
 
         /* make self a dependency */
 
