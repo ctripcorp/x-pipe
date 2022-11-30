@@ -6,6 +6,11 @@ currdir=$(cd `dirname $0`; pwd)
 
 cd $currdir
 
+
+for _Version in `ls others/redis/clients/jedis/`; do
+	mvn install:install-file -Dfile=others/redis/clients/jedis/$_Version/jedis-$_Version.jar -DpomFile=others/redis/clients/jedis/$_Version/jedis-$_Version.pom
+done
+
 for _Version in `ls com/ctrip/framework/framework-bom/`; do
 	mvn install:install-file -Dfile=com/ctrip/framework/framework-bom/$_Version/framework-bom-$_Version.pom -DpomFile=com/ctrip/framework/framework-bom/$_Version/framework-bom-$_Version.pom -Dpackaging=pom
 done

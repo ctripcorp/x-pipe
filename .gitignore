@@ -12,3 +12,5 @@ testbin
 core
 redis
 services
+
+!others/redis
