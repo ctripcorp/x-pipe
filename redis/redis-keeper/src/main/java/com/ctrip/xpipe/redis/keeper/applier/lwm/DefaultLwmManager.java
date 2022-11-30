@@ -38,7 +38,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
             try {
                 send();
             } catch (Throwable t) {
-                logger.info("[send] error", t);
+                logger.error("[send] error", t);
             }
         }, 1, 1, TimeUnit.SECONDS);
     }
@@ -56,6 +56,11 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public void send() {
 
         GtidSet gtidSet = gtid_executed.get();
+
+        if (gtidSet == null) {
+            logger.debug("[send] gitSet is null");
+            return;
+        }
 
         logger.debug("[send] send lwm, gtidSet {}", gtidSet);
 
