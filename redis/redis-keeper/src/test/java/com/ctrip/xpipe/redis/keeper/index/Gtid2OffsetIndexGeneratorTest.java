@@ -26,7 +26,7 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
 
     @Test
     public void manual() throws Exception {
-        RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+        RedisKeeperServer redisKeeperServer = createRedisKeeperServer(createKeeperMeta(6000, "0"));
         redisKeeperServer.initialize();
         redisKeeperServer.start();
 
@@ -76,10 +76,15 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         KeeperConfig config = super.getKeeperConfig();
         if (config instanceof TestKeeperConfig) {
             TestKeeperConfig modified = (TestKeeperConfig)config;
-            modified.setReplicationStoreCommandFileSize(1024 * 128 /* 128 K */);
+            modified.setReplicationStoreCommandFileSize(1024 * 1024 * 128 /* 128 M */);
             modified.setCommandReaderFlyingThreshold(10);
             //modified.setReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb(0);
         }
         return config;
+    }
+
+    @Override
+    protected boolean deleteTestDirBeforeTest() {
+        return false;
     }
 }
