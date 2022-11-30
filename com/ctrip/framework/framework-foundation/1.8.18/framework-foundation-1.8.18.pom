@@ -5,17 +5,12 @@
     <parent>
         <groupId>com.ctrip.framework</groupId>
         <artifactId>framework-parent</artifactId>
-        <version>1.12.0</version>
+        <version>1.6.0</version>
     </parent>
 
     <artifactId>framework-foundation</artifactId>
     <version>1.8.18</version>
     <packaging>jar</packaging>
-
-    <properties>
-        <java.version>1.8</java.version>
-    </properties>
-
     <dependencies>
         <!-- for base64 processing and Caching -->
         <dependency>
