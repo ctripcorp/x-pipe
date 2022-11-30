@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.utils.CloseState;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +49,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
     public Gtid2OffsetIndexGenerator(CommandStore cmdStore, GtidSet initGtidSet) {
         this.cmdStore = cmdStore;
         this.gtid_received = initGtidSet;
+        this.last_indexed_gtid = gtid_received.clone();
     }
 
     @Override
@@ -70,15 +68,17 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
         String cmdGtid = redisOp.getOpGtid();
 
-        gtid_received.add(cmdGtid);
-
-        //avoid currency-problem
-        //TODO: enhance performance
-        endGtidSet = gtid_received.clone();
-
         try {
 
             rotateIndexFileIfNecessary(currentFile);
+
+            if(!gtid_received.add(cmdGtid)) {
+                //coming gtid already disposed of
+                return channel.newSucceededFuture();
+            }
+
+            //avoid currency-problem
+            endGtidSet = gtid_received.clone();
 
             if (shouldInsert()) {
                 CommandFileOffsetGtidIndex index = new CommandFileOffsetGtidIndex(gtid_received.clone(), currentFile, filePosition);
@@ -100,7 +100,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
         tryCloseFile(indexControllableFile);
 
-        File indexFile = getCommandStore().findIndexFile(comingFile);
+        File indexFile = cmdStore.findIndexFile(comingFile);
         indexControllableFile = new DefaultControllableFile(indexFile);
         currentFile = comingFile;
     }
@@ -120,7 +120,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
         } catch (Throwable throwable) {
             logger.info("[tryInsertIndex][fail] {}", index, throwable);
         }
-        getCommandStore().addIndex(index);
+        cmdStore.addIndex(index);
     }
 
     private void tryCloseFile(ControllableFile file) {
@@ -132,10 +132,6 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
         } catch (IOException e) {
             logger.error("[tryCloseFile]" + file, e);
         }
-    }
-
-    private CommandStore getCommandStore() {
-        return cmdStore;
     }
 
     @Override

@@ -45,9 +45,9 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	CommandFile findLatestFile() throws IOException;
 
-	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) throws IOException;
+	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet);
 
-	CommandFileSegment findLastFileSegment() throws IOException;
+	CommandFileSegment findLastFileSegment();
 
 	GtidSet getBeginGtidSet() throws IOException;
 

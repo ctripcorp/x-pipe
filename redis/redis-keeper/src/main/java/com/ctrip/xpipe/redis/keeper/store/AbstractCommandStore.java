@@ -293,10 +293,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public CommandFileSegment findLastFileSegment() throws IOException {
+    public CommandFileSegment findLastFileSegment() {
         if (this.cmdIndexList.isEmpty()) {
             CommandFileOffsetGtidIndex baseIndex = getBaseIndex();
-            if (null == baseIndex) throw new IllegalArgumentException(); // TODO: handle fsync
+            if (null == baseIndex) {
+                return null;
+            }
             return new CommandFileSegment(baseIndex);
         } else {
             CommandFileOffsetGtidIndex lastIndex = this.cmdIndexList.get(cmdIndexList.size() - 1);
@@ -305,7 +307,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) throws IOException {
+    public CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) {
         makeSureOpen();
 
         Set<String> interestedSrcIds = excludedGtidSet.getUUIDs();
@@ -354,7 +356,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return null;
     }
 
-    protected CommandFileOffsetGtidIndex getBaseIndex() throws IOException {
+    protected CommandFileOffsetGtidIndex getBaseIndex() {
         CommandFile firstCommandFile = findFileForOffset(baseStartOffset);
         if (null == firstCommandFile) return null;
 

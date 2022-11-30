@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
-import com.ctrip.xpipe.redis.keeper.handler.*;
+import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.redis.keeper.impl.*;
@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderTest;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandWriterTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
@@ -80,7 +79,6 @@ import org.junit.runners.Suite.SuiteClasses;
 
         GtidCmdOneSegmentReaderTest.class,
         GtidSetCommandReaderTest.class,
-        GtidSetCommandWriterTest.class,
 
         AllApplierTests.class,
 })
