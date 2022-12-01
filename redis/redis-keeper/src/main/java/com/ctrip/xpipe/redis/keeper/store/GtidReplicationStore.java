@@ -165,14 +165,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx, ExecutorService indexingExecutors) {
         //TODO 1: how about gc() invoked at the same time ?
         //TODO 2: find latest index - DONE
-        GtidSet gtidSet = new GtidSet(ctx.getRdbStore().getGtidSet());
 
         CommandFileSegment lastSegment = cmdStore.findLastFileSegment();
-        if (lastSegment != null) {
-            gtidSet = gtidSet.intersectionGtidSet(lastSegment.getStartIdx().getExcludedGtidSet());
-        }
 
-        String gtidSetString = gtidSet.toString();
+        String gtidSetString = lastSegment != null ? lastSegment.getStartIdx().getExcludedGtidSet().toString() : ctx.getRdbStore().getGtidSet();
 
         indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, new GtidSet(gtidSetString));
 
