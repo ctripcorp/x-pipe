@@ -35,6 +35,8 @@ public interface MetaServerConfig extends CoreConfig {
 
 	boolean validateDomain();
 
+	int getKeeperSetIndexInterval();
+
 	int getKeeperInfoCheckInterval();
 
 	int getApplierInfoCheckInterval();

@@ -709,6 +709,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
+	@Override
+	public boolean isStartIndexing() {
+	    return isStartIndexing;
+	}
+
 	private RdbDumper dumpNewRdb() throws CreateRdbDumperException, SetRdbDumperException {
 		
 		RdbDumper rdbDumper = keeperRedisMaster.createRdbDumper();
