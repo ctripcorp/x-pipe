@@ -49,20 +49,35 @@ public class DefaultRedisGtidCollectorTest {
     }
 
     @Test
-    public void testHintsApplierInCluster() {
+    public void testHintsMasterDcInClusterSourceShard() {
         ClusterMeta clusterMeta = new ClusterMeta();
-        clusterMeta.setHints(Hints.APPLIER_IN_CLUSTER.name());
+        clusterMeta.setHints(Hints.MASTER_DC_IN_CLUSTER.name());
         when(dcMetaCache.getClusterMeta(1L)).thenReturn(clusterMeta);
+        when(dcMetaCache.isCurrentShardParentCluster(1L, 1L)).thenReturn(false);
+
+        DefaultRedisGtidCollector collector = spy(defaultRedisGtidCollector);
+
+        collector.work();
+        verify(collector,Mockito.times(0)).collectCurrentDcGtidAndSids();
+        verify(collector,Mockito.times(1)).collectSids();
+    }
+
+    @Test
+    public void testHintsMasterDcInClusterNormalShard() {
+        ClusterMeta clusterMeta = new ClusterMeta();
+        clusterMeta.setHints(Hints.MASTER_DC_IN_CLUSTER.name());
+        when(dcMetaCache.getClusterMeta(1L)).thenReturn(clusterMeta);
+        when(dcMetaCache.isCurrentShardParentCluster(1L, 1L)).thenReturn(true);
 
         DefaultRedisGtidCollector collector = spy(defaultRedisGtidCollector);
 
         collector.work();
         verify(collector,Mockito.times(1)).collectCurrentDcGtidAndSids();
-        verify(collector,Mockito.times(1)).collectSids();
+        verify(collector,Mockito.times(0)).collectSids();
     }
 
     @Test
-    public void testHintsApplierNotInCluster() {
+    public void testHintsMasterDcNotInCluster() {
         ClusterMeta clusterMeta = new ClusterMeta();
         when(dcMetaCache.getClusterMeta(1L)).thenReturn(clusterMeta);
 
