@@ -25,12 +25,6 @@ public class GtidSetCommandReaderWriterFactory extends OffsetCommandReaderWriter
     }
 
     @Override
-    public CommandWriter createCmdWriter(CommandStore cmdStore,
-                                         int maxFileSize, Logger delayTraceLogger) {
-        return new GtidSetCommandWriter(new ArrayParser(), redisOpParser, cmdStore, bytesBetweenIndex, maxFileSize, delayTraceLogger);
-    }
-
-    @Override
     public CommandReader<RedisOp> createCmdReader(GtidSetReplicationProgress replProgress,
                                                   CommandStore cmdStore,
                                                   OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException {

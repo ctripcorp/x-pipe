@@ -63,4 +63,6 @@ public interface ClusterService {
 	List<RouteInfoModel> findClusterDesignateRoutesBySrcDcNameAndClusterName(String dcName, String clusterName);
 	void updateClusterDesignateRoutes(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
 	UnexpectedRouteUsageInfoModel findUnexpectedRouteUsageInfoModel();
+
+    void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
 }

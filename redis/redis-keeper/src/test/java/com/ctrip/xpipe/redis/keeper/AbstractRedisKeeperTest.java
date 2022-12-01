@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -101,8 +100,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager.IdAndDbIdCompatible(keeperConfig, clusterId, shardId, keeperRunid, storeDir,
-				createkeeperMonitor());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, createkeeperMonitor());
 		
 		replicationStoreManager.addObserver(new Observer() {
 			
@@ -233,7 +231,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(Object cmd) {
+					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 						
 						try {
 							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);

@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-2022-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-2022-11-30-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2-2022
 
       - name: Build with Maven

@@ -38,11 +38,11 @@ public interface RedisService {
 	void updateBatchMaster(List<RedisTbl> redises);
 	void updateBatchKeeperActive(List<RedisTbl> redises);
 
-	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
+    void updateSourceKeepers(String srcDcName, String clusterName, String shardName, long dstDcId, ShardModel sourceShard);
+
+    void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 
 	List<RedisTbl> findAllKeeperContainerCountInfo();
 
 	List<Long> findClusterIdsByKeeperContainer(long keeperContainerId);
-
-	void updateSourceKeepers(String srcDcName, String clusterName, String shardName, long dstDcId, ShardModel sourceShard);
 }

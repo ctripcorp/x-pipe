@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,10 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
     }
 
     default void doConnect() {
+        if (endpoint() == null) {
+            scheduleReconnect();
+            return;
+        }
         try {
             Command<Object> command = connectCommand();
             command.future().addListener((f) -> {

@@ -42,13 +42,12 @@ public class SourceModelServiceImpl implements SourceModelService {
 
     @Override
     public List<SourceModel> getAllSourceModels(String dcName, String clusterName) {
+        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
+        if (null == shards) return null;
 
         List<ReplDirectionInfoModel> replDirectionInfoModels =
                 replDirectionService.findReplDirectionInfoModelsByClusterAndToDc(clusterName, dcName);
-        if (replDirectionInfoModels == null) return null;
-
-        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
-        if (null == shards) return null;
+        if (replDirectionInfoModels == null || replDirectionInfoModels.isEmpty()) return null;
 
         List<SourceModel> sourceModels = new ArrayList<>();
 
@@ -62,5 +61,21 @@ public class SourceModelServiceImpl implements SourceModelService {
             sourceModels.add(sourceModel);
         }
         return sourceModels;
+    }
+
+    @Override
+    public SourceModel getAllSourceModelsByClusterAndReplDirection(String dcName, String clusterName, ReplDirectionInfoModel replDirection) {
+        if (replDirection == null) return null;
+
+        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
+        if (null == shards) return null;
+
+        SourceModel sourceModel = new SourceModel().setReplDirectionInfoModel(replDirection);
+        for (ShardTbl shard : shards) {
+            ShardModel sourceShard = shardModelService.getShardModel(dcName, clusterName, shard.getShardName(), true, replDirection);
+            if (sourceShard != null) sourceModel.addShardModel(sourceShard);
+        }
+
+        return sourceModel;
     }
 }

@@ -120,6 +120,10 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 		
 		return current < fileSize;
 	}
+
+	public long position() {
+	    return currentPos.get();
+	}
 	
 	@Override
 	public String toString() {

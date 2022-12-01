@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -14,7 +15,6 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Set;
@@ -67,6 +67,10 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
 
     @Override
     public RedisOp doRead() throws IOException {
+        if (opParser == null) {
+            throw new XpipeRuntimeException("unlikely: opParser is null");
+        }
+
         rollToNextSegmentIfNecessary();
         readNextFileIfNecessary();
         refillBufIfNecessary();
@@ -147,8 +151,13 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         }
     }
 
-    private long filePosition() throws IOException {
+    public long filePosition() throws IOException {
         return controllableFile.getFileChannel().position();
+    }
+
+    @Override
+    public long position() throws IOException {
+        return filePosition() - curBuf.readableBytes();
     }
 
     private synchronized void setCmdFile(CommandFile cmdFile, long filePosition, boolean clearBuf) throws IOException {
@@ -186,8 +195,8 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
     }
 
     @Override
-    public File getCurFile() {
-        return curCmdFile.getFile();
+    public CommandFile getCurCmdFile() {
+        return curCmdFile;
     }
 
 

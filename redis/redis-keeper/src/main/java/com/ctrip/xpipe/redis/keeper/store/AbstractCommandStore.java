@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -66,6 +67,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private List<CommandFileOffsetGtidIndex> cmdIndexList = new CopyOnWriteArrayList<>();
 
     protected GtidSet baseGtidSet;
+
+    protected long baseStartOffset;
 
     private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
 
@@ -263,7 +266,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         cmdWriter.rotateFileIfNecessary();
     }
 
-    public CommandFile findFileForOffset(long targetStartOffset) throws IOException {
+    public CommandFile findFileForOffset(long targetStartOffset) {
         File[] files = baseDir.listFiles(cmdFileFilter);
         if (files != null) {
             for (File file : files) {
@@ -290,10 +293,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public CommandFileSegment findLastFileSegment() throws IOException {
+    public CommandFileSegment findLastFileSegment() {
         if (this.cmdIndexList.isEmpty()) {
             CommandFileOffsetGtidIndex baseIndex = getBaseIndex();
-            if (null == baseIndex) throw new IllegalArgumentException(); // TODO: handle fsync
+            if (null == baseIndex) {
+                return null;
+            }
             return new CommandFileSegment(baseIndex);
         } else {
             CommandFileOffsetGtidIndex lastIndex = this.cmdIndexList.get(cmdIndexList.size() - 1);
@@ -302,7 +307,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) throws IOException {
+    public CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) {
         makeSureOpen();
 
         Set<String> interestedSrcIds = excludedGtidSet.getUUIDs();
@@ -348,15 +353,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         CommandFileOffsetGtidIndex baseIndex = getBaseIndex();
         if (null != baseIndex) return baseIndex.getExcludedGtidSet();
         if (!cmdIndexList.isEmpty()) return cmdIndexList.get(0).getExcludedGtidSet();
-        return new GtidSet("");
+        return null;
     }
 
-    protected CommandFileOffsetGtidIndex getBaseIndex() throws IOException {
-        CommandFile firstCommandFile = findFileForOffset(0L);
+    protected CommandFileOffsetGtidIndex getBaseIndex() {
+        CommandFile firstCommandFile = findFileForOffset(baseStartOffset);
         if (null == firstCommandFile) return null;
 
         getLogger().debug("[getBaseIndex]baseGtidSet={}", getBaseGtidSet());
-        return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, 0);
+        return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, baseStartOffset - firstCommandFile.getStartOffset());
     }
 
     public CommandFile findNextFile(File curFile) {
@@ -386,7 +391,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long lowestReadingOffset = Long.MAX_VALUE;
 
         for (CommandReader reader : readers.keySet()) {
-            File readingFile = reader.getCurFile();
+            File readingFile = reader.getCurCmdFile().getFile();
             if (readingFile != null) {
                 lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
             }

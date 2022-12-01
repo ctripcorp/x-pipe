@@ -2,9 +2,9 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandWriter;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
@@ -72,12 +72,21 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
             while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
                 final RedisOp redisOp = cmdReader.read();
+
                 if (null == redisOp) continue;
 
                 logger.debug("[addCommandsListener] {}", redisOp);
 
+                if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+                    String channel = new String(redisOp.buildRawOpArgs()[4]);
+                    if (!channel.startsWith("xpipe-hetero-")) {
+                        logger.debug("publish channel: [{}] filtered", channel);
+                        continue;
+                    }
+                }
+
                 // TODO: monitor send delay
-                ChannelFuture future = listener.onCommand(redisOp.buildRESP());
+                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), redisOp);
 
                 if(future != null){
                     CommandReader<RedisOp> finalCmdReader = cmdReader;
@@ -97,13 +106,11 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
         logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
     }
 
-    public void setBaseGtidSet(String baseGtidSet) {
+    @Override
+    public void setBaseIndex(String baseGtidSet, long localOffset) {
+
         this.baseGtidSet = new GtidSet(baseGtidSet);
+        this.baseStartOffset = localOffset;
     }
 
-    @Override
-    public GtidSet getEndGtidSet() {
-        makeSureOpen();
-        return ((GtidSetCommandWriter)getCmdWriter()).getGtidSetContain();
-    }
 }

@@ -10,22 +10,19 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,14 +336,42 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture onCommand(Object cmd) {
+	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
 
-		ChannelFuture future = channel().writeAndFlush(cmd);
+		Object command = cmd;
+
+		if (cmd instanceof RedisOp) {
+			if (shouldFilter((RedisOp) cmd)) {
+				ChannelPromise result = channel().newPromise();
+			    result.setSuccess();
+			    return result;
+			}
+		    command = ((RedisOp) cmd).buildRESP();
+		}
+
+		ChannelFuture future = channel().writeAndFlush(command);
 		future.addListener(writeExceptionListener);
 		return future;
 	}
+
+	@VisibleForTesting
+	protected boolean shouldFilter(RedisOp redisOp) {
+	 	if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+			int length = redisOp.buildRawOpArgs().length;
+			if (length < 5) {
+				logger.warn("publish command length={} < 5, filtered", length);
+				return true;
+			}
+			String channel = new String(redisOp.buildRawOpArgs()[4]);
+			if (!channel.startsWith("xpipe-hetero-")) {
+				logger.debug("publish channel: [{}] filtered", channel);
+				return true;
+            }
+        }
+		return false;
+    }
 
 	@Override
 	public String info() {

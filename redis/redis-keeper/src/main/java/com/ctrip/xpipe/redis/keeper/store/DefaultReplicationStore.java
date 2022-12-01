@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -43,9 +44,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
-	private CommandStore cmdStore;
+	protected CommandStore cmdStore;
 
-	private MetaStore metaStore;
+	protected MetaStore metaStore;
 
 	private int cmdFileSize;
 
@@ -226,12 +227,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		    // when switching to GtidReplicationStore via rdb only repl, rdbStore is of GtidRdbStore and this is of DefaultReplicationStore
 			// which maybe it is not a elegant way
 			rdbStore.updateRdbGtidSet(rdbGtidSet);
+			//probably redundant
 			getMetaStore().attachRdbGtidSet(rdbStore.getRdbFileName(), rdbGtidSet);
 		}
-	}
-
-	public CommandStore getCommandStore() {
-		return cmdStore;
 	}
 
 	public RdbStore getRdbStore() {
@@ -393,20 +391,25 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (progress instanceof OffsetReplicationProgress) {
 			long realOffset = ((OffsetReplicationProgress) progress).getProgress() - metaStore.beginOffset();
-			getCommandStore().addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
+			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
 		} else {
-			getCommandStore().addCommandsListener(progress, commandsListener);
+			cmdStore.addCommandsListener(progress, commandsListener);
 		}
 	}
 
 	@Override
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public GtidSet getBeginGtidSet() throws IOException {
-		return getCommandStore().getBeginGtidSet();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public GtidSet getEndGtidSet() {
-		return getCommandStore().getEndGtidSet();
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
