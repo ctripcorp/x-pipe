@@ -244,4 +244,9 @@ public class DefaultApplierElectorManager extends AbstractCurrentMetaObserver im
     public void setApplierActiveElectAlgorithmManager(ApplierActiveElectAlgorithmManager applierActiveElectAlgorithmManager) {
         this.applierActiveElectAlgorithmManager = applierActiveElectAlgorithmManager;
     }
+
+    @VisibleForTesting
+    public void setDcMetaCache(DcMetaCache dcMetaCache) {
+        this.dcMetaCache = dcMetaCache;
+    }
 }
