@@ -65,6 +65,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler {
 					KeeperIndexState indexState = KeeperIndexState.valueOf(args[1]);
 					if (KeeperIndexState.ON.equals(indexState)) {
 						((RedisKeeperServer) redisClient.getRedisServer()).startIndexing();
+						redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
 					} else if (KeeperIndexState.OFF.equals(indexState)) {
 						throw new IllegalArgumentException("setstate OFF not supported");
 					} else {
