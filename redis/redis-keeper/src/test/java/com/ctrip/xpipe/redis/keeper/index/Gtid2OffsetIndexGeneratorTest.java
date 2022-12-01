@@ -40,9 +40,9 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         redis.setIp("127.0.0.1");
         redis.setPort(6379);
 
-        sendRandomMessage(redis, 30);
+        redisKeeperServer.startIndexing();
 
-        //redisKeeperServer.startIndexing();
+        sendRandomMessage(redis, 30);
 
         waitForAnyKey();
     }
@@ -78,6 +78,7 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
             TestKeeperConfig modified = (TestKeeperConfig)config;
             modified.setReplicationStoreCommandFileSize(1024 * 1024 * 128 /* 128 M */);
             modified.setCommandReaderFlyingThreshold(10);
+            modified.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(1024 * 1024 * 1024);
             //modified.setReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb(0);
         }
         return config;
