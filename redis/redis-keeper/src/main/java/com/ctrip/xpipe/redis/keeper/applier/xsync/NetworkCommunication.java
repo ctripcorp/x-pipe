@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 /**
  * @author Slight
  * <p>
@@ -20,7 +22,7 @@ public interface NetworkCommunication extends NetworkCommunicationState {
 
     default boolean changeTarget(Endpoint endpoint, Object... states) {
         if (isConnected()) {
-            if (endpoint().equals(endpoint)) {
+            if (Objects.equals(endpoint(), endpoint)) {
                 return false;
             }
         }

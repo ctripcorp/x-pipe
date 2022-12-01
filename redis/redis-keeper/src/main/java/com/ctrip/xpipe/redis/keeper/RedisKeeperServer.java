@@ -75,6 +75,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	}
 
 	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
+
+	void startIndexing() throws IOException;
 	
 	KeeperInstanceMeta getKeeperInstanceMeta();
 	
@@ -95,4 +97,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	int getTryConnectMasterCnt();
 
 	void resetDefaultReplication();
+
+	PsyncObserver createPsyncObserverForRdbOnlyRepl();
 }

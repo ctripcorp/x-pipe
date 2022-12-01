@@ -23,15 +23,9 @@ public class RedisMasterNewRdbDumperTest {
     @Test
     public void whenRdbOffsetNotContinuous() throws Exception {
         RedisMaster redisMaster = mock(RedisMaster.class);
-        doNothing().when(redisMaster).reconnect();
-
-        ReplicationStoreManager storeManager = mock(ReplicationStoreManager.class);
-        doReturn(mock(ReplicationStore.class)).when(storeManager).create();
 
         RedisKeeperServer redisKeeperServer = mock(RedisKeeperServer.class);
-        doNothing().when(redisKeeperServer).closeSlaves(anyString());
-
-        doReturn(storeManager).when(redisMaster).getReplicationStoreManager();
+        doNothing().when(redisKeeperServer).resetDefaultReplication();
 
         RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, redisKeeperServer, mock(NioEventLoopGroup.class),
                 mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
@@ -40,9 +34,7 @@ public class RedisMasterNewRdbDumperTest {
         dumper.execute();
         dumper.future().setFailure(new PsyncMasterRdbOffsetNotContinuousRuntimeException(10, 20));
 
-        verify(storeManager, times(1)).create();
-        verify(redisMaster, times(1)).reconnect();
-        verify(redisKeeperServer, times(1)).closeSlaves(anyString());
+        verify(redisKeeperServer, times(1)).resetDefaultReplication();
     }
 
     @Test

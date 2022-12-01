@@ -49,6 +49,11 @@ public class ShardModel implements java.io.Serializable{
 		return this;
 	}
 
+	public ShardModel setAppliers(List<ApplierTbl> appliers) {
+		this.m_appliers = appliers;
+		return this;
+	}
+
 	public List<ApplierTbl> getAppliers() {
 		return m_appliers;
 	}

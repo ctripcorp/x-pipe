@@ -17,8 +17,8 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.unidal.dal.jdbc.DalException;
 
-import static com.ctrip.xpipe.AbstractTest.randomString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Matchers.anyString;
@@ -174,7 +174,7 @@ public class ShardServiceImplTest2 {
     }
 
     @Test
-    public void findOrCreateSHardIfNotExistWithCreateDcClusterShard() {
+    public void findOrCreateSHardIfNotExistWithCreateDcClusterShard() throws DalException {
         String cluster = "cluster-test", shard = "shard1";
         // TODO: 2022/10/10 remove hetero
 //        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.HETERO.toString());
@@ -183,6 +183,7 @@ public class ShardServiceImplTest2 {
 
         when(clusterService.find(cluster)).thenReturn(clusterTbl);
         when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(true);
+        when(shardDao.insertShard(cluster, proto)).thenReturn(proto);
 
         shardService.findOrCreateShardIfNotExist(cluster, proto, Lists.newArrayList(new DcClusterTbl()), Maps.newHashMap());
         verify(dcClusterShardService).insertBatch(anyList());

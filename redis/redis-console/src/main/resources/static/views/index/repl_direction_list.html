@@ -54,12 +54,19 @@
                 <td data-title="'appliers'" sortable="'applierCount'">
                     <a href="/#/cluster_dc_shards/{{info.clusterName}}/{{info.toDcName}}">{{info.applierCount}}</a>
                 </td>
+                <td data-title="'操作'" sortable="'applierCount'">
+                    <a type="button" class="btn btn-info btn-xs" ng-click="preCompleteReplicationByReplDirection(info)">补全复制</a>
             </tr>
         </table>
 
     </div>
 </div>
 
+<xpipeconfirmdialog xpipe-dialog-id="'completeReplicationByReplDirectionConfirm'" xpipe-title="'补全该复制方向上的所有applier和keeper'"
+                    xpipe-detail="'确认补全该复制方向上的所有applier和keeper？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="doCompleteReplicationByReplDirection"></xpipeconfirmdialog>
+
 <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
     <i class="icon-double-angle-up icon-only bigger-110"></i>
 </a>
+

@@ -45,13 +45,11 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	CommandFile findLatestFile() throws IOException;
 
-	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet) throws IOException;
+	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet);
 
-	CommandFileSegment findLastFileSegment() throws IOException;
+	CommandFileSegment findLastFileSegment();
 
 	GtidSet getBeginGtidSet() throws IOException;
-
-	GtidSet getEndGtidSet();
 
 	String simpleDesc();
 
@@ -62,5 +60,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	CommandFile findNextFile(File file);
 
 	void makeSureOpen();
-	
+
+	default void setBaseIndex(String baseGtidSet, long localOffset) {
+		//ignore
+	}
 }

@@ -14,10 +14,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int replicationStoreCommandFileSize = 1024;
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private long replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
+	private long replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb = 10000;
 	private int minTimeMilliToGcAfterCreate = 2000;
 	private int rdbDumpMinIntervalMilli = 1000;
 	private int maxPartialSyncKeepTokenRounds = 3;
 	private int partialSyncTrafficMonitorIntervalTimes = 10;
+	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
 	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -76,7 +78,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb() {
 		return replicationStoreMaxCommandsToTransferBeforeCreateRdb;
 	}
-	
+
+	@Override
+	public long getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb() {
+		return replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb;
+	}
+
 	public void setReplicationStoreCommandFileNumToKeep(int replicationStoreCommandFileNumToKeep) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
 	}
@@ -88,6 +95,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public void setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb) {
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
+	}
+
+	public void setReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb(
+			int replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb) {
+		this.replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb = replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb;
 	}
 
 	@Override
@@ -109,9 +121,13 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return minTimeMilliToGcAfterCreate;
 	}
 
+	public void setCommandReaderFlyingThreshold(long commandReaderFlyingThreshold) {
+		this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
+	}
+
 	@Override
 	public long getCommandReaderFlyingThreshold() {
-		return DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
+		return commandReaderFlyingThreshold;
 	}
 
 	@Override

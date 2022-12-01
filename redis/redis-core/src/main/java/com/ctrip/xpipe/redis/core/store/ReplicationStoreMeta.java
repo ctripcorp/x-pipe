@@ -208,11 +208,21 @@ public class ReplicationStoreMeta implements Serializable{
 
 	@Override
 	public String toString() {
-		return "ReplicationStoreMeta [masterAddress=" + masterAddress + ", beginOffset=" + beginOffset 
-				+ ", replid=" + replId + ",replid2=" + replId2 + ", secondReplIdOffset=" + secondReplIdOffset  
-				+ ", rdbFile=" + rdbFile + ", rdbLastOffset=" + rdbLastOffset + ", rdbFileSize=" + rdbFileSize + ", "+ ", rdbFileEofMark:" + rdbEofMark + 
-				", cmdFilePrefix=" + cmdFilePrefix + 
-				", keeperState=" + keeperState +", keeperRunid=" + keeperRunid;
+		return "ReplicationStoreMeta{" +
+				"masterAddress=" + masterAddress +
+				", beginOffset=" + beginOffset +
+				", replId='" + replId + '\'' +
+				", replId2='" + replId2 + '\'' +
+				", secondReplIdOffset=" + secondReplIdOffset +
+				", rdbFile='" + rdbFile + '\'' +
+				", rdbLastOffset=" + rdbLastOffset +
+				", rdbFileSize=" + rdbFileSize +
+				", rdbEofMark='" + rdbEofMark + '\'' +
+				", rdbGtidSet='" + rdbGtidSet + '\'' +
+				", cmdFilePrefix='" + cmdFilePrefix + '\'' +
+				", keeperState=" + keeperState +
+				", keeperRunid='" + keeperRunid + '\'' +
+				'}';
 	}
 
 	@Override

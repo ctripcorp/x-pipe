@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
@@ -244,6 +245,67 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         }
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testAddKeeperContainerByInfoModel() {
+        KeeperContainerInfoModel infoModel = new KeeperContainerInfoModel();
+        infoModel.setAddr(new HostPort("127.0.0.1", 8080));
+        infoModel.setDcName("jq");
+
+        try {
+            keeperContainerService.addKeeperContainerByInfoModel(infoModel);
+        } catch (Exception e) {
+            Assert.assertEquals("Keeper container with ip:127.0.0.1, port:8080 is unhealthy", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test
+    public void testUpdateKeeperContainerByInfoModel() {
+        KeeperContainerInfoModel keeper = keeperContainerService.findKeeperContainerInfoModelById(30);
+        Assert.assertEquals("fra", keeper.getDcName());
+        Assert.assertEquals("127.0.1.2", keeper.getAddr().getHost());
+        Assert.assertEquals(7033, keeper.getAddr().getPort());
+        Assert.assertEquals(true, keeper.isActive());
+        Assert.assertEquals(null, keeper.getOrgName());
+        Assert.assertEquals("A", keeper.getAzName());
+
+        keeper.setAzName("B");
+        keeper.setOrgName("org-1");
+        keeper.setActive(false);
+        keeper.setDcName("jq");
+
+        keeperContainerService.updateKeeperContainerByInfoModel(keeper);
+
+        KeeperContainerInfoModel keeper1 = keeperContainerService.findKeeperContainerInfoModelById(30);
+        Assert.assertEquals("fra", keeper1.getDcName());
+        Assert.assertEquals("127.0.1.2", keeper1.getAddr().getHost());
+        Assert.assertEquals(7033, keeper1.getAddr().getPort());
+        Assert.assertEquals(false, keeper1.isActive());
+        Assert.assertEquals("org-1", keeper1.getOrgName());
+        Assert.assertEquals("B", keeper1.getAzName());
+
+    }
+
+    @Test
+    public void testUpdateKeeperContainerByInfoModelFail() {
+        KeeperContainerInfoModel keeper = keeperContainerService.findKeeperContainerInfoModelById(30);
+        Assert.assertNotNull(keeper);
+        keeper.setAzName("NONE");
+
+        try {
+            keeperContainerService.updateKeeperContainerByInfoModel(keeper);
+        } catch (Throwable th) {
+            Assert.assertEquals("available zone NONE does not exist", th.getMessage());
+        }
+
+        keeper.setAddr(new HostPort("128.0.0.1", 8080));
+        try {
+            keeperContainerService.updateKeeperContainerByInfoModel(keeper);
+        } catch (Throwable th) {
+            Assert.assertEquals("Keeper container with IP: 128.0.0.1 does not exists", th.getMessage());
+        }
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
@@ -279,8 +341,8 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         KeeperContainerCreateInfo newKeeperContainer = new KeeperContainerCreateInfo()
                 .setKeepercontainerIp("127.0.0.1").setKeepercontainerPort(9090);
 
-        Assert.assertTrue(keeperContainerService.keeperContainerAlreadyExists(existKeeperContainer));
-        Assert.assertFalse(keeperContainerService.keeperContainerAlreadyExists(newKeeperContainer));
+        Assert.assertTrue(keeperContainerService.keeperContainerAlreadyExists(existKeeperContainer.getKeepercontainerIp(), existKeeperContainer.getKeepercontainerPort()));
+        Assert.assertFalse(keeperContainerService.keeperContainerAlreadyExists(newKeeperContainer.getKeepercontainerIp(), newKeeperContainer.getKeepercontainerPort()));
     }
 
     @Test
@@ -307,4 +369,6 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("jq", "", "");
         Assert.assertEquals(3, keeperContainers.size());
     }
+
+
 }

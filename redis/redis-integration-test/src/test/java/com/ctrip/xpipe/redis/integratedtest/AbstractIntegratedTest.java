@@ -10,8 +10,6 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -22,7 +20,6 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.impl.GtidRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
@@ -134,7 +131,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return startKeeper(keeperMeta, getKeeperConfig(), leaderElectorManager);
 	}
 
-	protected GtidRedisKeeperServer startGtidKeeper(KeeperMeta keeperMeta,
+	protected RedisKeeperServer startGtidKeeper(KeeperMeta keeperMeta,
 													LeaderElectorManager leaderElectorManager,
 													RedisOpParser redisOpParser) throws Exception {
 		return startGtidKeeper(keeperMeta, getKeeperConfig(), leaderElectorManager, redisOpParser);
@@ -144,14 +141,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return new DefaultKeeperConfig();
 	}
 
-	protected GtidRedisKeeperServer startGtidKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig,
+	protected RedisKeeperServer startGtidKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig,
 												LeaderElectorManager leaderElectorManager,
 												RedisOpParser redisOpParser) throws Exception {
 
 		logger.info(remarkableMessage("[startGtidKeeper]{}, {}"), keeperMeta);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
-		GtidRedisKeeperServer gtidRedisKeeperServer = createGtidRedisKeeperServer(keeperMeta, baseDir, keeperConfig,
+		RedisKeeperServer gtidRedisKeeperServer = createGtidRedisKeeperServer(keeperMeta, baseDir, keeperConfig,
 				leaderElectorManager, new NoneKeepersMonitorManager(), redisOpParser);
 		add(gtidRedisKeeperServer);
 		return gtidRedisKeeperServer;
@@ -181,12 +178,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		remove(redisKeeperServer);
 	}
 
-	protected GtidRedisKeeperServer createGtidRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
+	protected RedisKeeperServer createGtidRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
 																LeaderElectorManager leaderElectorManager,
 																KeepersMonitorManager keeperMonitorManager,
 																RedisOpParser redisOpParser) {
 
-		return new GtidRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
+		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
 				leaderElectorManager, keeperMonitorManager, resourceManager, redisOpParser);
 	}
 

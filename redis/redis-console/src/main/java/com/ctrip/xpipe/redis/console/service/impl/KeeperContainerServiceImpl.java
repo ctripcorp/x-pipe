@@ -177,7 +177,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     KeepercontainerTbl proto = dao.createLocal();
 
-    if(keeperContainerAlreadyExists(createInfo)) {
+    if(keeperContainerAlreadyExists(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort())) {
       throw new IllegalArgumentException("Keeper Container with IP: "
               + createInfo.getKeepercontainerIp() + " already exists");
     }
@@ -308,6 +308,91 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
+  public void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel) {
+    KeepercontainerTbl proto = dao.createLocal();
+
+    if(keeperContainerAlreadyExists(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
+      throw new IllegalArgumentException("Keeper Container with IP: "
+                                                  + keeperContainerInfoModel.getAddr().getHost() + " already exists");
+    }
+
+    if (!checkIpAndPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
+      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
+              keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort()));
+    }
+
+    DcTbl dcTbl = dcService.find(keeperContainerInfoModel.getDcName());
+    if(dcTbl == null) {
+      throw new IllegalArgumentException("DC name does not exist");
+    }
+
+    OrganizationTbl org;
+    if (keeperContainerInfoModel.getOrgName() == null
+            || (org = organizationService.getOrgByName(keeperContainerInfoModel.getOrgName())) == null) {
+      proto.setKeepercontainerOrgId(0L);
+    } else {
+      proto.setKeepercontainerOrgId(org.getId());
+    }
+
+    if (keeperContainerInfoModel.getAzName() != null) {
+      AzTbl azTbl = azService.getAvailableZoneTblByAzName(keeperContainerInfoModel.getAzName());
+      if(azTbl == null) {
+        throw new IllegalArgumentException(String.format("available zone %s does not exist",
+                                                                      keeperContainerInfoModel.getAzName()));
+      }
+      proto.setAzId(azTbl.getId());
+    }
+
+    proto.setKeepercontainerDc(dcTbl.getId())
+            .setKeepercontainerIp(keeperContainerInfoModel.getAddr().getHost())
+            .setKeepercontainerPort(keeperContainerInfoModel.getAddr().getPort())
+            .setKeepercontainerActive(keeperContainerInfoModel.isActive());
+
+    queryHandler.handleInsert(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.insert(proto);
+      }
+    });
+  }
+
+  @Override
+  public void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel) {
+    KeepercontainerTbl proto =
+            findByIpPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort());
+    if( proto == null) {
+      throw new IllegalArgumentException("Keeper container with IP: " + keeperContainerInfoModel.getAddr().getHost()
+              + " does not exists");
+    }
+
+    OrganizationTbl org;
+    if (keeperContainerInfoModel.getOrgName() == null
+            || (org = organizationService.getOrgByName(keeperContainerInfoModel.getOrgName())) == null) {
+      proto.setKeepercontainerOrgId(0L);
+    } else {
+      proto.setKeepercontainerOrgId(org.getId());
+    }
+
+    if (keeperContainerInfoModel.getAzName() != null) {
+      AzTbl azTbl = azService.getAvailableZoneTblByAzName(keeperContainerInfoModel.getAzName());
+      if(azTbl == null) {
+        throw new IllegalArgumentException(String.format("available zone %s does not exist",
+                                                                                keeperContainerInfoModel.getAzName()));
+      }
+      proto.setAzId(azTbl.getId());
+    }
+
+    proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
+
+    queryHandler.handleQuery(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.updateByPK(proto, KeepercontainerTblEntity.UPDATESET_FULL);
+      }
+    });
+  }
+
+  @Override
   public Map<Long, Long> keeperContainerIdDcMap() {
     Map<Long, Long> keeperContainerIdDcMap = new HashMap<>();
     List<KeepercontainerTbl> allKeeperContainers = findAll();
@@ -431,11 +516,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  protected boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
+  protected boolean keeperContainerAlreadyExists(String ip, int port) {
     KeepercontainerTbl existing = queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
       @Override
       public KeepercontainerTbl doQuery() throws DalException {
-        return dao.findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort(),
+        return dao.findByIpPort(ip, port,
                 KeepercontainerTblEntity.READSET_CONTAINER_ADDRESS);
       }
     });
@@ -470,7 +555,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     } catch (RestClientException e) {
       logger.error("[healthCheck]Http connect occur exception. ", e);
     }
-
     return false;
   }
 

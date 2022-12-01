@@ -189,6 +189,11 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/keepercontainer_list.html',
             controller : 'KeeperContainerListCtl',
         })
+        .state('keepercontainer_form',{
+            url: '/keepercontainer_form?id&type',
+            templateUrl: 'views/index/keepercontainer_form.html',
+            controller: 'KeepercontainerFormCtl'
+        })
         .state('keeper_migration', {
             url: '/keeper_migration?keepercontainer',
             templateUrl: 'views/index/keeper_migration.html',
