@@ -173,4 +173,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public String getChooseRouteStrategyType() {
 		return "crc32_hash";
 	}
+
+	@Override
+	public int getKeeperSetIndexInterval() {
+		return 30 * 1000;
+	}
 }

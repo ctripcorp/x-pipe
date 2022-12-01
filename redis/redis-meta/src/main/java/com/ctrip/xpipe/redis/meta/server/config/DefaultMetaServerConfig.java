@@ -44,6 +44,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_IP = "server.ip";
 	public static String KEY_SERVER_PORT = "server.port";
 
+	private static final String KEY_KEEPER_SET_INDEX_INTERVAL = "meta.keeper.set.index.interval";
 	private static final String KEY_KEEPER_INFO_CHECK_INTERVAL = "meta.keeper.info.check.interval";
 	private static final String KEY_APPLIER_INFO_CHECK_INTERVAL = "meta.applier.info.check.interval";
 	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
@@ -147,6 +148,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public boolean validateDomain() {
 		return getBooleanProperty(KEY_VALIDATE_DOMAIN, true);
+	}
+
+	@Override
+	public int getKeeperSetIndexInterval() {
+		return getIntProperty(KEY_KEEPER_SET_INDEX_INTERVAL, 30 * 1000);
 	}
 
 	@Override
