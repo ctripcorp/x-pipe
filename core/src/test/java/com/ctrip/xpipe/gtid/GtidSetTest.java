@@ -477,6 +477,16 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testIntersection() {
+        /*
+        GtidSet one = new GtidSet("A:1-10");
+        GtidSet another = new GtidSet("A:5-12");
+
+        Assert.assertEquals("A:5-10", one.intersectionGtidSet(another).toString());
+        */
+    }
+
+    @Test
     public void testUnion() {
         GtidSet big = new GtidSet(UUID + ":1-10:100");
         GtidSet small = new GtidSet(UUID + ":3-8");
