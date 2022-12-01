@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.applier.elect;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
@@ -10,13 +11,13 @@ import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgori
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -64,6 +65,7 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
         applierElectorManager.setApplierActiveElectAlgorithmManager(applierActiveElectAlgorithmManager);
 
         clusterMeta = differentCluster("oy", 2);
+        clusterMeta.setDcGroupType(DcGroupType.MASTER.name());
         shardMeta = (ShardMeta) clusterMeta.getAllShards().values().toArray()[0];
     }
 
@@ -131,6 +133,9 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
     public void testAddWatch() throws Exception {
 
         when(currentMetaManager.watchApplierIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+        DcMetaCache dcMetaCache = Mockito.mock(DcMetaCache.class);
+        when(dcMetaCache.isCurrentShardParentCluster(clusterMeta.getDbId(), shardMeta.getDbId())).thenReturn(false);
+        applierElectorManager.setDcMetaCache(dcMetaCache);
 
         applierElectorManager.update(new NodeAdded<>(clusterMeta), null);
         //change notify
@@ -145,6 +150,9 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
     public void testRemoveWatch() throws Exception {
 
         when(currentMetaManager.watchApplierIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+        DcMetaCache dcMetaCache = Mockito.mock(DcMetaCache.class);
+        when(dcMetaCache.isCurrentShardParentCluster(clusterMeta.getDbId(), shardMeta.getDbId())).thenReturn(false);
+        applierElectorManager.setDcMetaCache(dcMetaCache);
 
         final AtomicReference<Releasable> release = new AtomicReference<>(null);
 
