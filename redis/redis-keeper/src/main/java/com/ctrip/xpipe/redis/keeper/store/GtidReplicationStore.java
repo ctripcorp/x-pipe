@@ -170,6 +170,8 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
         String gtidSetString = lastSegment != null ? lastSegment.getStartIdx().getExcludedGtidSet().toString() : ctx.getRdbStore().getGtidSet();
 
+        logger.info("[tryCreateIndex] indexing from {}", gtidSetString);
+
         indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, new GtidSet(gtidSetString));
 
         indexingFuture = indexingExecutors.submit(()->{
