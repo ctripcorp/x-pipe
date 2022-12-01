@@ -5,6 +5,7 @@ import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.meta.KeeperIndexState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
@@ -50,6 +51,27 @@ public class KeeperCommandHandler extends AbstractCommandHandler {
 					doSetKeeperState(redisClient, keeperState, masterAddress);
 				}else{
 					throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
+				}
+			}else if (args[0].equalsIgnoreCase(AbstractKeeperCommand.GET_INDEX)) {
+
+				KeeperIndexState indexState =
+						((RedisKeeperServer)redisClient.getRedisServer()).isStartIndexing()?
+								KeeperIndexState.ON : KeeperIndexState.OFF;
+
+				redisClient.sendMessage(new SimpleStringParser(indexState.name()).format());
+			}else if (args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_INDEX)){
+
+				if (args.length >= 2) {
+					KeeperIndexState indexState = KeeperIndexState.valueOf(args[1]);
+					if (KeeperIndexState.ON.equals(indexState)) {
+						((RedisKeeperServer) redisClient.getRedisServer()).startIndexing();
+					} else if (KeeperIndexState.OFF.equals(indexState)) {
+						throw new IllegalArgumentException("setstate OFF not supported");
+					} else {
+						throw new IllegalArgumentException("setindex argument error:" + StringUtil.join(" ", args));
+					}
+				} else {
+					throw new IllegalArgumentException("setindex argument error:" + StringUtil.join(" ", args));
 				}
 			}else{
 				throw new IllegalStateException("unknown command:" + args[0]);
