@@ -77,14 +77,6 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
                 logger.debug("[addCommandsListener] {}", redisOp);
 
-                if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
-                    String channel = new String(redisOp.buildRawOpArgs()[4]);
-                    if (!channel.startsWith("xpipe-hetero-")) {
-                        logger.debug("publish channel: [{}] filtered", channel);
-                        continue;
-                    }
-                }
-
                 // TODO: monitor send delay
                 ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), redisOp);
 
