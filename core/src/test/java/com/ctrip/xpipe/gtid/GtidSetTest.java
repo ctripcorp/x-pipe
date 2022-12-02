@@ -488,9 +488,15 @@ public class GtidSetTest {
 
     @Test
     public void testUnion() {
-        GtidSet big = new GtidSet(UUID + ":1-10:100");
-        GtidSet small = new GtidSet(UUID + ":3-8");
+
+        GtidSet big = new GtidSet(UUID + ":1-10");
+        GtidSet small = new GtidSet(UUID + ":1-12");
         GtidSet res = big.union(small);
+        Assert.assertEquals(res.toString(), UUID + ":1-12");
+
+        big = new GtidSet(UUID + ":1-10:100");
+        small = new GtidSet(UUID + ":3-8");
+        res = big.union(small);
         Assert.assertEquals(res.toString(), UUID + ":1-10:100");
 
         small = new GtidSet(UUID + ":2-5");
