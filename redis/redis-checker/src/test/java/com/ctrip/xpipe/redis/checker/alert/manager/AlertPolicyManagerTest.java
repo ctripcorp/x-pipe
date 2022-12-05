@@ -189,12 +189,13 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
         Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> expect = Maps.newHashMap();
 
         Map<ALERT_TYPE, Set<AlertEntity>> dbaMap = Maps.newHashMap();
-        dbaMap.put(ALERT_TYPE.CLIENT_INCONSIS, alerts.get(ALERT_TYPE.CLIENT_INCONSIS));
+//        dbaMap.put(ALERT_TYPE.CLIENT_INCONSIS, alerts.get(ALERT_TYPE.CLIENT_INCONSIS));
         dbaMap.put(ALERT_TYPE.XREDIS_VERSION_NOT_VALID, alerts.get(ALERT_TYPE.XREDIS_VERSION_NOT_VALID));
         dbaMap.put(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE, alerts.get(ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE));
         dbaMap.put(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, alerts.get(ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR));
 
         Map<ALERT_TYPE, Set<AlertEntity>> xpipeAdminMap = Maps.newHashMap();
+        xpipeAdminMap.put(ALERT_TYPE.CLIENT_INCONSIS, alerts.get(ALERT_TYPE.CLIENT_INCONSIS));
         xpipeAdminMap.put(ALERT_TYPE.QUORUM_DOWN_FAIL, alerts.get(ALERT_TYPE.QUORUM_DOWN_FAIL));
         xpipeAdminMap.put(ALERT_TYPE.SENTINEL_RESET, alerts.get(ALERT_TYPE.SENTINEL_RESET));
         xpipeAdminMap.put(ALERT_TYPE.MIGRATION_MANY_UNFINISHED, alerts.get(ALERT_TYPE.MIGRATION_MANY_UNFINISHED));
