@@ -4,7 +4,9 @@ import com.ctrip.xpipe.server.AbstractServer;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Slight
@@ -13,25 +15,24 @@ import java.util.List;
  */
 public abstract class AbstractInstanceNode extends AbstractServer {
 
-    public List<AbstractInstanceComponent> components;
+    public Map<String, Object> dependencies;
 
-    public List<Object> dependencies;
+    public List<AbstractInstanceComponent> components;
 
     @Override
     public void initialize() throws Exception {
 
+        dependencies = new HashMap<>();
         components = new ArrayList();
-        dependencies = new ArrayList<>();
 
         for (Field field : this.getClass().getFields()) {
 
             if (field.isAnnotationPresent(InstanceDependency.class)) {
                 Object dependency = field.get(this);
                 if (dependency instanceof InstanceComponentWrapper) {
-                    dependencies.add(((InstanceComponentWrapper<?>) dependency).getInner());
-                } else {
-                    dependencies.add(dependency);
+                    dependency = ((InstanceComponentWrapper<?>) dependency).getInner();
                 }
+                dependencies.put(field.getName(), dependency);
             }
 
             Object value = field.get(this);

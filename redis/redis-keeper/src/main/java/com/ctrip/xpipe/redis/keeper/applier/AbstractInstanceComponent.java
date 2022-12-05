@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper.applier;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 
 import java.lang.reflect.Field;
-import java.util.List;
+import java.util.Map;
 
 /**
  * @author Slight
@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class AbstractInstanceComponent extends AbstractLifecycle {
 
-    public void inject(List<Object> dependencies) throws IllegalAccessException {
+    public void inject(Map<String, Object> dependencies) throws IllegalAccessException {
 
         for (Field field : this.getClass().getFields()) {
 
@@ -20,10 +20,12 @@ public class AbstractInstanceComponent extends AbstractLifecycle {
 
                 Class<?> type = field.getType();
 
-                //TODO: compare NAME
-                for (Object dependency : dependencies) {
-                    if (type.isAssignableFrom(dependency.getClass())) {
+                for (String name : dependencies.keySet()) {
+                    Object dependency = dependencies.get(name);
+                    if (name != null && name.equals(field.getName()) && type.isAssignableFrom(dependency.getClass())) {
                         field.set(this, dependency);
+
+                        logger.info("[inject] ({}) as {} -> {} of ({})", dependency, name, field.getName(), this);
                     }
                 }
             }
