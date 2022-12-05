@@ -22,7 +22,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultXsyncReplicationTest.class,
 
         AbstractInstanceNodeTest.class,
-        //DefaultApplierServerTest.class,
+        DefaultApplierServerTest.class,
 })
 public class AllApplierTests {
 
