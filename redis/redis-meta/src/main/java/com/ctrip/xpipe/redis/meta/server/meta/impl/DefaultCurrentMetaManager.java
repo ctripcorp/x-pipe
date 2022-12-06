@@ -416,7 +416,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
 		Long clusterDbId = clusterMeta.getDbId();
 		for (ShardMeta shard : shards) {
-		    String sids = this.getSids(clusterDbId, shard.getDbId());
+		    String sids = this.getSrcSids(clusterDbId, shard.getDbId());
 			notifyApplierMasterChanged(clusterDbId, shard.getDbId(), getApplierMaster(clusterDbId, shard.getDbId()), sids);
 		}
 	}
