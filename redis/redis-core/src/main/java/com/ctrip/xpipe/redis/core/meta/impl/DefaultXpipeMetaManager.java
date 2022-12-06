@@ -837,7 +837,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		routes(srcDc, tag).forEach((routeMeta -> {
 			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
 		}));
-		logger.debug("[doChooseRoute] begin to choose route for dstDcs:{} with orgId:{} from clusterPrioritizedRoutes:{} and routes:{}",
+		logger.info("[doChooseRoute] begin to choose route for dstDcs:{} with orgId:{} from clusterPrioritizedRoutes:{} and routes:{}",
 				dstDcs, orgId, clusterPrioritizedRoutes, dstDcRouteMap);
 		if (dstDcRouteMap.isEmpty()) return chooseRoutes;
 
@@ -846,7 +846,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 
 			RouteMeta chooseRoute = chooseRoute(clusterId, dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()),
 					strategy, clusterPrioritizedRoutes);
-			logger.debug("[doChooseRoute] choose route {} for dstDc:{}", chooseRoute, dstDc);
+			logger.info("[doChooseRoute] choose route {} for dstDc:{}", chooseRoute, dstDc);
 			if (chooseRoute != null) chooseRoutes.put(dstDc.toLowerCase(), chooseRoute);
 		}
 		return chooseRoutes;
