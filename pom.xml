@@ -84,6 +84,7 @@
         <mysql-connector.version>5.1.38</mysql-connector.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
+        <herald.token.lib.version>1.5.0</herald.token.lib.version>
     </properties>
 
     <modules>
@@ -883,6 +884,11 @@
                 <groupId>joda-time</groupId>
                 <artifactId>joda-time</artifactId>
                 <version>${joda-time.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.sysdev</groupId>
+                <artifactId>herald-token-lib</artifactId>
+                <version>${herald.token.lib.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
