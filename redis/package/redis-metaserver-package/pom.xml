@@ -23,6 +23,20 @@
 				<configuration>
 					<mainClass>com.ctrip.xpipe.redis.meta.server.MetaServerApplication</mainClass>
 					<executable>true</executable>
+					<excludes>
+						<exclude>
+							<groupId>com.ctrip.framework.fireman</groupId>
+							<artifactId>fireman</artifactId>
+						</exclude>
+						<exclude>
+							<groupId>com.ctrip.framework</groupId>
+							<artifactId>vi</artifactId>
+						</exclude>
+						<exclusion>
+							<groupId>com.ctrip.infosec</groupId>
+							<artifactId>sso-client-new</artifactId>
+						</exclusion>
+					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
