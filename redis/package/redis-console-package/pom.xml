@@ -23,6 +23,12 @@
 				<configuration>
 					<mainClass>com.ctrip.xpipe.redis.console.App</mainClass>
 					<executable>true</executable>
+					<excludes>
+						<exclude>
+							<groupId>com.ctrip.framework</groupId>
+							<artifactId>vi</artifactId>
+						</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 			<plugin>

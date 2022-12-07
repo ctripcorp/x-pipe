@@ -84,6 +84,10 @@
                             <groupId>com.ctrip.framework.fireman</groupId>
                             <artifactId>fireman</artifactId>
                         </exclude>
+                        <exclude>
+                            <groupId>com.ctrip.framework</groupId>
+                            <artifactId>vi</artifactId>
+                        </exclude>
                     </excludes>
                 </configuration>
             </plugin>
