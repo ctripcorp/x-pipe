@@ -88,6 +88,14 @@
                             <groupId>com.ctrip.framework</groupId>
                             <artifactId>vi</artifactId>
                         </exclude>
+                        <exclusion>
+                            <groupId>com.ctrip.infosec</groupId>
+                            <artifactId>sso-client-new</artifactId>
+                        </exclusion>
+                        <exclude>
+                            <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
+                            <artifactId>emailservice</artifactId>
+                        </exclude>
                     </excludes>
                 </configuration>
             </plugin>
