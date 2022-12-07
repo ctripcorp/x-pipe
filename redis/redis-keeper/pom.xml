@@ -65,6 +65,12 @@
                 <dependency>
                     <groupId>com.ctrip.framework.xpipe</groupId>
                     <artifactId>ctrip-service</artifactId>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>com.ctrip.framework.fireman</groupId>
+                            <artifactId>fireman</artifactId>
+                        </exclusion>
+                    </exclusions>
                 </dependency>
             </dependencies>
         </profile>
