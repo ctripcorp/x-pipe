@@ -88,13 +88,13 @@
                             <groupId>com.ctrip.framework</groupId>
                             <artifactId>vi</artifactId>
                         </exclude>
-                        <exclusion>
+                        <exclude>
                             <groupId>com.ctrip.infosec</groupId>
                             <artifactId>sso-client-new</artifactId>
-                        </exclusion>
+                        </exclude>
                         <exclude>
-                            <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
-                            <artifactId>emailservice</artifactId>
+                            <groupId>com.ctrip.basebiz</groupId>
+                            <artifactId>accounts-mobile-request-filter</artifactId>
                         </exclude>
                     </excludes>
                 </configuration>
