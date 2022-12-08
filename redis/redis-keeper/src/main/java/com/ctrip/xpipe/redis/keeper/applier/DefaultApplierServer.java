@@ -62,7 +62,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     /* component */
 
     @InstanceDependency
-    public ApplierSequenceController sequence;
+    public ApplierSequenceController sequenceController;
 
     @InstanceDependency
     public ApplierLwmManager lwmManager;
@@ -131,7 +131,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser) throws Exception {
-        this.sequence = new DefaultSequenceController();
+        this.sequenceController = new DefaultSequenceController();
         this.lwmManager = new DefaultLwmManager();
         this.replication = new DefaultXsyncReplication();
         this.dispatcher = new DefaultCommandDispatcher();
