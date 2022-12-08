@@ -72,6 +72,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.gtid_received = gtidSet.clone();
         this.receivedSids = new HashSet<>();
         this.gtid_executed.set(gtidSet.clone());
+        this.rdbParser.reset();
     }
 
     @Override

@@ -6,13 +6,10 @@ import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
-import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -48,7 +45,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
                 applierMeta, leaderElectorManager, parser);
         server.initialize();
 
-        assertTrue(server.sequence.getLifecycleState().isInitialized());
+        assertTrue(server.sequenceController.getLifecycleState().isInitialized());
         assertTrue(server.lwmManager.getLifecycleState().isInitialized());
         assertTrue(server.replication.getLifecycleState().isInitialized());
 
@@ -56,14 +53,16 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertNotNull(server.parser);
 
         assertEquals(server.client, ((DefaultLwmManager) server.lwmManager).client);
-        assertEquals(server.lwmManager, ((DefaultSequenceController) server.sequence).lwmManager);
+        assertEquals(server.lwmManager, ((DefaultSequenceController) server.sequenceController).lwmManager);
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
+        assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
 
         assertEquals(server.gtid_executed, ((DefaultXsyncReplication) server.replication).gtid_executed);
         assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
         assertEquals(server.gtid_executed, ((DefaultLwmManager) server.lwmManager).gtid_executed);
 
-        assertEquals(server.stateThread, ((DefaultSequenceController) server.sequence).stateThread);
+        assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
+
 
         //server.client.close()
     }
