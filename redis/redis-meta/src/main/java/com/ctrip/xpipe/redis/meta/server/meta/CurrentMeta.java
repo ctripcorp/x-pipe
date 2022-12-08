@@ -515,7 +515,7 @@ public class CurrentMeta implements Releasable {
 			for (CurrentShardMeta currentShardMeta : clusterMetas.values()) {
 				for (RedisMeta redisMeta : ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas()) {
 					GtidSet gtidSet = new GtidSet(redisMeta.getGtid());
-					result = result == null? gtidSet: result.intersectionGtidSet(gtidSet);
+					result = result == null? gtidSet: result.retainAll(gtidSet);
 				}
 			}
 			return result;
