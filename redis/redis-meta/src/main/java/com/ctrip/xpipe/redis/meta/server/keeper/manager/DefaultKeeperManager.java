@@ -288,16 +288,21 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	 * for backup dc, keeper's master should not be a redis
 	 * because the current meta may delay, we need to make sure the relationship is correct*/
 	protected boolean isCurrentMetaKeeperMasterMatch(Long clusterDbId, Long shardDbId) {
+
+		Pair<String, Integer> master = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
+		if (master == null) {
+			return false;
+		}
+
 		if(metaCache.isCurrentDcPrimary(clusterDbId)) {
-			return isKeeperMasterRedis(clusterDbId, shardDbId);
+			return isKeeperMasterRedis(clusterDbId, shardDbId, master);
 		} else {
-			return !isKeeperMasterRedis(clusterDbId, shardDbId);
+			return !isKeeperMasterRedis(clusterDbId, shardDbId, master);
 		}
 	}
 
-	private boolean isKeeperMasterRedis(Long clusterDbId, Long shardDbId) {
+	private boolean isKeeperMasterRedis(Long clusterDbId, Long shardDbId, Pair<String, Integer> master) {
 		List<RedisMeta> redises = metaCache.getShardRedises(clusterDbId, shardDbId);
-		Pair<String, Integer> master = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		for (RedisMeta redis : redises) {
 			if (redis.getPort().equals(master.getValue()) && redis.getIp().equals(master.getKey())) {
 				return true;
