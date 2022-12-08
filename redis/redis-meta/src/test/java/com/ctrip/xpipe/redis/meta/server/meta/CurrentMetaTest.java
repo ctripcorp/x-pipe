@@ -323,12 +323,12 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	private void setRedisesSidsAndGtids(List<RedisMeta> redises) {
 
 		RedisMeta redis1 = redises.get(0);
-		redis1.setGtid("a1:1-10:15-20,b1:1-8");
-		redis1.setSid("a1,b1");
+		redis1.setGtid("a1:1-10:15-21,b2:1-7");
+		redis1.setSid("a1,b2");
 
 		RedisMeta redis2 = redises.get(1);
-		redis2.setGtid("a1:1-10:15-21,b2:1-7");
-		redis2.setSid("a1,b2");
+		redis2.setGtid("a1:1-10:15-20,b1:1-8");
+		redis2.setSid("a1,b1");
 	}
 }
 	
