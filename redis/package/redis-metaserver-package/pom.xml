@@ -32,10 +32,10 @@
 							<groupId>com.ctrip.framework</groupId>
 							<artifactId>vi</artifactId>
 						</exclude>
-						<exclusion>
+						<exclude>
 							<groupId>com.ctrip.infosec</groupId>
 							<artifactId>sso-client-new</artifactId>
-						</exclusion>
+						</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
