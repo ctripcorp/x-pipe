@@ -215,6 +215,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		if(!comparator.getRemoved().isEmpty()
 				|| !comparator.getMofified().isEmpty()) {
+			logger.info("[run][route][change]{}", comparator);
 			notifyObservers(comparator);
 		}
 	}
