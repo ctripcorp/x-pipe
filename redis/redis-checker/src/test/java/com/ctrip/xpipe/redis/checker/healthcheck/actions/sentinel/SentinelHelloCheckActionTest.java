@@ -357,7 +357,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
 
-        redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER).getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
+        redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER).getRedisSession().subscribeIfAbsent(new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
                 SentinelHello hello = SentinelHello.fromString(message);
@@ -368,7 +368,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             public void fail(Throwable e) {
                 logger.error("[sub-failed]", e);
             }
-        });
+        }, HELLO_CHANNEL);
         sleep(100);
     }
 

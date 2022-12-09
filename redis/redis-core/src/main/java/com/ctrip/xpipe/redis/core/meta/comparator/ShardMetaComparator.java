@@ -1,20 +1,22 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import com.ctrip.xpipe.redis.core.entity.Redis;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author wenchao.meng
  *
  * Sep 2, 2016
  */
-public class ShardMetaComparator extends AbstractMetaComparator<Redis>{
+public class ShardMetaComparator extends AbstractMetaComparator<InstanceNode>{
 
 	private ShardMeta current, future;
 
@@ -27,63 +29,76 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis>{
 	public void compare() {
 		configChanged = checkShallowChange(current, future);
 
-		List<Redis> currentAll =  getAll(current);
-		List<Redis> futureAll =  getAll(future);
+		List<InstanceNode> currentAll =  getAll(current);
+		List<InstanceNode> futureAll =  getAll(future);
 
-		Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll);
-		List<Redis> tAdded = subResult.getKey();
+		Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>> subResult = sub(futureAll, currentAll);
+		List<InstanceNode> tAdded = subResult.getKey();
 		added.addAll(tAdded);
 
-		List<Pair<Redis, Redis>> modified = subResult.getValue();
+		List<Pair<InstanceNode, InstanceNode>> modified = subResult.getValue();
 		compareConfigConfig(modified);
 		
-		List<Redis> tRemoved = sub(currentAll, futureAll).getKey();
+		List<InstanceNode> tRemoved = sub(currentAll, futureAll).getKey();
 		removed.addAll(tRemoved);
 	}
 
-	private void compareConfigConfig(List<Pair<Redis, Redis>> allModified) {
+	private void compareConfigConfig(List<Pair<InstanceNode, InstanceNode>> allModified) {
 		
-		for(Pair<Redis, Redis> pair : allModified){
-			Redis current = pair.getValue();
-			Redis future = pair.getKey();
+		for(Pair<InstanceNode, InstanceNode> pair : allModified){
+			InstanceNode current = pair.getValue();
+			InstanceNode future = pair.getKey();
 			if(current.equals(future)){
 				continue;
 			}
-			RedisComparator redisComparator = new RedisComparator(current, future);
-			redisComparator.compare();
-			modified.add(redisComparator);
+			InstanceNodeComparator instanceNodeComparator = new InstanceNodeComparator(current, future);
+			instanceNodeComparator.compare();
+			modified.add(instanceNodeComparator);
 		}
 		
 	}
 
-	private Pair<List<Redis>, List<Pair<Redis, Redis>>> sub(List<Redis> all1, List<Redis> all2) {
+	private Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>> sub(List<InstanceNode> all1, List<InstanceNode> all2) {
 		
-		List<Redis> subResult = new LinkedList<>();
-		List<Pair<Redis, Redis>> intersectResult = new LinkedList<>();
+		List<InstanceNode> subResult = new LinkedList<>();
+		List<Pair<InstanceNode, InstanceNode>> intersectResult = new LinkedList<>();
 		
-		for(Redis redis1 : all1){
+		for(InstanceNode instanceNode1 : all1){
 			
-			Redis redis2Equal = null;
-			for(Redis redis2 : all2){
-				if(MetaUtils.theSame(redis1, redis2)){
-					redis2Equal = redis2;
+			InstanceNode instanceNode2Equal = null;
+			for(InstanceNode instanceNode2 : all2){
+				if(instanceNodeTheSame(instanceNode1, instanceNode2)){
+					instanceNode2Equal = instanceNode2;
 					break;
 				}
 			}
-			if(redis2Equal == null){
-				subResult.add(redis1);
+			if(instanceNode2Equal == null){
+				subResult.add(instanceNode1);
 			}else{
-				intersectResult.add(new Pair<>(redis1, redis2Equal));
+				intersectResult.add(new Pair<>(instanceNode1, instanceNode2Equal));
 			}
 		}
-		return new Pair<List<Redis>, List<Pair<Redis, Redis>>>(subResult, intersectResult);
+		return new Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>>(subResult, intersectResult);
 	}
 
-	private List<Redis> getAll(ShardMeta shardMeta) {
+	private boolean instanceNodeTheSame(InstanceNode instanceNode1, InstanceNode instanceNode2) {
+		if (!MetaUtils.theSame(instanceNode1, instanceNode2)) {
+			return false;
+		}
+		if (instanceNode1 instanceof ApplierMeta && instanceNode2 instanceof ApplierMeta) {
+			return Objects.equals(((ApplierMeta) instanceNode1).getTargetClusterName(),
+					((ApplierMeta) instanceNode2).getTargetClusterName());
+		}
+		return true;
+	}
+
+	private List<InstanceNode> getAll(ShardMeta shardMeta) {
 		
-		List<Redis> result = new LinkedList<>();
+		List<InstanceNode> result = new LinkedList<>();
 		result.addAll(shardMeta.getRedises());
 		result.addAll(shardMeta.getKeepers());
+		result.addAll(shardMeta.getAppliers());
+
 		return result;
 	}
 	

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.integratedtest.full;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServer;
@@ -30,7 +31,7 @@ public abstract class AbstractIntegratedTestTemplate extends AbstractFullIntegra
 		Assert.assertEquals(SERVER_ROLE.SLAVE, role);
 
 		logger.info(remarkableMessage("[testRedisFailover][promote]{}:{})"), slave.getIp(), slave.getPort());
-		String clusterId = redisMaster.parent().parent().getId();
+		String clusterId = ((ClusterMeta) redisMaster.parent().parent()).getId();
 		String shardId = redisMaster.parent().getId();
 		DefaultMetaServer metaServer = getDcInfos().get(activeDc().getId()).getApplicationContext().getBean(DefaultMetaServer.class);
 //		metaServer.promoteRedisMaster(clusterId, shardId, slave.getIp(), slave.getPort());

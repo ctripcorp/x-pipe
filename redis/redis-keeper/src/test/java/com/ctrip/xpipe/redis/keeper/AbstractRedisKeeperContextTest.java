@@ -4,6 +4,11 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
@@ -116,7 +121,14 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), getResourceManager());
+				createkeepersMonitorManager(), getResourceManager(), createRedisOpParser());
+	}
+
+	protected RedisOpParser createRedisOpParser() {
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		RedisOpParser parser = new GeneralRedisOpParser(redisOpParserManager);
+		return parser;
 	}
 
 	protected KeeperResourceManager getResourceManager() {

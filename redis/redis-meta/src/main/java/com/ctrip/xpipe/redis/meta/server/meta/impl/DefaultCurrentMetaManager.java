@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
@@ -28,6 +29,7 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -191,6 +193,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 		else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
 			refreshKeeperMaster(clusterMeta);
+			refreshApplierMaster(clusterMeta);
 		}
 	}
 
@@ -402,13 +405,21 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void refreshKeeperMaster(ClusterMeta clusterMeta) {
-		Collection<ShardMeta> shards = clusterMeta.getShards().values();
+		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
 		Long clusterDbId = clusterMeta.getDbId();
 		for (ShardMeta shard : shards) {
 			notifyKeeperMasterChanged(clusterDbId, shard.getDbId(), getKeeperMaster(clusterDbId, shard.getDbId()));
 		}
 	}
 
+	protected void refreshApplierMaster(ClusterMeta clusterMeta) {
+		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
+		Long clusterDbId = clusterMeta.getDbId();
+		for (ShardMeta shard : shards) {
+		    String sids = this.getSrcSids(clusterDbId, shard.getDbId());
+			notifyApplierMasterChanged(clusterDbId, shard.getDbId(), getApplierMaster(clusterDbId, shard.getDbId()), sids);
+		}
+	}
 	
 	@Override
 	public boolean hasCluster(Long clusterDbId) {
@@ -435,6 +446,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return currentMeta.getKeeperMaster(clusterDbId, shardDbId);
 	}
 
+	@Override
+	public Pair<String, Integer> getApplierMaster(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getApplierMaster(clusterDbId, shardDbId);
+	}
 
 	@Override
 	public List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId) {
@@ -442,10 +457,25 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getSurviveAppliers(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getRedises(clusterDbId, shardDbId);
+	}
+
+	@Override
 	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
 		return currentMeta.getKeeperActive(clusterDbId, shardDbId);
 	}
-	
+
+	@Override
+	public ApplierMeta getApplierActive(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getApplierActive(clusterDbId, shardDbId);
+	}
+
 	@Override
 	public String getCurrentMetaDesc() {
 	
@@ -459,9 +489,15 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected Set<Integer> getCurrentSlots() {
 		return currentSlots;
 	}
-	
-	
+
+
 	/*******************update dynamic info*************************/
+
+	@Override
+	public void setRedises(Long clusterDbId, Long shardDbId, List<RedisMeta> redises) {
+		currentMeta.setRedises(clusterDbId, shardDbId, redises);
+	}
+
 	@Override
 	public boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, activeKeeper);
@@ -482,6 +518,27 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public void setSurviveAppliersAndNotify(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids) {
+		currentMeta.setSurviveAppliers(clusterDbId, shardDbId, surviveAppliers, activeApplier);
+		notifyApplierActiveElected(clusterDbId, shardDbId, activeApplier, sids);
+	}
+
+	@Override
+	public GtidSet getGtidSet(Long clusterDbId, String srcSids) {
+		return currentMeta.getGtidSet(clusterDbId, srcSids);
+	}
+
+	@Override
+	public String getSids(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getSids(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public String getSrcSids(Long clusterDbId, Long shardDbId) {
+	    return currentMeta.getSrcSids(clusterDbId, shardDbId);
+	}
+
+	@Override
 	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
 		
 		
@@ -496,6 +553,29 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public void setApplierMasterAndNotify(Long clusterDbId, Long shardDbId, String ip, int port, String sids) {
+
+		Pair<String, Integer> applierMaster = new Pair<String, Integer>(ip, port);
+		if(currentMeta.setApplierMaster(clusterDbId, shardDbId, applierMaster)){
+			logger.info("[setApplierMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			notifyApplierMasterChanged(clusterDbId, shardDbId, applierMaster, sids);
+		}else{
+			logger.info("[setApplierMaster][applier master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+		}
+
+	}
+
+	@Override
+	public void setSrcSidsAndNotify(Long clusterDbId, Long shardDbId, String sids) {
+		if (currentMeta.setSrcSids(clusterDbId, shardDbId, sids)) {
+			logger.info("[setSrcSids]cluster_{},shard_{},{}", clusterDbId, shardDbId, sids);
+			notifyApplierMasterChanged(clusterDbId, shardDbId, currentMeta.getApplierMaster(clusterDbId, shardDbId), sids);
+		} else {
+			logger.info("[setSrcSids][srcSids not changed!]cluster_{},shard_{},{}", clusterDbId, shardDbId, sids);
+		}
+	}
+
+	@Override
 	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String addr) {
 		
 		logger.info("[setKeeperMaster]cluster_{},shard_{},{}", clusterDbId, shardDbId, addr);
@@ -504,8 +584,13 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public boolean watchIfNotWatched(Long clusterDbId, Long shardDbId) {
-		return currentMeta.watchIfNotWatched(clusterDbId, shardDbId);
+	public boolean watchKeeperIfNotWatched(Long clusterDbId, Long shardDbId) {
+		return currentMeta.watchKeeperIfNotWatched(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public boolean watchApplierIfNotWatched(Long clusterDbId, Long shardDbId) {
+		return currentMeta.watchApplierIfNotWatched(clusterDbId, shardDbId);
 	}
 
 	@Override
@@ -522,7 +607,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@Override
 	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId) {
-		return currentMeta.getCurrentMaster(clusterDbId, shardDbId);
+		List<KeeperMeta> keeperMetaList = dcMetaCache.getShardKeepers(clusterDbId, shardDbId);
+		boolean hasKeeperMeta = keeperMetaList != null && !keeperMetaList.isEmpty();
+		return currentMeta.getCurrentMaster(clusterDbId, shardDbId, hasKeeperMeta);
 	}
 
 	@Override
@@ -593,6 +680,17 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
+	private void notifyApplierActiveElected(Long clusterDbId, Long shardDbId, ApplierMeta activeApplier, String sids) {
+
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.applierActiveElected(clusterDbId, shardDbId, activeApplier, sids);
+			} catch (Exception e) {
+				logger.error("[notifyApplierActiveElected]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + activeApplier + ",sids_" + sids, e);
+			}
+		}
+	}
+
 	private void notifyKeeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> keeperMaster) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
@@ -602,8 +700,17 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}
 		}
 	}
-	
-	
+
+	private void notifyApplierMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> applierMaster, String sids) {
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.applierMasterChanged(clusterDbId, shardDbId, applierMaster, sids);
+			} catch (Exception e) {
+				logger.error("[notifyApplierMasterChanged]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + applierMaster + ",sids_" + sids, e);
+			}
+		}
+	}
+
 	public void setSlotManager(SlotManager slotManager) {
 		this.slotManager = slotManager;
 	}

@@ -138,4 +138,19 @@ public class XPipeMetaVisitor implements IVisitor{
     public void visitZkServer(ZkServerMeta zkServer) {
 
     }
+
+    @Override
+    public void visitApplier(ApplierMeta applier) {
+
+    }
+
+    @Override
+    public void visitApplierContainer(ApplierContainerMeta applierContainer) {
+
+    }
+
+    @Override
+    public void visitSource(SourceMeta source) {
+
+    }
 }

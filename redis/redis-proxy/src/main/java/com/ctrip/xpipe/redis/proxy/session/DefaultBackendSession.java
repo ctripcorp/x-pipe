@@ -77,12 +77,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             return;
         }
 
-        try {
-            this.endpoint = selector.nextHop();
-        } catch (Exception e) {
+        endpoint = selector.nextHop();
+        if (endpoint == null) {
             setSessionState(new SessionClosed(this));
-            logger.error("[connect] select nextHop error", e);
-            throw e;
+            logger.error("[connect] select nextHop error");
+            return;
         }
         ChannelFuture connectionFuture = initChannel(endpoint);
         connectionFuture.addListener(new ChannelFutureListener() {

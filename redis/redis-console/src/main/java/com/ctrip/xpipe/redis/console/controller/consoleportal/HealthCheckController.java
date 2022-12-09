@@ -2,12 +2,11 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.ImmutableMap;
@@ -19,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -42,7 +39,8 @@ public class HealthCheckController extends AbstractConsoleController {
     @Autowired
     private DefaultCrossMasterDelayService crossMasterDelayService;
 
-    private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
+    private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d&var-delayType=%s";
+    private static final String HETERO_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-srcShardId=%d&var-delayType=%s";
     private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";
     private static final String OUTCOMING_TRAFFIC_TO_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
     private static final String INCOMING_TRAFFIC_FROM_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
@@ -50,6 +48,11 @@ public class HealthCheckController extends AbstractConsoleController {
     private static final String PEER_SYNC_PARTIAL_TEMPLATE = "&panelId=%d&var-address=%s:%d";
     
     private static final String ENDCODE_TYPE = "UTF-8";
+
+    @RequestMapping(value = "/shard/delay/{clusterId}/{shardId}/{shardDbId}", method = RequestMethod.GET)
+    public Map<String, Long> getShardDelayMillis(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable Long shardDbId) {
+        return ImmutableMap.of("delay", delayService.getShardDelay(clusterId, shardId, shardDbId));
+    }
 
     @RequestMapping(value = "/redis/health/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Map<String, Boolean> isRedisHealth(@PathVariable String redisIp, @PathVariable int redisPort) {
@@ -89,13 +92,24 @@ public class HealthCheckController extends AbstractConsoleController {
         return url;
     }
     
-    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}/{delayType}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort, @PathVariable String delayType) {
         String url = "";
         try {
-             url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort));
+             url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort, delayType));
         } catch (Exception e) {
             logger.error("[getHickwallUrl]", e);
+        }
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/hetero/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/{srcShardId}/{delayType}", method = RequestMethod.GET)
+    public Map<String, String> getHeteroDelayHickwallAddress(@PathVariable String clusterName, @PathVariable int srcShardId, @PathVariable String delayType) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(HETERO_DELAY_TEMPLATE, info.getHeteroDelayPanelId(), clusterName, srcShardId, delayType));
+        } catch (Exception e) {
+            logger.error("[getHeteroDelayHickwallAddress]", e);
         }
         return ImmutableMap.of("addr", url);
     }

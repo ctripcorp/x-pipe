@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-
 import java.io.IOException;
 
-public interface CommandReader {
+public interface CommandReader<R> {
+
+	R read() throws IOException;
+
+	CommandFile getCurCmdFile();
+
+	long position() throws IOException;
+
+	void flushed(R cmdContent);
 
 	void close() throws IOException;
-
-	ReferenceFileRegion read() throws IOException;
-
-	void flushed(ReferenceFileRegion referenceFileRegion);
-
 }

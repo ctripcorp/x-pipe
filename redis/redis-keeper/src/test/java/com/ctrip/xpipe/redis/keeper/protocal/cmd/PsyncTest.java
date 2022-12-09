@@ -35,7 +35,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 	private String masterId = randomString(40);
 	private Long masterOffset;
-	private String rdbContent = randomString();
+	private String rdbContent = "REDIS0009" + '\0' + randomString();
 	private String commandContent = randomString();
 	
 	private boolean isPartial = false;

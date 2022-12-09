@@ -38,7 +38,7 @@ public class AppTest extends AbstractProxyIntegrationTest {
     }
 
     @Test
-    public void start8992_8993() throws Exception {
+    public void start_8992_1443() throws Exception {
         startFirstProxy();
         waitForAnyKey();
     }

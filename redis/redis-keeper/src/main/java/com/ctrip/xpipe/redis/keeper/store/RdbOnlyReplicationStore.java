@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author marsqing
@@ -101,6 +103,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -162,7 +169,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public boolean fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
+	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -182,7 +189,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException {
+	public GtidSet getBeginGtidSet() throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public GtidSet getEndGtidSet() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -193,6 +205,21 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
 		throw new UnsupportedOperationException();
 	}
 

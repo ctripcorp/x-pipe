@@ -35,4 +35,6 @@ public interface RedisClientProtocol<T> extends RedisProtocol{
 	T getPayload();
 	
 	boolean supportes(Class<?> clazz);
+
+	void reset();
 }

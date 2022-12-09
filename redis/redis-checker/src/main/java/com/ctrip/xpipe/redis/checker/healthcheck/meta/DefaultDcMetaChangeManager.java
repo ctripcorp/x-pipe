@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -161,21 +162,34 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         this.clustersToDelete.add(removed);
     }
 
-    private boolean isInterestedInCluster(ClusterMeta cluster) {
+    protected boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
-            return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
-        }
+        boolean result = false;
+        if (dcClusterIsMasterType(clusterType, cluster))
+            result = clusterDcIsCurrentDc(cluster);
+        if (hasSingleActiveDc(clusterType))
+            result = result || cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         if (clusterType.supportMultiActiveDC()) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
-            return Arrays.asList(dcs).contains(currentDcId.toLowerCase());
+            result = result || Arrays.asList(dcs).contains(currentDcId.toLowerCase());
         }
 
-        return true;
+        return result;
     }
 
+    private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
+        return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
+    }
+
+    private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
+        return clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(clusterMeta.getDcGroupType());
+    }
+
+    private boolean hasSingleActiveDc(ClusterType clusterType) {
+        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
+    }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override
@@ -210,5 +224,4 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             visitRemoved(cluster);
         }
     }
-
 }

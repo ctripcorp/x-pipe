@@ -13,4 +13,9 @@ public class DelayActionContext extends AbstractActionContext<Long, RedisHealthC
     public DelayActionContext(RedisHealthCheckInstance instance, Long delay) {
         super(instance, delay);
     }
+
+    public String getDelayType() {
+        return "default";
+    }
+
 }

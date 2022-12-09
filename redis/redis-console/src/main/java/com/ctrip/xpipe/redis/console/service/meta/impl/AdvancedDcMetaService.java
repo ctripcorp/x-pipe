@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +53,9 @@ public class AdvancedDcMetaService implements DcMetaService {
     private ZoneService zoneService;
 
     @Autowired
+    private ReplDirectionService replDirectionService;
+
+    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -61,6 +65,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     private KeeperContainerService keeperContainerService;
 
     @Autowired
+    private AppliercontainerService appliercontainerService;
+
+    @Autowired
+    private ApplierService applierService;
+
+    @Autowired
     private AzService azService;
 
     @Autowired
@@ -68,6 +78,9 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     private KeepercontainerMetaService keepercontainerMetaService;
+
+    @Autowired
+    private AppliercontainerMetaService appliercontainerMetaService;
 
     @Autowired
     private RedisMetaService redisMetaService;
@@ -109,19 +122,29 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) {
-        DcTbl dcTbl = dcService.find(dcName);
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        DcTbl dcTbl = null;
+        for (DcTbl dt : dcTblList) {
+            if (dcName.equalsIgnoreCase(dt.getDcName())) {
+                dcTbl = dt;
+            }
+        }
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
         DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+        dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
 
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, factory, consoleConfig);
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService, dcClusterService,
+                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
@@ -131,6 +154,39 @@ public class AdvancedDcMetaService implements DcMetaService {
         }
 
         return dcMeta;
+    }
+
+    @Override
+    public Map<String, DcMeta> getAllDcMetas() {
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        ParallelCommandChain chain = new ParallelCommandChain(executors, false);
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+
+        for (DcTbl dcTbl : dcTblList) {
+            ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
+
+            DcMeta dcMeta = new DcMeta().setId(dcTbl.getDcName()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+            dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
+
+            chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
+        }
+
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
+                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                applierService, factory, consoleConfig);
+        chain.add(retry3TimesUntilSuccess(builder));
+
+        try {
+            chain.execute().get();
+        } catch (Exception e) {
+            logger.error("[queryAllDcMetas] ", e);
+        }
+
+        return dcMetaMap;
     }
 
     @VisibleForTesting
@@ -237,6 +293,37 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doReset() {
             dcMeta.getKeeperContainers().clear();
+        }
+
+        @Override
+        public String getName() {
+            return this.getClass().getSimpleName();
+        }
+    }
+
+    class GetAllApplierContainerCommand extends AbstractCommand<Void> {
+
+        private DcMeta dcMeta;
+
+        public GetAllApplierContainerCommand(DcMeta dcMeta) {
+            this.dcMeta = dcMeta;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            try {
+                List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainerTblsByDc(dcMeta.getId());
+                appliercontainers.forEach(appliercontainer -> dcMeta.addApplierContainer(
+                        appliercontainerMetaService.encodeAppliercontainerMeta(appliercontainer, dcMeta)));
+                future().setSuccess();
+            } catch (Throwable th) {
+                future().setFailure(th);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcMeta.getApplierContainers().clear();
         }
 
         @Override

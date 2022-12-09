@@ -16,6 +16,7 @@ public class ShardModel implements java.io.Serializable{
 	
 	private List<RedisTbl> m_keepers = new ArrayList<RedisTbl>();
 	private List<RedisTbl> m_redises = new ArrayList<RedisTbl>();
+	private List<ApplierTbl> m_appliers = new ArrayList<ApplierTbl>();
 	
 	/** for creation **/
 	private Map<Long, SentinelGroupModel> sentinels;
@@ -36,6 +37,25 @@ public class ShardModel implements java.io.Serializable{
 	public ShardModel addRedis(RedisTbl redis) {
 		m_redises.add(redis);
 		return this;
+	}
+
+	public ShardModel addApplier(ApplierTbl applier) {
+		m_appliers.add(applier);
+		return this;
+	}
+
+	public ShardModel setKeepers(List<RedisTbl> keepers) {
+		this.m_keepers = keepers;
+		return this;
+	}
+
+	public ShardModel setAppliers(List<ApplierTbl> appliers) {
+		this.m_appliers = appliers;
+		return this;
+	}
+
+	public List<ApplierTbl> getAppliers() {
+		return m_appliers;
 	}
 	
 	public List<RedisTbl> getKeepers() {
@@ -64,6 +84,6 @@ public class ShardModel implements java.io.Serializable{
 
 	@Override
 	public String toString() {
-		return String.format("shard:%s, keepers:%s, redises:%s", shardTbl, m_keepers, m_redises);
+		return String.format("shard:%s, keepers:%s, redises:%s, appliers:%s", shardTbl, m_keepers, m_redises, m_appliers);
 	}
 }

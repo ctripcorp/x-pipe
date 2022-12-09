@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,12 +17,15 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
@@ -33,6 +40,10 @@ public class MetaUpdateTest2 {
     @Mock
     private KeeperAdvancedService keeperAdvancedService;
 
+    @Mock
+    private DcClusterService dcClusterService;
+
+    @Spy
     @InjectMocks
     private MetaUpdate metaUpdate = new MetaUpdate();
 
@@ -64,7 +75,7 @@ public class MetaUpdateTest2 {
 
         when(redisService.insertKeepers(dc, cluster, shard, keepers)).thenReturn(2);
 
-        Assert.assertEquals(2, metaUpdate.addKeepers(dc, cluster, new ShardTbl().setShardName(shard)));
+        Assert.assertEquals(2, metaUpdate.doAddKeepers(dc, cluster, new ShardTbl().setShardName(shard), dc));
     }
 
     @Test
@@ -83,9 +94,29 @@ public class MetaUpdateTest2 {
 
         when(redisService.insertKeepers(anyString(), anyString(), anyString(), eq(keepers)))
                 .thenReturn(2 - keepers.size());
-        Assert.assertEquals(1, metaUpdate.addKeepers(dc, cluster, new ShardTbl().setShardName(shard)));
+        Assert.assertEquals(1, metaUpdate.doAddKeepers(dc, cluster, new ShardTbl().setShardName(shard), dc));
 
 
+    }
+
+    @Test
+    public void addKeepersWithIsDRMasterDc() throws Exception {
+        ClusterTbl clusterTbl = mock(ClusterTbl.class);
+        when(clusterTbl.getClusterName()).thenReturn("cluster-test");
+        // TODO: 2022/10/10 remove hetero
+//        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
+        when(clusterTbl.getId()).thenReturn(1L);
+        DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
+        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
+        when(dcClusterTbl.getDcId()).thenReturn(2L);
+        when(dcClusterService.find("SHAJQ", "cluster-test")).thenReturn(dcClusterTbl);
+        ShardTbl shardTbl = mock(ShardTbl.class);
+        RedisCreateInfo redisCreateInfo = mock(RedisCreateInfo.class);
+        when(redisCreateInfo.getDcId()).thenReturn("SHAJQ");
+
+        metaUpdate.addKeepers(clusterTbl, shardTbl, Lists.newArrayList(redisCreateInfo));
+        verify(metaUpdate).doAddKeepers("SHAJQ", "cluster-test", shardTbl, "SHAJQ");
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)

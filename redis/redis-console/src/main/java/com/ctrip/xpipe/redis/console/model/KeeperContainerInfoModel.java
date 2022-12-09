@@ -9,6 +9,7 @@ public class KeeperContainerInfoModel implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private long id;
+    private boolean active;
     private HostPort addr;
     private String dcName;
     private String orgName;
@@ -83,6 +84,15 @@ public class KeeperContainerInfoModel implements Serializable {
 
     public void setAzName(String azName) {
         this.azName = azName;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public KeeperContainerInfoModel setActive(boolean active) {
+        this.active = active;
+        return this;
     }
 
     @Override

@@ -63,7 +63,7 @@ public class KeeperTransMeta {
 	public int hashCode() {
 		return Objects.hash(clusterDbId, shardDbId, keeperMeta);
 	}
-	
+
 	@Override
 	public String toString() {
 		return String.format("[%d,%d-%s:%d]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());

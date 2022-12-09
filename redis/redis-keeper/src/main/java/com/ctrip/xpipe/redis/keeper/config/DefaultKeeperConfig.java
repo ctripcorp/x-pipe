@@ -21,7 +21,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_REPLICATION_STORE_COMMANDFILE_NUM_KEEP = "replicationstore.commandfile.num.keep";
 	public static final String KEY_REPLICATION_STORE_MINITIME_GC_AFTERCREATE = "replicationstore.mintime.gc.aftercreate";
 	public static final String KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.commands.to.transfer";
+	public static final String KEY_REPLICATION_STORE_MAX_LWM_DISTANCE_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.lwm.distance.to.transfer";
 	public static final String KEY_COMMAND_READER_FLYING_THRESHOLD = "command.reader.flying.threshold";
+	private static final String KEY_COMMAND_INDEX_BYTES_INTERVAL = "command.index.bytes.interval";
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
 	public static final String KEY_DELAY_LOG_LIMIT_MICRO = "monitor.delay.log.limit.micro";
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "monitor.traffic.report.interval";
@@ -100,6 +102,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public long getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb() {
+		return getLongProperty(KEY_REPLICATION_STORE_MAX_LWM_DISTANCE_TO_TRANSFER_BEFORE_CREATE_RDB, 100000L);
+	}
+
+	@Override
 	public int getRdbDumpMinIntervalMilli() {
 		return getIntProperty(KEY_RDB_DUMP_MIN_INTERVAL, 3600000);
 	}
@@ -113,6 +120,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getCommandReaderFlyingThreshold() {
 		return getLongProperty(KEY_COMMAND_READER_FLYING_THRESHOLD, (long) (1 << 15));
+	}
+
+	@Override
+	public int getCommandIndexBytesInterval() {
+		return getIntProperty(KEY_COMMAND_INDEX_BYTES_INTERVAL, 50 * 1024 * 1024);
 	}
 
 	@Override

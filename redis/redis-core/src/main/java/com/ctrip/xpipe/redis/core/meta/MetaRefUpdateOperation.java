@@ -31,4 +31,6 @@ public interface MetaRefUpdateOperation extends ReadWriteSafe {
     default void setSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviceKeepers) { write(()->doSetSurviveKeepers(dcId, clusterId, shardId, surviceKeepers)); }
     void doSetSurviveKeepers(String dcId, String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 
+    default void setRedisGtidAndSids(String dcId, String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids) { write(()->doSetRedisGtidAndSids(dcId, clusterId, shardId, redisMeta, gtid, sids)); }
+    void doSetRedisGtidAndSids(String dc, String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids);
 }

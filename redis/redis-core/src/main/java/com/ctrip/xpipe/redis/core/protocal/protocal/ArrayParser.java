@@ -157,6 +157,16 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 		return clazz.isArray();
 	}
 
+	@Override
+	public void reset() {
+		super.reset();
+		arrayState = ARRAY_STATE.READ_SIZE;
+		resultArray = null;
+		arraySize = 0;
+		currentIndex = 0;
+		currentParser  = null;
+	}
+
 	public ArrayParser setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {
 		this.inOutPayloadFactory = inOutPayloadFactory;
 		return this;

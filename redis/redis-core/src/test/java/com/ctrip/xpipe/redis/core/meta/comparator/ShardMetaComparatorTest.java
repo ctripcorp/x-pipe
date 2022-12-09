@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import org.junit.Assert;
 import org.junit.Before;
@@ -43,6 +42,22 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertEquals(0, comparator.getMofified().size());
 	}
 
+	@Test
+	public void testApplierRemoved(){
+		//equal
+		ApplierMeta removed = differentApplier(current);
+		current.addApplier(removed);
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(0, comparator.getAdded().size());
+
+		Assert.assertEquals(1, comparator.getRemoved().size());
+		Assert.assertEquals(removed, comparator.getRemoved().toArray()[0]);
+
+		Assert.assertEquals(0, comparator.getMofified().size());
+	}
 
 	@Test
 	public void testAdd(){
@@ -58,8 +73,64 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertEquals(0, comparator.getRemoved().size());
 		Assert.assertEquals(0, comparator.getMofified().size());
 	}
-	
 
+	@Test
+	public void testApplierAdded(){
+		//equal
+        ApplierMeta added = differentApplier(current);
+		future.addApplier(added);
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(1, comparator.getAdded().size());
+		Assert.assertEquals(added, comparator.getAdded().toArray()[0]);
+
+		Assert.assertEquals(0, comparator.getRemoved().size());
+		Assert.assertEquals(0, comparator.getMofified().size());
+	}
+
+	@Test
+	public void testApplierSameTargetClusterName() {
+		ApplierMeta removed = differentApplier(current);
+		removed.setTargetClusterName("newCluster");
+		current.addApplier(removed);
+
+		ApplierMeta added = differentApplier(future);
+		added.setIp(removed.getIp());
+		added.setPort(removed.getPort());
+		added.setTargetClusterName("newCluster");
+		future.addApplier(added);
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(0, comparator.getAdded().size());
+		Assert.assertEquals(0, comparator.getRemoved().size());
+		Assert.assertEquals(0, comparator.getMofified().size());
+	}
+
+	@Test
+	public void testApplierDifferentTargetClusterName() {
+		ApplierMeta removed = differentApplier(current);
+		current.addApplier(removed);
+
+		ApplierMeta added = differentApplier(future);
+		added.setIp(removed.getIp());
+		added.setPort(removed.getPort());
+		added.setTargetClusterName("newCluster");
+		future.addApplier(added);
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(1, comparator.getAdded().size());
+
+		Assert.assertEquals(1, comparator.getRemoved().size());
+		Assert.assertEquals(removed, comparator.getRemoved().toArray()[0]);
+
+		Assert.assertEquals(0, comparator.getMofified().size());
+	}
 
 	@Test
 	public void testEquals(){

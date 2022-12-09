@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.StringInOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,7 @@ public class CommandBulkStringParser extends AbstractBulkStringParser {
                 if (data1 == '\n') {
                     commandState = COMMAND_STATE.END;
                 } else {
-                    throw new RedisRuntimeException(String.format("command eof not '\\r', but: %d, %c", data1, data1));
+                    throw new RedisRuntimeException(String.format("command eof not '\\n', but: %d, %c", data1, data1));
                 }
             case END:
                 return new CommandBulkStringParser(payload);

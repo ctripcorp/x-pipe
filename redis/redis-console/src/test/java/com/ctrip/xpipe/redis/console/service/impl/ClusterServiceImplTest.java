@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -63,6 +65,15 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private ApplierService applierService;
+
+    @Autowired
+    private ReplDirectionService replDirectionService;
+
     @Test
     public void testCreateOneWayCluster(){
 
@@ -78,8 +89,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterAdminEmails("test@ctrip.com")
                 .setClusterDescription(randomString(20))
         );
-
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters);
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -97,13 +113,161 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDescription(randomString(20))
                 .setClusterDesignatedRouteIds("1,2")
         );
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters1 = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters1.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters1);
         clusterService.createCluster(clusterModel);
         clusterTbl = clusterService.find(clusterName2);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
 
         Assert.assertFalse(dcTbls.isEmpty());
         dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName2)));
+
+    }
+
+    @Test
+    public void testCreateHeteroCluster() {
+        String clusterName = randomString(10);
+        List<DcTbl> dcTbls = dcService.findAllDcs();
+
+        ClusterModel clusterModel = new ClusterModel();
+
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setActivedcId(1)
+                .setClusterName(clusterName)
+                // TODO: 2022/10/10 remove hetero
+//                .setClusterType(ClusterType.HETERO.toString())
+                .setClusterType(ClusterType.ONE_WAY.toString())
+                .setClusterAdminEmails("test@1111.com")
+                .setClusterDescription(randomString(20))
+        );
+
+
+        ShardModel shard1 = new ShardModel();
+        shard1.setShardTbl(new ShardTbl().setShardName(clusterName + "_1").setSetinelMonitorName(clusterName + "_1"));
+        ShardModel shard2 = new ShardModel();
+        shard2.setShardTbl(new ShardTbl().setShardName(clusterName + "_2").setSetinelMonitorName(clusterName + "_2"));
+        ShardModel shard3 = new ShardModel();
+        shard3.setShardTbl(new ShardTbl().setShardName(clusterName + "_3").setSetinelMonitorName(clusterName + "_3"));
+        ShardModel shard4 = new ShardModel();
+        shard4.setShardTbl(new ShardTbl().setShardName(clusterName + "_4").setSetinelMonitorName(clusterName + "_4"));
+        ShardModel shard5 = new ShardModel();
+        shard5.setShardTbl(new ShardTbl().setShardName(clusterName + "_5").setSetinelMonitorName(clusterName + "_5"));
+
+        DcModel jq = new DcModel();
+        jq.setDc_name("jq");
+        DcClusterModel jqDcCluster = new DcClusterModel().setDc(jq)
+                                            .setDcCluster(new DcClusterTbl().setGroupName("jq").setGroupType(DcGroupType.DR_MASTER.toString()))
+                                            .setShards(Lists.newArrayList(shard1, shard2, shard3));
+        DcModel oy = new DcModel();
+        oy.setDc_name("oy");
+        DcClusterModel oyDcCluster = new DcClusterModel().setDc(oy)
+                .setDcCluster(new DcClusterTbl().setGroupName("oy").setGroupType(DcGroupType.DR_MASTER.toString()))
+                .setShards(Lists.newArrayList(shard1, shard2, shard3));
+
+        DcModel fra = new DcModel();
+        fra.setDc_name("fra");
+        DcClusterModel fraDcCluster = new DcClusterModel().setDc(fra)
+                .setDcCluster(new DcClusterTbl().setGroupName("fra").setGroupType(DcGroupType.MASTER.toString()))
+                .setShards(Lists.newArrayList(shard4, shard5));
+        clusterModel.setDcClusters(Lists.newArrayList(jqDcCluster, oyDcCluster, fraDcCluster));
+
+        ReplDirectionInfoModel replDirectionInfoModel1 = new ReplDirectionInfoModel().setClusterName(clusterName)
+                                                            .setSrcDcName("jq").setFromDcName("jq").setToDcName("oy");
+        ReplDirectionInfoModel replDirectionInfoModel2 = new ReplDirectionInfoModel().setClusterName(clusterName)
+                .setSrcDcName("jq").setFromDcName("jq").setToDcName("fra");
+        clusterModel.setReplDirections(Lists.newArrayList(replDirectionInfoModel1, replDirectionInfoModel2));
+
+        clusterService.createCluster(clusterModel);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertTrue(clusterTbl.isIsXpipeInterested());
+
+        Assert.assertFalse(dcTbls.isEmpty());
+        dcTbls.forEach(dcTbl -> {
+            DcClusterTbl dcClusterTbl = dcClusterService.find(dcTbl.getDcName(), clusterName);
+            Assert.assertNotNull(dcClusterTbl);
+
+        });
+        DcClusterTbl dcClusterTbl = dcClusterService.find("jq", clusterName);
+        Assert.assertNotNull(dcClusterTbl);
+        Assert.assertEquals(jqDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl.getDcClusterId()).size());
+
+        DcClusterTbl dcClusterTbl2 = dcClusterService.find("oy", clusterName);
+        Assert.assertNotNull(dcClusterTbl2);
+        Assert.assertEquals(oyDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl2.getDcClusterId()).size());
+
+        DcClusterTbl dcClusterTbl3 = dcClusterService.find("fra", clusterName);
+        Assert.assertNotNull(dcClusterTbl3);
+        Assert.assertEquals(fraDcCluster.getShards().size(), dcClusterShardService.findAllByDcCluster(dcClusterTbl3.getDcClusterId()).size());
+    }
+
+    @Test
+    public void testDeleteHeteroCluster() {
+        String heteroClusterName = "hetero-cluster";
+        long heteroClusterId = 7;
+        String shard1 = "hetero-cluster_1";
+        String shard2 = "hetero-cluster_oy_1";
+        String shard4 = "hetero-cluster_oy_2";
+        String shard3 = "hetero-cluster_fra_1";
+        String shard5 = "hetero-cluster_fra_2";
+
+        clusterService.deleteCluster(heteroClusterName);
+
+        ClusterTbl clusterTbl = clusterService.find(heteroClusterName);
+        Assert.assertNull(clusterTbl);
+
+        DcClusterTbl dcClusterTbl = dcClusterService.find("oy", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+        dcClusterTbl = dcClusterService.find("fra", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+        dcClusterTbl = dcClusterService.find("jq", heteroClusterName);
+        Assert.assertNull(dcClusterTbl);
+
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("jq", heteroClusterName, shard1);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("jq", heteroClusterName, shard2);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("oy", heteroClusterName, shard1);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("oy", heteroClusterName, shard2);
+        Assert.assertNull(dcClusterShardTbl);
+        dcClusterShardTbl = dcClusterShardService.find("fra", heteroClusterName, shard3);
+        Assert.assertNull(dcClusterShardTbl);
+
+
+        //oy
+        List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(53);
+        Assert.assertEquals(0, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(54);
+        Assert.assertEquals(0, redisTbls.size());
+        //fra
+        redisTbls = redisService.findAllByDcClusterShard(55);
+        Assert.assertEquals(0, redisTbls.size());
+        //jq
+        redisTbls = redisService.findAllByDcClusterShard(51);
+        Assert.assertEquals(0, redisTbls.size());
+        redisTbls = redisService.findAllByDcClusterShard(52);
+        Assert.assertEquals(0, redisTbls.size());
+
+        List<ApplierTbl> applierTbls = applierService.findApplierTblByShardAndReplDirection(21 , 2);
+        Assert.assertEquals(0, applierTbls.size());
+        applierTbls = applierService.findApplierTblByShardAndReplDirection(22 , 2);
+        Assert.assertEquals(0, applierTbls.size());
+
+        ShardTbl shardTbl = shardService.find(23);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+        shardTbl = shardService.find(22);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+        shardTbl = shardService.find(21);
+        Assert.assertEquals(true, shardTbl.isDeleted());
+
+
+        List<ReplDirectionTbl> allReplications = replDirectionService.findAllReplDirectionTblsByCluster(heteroClusterId);
+        Assert.assertEquals(0, allReplications.size());
 
     }
 
@@ -121,7 +285,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDescription(randomString(20))
         );
 
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters);
         clusterService.createCluster(clusterModel);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -139,7 +309,13 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
                 .setClusterDesignatedRouteIds("1,2")
         );
 
-        clusterModel.setDcs(dcTbls);
+        List<DcClusterModel> dcClusters1 = new LinkedList<>();
+        dcTbls.forEach(dcTbl -> {
+            DcModel dcModel = new DcModel();
+            dcModel.setDc_name(dcTbl.getDcName());
+            dcClusters1.add(new DcClusterModel().setDc(dcModel).setDcCluster(new DcClusterTbl()));
+        });
+        clusterModel.setDcClusters(dcClusters1);
         clusterService.createCluster(clusterModel);
         clusterTbl = clusterService.find(clusterName2);
         Assert.assertTrue(clusterTbl.isIsXpipeInterested());
@@ -192,7 +368,8 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         long SET_ORG_ID = 6L;
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         clusterTbl.setClusterOrgId(SET_ORG_ID);
-        clusterService.updateCluster(clusterName, clusterTbl);
+        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
+        clusterService.updateCluster(clusterName, clusterModel);
         clusterTbl = clusterService.find(clusterName);
         Assert.assertEquals(EXPECTED_ORG_ID, clusterTbl.getClusterOrgId());
     }
@@ -204,7 +381,8 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         OrganizationTbl organizationTbl = organizationService.getOrganizationTblByCMSOrganiztionId(EXPECTED_ORG_ID);
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         clusterTbl.setClusterOrgName(organizationTbl.getOrgName());
-        clusterService.updateCluster(clusterName, clusterTbl);
+        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
+        clusterService.updateCluster(clusterName, clusterModel);
         clusterTbl = clusterService.find(clusterName);
         Assert.assertEquals((long)organizationTbl.getId(), clusterTbl.getClusterOrgId());
     }
@@ -419,7 +597,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(2L, route.getId());
 
     }
-
 
     @Test
     public void testParseDstDcs() {

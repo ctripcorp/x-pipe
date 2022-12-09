@@ -55,5 +55,4 @@ public abstract class AbstractConsoleService<T> {
 			throw new IllegalArgumentException("Internal error: TypeName parse failed.");
 		}
 	}
-	
 }

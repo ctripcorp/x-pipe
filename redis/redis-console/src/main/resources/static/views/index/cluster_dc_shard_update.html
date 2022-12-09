@@ -7,7 +7,8 @@
         <span> > </span>
         <a href="/#/cluster_dc_shards?clusterName={{clusterName}}">详情</a>
         <span> > </span>
-        <span> shard </span>
+        <span ng-if="isSource === false"> shard </span>
+        <span ng-if="isSource === true"> sourceShard </span>
     </h3>
 
     <div>
@@ -22,10 +23,12 @@
 
         <div ng-if="dcs && dcs.length">
             <div class="col-xs-12">
-                <div class="panel panel-primary" style="margin-top: 15px;">
-                    <header class="panel-heading">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-if="isSource === false">
+                    <header class="panel-heading" ng-if="isSource == false">
                         <div class="row">
-                            <div class="col-md-6">{{shardName}}</div>
+                            <div class="col-md-6">
+                                <span >{{shardName}} </span>
+                            </div>
                             <div class="col-md-6 text-right">
                                 <button type="button" class="btn btn-primary btn-sm" ng-click="preCreateRedis()">
                                     新增Redis
@@ -84,6 +87,72 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-if="isSource == true">
+                    <header class="panel-heading" style="background: #C7EDCC">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <span> src-dc: {{replDirection.srcDcName}}, upstream-dc: {{replDirection.fromDcName}},</span>
+                                <span> shard:{{dcSourceShards[currentDcName].shardTbl.shardName}} </span>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button type="button" class="btn btn-success btn-sm" ng-click="preCreateApplier()">
+                                    新增Applier
+                                </button>
+                                <button ng-if="useKeeper" type="button" class="btn btn-success btn-sm" ng-click="preCreateKeeper()">
+                                    新增Keeper
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>
+                                角色
+                            </th>
+                            <th>
+                                IP
+                            </th>
+                            <th>
+                                端口
+                            </th>
+                            <th>
+                                操作
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="applier in dcSourceShards[currentDcName].appliers">
+                            <td>
+                                <span class="label label-success" ng-if="applier.active === true">
+                                    Active</span>  Applier
+                            </td>
+                            <td ng-bind="applier.ip">
+                            </td>
+                            <td ng-bind="applier.port">
+                            </td>
+                            <td>
+                                <a ng-click="preDeleteApplier(applier)">删除</a>
+                            </td>
+                        </tr>
+                        <tr ng-repeat="keeper in dcSourceShards[currentDcName].keepers">
+                            <td title="{{keeper.runId}}">
+                                <span class="label label-success" ng-if="keeper.keeperActive">
+                                    active</span>  Keeper
+                            </td>
+                            <td ng-bind="keeper.redisIp">
+                            </td>
+                            <td ng-bind="keeper.redisPort">
+                            </td>
+                            <td>
+                                <a ng-click="preDeleteRedis(keeper)">删除</a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="col-md-6 text-right">
                 <button type="button" class="btn btn-primary btn-sm" ng-click="submitUpdates()">提交</button>
@@ -92,13 +161,13 @@
         </div>
 
         <div ng-if="(!dcs || !dcs.length) && clusterName">
-            无shards
+            无Shards
         </div>
 
     </div>
 </div>
 
-<form class="modal fade form-horizontal" id="createRedisModal" tabindex="-1" role="dialog"
+<form class="modal fade form-horizontal" id="createRedisModel" tabindex="-1" role="dialog"
       ng-submit="createRedis()">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -151,7 +220,7 @@
     </div>
 </form>
 
-<form class="modal fade form-horizontal" id="createKeeperModal" tabindex="-1" role="dialog" novalidate
+<form class="modal fade form-horizontal" id="createKeeperModel" tabindex="-1" role="dialog" novalidate
       ng-submit="createKeeper()">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -236,7 +305,95 @@
     </div>
 </form>
 
+<form class="modal fade form-horizontal" id="createApplierModel" tabindex="-1" role="dialog" novalidate
+      ng-submit="createApplier()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+                <div class="modal-title">
+                    <span style="">创建 Applier</span>
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="alert alert-danger" role="alert" ng-show="createApplierErrorMsg">
+                    {{createApplierErrorMsg}}
+                </div>
+                <div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            Appliercontainer
+                        </label>
+                        <div class="col-sm-6">
+                            <select class="form-control" ng-model="toCreateFirstApplier.containerId">
+                                <option ng-repeat="appliercontainer in appliercontainers"
+                                        value="{{appliercontainer.appliercontainerId}}"
+                                        ng-bind="appliercontainer.appliercontainerIp + ':' + appliercontainer.appliercontainerPort"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            port
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toCreateFirstApplier.port" ng-required="true">
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+
+                <div ng-repeat="toCreateOtherApplier in toCreateOtherAppliers">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            Appliercontainer
+                        </label>
+                        <div class="col-sm-6">
+                            <select class="form-control" ng-model="toCreateOtherApplier.containerId">
+                                <option ng-repeat="appliercontainer in appliercontainers"
+                                        value="{{appliercontainer.appliercontainerId}}"
+                                        ng-bind="appliercontainer.appliercontainerIp + ':' + appliercontainer.appliercontainerPort"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            port
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" ng-model="toCreateOtherApplier.port"
+                                   ng-required="true">
+                        </div>
+                        <div class="col-md-2" ng-show="$index >= 0">
+                            <button class="btn btn-danger btn-xs" type="button"
+                                    ng-click="removeCreateBackupApplierForm($index)">remove
+                            </button>
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+
+                <div class="form-group text-center">
+                    <button class="btn btn-default btn-xs" type="button" ng-click="addCreateBackupApplierForm()">
+                        add backup keeper
+                    </button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary" ng-disabled="freeKeeperContainers.length <= 0">创建</button>
+            </div>
+        </div>
+    </div>
+</form>
+
 <xpipeconfirmdialog xpipe-dialog-id="'deleteRedisConfirm'" xpipe-title="'删除redis'"
                     xpipe-detail="'您确定删除该Redis实例吗?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteRedis"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteApplierConfirm'" xpipe-title="'删除applier'"
+                    xpipe-detail="'您确定删除该Applier例吗?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteApplier"></xpipeconfirmdialog>
 

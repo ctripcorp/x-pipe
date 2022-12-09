@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -64,15 +65,42 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     }
 
     @Override
+    public void updateHeteroShardsDelays(Map<Long, Long> heteroShardsDelays) {
+        heteroShardsDelay.putAll(heteroShardsDelays);
+    }
+
+    @Override
+    public long getShardDelay(String clusterId, String shardId, Long shardDbId) {
+        String dcId = metaCache.getActiveDc(clusterId,shardId);
+
+        if (StringUtil.isEmpty(dcId)) {
+            return -1L;
+        }
+
+        long result;
+        if(!foundationService.getDataCenter().equals(dcId)) {
+            try {
+                result = consoleServiceManager.getShardDelay(shardDbId, dcId);
+            } catch (Exception e) {
+                return -1L;
+            }
+        } else {
+            result = heteroShardsDelay.getOrDefault(shardDbId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+        }
+        return TimeUnit.NANOSECONDS.toMillis(result);
+    }
+
+    @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
         if (null == clusterShard) return -1L;
 
         ClusterType clusterType = metaCache.getClusterType(clusterShard.getKey());
+        String dcGroupType=metaCache.getDcGroupType(hostPort);
         String dcId = null;
-        if (clusterType.supportSingleActiveDC()) {
+        if (clusterType.supportSingleActiveDC() && DcGroupType.isNullOrDrMaster(dcGroupType)) {
             dcId = metaCache.getActiveDc(hostPort);
-        } else if (clusterType.supportMultiActiveDC()) {
+        } else if (clusterType.supportMultiActiveDC() || !DcGroupType.isNullOrDrMaster(dcGroupType)) {
             dcId = metaCache.getDc(hostPort);
         }
 
@@ -106,6 +134,11 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     @Override
     public long getLocalCachedDelay(HostPort hostPort) {
         return hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
+    }
+
+    @Override
+    public long getLocalCachedShardDelay(long shardId) {
+        return heteroShardsDelay.getOrDefault(shardId, DelayAction.SAMPLE_LOST_AND_NO_PONG);
     }
 
     @Override

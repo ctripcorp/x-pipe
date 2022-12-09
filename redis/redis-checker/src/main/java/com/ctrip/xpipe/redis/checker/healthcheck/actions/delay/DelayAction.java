@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInstance> {
 
-    private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
+    protected static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
-    private static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
+    protected static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
 
     public static final long SAMPLE_LOST_AND_NO_PONG = -99999L * 1000 * 1000;
 
@@ -39,22 +39,31 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     private PingService pingService;
 
-    private final long expireInterval;
+    protected final long expireInterval;
 
     private volatile boolean isContextInited = false;
 
     private String currentDcId;
     
-    private String channel;
+    private String publish_channel;
+
+    private String[] subscribe_channel;
+
+    protected FoundationService foundationService;
 
     public DelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                        ExecutorService executors, PingService pingService, FoundationService foundationService) {
         super(scheduled, instance, executors);
         this.pingService = pingService;
+        this.foundationService = foundationService;
         expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
         this.currentDcId = foundationService.getDataCenter();
-        this.channel =  "xpipe-health-check-" + foundationService.getLocalIp();
+        this.publish_channel =  publishChannelPrefix() + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
+        this.subscribe_channel = getSubscribeChannel();
+    }
 
+    protected String publishChannelPrefix() {
+        return instance.getCheckInfo().isHeteroCluster() ? "xpipe-hetero-health-check-" : "xpipe-health-check-";
     }
 
     @Override
@@ -63,21 +72,24 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 //        logger.info("[doTask][begin][{}]", instance.getCheckInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
-        doSubscribe(session, channel, callback);
+        doSubscribe(session, callback, subscribe_channel);
 
         RedisInstanceInfo info = instance.getCheckInfo();
         if (currentDcId.equalsIgnoreCase(info.getDcId()) && info.isMaster()) {
-//            logger.info("[doTask][pub][{}]", instance.getCheckInfo().getClusterShardHostport());
-            doPublish(session, channel, Long.toHexString(System.nanoTime()));
+            doPublish(session, publish_channel, Long.toHexString(System.nanoTime()));
         }
     }
 
-    protected void doSubscribe(RedisSession session, String channel, SubscribeCallback callback) {
-        session.subscribeIfAbsent(channel, callback);
+    protected void doSubscribe(RedisSession session, SubscribeCallback callback, String... channel) {
+        session.subscribeIfAbsent(callback, channel);
     }
 
     protected void doPublish(RedisSession session, String channel, String message) {
         session.publish(channel, message);
+    }
+
+    protected String[] getSubscribeChannel() {
+        return new String[]{publish_channel};
     }
 
     @Override
@@ -85,19 +97,19 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         return logger;
     }
 
-    private void reportDelay() {
-        if(INIT_CONTEXT.equals(context.get()) && !isContextInited) {
+    protected void reportDelay() {
+        if (INIT_CONTEXT.equals(context.get()) && !isContextInited) {
             isContextInited = true;
             return;
         }
-        if(isExpired()) {
+        if (isExpired(context.get())) {
             if (!isExpired) {
                 isExpired = true;
                 logger.warn("[expire][{}] last update time: {}", instance.getCheckInfo().getHostPort(),
                         DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
             }
 
-            onExpired();
+            onExpired(context.get());
         } else {
             if (INIT_CONTEXT.equals(context.get())) {
                 // no receive any messages but not expire just on init time
@@ -108,11 +120,11 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
                 isExpired = false;
                 logger.info("[expire][{}] recovery", instance.getCheckInfo().getHostPort());
             }
-            onNotExpired();
+            onNotExpired(context.get());
         }
     }
 
-    protected void onExpired() {
+    protected void onExpired(DelayActionContext context) {
         long result = SAMPLE_LOST_AND_NO_PONG;
         if(pingService.isRedisAlive(instance.getCheckInfo().getHostPort())) {
             result = SAMPLE_LOST_BUT_PONG;
@@ -120,15 +132,15 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         notifyListeners(new DelayActionContext(instance, result));
     }
 
-    protected void onNotExpired() {
-        notifyListeners(context.get());
+    protected void onNotExpired(DelayActionContext context) {
+        notifyListeners(context);
     }
 
     protected class SubscribeCallback implements RedisSession.SubscribeCallback {
 
         @Override
         public void message(String channel, String message) {
-            onMessage(message);
+            onMessage(channel, message);
         }
 
         @Override
@@ -138,7 +150,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
     }
 
     @VisibleForTesting
-    protected void onMessage(String message) {
+    protected void onMessage(String channel, String message) {
         if (!getLifecycleState().isStarted()) {
             return;
         }
@@ -149,12 +161,12 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     @Override
     public void doStop() {
-        instance.getRedisSession().closeSubscribedChannel(channel);
+        instance.getRedisSession().closeSubscribedChannel(subscribe_channel);
         super.doStop();
     }
 
-    private boolean isExpired() {
-        long lastDelay = System.currentTimeMillis() - context.get().getRecvTimeMilli();
+    protected boolean isExpired(DelayActionContext context) {
+        long lastDelay = System.currentTimeMillis() - context.getRecvTimeMilli();
         return lastDelay >= expireInterval;
     }
 

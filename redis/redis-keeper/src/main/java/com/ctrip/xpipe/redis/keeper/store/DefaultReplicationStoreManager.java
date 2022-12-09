@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
@@ -13,7 +14,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final KeeperMonitor keeperMonitor;
 
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
+    private final RedisOpParser redisOpParser;
+
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
+        this(keeperConfig, clusterId, shardId, keeperRunid, baseDir, keeperMonitor, null);
+    }
+
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) {
         super(MoreExecutors.directExecutor());
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -76,6 +84,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.keeperConfig = keeperConfig;
         this.keeperMonitor = keeperMonitor;
         this.keeperBaseDir = baseDir;
+        this.redisOpParser = redisOpParser;
     }
 
     @Override
@@ -151,7 +160,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         recrodLatestStore(storeBaseDir.getName());
 
-        ReplicationStore replicationStore = new DefaultReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
+        ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
 
         closeCurrentStore();
 
@@ -159,6 +168,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         notifyObservers(new NodeAdded<ReplicationStore>(replicationStore));
         return currentStore.get();
+    }
+
+    protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
+                                                      KeeperMonitor keeperMonitor) throws IOException {
+        return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -225,7 +239,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
                     if (latestStoreDir.isDirectory()) {
-                        currentStore.set(new DefaultReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
+                        currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
                     }
                 }
             }
@@ -317,61 +331,4 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return baseDir;
     }
 
-    public static class IdAndDbIdCompatible extends DefaultReplicationStoreManager {
-
-        private final Logger logger = LoggerFactory.getLogger(IdAndDbIdCompatible.class);
-
-        private final File keeperBaseDir;
-
-        private ClusterId clusterId;
-
-        private ShardId shardId;
-
-        private String deprecatedClusterName;
-
-        private String deprecatedShardName;
-
-        public IdAndDbIdCompatible(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
-            super(keeperConfig, clusterId, shardId, keeperRunid, baseDir, keeperMonitor);
-            this.keeperBaseDir = baseDir;
-            this.clusterId = clusterId;
-            this.shardId = shardId;
-        }
-
-        public IdAndDbIdCompatible setDeprecatedClusterAndShardName(String clusterName, String shardName) {
-            this.deprecatedClusterName = clusterName;
-            this.deprecatedShardName = shardName;
-            return this;
-        }
-
-        @Override
-        protected void doInitialize() throws Exception {
-
-            renameDeprecatedStore();
-
-            super.doInitialize();
-        }
-
-        public void renameDeprecatedStore() {
-            if (deprecatedClusterName == null || deprecatedShardName == null) {
-                return;
-            }
-
-            File deprecated = new File(keeperBaseDir, deprecatedClusterName + "/" + deprecatedShardName);
-            File dest = new File(keeperBaseDir, clusterId + "/" + shardId);
-
-            File deprecatedParent = new File(keeperBaseDir, deprecatedClusterName);
-            File destParent = new File(keeperBaseDir, clusterId.toString());
-            if (deprecated.exists() && !dest.exists()) {
-                try {
-                    destParent.mkdirs();
-                    Files.move(deprecated, dest);
-                    logger.info("[renameDeprecatedStore] {} -> {} success", deprecated.getAbsolutePath(), dest.getAbsolutePath());
-                    FileUtils.recursiveDelete(deprecatedParent);
-                } catch (IOException e) {
-                    logger.error("[renameDeprecatedStore] {} -> {} failure", deprecated.getAbsolutePath(), dest.getAbsolutePath(), e);
-                }
-            }
-        }
-    }
 }

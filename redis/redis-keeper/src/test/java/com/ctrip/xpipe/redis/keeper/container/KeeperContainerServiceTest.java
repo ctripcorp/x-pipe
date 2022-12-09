@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class KeeperContainerServiceTest extends AbstractTest {
 
     private KeeperConfig keeperConfig = new DefaultKeeperConfig();
@@ -40,6 +40,8 @@ public class KeeperContainerServiceTest extends AbstractTest {
     private ComponentRegistry componentRegistry;
     @Mock
     private KeepersMonitorManager keepersMonitorManager;
+    @Mock
+    private ContainerResourceManager containerResourceManager;
     
     private KeeperContainerService keeperContainerService;
     private ClusterId someClusterId;
@@ -57,6 +59,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         ReflectionTestUtils.setField(keeperContainerService, "keeperContainerConfig", keeperContainerConfig);
         ReflectionTestUtils.setField(keeperContainerService, "keeperConfig", keeperConfig);
         ReflectionTestUtils.setField(keeperContainerService, "keepersMonitorManager", keepersMonitorManager);
+        ReflectionTestUtils.setField(keeperContainerService, "containerResourceManager", containerResourceManager);
 
         someClusterId = ClusterId.from(randomLong());
         someShardId = ShardId.from(randomLong());
@@ -70,6 +73,8 @@ public class KeeperContainerServiceTest extends AbstractTest {
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
+        when(containerResourceManager.isPortFree(anyInt())).thenReturn(true);
+        when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
 
         ReflectionTestUtils.setField(ComponentRegistryHolder.class, "componentRegistry", componentRegistry);
     }
@@ -99,6 +104,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         anotherKeeperTransMeta.setClusterDbId(someClusterId.id());
 
         keeperContainerService.add(someKeeperTransMeta);
+        when(containerResourceManager.applyPort(somePort)).thenReturn(false);
         keeperContainerService.add(anotherKeeperTransMeta);
     }
 

@@ -57,7 +57,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
 
         long begin = System.currentTimeMillis();
         for(int i = 0; i < COUNT; i++) {
-            redisSession.subscribeIfAbsent(CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
+            redisSession.subscribeIfAbsent(new RedisSession.SubscribeCallback() {
 
                 @Override
                 public void message(String channel, String message) {
@@ -68,7 +68,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
                 public void fail(Throwable e) {
                     System.out.println(e.getMessage());
                 }
-            });
+            }, CHECK_CHANNEL);
         }
         long after = System.currentTimeMillis();
         Assert.assertTrue(after - begin < TIMEOUT);

@@ -14,13 +14,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
-import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -110,6 +110,7 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getWarningClusterShards()) clusterHealthMonitorManager.updateHealthCheckWarningShards(checkResult.getWarningClusterShards());
         if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.decodeRedisAlives());
         if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
+        if (null != checkResult.getHeteroShardsDelay()) delayService.updateHeteroShardsDelays(checkResult.getHeteroShardsDelay());
     }
 
     @Resource

@@ -2,8 +2,9 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.core.entity.Redis;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.tuple.Pair;
@@ -17,11 +18,12 @@ import java.util.Set;
 public class RedisMetaSynchronizer implements MetaSynchronizer {
     private static Logger logger = LoggerFactory.getLogger(RedisMetaSynchronizer.class);
     protected RedisService redisService;
-    private Set<Redis> added;
-    private Set<Redis> removed;
+    private Set<InstanceNode> added;
+    private Set<InstanceNode> removed;
     private Set<MetaComparator> modified;
 
-    public RedisMetaSynchronizer(Set<Redis> added, Set<Redis> removed, Set<MetaComparator> modified, RedisService redisService) {
+
+    public RedisMetaSynchronizer(Set<InstanceNode> added, Set<InstanceNode> removed, Set<MetaComparator> modified, RedisService redisService) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -40,10 +42,10 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             String clusterId = "";
             String shardId = "";
             List<Pair<String, Integer>> toDeleted = new ArrayList<>();
-            for (Redis redis : removed) {
-                toDeleted.add(new Pair<>(redis.getIp(), redis.getPort()));
-                clusterId = ((RedisMeta) redis).parent().parent().getId();
-                shardId = ((RedisMeta) redis).parent().getId();
+            for (InstanceNode instanceNode : removed) {
+                toDeleted.add(new Pair<>(instanceNode.getIp(), instanceNode.getPort()));
+                clusterId = ((ClusterMeta) ((RedisMeta) instanceNode).parent().parent()).getId();
+                shardId = ((RedisMeta) instanceNode).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
             redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
@@ -61,11 +63,11 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             String shardId = "";
             List<Pair<String, Integer>> toAdded = new ArrayList<>();
             List<RedisMeta> toUpdateMaster = new ArrayList<>();
-            for (Redis redis : added) {
-                toAdded.add(new Pair<>(redis.getIp(), redis.getPort()));
-                toUpdateMaster.add((RedisMeta) redis);
-                clusterId = ((RedisMeta) redis).parent().parent().getId();
-                shardId = ((RedisMeta) redis).parent().getId();
+            for (InstanceNode instanceNode : added) {
+                toAdded.add(new Pair<>(instanceNode.getIp(), instanceNode.getPort()));
+                toUpdateMaster.add((RedisMeta) instanceNode);
+                clusterId = ((ClusterMeta) ((RedisMeta) instanceNode).parent().parent()).getId();
+                shardId = ((RedisMeta) instanceNode).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
             redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);

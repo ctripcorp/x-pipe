@@ -36,6 +36,7 @@ public class ReplicationStoreMeta implements Serializable{
 	private Long rdbLastOffset;
 	private long rdbFileSize;
 	private String rdbEofMark;
+	private String rdbGtidSet;
 	
 	// last offset of rdb in keeper coordinate
 	private String cmdFilePrefix;
@@ -68,6 +69,7 @@ public class ReplicationStoreMeta implements Serializable{
 		
 		this.rdbFileSize = proto.rdbFileSize;
 		this.rdbEofMark = proto.rdbEofMark;
+		this.rdbGtidSet = proto.rdbGtidSet;
 		
 		this.cmdFilePrefix = proto.cmdFilePrefix;
 		this.keeperState = proto.keeperState;
@@ -80,6 +82,14 @@ public class ReplicationStoreMeta implements Serializable{
 	
 	public String getRdbEofMark() {
 		return rdbEofMark;
+	}
+
+	public String getRdbGtidSet() {
+		return rdbGtidSet;
+	}
+
+	public void setRdbGtidSet(String rdbGtidSet) {
+		this.rdbGtidSet = rdbGtidSet;
 	}
 
 	public void setRdbFileSize(long rdbFileSize) {
@@ -198,11 +208,21 @@ public class ReplicationStoreMeta implements Serializable{
 
 	@Override
 	public String toString() {
-		return "ReplicationStoreMeta [masterAddress=" + masterAddress + ", beginOffset=" + beginOffset 
-				+ ", replid=" + replId + ",replid2=" + replId2 + ", secondReplIdOffset=" + secondReplIdOffset  
-				+ ", rdbFile=" + rdbFile + ", rdbLastOffset=" + rdbLastOffset + ", rdbFileSize=" + rdbFileSize + ", "+ ", rdbFileEofMark:" + rdbEofMark + 
-				", cmdFilePrefix=" + cmdFilePrefix + 
-				", keeperState=" + keeperState +", keeperRunid=" + keeperRunid;
+		return "ReplicationStoreMeta{" +
+				"masterAddress=" + masterAddress +
+				", beginOffset=" + beginOffset +
+				", replId='" + replId + '\'' +
+				", replId2='" + replId2 + '\'' +
+				", secondReplIdOffset=" + secondReplIdOffset +
+				", rdbFile='" + rdbFile + '\'' +
+				", rdbLastOffset=" + rdbLastOffset +
+				", rdbFileSize=" + rdbFileSize +
+				", rdbEofMark='" + rdbEofMark + '\'' +
+				", rdbGtidSet='" + rdbGtidSet + '\'' +
+				", cmdFilePrefix='" + cmdFilePrefix + '\'' +
+				", keeperState=" + keeperState +
+				", keeperRunid='" + keeperRunid + '\'' +
+				'}';
 	}
 
 	@Override
