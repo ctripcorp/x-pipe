@@ -175,7 +175,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.onFullSync(rdbDataGtidSet);
             } catch (Throwable th) {
-                getLogger().debug("[doOnFullSync][fail] {}", observer, th);
+                getLogger().error("[doOnFullSync][fail] {}", observer, th);
             }
         }
         resetClient();
@@ -187,7 +187,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.onContinue(gitdSetExcluded);
             } catch (Throwable th) {
-                getLogger().debug("[doOnContinue][fail] {}", observer, th);
+                getLogger().error("[doOnContinue][fail] {}", observer, th);
             }
         }
         resetClient();
@@ -199,7 +199,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.onCommand(rawCmdArgs);
             } catch (Throwable th) {
-                getLogger().debug("[doOnCommand][fail] {}", observer, th);
+                getLogger().error("[doOnCommand][fail] {}", observer, th);
             }
         }
         resetClient();
@@ -211,7 +211,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.beginReadRdb(eofType, rdbDataGtidSet);
             } catch (Throwable th) {
-                getLogger().debug("[beginReadRdb][fail] {}", observer, th);
+                getLogger().error("[beginReadRdb][fail] {}", observer, th);
             }
         }
     }
@@ -222,7 +222,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.onRdbData(byteBuf.slice());
             } catch (Throwable th) {
-                getLogger().debug("[notifyRdbData][fail] {}", observer, th);
+                getLogger().error("[notifyRdbData][fail] {}", observer, th);
             }
         }
     }
@@ -243,7 +243,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             try {
                 observer.endReadRdb(eofType, rdbDataGtidSet);
             } catch (Throwable th) {
-                getLogger().debug("[notifyRdbData][fail] {}", observer, th);
+                getLogger().error("[notifyRdbData][fail] {}", observer, th);
             }
         }
     }
