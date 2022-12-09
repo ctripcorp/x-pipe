@@ -61,10 +61,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     GtidSet gtid_received;
 
     public DefaultCommandDispatcher() {
-        this.rdbParser = new DefaultRdbParser();
-        this.rdbParser.registerListener(this);
+        this.rdbParser = createRdbParser();
 
         this.receivedSids = new HashSet<>();
+    }
+
+    private RdbParser<?> createRdbParser() {
+        RdbParser<?> rdbParser = new DefaultRdbParser();
+        rdbParser.registerListener(this);
+        return rdbParser;
     }
 
     @VisibleForTesting
@@ -72,7 +77,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.gtid_received = gtidSet.clone();
         this.receivedSids = new HashSet<>();
         this.gtid_executed.set(gtidSet.clone());
-        this.rdbParser.reset();
     }
 
     @Override
@@ -81,6 +85,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
 
         this.resetState(rdbGtidSet);
+        this.rdbParser = createRdbParser();
     }
 
     @Override
