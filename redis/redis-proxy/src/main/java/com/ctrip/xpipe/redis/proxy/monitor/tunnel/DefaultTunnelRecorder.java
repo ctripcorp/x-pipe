@@ -17,6 +17,10 @@ public class DefaultTunnelRecorder implements TunnelRecorder {
     public void record(Tunnel tunnel) {
         StringBuilder sb = new StringBuilder(tunnel.identity().toString());
         sb.append(RedisProtocol.CRLF);
+        if (tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult() == null ){
+            logger.info("there is no backend channel int tunnel : {}", tunnel.identity().toString());
+            return;
+        }
         sb.append(tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult().toString()).append(RedisProtocol.CRLF);
 
         sb.append(SESSION_TYPE.FRONTEND.name()).append(RedisProtocol.CRLF);

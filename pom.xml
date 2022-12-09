@@ -13,6 +13,7 @@
     <version>1.2.6</version>
     <packaging>pom</packaging>
 
+    <!-- trigger cache-->
 
     <properties>
         <commons-io.version>2.4</commons-io.version>
@@ -26,10 +27,8 @@
         <jersey.version>2.19</jersey.version>
         <commons-exec.version>1.3</commons-exec.version>
         <unidal.test.version>3.1.4</unidal.test.version>
-
         <unidal.foundation.version>3.1.4</unidal.foundation.version>
         <unidal.jdbc.version>3.1.4</unidal.jdbc.version>
-
         <unidal.codegen.version>2.5.8</unidal.codegen.version>
         <unidal.plexus.version>2.5.8</unidal.plexus.version>
         <commons-pool.version>2.3</commons-pool.version>
@@ -43,13 +42,13 @@
         <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
         <netty3.version>3.10.5.Final</netty3.version>
         <netty4.version>4.1.52.Final</netty4.version>
-        <ctrip-framework-foundation.version>1.8.11</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.8.18</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>3.3.32</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
-        <log4j2.version>2.16.0</log4j2.version>
+        <log4j2.version>2.17.1</log4j2.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -58,20 +57,20 @@
         <influxdb.version>2.7</influxdb.version>
         <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
         <clogging.version>4.6.3</clogging.version>
-        <credis.version>4.0.10</credis.version>
+        <credis.version>4.4.1-unstable</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
-        <qconfig.client.version>1.6.11</qconfig.client.version>
+        <qconfig.client.version>1.100.46-ctrip</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
         <netty.boringssl.version>2.0.12.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
         <jackson.version>2.10.3</jackson.version>
-
+        <jedis.version>2.8.1.2-ctrip-SNAPSHOT</jedis.version>
         <soa.version>2.21.17</soa.version>
-        <sso.version>0.0.8</sso.version>
+        <sso.version>0.1.3</sso.version>
         <vi.version>0.11.33</vi.version>
-        <dal.version>2.3.1</dal.version>
+        <dal.version>2.3.38</dal.version>
         <ucs.version>0.3.4</ucs.version>
         <artemis.version>1.9.6</artemis.version>
         <caravan.version>1.17.13</caravan.version>
@@ -122,6 +121,11 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jedis.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.ctrip.infosec</groupId>
                 <artifactId>sso-client-new</artifactId>
                 <version>${sso.version}</version>
@@ -150,6 +154,12 @@
                 <groupId>qunar.tc.qconfig</groupId>
                 <artifactId>qconfig-client</artifactId>
                 <version>${qconfig.client.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.squareup.okio</groupId>
+                        <artifactId>okio</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>qunar.tc.qtracer</groupId>
@@ -300,10 +310,35 @@
                 <version>${credis.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>qunar.tc.qconfig</groupId>
+                        <artifactId>qconfig-client</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc.qconfig</groupId>
+                        <artifactId>qconfig-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.ctrip.ops</groupId>
+                        <artifactId>hickwall-sdk</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>qunar.common</groupId>
                         <artifactId>common-core</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>qunar.common</groupId>
+                        <artifactId>common-lang</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc</groupId>
+                        <artifactId>common-zookeeper</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.squareup.okio</groupId>
+                        <artifactId>okio</artifactId>
+                    </exclusion>
                 </exclusions>
+
             </dependency>
 
             <dependency>

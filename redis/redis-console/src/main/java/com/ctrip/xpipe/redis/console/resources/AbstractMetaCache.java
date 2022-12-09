@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
@@ -178,7 +179,8 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         String instanceInDc = metaDesc.getDcId();
         String activeDc = metaDesc.getActiveDc();
-        return !activeDc.equalsIgnoreCase(instanceInDc);
+        String dcGroupType = metaDesc.getDcGroupType();
+        return !activeDc.equalsIgnoreCase(instanceInDc) && DcGroupType.isNullOrDrMaster(dcGroupType);
     }
 
     @Override
@@ -226,6 +228,18 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
 
         return metaDesc.getActiveDc();
+    }
+
+    @Override
+    public String getDcGroupType(HostPort hostPort) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+
+        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
+        if (metaDesc == null) {
+            return null;
+        }
+
+        return metaDesc.getDcGroupType();
     }
 
     @Override
@@ -410,7 +424,8 @@ public abstract class AbstractMetaCache implements MetaCache {
             for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
                 for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                     ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-                    if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
+                    String dcGroupType = clusterMeta.getDcGroupType();
+                    if (clusterType.supportSingleActiveDC() && DcGroupType.isNullOrDrMaster(dcGroupType) && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
                         continue;
                     }
 
@@ -462,6 +477,27 @@ public abstract class AbstractMetaCache implements MetaCache {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean isHeteroCluster(String clusterName) {
+        XpipeMeta xpipeMeta = meta.getKey();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta != null) {
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                String dcGroupType = clusterMeta.getDcGroupType();
+                if (clusterType.supportSingleActiveDC() && !DcGroupType.isNullOrDrMaster(dcGroupType)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public List<Long> dcShardIds(String clusterId, String dcId) {
+        return meta.getKey().findDc(dcId).findCluster(clusterId).getShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toList());
     }
 
     @VisibleForTesting

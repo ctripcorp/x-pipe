@@ -180,4 +180,10 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		CRLF,
 		CONTENT
 	}
+
+	@Override
+	public void reset() {
+		baous = new ByteArrayOutputStream();
+		crlfState = CRLF_STATE.CONTENT;
+	}
 }

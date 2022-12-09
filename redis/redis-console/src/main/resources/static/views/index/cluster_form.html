@@ -21,7 +21,7 @@
 
                     <div class="col-sm-7">
                         <input type="text" placeholder="集群名称" class="col-xs-10 col-sm-4" ng-required="true"
-                               ng-model="cluster.clusterName" ng-disabled="operateType == 'update'"
+                               ng-model="cluster.clusterName" ng-disabled="operateType == 'update'" style="width:330px"
                                pattern="^[\u4E00-\u9FA5A-Za-z0-9._-]+$"/>
                     </div>
                 </div>
@@ -31,7 +31,7 @@
                     <div class="col-sm-6">
                         <select
                                 allow_single_deselect=true
-                                style="width:200px;"
+                                style="width:330px;"
                                 ng-required="true"
                                 ng-disabled="operateType == 'update'"
                                 ng-model="selectedType"
@@ -39,25 +39,38 @@
                         >
                             <option ng-repeat="type in clusterTypes" value="{{type.value}}">{{type.name}}</option>
                         </select>
+                        <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && !isHeteroCluster">增加异构集群</a>
+                        <a ng-click="changeIsHeteroCluster()" ng-if="operateType == 'create' && selectedType == 'one_way' && isHeteroCluster">增加对称集群</a>
+                        <a ng-click="changeSymmetryToHeteroCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && !isHeteroCluster">修改为异构集群</a>
+                        <a ng-click="changeHeteroToSymmetryCluster()" ng-if="operateType == 'update' && selectedType == 'one_way' && isHeteroCluster">修改为对称集群</a>
                     </div>
                 </div>
-                <div class="form-group" ng-if="showActiveDc">
+                <div class="form-group" ng-show="showActiveDc">
                     <label class="col-sm-4 control-label no-padding-right"> 主数据中心 </label>
-
-                    <div class="col-sm-7">
+                    <div class="col-sm-6" ng-show="selectedType == 'one_way' && isHeteroCluster">
+                        <select
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-disabled="operateType == 'update'"
+                                ng-model="activeDcName"
+                                ng-change="activeDcNameChange()"
+                        >
+                            <option ng-repeat = "dc in drMasterDcs" value="{{dc}}">{{dc}}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-7" ng-if="!isHeteroCluster">
                         <label ng-repeat="dc in allDcs" ng-show="!slaveExists(dc)">
                             <input name="activeDcId" type="radio" class="ace" ng-model="cluster.activedcId"
                                    ng-value="dc.id" ng-checked="cluster.activedcId == dc.id"
                                    ng-change="activeDcSelected(dc)"
-                                   ng-disabled="operateType == 'update'" ng-required="true"/>
+                                   ng-disabled="operateType == 'update'"/>
                             <span class="lbl" ng-bind="dc.dcName"></span>
                             &nbsp&nbsp&nbsp&nbsp
                         </label>
                     </div>
                 </div>
-                <div class="form-group" ng-show="operateType == 'create'">
+                <div class="form-group" ng-show="operateType == 'create' && !isHeteroCluster">
                     <label class="col-sm-4 control-label no-padding-right"> 从数据中心 </label>
-
                     <div class="col-sm-7">
                         <label ng-repeat="dc in allDcs" ng-show="cluster.activedcId != dc.id">
                             <md-checkbox ng-checked="slaveExists(dc)" ng-click="toggle(dc)"></md-checkbox>
@@ -81,7 +94,7 @@
                                 chosen="directiveOptions"
                                 allow_single_deselect=true
                                 ng-options="orgName for orgName in organizationNames"
-                                style="width:200px;"
+                                style="width:330px;"
                                 ng-required="true"
                         >
                             <option value=""></option>
@@ -99,7 +112,13 @@
                 </div>
 
                 <addshard xpipe-pre-create-shard="preCreateShard" xpipe-create-shard="createShard"
-                          ng-show="operateType == 'create'" />
+                          ng-show="operateType == 'create' && !isHeteroCluster" />
+
+                <adddcgroup xpipe-pre-create-dc-group="preCreateDcGroup" xpipe-create-dc-group="createDcGroup"
+                            ng-show="isHeteroCluster"/>
+
+                <addrepldirction xpipe-pre-create-repl-direction="preCreateReplDirection" xpipe-create-repl-direction="createReplDirection"
+                                  ng-show="isHeteroCluster"/>
 
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"></label>
@@ -187,3 +206,18 @@
                     xpipe-detail="'您确定要删除该cluster下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteCluster"></xpipeconfirmdialog>
 
+<xpipeconfirmdialog xpipe-dialog-id="'deleteDcGroupConfirm'" xpipe-title="'删除 Dc Group'"
+                    xpipe-detail="'您确定要删除该Dc Group下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteDcGroup"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'updateDcGroupConfirm'" xpipe-title="'更新 Dc Group'"
+                    xpipe-detail="'您确定要更新该Dc Group下的所有内容吗（如果shard数目减少会导致部分shard及相应的redis实例都将被删除）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="updateDcGroup"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'updateShardModelConfirm'" xpipe-title="'更新 shard'"
+                    xpipe-detail="'您确定要更新该shard吗（可能会导致原有shard及相对应的redis实例都将被删除）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="updateShardModel"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteReplDirectionConfirm'" xpipe-title="'删除 复制方向'"
+                    xpipe-detail="'您确定要更新该复制方向吗（可能会导致该slave Dc 无法同步数据）？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteReplDirection"></xpipeconfirmdialog>

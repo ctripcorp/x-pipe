@@ -7,7 +7,9 @@ HealthCheckService.$inject = ['$resource', '$q'];
 function HealthCheckService($resource, $q) {
 	const IS_REDIS_HEALTH = "is_redis_health";
 	const GET_REPL_DELAY = "get_repl_delay";
+	const GET_SHARD_DELAY = "get_shard_delay";
 	const GET_HICKWALL_ADDR = "get_hickwall_addr";
+	const GET_HETERO_HICKWALL_ADDR = "get_hetero_hickwall_addr";
 	const GET_CROSS_MASTER_DELAY = "get_cross_master_delay";
 	const GET_CROSS_MASTER_HICKWALL_ADDR = "get_cross_master_hickwall_addr";
 	const GET_PEER_OUTCOMING = "get_peer_outcoming";
@@ -25,9 +27,17 @@ function HealthCheckService($resource, $q) {
 			method: 'GET',
 			url: '/console/redis/delay/:clusterType/:redisIp/:redisPort'
 		};
+		apis[GET_SHARD_DELAY] = {
+			method: 'GET',
+			url: '/console/shard/delay/:clusterId/:shardId/:shardDbId'
+		};
 		apis[GET_HICKWALL_ADDR] = {
 			method: 'GET',
-			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort'
+			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort/:delayType'
+		};
+		apis[GET_HETERO_HICKWALL_ADDR] = {
+			method: 'GET',
+			url: '/console/hetero/health/hickwall/:cluster/:srcShardId/:delayType'
 		};
 		apis[GET_CROSS_MASTER_DELAY] = {
 			method: 'GET',
@@ -80,13 +90,30 @@ function HealthCheckService($resource, $q) {
 			redisPort : port
 		});
 	}
+
+	function getShardDelay(clusterId, shardId, shardDbId) {
+		return request($q.defer(), GET_SHARD_DELAY, {
+			clusterId: clusterId,
+			shardId: shardId,
+			shardDbId: shardDbId
+		});
+	}
 	
-	function getHickwallAddr(cluster, shard, redisIp, redisPort) {
+	function getHickwallAddr(cluster, shard, redisIp, redisPort, delayType) {
 		return request($q.defer(), GET_HICKWALL_ADDR, {
 			cluster : cluster,
 			shard : shard,
 			redisIp : redisIp,
-			redisPort : redisPort
+			redisPort : redisPort,
+			delayType: delayType
+		});
+	}
+
+	function getHeteroHickwallAddr(cluster, srcShardId, delayType) {
+		return request($q.defer(), GET_HETERO_HICKWALL_ADDR, {
+			cluster : cluster,
+			srcShardId : srcShardId,
+			delayType: delayType
 		});
 	}
 
@@ -134,7 +161,9 @@ function HealthCheckService($resource, $q) {
 	return {
 		isRedisHealth : isRedisHealth,
 		getReplDelay : getReplDelay,
+		getShardDelay: getShardDelay,
 		getHickwallAddr : getHickwallAddr,
+		getHeteroHickwallAddr: getHeteroHickwallAddr,
 		getCrossMasterDelay : getCrossMasterDelay,
 		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr,
 		getOutComingTrafficToPeerHickwallAddr: getOutComingTrafficToPeerHickwallAddr,

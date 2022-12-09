@@ -50,7 +50,11 @@ public interface DcMetaManager{
 
 	List<KeeperMeta> getKeepers(String clusterId, String shardId);
 
+	List<ApplierMeta> getAppliers(String clusterId, String shardId);
+
 	List<RedisMeta> getRedises(String clusterId, String shardId);
+
+	List<RedisMeta> getRedises(String clusterId);
 
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
 	
@@ -69,6 +73,8 @@ public interface DcMetaManager{
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
+
 	DcMeta getDcMeta();
 	
 	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);
@@ -85,7 +91,13 @@ public interface DcMetaManager{
 
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 
+	void setRedisGtidAndSids(String clusterId, String shardId, RedisMeta redisMeta, String gtid, String sids);
+
 	Set<String> getBackupDcs(String clusterId, String shardId);
+
+	Set<String> getDownstreamDcs(String dc, String clusterId, String shardId);
+
+	String getUpstreamDc(String dc, String clusterId, String shardId);
 
 	Set<String> getRelatedDcs(String clusterId, String shardId);
 
@@ -119,7 +131,11 @@ public interface DcMetaManager{
 
 	List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId);
 
+	List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId);
+
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
+
+	List<RedisMeta> getRedises(Long clusterDbId);
 
 	KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId);
 
@@ -144,7 +160,15 @@ public interface DcMetaManager{
 
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers);
 
+	void setRedisGtidAndSids(Long clusterDbId, Long shardDbId, RedisMeta redisMeta, String gtid, String sids);
+
 	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 

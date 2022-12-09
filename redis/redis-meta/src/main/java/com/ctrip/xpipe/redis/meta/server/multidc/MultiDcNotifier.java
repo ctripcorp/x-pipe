@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
@@ -44,33 +45,44 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-			logger.info("[keeperActiveElected][current dc backup, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
-			return;
+		boolean primary = dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId);
+		logger.info("[keeperActiveElected][current dc]primary={}, cluster_{}, shard_{}, {}", primary, clusterDbId, shardDbId, activeKeeper);
+
+		if (primary) {
+			keeperActiveElectedNotifyDcs(clusterDbId, shardDbId, activeKeeper, dcMetaCache.getBakupDcs(clusterDbId, shardDbId));
 		}
-		
+
+		keeperActiveElectedNotifyDcs(clusterDbId, shardDbId, activeKeeper, dcMetaCache.getDownstreamDcs(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId));
+	}
+
+	private void keeperActiveElectedNotifyDcs(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper, Set<String> dcs) {
 		if(activeKeeper == null){
 			return;
 		}
 
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
-		Set<String> backupDcs = dcMetaCache.getBakupDcs(clusterDbId, shardDbId);
 		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
-		logger.info("[keeperActiveElected][current dc primary, notify backup dc]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
-				shardDbId, clusterShard.getValue(), backupDcs, activeKeeper);
-		for (String backupDcName : backupDcs) {
 
-			DcInfo dcInfo = dcInfos.get(backupDcName);
+		logger.info("[keeperActiveElected][notify dcs]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
+				shardDbId, clusterShard.getValue(), dcs, activeKeeper);
+
+		executeKeeperActiveElectedNotifyTask(dcs, activeKeeper, dcInfos, clusterShard);
+	}
+
+	private void executeKeeperActiveElectedNotifyTask(Set<String> dcs, KeeperMeta activeKeeper, Map<String, DcInfo> dcInfos, Pair<String, String> clusterShard) {
+
+		for (String dc : dcs) {
+
+			DcInfo dcInfo = dcInfos.get(dc);
 
 			if (dcInfo == null) {
-				logger.error("[keeperActiveElected][backup dc, but can not find dcinfo]{}, {}", backupDcName, dcInfos);
+				logger.error("[keeperActiveElected][can not find dcinfo]{}, {}", dc, dcInfos);
 				continue;
 			}
 			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
 					.getOrCreate(dcInfo.getMetaServerAddress());
 			executors.execute(new BackupDcNotifyTask(metaServerMultiDcService, clusterShard.getKey(), clusterShard.getValue(), activeKeeper));
 		}
-
 	}
 
 	@Override

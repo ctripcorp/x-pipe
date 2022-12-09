@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -112,6 +113,11 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
 
     public FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {
         return finalStateSetterManager;
+    }
+
+    @Override
+    public boolean supportInstance(RedisHealthCheckInstance instance) {
+        return currentDcId.equalsIgnoreCase(instance.getCheckInfo().getActiveDc()) == DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType());
     }
 
     @Override

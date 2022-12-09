@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.model.AzInfoModel;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import org.junit.Assert;
@@ -113,7 +114,6 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(oldAt.getDcId(), newAt.getDcId());
     }
 
-
     @Test(expected = IllegalArgumentException.class)
     public void testUpdateAzFailByNonExistZone(){
         String azName = "G";
@@ -198,7 +198,6 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(3, createInfoList.size());
     }
 
-
     private void addAvailableZone(String dcName, boolean isActive, String azName, String desc){
         AzCreateInfo createInfo = new AzCreateInfo()
                 .setDcName(dcName)
@@ -209,6 +208,20 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         azService.addAvailableZone(createInfo);
 
         Assert.assertEquals(true, azService.availableZoneIsExist(createInfo));
+    }
+
+
+    @Test
+    public void TestGetAllAvailableZoneIndoModelsByDc() {
+        addAvailableZone(dcNames[0], true, "JQ-A", "Zone for A");
+        addAvailableZone(dcNames[0], true, "JQ-B", "Zone for C");
+        addAvailableZone(dcNames[0], true, "JQ-C", "Zone for C");
+        addAvailableZone(dcNames[0], false, "JQ-D", "Zone for D");
+
+        addAvailableZone(dcNames[1], true, "OY-A", "Zone for A");
+        List<AzInfoModel> azInfoModels = azService.getAllAvailableZoneInfoModelsByDc(1L);
+        Assert.assertEquals(3, azInfoModels.size());
+
     }
 
     @Override

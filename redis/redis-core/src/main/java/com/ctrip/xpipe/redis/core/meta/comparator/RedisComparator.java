@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.entity.Redis;
  */
 public class RedisComparator extends AbstractMetaComparator<Object>{
 
+    //todo, to be deleted
+
 	private Redis current, future;
 	
 	public RedisComparator(Redis current, Redis future) {

@@ -86,7 +86,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         AtomicReference<String> result = new AtomicReference<>();
         AtomicBoolean recieved = new AtomicBoolean(false);
         final String message = "hello-world";
-        redisSession.subscribeIfAbsent(SUBSCRIBE_CHANNEL, new RedisSession.SubscribeCallback() {
+        redisSession.subscribeIfAbsent(new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
                 result.set(message);
@@ -99,7 +99,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
                 recieved.getAndSet(true);
                 logger.error("[fail] cause: ", e);
             }
-        });
+        }, SUBSCRIBE_CHANNEL);
         Thread.sleep(1000);
         redisSession.publish(SUBSCRIBE_CHANNEL, message);
         waitConditionUntilTimeOut(()->result.get()!=null, 2000);
@@ -248,7 +248,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         endpoint = new DefaultEndPoint("10.5.111.145", 6379, protocol);
         redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), new TestConfig());
-        redisSession.subscribeIfAbsent(SUBSCRIBE_CHANNEL, new RedisSession.SubscribeCallback() {
+        redisSession.subscribeIfAbsent(new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
                 logger.info("[receive] channel: {}, message: {}", channel, message);
@@ -258,7 +258,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
             public void fail(Throwable e) {
 
             }
-        });
+        }, SUBSCRIBE_CHANNEL);
         Thread.sleep(10);
         redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world");
         redisSession.publish(SUBSCRIBE_CHANNEL, "hello-world1");

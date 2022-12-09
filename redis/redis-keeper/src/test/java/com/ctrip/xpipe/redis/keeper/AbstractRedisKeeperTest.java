@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
 
@@ -99,8 +100,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager.IdAndDbIdCompatible(keeperConfig, clusterId, shardId, keeperRunid, storeDir,
-				createkeeperMonitor());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, createkeeperMonitor());
 		
 		replicationStoreManager.addObserver(new Observer() {
 			
@@ -158,8 +158,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		rdbStore.readRdbFile(new RdbFileListener() {
 
 			@Override
-			public void setRdbFileInfo(EofType eofType, long rdbFileOffset) {
+			public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
 
+			}
+
+			@Override
+			public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+				return true;
 			}
 
 			@Override
@@ -209,7 +214,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException{
-				replicationStore.addCommandsListener(replicationStore.beginOffsetWhenCreated() + beginOffset, new CommandsListener() {
+				replicationStore.addCommandsListener(new OffsetReplicationProgress(replicationStore.beginOffsetWhenCreated() + beginOffset), new CommandsListener() {
 					
 					@Override
 					public boolean isOpen() {
@@ -226,13 +231,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
+					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes(referenceFileRegion);
+							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
-							logger.error("[onCommand]" + referenceFileRegion, e);
+							logger.error("[onCommand]" + cmd, e);
 						}
 						return null;
 					}

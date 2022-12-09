@@ -51,7 +51,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	private void observeLeader(final ClusterMeta cluster) {
 		logger.info("[observeLeader]{}", cluster.getDbId());
-		for (final ShardMeta shard : cluster.getShards().values()) {
+		for (final ShardMeta shard : cluster.getAllShards().values()) {
 			observerShardLeader(cluster.getDbId(), shard.getDbId());
 		}
 	}
@@ -60,7 +60,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		logger.info("[observerShardLeader]cluster_{},shard_{}", clusterDbId, shardDbId);
 
 		final CuratorFramework client = zkClient.get();
-		if(currentMetaManager.watchIfNotWatched(clusterDbId, shardDbId)){
+		if(currentMetaManager.watchKeeperIfNotWatched(clusterDbId, shardDbId)){
 			try {
                 List<PathChildrenCache> pathChildrenCaches = new ArrayList<>();
                 pathChildrenCaches.add(buildPathChildrenCacheByDbId(clusterDbId, shardDbId, client));

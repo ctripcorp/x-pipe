@@ -1,24 +1,25 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentOneWayShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -26,26 +27,32 @@ import java.util.stream.IntStream;
  *
  * Sep 6, 2016
  */
-public class CurrentMetaTest extends AbstractMetaServerTest{
-	
+public class CurrentMetaTest extends AbstractMetaServerTest {
+
 	private ClusterMeta clusterMeta;
 	private ClusterMeta biClusterMeta;
+	private ClusterMeta heteroClusterMeta;
 	private CurrentMeta currentMeta;
-	
+
 	private String clusterId, shardId;
-	private Long clusterDbId , shardDbId;
+	private Long clusterDbId, shardDbId;
 	private String biClusterId, biShardId;
 	private Long biClusterDbId, bishardDbId;
+	private String heteroClusterId, heteroShardId;
+	private Long heteroClusterDbId, heteroShardDbId;
+
 	private AtomicInteger releaseCount = new AtomicInteger();
-	
+
 	@Before
-	public void beforeCurrentMetaTest(){
+	public void beforeCurrentMetaTest() {
 		clusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[0];
 		biClusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[1];
+		heteroClusterMeta = (ClusterMeta) getDcMeta("fra").getClusters().values().toArray()[4];
 		currentMeta = new CurrentMeta();
 		currentMeta.addCluster(clusterMeta);
 		currentMeta.addCluster(biClusterMeta);
-		List<RouteMeta> routes = getDcMeta(getDc()).getRoutes(); 
+		currentMeta.addCluster(heteroClusterMeta);
+		List<RouteMeta> routes = getDcMeta(getDc()).getRoutes();
 //		currentMeta.updateClusterRoutes(biClusterMeta, routes);
 
 		clusterId = clusterMeta.getId();
@@ -57,6 +64,11 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		biShardId = biClusterMeta.getShards().keySet().iterator().next();
 		biClusterDbId = biClusterMeta.getDbId();
 		bishardDbId = biClusterMeta.getShards().get(biShardId).getDbId();
+
+		heteroClusterId = heteroClusterMeta.getId();
+		heteroShardId = heteroClusterMeta.getShards().keySet().iterator().next();
+		heteroClusterDbId = heteroClusterMeta.getDbId();
+		heteroShardDbId = heteroClusterMeta.getShards().get(heteroShardId).getDbId();
 	}
 
 	@Test
@@ -90,131 +102,130 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 
 		Assert.assertEquals(concurrentSize, releaseCount.get());
 	}
-	
+
 	@Test
-	public void testGetKeeperMaster(){
-		
+	public void testGetKeeperMaster() {
+
 		Pair<String, Integer> keeperMaster = new Pair<>("localhost", 6379);
 		currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster);
-		
+
 		Pair<String, Integer> gotMaster = currentMeta.getKeeperMaster(clusterDbId, shardDbId);
 		Assert.assertEquals(keeperMaster, gotMaster);
 		Assert.assertTrue(keeperMaster != gotMaster);
-		
-		
+
+
 		keeperMaster.setKey("127.0.0.2");
 		gotMaster = currentMeta.getKeeperMaster(clusterDbId, shardDbId);
 		Assert.assertNotEquals(keeperMaster, gotMaster);
 		Assert.assertTrue(keeperMaster != gotMaster);
 	}
-	
+
 	@Test
-	public void testDefaultMaster(){
+	public void testDefaultMaster() {
 		String clusterId = getClusterId(), shardId = getShardId();
 		String activeDc = getDcMeta(getDc()).getClusters().get(clusterId).getActiveDc();
-				
-		for(String dc : getDcs()){
+
+		for (String dc : getDcs()) {
 			CurrentMeta currentMeta = new CurrentMeta();
-			ClusterMeta clusterMeta = getDcMeta(dc).getClusters().get(clusterId); 
+			ClusterMeta clusterMeta = getDcMeta(dc).getClusters().get(clusterId);
 			currentMeta.addCluster(clusterMeta);
 			Pair<String, Integer> keeperMaster = currentMeta.getKeeperMaster(clusterDbId, shardDbId);
-			
+
 			logger.info("[testDefaultMaster]{},{},{}-{}", dc, clusterDbId, shardDbId, keeperMaster);
-			if(dc.equals(activeDc)){
+			if (dc.equals(activeDc)) {
 				Assert.assertEquals(new Pair<String, Integer>("127.0.0.1", 6379), keeperMaster);
-			}else{
+			} else {
 				Assert.assertEquals(null, keeperMaster);
 			}
 		}
-		
+
 	}
-	
+
 	@Test
-	public void testRelease(){
-		
+	public void testRelease() {
+
 		currentMeta.addResource(clusterDbId, shardDbId, new Releasable() {
-			
+
 			@Override
 			public void release() throws Exception {
 				releaseCount.incrementAndGet();
 			}
 		});
-		
+
 		currentMeta.removeCluster(clusterDbId);
 		Assert.assertEquals(1, releaseCount.get());
-		
+
 	}
-	
-	
+
+
 	@Test
-	public void testToString(){
-		
+	public void testToString() {
+
 		List<KeeperMeta> allKeepers = getDcKeepers(getDc(), clusterId, shardId);
-		
+
 		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, allKeepers, allKeepers.get(0));
 		currentMeta.addResource(clusterDbId, shardDbId, new Releasable() {
-			
+
 			@Override
 			public void release() throws Exception {
-				
+
 			}
 		});
-		
+
 		String json = currentMeta.toString();
 		CurrentMeta de = CurrentMeta.fromJson(json);
 		Assert.assertEquals(json, de.toString());
-		
+
 		Assert.assertTrue(currentMeta.hasCluster(clusterDbId));
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 			Assert.assertTrue(currentMeta.hasShard(clusterDbId, shardMeta.getDbId()));
 		}
 	}
 
 	@Test
-	public void testSetInfo(){
+	public void testSetInfo() {
 
 		//set survice keepers
 		Assert.assertEquals(0, currentMeta.getSurviveKeepers(clusterDbId, shardDbId).size());
 		Assert.assertEquals(null, currentMeta.getKeeperActive(clusterDbId, shardDbId));
-		
+
 		List<KeeperMeta> allKeepers = getDcKeepers(getDc(), clusterId, shardId);
 		KeeperMeta active = allKeepers.get(0);
 		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, allKeepers, active);
 		Assert.assertEquals(allKeepers.size(), currentMeta.getSurviveKeepers(clusterDbId, shardDbId).size());
 		active.setActive(true);
 		Assert.assertEquals(active, currentMeta.getKeeperActive(clusterDbId, shardDbId));
-		
+
 		//set keeper active
-		
-		KeeperMeta keeperMeta =  getDcKeepers(getDc(), clusterId, shardId).get(1);
+
+		KeeperMeta keeperMeta = getDcKeepers(getDc(), clusterId, shardId).get(1);
 		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta);
 		Assert.assertTrue(result);
 		keeperMeta.setActive(true);
 		Assert.assertEquals(keeperMeta, currentMeta.getKeeperActive(clusterDbId, shardDbId));
 		Assert.assertFalse(currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta));
-		
+
 		//set keeper active not exist
 		keeperMeta.setIp(randomString(10));
-		try{
+		try {
 			currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta);
 			Assert.fail();
-		}catch(Exception e){
-			
+		} catch (Exception e) {
+
 		}
-		
+
 
 		Assert.assertEquals(new Pair<String, Integer>("127.0.0.1", 6379), currentMeta.getKeeperMaster(clusterDbId, shardDbId));
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>("localhost", randomPort());
 		currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster);
 		Assert.assertEquals(keeperMaster, currentMeta.getKeeperMaster(clusterDbId, shardDbId));
 
-		
-		
+
 	}
-	
+
 	@Test
-	public void testChange(){
-		
+	public void testChange() {
+
 		ClusterMeta future = MetaClone.clone(clusterMeta);
 		String newShardId = randomString(100);
 		Long newShardDbId = Math.abs(randomLong());
@@ -223,7 +234,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		future.addShard(shardMeta);
 		ClusterMetaComparator comparator = new ClusterMetaComparator(clusterMeta, future);
 		comparator.compare();
-		
+
 		currentMeta.changeCluster(comparator);
 		Assert.assertFalse(currentMeta.hasShard(clusterDbId, shardDbId));
 		Assert.assertTrue(currentMeta.hasShard(clusterDbId, newShardDbId));
@@ -266,13 +277,59 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 
 	@Test
 	public void testGetCurrentMaster() {
-		Assert.assertEquals(new RedisMeta().setIp("127.0.0.1").setPort(6379), currentMeta.getCurrentMaster(clusterDbId, shardDbId));
-		Assert.assertNull(currentMeta.getCurrentMaster(biClusterDbId, bishardDbId));
+		Assert.assertEquals(new RedisMeta().setIp("127.0.0.1").setPort(6379), currentMeta.getCurrentMaster(clusterDbId, shardDbId, true));
+		Assert.assertNull(currentMeta.getCurrentMaster(biClusterDbId, bishardDbId, true));
 
 		currentMeta.setCurrentCRDTMaster(biClusterDbId, bishardDbId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterDbId, bishardDbId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterDbId, bishardDbId, true));
 	}
 
+	@Test
+	public void testGetGtidSet() {
+		GtidSet gtidSet = currentMeta.getGtidSet(heteroClusterDbId, null);
+		Assert.assertNotNull(gtidSet);
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "t");
+		Assert.assertNotNull(gtidSet);
+
+        List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
+        CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
+		List<RedisMeta> redisMetas = ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
+		setRedisesSidsAndGtids(redisMetas);
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "a1");
+		Assert.assertEquals("a1:1-10:15-20", gtidSet.toString());
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "b1");
+		Assert.assertEquals("", gtidSet.toString());
+	}
+
+	@Test
+	public void testGetSids() {
+		String sids = currentMeta.getSids(heteroClusterDbId, heteroShardDbId);
+		Assert.assertEquals("", sids);
+
+		List<CurrentMeta.CurrentClusterMeta> currentClusterMetas = currentMeta.allClusterMetas().stream().filter(a -> a.getClusterDbId() == 7).collect(Collectors.toList());
+		CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
+		List<RedisMeta> redisMetas = ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
+		setRedisesSidsAndGtids(redisMetas);
+
+		Set<String> sidSet = new HashSet(Arrays.asList(currentMeta.getSids(heteroClusterDbId, heteroShardDbId).split(",")));
+		Set<String> resultSet = new HashSet(Arrays.asList("a1,b1,b2".split(",")));
+		Assert.assertFalse(resultSet.retainAll(sidSet));
+		Assert.assertFalse(sidSet.retainAll(resultSet));
+	}
+
+	private void setRedisesSidsAndGtids(List<RedisMeta> redises) {
+
+		RedisMeta redis1 = redises.get(0);
+		redis1.setGtid("a1:1-10:15-21,b2:1-7");
+		redis1.setSid("a1,b2");
+
+		RedisMeta redis2 = redises.get(1);
+		redis2.setGtid("a1:1-10:15-20,b1:1-8");
+		redis2.setSid("a1,b1");
+	}
 }
 	
 		

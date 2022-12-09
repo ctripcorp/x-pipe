@@ -74,7 +74,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("Redis CONF REWRITE", "Redis CONF REWRITE不可用将导致 redis master切换/DR切换失败");
         }
     },
-    CLIENT_INCONSIS("client_inconsis", EMAIL_DBA | EMAIL_XPIPE_ADMIN) {
+    CLIENT_INCONSIS("client_inconsis", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;

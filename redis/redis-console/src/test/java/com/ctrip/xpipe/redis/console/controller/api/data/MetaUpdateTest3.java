@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
@@ -20,6 +21,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -219,6 +221,40 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(backupDC, clusterCreateInfo.getDcs().get(1));
     }
 
+    @Test
+    public void testCreateClusterWithDcSequence() {
+        String clusterName = "testCreateClusterWithDcSequence";
+        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+        clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
+        clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
+        clusterCreateInfo.setDcs(Lists.newArrayList("jq", "oy"));
+        clusterCreateInfo.setOrganizationId(3L);
+        clusterCreateInfo.setDesc("test cluster");
+        metaUpdate.createCluster(clusterCreateInfo);
+
+        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        Assert.assertEquals("jq", current.getDcs().get(0));
+        Assert.assertEquals("oy", current.getDcs().get(1));
+    }
+
+    @Test
+    public void testCreateClusterWithDcSequence1() {
+        String clusterName = "testCreateClusterWithDcSequence1";
+        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
+        clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
+        clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
+        clusterCreateInfo.setDcs(Lists.newArrayList("oy", "jq"));
+        clusterCreateInfo.setOrganizationId(3L);
+        clusterCreateInfo.setDesc("test cluster");
+        metaUpdate.createCluster(clusterCreateInfo);
+
+        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        Assert.assertEquals("oy", current.getDcs().get(0));
+        Assert.assertEquals("jq", current.getDcs().get(1));
+    }
+
     private List<RedisCreateInfo> createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {
         return Lists.newArrayList(new RedisCreateInfo().setDcId(activeDC).setRedises(StringUtil.join(", ", activeDcRedis.toArray())),
                 new RedisCreateInfo().setDcId(backupDC).setRedises(StringUtil.join(", ", backupDcRedis.toArray())));
@@ -266,7 +302,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBindDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "fra");
+        RetMessage ret = metaUpdate.bindDc(clusterName, "fra", Optional.ofNullable(null));
         Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
 
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
@@ -276,7 +312,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBindDuplicatedDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "jq");
+        RetMessage ret = metaUpdate.bindDc(clusterName, "jq", null);
         Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
 
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
@@ -315,4 +351,10 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(2, dcTbls.size());
     }
 
+    @Test
+    public void getClusters() throws CheckFailException {
+        List<ClusterCreateInfo> clusters = metaUpdate.getClusters(ClusterType.ONE_WAY.toString());
+        Assert.assertNotNull(clusters.get(0).getDcDetails());
+        logger.info("{}", clusters);
+    }
 }

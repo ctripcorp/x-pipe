@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
@@ -71,14 +72,19 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         if (clusterType.supportMultiActiveDC()) {
             delayAction = new CRDTDelayAction(scheduled, instance, executors, pingService, foundationService);
+        } else if (activeDcCheckerSubscribeMasterTypeInstance(instance)) {
+            delayAction = new HeteroDelayAction(scheduled, instance, executors, pingService, foundationService);
         } else {
             delayAction = new DelayAction(scheduled, instance, executors, pingService, foundationService);
         }
 
-        delayAction.addListeners(listenersByClusterType.get(clusterType));
+        listenersByClusterType.get(clusterType).forEach(listener -> {
+            if (listener.supportInstance(instance)) delayAction.addListener(listener);
+        });
+
         delayAction.addControllers(controllersByClusterType.get(clusterType));
-        if(instance instanceof DefaultRedisHealthCheckInstance) {
-            delayAction.addListener(((DefaultRedisHealthCheckInstance)instance).createDelayListener());
+        if (instance instanceof DefaultRedisHealthCheckInstance) {
+            delayAction.addListener(((DefaultRedisHealthCheckInstance) instance).createDelayListener());
         }
 
         List<DelayPingActionCollector> delayPingActionCollectors = delayPingCollectorByClusterType.get(clusterType);
@@ -88,4 +94,10 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
 
         return delayAction;
     }
+
+
+    private boolean activeDcCheckerSubscribeMasterTypeInstance(RedisHealthCheckInstance instance) {
+        return foundationService.getDataCenter().equalsIgnoreCase(instance.getCheckInfo().getActiveDc()) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType());
+    }
+
 }

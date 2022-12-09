@@ -36,20 +36,27 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser {
 
 	@Override
 	protected Pair<String, Integer> chooseKeeperMaster() {
-		
-		if(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)){
-			
-			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm){
-				
-				logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
-				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
+
+		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+		    if (dcMetaCache.isCurrentDcBackUp(clusterDbId)){
+				if(!(keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm)){
+					logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+					keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
+				}
+			}else{
+				if(!(keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm)){
+
+					logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+					keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
+				}
 			}
-		}else{
-			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm){
-				logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
-				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
+		} else {
+			if(!(keeperMasterChooserAlgorithm instanceof HeteroDownStreamDcKeeperMasterChooserAlgorithm)){
+				logger.info("[chooseKeeperMaster][current dc hetero downstream, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+				keeperMasterChooserAlgorithm = new HeteroDownStreamDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 			}
 		}
+
 		return keeperMasterChooserAlgorithm.choose();
 	}
 	

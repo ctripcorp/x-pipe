@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.ClusterModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.UnexpectedRouteUsageInfoModel;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
@@ -15,7 +12,8 @@ import java.util.Set;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
-	List<ClusterTbl> findAllByNames(List<String> clusterNames);
+    List<ClusterTbl> findClustersByGroupType(String groupType);
+    List<ClusterTbl> findAllByNames(List<String> clusterNames);
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 	List<DcTbl> getClusterRelatedDcs(String clusterName);
@@ -30,12 +28,12 @@ public interface ClusterService {
 	Map<String, Long> getMigratableClustersCountByActiveDc();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
-	void updateCluster(String clusterName, ClusterTbl cluster);
+	void updateCluster(String clusterName, ClusterModel cluster);
 
 	void updateActivedcId(long id, long activeDcId);
 	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);
 	void deleteCluster(String clusterName);
-	void bindDc(String clusterName, String dcName);
+	void bindDc(DcClusterTbl dcClusterTbl);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
@@ -65,4 +63,6 @@ public interface ClusterService {
 	List<RouteInfoModel> findClusterDesignateRoutesBySrcDcNameAndClusterName(String dcName, String clusterName);
 	void updateClusterDesignateRoutes(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
 	UnexpectedRouteUsageInfoModel findUnexpectedRouteUsageInfoModel();
+
+    void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
 }

@@ -114,6 +114,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcGroupType(HostPort hostPort) {
+        return null;
+    }
+
+    @Override
     public long getLastUpdateTime() {
         return 0;
     }
@@ -126,6 +131,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public boolean isMetaChain(HostPort src, HostPort dst) {
         return false;
+    }
+
+    @Override
+    public List<Long> dcShardIds(String clusterId, String dcId) {
+        return null;
     }
 
     @Override
@@ -146,5 +156,10 @@ public class TestMetaCache implements MetaCache {
     @Override
     public List<RedisMeta> getAllInstancesOfShard(String cluster, String shard) {
         return null;
+    }
+
+    @Override
+    public boolean isHeteroCluster(String clusterName) {
+        return false;
     }
 }

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -181,6 +182,11 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 				@Override
 				public void onKeeperContinue(String replId, long beginOffset) {
+
+				}
+
+				@Override
+				public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 
 				}
 

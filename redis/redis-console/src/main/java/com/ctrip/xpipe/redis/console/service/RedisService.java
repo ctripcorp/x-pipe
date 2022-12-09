@@ -19,6 +19,9 @@ public interface RedisService {
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);
 
 	List<RedisTbl> findAllRedisesByDcClusterName(String dcId, String clusterId);
+
+	List<RedisTbl> findAllKeepersByDcClusterName(String dcId, String clusterId);
+
 	List<RedisTbl> findAllByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 
 	List<RedisTbl> findRedisesByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
@@ -35,7 +38,9 @@ public interface RedisService {
 	void updateBatchMaster(List<RedisTbl> redises);
 	void updateBatchKeeperActive(List<RedisTbl> redises);
 
-	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
+    void updateSourceKeepers(String srcDcName, String clusterName, String shardName, long dstDcId, ShardModel sourceShard);
+
+    void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 
 	List<RedisTbl> findAllKeeperContainerCountInfo();
 

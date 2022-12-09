@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -50,6 +51,13 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
         if (keeperMeta.equals(getKeeperActive())) {
             originActiveKeeperServer = keeperServer;
             spyActiveKeeperServer = spy(keeperServer);
+            try {
+                originActiveKeeperServer.initialize();
+                originActiveKeeperServer.start();
+            } catch (Exception e) {
+                logger.info("[createRedisKeeperServer] init fail", e);
+            }
+
             return spyActiveKeeperServer;
         }
 
@@ -67,9 +75,9 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
             doAnswer(storeParams -> {
                 replicationStore.gc();
                 logger.info("[cmdFileMissingOnSendingCmdAfterFsync] after gc");
-                replicationStore.addCommandsListener(storeParams.getArgument(0, Long.class), storeParams.getArgument(1, CommandsListener.class));
+                replicationStore.addCommandsListener(storeParams.getArgument(0, ReplicationProgress.class), storeParams.getArgument(1, CommandsListener.class));
                 return null;
-            }).when(spyReplicationStore).addCommandsListener(anyLong(), any());
+            }).when(spyReplicationStore).addCommandsListener(any(), any());
 
             return spyReplicationStore;
         }).when(spyActiveKeeperServer).getReplicationStore();

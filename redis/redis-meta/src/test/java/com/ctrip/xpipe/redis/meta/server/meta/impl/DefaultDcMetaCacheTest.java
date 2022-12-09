@@ -16,8 +16,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Map;
-
 import static org.mockito.Mockito.*;
 
 /**

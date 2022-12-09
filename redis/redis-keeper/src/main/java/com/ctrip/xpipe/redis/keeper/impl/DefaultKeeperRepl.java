@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+
+import java.io.IOException;
 
 /**
  * @author wenchao.meng
@@ -42,6 +45,19 @@ public class DefaultKeeperRepl implements KeeperRepl {
 		return replicationStore.getMetaStore().getSecondReplIdOffset();
 	}
 
+	@Override
+	public GtidSet getBeginGtidSet() throws IOException {
+		return replicationStore.getBeginGtidSet();
+	}
+
+	@Override
+	public GtidSet getEndGtidSet() throws IOException {
+		GtidSet end = replicationStore.getEndGtidSet();
+		if (null == end) {
+		    end = getBeginGtidSet();
+		}
+		return end;
+	}
 
 	@Override
 	public String toString() {

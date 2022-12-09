@@ -16,6 +16,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
+import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -438,6 +440,14 @@ public abstract class AbstractRedisTest extends AbstractTest {
         return xpipeMeta;
     }
 
+    protected FakeXsyncServer startFakeXsyncServer(int serverPort, FakeXsyncHandler xsyncHandler) throws Exception {
+        FakeXsyncServer fakeXsyncServer = new FakeXsyncServer(serverPort, xsyncHandler);
+        fakeXsyncServer.initialize();
+        fakeXsyncServer.start();
+        add(fakeXsyncServer);
+        return fakeXsyncServer;
+    }
+
     protected FakeRedisServer startFakeRedisServer() throws Exception {
 
         int port = randomPort(6379, 6479);
@@ -491,10 +501,15 @@ public abstract class AbstractRedisTest extends AbstractTest {
         }
     }
 
+
     protected ClusterMeta differentCluster(String dc) {
+        return differentCluster(dc, 0);
+    }
+
+    protected ClusterMeta differentCluster(String dc, int index) {
 
         DcMeta dcMeta = getDcMeta(dc);
-        ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[0]);
+        ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[index]);
         clusterMeta.setId(randomString(10));
         clusterMeta.setDbId(randomLong());
 
@@ -542,6 +557,32 @@ public abstract class AbstractRedisTest extends AbstractTest {
                 keeperMeta.setActive(false);
             }
             result.add(keeperMeta);
+        }
+        return result;
+    }
+
+    protected List<ApplierMeta> createRandomAppliers(int count) {
+
+        List<Integer> ports = new LinkedList<>(randomPorts(count));
+        List<ApplierMeta> result = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            ApplierMeta applierMeta = new ApplierMeta().setIp("localhost").setPort(ports.get(i));
+            if (i == 0) {
+                applierMeta.setActive(true);
+            } else {
+                applierMeta.setActive(false);
+            }
+            result.add(applierMeta);
+        }
+        return result;
+    }
+
+    protected List<RedisMeta> createRandomRedises(int count) {
+        List<Integer> ports = new LinkedList<>(randomPorts(count));
+        List<RedisMeta> result = new LinkedList<>();
+        for (int i = 0; i < count; i++) {
+            RedisMeta redisMeta = new RedisMeta().setIp("localhost").setPort(ports.get(i));
+            result.add(redisMeta);
         }
         return result;
     }

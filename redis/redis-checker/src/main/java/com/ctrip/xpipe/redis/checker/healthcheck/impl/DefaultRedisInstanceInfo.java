@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,6 +28,10 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     private boolean isMaster;
 
     private boolean crossRegion;
+
+    private Long shardDbId;
+
+    private List<Long> activeDcShardIds = new ArrayList<>();
 
     public DefaultRedisInstanceInfo() {
         super();
@@ -86,10 +92,21 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         return crossRegion;
     }
 
+
+    @Override
+    public Long getShardDbId() {
+        return this.shardDbId;
+    }
+
+    @Override
+    public List<Long> getActiveDcAllShardIds() {
+        return Lists.newArrayList(this.activeDcShardIds);
+    }
+
     @Override
     public String toString() {
         return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, isMaster ? "Master" : "Slave",
-                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal");
+                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal", "dcGroupType:" + dcGroupType, "isHeteroCluster:" + isHeteroCluster);
     }
 
     public DefaultRedisInstanceInfo setCrossRegion(boolean crossRegion) {
@@ -118,4 +135,11 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         super.setActiveDc(activeDc);
     }
 
+    public void setShardDbId(Long shardDbId) {
+        this.shardDbId = shardDbId;
+    }
+
+    public void setActiveDcShardIds(List<Long> shardIds) {
+        this.activeDcShardIds = shardIds;
+    }
 }

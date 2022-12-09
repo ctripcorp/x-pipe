@@ -67,7 +67,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 	@Override
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
 		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+		for(ShardMeta shardMeta : clusterMeta.getAllShards().values()){
 			addShard(clusterMeta.getDbId(), shardMeta);
 		}
 		

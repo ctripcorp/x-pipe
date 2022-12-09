@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
-import com.ctrip.xpipe.redis.keeper.handler.*;
+import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
+import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
 import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReasonTest;
@@ -15,6 +18,8 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListenerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
@@ -57,6 +62,8 @@ import org.junit.runners.Suite.SuiteClasses;
         SlaveOfCommandHandlerTest.class,
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
+        ApplierCommandHandlerTest.class,
+
         DefaultKeeperStatsTest.class,
         DefaultLeakyBucketTest.class,
         CompositeLeakyBucketTest.class,
@@ -68,7 +75,12 @@ import org.junit.runners.Suite.SuiteClasses;
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class,
         PsyncForKeeperTest.class,
-        PsyncKeeperServerStateObserverTest.class
+        PsyncKeeperServerStateObserverTest.class,
+
+        GtidCmdOneSegmentReaderTest.class,
+        GtidSetCommandReaderTest.class,
+
+        AllApplierTests.class,
 })
 public class AllTests {
 

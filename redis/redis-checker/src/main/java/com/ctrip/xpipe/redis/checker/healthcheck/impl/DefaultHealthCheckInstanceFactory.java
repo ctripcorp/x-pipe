@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -29,9 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.LongStream;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -114,28 +113,33 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
+        ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        if (!StringUtil.isEmpty(redisMeta.parent().parent().getActiveRedisCheckRules())) {
-            for (String ruleId : redisMeta.parent().parent().getActiveRedisCheckRules().split(",")) {
+        if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
+            for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
                 RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
-                if(redisCheckRuleMeta != null) {
+                if (redisCheckRuleMeta != null) {
                     redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
                     logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
-                            redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(),redisMeta.getIp(), redisMeta.getPort());
+                            redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(), redisMeta.getIp(), redisMeta.getPort());
                 }
             }
         }
+
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
-                redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
         info.isMaster(redisMeta.isMaster());
+        info.setDcGroupType(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType());
+        info.setHeteroCluster(metaCache.isHeteroCluster(info.getClusterId()));
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
+            info.setShardDbId(redisMeta.parent().getDbId());
+            info.setActiveDcShardIds(metaCache.dcShardIds(info.getClusterId(), info.getActiveDc()));
         } else if (clusterType.supportMultiActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(currentDcId, info.getDcId()));
         }
@@ -150,6 +154,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId());
+        info.setDcGroupType(clusterMeta.getDcGroupType());
+        info.setHeteroCluster(metaCache.isHeteroCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
@@ -198,7 +204,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 instance.register(factory.create(instance));
             }
         }
-
     }
 
     private void installActionIfNeeded(SiteLeaderAwareHealthCheckActionFactory factory, HealthCheckInstance instance) {

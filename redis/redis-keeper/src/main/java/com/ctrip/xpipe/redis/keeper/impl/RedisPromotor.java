@@ -162,7 +162,7 @@ public class RedisPromotor {
 			}
 			
 			Long slaveCmdOffset = redisSlave.getAck();
-			long masterCmdOffset = redisSlave.getRedisKeeperServer().getKeeperRepl().getEndOffset();
+			long masterCmdOffset = redisSlave.getRedisServer().getKeeperRepl().getEndOffset();
 			
 			if(slaveCmdOffset == null || slaveCmdOffset < masterCmdOffset){
 				if (logger.isInfoEnabled()) {

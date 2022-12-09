@@ -61,7 +61,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
                 releaseResource();
                 if (!commandFuture.isSuccess()) {
                     if (commandFuture.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException) {
-                        resetDefaultReplication();
+                        redisKeeperServer.resetDefaultReplication();
                     }
                 }
             }
@@ -85,17 +85,6 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
         rdbonlyRedisMasterReplication.initialize();
         rdbonlyRedisMasterReplication.start();
     }
-
-    protected void resetDefaultReplication() {
-        try {
-            redisMaster.getReplicationStoreManager().create();
-        } catch (IOException e) {
-            throw new XpipeRuntimeException("[RedisMasterNewRdbDumper][RdbOffsetNotContinuous][RecreateStore]" + redisMaster.getReplicationStoreManager(), e);
-        }
-        redisMaster.reconnect();
-        redisKeeperServer.closeSlaves("replication reset");
-    }
-
 
     @Override
     protected void doCancel() {

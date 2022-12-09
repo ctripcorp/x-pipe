@@ -34,8 +34,9 @@ public class TestWithoutZkProfile extends AbstractProfile{
 	
 	@Bean
 	public ZkClient getZkClient(KeeperConfig keeperConfig){
-		
-		return getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
+	    String zkNameSpace = System.getProperty("zk.namespace", keeperConfig.getZkNameSpace());
+	    String zkAddress = System.getProperty("zk.address", keeperConfig.getZkConnectionString());
+		return getZkClient(zkNameSpace, zkAddress);
 	}
 	
 	@Bean

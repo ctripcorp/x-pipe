@@ -33,5 +33,4 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	ClusterId getClusterId();
 
 	ShardId getShardId();
-
 }

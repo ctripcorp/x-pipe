@@ -58,5 +58,25 @@
 			<scope>test</scope>
 		</dependency>
     </dependencies>
-
+    <profiles>
+        <profile>
+            <id>services</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.ctrip.framework.xpipe</groupId>
+                    <artifactId>ctrip-service</artifactId>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>com.ctrip.framework.fireman</groupId>
+                            <artifactId>fireman</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>com.ctrip.infosec</groupId>
+                            <artifactId>sso-client-new</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

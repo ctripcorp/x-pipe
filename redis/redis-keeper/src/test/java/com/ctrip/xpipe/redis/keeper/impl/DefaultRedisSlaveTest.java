@@ -1,12 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -30,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.*;
 
 /**
@@ -41,7 +46,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
-    private int waitDumpMilli = 100;
+    private int waitDumpMilli = 200;
 
     @Mock
     public Channel channel;
@@ -52,6 +57,9 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Mock
     private ReplicationStore replicationStore;
 
+    @Mock
+    private KeeperRepl keeperRepl;
+
     public DefaultRedisSlave redisSlave;
 
     @Before
@@ -59,6 +67,8 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
         when(channel.remoteAddress()).thenReturn(localhostInetAdress(randomPort()));
+        when(keeperRepl.replId()).thenReturn("test-repl-id");
+        when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
         redisSlave= new DefaultRedisSlave(redisClient);
@@ -77,17 +87,17 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes()));
 
         //should fail
-        shouldThrowException(() -> redisSlave.onCommand(mock(ReferenceFileRegion.class)));
-        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), 0L));
-        shouldThrowException(() -> redisSlave.beginWriteCommands(0L));
+        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
+        shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
         redisSlave.markPsyncProcessed();
         //all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
-        shouldThrowException(() -> redisSlave.onCommand(mock(ReferenceFileRegion.class)));
-        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), 0L));
-        shouldThrowException(() -> redisSlave.beginWriteCommands(0L));
+        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
+        shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
     }
 
@@ -177,7 +187,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         sleep(waitDumpMilli / 2);
 
-        redisSlave.beginWriteRdb(new LenEofType(1000), 2);
+        redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(2));
 
         sleep(waitDumpMilli);
 
@@ -225,9 +235,9 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Test
     public void testSlaveClosedWhenSendCommandFail() throws Exception {
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
-        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(anyLong(), any());
+        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(any(), any());
 
-        redisSlave.beginWriteRdb(new LenEofType(1000), 0);
+        redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(0));
         Assert.assertTrue(redisSlave.isOpen());
         redisSlave.sendCommandForFullSync();
         waitConditionUntilTimeOut(() -> !redisSlave.isOpen());
@@ -236,10 +246,39 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Test
     public void testMultiBeginWritingCmds() throws Exception {
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
-        redisSlave.beginWriteCommands(0L);
-        redisSlave.beginWriteCommands(0L);
+        redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
+        redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
 
-        verify(replicationStore).addCommandsListener(anyLong(), any());
+        verify(replicationStore).addCommandsListener(any(), any());
+    }
+
+    @Test
+    public void testFilterPublish() {
+        RedisSingleKeyOp op1 = new RedisOpSingleKey(RedisOpType.SET, string2Bytes("set a 1"), null, null);
+        RedisOp gtidOp1 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op1);
+        Assert.assertFalse(redisSlave.shouldFilter(gtidOp1));
+
+        RedisSingleKeyOp op2 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish xpipe-hetero-ppp 222"), null, null);
+        RedisOp gtidOp2 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op2);
+        Assert.assertFalse(redisSlave.shouldFilter(gtidOp2));
+
+        RedisSingleKeyOp op3 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish ppp 222"), null, null);
+        RedisOp gtidOp3 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op3);
+        Assert.assertTrue(redisSlave.shouldFilter(gtidOp3));
+        Assert.assertTrue(redisSlave.shouldFilter(op3));
+    }
+
+    private byte[][] string2Bytes(String s) {
+
+        String[] ss = s.split(" ");
+        int length = ss.length;
+        byte[][] b = new byte[length][];
+
+        for (int i = 0; i < length; i++) {
+            b[i] = ss[i].getBytes();
+        }
+
+        return b;
     }
 
     @Test

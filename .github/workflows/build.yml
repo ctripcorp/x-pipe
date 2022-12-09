@@ -38,12 +38,12 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          key: ${{ runner.os }}-m2-2022-11-30-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2-2022
 
       - name: Build with Maven
-        #run: mvn clean install -Plocal   -Dmaven.test.failure.ignore=true
-        run: mvn clean install -Plocal   
+        #run: mvn clean install -Plocal -Dmaven.test.failure.ignore=true
+        run: mvn clean install -Plocal -Dmaven.test.failure.ignore=true
 
       - name: codecov
         uses: codecov/codecov-action@v2.0.1

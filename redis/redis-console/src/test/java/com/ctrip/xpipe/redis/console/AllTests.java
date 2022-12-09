@@ -12,8 +12,10 @@ import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisInstanceInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.RedisController;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.RouteInfoControllerTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.ExclusiveThreadsForMigrationTest;
 import com.ctrip.xpipe.redis.console.dao.*;
@@ -99,6 +101,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DcServiceImplTest.class,
         ConfigServiceImplTest.class,
         AutoMigrationOffCheckerTest.class,
+        AppliercontainerServiceImplTest.class,
+        ReplDirectionServiceImplTest.class,
+        ApplierServiceImplTest.class,
 
         StateMachineTest.class,
         MigrationStatusTest.class,
@@ -118,6 +123,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
         ClusterServiceImplTest3.class,
+        ClusterServiceImplTest4.class,
 
         CheckPrepareRequestTest.class,
         ConfigDaoTest.class,
@@ -128,6 +134,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisDaoTest.class,
         CheckClusterTest.class,
 
+        RedisInstanceInfoTest.class,
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
         MetaUpdateTest.class,
@@ -214,7 +221,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
         ClusterTypeUpdateEventListenerTest.class,
 
-        RouteInfoControllerTest.class
+        RouteInfoControllerTest.class,
+        RedisController.class
 })
 public class AllTests {
 

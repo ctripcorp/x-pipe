@@ -51,6 +51,10 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 		public Redis getRedis() {
 			return redis;
 		}
+
+		public String getDcGroupType() {
+			return clusterMeta != null ? clusterMeta.getDcGroupType() : null;
+		}
 	}
 	
 	default boolean dcExists(String dc) { return read(()-> doDcExists(dc)); }
@@ -74,8 +78,14 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<KeeperMeta> getKeepers(String dc, String clusterId, String shardId) { return read(()->doGetKeepers(dc, clusterId, shardId)); }
 	List<KeeperMeta> doGetKeepers(String dc, String clusterId, String shardId);
 
+	default List<ApplierMeta> getAppliers(String dc, String clusterId, String shardId) { return read(()->doGetAppliers(dc, clusterId, shardId)); }
+	List<ApplierMeta> doGetAppliers(String dc, String clusterId, String shardId);
+
 	default List<RedisMeta> getRedises(String dc, String clusterId, String shardId) { return read(()->doGetRedises(dc, clusterId, shardId)); }
 	List<RedisMeta> doGetRedises(String dc, String clusterId, String shardId);
+
+	default List<RedisMeta> getRedises(String dc, String clusterId) { return read(()->doGetRedises(dc, clusterId)); }
+	List<RedisMeta> doGetRedises(String dc, String clusterId);
 
 	default KeeperMeta getKeeperActive(String dc, String clusterId, String shardId) { return read(()->doGetKeeperActive(dc, clusterId, shardId)); }
 	KeeperMeta doGetKeeperActive(String dc, String clusterId, String shardId);
@@ -107,11 +117,23 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default Set<String> getBackupDcs(String clusterId, String shardId) { return read(()->doGetBackupDcs(clusterId, shardId)); }
 	Set<String> doGetBackupDcs(String clusterId, String shardId);
 
+	default Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) { return read(()->doGetDownstreamDcs(dc, clusterId, shardId)); }
+	Set<String> doGetDownstreamDcs(String dc, String clusterId, String shardId);
+
+	default String getUpstreamDc(String dc, String clusterId, String shardId){ return read(()->doGetUpstreamDc(dc, clusterId, shardId)); }
+	String doGetUpstreamDc(String dc, String clusterId, String shardId);
+
+	default String getSrcDc(String dc, String clusterId, String shardId){ return read(()->doGetSrcDc(dc, clusterId, shardId)); }
+	String doGetSrcDc(String dc, String clusterId, String shardId);
+
 	default Set<String> getRelatedDcs(String clusterId, String shardId) { return read(()->doGetRelatedDcs(clusterId, shardId)); }
 	Set<String> doGetRelatedDcs(String clusterId, String shardId);
 
 	default KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta) { return read(()->doGetKeeperContainer(dc, keeperMeta)); }
 	KeeperContainerMeta doGetKeeperContainer(String dc, KeeperMeta keeperMeta);
+
+	default ApplierContainerMeta getApplierContainer(String dc, ApplierMeta applierMeta) { return read(()->doGetApplierContainer(dc, applierMeta)); }
+	ApplierContainerMeta doGetApplierContainer(String dc, ApplierMeta applierMeta);
 
 	default DcMeta getDcMeta(String dc) { return read(()->doGetDcMeta(dc)); }
 	DcMeta doGetDcMeta(String dc);

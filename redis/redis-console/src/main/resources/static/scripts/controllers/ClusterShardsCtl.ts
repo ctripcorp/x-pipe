@@ -20,6 +20,8 @@ function ClusterShardCtl($rootScope, $scope, $stateParams, $window,
 
     $scope.shardNameChange = shardNameChange;
 
+    $scope.gotoUpdateCluster = gotoUpdateCluster;
+
     init();
 
     function init() {
@@ -95,5 +97,11 @@ function ClusterShardCtl($rootScope, $scope, $stateParams, $window,
         }else{
            $scope.shard.setinelMonitorName = $scope.clusterName + $scope.shard.shardName;
         }
+    }
+
+    function gotoUpdateCluster() {
+        $('#createShardModal').modal('hide');
+        $window.location.href = "/#/cluster_form?clusterName=" + $scope.clusterName + "&type=update";
+        $window.location.reload();
     }
 }
