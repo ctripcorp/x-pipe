@@ -54,4 +54,9 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
     public RedisOp redisOp() {
         return redisOp;
     }
+
+    @Override
+    public RedisOpCommandType type() {
+        return RedisOpCommandType.OTHER;
+    }
 }
