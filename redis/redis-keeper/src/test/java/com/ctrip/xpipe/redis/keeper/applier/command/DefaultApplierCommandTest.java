@@ -7,9 +7,10 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.junit.*;
+
+import java.util.concurrent.Executors;
 
 /**
  * @author Slight
@@ -35,11 +36,12 @@ public class DefaultApplierCommandTest {
         //destroy async redis client
     }
 
-    private final ApplierSequenceController controller = new DefaultSequenceController();
+    private final DefaultSequenceController controller = new DefaultSequenceController();
 
     @Before
     public void setUp() throws Exception {
         controller.initialize();
+        controller.stateThread = Executors.newFixedThreadPool(1);
     }
 
     @After

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.op;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -28,6 +29,8 @@ public abstract class AbstractRedisOp implements RedisOp {
 
     private byte[][] rawArgs;
 
+    private long estimatedSize;
+
     public AbstractRedisOp() {}
 
     public AbstractRedisOp(byte[][] rawArgs) {
@@ -47,6 +50,21 @@ public abstract class AbstractRedisOp implements RedisOp {
         this.gtid = gtid;
         this.gid = gid;
         this.timestamp = timestamp;
+        this.estimateSize(rawArgs);
+    }
+
+    private void estimateSize(byte[][] rawArgs) {
+
+        estimatedSize = 0;
+
+        for (byte[] rawArg : rawArgs) {
+            estimatedSize += rawArg.length;
+        }
+    }
+
+    @Override
+    public long estimatedSize() {
+        return estimatedSize;
     }
 
     @Override
