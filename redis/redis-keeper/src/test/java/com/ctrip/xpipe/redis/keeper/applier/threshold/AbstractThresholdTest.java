@@ -67,6 +67,7 @@ public class AbstractThresholdTest extends AbstractTest {
 
         try {
             while (System.currentTimeMillis() - start <= duration) {
+                //this is like a netty thread
                 long quantity = randomInt(1, maxPacket);
                 threshold.tryPass(quantity);
                 executor.submit(() -> {

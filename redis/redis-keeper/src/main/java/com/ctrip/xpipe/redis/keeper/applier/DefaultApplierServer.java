@@ -147,6 +147,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
+        this.memoryThreshold = new MemoryThreshold(512 * 1024 * 1024 /* 512M */);
 
         this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
