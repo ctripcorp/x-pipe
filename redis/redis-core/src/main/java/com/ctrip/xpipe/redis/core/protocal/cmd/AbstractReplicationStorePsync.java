@@ -113,6 +113,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 	
 	@Override
 	protected void failReadRdb(Throwable throwable) {
+		if (rdbStore == null) {
+			getLogger().info("[failRdb], rdbStore=null", throwable);
+			return;
+		}
 		rdbStore.failRdb(throwable);
 	}
 
