@@ -19,6 +19,8 @@ public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp impleme
         this.rawGtidArgs = rawGtidArgs;
         this.gtid = gtid;
         this.innerRedisOp = innerRedisOp;
+
+        this.estimateSize(rawGtidArgs, innerRedisOp.estimatedSize());
     }
 
     @Override

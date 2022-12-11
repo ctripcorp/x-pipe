@@ -50,12 +50,13 @@ public abstract class AbstractRedisOp implements RedisOp {
         this.gtid = gtid;
         this.gid = gid;
         this.timestamp = timestamp;
-        this.estimateSize(rawArgs);
+
+        this.estimateSize(rawArgs, 0);
     }
 
-    private void estimateSize(byte[][] rawArgs) {
+    protected void estimateSize(byte[][] rawArgs, long alongWith) {
 
-        estimatedSize = 0;
+        estimatedSize = alongWith;
 
         if (rawArgs == null) {
             return;
