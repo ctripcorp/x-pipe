@@ -75,27 +75,6 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         return parser;
     }
 
-    RedisOpParser cmdParser = createRedisOpParser();
-
-    RdbParser<?> rdbParser;
-
-    @Test
-    public void xsync() throws Exception {
-
-        rdbParser = new DefaultRdbParser();
-        rdbParser.registerListener(this);
-
-        XpipeNettyClientKeyedObjectPool pool = new XpipeNettyClientKeyedObjectPool(8);
-        pool.initialize();
-        pool.start();
-
-        SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(new DefaultEndPoint("127.0.0.1", 6000));
-        DefaultXsync xsync = new DefaultXsync(objectPool, new GtidSet("e0cbd7e2858c5b1f6216f22d1d24eecaeb1d48ef:0"), null, scheduled);
-        xsync.addXsyncObserver(this);
-        xsync.execute(executors);
-
-        waitForAnyKey();
-    }
 
     private void setReplicationStoreDir() {
         System.setProperty("replication.store.dir", String.format("/opt/data/xpipe%s", System.getProperty("server.port")));
@@ -139,6 +118,29 @@ public class Gtid2OffsetIndexGeneratorTest extends AbstractRedisKeeperContextTes
         return false;
     }
 
+    /* start applier manually */
+
+    RedisOpParser cmdParser = createRedisOpParser();
+
+    RdbParser<?> rdbParser;
+
+    @Test
+    public void xsync() throws Exception {
+
+        rdbParser = new DefaultRdbParser();
+        rdbParser.registerListener(this);
+
+        XpipeNettyClientKeyedObjectPool pool = new XpipeNettyClientKeyedObjectPool(8);
+        pool.initialize();
+        pool.start();
+
+        SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(new DefaultEndPoint("127.0.0.1", 6000));
+        DefaultXsync xsync = new DefaultXsync(objectPool, new GtidSet("e0cbd7e2858c5b1f6216f22d1d24eecaeb1d48ef:0"), null, scheduled);
+        xsync.addXsyncObserver(this);
+        xsync.execute(executors);
+
+        waitForAnyKey();
+    }
     @Override
     public void onFullSync(GtidSet rdbGtidSet) {
         logger.info(rdbGtidSet.toString());
