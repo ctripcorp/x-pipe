@@ -65,7 +65,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
 
 
         assertEquals(server.memoryThreshold, ((DefaultCommandDispatcher) server.dispatcher).memoryThreshold);
-        assertEquals(server.memoryThreshold, ((DefaultSequenceController) server.sequence).memoryThreshold);
+        assertEquals(server.memoryThreshold, ((DefaultSequenceController) server.sequenceController).memoryThreshold);
 
         //server.client.close()
     }
