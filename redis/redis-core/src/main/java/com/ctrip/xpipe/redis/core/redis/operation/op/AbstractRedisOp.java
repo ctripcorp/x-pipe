@@ -57,6 +57,10 @@ public abstract class AbstractRedisOp implements RedisOp {
 
         estimatedSize = 0;
 
+        if (rawArgs == null) {
+            return;
+        }
+
         for (byte[] rawArg : rawArgs) {
             estimatedSize += rawArg.length;
         }
