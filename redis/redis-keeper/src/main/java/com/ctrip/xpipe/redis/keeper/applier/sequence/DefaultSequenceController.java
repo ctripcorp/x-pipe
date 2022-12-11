@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -23,6 +24,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @InstanceDependency
     public ExecutorService stateThread;
+
+    @InstanceDependency
+    public MemoryThreshold memoryThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
@@ -89,6 +93,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* do some stuff when finish */
 
         mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -133,6 +138,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         SequenceCommand<?> success = new SuccessSequenceCommand(currents, stateThread, workerThreads);
         mergeGtidWhenSuccess(success, command.gtid());
+        releaseMemoryThresholdWhenSuccess(success, command.redisOp().estimatedSize());
 
         success.execute();
     }
@@ -160,6 +166,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* do some stuff when finish */
 
         mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -193,6 +200,16 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                     if (lwmManager != null) {
                         lwmManager.submit(gtid);
                     }
+                }
+            }
+        });
+    }
+
+    private void releaseMemoryThresholdWhenSuccess(SequenceCommand<?> sequenceCommand, long memory) {
+        sequenceCommand.future().addListener((f)->{
+            if (f.isSuccess()) {
+                if (memoryThreshold != null) {
+                    memoryThreshold.release(memory);
                 }
             }
         });
