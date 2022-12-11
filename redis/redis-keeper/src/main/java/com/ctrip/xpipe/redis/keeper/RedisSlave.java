@@ -21,7 +21,7 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	
 	SLAVE_STATE getSlaveState();
 
-	void ack(Long valueOf);
+	void ack(Long valueOf, boolean putOnline);
 	
 	Long getAck();
 	
