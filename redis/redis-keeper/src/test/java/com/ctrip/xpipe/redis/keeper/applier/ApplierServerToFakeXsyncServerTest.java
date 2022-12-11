@@ -80,5 +80,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("GTID a1:28");
 
         server.propagate("gtid a1:27 set k1 v7");
+
+
     }
 }
