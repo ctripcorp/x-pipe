@@ -266,6 +266,11 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         RedisOp gtidOp3 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op3);
         Assert.assertTrue(redisSlave.shouldFilter(gtidOp3));
         Assert.assertTrue(redisSlave.shouldFilter(op3));
+
+        //test estimated size by the way
+        Assert.assertEquals(15, gtidOp1.estimatedSize());
+        Assert.assertEquals(36, gtidOp2.estimatedSize());
+        Assert.assertEquals(23, gtidOp3.estimatedSize());
     }
 
     private byte[][] string2Bytes(String s) {
