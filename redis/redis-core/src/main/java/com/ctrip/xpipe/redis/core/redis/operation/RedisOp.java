@@ -20,4 +20,6 @@ public interface RedisOp {
 
     ByteBuf buildRESP();
 
+    //overhead apart
+    long estimatedSize();
 }
