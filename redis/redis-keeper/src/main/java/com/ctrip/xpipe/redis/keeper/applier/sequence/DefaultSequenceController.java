@@ -47,6 +47,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @Override
     public void submit(RedisOpCommand<?> command) {
 
+        memoryThreshold.tryPass(command.redisOp().estimatedSize());
+
         stateThread.execute(()->{
             if (logger.isDebugEnabled()) {
                 logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
