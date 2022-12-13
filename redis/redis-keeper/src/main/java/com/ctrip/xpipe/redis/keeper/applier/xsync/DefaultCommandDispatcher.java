@@ -195,10 +195,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         updateGtidState(redisOp.getOpGtid());
 
-        //We put memoryThreshold.tryPass() closer to sequenceController.submit()
-        // to avoid threshold-leak as much as possible.
-        memoryThreshold.tryPass(redisOp.estimatedSize());
-
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
         } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
