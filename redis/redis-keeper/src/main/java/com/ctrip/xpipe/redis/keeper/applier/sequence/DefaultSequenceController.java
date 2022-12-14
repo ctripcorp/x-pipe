@@ -5,11 +5,14 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +29,13 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ExecutorService stateThread;
 
     @InstanceDependency
-    public MemoryThreshold memoryThreshold;
+    public ScheduledExecutorService scheduled;
+
+    public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
+
+    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(2000);
+
+    public QPSThreshold qpsThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
@@ -37,6 +46,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @Override
     protected void doInitialize() throws Exception {
         workerThreads = Executors.newFixedThreadPool(8);
+        qpsThreshold = new QPSThreshold(8000, scheduled);
     }
 
     @Override
@@ -48,6 +58,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public void submit(RedisOpCommand<?> command) {
 
         memoryThreshold.tryPass(command.redisOp().estimatedSize());
+        concurrencyThreshold.tryPass();
+
+        if (qpsThreshold != null) {
+            qpsThreshold.tryPass();
+        }
 
         stateThread.execute(()->{
             if (logger.isDebugEnabled()) {
@@ -210,9 +225,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     private void releaseMemoryThresholdWhenSuccess(SequenceCommand<?> sequenceCommand, long memory) {
         sequenceCommand.future().addListener((f)->{
             if (f.isSuccess()) {
-                if (memoryThreshold != null) {
-                    memoryThreshold.release(memory);
-                }
+                concurrencyThreshold.release();
+                memoryThreshold.release(memory);
             }
         });
     }
