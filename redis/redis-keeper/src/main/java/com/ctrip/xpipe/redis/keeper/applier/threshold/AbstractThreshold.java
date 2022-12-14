@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * Dec 09, 2022 11:41
  */
-public abstract class AbstractThreshold implements Threshold {
+public abstract class AbstractThreshold {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -25,24 +25,27 @@ public abstract class AbstractThreshold implements Threshold {
         this.limit = limit;
     }
 
-    @Override
-    public void tryPass(long quantity) {
+    protected void tryPass(long quantity) {
 
         gate.tryPass();
 
         checkCloseGate(accumulated.addAndGet(quantity));
     }
 
-    @Override
-    public void release(long quantity) {
+    protected void release(long quantity) {
 
         checkOpenGate(accumulated.addAndGet(-quantity));
+    }
+
+    protected void reset() {
+        accumulated.set(0);
+        checkOpenGate(0);
     }
 
     private void checkCloseGate(long current) {
 
         if(gate.isOpen() && (current >= limit)){
-            logger.info("[checkCloseGate][close gate]{}, {} / {}", gate, accumulated, limit);
+            logger.debug("[checkCloseGate][close gate]{}, {} / {}", gate, accumulated, limit);
             gate.close();
             //just in case, before gate.close(), all flushed
             checkOpenGate(accumulated.get());
@@ -52,7 +55,7 @@ public abstract class AbstractThreshold implements Threshold {
     private void checkOpenGate(long current){
 
         if(!gate.isOpen() && (current <= (limit >> 2))){
-            logger.info("[checkOpenGate][open gate]{}, {} / {}", gate, accumulated, limit);
+            logger.debug("[checkOpenGate][open gate]{}, {} / {}", gate, accumulated, limit);
             gate.open();
         }
     }

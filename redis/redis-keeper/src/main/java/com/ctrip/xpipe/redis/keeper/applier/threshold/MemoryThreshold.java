@@ -7,7 +7,17 @@ package com.ctrip.xpipe.redis.keeper.applier.threshold;
  */
 public class MemoryThreshold extends AbstractThreshold {
 
-    public MemoryThreshold(long limit) {
-        super(limit);
+    public MemoryThreshold(long bytes) {
+        super(bytes);
+    }
+
+    @Override
+    public void tryPass(long bytes) {
+        super.tryPass(bytes);
+    }
+
+    @Override
+    public void release(long bytes) {
+        super.release(bytes);
     }
 }
