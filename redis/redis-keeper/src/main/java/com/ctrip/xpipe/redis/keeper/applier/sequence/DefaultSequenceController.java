@@ -33,7 +33,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
 
-    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(2000);
+    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(500);
 
     public QPSThreshold qpsThreshold;
 
@@ -46,7 +46,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @Override
     protected void doInitialize() throws Exception {
         workerThreads = Executors.newFixedThreadPool(8);
-        qpsThreshold = new QPSThreshold(8000, scheduled);
+        qpsThreshold = new QPSThreshold(5000, scheduled);
     }
 
     @Override
