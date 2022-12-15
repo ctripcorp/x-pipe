@@ -13,6 +13,8 @@ public interface ReplDirectionService {
 
     List<ReplDirectionTbl> findAllReplDirectionTblsByCluster(long clusterId);
 
+    List<ReplDirectionTbl> findAllReplDirectionTblsByClusterWithSrcDcAndFromDc(long clusterId);
+
     ReplDirectionInfoModel findReplDirectionInfoModelByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName);
 
     ReplDirectionTbl findByClusterAndSrcToDc(String clusterName, String srcDcName, String toDcName);

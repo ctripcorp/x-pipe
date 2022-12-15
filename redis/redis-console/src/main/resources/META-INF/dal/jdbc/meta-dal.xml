@@ -2860,6 +2860,8 @@
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-id" value-type="Long"/>
 
+		<var name="shard-ids" value-type="java.util.List&lt;Long&gt;" />
+
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct"/>
@@ -3012,6 +3014,18 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='shard-id' /> = ${shard-id}
 					AND <FIELD name='repl-direction-id' /> = ${repl-direction-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/>
+					]]>
+				</statement>
+			</query>
+			<query name='find-appliers-by-shard-ids' type='SELECT' multiple="true">
+				<param name='shard-ids'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='shard-id'/> IN <IN>${shard-ids}</IN>
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/>
 					]]>
