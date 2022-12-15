@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
-import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -47,9 +46,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @InstanceDependency
     public ExecutorService stateThread;
-
-    @InstanceDependency
-    public MemoryThreshold memoryThreshold;
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
@@ -194,10 +190,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         updateGtidState(redisOp.getOpGtid());
-
-        //We put memoryThreshold.tryPass() closer to sequenceController.submit()
-        // to avoid threshold-leak as much as possible.
-        memoryThreshold.tryPass(redisOp.estimatedSize());
 
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -17,7 +18,7 @@ import java.util.concurrent.Executors;
  * <p>
  * Feb 26, 2022 8:45 PM
  */
-public class DefaultApplierCommandTest {
+public class DefaultApplierCommandTest extends AbstractTest {
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
@@ -40,8 +41,9 @@ public class DefaultApplierCommandTest {
 
     @Before
     public void setUp() throws Exception {
-        controller.initialize();
         controller.stateThread = Executors.newFixedThreadPool(1);
+        controller.scheduled = scheduled;
+        controller.initialize();
     }
 
     @After

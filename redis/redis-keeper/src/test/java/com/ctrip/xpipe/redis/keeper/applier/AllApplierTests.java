@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceControllerTe
 import com.ctrip.xpipe.redis.keeper.applier.sequence.SequenceCommandTest;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.StubbornCommandTest;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.AbstractThresholdTest;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThresholdTest;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcherTest;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplicationTest;
 import org.junit.runner.RunWith;
@@ -17,6 +18,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultApplierCommandTest.class,
 
         AbstractThresholdTest.class,
+        QPSThresholdTest.class,
 
         DefaultSequenceControllerTest.class,
         SequenceCommandTest.class,
