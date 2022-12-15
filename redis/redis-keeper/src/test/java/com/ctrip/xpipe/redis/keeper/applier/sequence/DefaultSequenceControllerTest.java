@@ -31,9 +31,10 @@ public class DefaultSequenceControllerTest extends AbstractTest {
 
     @Before
     public void setUp() throws Exception {
-        controller.initialize();
         controller.stateThread = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "state-test-thread"));
+        controller.scheduled = scheduled;
+        controller.initialize();
     }
 
     @After

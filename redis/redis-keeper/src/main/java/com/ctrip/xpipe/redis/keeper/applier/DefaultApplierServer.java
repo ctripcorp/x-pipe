@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
-import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
@@ -76,9 +75,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public InstanceComponentWrapper<LeaderElector> leaderElectorWrapper;
-
-    @InstanceDependency
-    public MemoryThreshold memoryThreshold;
 
     //@InstanceDependency
     //public QPSThreshold qpsThreshold;
@@ -147,7 +143,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
-        this.memoryThreshold = new MemoryThreshold(512 * 1024 * 1024 /* 512M */);
 
         this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
