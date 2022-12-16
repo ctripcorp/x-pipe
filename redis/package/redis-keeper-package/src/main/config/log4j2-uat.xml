@@ -77,7 +77,7 @@
         <logger name="com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats" level="INFO" additivity="false">
             <appender-ref ref="trafficLogger"/>
         </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.applier" level="INFO" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.keeper.applier" level="DEBUG" additivity="false">
             <appender-ref ref="rollingFileInfo"/>
         </logger>
         <root level="INFO">
