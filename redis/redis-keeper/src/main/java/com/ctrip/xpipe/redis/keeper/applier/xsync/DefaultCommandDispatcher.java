@@ -167,6 +167,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
+            if (current - last > 10000) {
+                logger.info("[GtidCompensateJob] gtid leap a lot - last: {}, current: {}", last, current);
+            }
+
+            if (last > current) {
+                logger.info("[GtidCompensateJob] unlikely - last > current {} > {}", last, current);
+            }
             for (long i = last + 1; i < current; i++) {
                 logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, i, gtid_executed.get());
                 gtid_executed.get().add(GtidSet.composeGtid(sourceId, i));
