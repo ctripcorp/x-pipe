@@ -167,10 +167,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
-            for (long i = last + 1; i < current; i++) {
-                logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, i, gtid_executed.get());
-                gtid_executed.get().add(GtidSet.composeGtid(sourceId, i));
-            }
+            logger.debug("[updateGtidState] add leap gtid {}:{}-{} to gtid_executed {}", sourceId, last + 1, current - 1, gtid_executed.get());
+            gtid_executed.get().compensate(sourceId, last + 1, current - 1);
         }
     }
 

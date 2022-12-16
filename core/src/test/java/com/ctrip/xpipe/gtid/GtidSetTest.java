@@ -44,6 +44,77 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testCompensate() {
+
+        GtidSet result;
+
+        //near
+        result = new GtidSet("A:3-5:10-11");
+        result.compensate("A", 1,2);
+        Assert.assertEquals(new GtidSet("A:1-5:10-11"), result);
+
+        result = new GtidSet("A:3-5:10-11");
+        result.compensate("A", 6,9);
+        Assert.assertEquals(new GtidSet("A:3-11"), result);
+
+        result = new GtidSet("A:3-5:10-11");
+        result.compensate("A", 12,20);
+        Assert.assertEquals(new GtidSet("A:3-5:10-20"), result);
+
+        //overlap
+        result = new GtidSet("A:3-6:10-13");
+        result.compensate("A", 1,5);
+        Assert.assertEquals(new GtidSet("A:1-6:10-13"), result);
+
+        result = new GtidSet("A:3-6:10-13");
+        result.compensate("A", 5,11);
+        Assert.assertEquals(new GtidSet("A:3-13"), result);
+
+        result = new GtidSet("A:3-6:10-13");
+        result.compensate("A", 5,13);
+        Assert.assertEquals(new GtidSet("A:3-13"), result);
+
+        result = new GtidSet("A:3-6:10-13");
+        result.compensate("A", 11,20);
+        Assert.assertEquals(new GtidSet("A:3-6:10-20"), result);
+
+        //all over
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 3,25);
+        Assert.assertEquals(new GtidSet("A:3-25"), result);
+
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 4,24);
+        Assert.assertEquals(new GtidSet("A:3-25"), result);
+
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 2,26);
+        Assert.assertEquals(new GtidSet("A:2-26"), result);
+
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 1,27);
+        Assert.assertEquals(new GtidSet("A:1-27"), result);
+
+        //add
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 7,7);
+        Assert.assertEquals(new GtidSet("A:3-7:10-13:20-25"), result);
+
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 24,24);
+        Assert.assertEquals(new GtidSet("A:3-6:10-13:20-25"), result);
+
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 26,26);
+        Assert.assertEquals(new GtidSet("A:3-6:10-13:20-26"), result);
+
+        //from > to
+        result = new GtidSet("A:3-6:10-13:20-25");
+        result.compensate("A", 27,26);
+        Assert.assertEquals(new GtidSet("A:3-6:10-13:20-25"), result);
+    }
+
+    @Test
     public void testDistanceFrom() {
         Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3")));
         Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3")));
