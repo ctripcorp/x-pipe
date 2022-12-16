@@ -33,7 +33,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
 
-    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(500);
+    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(1000);
 
     public QPSThreshold qpsThreshold;
 
