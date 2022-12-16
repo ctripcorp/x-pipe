@@ -157,6 +157,18 @@ public class GtidSet {
         return last;
     }
 
+    public void compensate(String sourceId, long from, long to) {
+        UUIDSet uuidSet = map.get(sourceId);
+        if (uuidSet == null) {
+            map.put(sourceId, uuidSet = new UUIDSet(sourceId, new ArrayList<Interval>()));
+        }
+        if (from == to) {
+            uuidSet.add(from);
+        } else {
+            uuidSet.compensate(from, to);
+        }
+    }
+
     /**
      * @param gtid GTID ("source_id:transaction_id")
      * @return whether or not gtid was added to the set (false if it was already there)
@@ -571,6 +583,25 @@ public class GtidSet {
             }
         }
 
+        public void compensate(long from, long to) {
+            if (from > to) {
+                return;
+            }
+
+            int fromIndex = findInterval(from);
+            int toIndex = findInterval(to);
+
+            long start = fromIndex < intervals.size() ? Math.min(intervals.get(fromIndex).start, from) : from;
+
+            for (int i = fromIndex; i < toIndex; i++) {
+                intervals.remove(fromIndex);
+            }
+
+            intervals.add(fromIndex, new Interval(start, to));
+
+            joinAdjacentIntervalsEvenOverlap(fromIndex);
+        }
+
         private void removeTil(int index) {
             for (int i = 0; i < index; i++) {
                 intervals.remove(0);
@@ -615,6 +646,16 @@ public class GtidSet {
             for (int i = Math.min(index + 1, intervals.size() - 1), e = Math.max(index - 1, 0); i > e; i--) {
                 Interval a = intervals.get(i - 1), b = intervals.get(i);
                 if (a.end + 1 == b.start) {
+                    a.end = b.end;
+                    intervals.remove(i);
+                }
+            }
+        }
+
+        private void joinAdjacentIntervalsEvenOverlap(int index) {
+            for (int i = Math.min(index + 1, intervals.size() - 1), e = Math.max(index - 1, 0); i > e; i--) {
+                Interval a = intervals.get(i - 1), b = intervals.get(i);
+                if (a.end + 1 >= b.start) {
                     a.end = b.end;
                     intervals.remove(i);
                 }
