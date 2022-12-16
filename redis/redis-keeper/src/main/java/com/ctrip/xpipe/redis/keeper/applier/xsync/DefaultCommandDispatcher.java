@@ -167,10 +167,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
-            if (current - last > 10000) {
-                logger.info("[GtidCompensateJob] gtid leap a lot - last: {}, current: {}", last, current);
-            }
-
             for (long i = last + 1; i < current; i++) {
                 logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, i, gtid_executed.get());
                 gtid_executed.get().add(GtidSet.composeGtid(sourceId, i));
@@ -198,6 +194,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             if (current <= last) {
                 //gtid under low watermark
                 return true;
+            }
+            if (current - last > 10000) {
+                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, {}, {}, {}", last, current, gtid, gtid_received, gtid_executed.get());
             }
             if (current > last + 1) {
                 stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
