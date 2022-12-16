@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -193,7 +194,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         return relatedDcClusterMap == null? new HashMap<>(): relatedDcClusterMap;
     }
 
-    private void generateBasicClusterMeta(ClusterMeta clusterMeta, String dcName, String clusterName,
+    @VisibleForTesting
+    protected void generateBasicClusterMeta(ClusterMeta clusterMeta, String dcName, String clusterName,
                                           DcTbl dcInfo, ClusterTbl clusterInfo, DcClusterTbl dcClusterInfo,
                                           List<DcTbl> clusterRelatedDc, Map<Long, DcClusterTbl> dcClusterMap) {
 
@@ -271,7 +273,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         return dcClusterInfo.getGroupName();
     }
 
-    private void generateHeteroMeta(ClusterMeta clusterMeta, long dcId, DcClusterTbl dcClusterInfo, List<DcTbl> dcList,
+    @VisibleForTesting
+    protected void generateHeteroMeta(ClusterMeta clusterMeta, long dcId, DcClusterTbl dcClusterInfo, List<DcTbl> dcList,
                                     Map<Long, DcClusterTbl> dcClusterMap, List<ShardTbl> shards, ClusterTbl clusterInfo,
                                     Map<Long, Long> keeperContainerId2DcMap) {
         ExecutorService fixedThreadPool = Executors.newFixedThreadPool(1);
@@ -332,7 +335,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         return dcTbl == null? "": dcTbl.getDcName();
     }
 
-    private SourceMeta buildSourceMeta(ClusterMeta clusterMeta, long srcDcId, long fromDcId, List<DcTbl> dcList) {
+    @VisibleForTesting
+    protected SourceMeta buildSourceMeta(ClusterMeta clusterMeta, long srcDcId, long fromDcId, List<DcTbl> dcList) {
         SourceMeta sourceMeta = new SourceMeta();
 
         sourceMeta.setSrcDc(getDcName(srcDcId, dcList));
@@ -422,5 +426,15 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         }
 
         return appliers != null && !appliers.isEmpty();
+    }
+
+    @VisibleForTesting
+    protected void setZoneService(ZoneService zoneService) {
+        this.zoneService = zoneService;
+    }
+
+    @VisibleForTesting
+    protected void setReplDirectionService(ReplDirectionService replDirectionService) {
+        this.replDirectionService = replDirectionService;
     }
 }
