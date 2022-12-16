@@ -149,17 +149,22 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         private final String sourceId;
 
-        private final long transactionId;
+        private final long last;
 
-        private GtidCompensateJob(String sourceId, long transactionId) {
+        private final long current;
+
+        public GtidCompensateJob(String sourceId, long last, long current) {
             this.sourceId = sourceId;
-            this.transactionId = transactionId;
+            this.last = last;
+            this.current = current;
         }
 
         @Override
         public void run() {
-            logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, transactionId, gtid_executed.get());
-            gtid_executed.get().add(GtidSet.composeGtid(sourceId, transactionId));
+            for (long i = last + 1; i < current; i++) {
+                logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, i, gtid_executed.get());
+                gtid_executed.get().add(GtidSet.composeGtid(sourceId, i));
+            }
         }
     }
 
@@ -179,10 +184,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else {
             //sid already received, transactionId may leap
             long last = gtid_received.rise(gtid);
-
-            for (long i = last + 1; i < parsed.getValue(); i++) {
-                stateThread.execute(new GtidCompensateJob(parsed.getKey(), i));
-            }
+            stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, parsed.getValue()));
         }
     }
 
