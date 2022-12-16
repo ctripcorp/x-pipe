@@ -130,6 +130,39 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
+    private class GtidRiseJob implements Runnable {
+
+        private final String gtid;
+
+        private GtidRiseJob(String gtid) {
+            this.gtid = gtid;
+        }
+
+        @Override
+        public void run() {
+            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
+            gtid_executed.get().rise(gtid);
+        }
+    }
+
+    private class GtidCompensateJob implements Runnable {
+
+        private final String sourceId;
+
+        private final long transactionId;
+
+        private GtidCompensateJob(String sourceId, long transactionId) {
+            this.sourceId = sourceId;
+            this.transactionId = transactionId;
+        }
+
+        @Override
+        public void run() {
+            logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, transactionId, gtid_executed.get());
+            gtid_executed.get().add(GtidSet.composeGtid(sourceId, transactionId));
+        }
+    }
+
     public void updateGtidState(String gtid) {
 
         if (null == gtid) {
@@ -142,20 +175,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             //sid first received
             gtid_received.rise(gtid);
 
-            stateThread.execute(()->{
-                logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
-                gtid_executed.get().rise(gtid);
-            });
+            stateThread.execute(new GtidRiseJob(gtid));
         } else {
             //sid already received, transactionId may leap
             long last = gtid_received.rise(gtid);
 
             for (long i = last + 1; i < parsed.getValue(); i++) {
-                long leaped = i;
-                stateThread.execute(()->{
-                    logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", parsed.getKey(), leaped, gtid_executed.get());
-                    gtid_executed.get().add(GtidSet.composeGtid(parsed.getKey(), leaped));
-                });
+                stateThread.execute(new GtidCompensateJob(parsed.getKey(), i));
             }
         }
     }
