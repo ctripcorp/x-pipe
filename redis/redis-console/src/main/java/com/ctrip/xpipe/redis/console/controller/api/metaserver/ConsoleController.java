@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.meta.*;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +42,8 @@ public class ConsoleController extends AbstractConsoleController {
 	private RedisMetaService redisMetaService;
 	@Autowired
 	private ApplierMetaService applierMetaService;
+	@Autowired
+	private KeeperContainerService keeperContainerService;
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
@@ -63,7 +67,12 @@ public class ConsoleController extends AbstractConsoleController {
 	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}/shard/{shardId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcClusterShardMeta(@PathVariable String dcId,@PathVariable String clusterId,
 			@PathVariable String shardId, @RequestParam(value="format", required = false) String format) {
-		ShardMeta result = shardMetaService.getShardMeta(dcId, clusterId, shardId);
+		Map<Long, Long> keepContainerId2DcMap = keeperContainerService.keeperContainerIdDcMap();
+
+		ShardMeta result = shardMetaService.getShardMeta(dcId, clusterId, shardId, keepContainerId2DcMap);
+		if (result == null) {
+		    return "";
+		}
 		return (format != null && format.equals("xml"))? result.toString() : coder.encode(result);
 	}
 	
