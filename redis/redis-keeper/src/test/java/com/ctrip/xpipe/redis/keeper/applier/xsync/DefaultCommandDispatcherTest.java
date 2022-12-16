@@ -28,6 +28,18 @@ public class DefaultCommandDispatcherTest {
     }
 
     @Test
+    public void testSkip() {
+
+        dispatcher.updateGtidState("A:5");
+        assertEquals(5, dispatcher.gtid_received.lwm("A"));
+        assertTrue(dispatcher.receivedSids.contains("A"));
+
+        assertTrue(dispatcher.updateGtidState("A:5"));
+        assertTrue(dispatcher.updateGtidState("A:3"));
+        assertFalse(dispatcher.updateGtidState("A:6"));
+    }
+
+    @Test
     public void testFirstReceived() {
 
         assertFalse(dispatcher.receivedSids.contains("A"));

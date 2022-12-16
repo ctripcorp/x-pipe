@@ -171,9 +171,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 logger.info("[GtidCompensateJob] gtid leap a lot - last: {}, current: {}", last, current);
             }
 
-            if (last > current) {
-                logger.info("[GtidCompensateJob] unlikely - last > current {} > {}", last, current);
-            }
             for (long i = last + 1; i < current; i++) {
                 logger.debug("[updateGtidState] add leap gtid {}:{} to gtid_executed {}", sourceId, i, gtid_executed.get());
                 gtid_executed.get().add(GtidSet.composeGtid(sourceId, i));
@@ -181,10 +178,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
-    public void updateGtidState(String gtid) {
+    public boolean /* skip? */ updateGtidState(String gtid) {
 
         if (null == gtid) {
-            return;
+            return false;
         }
 
         Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
@@ -197,8 +194,16 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else {
             //sid already received, transactionId may leap
             long last = gtid_received.rise(gtid);
-            stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, parsed.getValue()));
+            long current = parsed.getValue();
+            if (current <= last) {
+                //gtid under low watermark
+                return true;
+            }
+            if (current > last + 1) {
+                stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
+            }
         }
+        return false;
     }
 
     protected int toInt(byte[] value) {
@@ -230,7 +235,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        updateGtidState(redisOp.getOpGtid());
+        if (updateGtidState(redisOp.getOpGtid())) {
+            return;
+        }
 
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
