@@ -4,6 +4,7 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import org.junit.Assert;
@@ -15,7 +16,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -102,6 +105,27 @@ public class ShardMetaServiceImplTest extends AbstractTest {
         Assert.assertEquals(Long.valueOf(shardName.hashCode()), shardMeta.getSentinelId());
         Assert.assertEquals(SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName), shardMeta.getSentinelMonitorName());
         Assert.assertEquals(1L, shardMeta.getDbId().longValue());
+    }
+
+    @Test
+    public void testAddAppliers() {
+        shardMetaService.addAppliers(null, null, null);
+
+        List<ApplierTbl> applierTblList = new ArrayList<>();
+        ApplierTbl applierTbl = new ApplierTbl();
+        applierTbl.setActive(true);
+        applierTbl.setIp("ip");
+        applierTbl.setPort(5555);
+        applierTblList.add(applierTbl);
+
+        ShardMeta shardMeta = new ShardMeta();
+        shardMetaService.addAppliers(shardMeta, applierTblList, "cluster");
+        ApplierMeta result = shardMeta.getAppliers().get(0);
+
+        Assert.assertTrue(result.getActive());
+        Assert.assertEquals("ip", result.getIp());
+        Assert.assertEquals(5555, result.getPort().intValue());
+        Assert.assertEquals("cluster", result.getTargetClusterName());
     }
 
     private DcTbl mockDcInfo(String dcName) {

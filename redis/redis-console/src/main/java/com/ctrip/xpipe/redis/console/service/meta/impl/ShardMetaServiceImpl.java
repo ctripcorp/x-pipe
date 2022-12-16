@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,7 +185,8 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		}
 	}
 
-	private void addAppliers(ShardMeta shardMeta, List<ApplierTbl> appliers, String clusterName) {
+	@VisibleForTesting
+	protected void addAppliers(ShardMeta shardMeta, List<ApplierTbl> appliers, String clusterName) {
 		if (shardMeta == null) {
 			return;
 		}
