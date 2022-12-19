@@ -5,6 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.google.common.collect.Sets;
 
 /**
  * @author chen.zhu
@@ -22,7 +23,8 @@ public class ShardMetaVisitor implements MetaVisitor<ShardMeta> {
     @Override
     public void accept(ShardMeta shardMeta) {
         if (ClusterType.lookup(((ClusterMeta) shardMeta.parent()).getType()).supportSingleActiveDC()
-                && !shardMeta.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+                && shardMeta.getBackupDcs() != null
+                && Sets.newHashSet(shardMeta.getBackupDcs().toUpperCase().split("\\s*,\\s*")).contains(FoundationService.DEFAULT.getDataCenter().toUpperCase())) {
             return;
         }
         for(RedisMeta redisMeta : shardMeta.getRedises()) {

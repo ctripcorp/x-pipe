@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
@@ -152,7 +153,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void testActiveDcOY2JQ() {
         prepareData("oy");
         DcMeta future = cloneDcMeta("oy");
-        future.findCluster("cluster2").setActiveDc("jq");
+        future.findCluster("cluster2").setActiveDc("jq").setBackupDcs("oy");
         manager.compare(future);
 
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
@@ -164,7 +165,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void testActiveDcJQ2OY() {
         prepareData("oy");
         DcMeta future = cloneDcMeta("oy");
-        future.findCluster("cluster1").setActiveDc("oy");
+        future.findCluster("cluster1").setActiveDc("oy").setBackupDcs("jq");
         manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
@@ -350,6 +351,79 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Mockito.verify(instanceManager, never()).remove(anyString());
     }
 
+    @Test
+    public void testHeteroClusterModified() throws Exception {
+        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory);
+        DcMeta dcMeta= getDcMeta("jq");
+        ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
+        cluster1.setBackupDcs("ali");
+        cluster1.setDcGroupType(DcGroupType.DR_MASTER.name());
+        manager.compare(dcMeta);
+
+
+        DcMeta future = cloneDcMeta(dcMeta);
+        ClusterMeta futureCluster = future.findCluster("cluster2");
+        futureCluster.setBackupDcs("ali");
+        futureCluster.setDcGroupType(DcGroupType.MASTER.name());
+
+        manager.compare(future);
+
+        Mockito.verify(instanceManager, times(1)).getOrCreate(any(ClusterMeta.class));
+        Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
+        Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).remove(anyString());
+
+    }
+
+
+    @Test
+    public void testBackupDcClusterModified() throws Exception {
+        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory);
+        DcMeta dcMeta= getDcMeta("jq");
+        ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
+        cluster1.setBackupDcs("jq,ali");
+        manager.compare(dcMeta);
+
+
+        DcMeta future = cloneDcMeta(dcMeta);
+        ClusterMeta futureCluster = future.findCluster("cluster2");
+        futureCluster.setBackupDcs("jq");
+
+        manager.compare(future);
+
+        Mockito.verify(instanceManager, never()).getOrCreate(any(ClusterMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).remove(anyString());
+
+    }
+
+    protected DcMeta getDcMeta(String dc) {
+        Map<String, DcMeta> dcMetaMap = getXpipeMeta().getDcs();
+        DcMeta dcMeta = dcMetaMap.get(dc);
+        dcMeta.getClusters().values().forEach(clusterMeta -> {
+            if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
+                clusterMeta.setBackupDcs(getBackupDcs(dcMetaMap, clusterMeta));
+            }
+        });
+
+        return dcMeta;
+    }
+
+    protected String getBackupDcs(Map<String, DcMeta> dcMetaMap, ClusterMeta clusterMeta) {
+        StringBuilder sb = new StringBuilder();
+        for (String dc : dcMetaMap.keySet()) {
+            if (dcMetaMap.get(dc).findCluster(clusterMeta.getId()) != null) {
+                if (!dc.equalsIgnoreCase(clusterMeta.getActiveDc())) {
+                    sb.append(dc).append(",");
+                }
+            }
+        }
+        if (sb.length() > 1) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
+    }
 
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
