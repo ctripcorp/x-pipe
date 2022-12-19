@@ -242,6 +242,20 @@ public class GtidSetTest {
     }
 
     @Test
+    public void testRise4() {
+
+        GtidSet result;
+
+        result = new GtidSet("A:0");
+        result.rise("A:29");
+        Assert.assertEquals(new GtidSet("A:1-29"), result);
+
+        result = new GtidSet("A:5-10:20-30");
+        result.rise("A:29");
+        Assert.assertEquals(new GtidSet("A:1-30"), result);
+    }
+
+    @Test
     public void testAdd() throws Exception {
         GtidSet gtidSet = new GtidSet("00000000-0000-0000-0000-000000000000:3-5");
         gtidSet.add("00000000-0000-0000-0000-000000000000:2");
