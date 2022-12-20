@@ -1682,6 +1682,7 @@
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
 					AND <FIELD name='keepercontainer-org-id'/> = ${org-id}
+					AND kit.redis_role = 'keeper'
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count
 					]]>
