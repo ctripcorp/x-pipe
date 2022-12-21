@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.ping;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class PingAction extends AbstractHealthCheckAction<RedisHealthCheckInstan
 
             @Override
             public void fail(Throwable th) {
-                if (th.getMessage().contains("LOADING")) {
+                if (th.getMessage() != null && th.getMessage().contains("LOADING")) {
                     notifyListeners(new PingActionContext(instance, false, th));
                 } else {
                     notifyListeners(new PingActionContext(instance, false));
