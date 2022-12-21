@@ -68,6 +68,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private MigrationShardTblDao migrationShardTblDao;
 	private ClusterTblDao clusterTblDao;
 	private ShardTblDao shardTblDao;
+	private DcClusterShardTblDao dcClusterShardTblDao;
 
 	@PostConstruct
 	private void postConstruct() {
@@ -77,6 +78,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
 			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
 			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
+			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
@@ -259,18 +261,18 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
 		if (null != migrationClusters) {
 			for (final MigrationClusterTbl migrationCluster : migrationClusters) {
-				List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+				List<DcClusterShardTbl> /* distinct */ withShardIds = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 					@Override
-					public List<ShardTbl> doQuery() throws DalException {
-						return shardTblDao.findAllByClusterId(migrationCluster.getClusterId(),
-								ShardTblEntity.READSET_FULL);
+					public List<DcClusterShardTbl> doQuery() throws DalException {
+						return dcClusterShardTblDao.findByClusterIdForDrSwitch(migrationCluster.getClusterId(),
+								DcClusterShardTblEntity.READSET_SHARD_ID);
 					}
 				});
 
-				if (null != shards) {
-					for (ShardTbl shard : shards) {
+				if (null != withShardIds) {
+					for (DcClusterShardTbl withShardId : withShardIds) {
 						MigrationShardTbl migrationShardProto = migrationShardTblDao.createLocal();
-						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(shard.getId())
+						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(withShardId.getShardId())
 						.setLog("");
 						toCreateMigrationShards.add(migrationShardProto);
 					}
