@@ -129,7 +129,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
             if (clusterShard == null) {
                 if (redundantInstance(currentSlave))
-                    return new Pair<>(true, String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId));
+                    return new Pair<>(true, String.format("[%s]keeper or master, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId));
                 else {
                     String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
                     alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
@@ -144,12 +144,11 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(hostPort.getHost(), hostPort.getPort())), scheduled);
         try {
             Role role = roleCommand.execute().get(1, TimeUnit.SECONDS);
-            if (context.getInfo().getClusterType().supportKeeper())
-                redundant.set(isKeeper(role));
-            logger.info("[isKeeperOrDead] role: {}", role.getServerRole().name());
+            redundant.set(isKeeper(role) || isMaster(role));
+            logger.debug("[redundantInstance] role: {}", role.getServerRole().name());
         } catch (Throwable th) {
             redundant.set(inactive(th.getCause()));
-            logger.warn("[isKeeperOrDead][failed]{}", hostPort, th);
+            logger.warn("[redundantInstance][failed]{}", hostPort, th);
         }
 
         return redundant.get();
@@ -157,6 +156,10 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     boolean isKeeper(Role role) {
         return Server.SERVER_ROLE.KEEPER.equals(role.getServerRole());
+    }
+
+    boolean isMaster(Role role) {
+        return Server.SERVER_ROLE.MASTER.equals(role.getServerRole());
     }
 
     boolean inactive(Throwable th) {
