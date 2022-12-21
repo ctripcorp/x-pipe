@@ -705,6 +705,7 @@
 
 		<var name="dc-id" value-type="Long"/>
 		<var name="dc-name" value-type="String"/>
+		<var name="cluster-id" value-type="Long"/>
 		<var name="cluster-name" value-type="String"/>
 		<var name="shard-name" value-type="String"/>
 		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
@@ -718,6 +719,9 @@
 		<relation name="redis-info" entity-name="redis-tbl" entity-alias="rt"/>
 
 		<readsets>
+			<readset name="SHARD_ID">
+				<member name="shard-id"/>
+			</readset>
 			<readset name="SENTINEL_ID">
 				<member name="setinel-id"/>
 			</readset>
@@ -794,6 +798,20 @@
 					AND st2.deleted = 0
 					AND dct.deleted = 0
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-cluster-id-for-dr-switch" type="SELECT" multiple="true">
+				<param name="cluster-id"/>
+				<statement>
+					<![CDATA[
+					SELECT DISTINCT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-cluster-info'/>
+					WHERE <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND <FIELD name='deleted'/> = 0
+					AND (dct.group_type = 'DR_MASTER' or dct.group_type is null)
+					AND dct.cluster_id = ${cluster-id}
+					AND dct.deleted = 0;
 					]]>
 				</statement>
 			</query>
