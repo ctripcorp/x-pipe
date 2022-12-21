@@ -21,6 +21,7 @@ import org.springframework.web.client.RestOperations;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class KeeperContainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
@@ -111,19 +112,44 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
-        List<KeepercontainerTbl> keepercontainerTbls = dao.findKeeperContainerByCluster(dcName, clusterOrgId,
-            KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
-        if (keepercontainerTbls == null || keepercontainerTbls.isEmpty()) {
+        // find all keepers, both in used and unused
+        List<KeepercontainerTbl> allDcKeeperContainers = dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
+        List<KeepercontainerTbl> allDcOrgKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId).collect(Collectors.toList());
+
+        List<KeepercontainerTbl> dcOrgKeeperContainersInUsed;
+        if (allDcOrgKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
           logger.info("cluster {} with org id {} is going to find keepercontainers in normal pool",
                   clusterName, clusterOrgId);
-          keepercontainerTbls = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
-              KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
+          allDcOrgKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID).collect(Collectors.toList());
+
+          // find keepers in used in normal org
+          dcOrgKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
+                  KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
+        } else {
+          // find keepers in used in cluster org
+          dcOrgKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, clusterOrgId,
+                  KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
-        keepercontainerTbls = filterKeeperFromSameAvailableZone(keepercontainerTbls, dcName);
-        logger.info("find keeper containers: {}", keepercontainerTbls);
-        return keepercontainerTbls;
+
+        setCountAndSortForAllKeeperContainers(allDcOrgKeeperContainers,  dcOrgKeeperContainersInUsed);
+        allDcOrgKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgKeeperContainers, dcName);
+        logger.info("find keeper containers: {}", allDcOrgKeeperContainers);
+        return allDcOrgKeeperContainers;
       }
     });
+  }
+
+  void setCountAndSortForAllKeeperContainers(List<KeepercontainerTbl> allKeepers, List<KeepercontainerTbl> keepersInUsed) {
+    Map<Long, KeepercontainerTbl> dcKeepersInOrgMap = allKeepers.stream().collect(Collectors.toMap(KeepercontainerTbl::getKeepercontainerId, dcKeeperContainerInOrg -> dcKeeperContainerInOrg));
+    Map<Long, KeepercontainerTbl> dcKeepersInOrgWithCountMap = keepersInUsed.stream().collect(Collectors.toMap(KeepercontainerTbl::getKeepercontainerId, dcKeeperContainerInOrgWithCount -> dcKeeperContainerInOrgWithCount));
+
+    for (long keeperId : dcKeepersInOrgWithCountMap.keySet()) {
+      KeepercontainerTbl existed = dcKeepersInOrgMap.get(keeperId);
+      if (existed != null) {
+        existed.setCount(dcKeepersInOrgWithCountMap.get(keeperId).getCount());
+      }
+    }
+    allKeepers.sort(Comparator.comparing(KeepercontainerTbl::getCount));
   }
 
   @Override
