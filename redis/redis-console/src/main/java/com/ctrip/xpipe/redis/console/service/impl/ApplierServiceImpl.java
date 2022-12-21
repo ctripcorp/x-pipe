@@ -120,6 +120,16 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     }
 
     @Override
+    public List<ApplierTbl> findAppliersByShardIds(List<Long> shardIds) {
+        return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
+            @Override
+            public List<ApplierTbl> doQuery() throws DalException {
+                return dao.findAppliersByShardIds(shardIds, ApplierTblEntity.READSET_FULL);
+            }
+        });
+    }
+
+    @Override
     public List<ApplierTbl> findAppliersByClusterAndToDc(long toDcId, long clusterId) {
         return queryHandler.handleQuery(new DalQuery<List<ApplierTbl>>() {
             @Override
