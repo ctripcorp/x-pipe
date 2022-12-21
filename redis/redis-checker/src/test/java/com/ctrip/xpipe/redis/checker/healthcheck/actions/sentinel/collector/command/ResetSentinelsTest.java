@@ -75,12 +75,12 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         when(metaCache.findClusterShard(unknownKeeper)).thenReturn(null);
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
         Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
 
         unknownKeeperServer.stop();
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
         Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
 
         HostPort trueSlave = new HostPort(LOCAL_HOST, 6379);
         when(metaCache.findClusterShard(trueSlave)).thenReturn(new Pair<>("cluster", "shard"));
@@ -120,20 +120,30 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         Assert.assertTrue(shouldResetAndReason.getKey());
         Assert.assertTrue(shouldResetAndReason.getValue().contains("but meta:otherCluster:otherShard"));
 
-        Server unknownActiveServer = startServer(randomPort(), "*3\r\n"
+        Server unknownActiveSlaveServer = startServer(randomPort(), "*3\r\n"
                 + "$6\r\nslave\r\n"
                 + ":0\r\n*0\r\n");
-        HostPort unknownActive = new HostPort(LOCAL_HOST, unknownActiveServer.getPort());
+        HostPort unknownActive = new HostPort(LOCAL_HOST, unknownActiveSlaveServer.getPort());
         when(metaCache.findClusterShard(unknownActive)).thenReturn(null);
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
         Assert.assertFalse(shouldResetAndReason.getKey());
         verify(alertManager, times(1)).alert(anyString(), anyString(), any(), any(), anyString());
 
-        unknownActiveServer.stop();
-        waitConditionUntilTimeOut(() -> unknownActiveServer.getConnected() <= 0);
+
+        Server unknownActiveMasterServer = startServer(randomPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + ":0\r\n*0\r\n");
+        unknownActive = new HostPort(LOCAL_HOST, unknownActiveMasterServer.getPort());
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
         Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+        verify(alertManager, times(1)).alert(anyString(), anyString(), any(), any(), anyString());
+
+        unknownActiveSlaveServer.stop();
+        unknownActiveMasterServer.stop();
+        waitConditionUntilTimeOut(() -> unknownActiveSlaveServer.getConnected() <= 0);
+        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
         verify(metaCache, never()).getAllKeepers();
 
     }
