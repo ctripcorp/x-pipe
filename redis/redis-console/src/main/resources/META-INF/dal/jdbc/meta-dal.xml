@@ -808,6 +808,7 @@
 					SELECT DISTINCT <FIELDS/>
 					FROM <TABLE/>, <TABLE name='dc-cluster-info'/>
 					WHERE <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND <FIELD name='shard-id'/> != 0
 					AND <FIELD name='deleted'/> = 0
 					AND (dct.group_type = 'DR_MASTER' or dct.group_type is null)
 					AND dct.cluster_id = ${cluster-id}
