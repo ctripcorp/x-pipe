@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.DcRelation;
+import com.ctrip.xpipe.redis.console.config.DcsRelationsInfo;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
@@ -21,7 +24,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -42,6 +48,9 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Mock
     private DcClusterService dcClusterService;
 
+    @Mock
+    private ConsoleConfig config;
+
     private MigrationClusterTbl migrationClusterTbl;
 
     private ClusterTbl clusterTbl;
@@ -55,7 +64,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Before
     public void setup() {
         migrationRequest = new BeaconMigrationRequest();
-        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService);
+        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, config);
         migrationClusterTbl = new MigrationClusterTbl();
         clusterTbl = new ClusterTbl().setClusterName("cluster1").setId(1);
         dc0 = new DcTbl().setDcName("dc0").setId(1);
@@ -71,6 +80,12 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
         when(dcCache.find(dc1.getDcName())).thenReturn(dc1);
         when(dcCache.find(dc2.getId())).thenReturn(dc2);
         when(dcClusterService.find(2, 1)).thenReturn(new DcClusterTbl());
+
+        DcRelation dcRelation1 = new DcRelation().setDcs(dc0.getDcName() + " , " + dc1.getDcName()).setDistance(1);
+        DcRelation dcRelation2 = new DcRelation().setDcs(dc2.getDcName() + " , " + dc1.getDcName()).setDistance(10);
+        DcRelation dcRelation3 = new DcRelation().setDcs(dc0.getDcName() + " , " + dc2.getDcName()).setDistance(10);
+        List<DcRelation> relations = Arrays.asList(dcRelation1, dcRelation2, dcRelation3);
+        when(config.getDcsRelationsInfo()).thenReturn(new DcsRelationsInfo().setHealthyDelayPerDistance(1000).setRelations(relations));
     }
 
     @Test
@@ -163,6 +178,55 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());
         throw future.cause();
+    }
+
+    @Test
+    public void testChooseTargetDc() {
+        Set<String> availableDcs = Sets.newHashSet(dc0.getDcName(), dc1.getDcName(), dc2.getDcName());
+        String targetDcName ;
+        for (int i = 0; i < 1000; i++) {
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc0.getDcName(), availableDcs);
+            Assert.assertEquals(dc1.getDcName(), targetDcName);
+        }
+        for (int i = 0; i < 1000; i++) {
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc1.getDcName(), availableDcs);
+            Assert.assertEquals(dc0.getDcName(), targetDcName);
+        }
+        int first = 0;
+        int second = 0;
+        int error = 0;
+        for (int i = 0; i < 5000; i++) {
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc2.getDcName(), availableDcs);
+            if (dc0.getDcName().equalsIgnoreCase(targetDcName)) {
+                first++;
+            } else if (dc1.getDcName().equalsIgnoreCase(targetDcName)) {
+                second++;
+            } else {
+                error++;
+            }
+        }
+        Assert.assertEquals(0, error);
+        Assert.assertEquals(true, first > 2400 && first < 2600);
+        Assert.assertEquals(true, second > 2400 && first < 2600);
+
+        availableDcs = Sets.newHashSet(dc1.getDcName(), dc2.getDcName());
+        for (int i = 0; i < 1000; i++) {
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc1.getDcName(), availableDcs);
+            Assert.assertEquals(dc2.getDcName(), targetDcName);
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc2.getDcName(), availableDcs);
+            Assert.assertEquals(dc1.getDcName(), targetDcName);
+        }
+
+        availableDcs = Sets.newHashSet(dc0.getDcName(), dc2.getDcName());
+        for (int i = 0; i < 1000; i++) {
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc0.getDcName(), availableDcs);
+            Assert.assertEquals(dc2.getDcName(), targetDcName);
+            targetDcName = chooseTargetDcCmd.getTargetDcName(dc2.getDcName(), availableDcs);
+            Assert.assertEquals(dc0.getDcName(), targetDcName);
+        }
+
+        String none = chooseTargetDcCmd.getTargetDcName("none", availableDcs);
+        Assert.assertNull(none);
     }
 
 }

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.DcsRelationsInfo;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -93,6 +94,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "checker.sentinel.bind.timeout.milli";
 
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
+
+    public static final String KEY_DCS_RELATIONS = "dcs.relations";
 
     private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
@@ -204,6 +207,19 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
             info = JsonCodec.INSTANCE.decode(hickwallInfo, HickwallMetricInfo.class);
         }
         return info;
+    }
+
+
+    private String rawDcsRelationsInfo;
+    private DcsRelationsInfo dcsRelationsInfo;
+    @Override
+    public DcsRelationsInfo getDcsRelationsInfo() {
+        String localInfo = getProperty(KEY_DCS_RELATIONS, "{\"healthyDelayPerDistance\": 2000, \"relations\":[{\"dcs\":\"jq,oy\",\"distance\":1}]}");
+        if (StringUtil.isEmpty(rawDcsRelationsInfo) || !localInfo.equals(rawDcsRelationsInfo)) {
+            rawDcsRelationsInfo = localInfo;
+            dcsRelationsInfo = JsonCodec.INSTANCE.decode(rawDcsRelationsInfo, DcsRelationsInfo.class);
+        }
+        return dcsRelationsInfo;
     }
 
     @Override

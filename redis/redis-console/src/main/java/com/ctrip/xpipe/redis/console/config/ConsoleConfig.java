@@ -38,7 +38,9 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	HickwallMetricInfo getHickwallMetricInfo();
 
-	int getHealthyDelayMilli();
+    DcsRelationsInfo getDcsRelationsInfo();
+
+    int getHealthyDelayMilli();
 
 	int getHealthyDelayMilliThroughProxy();
 

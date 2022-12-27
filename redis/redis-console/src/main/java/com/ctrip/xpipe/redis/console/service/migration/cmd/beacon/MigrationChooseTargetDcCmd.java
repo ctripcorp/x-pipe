@@ -1,15 +1,19 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.DcRelation;
+import com.ctrip.xpipe.redis.console.config.DcsRelationsInfo;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -21,12 +25,15 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
 
     private DcClusterService dcClusterService;
 
+    private ConsoleConfig config;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationChooseTargetDcCmd.class);
 
-    public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache, DcClusterService dcClusterService) {
+    public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache, DcClusterService dcClusterService, ConsoleConfig config) {
         super(migrationRequest);
         this.dcCache = dcCache;
         this.dcClusterService = dcClusterService;
+        this.config = config;
     }
 
     @Override
@@ -86,9 +93,9 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
                 return;
             }
 
-            String targetDcName = availableDcs.iterator().next();
-            DcTbl targetDc = dcCache.find(targetDcName);
-            if (null == targetDc) {
+            String targetDcName = getTargetDcName(sourcedDc.getDcName(), availableDcs);
+            DcTbl targetDc;
+            if (targetDcName == null || (targetDc = dcCache.find(targetDcName)) == null) {
                 future().setFailure(new UnknownTargetDcException(clusterName, targetDcName));
                 return;
             }
@@ -98,4 +105,28 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
         }
     }
 
+    @VisibleForTesting
+    protected String getTargetDcName(String srcDcName, Set<String> availableDcs) {
+        DcsRelationsInfo dcsRelationsInfo = config.getDcsRelationsInfo();
+        if (dcsRelationsInfo == null || dcsRelationsInfo.getRelations() == null) {
+            return availableDcs.iterator().next();
+        }
+
+        Set<String> result = new HashSet<>();
+        int currentPriority = Integer.MAX_VALUE;
+        for (DcRelation dcRelation : dcsRelationsInfo.getRelations()) {
+            String[] dcs = dcRelation.getDcs().split("\\s*,\\s*");
+            boolean first = dcs[0].equalsIgnoreCase(srcDcName) && availableDcs.contains(dcs[1]);
+            boolean second = dcs[1].equalsIgnoreCase(srcDcName) && availableDcs.contains(dcs[0]);
+            if ((first || second) && dcRelation.getDistance() <= currentPriority && dcRelation.getDistance() > 0) {
+                if (dcRelation.getDistance() < currentPriority) {
+                    result.clear();
+                    currentPriority = dcRelation.getDistance();
+                }
+                result.add(first ? dcs[1] : dcs[0]);
+            }
+        }
+
+        return result.isEmpty() ? null : new ArrayList<String>(result).get(new Random().nextInt(result.size()));
+    }
 }

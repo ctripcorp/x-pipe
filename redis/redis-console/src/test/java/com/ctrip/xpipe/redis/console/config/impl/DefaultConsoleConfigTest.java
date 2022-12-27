@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.config.DcsRelationsInfo;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,6 +37,43 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest{
 
         Assert.assertEquals(result, whiteList);
 
+    }
+
+    @Test
+    public void testGetDcRelations1() {
+        String dcsRelations = "{\"healthyDelayPerDistance\":2000, \"relations\":[{\"dcs\": \"jq,oy\",\"distance\":1},{\"dcs\": \"jq,fra\",\"distance\":15},{\"dcs\": \"fra,oy\",\"distance\":15}]}";
+        System.setProperty(DefaultConsoleConfig.KEY_DCS_RELATIONS, dcsRelations);
+
+        DcsRelationsInfo dcsRelationsInfo = consoleConfig.getDcsRelationsInfo();
+        Assert.assertEquals(2000, dcsRelationsInfo.getHealthyDelayPerDistance());
+        Assert.assertEquals(3, dcsRelationsInfo.getRelations().size());
+    }
+
+    @Test
+    public void testGetDcRelations2() {
+        String dcsRelations = "{\"relations\":[{\"dcs\": \"jq,oy\",\"distance\":1},{\"dcs\": \"jq,fra\",\"distance\":15}]}";
+        System.setProperty(DefaultConsoleConfig.KEY_DCS_RELATIONS, dcsRelations);
+
+        DcsRelationsInfo dcsRelationsInfo = consoleConfig.getDcsRelationsInfo();
+        Assert.assertEquals(0, dcsRelationsInfo.getHealthyDelayPerDistance());
+        Assert.assertEquals(2, dcsRelationsInfo.getRelations().size());
+    }
+
+    @Test
+    public void testGetDcRelations3() {
+        String dcsRelations = "{\"healthyDelayPerDistance\":2000 }";
+        System.setProperty(DefaultConsoleConfig.KEY_DCS_RELATIONS, dcsRelations);
+
+        DcsRelationsInfo dcsRelationsInfo = consoleConfig.getDcsRelationsInfo();
+        Assert.assertEquals(2000, dcsRelationsInfo.getHealthyDelayPerDistance());
+        Assert.assertNull(dcsRelationsInfo.getRelations());
+    }
+
+    @Test
+    public void testGetDcRelations4() {
+        DcsRelationsInfo dcsRelationsInfo = consoleConfig.getDcsRelationsInfo();
+        Assert.assertEquals(2000, dcsRelationsInfo.getHealthyDelayPerDistance());
+        Assert.assertEquals(1, dcsRelationsInfo.getRelations().size());
     }
 
     @Test
