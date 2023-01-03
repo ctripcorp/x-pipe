@@ -49,9 +49,15 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
             command.future().addListener((f) -> {
                 scheduleReconnect();
             });
+
+            logger.info("[doConnect() try execute] {}", endpoint());
+
             command.execute();
         } catch (Throwable t) {
-            logger.error("[doConnect() fail] {}", endpoint(), t);
+
+            logger.error("[doConnect() fail] {}", endpoint());
+            logger.error("[doConnect() fail]", t);
+
             scheduleReconnect();
         }
     }
