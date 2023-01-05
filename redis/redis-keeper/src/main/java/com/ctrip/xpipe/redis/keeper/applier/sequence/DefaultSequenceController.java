@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -30,6 +32,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @InstanceDependency
     public ScheduledExecutorService scheduled;
+
+    @InstanceDependency
+    public AsyncRedisClient client;
 
     public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
 
@@ -121,43 +126,25 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         List<SequenceCommand<?>> currents = new ArrayList<>();
 
-        for (RedisOpCommand<?> subCommand : command.sharding()) {
-
-            /* find dependencies */
-
-            List<RedisKey> keys = subCommand.keys();
-            List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
-            if (obstacle != null) {
-                dependencies.add(obstacle);
-            }
-
-            /* make command */
-
-            SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(subCommand, workerThreads), stateThread, workerThreads);
-
-            /* make self a dependency */
-
-            for (RedisKey key : keys) {
-                runningCommands.put(key, current);
-                forgetWhenSuccess(current, key);
-            }
-
-            currents.add(current);
+        List<RedisKey> keys = command.keys();
+        List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
+        if (obstacle != null) {
+            dependencies.add(obstacle);
         }
 
-        /* run self */
+        MultiDataCommand multiDataCommand = new MultiDataCommand(client, command.redisOpAsMulti(), workerThreads);
 
-        for (SequenceCommand<?> current : currents) {
-            current.execute();
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(multiDataCommand, workerThreads), stateThread, workerThreads);
+
+        for (RedisKey key : keys) {
+            runningCommands.put(key, current);
+            forgetWhenSuccess(current, key);
         }
 
-        /* do some stuff when finish */
+        mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
 
-        SequenceCommand<?> success = new SuccessSequenceCommand(currents, stateThread, workerThreads);
-        mergeGtidWhenSuccess(success, command.gtid());
-        releaseMemoryThresholdWhenSuccess(success, command.redisOp().estimatedSize());
-
-        success.execute();
+        current.execute();
     }
 
     private void submitObstacle(RedisOpCommand<?> command) {
