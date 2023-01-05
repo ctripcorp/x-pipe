@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -123,8 +122,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     private void submitMultiKeyCommand(RedisOpDataCommand<?> command) {
-
-        List<SequenceCommand<?>> currents = new ArrayList<>();
 
         List<RedisKey> keys = command.keys();
         List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
