@@ -47,6 +47,13 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
         try {
             Command<Object> command = connectCommand();
             command.future().addListener((f) -> {
+
+                logger.info("[future.done()] isSuccess: {}", f.isSuccess());
+
+                if (!f.isSuccess()) {
+                    logger.error("[future.done()] fail", f.cause());
+                }
+
                 scheduleReconnect();
             });
 
