@@ -124,13 +124,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = null;
+
+        String snapshot_used_to_find_bug = "";
+
         try {
+            snapshot_used_to_find_bug = gtid_received.toString();
+
             redisOp = parser.parse(rawCmdArgs);
             onRedisOp(redisOp);
         } catch (Throwable unlikely) {
             try {
                 logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
-                logger.error("[onCommand] unlikely {}, {}", redisOp, gtid_received.toString());
+                logger.error("[onCommand] unlikely {}, {}", redisOp, snapshot_used_to_find_bug);
             } catch (Throwable ignore) {
             }
         }
