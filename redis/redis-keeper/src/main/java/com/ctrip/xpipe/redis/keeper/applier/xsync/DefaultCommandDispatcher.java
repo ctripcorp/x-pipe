@@ -130,7 +130,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } catch (Throwable unlikely) {
             try {
                 logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
-                logger.error("[onCommand] unlikely {}, {}", redisOp, gtid_received);
+                logger.error("[onCommand] unlikely {}, {}", redisOp, gtid_received.toString());
             } catch (Throwable ignore) {
             }
         }
@@ -194,7 +194,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 return true;
             }
             if (current - last > 10000) {
-                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}, gtid_executed: {}", last, current, gtid, gtid_received, gtid_executed.get());
+                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}", last, current, gtid, gtid_received.toString());
             }
             if (current > last + 1) {
                 stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
