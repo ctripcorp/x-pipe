@@ -8,7 +8,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
-import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
 
@@ -20,8 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Jun 01, 2022 17:20
  */
-public class DefaultXsyncReplication
-        extends AbstractInstanceComponent implements ApplierXsyncReplication, StubbornNetworkCommunication {
+public class DefaultXsyncReplication extends StubbornNetworkCommunication implements ApplierXsyncReplication {
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
@@ -35,13 +33,11 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
-    private /* to be visible when initState() */volatile Endpoint endpoint;
+    private Endpoint endpoint;
 
-    private /* to be visible when initState() */volatile GtidSet gtidSetExcluded;
+    private GtidSet gtidSetExcluded;
 
     private Xsync currentXsync;
-
-    private boolean invoked = false;
 
     private CloseState closeState = new CloseState();
 
@@ -82,6 +78,7 @@ public class DefaultXsyncReplication
     public void doDisconnect() throws Exception {
         if (currentXsync != null) {
             currentXsync.close();
+            currentXsync = null;
         }
     }
 
@@ -101,21 +98,6 @@ public class DefaultXsyncReplication
     @Override
     public ScheduledExecutorService scheduled() {
         return scheduled;
-    }
-
-    @Override
-    public boolean isInvoked() {
-        return invoked;
-    }
-
-    @Override
-    public void markInvoked() {
-        invoked = true;
-    }
-
-    @Override
-    public long reconnectDelayMillis() {
-        return 2000;
     }
 
     @Override
