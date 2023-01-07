@@ -10,7 +10,6 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 public interface NetworkCommunicationState {
 
     Endpoint endpoint();
-    boolean isConnected();
 
     void initState(Endpoint endpoint, Object... states);
 }

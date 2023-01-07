@@ -35,9 +35,13 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
+    private /* to be visible when initState() */volatile Endpoint endpoint;
+
+    private /* to be visible when initState() */volatile GtidSet gtidSetExcluded;
+
     private Xsync currentXsync;
 
-    private GtidSet gtidSetExcluded;
+    private boolean invoked = false;
 
     private CloseState closeState = new CloseState();
 
@@ -61,10 +65,6 @@ public class DefaultXsyncReplication
     //all below are definition to invoke StubbornNetworkCommunication functionality
     //see StubbornNetworkCommunication API: connect(Endpoint, Object...), disconnect()
 
-    public Endpoint endpoint;
-
-    public Xsync xsync;
-
     @Override
     public Command<Object> connectCommand() throws Exception {
 
@@ -80,14 +80,9 @@ public class DefaultXsyncReplication
 
     @Override
     public void doDisconnect() throws Exception {
-        if (isConnected()) {
+        if (currentXsync != null) {
             currentXsync.close();
         }
-    }
-
-    @Override
-    public boolean isConnected() {
-        return currentXsync != null;
     }
 
     @Override
@@ -106,6 +101,16 @@ public class DefaultXsyncReplication
     @Override
     public ScheduledExecutorService scheduled() {
         return scheduled;
+    }
+
+    @Override
+    public boolean isInvoked() {
+        return invoked;
+    }
+
+    @Override
+    public void markInvoked() {
+        invoked = true;
     }
 
     @Override

@@ -21,10 +21,8 @@ public interface NetworkCommunication extends NetworkCommunicationState {
     void doDisconnect() throws Exception;
 
     default boolean changeTarget(Endpoint endpoint, Object... states) {
-        if (isConnected()) {
-            if (Objects.equals(endpoint(), endpoint)) {
-                return false;
-            }
+        if (Objects.equals(endpoint(), endpoint)) {
+            return false;
         }
 
         initState(endpoint, states);

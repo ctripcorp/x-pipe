@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,10 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
 
     ScheduledExecutorService scheduled();
 
+    boolean isInvoked();
+
+    void markInvoked();
+
     long reconnectDelayMillis();
 
     boolean closed();
@@ -34,8 +37,9 @@ public interface StubbornNetworkCommunication extends NetworkCommunication {
         // close and reconnect later by scheduleReconnect()
         disconnect();
 
-        if (!isConnected()) {
-           doConnect();
+        if (!isInvoked()) {
+            markInvoked();
+            doConnect();
         }
     }
 
