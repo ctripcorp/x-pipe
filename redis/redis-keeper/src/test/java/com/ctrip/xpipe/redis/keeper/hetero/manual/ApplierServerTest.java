@@ -53,6 +53,8 @@ public class ApplierServerTest extends AbstractTest {
         applier.initialize();
         applier.start();
 
+        //applier.setStateBackup();
+
         applier.setStateActive(new DefaultEndPoint("127.0.0.1", 6000), new GtidSet("889eda76593e52d72eb5e89a07fba6ada1531589:0"));
 
         waitForAnyKey();
