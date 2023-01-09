@@ -525,16 +525,18 @@ public interface OuterClientService extends Ordered{
 			return orgId;
 		}
 
-		public void setOrgId(Integer orgId) {
+		public ClusterMeta setOrgId(Integer orgId) {
 			this.orgId = orgId;
+			return this;
 		}
 
 		public String getOwnerEmails() {
 			return ownerEmails;
 		}
 
-		public void setOwnerEmails(String ownerEmails) {
+		public ClusterMeta setOwnerEmails(String ownerEmails) {
 			this.ownerEmails = ownerEmails;
+			return this;
 		}
 
 		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
