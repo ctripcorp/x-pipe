@@ -52,7 +52,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             String key = cluster.getId().toLowerCase();
             return MapUtils.getOrCreate(clusterHealthCheckerInstances, key, () -> instanceFactory.create(cluster));
         } catch (Throwable th) {
-            logger.error("getOrCreate health checker cluster:{}", cluster.getId());
+            logger.error("getOrCreate health check cluster:{}", cluster.getId());
         }
         return null;
     }
