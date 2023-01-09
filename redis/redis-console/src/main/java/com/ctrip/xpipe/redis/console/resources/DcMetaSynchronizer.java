@@ -157,13 +157,13 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         Set<String> filterClusters = new HashSet<>();
         for (OuterClientService.ClusterMeta outerClusterMeta : outerClusterMetas.values()) {
             try {
-                if (notInterestedTypes(outerClusterMeta.getClusterType().innerType().name()))
-                    continue;
-
                 if (shouldFilterOuterCluster(outerClusterMeta)) {
                     filterClusters.add(outerClusterMeta.getName());
                     continue;
                 }
+
+                if (notInterestedTypes(outerClusterMeta.getClusterType().innerType().name()))
+                    continue;
 
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
