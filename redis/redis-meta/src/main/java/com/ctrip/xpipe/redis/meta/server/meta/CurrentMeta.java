@@ -474,6 +474,10 @@ public class CurrentMeta implements Releasable {
 		public void removeShard(ShardMeta shardMeta) {
 
 			CurrentShardMeta currentShardMeta = clusterMetas.remove(shardMeta.getDbId());
+			if (currentShardMeta == null) {
+				logger.info("[removeShard]not exist. shard_{}", shardMeta.getDbId());
+				return;
+			}
 			try {
 				currentShardMeta.release();
 			} catch (Exception e) {
