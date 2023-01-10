@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MetricGapListener extends AbstractLongValueMetricListener<GtidGapCheckActionContext> implements GtidGapCheckActionListener, OneWaySupport {
 
-    private static final String TYPE = "gtid.gap";
+    private static final String TYPE = "gtid.gap.count";
 
     @Override
     protected String getMetricType() {
