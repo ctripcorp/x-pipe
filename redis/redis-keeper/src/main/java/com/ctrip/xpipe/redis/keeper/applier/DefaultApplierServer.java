@@ -109,6 +109,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public ExecutorService stateThread;
 
     @InstanceDependency
+    public ExecutorService workerThreads;
+
+    @InstanceDependency
     public ScheduledExecutorService scheduled;
 
     private long startTime;
@@ -152,6 +155,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
+
+        workerThreads = Executors.newFixedThreadPool(8,
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
@@ -200,6 +206,8 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         stateThread.shutdownNow();
+        workerThreads.shutdownNow();
+        scheduled.shutdownNow();
         clientExecutors.shutdownNow();
     }
 
