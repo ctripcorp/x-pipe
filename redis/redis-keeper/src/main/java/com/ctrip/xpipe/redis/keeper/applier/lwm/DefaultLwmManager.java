@@ -8,8 +8,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
-import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
-import com.ctrip.xpipe.utils.ThreadUtils;
 
 import java.util.Set;
 import java.util.concurrent.*;
@@ -35,7 +33,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public ExecutorService stateThread;
 
     @InstanceDependency
-    public ExecutorService workerThreads; /* maybe we should have sync-worker-thread and async-worker-thread */
+    public ExecutorService lwmThread;
 
     @Override
     public void doStart() throws Exception {
@@ -83,13 +81,19 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     }
 
     public void doSendLWM(String sid, long lwm) {
-        workerThreads.submit(()->{
+        lwmThread.submit(()->{
             RedisOp redisOp = new RedisOpLwm(sid, lwm);
 
             try {
-                new DefaultBroadcastCommand(client, redisOp).execute().get();
+                new DefaultBroadcastCommand(client, redisOp).execute().addListener((f)->{
+                    if (!f.isSuccess()) {
+                        EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
+                        logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
+                    }
+                });
             } catch (Throwable t) {
                 EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
+                logger.error("failed to apply: " + redisOp.toString(), t);
             }
         });
     }
