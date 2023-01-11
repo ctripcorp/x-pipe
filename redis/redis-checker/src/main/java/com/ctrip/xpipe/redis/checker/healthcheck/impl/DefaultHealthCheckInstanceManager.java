@@ -10,6 +10,8 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,8 @@ import java.util.concurrent.ConcurrentMap;
 @Component
 public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceManager {
 
+    private Logger logger = LoggerFactory.getLogger(getClass());
+
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> instances = Maps.newConcurrentMap();
 
     private ConcurrentMap<String, ClusterHealthCheckInstance> clusterHealthCheckerInstances = Maps.newConcurrentMap();
@@ -33,14 +37,24 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     @Override
     public RedisHealthCheckInstance getOrCreate(RedisMeta redis) {
-        HostPort key = new HostPort(redis.getIp(), redis.getPort());
-        return MapUtils.getOrCreate(instances, key, () -> instanceFactory.create(redis));
+        try {
+            HostPort key = new HostPort(redis.getIp(), redis.getPort());
+            return MapUtils.getOrCreate(instances, key, () -> instanceFactory.create(redis));
+        } catch (Throwable th) {
+            logger.error("getOrCreate health check instance:{}:{}", redis.getIp(), redis.getPort());
+        }
+        return null;
     }
 
     @Override
     public ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster) {
-        String key = cluster.getId().toLowerCase();
-        return MapUtils.getOrCreate(clusterHealthCheckerInstances, key, () -> instanceFactory.create(cluster));
+        try {
+            String key = cluster.getId().toLowerCase();
+            return MapUtils.getOrCreate(clusterHealthCheckerInstances, key, () -> instanceFactory.create(cluster));
+        } catch (Throwable th) {
+            logger.error("getOrCreate health check cluster:{}", cluster.getId());
+        }
+        return null;
     }
 
     @Override
