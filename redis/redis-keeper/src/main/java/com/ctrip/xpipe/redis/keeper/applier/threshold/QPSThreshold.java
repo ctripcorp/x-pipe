@@ -10,11 +10,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class QPSThreshold extends AbstractThreshold {
 
-    public static long ACCURACY = 10;
-
     public QPSThreshold(long qps, ScheduledExecutorService scheduled) {
-        super(qps/ACCURACY);
-        scheduled.scheduleAtFixedRate(super::reset, 1000/ACCURACY, 1000/ACCURACY, TimeUnit.MILLISECONDS);
+        super(qps);
+        scheduled.scheduleAtFixedRate(super::reset, 1, 1, TimeUnit.SECONDS);
     }
 
     public void tryPass() {
