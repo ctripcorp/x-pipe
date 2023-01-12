@@ -203,32 +203,31 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		}
 
-	}
-
-	private void addDeadKeepers(List<KeeperMeta> deadKeepers, Long clusterDbId, Long shardDbId) {
-		for (KeeperMeta deadKeeper : deadKeepers) {
-			try {
-				KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
-				keeperStateController.addKeeper(keeperTransMeta);
-			} catch (ResourceAccessException e) {
-				logger.error(String.format("[check dead keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
-						deadKeeper, e.getMessage()));
-			} catch (Throwable th) {
-				logger.error("[doCheck][dead keepers]", th);
+		private void addDeadKeepers(List<KeeperMeta> deadKeepers, Long clusterDbId, Long shardDbId) {
+			for (KeeperMeta deadKeeper : deadKeepers) {
+				try {
+					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
+					keeperStateController.addKeeper(keeperTransMeta);
+				} catch (ResourceAccessException e) {
+					logger.error(String.format("[check dead keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
+							deadKeeper, e.getMessage()));
+				} catch (Throwable th) {
+					logger.error("[doCheck][dead keepers]", th);
+				}
 			}
 		}
-	}
 
-	private void removeRemovedKeepers(List<KeeperMeta> removedKeepers, Long clusterDbId, Long shardDbId) {
-		for (KeeperMeta removedKeeper : removedKeepers) {
-			try {
-				KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, removedKeeper);
-				keeperStateController.removeKeeper(keeperTransMeta);
-			} catch (ResourceAccessException e) {
-				logger.error(String.format("[check removed keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
-						removedKeeper, e.getMessage()));
-			} catch (Throwable th) {
-				logger.error("[doCheck][removed keepers]", th);
+		private void removeRemovedKeepers(List<KeeperMeta> removedKeepers, Long clusterDbId, Long shardDbId) {
+			for (KeeperMeta removedKeeper : removedKeepers) {
+				try {
+					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, removedKeeper);
+					keeperStateController.removeKeeper(keeperTransMeta);
+				} catch (ResourceAccessException e) {
+					logger.error(String.format("[check removed keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
+							removedKeeper, e.getMessage()));
+				} catch (Throwable th) {
+					logger.error("[doCheck][removed keepers]", th);
+				}
 			}
 		}
 	}
