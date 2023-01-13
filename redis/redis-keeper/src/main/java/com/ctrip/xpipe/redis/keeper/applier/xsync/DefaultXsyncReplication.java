@@ -8,7 +8,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
-import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
 
@@ -20,8 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Jun 01, 2022 17:20
  */
-public class DefaultXsyncReplication
-        extends AbstractInstanceComponent implements ApplierXsyncReplication, StubbornNetworkCommunication {
+public class DefaultXsyncReplication extends StubbornNetworkCommunication implements ApplierXsyncReplication {
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
@@ -35,9 +33,11 @@ public class DefaultXsyncReplication
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
-    private Xsync currentXsync;
+    private Endpoint endpoint;
 
     private GtidSet gtidSetExcluded;
+
+    private Xsync currentXsync;
 
     private CloseState closeState = new CloseState();
 
@@ -61,10 +61,6 @@ public class DefaultXsyncReplication
     //all below are definition to invoke StubbornNetworkCommunication functionality
     //see StubbornNetworkCommunication API: connect(Endpoint, Object...), disconnect()
 
-    public Endpoint endpoint;
-
-    public Xsync xsync;
-
     @Override
     public Command<Object> connectCommand() throws Exception {
 
@@ -80,14 +76,10 @@ public class DefaultXsyncReplication
 
     @Override
     public void doDisconnect() throws Exception {
-        if (isConnected()) {
+        if (currentXsync != null) {
             currentXsync.close();
+            currentXsync = null;
         }
-    }
-
-    @Override
-    public boolean isConnected() {
-        return currentXsync != null;
     }
 
     @Override
@@ -106,11 +98,6 @@ public class DefaultXsyncReplication
     @Override
     public ScheduledExecutorService scheduled() {
         return scheduled;
-    }
-
-    @Override
-    public long reconnectDelayMillis() {
-        return 2000;
     }
 
     @Override

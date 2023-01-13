@@ -497,7 +497,11 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     @Override
     public List<Long> dcShardIds(String clusterId, String dcId) {
-        return meta.getKey().findDc(dcId).findCluster(clusterId).getShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toList());
+        DcMeta dcMeta = meta.getKey().findDc(dcId);
+        if (dcMeta == null) return new ArrayList<>();
+        ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
+        if (clusterMeta == null) return new ArrayList<>();
+        return clusterMeta.getShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toList());
     }
 
     @VisibleForTesting
