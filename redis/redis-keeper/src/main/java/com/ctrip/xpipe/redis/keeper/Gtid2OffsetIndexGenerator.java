@@ -107,7 +107,13 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
 
     private boolean shouldInsert() {
         if (gtid_received.lwmDistance(last_indexed_gtid) < DEFAULT_LWM_DISTANCE_BETWEEN_INDEX) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("shouldInsert = false, gtid_received: {}, last_indexed_gtid: {}", gtid_received.toString(), last_indexed_gtid.toString());
+            }
             return false;
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("shouldInsert = true, gtid_received: {}, last_indexed_gtid: {}", gtid_received.toString(), last_indexed_gtid.toString());
         }
         last_indexed_gtid = gtid_received.clone();
         return true;
