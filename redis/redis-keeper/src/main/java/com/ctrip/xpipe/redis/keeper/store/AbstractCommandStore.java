@@ -280,7 +280,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if (files != null) {
             for (File file : files) {
-                getLogger().info("[findFileForOffset]{}, {}", file.getName(), file.length());
+                getLogger().info("[findFileForOffset]{}, {}, {}", file.getName(), file.length(), targetStartOffset);
             }
         }
         return null;
