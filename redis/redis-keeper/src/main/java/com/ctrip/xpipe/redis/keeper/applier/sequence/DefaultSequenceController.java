@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 

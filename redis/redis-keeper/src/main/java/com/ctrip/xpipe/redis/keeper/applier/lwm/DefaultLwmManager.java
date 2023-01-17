@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 
 import java.util.Set;
 import java.util.concurrent.*;
@@ -22,6 +23,9 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
     @InstanceDependency
     public AsyncRedisClient client;
+
+    @InstanceDependency
+    public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
@@ -75,9 +79,14 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
         Set<String> sids = gtidSet.getUUIDs();
 
+        long lwmSum = 0;
         for (String sid : sids) {
-            doSendLWM(sid, gtidSet.lwm(sid));
+            long lwm = gtidSet.lwm(sid);
+            doSendLWM(sid, lwm);
+            lwmSum = lwmSum + lwm;
         }
+
+        gtidDistanceThreshold.get().submit(lwmSum);
     }
 
     public void doSendLWM(String sid, long lwm) {

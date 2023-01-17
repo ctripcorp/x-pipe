@@ -71,6 +71,9 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.scheduled, ((DefaultSequenceController) server.sequenceController).scheduled);
         assertEquals(server.scheduled, ((DefaultLwmManager) server.lwmManager).scheduled);
 
+        assertEquals(server.gtidDistanceThreshold, ((DefaultCommandDispatcher) server.dispatcher).gtidDistanceThreshold);
+        assertEquals(server.gtidDistanceThreshold, ((DefaultLwmManager) server.lwmManager).gtidDistanceThreshold);
+
         server.dispose();
 
         //server.client.close()

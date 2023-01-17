@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
@@ -69,6 +70,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
+
+    @InstanceDependency
+    public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
 
     @InstanceDependency
     public InstanceComponentWrapper<LeaderElector> leaderElectorWrapper;
@@ -147,6 +151,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
 
+        this.gtidDistanceThreshold = new AtomicReference<>();
         this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
