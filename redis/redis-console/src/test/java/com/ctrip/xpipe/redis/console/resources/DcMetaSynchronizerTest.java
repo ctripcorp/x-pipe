@@ -4,7 +4,10 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -12,6 +15,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -22,9 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -515,6 +517,34 @@ public class DcMetaSynchronizerTest {
         Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster2"),filteredOuterClusters));
         Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster1"),filteredOuterClusters));
         Assert.assertFalse(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster"),filteredOuterClusters));
+    }
+
+    @Test
+    public void extractOuterDcMetaWithInterestedTypesTest() {
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC", "CROSS_DC"));
+        OuterClientService.DcMeta dcMeta = new OuterClientService.DcMeta();
+        dcMeta.setDcName("SHAXY");
+        Map<String, OuterClientService.ClusterMeta> clusters = new HashMap<>();
+        OuterClientService.ClusterMeta xpipeCluster = new OuterClientService.ClusterMeta();
+        xpipeCluster.setClusterType(OuterClientService.ClusterType.XPIPE_ONE_WAY);
+        xpipeCluster.setOperating(true).setName("xpipeCluster").setOrgId(0).setOwnerEmails("test@ctrip.com");
+
+        OuterClientService.ClusterMeta crossDcCluster = new OuterClientService.ClusterMeta();
+        crossDcCluster.setClusterType(OuterClientService.ClusterType.TROCKS);
+        crossDcCluster.setOperating(true).setName("crossDcCluster").setOrgId(0).setOwnerEmails("test@ctrip.com");
+
+        OuterClientService.ClusterMeta singleDcCluster = new OuterClientService.ClusterMeta();
+        singleDcCluster.setClusterType(OuterClientService.ClusterType.SINGEL_DC);
+        singleDcCluster.setOperating(false).setName("singleDcCluster").setOrgId(0).setOwnerEmails("test@ctrip.com");
+
+        clusters.put("xpipeCluster", xpipeCluster);
+        clusters.put("crossDcCluster", crossDcCluster);
+        clusters.put("singleDcCluster", singleDcCluster);
+        dcMeta.setClusters(clusters);
+        Pair<DcMeta, Set<String>> outerDcMeta = dcMetaSynchronizer.extractOuterDcMetaWithInterestedTypes(dcMeta);
+        Assert.assertEquals(1, outerDcMeta.getKey().getClusters().size());
+        Assert.assertTrue(outerDcMeta.getKey().getClusters().containsKey("singleDcCluster"));
+        Assert.assertEquals(Sets.newHashSet("xpipeCluster", "crossDcCluster"), outerDcMeta.getValue());
     }
 
     OuterClientService.DcMeta credisDcMeta() {
