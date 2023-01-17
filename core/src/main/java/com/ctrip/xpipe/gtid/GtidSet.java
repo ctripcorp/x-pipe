@@ -132,6 +132,14 @@ public class GtidSet {
         return map.put(uuidSet.getUUID(), uuidSet);
     }
 
+    public long lwmSum() {
+        long sum = 0;
+        for (UUIDSet uuidSet : map.values()) {
+            sum = sum + uuidSet.lwm();
+        }
+        return sum;
+    }
+
     public long lwm(String uuid /* src id */) {
 
         if (null == map.get(uuid)) {
