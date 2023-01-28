@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.function.IntSupplier;
 
 /**
@@ -28,20 +27,11 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-										   long commandReaderFlyingThreshold, GtidSet baseGtidSet,
+										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
 										   KeeperMonitor keeperMonitor) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, baseGtidSet, cmdReaderWriterFactory, keeperMonitor);
-	}
-
-	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-							   long commandReaderFlyingThreshold,
-							   CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, new GtidSet(""), cmdReaderWriterFactory, keeperMonitor);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress) throws IOException {

@@ -8,11 +8,10 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -26,21 +25,30 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public AsyncRedisClient client;
 
     @InstanceDependency
+    public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
+
+    @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
 
+    @InstanceDependency
     public ScheduledExecutorService scheduled;
+
+    @InstanceDependency
+    public ExecutorService stateThread;
+
+    @InstanceDependency
+    public ExecutorService lwmThread;
 
     @Override
     public void doStart() throws Exception {
 
-        scheduled = Executors.newSingleThreadScheduledExecutor();
         scheduled.scheduleAtFixedRate(() -> {
             try {
-                send();
+                stateThread.submit(this::send);
             } catch (Throwable t) {
                 logger.error("[send] error", t);
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -71,15 +79,32 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
         Set<String> sids = gtidSet.getUUIDs();
 
+        long lwmSum = 0;
         for (String sid : sids) {
-            RedisOp redisOp = new RedisOpLwm(sid, gtidSet.lwm(sid));
+            long lwm = gtidSet.lwm(sid);
+            doSendLWM(sid, lwm);
+            lwmSum = lwmSum + lwm;
+        }
+
+        gtidDistanceThreshold.get().submit(lwmSum);
+    }
+
+    public void doSendLWM(String sid, long lwm) {
+        lwmThread.submit(()->{
+            RedisOp redisOp = new RedisOpLwm(sid, lwm);
 
             try {
-                new DefaultBroadcastCommand(client, redisOp).execute().get();
+                new DefaultBroadcastCommand(client, redisOp).execute().addListener((f)->{
+                    if (!f.isSuccess()) {
+                        EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
+                        logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
+                    }
+                });
             } catch (Throwable t) {
                 EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
+                logger.error("failed to apply: " + redisOp.toString(), t);
             }
-        }
+        });
     }
 
     @Override
