@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSupplierCommand;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * @author Slight
@@ -18,16 +20,26 @@ public class StubbornCommandTest {
 
     int i = 0;
 
-    Command<Integer> failTwice = new TestSupplierCommand<>(()->{
+    Command<Integer> failTwice = new TestSupplierCommand<>(() -> {
         if (i < 2) {
-            i ++;
+            i++;
             return null;
         }
         return i;
     });
 
+    int j = 0;
 
-    @Test (expected = ExecutionException.class)
+    Command<Integer> fail5Times = new TestSupplierCommand<>(() -> {
+        if (j < 5) {
+            j++;
+            return null;
+        }
+        return j;
+    });
+
+
+    @Test(expected = ExecutionException.class)
     public void failTwice() throws ExecutionException, InterruptedException {
 
         try {
@@ -39,8 +51,14 @@ public class StubbornCommandTest {
     }
 
     @Test
+    public void stubbornFail5Times() throws ExecutionException, InterruptedException {
+        Integer result = new StubbornCommand<>(fail5Times, MoreExecutors.directExecutor(), 3).execute().get();
+        assertNull(result);
+    }
+
+    @Test
     public void stubbornFailTwice() throws ExecutionException, InterruptedException {
-        int result = new StubbornCommand<>(failTwice).execute().get();
-        assertEquals(2, result);;
+        Integer result = new StubbornCommand<>(failTwice).execute().get();
+        assertEquals((Integer) 2, result);
     }
 }

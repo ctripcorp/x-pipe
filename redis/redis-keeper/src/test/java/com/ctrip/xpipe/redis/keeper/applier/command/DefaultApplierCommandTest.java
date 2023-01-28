@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import org.junit.*;
 
 import java.util.concurrent.Executors;
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
  * Feb 26, 2022 8:45 PM
  */
 public class DefaultApplierCommandTest extends AbstractTest {
+    //manual test with no assert
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
@@ -42,6 +44,8 @@ public class DefaultApplierCommandTest extends AbstractTest {
     @Before
     public void setUp() throws Exception {
         controller.stateThread = Executors.newFixedThreadPool(1);
+        controller.workerThreads = Executors.newScheduledThreadPool(1,
+                ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "state-test-thread"));
         controller.scheduled = scheduled;
         controller.initialize();
     }

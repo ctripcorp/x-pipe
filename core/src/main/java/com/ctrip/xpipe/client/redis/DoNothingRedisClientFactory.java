@@ -11,4 +11,9 @@ public class DoNothingRedisClientFactory implements AsyncRedisClientFactory {
     public AsyncRedisClient getOrCreateClient(String clusterName) {
         return new DoNothingRedisClient();
     }
+
+    @Override
+    public AsyncRedisClient createClient(String clusterName) {
+        return new DoNothingRedisClient();
+    }
 }
