@@ -142,6 +142,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
+    @Override
+    public GtidSet getGtidReceived() {
+        GtidSet ref = gtid_received;
+        if (ref != null) {
+            return ref.clone();
+        }
+        return null;
+    }
+
     private class GtidRiseJob implements Runnable {
 
         private final String gtid;
