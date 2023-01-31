@@ -162,19 +162,19 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
-	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
+	protected List<KeeperMeta> getKeepersSubtraction(List<KeeperMeta> allKeepers, List<KeeperMeta> subtractKeepers) {
 
 		List<KeeperMeta> result = new LinkedList<>();
 		for (KeeperMeta allOne : allKeepers) {
-			boolean alive = false;
-			for (KeeperMeta aliveOne : aliveKeepers) {
-				if (ObjectUtils.equals(aliveOne.getIp(), allOne.getIp())
-						&& ObjectUtils.equals(aliveOne.getPort(), allOne.getPort())) {
-					alive = true;
+			boolean exist = false;
+			for (KeeperMeta subtractKeeper : subtractKeepers) {
+				if (ObjectUtils.equals(subtractKeeper.getIp(), allOne.getIp())
+						&& ObjectUtils.equals(subtractKeeper.getPort(), allOne.getPort())) {
+					exist = true;
 					break;
 				}
 			}
-			if (!alive) {
+			if (!exist) {
 				result.add(allOne);
 			}
 		}
@@ -186,26 +186,50 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
 			Long clusterDbId = clusterMeta.getDbId();
 			Long shardDbId = shardMeta.getDbId();
-			List<KeeperMeta> allKeepers = shardMeta.getKeepers();
+			List<KeeperMeta> metaKeepers = shardMeta.getKeepers();
 			List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
-			List<KeeperMeta> deadKeepers = getDeadKeepers(allKeepers, aliveKeepers);
+			List<KeeperMeta> deadKeepers = getKeepersSubtraction(metaKeepers, aliveKeepers);
+			List<KeeperMeta> removedKeepers = getKeepersSubtraction(aliveKeepers, metaKeepers);
 
 			if (deadKeepers.size() > 0) {
 				logger.info("[doCheck][dead keepers]{}", deadKeepers);
+				addDeadKeepers(deadKeepers, clusterDbId, shardDbId);
 			}
+
+			if (deadKeepers.size() == 0 && removedKeepers.size() > 0) {
+				logger.info("[doCheck][removed keepers]{}", removedKeepers);
+				removeRemovedKeepers(removedKeepers, clusterDbId, shardDbId);
+			}
+
+		}
+
+		private void addDeadKeepers(List<KeeperMeta> deadKeepers, Long clusterDbId, Long shardDbId) {
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
 					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper);
 					keeperStateController.addKeeper(keeperTransMeta);
 				} catch (ResourceAccessException e) {
-					logger.error(String.format("cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
+					logger.error(String.format("[check dead keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
 							deadKeeper, e.getMessage()));
 				} catch (Throwable th) {
-					logger.error("[doCheck]", th);
+					logger.error("[doCheck][dead keepers]", th);
 				}
 			}
 		}
 
+		private void removeRemovedKeepers(List<KeeperMeta> removedKeepers, Long clusterDbId, Long shardDbId) {
+			for (KeeperMeta removedKeeper : removedKeepers) {
+				try {
+					KeeperTransMeta keeperTransMeta = new KeeperTransMeta(clusterDbId, shardDbId, removedKeeper);
+					keeperStateController.removeKeeper(keeperTransMeta);
+				} catch (ResourceAccessException e) {
+					logger.error(String.format("[check removed keepers]cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
+							removedKeeper, e.getMessage()));
+				} catch (Throwable th) {
+					logger.error("[doCheck][removed keepers]", th);
+				}
+			}
+		}
 	}
 
 	protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
@@ -606,5 +630,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	@VisibleForTesting
 	protected void setScheduled(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;
+	}
+
+	@VisibleForTesting
+	protected void setKeeperStateController(KeeperStateController keeperStateController) {
+		this.keeperStateController = keeperStateController;
 	}
 }

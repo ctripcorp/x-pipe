@@ -31,7 +31,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -71,9 +70,6 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
     @Autowired
     private DcMetaCache dcMetaCache;
-
-    @Autowired
-    private MultiDcService multiDcService;
 
     @Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -150,18 +146,18 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         return Collections.singleton(ClusterType.ONE_WAY);
     }
 
-    protected List<ApplierMeta> getDeadAppliers(List<ApplierMeta> allAppliers, List<ApplierMeta> aliveAppliers) {
+    protected List<ApplierMeta> getAppliersSubtraction(List<ApplierMeta> allAppliers, List<ApplierMeta> subtractAppliers) {
         List<ApplierMeta> result = new LinkedList<>();
         for (ApplierMeta allOne : allAppliers) {
-            boolean alive = false;
-            for (ApplierMeta aliveOne : aliveAppliers) {
+            boolean exist = false;
+            for (ApplierMeta aliveOne : subtractAppliers) {
                 if (ObjectUtils.equals(aliveOne.getIp(), allOne.getIp())
                         && ObjectUtils.equals(aliveOne.getPort(), allOne.getPort())) {
-                    alive = true;
+                    exist = true;
                     break;
                 }
             }
-            if (!alive) {
+            if (!exist) {
                 result.add(allOne);
             }
         }
@@ -188,25 +184,49 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
             Long clusterDbId = clusterMeta.getDbId();
             Long shardDbId = shardMeta.getDbId();
-            List<ApplierMeta> allAppliers = shardMeta.getAppliers();
+            List<ApplierMeta> metaAppliers = shardMeta.getAppliers();
             List<ApplierMeta> aliveAppliers = currentMetaManager.getSurviveAppliers(clusterDbId, shardDbId);
-            List<ApplierMeta> deadAppliers = getDeadAppliers(allAppliers, aliveAppliers);
+            List<ApplierMeta> deadAppliers = getAppliersSubtraction(metaAppliers, aliveAppliers);
+            List<ApplierMeta> removedAppliers = getAppliersSubtraction(aliveAppliers, metaAppliers);
 
             if (deadAppliers.size() > 0) {
                 logger.info("[doCheck][dead appliers]{}", deadAppliers);
+                addDeadAppliers(deadAppliers, clusterDbId, shardDbId);
             }
+
+            if (deadAppliers.size() == 0 && removedAppliers.size() > 0) {
+                logger.info("[doCheck][removed appliers]{}", deadAppliers);
+                removeRemovedAppliers(removedAppliers, clusterDbId, shardDbId);
+            }
+        }
+
+        private void addDeadAppliers(List<ApplierMeta> deadAppliers, Long clusterDbId, Long shardDbId) {
             for (ApplierMeta deadApplier : deadAppliers) {
                 try {
                     applierStateController.addApplier(new ApplierTransMeta(deadApplier.getTargetClusterName(), clusterDbId, shardDbId, deadApplier));
                 } catch (ResourceAccessException e) {
-                    logger.error(String.format("cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
+                    logger.error(String.format("[check dead appliers]cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
                             deadApplier, e.getMessage()));
                 } catch (Throwable th) {
-                    logger.error("[doCheck]", th);
+                    logger.error("[doCheck][dead appliers]", th);
+                }
+            }
+        }
+
+        private void removeRemovedAppliers(List<ApplierMeta> removedAppliers, Long clusterDbId, Long shardDbId) {
+            for (ApplierMeta removedApplier : removedAppliers) {
+                try {
+                    applierStateController.removeApplier(new ApplierTransMeta(removedApplier.getTargetClusterName(), clusterDbId, shardDbId, removedApplier));
+                } catch (ResourceAccessException e) {
+                    logger.error(String.format("[check removed appliers]cluster_%d,shard_%d, applier:%s, error:%s", clusterDbId, shardDbId,
+                            removedApplier, e.getMessage()));
+                } catch (Throwable th) {
+                    logger.error("[doCheck][removed appliers]", th);
                 }
             }
         }
     }
+
 
     protected class ClusterComparatorVisitor implements MetaComparatorVisitor<ShardMeta> {
 

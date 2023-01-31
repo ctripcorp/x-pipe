@@ -92,7 +92,8 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	}
 
 	protected boolean supportCluster(ClusterMeta clusterMeta) {
-		return !StringUtil.isEmpty(clusterMeta.getType())
+		return clusterMeta != null
+				&& !StringUtil.isEmpty(clusterMeta.getType())
 				&& getSupportClusterTypes().contains(ClusterType.lookup(clusterMeta.getType()));
 	}
 

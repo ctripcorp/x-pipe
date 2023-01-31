@@ -7,12 +7,10 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -38,6 +36,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
     private CurrentMetaManager currentMetaManager;
 
+    private KeeperStateController keeperStateController;
+
     private SimpleKeyedObjectPool<Endpoint, NettyClient> pool;
 
     private ExecutorService executors;
@@ -54,8 +54,10 @@ public class DefaultKeeperManagerTest extends AbstractTest {
     public void beforeDefaultKeeperManagerTest() throws Exception {
         currentMetaManager = mock(CurrentMetaManager.class);
         dcMetaCache = mock(DcMetaCache.class);
+        keeperStateController = mock(KeeperStateController.class);
         manager.setCurrentMetaManager(currentMetaManager);
         manager.setMetaCache(dcMetaCache);
+        manager.setKeeperStateController(keeperStateController);
         pool = new XpipeNettyClientKeyedObjectPool();
         LifecycleHelper.initializeIfPossible(pool);
         LifecycleHelper.startIfPossible(pool);
@@ -71,6 +73,33 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         executors.shutdownNow();
     }
 
+    @Test
+    public void testDoCheckNotRemovedWithDeadKeepers() {
+        DefaultKeeperManager.DeadKeeperChecker checker = manager.new DeadKeeperChecker();
+        KeeperMeta metaKeeper = new KeeperMeta().setIp("1.1.1.1").setPort(1111);
+        ShardMeta shardMeta = new ShardMeta().setId(shardId).setDbId(shardDbId).addKeeper(metaKeeper);
+
+        KeeperMeta surviveKeeper = new KeeperMeta().setId("2.2.2.2").setPort(2222);
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveKeeper));
+
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
+        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, metaKeeper));
+        verify(keeperStateController, times(0)).removeKeeper(any());
+    }
+
+    @Test
+    public void testDoCheckRemoved() {
+        DefaultKeeperManager.DeadKeeperChecker checker = manager.new DeadKeeperChecker();
+        KeeperMeta metaKeeper = new KeeperMeta().setIp("1.1.1.1").setPort(1111);
+        ShardMeta shardMeta = new ShardMeta().setId(shardId).setDbId(shardDbId).addKeeper(metaKeeper);
+
+        KeeperMeta surviveKeeper = new KeeperMeta().setId("2.2.2.2").setPort(2222);
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveKeeper, metaKeeper));
+
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
+        verify(keeperStateController, times(0)).addKeeper(any());
+        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, surviveKeeper));
+    }
 
     @Test
     public void testActiveKeeperChecker() {
