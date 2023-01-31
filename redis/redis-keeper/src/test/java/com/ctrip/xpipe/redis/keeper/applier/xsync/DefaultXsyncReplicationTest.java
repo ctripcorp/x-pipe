@@ -83,7 +83,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
                     firstCalled = false;
                     return new GtidSet("mockRunId:0");
                 }
-                if (!excludedGtidSet.toString().equals("mockRunId:10")) {
+                if (!excludedGtidSet.toString().equals("mockRunId:1-10")) {
                     serverAssertError.set(true);
                 }
                 serverRecvTwice.set(true);
