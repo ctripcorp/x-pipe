@@ -79,6 +79,7 @@ public abstract class StubbornNetworkCommunication extends AbstractInstanceCompo
                     logger.error("[future.done()] fail", f.cause());
                 }
 
+                refreshStateWhenReconnect();
                 scheduleReconnect();
             });
 
@@ -101,7 +102,6 @@ public abstract class StubbornNetworkCommunication extends AbstractInstanceCompo
             synchronized (lock) {
 
                 if (!closed()) {
-                    refreshStateWhenReconnect();
                     doConnect();
                 }
             }
