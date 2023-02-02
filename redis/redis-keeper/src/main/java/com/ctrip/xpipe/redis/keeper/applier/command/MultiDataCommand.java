@@ -34,7 +34,10 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
                 new DefaultDataCommand(client,
                         /* resource */ e.getKey(),
                         /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).toArray(DefaultDataCommand[]::new);
-        ParallelCommandChain parallelCommandChain = new ParallelCommandChain(workThreads, dataCommands);
+        ParallelCommandChain parallelCommandChain = new ParallelCommandChain(workThreads, false);
+        for (DefaultDataCommand dataCommand : dataCommands) {
+            parallelCommandChain.add(dataCommand);
+        }
         parallelCommandChain.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
