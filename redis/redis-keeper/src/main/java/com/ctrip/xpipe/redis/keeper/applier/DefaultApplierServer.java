@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
@@ -46,10 +47,7 @@ import io.netty.handler.logging.LoggingHandler;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -72,6 +70,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
+
+    @InstanceDependency
+    public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
 
     @InstanceDependency
     public InstanceComponentWrapper<LeaderElector> leaderElectorWrapper;
@@ -109,6 +110,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public ExecutorService stateThread;
 
     @InstanceDependency
+    public ExecutorService workerThreads;
+
+    @InstanceDependency
+    public ExecutorService lwmThread;
+
+    @InstanceDependency
     public ScheduledExecutorService scheduled;
 
     private long startTime;
@@ -139,11 +146,13 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.replication = new DefaultXsyncReplication();
         this.dispatcher = new DefaultCommandDispatcher();
 
-        this.client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient(clusterName);
+        /* TODO: dispose client when applier closed */
+        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName);
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
 
+        this.gtidDistanceThreshold = new AtomicReference<>();
         this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
@@ -152,6 +161,13 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
+
+        workerThreads = Executors.newFixedThreadPool(8,
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
+
+        lwmThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(10), ClusterShardAwareThreadFactory.create(clusterId, shardId, "lwm-" + makeApplierThreadName()),
+                new ThreadPoolExecutor.DiscardPolicy());
 
         scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
@@ -200,6 +216,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         stateThread.shutdownNow();
+        workerThreads.shutdownNow();
+        lwmThread.shutdownNow();
+        scheduled.shutdownNow();
         clientExecutors.shutdownNow();
     }
 

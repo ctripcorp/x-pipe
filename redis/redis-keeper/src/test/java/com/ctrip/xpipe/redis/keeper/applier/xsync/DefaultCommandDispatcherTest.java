@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +24,7 @@ public class DefaultCommandDispatcherTest {
     public void setUp() throws Exception {
         dispatcher.gtid_executed = new AtomicReference<>(new GtidSet(""));
         dispatcher.stateThread = MoreExecutors.newDirectExecutorService();
+        dispatcher.gtidDistanceThreshold = new AtomicReference<>(new GTIDDistanceThreshold(2000));
 
         dispatcher.resetState(new GtidSet(""));
     }

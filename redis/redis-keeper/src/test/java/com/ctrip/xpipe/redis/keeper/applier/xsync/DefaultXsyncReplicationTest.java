@@ -7,6 +7,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
+import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,7 +16,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author: cchen6
@@ -44,6 +47,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
         XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool();
         keyedObjectPool.initialize();
         xsyncReplication.pool = keyedObjectPool;
+        xsyncReplication.dispatcher = new DefaultCommandDispatcher();
         xsyncReplication.initialize();
         xsyncReplication.start();
         return xsyncReplication;
@@ -65,13 +69,49 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
     @Test
     public void reconnectWhenChannelClose() throws Exception {
-        server = startFakeXsyncServer(randomPort(), null);
+
+        AtomicBoolean serverAssertError = new AtomicBoolean(false);
+        AtomicBoolean serverRecvTwice = new AtomicBoolean(false);
+
+        server = startFakeXsyncServer(randomPort(), new FakeXsyncHandler() {
+
+            public boolean firstCalled = true;
+
+            @Override
+            public GtidSet handleXsync(List<String> interestedSidno, GtidSet excludedGtidSet, Object excludedVectorClock) {
+                if (firstCalled) {
+                    firstCalled = false;
+                    return new GtidSet("mockRunId:0");
+                }
+                if (!excludedGtidSet.toString().equals("mockRunId:1-10")) {
+                    serverAssertError.set(true);
+                }
+                serverRecvTwice.set(true);
+                return new GtidSet("mockRunId:0");
+            }
+
+            @Override
+            public byte[] genRdbData() {
+                return new byte[0];
+            }
+        });
 
         DefaultXsyncReplication xsyncReplication = mockXsyncReplication();
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
         Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+
+        waitConditionUntilTimeOut(()-> {
+            try {
+                GtidSet gtid_received = getFieldFrom(xsyncReplication.dispatcher, "gtid_received");
+                return gtid_received != null;
+            } catch (Exception ignore) {}
+            return false;
+        });
+
+        GtidSet gtid_received = getFieldFrom(xsyncReplication.dispatcher, "gtid_received");
+        gtid_received.rise("mockRunId:10");
 
         NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
 
@@ -89,6 +129,10 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
                 return false;
             }
         }, 3000);
+
+        waitConditionUntilTimeOut(serverRecvTwice::get);
+
+        Assert.assertFalse(serverAssertError.get());
     }
 
     @Test

@@ -27,6 +27,7 @@ public abstract class StubbornNetworkCommunication extends AbstractInstanceCompo
     /* customized actions & resource */
     protected abstract ScheduledExecutorService scheduled();
     protected abstract void initState(Endpoint endpoint, Object... states);
+    protected abstract void refreshStateWhenReconnect();
     protected abstract Command<Object> connectCommand() throws Exception;
     protected abstract void doDisconnect() throws Exception;
     protected abstract boolean closed();
@@ -78,6 +79,7 @@ public abstract class StubbornNetworkCommunication extends AbstractInstanceCompo
                     logger.error("[future.done()] fail", f.cause());
                 }
 
+                refreshStateWhenReconnect();
                 scheduleReconnect();
             });
 

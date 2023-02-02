@@ -14,6 +14,8 @@ public interface AsyncRedisClientFactory extends Ordered {
 
     AsyncRedisClient getOrCreateClient(String clusterName) throws Exception;
 
+    AsyncRedisClient createClient(String clusterName) throws Exception;
+
     default int getOrder() {
         return LOWEST_PRECEDENCE;
     }

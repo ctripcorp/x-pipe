@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
@@ -30,6 +29,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ExecutorService stateThread;
 
     @InstanceDependency
+    public ExecutorService workerThreads;
+
+    @InstanceDependency
     public ScheduledExecutorService scheduled;
 
     @InstanceDependency
@@ -45,17 +47,10 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     SequenceCommand<?> obstacle;
 
-    ExecutorService workerThreads;
 
     @Override
     protected void doInitialize() throws Exception {
-        workerThreads = Executors.newFixedThreadPool(8);
         qpsThreshold = new QPSThreshold(5000, scheduled);
-    }
-
-    @Override
-    protected void doDispose() throws Exception {
-        workerThreads.shutdown();
     }
 
     @Override

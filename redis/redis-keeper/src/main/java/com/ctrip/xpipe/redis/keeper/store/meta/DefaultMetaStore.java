@@ -156,6 +156,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRdbEofMark(null);
 		metaDup.setRdbFileSize(0);
 		metaDup.setRdbLastOffset(null);
+		metaDup.setRdbGtidSet(null);
 	}
 
 }

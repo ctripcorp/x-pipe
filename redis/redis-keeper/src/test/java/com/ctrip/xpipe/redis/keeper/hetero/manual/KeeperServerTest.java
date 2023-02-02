@@ -6,8 +6,6 @@ import com.ctrip.xpipe.lifecycle.CreatedComponentRedistry;
 import com.ctrip.xpipe.lifecycle.DefaultRegistry;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.AppTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
