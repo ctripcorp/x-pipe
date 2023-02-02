@@ -19,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,6 +36,8 @@ public class DefaultApplierManagerTest extends AbstractTest {
 
     private CurrentMetaManager currentMetaManager;
 
+    private ApplierStateController applierStateController;
+
     private SimpleKeyedObjectPool<Endpoint, NettyClient> pool;
 
     private ExecutorService executors;
@@ -46,7 +49,9 @@ public class DefaultApplierManagerTest extends AbstractTest {
     @Before
     public void beforeDefaultApplierManagerTest() throws Exception {
         currentMetaManager = mock(CurrentMetaManager.class);
+        applierStateController = mock(ApplierStateController.class);
         manager.setCurrentMetaManager(currentMetaManager);
+        manager.setApplierStateController(applierStateController);
         pool = new XpipeNettyClientKeyedObjectPool();
         LifecycleHelper.initializeIfPossible(pool);
         LifecycleHelper.startIfPossible(pool);
@@ -57,6 +62,34 @@ public class DefaultApplierManagerTest extends AbstractTest {
     @After
     public void afterDefaultKeeperManagerTest() {
         executors.shutdownNow();
+    }
+
+    @Test
+    public void testDoCheckNotRemovedWithDeadAppliers() {
+        DefaultApplierManager.DeadApplierChecker checker = manager.new DeadApplierChecker();
+        ApplierMeta metaApplier = new ApplierMeta().setIp("1.1.1.1").setPort(1111);
+        ShardMeta shardMeta = new ShardMeta().setId(shardId).setDbId(shardDbId).addApplier(metaApplier);
+
+        ApplierMeta surviveApplier = new ApplierMeta().setId("2.2.2.2").setPort(2222);
+        when(currentMetaManager.getSurviveAppliers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveApplier));
+
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
+        verify(applierStateController, times(1)).addApplier(new ApplierTransMeta(clusterDbId, shardDbId, metaApplier));
+        verify(applierStateController, times(0)).removeApplier(any());
+    }
+
+    @Test
+    public void testDoCheckRemoved() {
+        DefaultApplierManager.DeadApplierChecker checker = manager.new DeadApplierChecker();
+        ApplierMeta metaApplier = new ApplierMeta().setIp("1.1.1.1").setPort(1111);
+        ShardMeta shardMeta = new ShardMeta().setId(shardId).setDbId(shardDbId).addApplier(metaApplier);
+
+        ApplierMeta surviveApplier = new ApplierMeta().setId("2.2.2.2").setPort(2222);
+        when(currentMetaManager.getSurviveAppliers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveApplier, metaApplier));
+
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
+        verify(applierStateController, times(0)).addApplier(any());
+        verify(applierStateController, times(1)).removeApplier(new ApplierTransMeta(clusterDbId, shardDbId, surviveApplier));
     }
 
     @Test

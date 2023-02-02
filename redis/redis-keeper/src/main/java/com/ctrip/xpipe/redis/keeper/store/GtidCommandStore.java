@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import io.netty.channel.ChannelFuture;
@@ -22,12 +21,12 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
-    public GtidCommandStore(File file, int maxFileSize, GtidSet baseGtidSet, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public GtidCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor) throws IOException {
         super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-                commandReaderFlyingThreshold, baseGtidSet, cmdReaderWriterFactory, keeperMonitor);
+                commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor);
     }
 
     @Override
@@ -100,6 +99,8 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     @Override
     public void setBaseIndex(String baseGtidSet, long localOffset) {
+        //when fullSync or when keeperSync, rdbGtidSet come up later;
+        //but when keeperRestart, rdbGtidSet come up immediately from meta.json
 
         this.baseGtidSet = new GtidSet(baseGtidSet);
         this.baseStartOffset = localOffset;

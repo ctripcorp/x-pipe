@@ -90,6 +90,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 		if (null != meta && null != meta.getCmdFilePrefix()) {
 			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, rdbStoreRef.get());
+			if (meta.getRdbLastOffset() != null) {
+				cmdStore.setBaseIndex(meta.getRdbGtidSet(), meta.getRdbLastOffset() - (meta.getBeginOffset() - 1));
+			}
 		}
 
 		removeUnusedRdbFiles();

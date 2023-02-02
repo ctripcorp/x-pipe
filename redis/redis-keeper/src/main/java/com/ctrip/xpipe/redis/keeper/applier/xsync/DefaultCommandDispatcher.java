@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
@@ -15,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -48,6 +50,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
 
+    @InstanceDependency
+    public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
+
     /* why not a global resource */
     @VisibleForTesting
     RdbParser<?> rdbParser;
@@ -75,6 +80,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.gtid_received = gtidSet.clone();
         this.receivedSids = new HashSet<>();
         this.gtid_executed.set(gtidSet.clone());
+        this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
     }
 
     @Override
@@ -132,6 +138,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             } catch (Throwable ignore) {
             }
         }
+    }
+
+    @Override
+    public GtidSet getGtidReceived() {
+        GtidSet ref = gtid_received;
+        if (ref != null) {
+            return ref.clone();
+        }
+        return null;
     }
 
     private class GtidRiseJob implements Runnable {
@@ -197,6 +212,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             if (current > last + 1) {
                 stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
             }
+        }
+
+        try {
+            gtidDistanceThreshold.get().tryPass(gtid_received.lwmSum());
+        } catch (InterruptedException interrupted) {
+            logger.info("[updateGtidState] gtidDistanceThreshold.tryPass() interrupted, probably quit.");
+            throw new XpipeRuntimeException("gtidDistanceThreshold.tryPass() interrupted, probably quit", interrupted);
         }
         return false;
     }

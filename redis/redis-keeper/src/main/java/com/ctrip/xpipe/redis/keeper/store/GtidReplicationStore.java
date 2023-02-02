@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -49,8 +48,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         String replRdbGtidSet = replMeta.getRdbGtidSet();
         logger.info("[createCommandStore], replRdbGtidSet={}", replRdbGtidSet);
         GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
-                new GtidSet(replRdbGtidSet), config::getReplicationStoreCommandFileKeepTimeSeconds,
-                config.getReplicationStoreMinTimeMilliToGcAfterCreate(), config::getReplicationStoreCommandFileNumToKeep,
+                config::getReplicationStoreCommandFileKeepTimeSeconds,
+                config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
+                config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor);
 
         try {
@@ -102,6 +102,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
         FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
         if (ctx.isFullSyncPossible() && StringUtil.isEmpty(((GtidRdbStore)ctx.getRdbStore()).getGtidSet())) {
+            ctx.getRdbStore().decrementRefCount();
             return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
         }
 
@@ -150,6 +151,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
             FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
             if (ctx.isFullSyncPossible() && StringUtil.isEmpty(ctx.getRdbStore().getGtidSet())) {
+                ctx.getRdbStore().decrementRefCount();
                 return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
             }
 
@@ -163,8 +165,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
 
     protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx, ExecutorService indexingExecutors) {
-        //TODO 1: how about gc() invoked at the same time ?
-        GtidSet fromGtidSet = new GtidSet(ctx.getRdbStore().getGtidSet());
+
+        RdbStore rdbStore = ctx.getRdbStore();
+        GtidSet fromGtidSet = new GtidSet(rdbStore.getGtidSet());
+        rdbStore.decrementRefCount();
 
         CommandFileSegment lastSegment = cmdStore.findLastFileSegment();
         if (lastSegment != null) {

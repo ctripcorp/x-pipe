@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -82,7 +81,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     public AbstractCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-                               long commandReaderFlyingThreshold, GtidSet baseGtidSet,
+                               long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
                                KeeperMonitor keeperMonitor) throws IOException {
 
@@ -95,7 +94,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
-        this.baseGtidSet = baseGtidSet.clone();
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -159,10 +157,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     protected CommandWriter getCmdWriter() {
         return cmdWriter;
-    }
-
-    protected GtidSet getBaseGtidSet() {
-        return baseGtidSet;
     }
 
     private File fileForStartOffset(long startOffset) {
@@ -280,7 +274,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if (files != null) {
             for (File file : files) {
-                getLogger().info("[findFileForOffset]{}, {}", file.getName(), file.length());
+                getLogger().info("[findFileForOffset]{}, {}, {}", file.getName(), file.length(), targetStartOffset);
             }
         }
         return null;
@@ -316,6 +310,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (null == startIndex) {
             getLogger().debug("[findFirstFileSegment] startIndex=null, iterate to next");
             startIndex = indexIterator.next();
+            //throw NoSuchElementException when index not found
         }
         CommandFileOffsetGtidIndex endIndex = null;
 
@@ -360,8 +355,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         CommandFile firstCommandFile = findFileForOffset(baseStartOffset);
         if (null == firstCommandFile) return null;
 
-        getLogger().debug("[getBaseIndex]baseGtidSet={}", getBaseGtidSet());
-        return new CommandFileOffsetGtidIndex(getBaseGtidSet(), firstCommandFile, baseStartOffset - firstCommandFile.getStartOffset());
+        getLogger().debug("[getBaseIndex]baseGtidSet={}", baseGtidSet);
+        if (null == baseGtidSet) return null;
+        return new CommandFileOffsetGtidIndex(baseGtidSet, firstCommandFile, baseStartOffset - firstCommandFile.getStartOffset());
     }
 
     public CommandFile findNextFile(File curFile) {
