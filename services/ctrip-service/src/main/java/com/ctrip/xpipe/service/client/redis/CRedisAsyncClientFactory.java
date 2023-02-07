@@ -13,6 +13,8 @@ import credis.java.client.exception.CRedisException;
 import credis.java.client.sync.applier.ApplierFactory;
 import credis.java.client.util.DefaultHashStrategyFactory;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * @author Slight
  * <p>
@@ -21,20 +23,20 @@ import credis.java.client.util.DefaultHashStrategyFactory;
 public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
     @Override
-    public AsyncRedisClient getOrCreateClient(String clusterName) throws CRedisException {
+    public AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
 
         return new CRedisAsyncClient(
                 AsyncApplierProviderFactory.getInstance().getOrCreateProvider(clusterName),
-                ApplierFactory.getProvider(clusterName));
+                ApplierFactory.getProvider(clusterName), credisNotifyExecutor);
     }
 
     @Override
-    public AsyncRedisClient createClient(String clusterName) throws CRedisException {
+    public AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
 
         return new CRedisAsyncClient(
                 new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
                         decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), new DefaultHashStrategyFactory()),
-                ApplierFactory.getProvider(clusterName) /* TODO: create a standalone txnProvider*/);
+                ApplierFactory.getProvider(clusterName) /* TODO: create a standalone txnProvider*/, credisNotifyExecutor);
     }
 
     private AbstractAsyncConfig decorateConfig(AbstractAsyncConfig config, String clusterName) {

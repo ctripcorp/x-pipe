@@ -18,6 +18,7 @@ import org.junit.Before;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Slight
@@ -42,6 +43,8 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
 
     private AsyncRedisClient client;
 
+    private ExecutorService executorService;
+
     @Before
     public void setup() throws Exception {
 
@@ -58,7 +61,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         //USE CREDIS
         //client = new CRedisAsyncClientFactory().getOrCreateClient("ApplierTest");
 
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest");
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", executors);
         sequenceController = new DefaultSequenceController();
         sequenceController.initialize();
     }
