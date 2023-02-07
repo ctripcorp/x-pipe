@@ -29,7 +29,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ExecutorService stateThread;
 
     @InstanceDependency
-    public ExecutorService workerThreads;
+    public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
     public ScheduledExecutorService scheduled;

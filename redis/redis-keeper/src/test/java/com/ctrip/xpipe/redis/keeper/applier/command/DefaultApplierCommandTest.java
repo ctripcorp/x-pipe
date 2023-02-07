@@ -10,8 +10,10 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserMan
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.*;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -28,15 +30,19 @@ public class DefaultApplierCommandTest extends AbstractTest {
 
     private static AsyncRedisClient client;
 
+    private static ExecutorService executorService;
+
     @BeforeClass
     public static void beforeClass() throws Throwable {
 
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("DefaultApplierRedisCommandTest");
+        executorService = Executors.newFixedThreadPool(1);
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("DefaultApplierRedisCommandTest", executorService);
     }
 
     @AfterClass
     public static void afterClass() throws Exception {
         //destroy async redis client
+        executorService.shutdown();
     }
 
     private final DefaultSequenceController controller = new DefaultSequenceController();
