@@ -28,14 +28,20 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
     }
 
     @Override
-    protected void doExecute() throws Throwable {
+    public List<RedisOpDataCommand<Boolean>> sharding() {
         List<Object> keys = keys().stream().map(RedisKey::get).collect(Collectors.toList());
-        DefaultDataCommand[] dataCommands = client.selectMulti(keys).entrySet().stream().map(e ->
+        return client.selectMulti(keys).entrySet().stream().map(e ->
                 new DefaultDataCommand(client,
                         /* resource */ e.getKey(),
-                        /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).toArray(DefaultDataCommand[]::new);
+                        /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    protected void doExecute() throws Throwable {
+        RedisOpDataCommand[] dataCommands = sharding().toArray(new RedisOpDataCommand[0]);
         ParallelCommandChain parallelCommandChain = new ParallelCommandChain(workThreads, false);
-        for (DefaultDataCommand dataCommand : dataCommands) {
+        for (RedisOpDataCommand dataCommand : dataCommands) {
             parallelCommandChain.add(dataCommand);
         }
         parallelCommandChain.execute().addListener(new CommandFutureListener<Object>() {
