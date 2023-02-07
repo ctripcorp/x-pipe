@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -46,6 +47,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @InstanceDependency
     public ExecutorService stateThread;
+
+    @InstanceDependency
+    public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
@@ -260,6 +264,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
         } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
             sequenceController.submit(new DefaultExecCommand(client, redisOp));
+        } else if (redisOp instanceof RedisMultiKeyOp) {
+            sequenceController.submit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads));
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));
         }

@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.*;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
@@ -33,9 +35,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @InstanceDependency
     public ScheduledExecutorService scheduled;
-
-    @InstanceDependency
-    public AsyncRedisClient client;
 
     public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
 
@@ -124,9 +123,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             dependencies.add(obstacle);
         }
 
-        MultiDataCommand multiDataCommand = new MultiDataCommand(client, command.redisOpAsMulti(), workerThreads);
-
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(multiDataCommand, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
 
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
