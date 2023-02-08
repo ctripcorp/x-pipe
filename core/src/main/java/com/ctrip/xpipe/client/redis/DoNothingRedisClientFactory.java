@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.client.redis;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * @author Slight
  * <p>
@@ -8,12 +10,12 @@ package com.ctrip.xpipe.client.redis;
 public class DoNothingRedisClientFactory implements AsyncRedisClientFactory {
 
     @Override
-    public AsyncRedisClient getOrCreateClient(String clusterName) {
+    public AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) {
         return new DoNothingRedisClient();
     }
 
     @Override
-    public AsyncRedisClient createClient(String clusterName) {
+    public AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) {
         return new DoNothingRedisClient();
     }
 }

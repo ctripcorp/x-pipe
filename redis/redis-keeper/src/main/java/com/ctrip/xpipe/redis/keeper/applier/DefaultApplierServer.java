@@ -110,7 +110,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public ExecutorService stateThread;
 
     @InstanceDependency
-    public ExecutorService workerThreads;
+    public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
     public ExecutorService lwmThread;
@@ -146,8 +146,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.replication = new DefaultXsyncReplication();
         this.dispatcher = new DefaultCommandDispatcher();
 
-        /* TODO: dispose client when applier closed */
-        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName);
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
                 leaderElectorManager));
@@ -162,8 +160,11 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
-        workerThreads = Executors.newFixedThreadPool(8,
+        workerThreads = Executors.newScheduledThreadPool(8,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
+
+        /* TODO: dispose client when applier closed */
+        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, workerThreads);
 
         lwmThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(10), ClusterShardAwareThreadFactory.create(clusterId, shardId, "lwm-" + makeApplierThreadName()),

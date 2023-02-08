@@ -42,4 +42,9 @@ public class DefaultMultiCommand extends AbstractCommand<Boolean> implements Red
     public RedisOp redisOp() {
         return redisOp;
     }
+
+    @Override
+    public RedisOpCommandType type() {
+        return RedisOpCommandType.OTHER;
+    }
 }
