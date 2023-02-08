@@ -10,14 +10,17 @@ public class TestMultiDataCommandWrapper extends MultiDataCommand {
 
     private RedisOpDataCommand inner;
 
-    public TestMultiDataCommandWrapper(RedisOpDataCommand inner, ExecutorService workThreads) {
+    private List<RedisOpDataCommand> subCommands;
+
+    public TestMultiDataCommandWrapper(RedisOpDataCommand inner, ExecutorService workThreads,  List<RedisOpDataCommand> redisOpDataCommands) {
         super(null, inner.redisOpAsMulti(), workThreads);
         this.inner = inner;
+        this.subCommands = redisOpDataCommands;
     }
 
     @Override
-    public List<RedisOpDataCommand<Boolean>> sharding() {
-        return inner.sharding();
+    public List<RedisOpDataCommand> sharding() {
+        return subCommands;
     }
 
     @Override

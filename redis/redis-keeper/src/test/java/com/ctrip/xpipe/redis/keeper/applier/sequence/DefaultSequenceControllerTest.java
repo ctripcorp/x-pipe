@@ -73,10 +73,9 @@ public class DefaultSequenceControllerTest extends AbstractTest {
         TestMSetCommand first = new TestMSetCommand(100, "MSET", "A", "A");
         TestMSetCommand second = new TestMSetCommand(200, "MSET", "B", "B");
 
-        when(command.sharding()).thenReturn(Lists.newArrayList(first, second));
         when(command.gtid()).thenReturn("A:1");
 
-        controller.submit(new TestMultiDataCommandWrapper(command, executors));
+        controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)));
 
         first.future().get();
         second.future().get();
