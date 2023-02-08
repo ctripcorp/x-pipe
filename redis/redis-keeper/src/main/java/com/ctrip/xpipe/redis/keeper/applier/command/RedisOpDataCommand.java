@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
-import com.google.common.collect.Lists;
-
-import java.util.List;
-
 /**
  * @author Slight
  * <p>
@@ -11,7 +7,4 @@ import java.util.List;
  */
 public interface RedisOpDataCommand<V> extends RedisOpCommand<V> {
 
-    default List<RedisOpDataCommand<V>> sharding() {
-        return Lists.newArrayList(this);
-    }
 }

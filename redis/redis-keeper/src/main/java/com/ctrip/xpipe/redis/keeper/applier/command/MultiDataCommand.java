@@ -27,8 +27,8 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
         this.workThreads = workThreads;
     }
 
-    @Override
-    public List<RedisOpDataCommand<Boolean>> sharding() {
+    @SuppressWarnings("rawtypes")
+    protected List<RedisOpDataCommand> sharding() {
         List<Object> keys = keys().stream().map(RedisKey::get).collect(Collectors.toList());
         return client.selectMulti(keys).entrySet().stream().map(e ->
                 new DefaultDataCommand(client,
