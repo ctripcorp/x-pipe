@@ -4,6 +4,7 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
@@ -13,10 +14,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultExecCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultMultiCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.tuple.Pair;
@@ -28,6 +26,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -48,6 +47,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @InstanceDependency
     public ExecutorService stateThread;
+
+    @InstanceDependency
+    public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
@@ -262,6 +264,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             sequenceController.submit(new DefaultMultiCommand(client, redisOp));
         } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
             sequenceController.submit(new DefaultExecCommand(client, redisOp));
+        } else if (redisOp instanceof RedisMultiKeyOp) {
+            sequenceController.submit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads));
         } else {
             sequenceController.submit(new DefaultDataCommand(client, redisOp));
         }

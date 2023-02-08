@@ -3,6 +3,8 @@ package com.ctrip.xpipe.client.redis;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.utils.ServicesUtil;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * @author Slight
  * <p>
@@ -12,9 +14,9 @@ public interface AsyncRedisClientFactory extends Ordered {
 
     AsyncRedisClientFactory DEFAULT = ServicesUtil.getAsyncRedisClientFactory();
 
-    AsyncRedisClient getOrCreateClient(String clusterName) throws Exception;
+    AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) throws Exception;
 
-    AsyncRedisClient createClient(String clusterName) throws Exception;
+    AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) throws Exception;
 
     default int getOrder() {
         return LOWEST_PRECEDENCE;

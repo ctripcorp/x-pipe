@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.*;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
@@ -28,7 +31,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public ExecutorService stateThread;
 
     @InstanceDependency
-    public ExecutorService workerThreads;
+    public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
     public ScheduledExecutorService scheduled;
@@ -114,45 +117,23 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     private void submitMultiKeyCommand(RedisOpDataCommand<?> command) {
 
-        List<SequenceCommand<?>> currents = new ArrayList<>();
-
-        for (RedisOpCommand<?> subCommand : command.sharding()) {
-
-            /* find dependencies */
-
-            List<RedisKey> keys = subCommand.keys();
-            List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
-            if (obstacle != null) {
-                dependencies.add(obstacle);
-            }
-
-            /* make command */
-
-            SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(subCommand, workerThreads), stateThread, workerThreads);
-
-            /* make self a dependency */
-
-            for (RedisKey key : keys) {
-                runningCommands.put(key, current);
-                forgetWhenSuccess(current, key);
-            }
-
-            currents.add(current);
+        List<RedisKey> keys = command.keys();
+        List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
+        if (obstacle != null) {
+            dependencies.add(obstacle);
         }
 
-        /* run self */
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
 
-        for (SequenceCommand<?> current : currents) {
-            current.execute();
+        for (RedisKey key : keys) {
+            runningCommands.put(key, current);
+            forgetWhenSuccess(current, key);
         }
 
-        /* do some stuff when finish */
+        mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
 
-        SequenceCommand<?> success = new SuccessSequenceCommand(currents, stateThread, workerThreads);
-        mergeGtidWhenSuccess(success, command.gtid());
-        releaseMemoryThresholdWhenSuccess(success, command.redisOp().estimatedSize());
-
-        success.execute();
+        current.execute();
     }
 
     private void submitObstacle(RedisOpCommand<?> command) {

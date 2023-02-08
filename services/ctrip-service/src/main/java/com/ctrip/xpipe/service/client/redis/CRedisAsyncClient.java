@@ -9,20 +9,31 @@ import com.google.common.util.concurrent.MoreExecutors;
 import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
+import credis.java.client.async.qclient.CRedisClusterSessionManager;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
+import credis.java.client.config.route.DefaultRoute;
+import credis.java.client.entity.RedisNode;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
+import redis.clients.util.SafeEncoder;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Slight
@@ -31,20 +42,25 @@ import java.util.concurrent.TimeUnit;
  */
 public class CRedisAsyncClient implements AsyncRedisClient {
 
+    Logger logger = LoggerFactory.getLogger(getClass());
+
     final AsyncCacheProviderImpl asyncProvider;
 
     final Codec codec;
 
     final ApplierCacheProvider txnProvider;
 
+    final ExecutorService credisNotifyThread;
+
     boolean isInMulti = false;
 
     int db = 0;
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider) {
+    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
         this.codec = new SedisCodec();
+        this.credisNotifyThread = credisNotifyExecutor;
     }
 
     @Override
@@ -118,7 +134,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             public void onFailure(Throwable t) {
                 commandFuture.setFailure(t);
             }
-        }, 1, TimeUnit.SECONDS, MoreExecutors.directExecutor());
+        }, 1, TimeUnit.SECONDS, credisNotifyThread);
         return commandFuture;
     }
 
@@ -146,8 +162,11 @@ public class CRedisAsyncClient implements AsyncRedisClient {
                 return resultFuture("OK");
             } catch (Throwable t) {
                 return errorFuture("one of txnClients.exec() failed", t);
+            } finally {
+                isInMulti = false;
             }
         } else {
+            isInMulti = false;
             return errorFuture("txnClients not valid when exec() called");
         }
     }
