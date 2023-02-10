@@ -5,15 +5,12 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.MoreExecutors;
 import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
-import credis.java.client.async.qclient.CRedisClusterSessionManager;
+import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
-import credis.java.client.config.route.DefaultRoute;
-import credis.java.client.entity.RedisNode;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
@@ -22,18 +19,13 @@ import org.slf4j.LoggerFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
-import redis.clients.util.SafeEncoder;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @author Slight
@@ -169,6 +161,11 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             isInMulti = false;
             return errorFuture("txnClients not valid when exec() called");
         }
+    }
+
+    @Override
+    public void shutdown() {
+        ((CRedisClusterSessionLocator) locator()).destroy();
     }
 
     private CRedisSessionLocator locator() {

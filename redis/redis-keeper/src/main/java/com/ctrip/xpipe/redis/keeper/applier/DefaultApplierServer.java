@@ -221,6 +221,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         lwmThread.shutdownNow();
         scheduled.shutdownNow();
         clientExecutors.shutdownNow();
+        client.shutdown();
     }
 
     @Override
