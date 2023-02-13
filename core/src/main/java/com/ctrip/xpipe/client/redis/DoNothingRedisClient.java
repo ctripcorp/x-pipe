@@ -54,4 +54,9 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     public CommandFuture<Object> exec(Object... rawArgs) {
         return resultFuture("OK");
     }
+
+    @Override
+    public void shutdown() {
+
+    }
 }
