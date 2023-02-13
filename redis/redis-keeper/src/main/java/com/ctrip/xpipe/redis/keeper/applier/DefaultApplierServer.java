@@ -217,11 +217,11 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         stateThread.shutdownNow();
+        client.shutdown();
         workerThreads.shutdownNow();
         lwmThread.shutdownNow();
         scheduled.shutdownNow();
         clientExecutors.shutdownNow();
-        client.shutdown();
     }
 
     @Override
