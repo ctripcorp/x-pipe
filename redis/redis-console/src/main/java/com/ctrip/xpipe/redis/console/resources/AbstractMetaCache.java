@@ -496,12 +496,12 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public List<Long> dcShardIds(String clusterId, String dcId) {
+    public Map<Long, String> dcShardIds(String clusterId, String dcId) {
         DcMeta dcMeta = meta.getKey().findDc(dcId);
-        if (dcMeta == null) return new ArrayList<>();
+        if (dcMeta == null) return new HashMap<>();
         ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
-        if (clusterMeta == null) return new ArrayList<>();
-        return clusterMeta.getShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toList());
+        if (clusterMeta == null) return new HashMap<>();
+        return clusterMeta.getShards().values().stream().collect(Collectors.toMap(ShardMeta::getDbId, ShardMeta::getId));
     }
 
     @VisibleForTesting
