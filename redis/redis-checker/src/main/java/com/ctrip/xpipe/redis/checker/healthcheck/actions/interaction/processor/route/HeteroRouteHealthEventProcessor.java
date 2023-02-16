@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.HeteroInstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -37,9 +38,17 @@ public class HeteroRouteHealthEventProcessor extends AbstractRouteHealthEventPro
                 event.getInstance().getCheckInfo().getDcId(), getSrcShardId(event)));
     }
 
+    @Override
+    protected Pair<String, String> identifierOfEvent(AbstractInstanceEvent event) {
+        RedisInstanceInfo info = event.getInstance().getCheckInfo();
+        return Pair.from(info.getDcId(), getSrcShardId(event));
+    }
+
     private String getSrcShardId(AbstractInstanceEvent event){
         RedisInstanceInfo instanceInfo = event.getInstance().getCheckInfo();
         long shardDBId = ((HeteroInstanceLongDelay) event).getSrcShardDBId();
         return instanceInfo.getActiveDcAllShardIds().get(shardDBId);
     }
+
+
 }
