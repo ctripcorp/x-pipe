@@ -25,7 +25,7 @@ import java.util.function.IntSupplier;
  */
 public class HealthStatus extends AbstractObservable implements Startable, Stoppable {
 
-    private static final Logger logger = LoggerFactory.getLogger(HealthStatus.class);
+    protected static final Logger logger = LoggerFactory.getLogger(HealthStatus.class);
 
     public static long UNSET_TIME = -1L;
 
@@ -34,16 +34,16 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
 
-    private RedisHealthCheckInstance instance;
-    private final IntSupplier delayDownAfterMilli;
-    private final IntSupplier instanceLongDelayMilli;
-    private final IntSupplier pingDownAfterMilli;
-    private final IntSupplier healthyDelayMilli;
+    protected RedisHealthCheckInstance instance;
+    protected final IntSupplier delayDownAfterMilli;
+    protected final IntSupplier instanceLongDelayMilli;
+    protected final IntSupplier pingDownAfterMilli;
+    protected final IntSupplier healthyDelayMilli;
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
 
-    private static Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
+    protected static Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
 
     public HealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
         this.instance = instance;
@@ -83,7 +83,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
     }
 
-    private class CheckDownTask extends AbstractExceptionLogTask {
+    protected class CheckDownTask extends AbstractExceptionLogTask {
         @Override
         protected Logger getLogger() {
             return HealthStatus.logger;
@@ -92,12 +92,16 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         @Override
         protected void doRun() throws Exception {
 
-            if(lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0) {
+            if(shouldNotRun()) {
                 logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
                 return;
             }
             healthStatusUpdate();
         }
+    }
+
+    protected boolean shouldNotRun() {
+        return lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0;
     }
 
     void loading() {
@@ -125,7 +129,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    void delay(long delayMilli){
+    void delay(long delayMilli, long...srcShardDbId){
 
         //first time
         lastHealthDelayTime.compareAndSet(UNSET_TIME, System.currentTimeMillis());
@@ -229,7 +233,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    private void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
+    protected void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
         logStateChange(pre, cur);
         if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
             logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
@@ -237,7 +241,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    private void logStateChange(HEALTH_STATE pre, HEALTH_STATE cur) {
+    protected void logStateChange(HEALTH_STATE pre, HEALTH_STATE cur) {
         if(pre.equals(cur)) {
             return;
         }

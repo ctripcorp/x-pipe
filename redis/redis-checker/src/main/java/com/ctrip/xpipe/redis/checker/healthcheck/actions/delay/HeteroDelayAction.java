@@ -18,7 +18,7 @@ public class HeteroDelayAction extends DelayAction {
     }
 
     protected String[] getSubscribeChannel() {
-        return instance.getCheckInfo().getActiveDcAllShardIds().stream().map(shardId ->  publishChannelPrefix() + foundationService.getLocalIp() + "-" + shardId).toArray(String[]::new);
+        return instance.getCheckInfo().getActiveDcAllShardIds().keySet().stream().map(shardId ->  publishChannelPrefix() + foundationService.getLocalIp() + "-" + shardId).toArray(String[]::new);
     }
 
     @Override
