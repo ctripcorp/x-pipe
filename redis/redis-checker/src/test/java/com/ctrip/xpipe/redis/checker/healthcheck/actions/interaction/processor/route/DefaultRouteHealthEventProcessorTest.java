@@ -5,6 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.HeteroInstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
@@ -22,7 +23,10 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Mockito.*;
 
@@ -130,6 +134,13 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
     }
 
     @Test
+    public void testOnEventWithHetero() {
+        processor.onEvent(new HeteroInstanceLongDelay(instance,1));
+        verify(processor, never()).doOnEvent(any());
+        verify(processor, never()).tryRecover(any(), any());
+    }
+
+    @Test
     public void testOnEventWithUp() throws HealthEventProcessorException {
         processor.onEvent(new InstanceUp(instance));
         verify(processor, never()).doOnEvent(any());
@@ -146,7 +157,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
     @Test
     public void testCloseProxyChain() {
         doCallRealMethod().when(processor).tryRecover(any(), any());
-        processor.tryRecover(instance, proxyTunnelInfo);
+        processor.tryRecover(new InstanceLongDelay(instance), proxyTunnelInfo);
         verify(proxyManager, times(1)).closeProxyTunnel(proxyTunnelInfo);
     }
 
@@ -190,4 +201,5 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         processor.onEvent(new InstanceLongDelay(instance2));
         verify(processor, times(1)).tryRecover(any(), any());
     }
+
 }
