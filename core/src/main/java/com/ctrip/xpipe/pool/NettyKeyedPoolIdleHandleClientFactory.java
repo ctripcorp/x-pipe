@@ -9,13 +9,13 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
-public class NettyKeyedPoolHeartBeatClientFactory extends NettyKeyedPoolClientFactory {
+public class NettyKeyedPoolIdleHandleClientFactory extends NettyKeyedPoolClientFactory {
 
     private static final int DEFAULT_READ_IDLE_SECONDS = 60;
 
     private final ChannelHandler idleHandler;
 
-    public NettyKeyedPoolHeartBeatClientFactory(ChannelHandler idleHandler) {
+    public NettyKeyedPoolIdleHandleClientFactory(ChannelHandler idleHandler) {
         this.idleHandler = idleHandler;
     }
 
