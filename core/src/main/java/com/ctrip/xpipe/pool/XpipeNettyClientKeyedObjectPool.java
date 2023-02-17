@@ -64,6 +64,11 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
         this.pooledObjectFactory = pooledObjectFactory;
     }
 
+    public XpipeNettyClientKeyedObjectPool(int maxPerKey, NettyKeyedPoolClientFactory pooledObjectFactory) {
+        this(maxPerKey);
+        this.pooledObjectFactory = pooledObjectFactory;
+    }
+
     @Override
     protected void doInitialize() throws Exception {
 

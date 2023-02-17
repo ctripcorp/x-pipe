@@ -67,6 +67,7 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
         /* simple implementation */
 
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
+
         Xsync xsync = new DefaultXsync(objectPool, gtidSetExcluded, null, scheduled);
         xsync.addXsyncObserver(dispatcher);
 
