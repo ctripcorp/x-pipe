@@ -116,12 +116,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     }
 
     @Override
-    public DcMeta getDcMeta(String dcName) {
+    public DcMeta getDcMeta(String dcName) throws Exception{
         return getDcMeta(dcName, consoleConfig.getOwnClusterType());
     }
 
     @Override
-    public DcMeta getDcMeta(String dcName, Set<String> allowTypes) {
+    public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
         List<DcTbl> dcTblList = dcService.findAllDcs();
         DcTbl dcTbl = null;
         for (DcTbl dt : dcTblList) {
@@ -147,17 +147,13 @@ public class AdvancedDcMetaService implements DcMetaService {
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
-        try {
-            chain.execute().get();
-        } catch (Exception e) {
-            logger.error("[queryDcMeta] ", e);
-        }
+        chain.execute().get();
 
         return dcMeta;
     }
 
     @Override
-    public Map<String, DcMeta> getAllDcMetas() {
+    public Map<String, DcMeta> getAllDcMetas() throws Exception {
         List<DcTbl> dcTblList = dcService.findAllDcs();
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
@@ -180,11 +176,7 @@ public class AdvancedDcMetaService implements DcMetaService {
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
-        try {
-            chain.execute().get();
-        } catch (Exception e) {
-            logger.error("[queryAllDcMetas] ", e);
-        }
+        chain.execute().get();
 
         return dcMetaMap;
     }

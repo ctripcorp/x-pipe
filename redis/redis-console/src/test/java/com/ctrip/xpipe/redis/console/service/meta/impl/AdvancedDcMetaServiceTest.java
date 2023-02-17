@@ -92,7 +92,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetDcMeta() {
+    public void testGetDcMeta() throws Exception {
         long start = System.currentTimeMillis();
         DcMeta dcMeta = service.getDcMeta("jq");
         long end = System.currentTimeMillis();
@@ -101,7 +101,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetDcMeta2() {
+    public void testGetDcMeta2() throws Exception {
         long start = System.currentTimeMillis();
         for(int i = 0; i < 100; i++) {
             dcMetaService.getDcMeta(dcNames[(1&i)]);
@@ -129,7 +129,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testClusterOrgInfo() {
+    public void testClusterOrgInfo() throws Exception {
         List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
 
         ClusterTbl clusterTbl = clusterTbls.get(3);
@@ -150,7 +150,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
 
     @Ignore
     @Test
-    public void testHangForever() {
+    public void testHangForever() throws Exception {
 //        proxyService.deleteProxy();
         dcMetaService.getDcMeta("jq");
     }

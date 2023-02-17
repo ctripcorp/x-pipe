@@ -47,7 +47,7 @@ public class ConsoleController extends AbstractConsoleController {
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
-							@RequestParam(value ="types", required = false) Set<String> types) {
+							@RequestParam(value ="types", required = false) Set<String> types) throws Exception {
 		DcMeta result;
 		if (null != types && !types.isEmpty()) {
 			result = dcMetaService.getDcMeta(dcId, types);
