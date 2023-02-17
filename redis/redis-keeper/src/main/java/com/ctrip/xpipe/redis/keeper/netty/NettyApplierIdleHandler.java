@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.keeper.netty;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ChannelHandler.Sharable
 public class NettyApplierIdleHandler extends ChannelDuplexHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
