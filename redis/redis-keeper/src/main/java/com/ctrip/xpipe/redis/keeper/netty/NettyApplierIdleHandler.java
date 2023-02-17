@@ -8,6 +8,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/* TODO after optimizing xsync to fixedobjectpool, sharable can be removed */
 @ChannelHandler.Sharable
 public class NettyApplierIdleHandler extends ChannelDuplexHandler {
 
@@ -24,6 +25,6 @@ public class NettyApplierIdleHandler extends ChannelDuplexHandler {
                     ctx.close();
             }
         }
-
+        super.userEventTriggered(ctx, evt);
     }
 }
