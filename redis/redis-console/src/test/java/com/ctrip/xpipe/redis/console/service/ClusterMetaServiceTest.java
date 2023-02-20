@@ -71,7 +71,7 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	
 	@Test
 	@DirtiesContext
-	public void testGetDifferentActiveDcForDcMetaWhileMigrating() {
+	public void testGetDifferentActiveDcForDcMetaWhileMigrating() throws Exception {
 		ClusterTbl clusterA = clusterService.find(clusterName1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), clusterA.getStatus());
 		ClusterTbl clusterB = clusterService.find(clusterName2);
