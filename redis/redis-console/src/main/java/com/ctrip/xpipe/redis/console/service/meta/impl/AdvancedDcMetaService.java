@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
@@ -147,7 +148,12 @@ public class AdvancedDcMetaService implements DcMetaService {
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
-        chain.execute().get();
+        try {
+            chain.execute().get();
+        } catch (Throwable th) {
+            EventMonitor.DEFAULT.logAlertEvent("getDcMeta throw exception");
+            throw th;
+        }
 
         return dcMeta;
     }
@@ -176,7 +182,12 @@ public class AdvancedDcMetaService implements DcMetaService {
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
-        chain.execute().get();
+        try {
+            chain.execute().get();
+        } catch (Throwable th) {
+            EventMonitor.DEFAULT.logAlertEvent("getAllDcMetas throw exception");
+            throw th;
+        }
 
         return dcMetaMap;
     }
