@@ -154,7 +154,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 	
 	@Test
 	@DirtiesContext
-	public void testCancelOnMigrating() {
+	public void testCancelOnMigrating() throws Exception {
 		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
 		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
 		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB,new Throwable("mocked new fail"));
