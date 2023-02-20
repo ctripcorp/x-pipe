@@ -12,7 +12,11 @@ import java.util.List;
 
 public class ApplierChannelHandlerFactory implements ChannelHandlerFactory {
 
-    private static final int DEFAULT_READ_IDLE_SECONDS = 60;
+    private int readIdleSeconds;
+
+    public ApplierChannelHandlerFactory(int readIdleSeconds) {
+        this.readIdleSeconds = readIdleSeconds;
+    }
 
     @Override
     public List<ChannelHandler> createHandlers() {
@@ -20,7 +24,7 @@ public class ApplierChannelHandlerFactory implements ChannelHandlerFactory {
         channelHandlers.add(new LoggingHandler());
         channelHandlers.add(new NettySimpleMessageHandler());
         channelHandlers.add(new NettyClientHandler());
-        channelHandlers.add(new IdleStateHandler(DEFAULT_READ_IDLE_SECONDS, 0,0));
+        channelHandlers.add(new IdleStateHandler(readIdleSeconds, 0,0));
         channelHandlers.add(new NettyApplierIdleHandler());
         return channelHandlers;
     }

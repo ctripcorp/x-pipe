@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -42,7 +43,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
 
         DefaultApplierServer server = new DefaultApplierServer(
                 "ApplierTest", ClusterId.from(1L), ShardId.from(1L),
-                applierMeta, leaderElectorManager, parser);
+                applierMeta, leaderElectorManager, parser, new TestKeeperConfig());
         server.initialize();
 
         assertTrue(server.sequenceController.getLifecycleState().isInitialized());
