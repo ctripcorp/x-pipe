@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -80,6 +81,10 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         });
     }
 
+    private Command<?> wrapWithRetry(RedisOpCommand<?> command) {
+        return command.needGuaranteeSuccess() ? new StubbornCommand<>(command, workerThreads) : command;
+    }
+
     private void submitSingleKeyCommand(RedisOpDataCommand<?> command) {
 
         /* find dependencies */
@@ -98,7 +103,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         /* make self a dependency */
 
@@ -123,7 +128,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             dependencies.add(obstacle);
         }
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
@@ -147,7 +152,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         /* make self a dependency */
 

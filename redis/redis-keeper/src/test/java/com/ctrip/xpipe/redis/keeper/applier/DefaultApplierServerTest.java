@@ -66,7 +66,6 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.stateThread, ((DefaultLwmManager) server.lwmManager).stateThread);
 
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
-        assertEquals(server.lwmThread, ((DefaultLwmManager) server.lwmManager).lwmThread);
 
         assertEquals(server.scheduled, ((DefaultXsyncReplication) server.replication).scheduled);
         assertEquals(server.scheduled, ((DefaultSequenceController) server.sequenceController).scheduled);

@@ -67,6 +67,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @VisibleForTesting
     GtidSet gtid_received;
 
+    // in order to aggregate the entire transaction into one command
+    private TransactionCommand transactionCommand;
+
     public DefaultCommandDispatcher() {
         this.rdbParser = createRdbParser();
 
@@ -79,12 +82,17 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return rdbParser;
     }
 
+    private void resetTransactionState() {
+        this.transactionCommand = null;
+    }
+
     @VisibleForTesting
     void resetState(GtidSet gtidSet) {
         this.gtid_received = gtidSet.clone();
         this.receivedSids = new HashSet<>();
         this.gtid_executed.set(gtidSet.clone());
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
+        resetTransactionState();
     }
 
     @Override
@@ -109,7 +117,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void onRdbData(ByteBuf rdbData) {
         try {
             rdbParser.read(rdbData);
-        } catch (Throwable t){
+        } catch (Throwable t) {
             logger.error("[onRdbData] unlikely - error", t);
         }
     }
@@ -237,6 +245,25 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return rt;
     }
 
+    private void addTransactionStart(RedisOpCommand<?> multiCommand) {
+        transactionCommand = new TransactionCommand(workerThreads);
+        transactionCommand.addTransactionStart(multiCommand);
+    }
+
+    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand) {
+        transactionCommand.addTransactionEnd(execCommand);
+        sequenceController.submit(transactionCommand);
+        resetTransactionState();
+    }
+
+    private void addIfTransactionCommandsOrSubmit(RedisOpDataCommand<?> redisOpDataCommand) {
+        if (transactionCommand != null) {
+            transactionCommand.addTransactionCommands(redisOpDataCommand);
+        } else {
+            sequenceController.submit(redisOpDataCommand);
+        }
+    }
+
     @Override
     public void onRedisOp(RedisOp redisOp) {
 
@@ -261,13 +288,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         if (redisOp.getOpType().equals(RedisOpType.MULTI)) {
-            sequenceController.submit(new DefaultMultiCommand(client, redisOp));
+            addTransactionStart(new DefaultMultiCommand(client, redisOp));
         } else if (redisOp.getOpType().equals(RedisOpType.EXEC)) {
-            sequenceController.submit(new DefaultExecCommand(client, redisOp));
+            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp));
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            sequenceController.submit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads));
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads));
         } else {
-            sequenceController.submit(new DefaultDataCommand(client, redisOp));
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp));
         }
     }
 

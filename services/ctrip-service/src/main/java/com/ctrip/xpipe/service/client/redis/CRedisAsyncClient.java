@@ -115,6 +115,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
             } catch (Throwable t) {
+                // transaction command will reselect resource later by retry TransactionCommand
+                cleanTransactionResource();
+                isInMulti = false;
                 return errorFuture(t);
             }
         }
@@ -148,6 +151,26 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         return resultFuture("OK");
     }
 
+    private void cleanTransactionResource() {
+        for (Map.Entry<RedisClient, RedisTransactionClient> redisClientRedisTransactionClientEntry : clients2TxnClients.entrySet()) {
+            RedisTransactionClient redisTransactionClient = redisClientRedisTransactionClientEntry.getValue();
+            try {
+                // if transaction still not finish, discard
+                redisTransactionClient.discard();
+            } catch (Throwable t) {
+                // ignore
+            }
+            RedisClient redisClient = redisClientRedisTransactionClientEntry.getKey();
+            try {
+                // release connection resource
+                redisClient.destroy();
+            } catch (Throwable t) {
+                // ignore, connection will recreate by connection pool
+            }
+        }
+        clients2TxnClients.clear();
+    }
+
     @Override
     public CommandFuture<Object> exec(Object... rawArgs) {
         if (txnProvider.isValidOnlyForApplier(clients2TxnClients.keySet())) {
@@ -164,6 +187,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             } catch (Throwable t) {
                 return errorFuture("one of txnClients.exec() failed", t);
             } finally {
+                cleanTransactionResource();
                 isInMulti = false;
             }
         } else {
