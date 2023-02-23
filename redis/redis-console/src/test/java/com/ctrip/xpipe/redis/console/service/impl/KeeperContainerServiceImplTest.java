@@ -370,5 +370,13 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(3, keeperContainers.size());
     }
 
+    @Test
+    public void testFindKeeperContainerInSingleAz() {
+        List<KeepercontainerTbl> bestKeeperContainersByDcCluster = keeperContainerService.findBestKeeperContainersByDcCluster("oy", "cluster2");
+        Assert.assertEquals(true, bestKeeperContainersByDcCluster.size() > 2);
+
+        bestKeeperContainersByDcCluster = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster6");
+        Assert.assertEquals(2, bestKeeperContainersByDcCluster.size());
+    }
 
 }
