@@ -1,24 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.dianping.cat.Cat;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.entity.AzMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 import java.util.*;
 
@@ -41,7 +33,7 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             List<AzMeta> azmetas = dcMeta.getAzs();
-            if (azmetas == null || azmetas.isEmpty())
+            if (azmetas == null || azmetas.isEmpty() || azmetas.size() == 1)
                 continue;
 
             List<KeeperContainerMeta> keeperContainers = dcMeta.getKeeperContainers();
