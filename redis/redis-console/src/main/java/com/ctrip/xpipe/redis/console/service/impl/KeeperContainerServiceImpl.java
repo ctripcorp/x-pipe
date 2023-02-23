@@ -163,8 +163,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   private List<KeepercontainerTbl>  filterKeeperFromSameAvailableZone(List<KeepercontainerTbl> keepercontainerTbls, String dcName) {
-    List<AzTbl> dcAvailableZones = azService.getDcAvailableZoneTbls(dcName);
-    if(dcAvailableZones == null || dcAvailableZones.isEmpty()) {
+    List<AzTbl> dcAvailableZones = azService.getDcActiveAvailableZoneTbls(dcName);
+    if(dcAvailableZones == null || dcAvailableZones.isEmpty() || dcAvailableZones.size() == 1) {
       return keepercontainerTbls;
     } else {
       Set<Long> usedAvailableZones = new HashSet<>();

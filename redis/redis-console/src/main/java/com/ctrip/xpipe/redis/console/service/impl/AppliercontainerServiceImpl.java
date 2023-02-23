@@ -122,8 +122,8 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
 
     private List<AppliercontainerTbl> filterAppliercontainerFromSameAvailableZone(List<AppliercontainerTbl> appliercontainerTbls,
                                                                                   String dcName) {
-        List<AzTbl> dcAvailableZones = azService.getDcAvailableZoneTbls(dcName);
-        if (dcAvailableZones == null || dcAvailableZones.isEmpty()) {
+        List<AzTbl> dcAvailableZones = azService.getDcActiveAvailableZoneTbls(dcName);
+        if (dcAvailableZones == null || dcAvailableZones.isEmpty() || dcAvailableZones.size() == 1) {
             return appliercontainerTbls;
         } else {
             Set<Long> usedAvailableZones = new HashSet<>();
