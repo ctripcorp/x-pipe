@@ -41,11 +41,9 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain(false);
         sequenceCommandChain.add(multiCommand);
         if (!transactionCommands.isEmpty()) {
-            ParallelCommandChain parallelCommandChain = new ParallelCommandChain(workExecutors, false);
             for (RedisOpCommand<?> transactionCommand : transactionCommands) {
-                parallelCommandChain.add(transactionCommand);
+                sequenceCommandChain.add(transactionCommand);
             }
-            sequenceCommandChain.add(parallelCommandChain);
         }
         sequenceCommandChain.add(execCommand);
         return sequenceCommandChain;
