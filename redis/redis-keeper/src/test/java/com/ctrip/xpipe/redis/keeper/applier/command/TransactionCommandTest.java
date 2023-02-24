@@ -20,7 +20,7 @@ public class TransactionCommandTest extends AbstractTest {
     @Test
     public void testCreate() throws ExecutionException, InterruptedException {
 
-        TransactionCommand transactionCommand = new TransactionCommand(executors);
+        TransactionCommand transactionCommand = new TransactionCommand();
         TestMultiCommand multiCommand = spy(new TestMultiCommand(100, "MULTI"));
         transactionCommand.addTransactionStart(multiCommand);
         TestSetCommand dataCommand = spy(new TestSetCommand(100, "SET", "K", "V"));
