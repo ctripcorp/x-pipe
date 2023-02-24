@@ -15,6 +15,8 @@ public class RedisOpTransactionAdapter implements RedisOp {
 
     private RedisOp execOp;
 
+    private long estimatedSize;
+
     public RedisOpTransactionAdapter() {
         this.transactionOps = new LinkedList<>();
     }
@@ -23,8 +25,19 @@ public class RedisOpTransactionAdapter implements RedisOp {
         this.multiOp = multiOp;
     }
 
+    private void calculateEstimatedSize() {
+        long res = 0;
+        res += multiOp.estimatedSize();
+        for (RedisOp transactionOp : transactionOps) {
+            res += transactionOp.estimatedSize();
+        }
+        res += execOp.estimatedSize();
+        estimatedSize = res;
+    }
+
     public void addExecOp(RedisOp execOp) {
         this.execOp = execOp;
+        this.calculateEstimatedSize();
     }
 
     public void addTransactionOp(RedisOp transactionOp) {
@@ -71,12 +84,6 @@ public class RedisOpTransactionAdapter implements RedisOp {
     // for memoryThreshold
     @Override
     public long estimatedSize() {
-        long res = 0;
-        res += multiOp.estimatedSize();
-        for (RedisOp transactionOp : transactionOps) {
-            res += transactionOp.estimatedSize();
-        }
-        res += execOp.estimatedSize();
-        return res;
+        return estimatedSize;
     }
 }
