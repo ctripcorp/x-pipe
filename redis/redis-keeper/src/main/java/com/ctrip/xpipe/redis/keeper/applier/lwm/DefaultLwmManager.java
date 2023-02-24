@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.LwmCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 
@@ -96,7 +97,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
         RedisOp redisOp = new RedisOpLwm(sid, lwm);
 
         try {
-            DefaultBroadcastCommand command = new DefaultBroadcastCommand(client, redisOp, false);
+            LwmCommand command = new LwmCommand(client, redisOp);
             command.future().addListener((f)->{
                 if (!f.isSuccess()) {
                     EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());

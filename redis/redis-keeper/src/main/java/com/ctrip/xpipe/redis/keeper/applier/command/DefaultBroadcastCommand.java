@@ -15,17 +15,9 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
 
     final RedisOp redisOp;
 
-    boolean needGuaranteeSuccess;
-
     public DefaultBroadcastCommand(AsyncRedisClient client, RedisOp redisOp) {
-        // needGuaranteeSuccess default is true
-        this(client, redisOp, true);
-    }
-
-    public DefaultBroadcastCommand(AsyncRedisClient client, RedisOp redisOp, boolean needGuaranteeSuccess) {
         this.client = client;
         this.redisOp = redisOp;
-        this.needGuaranteeSuccess = needGuaranteeSuccess;
     }
 
     @Override
@@ -66,10 +58,5 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
     @Override
     public RedisOpCommandType type() {
         return RedisOpCommandType.OTHER;
-    }
-
-    @Override
-    public boolean needGuaranteeSuccess() {
-        return needGuaranteeSuccess;
     }
 }

@@ -74,6 +74,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                 case MULTI_KEY:
                     submitMultiKeyCommand((RedisOpDataCommand<?>) command);
                     break;
+                case NONE_KEY:
+                    submitNoneKeyCommand(command);
+                    break;
                 case OTHER:
                     submitObstacle(command);
                     break;
@@ -83,6 +86,30 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     private Command<?> wrapWithRetry(RedisOpCommand<?> command) {
         return command.needGuaranteeSuccess() ? new StubbornCommand<>(command, workerThreads) : command;
+    }
+
+    private void submitNoneKeyCommand(RedisOpCommand<?> command) {
+
+        /* find dependencies */
+
+        List<SequenceCommand<?>> dependencies = new ArrayList<>();
+
+        if (obstacle != null) {
+            dependencies.add(obstacle);
+        }
+
+        /* make command */
+
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
+
+        /* do some stuff when finish */
+
+        mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+
+        /* run self */
+
+        current.execute();
     }
 
     private void submitSingleKeyCommand(RedisOpDataCommand<?> command) {
