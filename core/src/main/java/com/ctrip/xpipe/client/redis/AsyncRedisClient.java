@@ -24,6 +24,8 @@ public interface AsyncRedisClient {
 
     CommandFuture<Object> multi();
 
+    void resetTransactionState();
+
     CommandFuture<Object> exec(Object... rawArgs);
 
     void shutdown();

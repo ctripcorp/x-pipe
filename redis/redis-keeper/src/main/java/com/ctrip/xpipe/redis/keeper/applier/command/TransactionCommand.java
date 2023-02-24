@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.api.command.CommandChain;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 public class TransactionCommand extends AbstractCommand<Boolean> implements RedisOpCommand<Boolean> {
+
+    private AsyncRedisClient redisClient;
 
     private ExecutorService workExecutors;
 
@@ -27,7 +30,8 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     private CommandChain<Object> commandChain;
 
-    public TransactionCommand(ExecutorService workExecutors) {
+    public TransactionCommand(AsyncRedisClient redisClient, ExecutorService workExecutors) {
+        this.redisClient = redisClient;
         this.workExecutors = workExecutors;
         this.transactionCommands = new LinkedList<>();
         this.redisOp = new RedisOpTransactionAdapter();
@@ -81,7 +85,7 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     @Override
     protected void doReset() {
-
+        redisClient.resetTransactionState();
     }
 
     @Override

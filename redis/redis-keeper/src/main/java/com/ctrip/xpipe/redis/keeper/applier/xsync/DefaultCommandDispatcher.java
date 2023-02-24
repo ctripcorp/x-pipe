@@ -246,7 +246,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     private void addTransactionStart(RedisOpCommand<?> multiCommand) {
-        transactionCommand = new TransactionCommand(workerThreads);
+        transactionCommand = new TransactionCommand(client, workerThreads);
         transactionCommand.addTransactionStart(multiCommand);
     }
 

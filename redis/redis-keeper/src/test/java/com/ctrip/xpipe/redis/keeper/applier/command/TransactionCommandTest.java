@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.client.redis.DoNothingRedisClient;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestExecCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMultiCommand;
@@ -20,7 +21,7 @@ public class TransactionCommandTest extends AbstractTest {
     @Test
     public void testCreate() throws ExecutionException, InterruptedException {
 
-        TransactionCommand transactionCommand = new TransactionCommand(executors);
+        TransactionCommand transactionCommand = new TransactionCommand(new DoNothingRedisClient(), executors);
         TestMultiCommand multiCommand = spy(new TestMultiCommand(100, "MULTI"));
         transactionCommand.addTransactionStart(multiCommand);
         TestSetCommand dataCommand = spy(new TestSetCommand(100, "SET", "K", "V"));
