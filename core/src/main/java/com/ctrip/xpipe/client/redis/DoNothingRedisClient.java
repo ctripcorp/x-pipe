@@ -52,11 +52,6 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
-    public void resetTransactionState() {
-
-    }
-
-    @Override
     public CommandFuture<Object> exec(Object... rawArgs) {
         return resultFuture("OK");
     }

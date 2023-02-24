@@ -16,8 +16,6 @@ import java.util.concurrent.ExecutorService;
 
 public class TransactionCommand extends AbstractCommand<Boolean> implements RedisOpCommand<Boolean> {
 
-    private AsyncRedisClient redisClient;
-
     private ExecutorService workExecutors;
 
     private RedisOpCommand<?> multiCommand;
@@ -30,8 +28,7 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     private CommandChain<Object> commandChain;
 
-    public TransactionCommand(AsyncRedisClient redisClient, ExecutorService workExecutors) {
-        this.redisClient = redisClient;
+    public TransactionCommand(ExecutorService workExecutors) {
         this.workExecutors = workExecutors;
         this.transactionCommands = new LinkedList<>();
         this.redisOp = new RedisOpTransactionAdapter();
@@ -83,7 +80,7 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     @Override
     protected void doReset() {
-        redisClient.resetTransactionState();
+
     }
 
     @Override

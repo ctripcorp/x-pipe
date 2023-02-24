@@ -128,8 +128,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         clients2TxnClients.clear();
     }
 
-    @Override
-    public void resetTransactionState() {
+    private void resetTransactionState() {
         cleanTransactionResource();
         isInMulti = false;
     }
@@ -144,6 +143,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
             } catch (Throwable t) {
+                resetTransactionState();
                 return errorFuture(t);
             }
         }
