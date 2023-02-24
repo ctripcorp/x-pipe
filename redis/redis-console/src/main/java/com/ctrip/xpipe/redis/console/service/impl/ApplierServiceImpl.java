@@ -15,6 +15,7 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,14 +163,15 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
         }
 
         List<ApplierTbl> applierTbls = applierDao.findByShard(shardTbl.getId());
+        List<ApplierTbl> result = new ArrayList<>();
         for (ApplierTbl applierTbl : applierTbls) {
             AppliercontainerTbl appliercontainerTbl = appliercontainerService.findAppliercontainerTblById(applierTbl.getContainerId());
-            if (dcTbl.getId() != appliercontainerTbl.getAppliercontainerDc()) {
-                applierTbls.remove(applierTbl);
+            if (dcTbl.getId() == appliercontainerTbl.getAppliercontainerDc()) {
+                result.add(applierTbl);
             }
         }
 
-        return applierTbls;
+        return result;
     }
 
     @Override
@@ -469,6 +471,16 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
         }
 
         return ipUsedPortsMap;
+    }
+
+    @VisibleForTesting
+    public void setApplierDao(ApplierDao applierDao) {
+        this.applierDao = applierDao;
+    }
+
+    @VisibleForTesting
+    public void setAppliercontainerService(AppliercontainerService appliercontainerService) {
+        this.appliercontainerService = appliercontainerService;
     }
 
 }
