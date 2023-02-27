@@ -9,6 +9,7 @@ import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.concurrent.LongTimeAlertTask;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ApplierInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
@@ -27,8 +28,10 @@ import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.ApplierCommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.impl.ApplierRedisClient;
+import com.ctrip.xpipe.redis.keeper.netty.ApplierChannelHandlerFactory;
 import com.ctrip.xpipe.redis.keeper.netty.NettyApplierHandler;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -140,7 +143,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
-                                LeaderElectorManager leaderElectorManager, RedisOpParser parser) throws Exception {
+                                LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig) throws Exception {
         this.sequenceController = new DefaultSequenceController();
         this.lwmManager = new DefaultLwmManager();
         this.replication = new DefaultXsyncReplication();
@@ -173,7 +176,8 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
 
-        pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE));
+        pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE,
+                new NettyKeyedPoolClientFactory(new ApplierChannelHandlerFactory(keeperConfig.getApplierReadIdleSeconds()))));
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,

@@ -234,4 +234,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getReplicationStoreCommandFileKeepTimeSeconds() {
 		return cmdFileKeepSeconds;
 	}
+
+	@Override
+	public int getApplierReadIdleSeconds() {
+		return 60;
+	}
 }
