@@ -84,7 +84,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
         applierMeta.setId("test-applier");
         applierMeta.setPort(7080);
         ApplierServer applierServer = new DefaultApplierServer("ApplierTest",
-                ClusterId.from(1L), ShardId.from(1L), applierMeta, leaderElectorManager, redisOpParser);
+                ClusterId.from(1L), ShardId.from(1L), applierMeta, leaderElectorManager, redisOpParser, getKeeperConfig());
 
         applierServer.initialize();
         applierServer.start();
