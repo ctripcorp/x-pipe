@@ -62,9 +62,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	public static String KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS = "KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS";
 
-	public static String KEY_REPLICATION_TIMEOUT = "KEY_REPLICATION_TIMEOUT_MILLI";
-
-	public static int DEFAULT_REPLICATION_TIMEOUT_MILLI = Integer.parseInt(System.getProperty(KEY_REPLICATION_TIMEOUT, "60000"));
+	public static int DEFAULT_REPLICATION_TIMEOUT_MILLI = 60000;
 
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
@@ -103,20 +101,16 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected KeeperResourceManager resourceManager;
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-										  ScheduledExecutorService scheduled, int replTimeoutMilli, KeeperResourceManager resourceManager) {
+										  ScheduledExecutorService scheduled, KeeperResourceManager resourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
-		this.replTimeoutMilli = replTimeoutMilli;
+		this.replTimeoutMilli = redisKeeperServer.getKeeperConfig() == null? DEFAULT_REPLICATION_TIMEOUT_MILLI:
+				redisKeeperServer.getKeeperConfig().getKeyReplicationTimeoutMilli();
 		this.scheduled = scheduled;
 		this.resourceManager = resourceManager;
 		this.commandTimeoutMilli = initCommandTimeoutMilli();
-	}
-
-	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-										  ScheduledExecutorService scheduled, KeeperResourceManager resourceManager) {
-		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, resourceManager);
 	}
 
 	@Override

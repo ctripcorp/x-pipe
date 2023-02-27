@@ -61,4 +61,5 @@ public interface KeeperConfig extends CoreConfig{
 
     long getMaxReplKeepSecondsAfterDown();
 
+    int getKeyReplicationTimeoutMilli();
 }

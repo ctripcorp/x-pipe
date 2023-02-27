@@ -7,6 +7,7 @@ import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
+import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 
 /**
  * @author marsqing
@@ -39,6 +40,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI = "keeper.repl.down.safe.interval.milli";
 
 	private static String KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN = "keeper.repl.keep.seconds.after.down";
+
+	private static String KEY_REPLICATION_TIMEOUT_MILLI = "replication.timeout.milli";
 
 	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
@@ -165,5 +168,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getMaxReplKeepSecondsAfterDown() {
 		return getLongProperty(KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN, 3600L);
+	}
+
+	@Override
+	public int getKeyReplicationTimeoutMilli() {
+	    return getIntProperty(KEY_REPLICATION_TIMEOUT_MILLI, AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI);
 	}
 }

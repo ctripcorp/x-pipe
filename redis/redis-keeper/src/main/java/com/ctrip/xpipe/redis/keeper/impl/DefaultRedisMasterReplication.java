@@ -41,15 +41,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 int replTimeoutMilli, KeeperResourceManager resourceManager) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, resourceManager);
-	}
-
-	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
-										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
 										 KeeperResourceManager resourceManager) {
-		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI,
-				resourceManager);
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, resourceManager);
 	}
 
 	@Override
