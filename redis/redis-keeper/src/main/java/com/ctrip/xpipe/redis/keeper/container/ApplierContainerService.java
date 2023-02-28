@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -34,6 +35,9 @@ public class ApplierContainerService {
 
     @Autowired
     private GeneralRedisOpParser redisOpParser;
+
+    @Autowired
+    private KeeperConfig keeperConfig;
 
     private Map<String, ApplierServer> applierServers = Maps.newConcurrentMap();
 
@@ -177,7 +181,7 @@ public class ApplierContainerService {
     private ApplierServer createApplierServer(ApplierTransMeta applierTransMeta) throws Exception {
         ApplierServer applierServer = new DefaultApplierServer(applierTransMeta.getClusterName(),
                 ClusterId.from(applierTransMeta.getClusterDbId()), ShardId.from(applierTransMeta.getShardDbId()),
-                applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser);
+                applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser, keeperConfig);
         register(applierServer);
 
         return applierServer;

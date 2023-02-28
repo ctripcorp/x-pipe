@@ -48,6 +48,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     int db = 0;
 
+    // simple fix locator parallel
+    private final Object locatorLock = new Object();
+
     public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
@@ -58,7 +61,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     @Override
     public Object[] broadcast() {
         /* not efficient */
-        return locator().getAllSession(true).toArray();
+        synchronized (locatorLock) {
+            return locator().getAllSession(true).toArray();
+        }
     }
 
     public Map<RedisClient, RedisTransactionClient> clients2TxnClients = new HashMap<>();
@@ -73,7 +78,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             }
             return client;
         }
-        return locator().getSessionForObject(key, true);
+        synchronized (locatorLock) {
+            return locator().getSessionForObject(key, true);
+        }
     }
 
     @Override
@@ -88,7 +95,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             }
             return new TMapWrapper<>(clients);
         }
-        return new TMapWrapper<>(locator().getSessionForList(true, keys.toArray()));
+        synchronized (locatorLock) {
+            return new TMapWrapper<>(locator().getSessionForList(true, keys.toArray()));
+        }
     }
 
     @Override

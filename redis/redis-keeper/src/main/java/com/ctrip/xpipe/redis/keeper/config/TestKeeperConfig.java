@@ -252,4 +252,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getKeyReplicationTimeoutMilli() {
 	    return keyReplicationTimeoutMilli;
 	}
+
+	@Override
+	public int getApplierReadIdleSeconds() {
+		return 60;
+	}
 }

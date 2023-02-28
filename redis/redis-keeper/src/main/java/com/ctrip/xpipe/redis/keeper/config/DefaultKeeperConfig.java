@@ -45,6 +45,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
+	private static String KEY_APPLIER_READ_IDLE_SECONDS = "applier.read.idle.seconds";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -168,6 +170,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getMaxReplKeepSecondsAfterDown() {
 		return getLongProperty(KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN, 3600L);
+	}
+
+	@Override
+	public int getApplierReadIdleSeconds() {
+		return getIntProperty(KEY_APPLIER_READ_IDLE_SECONDS, 60);
 	}
 
 	@Override
