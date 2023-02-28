@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.core.redis.operation.*;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 
 import java.util.List;
 
@@ -18,6 +21,8 @@ public interface RedisOpCommand<V> extends Command<V> {
     default String gtid() {
         return redisOp().getOpGtid();
     }
+
+    default boolean needGuaranteeSuccess() {return true;}
 
     default RedisSingleKeyOp redisOpAsSingle() {
         RedisOp op = redisOp();

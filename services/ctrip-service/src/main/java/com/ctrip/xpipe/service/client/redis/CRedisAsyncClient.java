@@ -22,6 +22,7 @@ import qunar.tc.qclient.redis.command.value.ValueResult;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -105,6 +106,33 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         this.db = db;
     }
 
+    private void cleanTransactionResource() {
+        if (clients2TxnClients.isEmpty()) return;
+
+        for (Map.Entry<RedisClient, RedisTransactionClient> redisClientRedisTransactionClientEntry : clients2TxnClients.entrySet()) {
+            RedisTransactionClient redisTransactionClient = redisClientRedisTransactionClientEntry.getValue();
+            try {
+                // if transaction still not finish, discard
+                redisTransactionClient.discard();
+            } catch (Throwable t) {
+                // ignore
+            }
+            RedisClient redisClient = redisClientRedisTransactionClientEntry.getKey();
+            try {
+                // release connection resource
+                redisClient.destroy();
+            } catch (Throwable t) {
+                // ignore, connection will recreate by connection pool
+            }
+        }
+        clients2TxnClients.clear();
+    }
+
+    private void resetTransactionState() {
+        cleanTransactionResource();
+        isInMulti = false;
+    }
+
     @Override
     public CommandFuture<Object> write(Object resource, Object... rawArgs) {
         if (isInMulti) {
@@ -115,6 +143,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
             } catch (Throwable t) {
+                resetTransactionState();
                 return errorFuture(t);
             }
         }
@@ -152,19 +181,22 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     public CommandFuture<Object> exec(Object... rawArgs) {
         if (txnProvider.isValidOnlyForApplier(clients2TxnClients.keySet())) {
             try {
+                List<Object> allResults = new LinkedList<>();
                 for (RedisTransactionClient txnClient : clients2TxnClients.values()) {
                     List<Object> results = txnClient.exec(rawArgs);
-                    for (Object result : results) {
-                        if (result instanceof Throwable) {
-                            return errorFuture("one of txnClients.exec() failed", (Throwable) result);
-                        }
+                    allResults.addAll(results);
+                }
+                // if exception is GTID executed Exception, guarantee all exec command executed
+                for (Object result : allResults) {
+                    if (result instanceof Throwable) {
+                        return errorFuture((Throwable) result);
                     }
                 }
                 return resultFuture("OK");
             } catch (Throwable t) {
-                return errorFuture("one of txnClients.exec() failed", t);
+                return errorFuture(t);
             } finally {
-                isInMulti = false;
+                resetTransactionState();
             }
         } else {
             isInMulti = false;

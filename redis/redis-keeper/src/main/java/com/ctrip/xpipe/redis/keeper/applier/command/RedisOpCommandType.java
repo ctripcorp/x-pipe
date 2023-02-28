@@ -9,4 +9,5 @@ public enum RedisOpCommandType {
     SINGLE_KEY,
     MULTI_KEY,
     OTHER,
+    NONE_KEY,
 }
