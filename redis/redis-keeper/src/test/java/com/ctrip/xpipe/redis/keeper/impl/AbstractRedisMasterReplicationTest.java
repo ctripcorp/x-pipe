@@ -84,8 +84,10 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
         String origin_timeout = System.getProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI);
         System.setProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, "5");
+        int BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI = AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI;
+        AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = replTimeoutMilli;
         redisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-                scheduled, replTimeoutMilli, proxyEndpointManager);
+                scheduled, proxyEndpointManager);
 
         redisMasterReplication = spy(redisMasterReplication);
         redisMasterReplication.initialize();
@@ -95,6 +97,7 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
         verify(redisMasterReplication, timeout(500).atLeast(2)).connectWithMaster();
 
         System.setProperty(KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI, origin_timeout);
+        AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
     }
 
     @Test

@@ -55,7 +55,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return startRedisKeeperServerAndConnectToFakeRedis(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000);
 	}
 
-	protected RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep, 
+	protected RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep,
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServer(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000);
@@ -63,6 +63,13 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
+	protected RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep,
+			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate, int replicationTimeout) throws Exception {
+
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServer(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000, replicationTimeout);
+		connectToFakeRedis(redisKeeperServer);
+		return redisKeeperServer;
+	}
 	
 
 	protected RedisKeeperServer startRedisKeeperServer() throws Exception {
@@ -85,6 +92,22 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
+	protected RedisKeeperServer startRedisKeeperServer(int replicationStoreCommandFileNumToKeep,
+		   int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate, int replicationTimeout) throws Exception {
+
+		KeeperConfig keeperConfig = newTestKeeperConfig(
+				commandFileSize,
+				replicationStoreCommandFileNumToKeep,
+				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate, replicationTimeout);
+
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
+
+		return redisKeeperServer;
+	}
+
 	protected RedisKeeperServer startRedisKeeperServer(KeeperConfig keeperConfig, KeeperMeta keeperMeta) throws Exception {
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
 		redisKeeperServer.initialize();
@@ -103,6 +126,14 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	protected KeeperConfig newTestKeeperConfig(int commandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
 
 		return new TestKeeperConfig(commandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
+
+	}
+
+	protected KeeperConfig newTestKeeperConfig(int commandFileSize, int replicationStoreCommandFileNumToKeep,
+		   int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate, int replicationTimeout) {
+
+		return new TestKeeperConfig(commandFileSize, replicationStoreCommandFileNumToKeep,
+				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate, replicationTimeout);
 
 	}
 
