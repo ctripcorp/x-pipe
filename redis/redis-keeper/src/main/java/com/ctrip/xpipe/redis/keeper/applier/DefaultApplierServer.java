@@ -50,7 +50,10 @@ import io.netty.handler.logging.LoggingHandler;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -116,9 +119,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
-    public ExecutorService lwmThread;
-
-    @InstanceDependency
     public ScheduledExecutorService scheduled;
 
     private long startTime;
@@ -168,10 +168,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         /* TODO: dispose client when applier closed */
         this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, workerThreads);
-
-        lwmThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(10), ClusterShardAwareThreadFactory.create(clusterId, shardId, "lwm-" + makeApplierThreadName()),
-                new ThreadPoolExecutor.DiscardPolicy());
 
         scheduled = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
@@ -223,7 +219,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         stateThread.shutdownNow();
         client.shutdown();
         workerThreads.shutdownNow();
-        lwmThread.shutdownNow();
         scheduled.shutdownNow();
         clientExecutors.shutdownNow();
     }
