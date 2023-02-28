@@ -4,14 +4,16 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import credis.java.client.AbstractAsyncConfig;
 import credis.java.client.async.applier.AsyncApplierCacheProvider;
-import credis.java.client.async.applier.AsyncApplierProviderFactory;
 import credis.java.client.config.DefaultAsyncConfig;
 import credis.java.client.config.PropertiesAware;
+import credis.java.client.config.impl.DelegateClusterLevelConfig;
 import credis.java.client.config.impl.PropertiesDecorator;
 import credis.java.client.config.route.DefaultRouteManager;
 import credis.java.client.exception.CRedisException;
-import credis.java.client.sync.applier.ApplierFactory;
+import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.util.DefaultHashStrategyFactory;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author Slight
@@ -20,21 +22,21 @@ import credis.java.client.util.DefaultHashStrategyFactory;
  */
 public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
-    @Override
-    public AsyncRedisClient getOrCreateClient(String clusterName) throws CRedisException {
-
-        return new CRedisAsyncClient(
-                AsyncApplierProviderFactory.getInstance().getOrCreateProvider(clusterName),
-                ApplierFactory.getProvider(clusterName));
-    }
-
-    @Override
-    public AsyncRedisClient createClient(String clusterName) throws CRedisException {
-
+    private CRedisAsyncClient doCreate(String clusterName, ExecutorService credisNotifyExecutor) {
         return new CRedisAsyncClient(
                 new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
                         decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), new DefaultHashStrategyFactory()),
-                ApplierFactory.getProvider(clusterName) /* TODO: create a standalone txnProvider*/);
+                new ApplierCacheProvider(clusterName, DelegateClusterLevelConfig.newBuilder().build()) , credisNotifyExecutor);
+    }
+
+    @Override
+    public AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
+        return doCreate(clusterName, credisNotifyExecutor);
+    }
+
+    @Override
+    public AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
+        return doCreate(clusterName, credisNotifyExecutor);
     }
 
     private AbstractAsyncConfig decorateConfig(AbstractAsyncConfig config, String clusterName) {

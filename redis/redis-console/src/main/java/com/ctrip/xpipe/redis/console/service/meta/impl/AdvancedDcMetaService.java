@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
@@ -116,12 +117,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     }
 
     @Override
-    public DcMeta getDcMeta(String dcName) {
+    public DcMeta getDcMeta(String dcName) throws Exception{
         return getDcMeta(dcName, consoleConfig.getOwnClusterType());
     }
 
     @Override
-    public DcMeta getDcMeta(String dcName, Set<String> allowTypes) {
+    public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
         List<DcTbl> dcTblList = dcService.findAllDcs();
         DcTbl dcTbl = null;
         for (DcTbl dt : dcTblList) {
@@ -149,15 +150,16 @@ public class AdvancedDcMetaService implements DcMetaService {
 
         try {
             chain.execute().get();
-        } catch (Exception e) {
-            logger.error("[queryDcMeta] ", e);
+        } catch (Throwable th) {
+            EventMonitor.DEFAULT.logAlertEvent("getDcMeta throw exception");
+            throw th;
         }
 
         return dcMeta;
     }
 
     @Override
-    public Map<String, DcMeta> getAllDcMetas() {
+    public Map<String, DcMeta> getAllDcMetas() throws Exception {
         List<DcTbl> dcTblList = dcService.findAllDcs();
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
@@ -182,8 +184,9 @@ public class AdvancedDcMetaService implements DcMetaService {
 
         try {
             chain.execute().get();
-        } catch (Exception e) {
-            logger.error("[queryAllDcMetas] ", e);
+        } catch (Throwable th) {
+            EventMonitor.DEFAULT.logAlertEvent("getAllDcMetas throw exception");
+            throw th;
         }
 
         return dcMetaMap;

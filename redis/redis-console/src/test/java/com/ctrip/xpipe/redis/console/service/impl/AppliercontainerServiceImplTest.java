@@ -33,13 +33,13 @@ public class AppliercontainerServiceImplTest extends AbstractServiceImplTest {
     @Test
     public void testFindByDcName() {
         List<AppliercontainerTbl> appliercontainers = appliercontainerService.findAllAppliercontainerTblsByDc("oy");
-        Assert.assertEquals(3, appliercontainers.size());
+        Assert.assertEquals(9, appliercontainers.size());
 
         List<AppliercontainerCreateInfo> appliercontainerCreateInfos = appliercontainerService.findAllAppliercontainerCreateInfosByDc("oy");
-        Assert.assertEquals(3, appliercontainerCreateInfos.size());
+        Assert.assertEquals(9, appliercontainerCreateInfos.size());
 
         appliercontainers = appliercontainerService.findAllActiveAppliercontainersByDc("oy");
-        Assert.assertEquals(2, appliercontainers.size());
+        Assert.assertEquals(5, appliercontainers.size());
     }
 
     @Test
@@ -165,11 +165,18 @@ public class AppliercontainerServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
+    public void testFindBestAppliercontainerWithSingleAzActive() {
+        List<AppliercontainerTbl> bestAppliercontainers =
+                appliercontainerService.findBestAppliercontainersByDcCluster("oy", "hetero-cluster");
+        Assert.assertEquals(4, bestAppliercontainers.size());
+    }
+
+    @Test
     public void testFindAllAppliercontainerInfoModels() {
         List<AppliercontainerInfoModel> appliercontainerInfoModels
                 = appliercontainerService.findAllAppliercontainerInfoModels();
 
-        Assert.assertEquals(13, appliercontainerInfoModels.size());
+        Assert.assertEquals(19, appliercontainerInfoModels.size());
     }
 
     @Test

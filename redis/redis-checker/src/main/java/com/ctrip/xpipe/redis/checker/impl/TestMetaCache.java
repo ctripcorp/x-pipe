@@ -134,7 +134,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public List<Long> dcShardIds(String clusterId, String dcId) {
+    public Map<Long, String> dcShardIds(String clusterId, String dcId) {
         return null;
     }
 

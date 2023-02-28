@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
 import com.google.common.collect.Maps;
@@ -86,7 +87,10 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         @Override
         public void onAction(DelayActionContext context) {
             long delayNano = context.getResult();
-            createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
+            if (context instanceof HeteroDelayActionContext)
+                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
+            else
+                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
         }
 
         @Override

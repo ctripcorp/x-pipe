@@ -116,19 +116,19 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     }
 
     @Override
-    public boolean supportInstance(RedisHealthCheckInstance instance) {
-        return currentDcId.equalsIgnoreCase(instance.getCheckInfo().getActiveDc()) == DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType());
-    }
-
-    @Override
     protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
 
         return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
             @Override
             public HealthStatus create() {
 
-                HealthStatus healthStatus = new HealthStatus(instance, scheduled);
-                healthStatus.addObserver(clusterHealthManager.createHealthStatusObserver());
+                HealthStatus healthStatus;
+                if (activeDcCheckerSubscribeMasterTypeInstance(instance))
+                    healthStatus = new HeteroHealthStatus(instance, scheduled);
+                else {
+                    healthStatus = new HealthStatus(instance, scheduled);
+                    healthStatus.addObserver(clusterHealthManager.createHealthStatusObserver());
+                }
                 healthStatus.addObserver(new Observer() {
                     @Override
                     public void update(Object args, Observable observable) {
@@ -191,6 +191,10 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
                 });
             }
         }
+    }
+
+    private boolean activeDcCheckerSubscribeMasterTypeInstance(RedisHealthCheckInstance instance) {
+        return currentDcId.equalsIgnoreCase(instance.getCheckInfo().getActiveDc()) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType());
     }
 
 }

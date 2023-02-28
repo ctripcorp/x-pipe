@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +54,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         applier = new DefaultApplierServer(
                 "ApplierTest",
                 ClusterId.from(1L), ShardId.from(1L),
-                applierMeta, leaderElectorManager, parser);
+                applierMeta, leaderElectorManager, parser, new TestKeeperConfig());
         applier.initialize();
         applier.start();
 

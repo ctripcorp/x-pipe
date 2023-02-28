@@ -26,8 +26,10 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (7,1,'127.0.0.2',7083,1,2);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (8,1,'127.0.0.2',7084,1,2);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (9,2,'127.0.0.2',7083,1,2);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (10,2,'127.0.0.2',7084,1,2);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (9,2,'127.0.0.2',7083,1, 4, 2);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (10,2,'127.0.0.2',7084,1, 5, 2);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (39,2,'127.0.0.39',7083,1, 4, 2);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (40,2,'127.0.0.40',7084,1, 5, 2);
 
 
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (3,'cluster3',2,'Cluster:cluster3 , ActiveDC : B','0000000000000000','Normal',1, 3);
@@ -59,8 +61,8 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (11,1,'127.0.1.2',7083,1,6);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (12,1,'127.0.1.2',7084,1,6);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (13,2,'127.0.1.2',7085,1,6);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (14,2,'127.0.1.2',7086,1,6);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (13,2,'127.0.1.2',7085,1,4,6);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, az_id, keepercontainer_org_id) values (14,2,'127.0.1.2',7086,1,5,6);
 
 
 insert into organization_tbl(org_id, org_name) values (1, 'org-1'), (2, 'org-2'), (3, 'org-3'), (4, 'org-4'), (5, 'org-5'), (6, 'org-6');
@@ -110,11 +112,14 @@ insert into AZ_TBL (id, dc_id, az_name, active, description) values (1, 3, 'A', 
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (2, 3, 'B', 1, 'zone for dc:fra zone B');
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (3, 3, 'C', 0, 'zone for dc:fra zone C');
 
+insert into AZ_TBL (id, dc_id, az_name, active, description) values (4, 2, 'OY-A', 1, 'zone for dc:oy zone A');
+insert into AZ_TBL (id, dc_id, az_name, active, description) values (5, 2, 'OY-B', 0, 'zone for dc:oy zone B');
+
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (30,3,'127.0.1.2',7033,1,1,0);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (31,3,'127.0.1.2',7034,1,1,0);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (32,3,'127.0.1.2',7035,1,2,0);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (33,3,'127.0.1.2',7036,1,2,0);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (34,3,'127.0.1.2',7037,1,3,0);
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (35,3,'127.0.1.2',7038,1,3,0);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (34,3,'127.0.1.2',7037,0,3,0);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,az_id, keepercontainer_org_id) values (35,3,'127.0.1.2',7038,0,3,0);
 
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (6,'cluster6',3,'Cluster:cluster6 , ActiveDC : A','0000000000000000','Normal',1, 0);

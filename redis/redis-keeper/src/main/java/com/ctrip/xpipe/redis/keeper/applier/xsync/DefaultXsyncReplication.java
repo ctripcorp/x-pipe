@@ -10,6 +10,9 @@ import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -67,6 +70,8 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
         /* simple implementation */
 
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
+
+        /* TODO connect with master first, then handler notify to xsyncReplication with nettyClient, then use fixedObjectPool to create xsync */
         Xsync xsync = new DefaultXsync(objectPool, gtidSetExcluded, null, scheduled);
         xsync.addXsyncObserver(dispatcher);
 
@@ -92,6 +97,14 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
         this.endpoint = endpoint;
         if (states.length > 0) {
             this.gtidSetExcluded = (GtidSet) states[0];
+        }
+    }
+
+    @Override
+    protected void refreshStateWhenReconnect() {
+        GtidSet gtidReceived = dispatcher.getGtidReceived();
+        if (gtidReceived != null) {
+            this.gtidSetExcluded = gtidReceived;
         }
     }
 

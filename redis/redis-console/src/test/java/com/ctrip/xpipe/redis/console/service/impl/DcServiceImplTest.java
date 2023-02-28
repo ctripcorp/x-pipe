@@ -178,7 +178,7 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testFindAllDcsRichinfo() {
+    public void testFindAllDcsRichinfo() throws Exception {
 
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
         dcMetaMap.put("jq".toUpperCase(), xpipeMeta.findDc("jq"));

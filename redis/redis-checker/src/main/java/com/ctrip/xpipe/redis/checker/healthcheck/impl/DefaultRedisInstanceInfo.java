@@ -7,10 +7,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -31,7 +32,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     private Long shardDbId;
 
-    private List<Long> activeDcShardIds = new ArrayList<>();
+    private Map<Long, String> activeDcShardIds = new HashMap<>();
 
     public DefaultRedisInstanceInfo() {
         super();
@@ -99,8 +100,8 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     }
 
     @Override
-    public List<Long> getActiveDcAllShardIds() {
-        return Lists.newArrayList(this.activeDcShardIds);
+    public Map<Long, String> getActiveDcAllShardIds() {
+        return Maps.newHashMap(this.activeDcShardIds);
     }
 
     @Override
@@ -139,7 +140,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         this.shardDbId = shardDbId;
     }
 
-    public void setActiveDcShardIds(List<Long> shardIds) {
+    public void setActiveDcShardIds(Map<Long, String> shardIds) {
         this.activeDcShardIds = shardIds;
     }
 }

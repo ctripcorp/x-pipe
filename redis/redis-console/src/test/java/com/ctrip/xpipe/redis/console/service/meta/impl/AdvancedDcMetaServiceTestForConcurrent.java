@@ -51,7 +51,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     private RedisService redisService;
 
     @Test
-    public void testGetDcMeta() {
+    public void testGetDcMeta() throws Exception {
         DcMeta jqFuture = service.getDcMeta("NTGXH");
         DcMeta oyFuture = service.getDcMeta("UAT");
 
@@ -105,7 +105,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     }
 
     @Test
-    public void testDcComparator() {
+    public void testDcComparator() throws Exception {
         DcMeta jqFuture = service.getDcMeta("NTGXH");
         jqFuture.addCluster(new ClusterMeta("add"));
 
@@ -117,7 +117,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     }
 
     @Test
-    public void testDcComparator2() {
+    public void testDcComparator2() throws Exception {
         DcMeta jqFuture = service.getDcMeta("NTGXH");
 
         jqFuture.removeCluster(jqFuture.getClusters().keySet().iterator().next());
@@ -130,7 +130,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     }
 
     @Test
-    public void testDcComparator3() {
+    public void testDcComparator3() throws Exception {
         DcMeta jqFuture = service.getDcMeta("NTGXH");
 
         ClusterMeta clusterMeta = jqFuture.getClusters().values().iterator().next();

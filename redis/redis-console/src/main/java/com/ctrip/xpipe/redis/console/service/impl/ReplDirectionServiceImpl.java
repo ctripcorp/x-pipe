@@ -49,12 +49,15 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
 
         replDirectionTbls.forEach(replDirectionTbl -> {
-            if (replDirectionTbl.getSrcDcId() == 0) {
-                replDirectionTbl.setSrcDcId(clusterIdActiveDcIdMap.get(replDirectionTbl.getClusterId()));
-            }
+            Long dcId = clusterIdActiveDcIdMap.get(replDirectionTbl.getClusterId());
+            if (dcId != null) {
+                if (replDirectionTbl.getSrcDcId() == 0) {
+                    replDirectionTbl.setSrcDcId(dcId);
+                }
 
-            if (replDirectionTbl.getFromDcId() == 0) {
-                replDirectionTbl.setFromDcId(clusterIdActiveDcIdMap.get(replDirectionTbl.getClusterId()));
+                if (replDirectionTbl.getFromDcId() == 0) {
+                    replDirectionTbl.setFromDcId(dcId);
+                }
             }
         });
 

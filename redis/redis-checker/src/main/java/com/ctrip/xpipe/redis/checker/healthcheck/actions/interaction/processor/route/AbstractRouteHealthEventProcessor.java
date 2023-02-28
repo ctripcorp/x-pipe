@@ -48,11 +48,6 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
 
     private final Set<Pair<String, String>> cache = Sets.newConcurrentHashSet();
 
-    private Pair<String, String> identifierOfEvent(AbstractInstanceEvent event) {
-        RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        return Pair.from(info.getDcId(), info.getShardId());
-    }
-
     private boolean tryDedupe(AbstractInstanceEvent event) {
         Pair<String, String> id = identifierOfEvent(event);
         if (cache.add(id)) {
@@ -77,7 +72,7 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
         if (currentDcId.equals(event.getInstance().getCheckInfo().getDcId())) {
             return;
         }
-        if (event instanceof InstanceLongDelay) {
+        if (supportEvent(event)) {
             if (tryDedupe(event)) return;
             doOnEvent(event);
         }
@@ -93,7 +88,7 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
         long expected = isProbablyHealthyInXSeconds(instanceSick);
         logger.info("[doOnEvent]instance({}) is probably healthy in {} seconds", instanceSick, expected);
         if (0 >= expected) {
-            tryRecover(instanceSick.getInstance(), proxyTunnelInfo);
+            tryRecover(instanceSick, proxyTunnelInfo);
         } else {
             scheduled.schedule(()->undoDedupe(instanceSick), expected, TimeUnit.SECONDS);
         }
@@ -103,11 +98,24 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
 
     protected abstract long isProbablyHealthyInXSeconds(AbstractInstanceEvent instanceSick);
 
-    protected void tryRecover(RedisHealthCheckInstance instance, ProxyTunnelInfo proxyTunnelInfo) {
+    protected void tryRecover(AbstractInstanceEvent instanceSick, ProxyTunnelInfo proxyTunnelInfo) {
+        logEvent(instanceSick);
+        proxyManager.closeProxyTunnel(proxyTunnelInfo);
+    }
+
+    protected boolean supportEvent(AbstractInstanceEvent event) {
+        return event instanceof InstanceLongDelay;
+    }
+
+    protected Pair<String, String> identifierOfEvent(AbstractInstanceEvent event) {
+        RedisInstanceInfo info = event.getInstance().getCheckInfo();
+        return Pair.from(info.getDcId(), info.getShardId());
+    }
+
+    protected void logEvent(AbstractInstanceEvent instanceSick) {
+        RedisHealthCheckInstance instance = instanceSick.getInstance();
         EventMonitor.DEFAULT.logEvent("XPIPE.PROXY.CHAIN", String.format("[CLOSE]%s: %s",
                 instance.getCheckInfo().getDcId(), instance.getCheckInfo().getShardId()));
-
-        proxyManager.closeProxyTunnel(proxyTunnelInfo);
     }
 
     protected long getHoldingMillis() {

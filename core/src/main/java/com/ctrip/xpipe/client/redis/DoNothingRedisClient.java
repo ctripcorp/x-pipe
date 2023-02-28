@@ -45,6 +45,7 @@ public class DoNothingRedisClient implements AsyncRedisClient {
         return resultFuture("OK");
     }
 
+
     @Override
     public CommandFuture<Object> multi() {
         return resultFuture("OK");
@@ -53,5 +54,10 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     @Override
     public CommandFuture<Object> exec(Object... rawArgs) {
         return resultFuture("OK");
+    }
+
+    @Override
+    public void shutdown() {
+
     }
 }

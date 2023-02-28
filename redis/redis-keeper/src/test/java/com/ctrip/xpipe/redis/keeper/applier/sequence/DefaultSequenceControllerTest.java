@@ -4,6 +4,7 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMSetCommand;
+import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMultiDataCommandWrapper;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSetCommand;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.google.common.collect.Lists;
@@ -72,10 +73,9 @@ public class DefaultSequenceControllerTest extends AbstractTest {
         TestMSetCommand first = new TestMSetCommand(100, "MSET", "A", "A");
         TestMSetCommand second = new TestMSetCommand(200, "MSET", "B", "B");
 
-        when(command.sharding()).thenReturn(Lists.newArrayList(first, second));
         when(command.gtid()).thenReturn("A:1");
 
-        controller.submit(command);
+        controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)));
 
         first.future().get();
         second.future().get();
