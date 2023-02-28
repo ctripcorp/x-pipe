@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 
 /**
@@ -12,13 +13,21 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
 
     protected CheckerConfig checkerConfig;
 
-    public AbstractHealthCheckConfig(CheckerConfig checkerConfig) {
+    protected DcRelationsService dcRelationsService;
+
+    public AbstractHealthCheckConfig(CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
         this.checkerConfig = checkerConfig;
+        this.dcRelationsService = dcRelationsService;
     }
 
     @Override
     public int delayDownAfterMilli() {
         return checkerConfig.getDownAfterCheckNums() * checkerConfig.getHealthyDelayMilli();
+    }
+
+    @Override
+    public int delayDownAfterMilli(String clusterName, String fromDc, String toDc) {
+        return checkerConfig.getDownAfterCheckNums() * getHealthyDelayMilli(clusterName, fromDc, toDc);
     }
 
     @Override
@@ -44,6 +53,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int getHealthyDelayMilli() {
         return checkerConfig.getHealthyDelayMilli();
+    }
+
+    @Override
+    public int getHealthyDelayMilli(String clusterName, String fromDc, String toDc) {
+        return dcRelationsService.getDcsDelay(clusterName, fromDc, toDc);
     }
 
     @Override

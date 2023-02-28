@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.model.DcsRelations;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
@@ -99,6 +100,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
+
+    private static final String KEY_DCS_RELATIONS = "dcs.relations";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -630,6 +633,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long subscribeTimeoutMilli() {
         return getLongProperty(KEY_SUBSCRIBE_TIMEOUT_MILLI, 5000L);
+    }
+
+    @Override
+    public DcsRelations getDcsRelations() {
+        String property = getProperty(KEY_DCS_RELATIONS, "{}");
+        return JsonCodec.INSTANCE.decode(property, DcsRelations.class);
     }
 
     @Override

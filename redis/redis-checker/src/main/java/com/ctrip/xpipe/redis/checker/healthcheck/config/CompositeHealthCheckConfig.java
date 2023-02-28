@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import org.slf4j.Logger;
@@ -17,13 +18,13 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
     private HealthCheckConfig config;
 
-    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig) {
+    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
         logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
         if(instanceInfo.isCrossRegion()) {
-            config = new ProxyEnabledHealthCheckConfig(checkerConfig);
+            config = new ProxyEnabledHealthCheckConfig(checkerConfig, dcRelationsService);
             logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {
-            config = new DefaultHealthCheckConfig(checkerConfig);
+            config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
         }
         logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
     }
@@ -31,6 +32,16 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int delayDownAfterMilli() {
         return config.delayDownAfterMilli();
+    }
+
+    @Override
+    public int delayDownAfterMilli(String clusterName, String fromDc, String toDc) {
+        return config.delayDownAfterMilli(clusterName, fromDc, toDc);
+    }
+
+    @Override
+    public int getHealthyDelayMilli(String clusterName, String fromDc, String toDc) {
+        return config.getHealthyDelayMilli(clusterName, fromDc, toDc);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
@@ -42,6 +43,9 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Mock
     private DcClusterService dcClusterService;
 
+    @Mock
+    private DcRelationsService dcRelationsService;
+
     private MigrationClusterTbl migrationClusterTbl;
 
     private ClusterTbl clusterTbl;
@@ -55,7 +59,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Before
     public void setup() {
         migrationRequest = new BeaconMigrationRequest();
-        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService);
+        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService);
         migrationClusterTbl = new MigrationClusterTbl();
         clusterTbl = new ClusterTbl().setClusterName("cluster1").setId(1);
         dc0 = new DcTbl().setDcName("dc0").setId(1);

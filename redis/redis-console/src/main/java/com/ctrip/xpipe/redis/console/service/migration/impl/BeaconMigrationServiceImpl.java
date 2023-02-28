@@ -7,6 +7,7 @@ import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
@@ -26,16 +27,15 @@ import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.exception.UnexpectMigrationDataException;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
@@ -66,6 +66,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private AlertManager alertManager;
 
+    private DcRelationsService dcRelationsService;
+
     @Resource( name = MigrationResources.MIGRATION_PREPARE_EXECUTOR )
     private Executor prepareExecutors;
 
@@ -84,7 +86,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
                                       ConfigService configService, ConsoleConfig config, DcCache dcCache,
                                       ClusterService clusterService, DcClusterService dcClusterService,
                                       MigrationEventDao migrationEventDao, MigrationClusterDao migrationClusterDao,
-                                      BeaconMetaService beaconMetaService, AlertManager alertManager) {
+                                      BeaconMetaService beaconMetaService, AlertManager alertManager, DcRelationsService dcRelationsService) {
         this.checker = checker;
         this.migrationEventManager = migrationEventManager;
         this.configService = configService;
@@ -96,6 +98,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         this.migrationClusterDao = migrationClusterDao;
         this.beaconMetaService = beaconMetaService;
         this.alertManager = alertManager;
+        this.dcRelationsService = dcRelationsService;
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("BeaconMigrationTimeout"));
     }
 
@@ -105,7 +108,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
         migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
-        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService));
+        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
         migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
         CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);
