@@ -46,11 +46,16 @@ public class ApplierServiceImplTest extends AbstractServiceImplTest{
         Mockito.when(spy.findAppliercontainerTblById(1)).thenReturn(new AppliercontainerTbl().setAppliercontainerDc(1));
         Mockito.when(spy.findAppliercontainerTblById(2)).thenReturn(new AppliercontainerTbl().setAppliercontainerDc(2));
 
+        AppliercontainerService tmpAppliercontainerService = ((ApplierServiceImpl) applierService).getAppliercontainerService();
+        ApplierDao tmpApplierDao = ((ApplierServiceImpl) applierService).getApplierDao();
         ((ApplierServiceImpl) applierService).setAppliercontainerService(spy);
         ((ApplierServiceImpl) applierService).setApplierDao(mockedApplierDao);
 
         List<ApplierTbl> result = applierService.findAppliersByDcAndShard("jq", "cluster1", "shard1");
         Assert.assertEquals(2, result.size());
+
+        ((ApplierServiceImpl) applierService).setAppliercontainerService(tmpAppliercontainerService);
+        ((ApplierServiceImpl) applierService).setApplierDao(tmpApplierDao);
     }
 
     @Test

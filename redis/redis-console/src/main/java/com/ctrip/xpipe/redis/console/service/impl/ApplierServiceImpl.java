@@ -483,4 +483,13 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
         this.appliercontainerService = appliercontainerService;
     }
 
+    @VisibleForTesting
+    public AppliercontainerService getAppliercontainerService() {
+        return appliercontainerService;
+    }
+
+    @VisibleForTesting
+    public ApplierDao getApplierDao() {
+        return applierDao;
+    }
 }
