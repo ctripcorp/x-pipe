@@ -88,6 +88,10 @@ public class KeeperAvailableZoneCheckTest {
             dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(1), Long.valueOf(azIds.get(0))));
             dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(2), Long.valueOf(azIds.get(1))));
             dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(3), Long.valueOf(azIds.get(1))));
+        } else if (dc.equals(mockDcs.get(1))){
+            dcMeta.addAz(new AzMeta(azIds.get(0)));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(0), Long.valueOf(azIds.get(0))));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(1), Long.valueOf(azIds.get(0))));
         }
 
         for (String cluster: mockClusters) {

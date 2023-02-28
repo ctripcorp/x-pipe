@@ -27,6 +27,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public TestKeeperConfig(){
 		
 	}
+
 	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep, 
 			long replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
 		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
@@ -34,7 +35,17 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
 		this.minTimeMilliToGcAfterCreate = minTimeMilliToGcAfterCreate;
 	}
-	
+
+	public TestKeeperConfig(int replicationStoreCommandFileSize, int replicationStoreCommandFileNumToKeep,
+							long replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate,
+							int keyReplicationTimeoutMilli) {
+		this.replicationStoreCommandFileNumToKeep = replicationStoreCommandFileNumToKeep;
+		this.replicationStoreCommandFileSize = replicationStoreCommandFileSize;
+		this.replicationStoreMaxCommandsToTransferBeforeCreateRdb = replicationStoreMaxCommandsToTransferBeforeCreateRdb;
+		this.minTimeMilliToGcAfterCreate = minTimeMilliToGcAfterCreate;
+		this.keyReplicationTimeoutMilli = keyReplicationTimeoutMilli;
+	}
+
 	@Override
 	public int getMetaServerConnectTimeout() {
 		return 1000;
@@ -233,5 +244,17 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getReplicationStoreCommandFileKeepTimeSeconds() {
 		return cmdFileKeepSeconds;
+	}
+
+	private int keyReplicationTimeoutMilli = 60000;
+
+	@Override
+	public int getKeyReplicationTimeoutMilli() {
+	    return keyReplicationTimeoutMilli;
+	}
+
+	@Override
+	public int getApplierReadIdleSeconds() {
+		return 60;
 	}
 }

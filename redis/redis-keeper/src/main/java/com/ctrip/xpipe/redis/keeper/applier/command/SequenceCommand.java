@@ -54,7 +54,9 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                     }
                 });
             } else {
-                getLogger().warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
+                if (inner instanceof StubbornCommand) {
+                    getLogger().warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
+                }
                 stateThread.execute(() -> {
                     future().setFailure(f.cause());
                 });

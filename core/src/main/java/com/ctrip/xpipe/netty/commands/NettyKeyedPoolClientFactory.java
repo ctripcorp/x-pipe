@@ -3,6 +3,8 @@ package com.ctrip.xpipe.netty.commands;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.pool.ChannelHandlerFactory;
+import com.ctrip.xpipe.pool.DefaultChannelHandlerFactory;
 import com.ctrip.xpipe.utils.FastThreadLocalThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -29,21 +31,36 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	protected Bootstrap b = new Bootstrap();
 	protected int connectTimeoutMilli = 1000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
+	private ChannelHandlerFactory channelHandlerFactory;
 
 	public NettyKeyedPoolClientFactory() {
 		this(DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD);
 	}
 
 	public NettyKeyedPoolClientFactory(int eventLoopThreads) {
-		this.eventLoopThreads = eventLoopThreads;
-
+		this(eventLoopThreads, new DefaultChannelHandlerFactory());
 	}
-	
+
+	public NettyKeyedPoolClientFactory(ChannelHandlerFactory channelHandlerFactory) {
+		this(DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD, channelHandlerFactory);
+	}
+
+	public NettyKeyedPoolClientFactory(int eventLoopThreads, ChannelHandlerFactory channelHandlerFactory) {
+		this.eventLoopThreads = eventLoopThreads;
+		this.channelHandlerFactory = channelHandlerFactory;
+	}
+
 	@Override
 	protected void doStart() throws Exception {
 		
 		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, FastThreadLocalThreadFactory.create("NettyKeyedPoolClientFactory"));
 		initBootstrap();
+	}
+
+	private void addChannelHandler(ChannelPipeline pipeline) {
+		for (ChannelHandler handler : channelHandlerFactory.createHandlers()) {
+			pipeline.addLast(handler);
+		}
 	}
 
 	protected void initBootstrap() {
@@ -55,9 +72,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 					@Override
 					public void initChannel(SocketChannel ch) {
 						ChannelPipeline p = ch.pipeline();
-						p.addLast(new LoggingHandler());
-						p.addLast(new NettySimpleMessageHandler());
-						p.addLast(new NettyClientHandler());
+						addChannelHandler(p);
 					}
 				});
 	}

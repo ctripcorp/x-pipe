@@ -66,6 +66,8 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 	private NioEventLoopGroup nioEventLoopGroup;
 
+	private int BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI = AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI;
+
 	@Before
 	public void beforeDefaultRedisMasterReplicationTest() throws Exception {
 
@@ -73,8 +75,9 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		nioEventLoopGroup = new NioEventLoopGroup();
 
+		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = replTimeoutMilli;
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, proxyResourceManager);
+				scheduled, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
@@ -150,7 +153,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		AtomicInteger replConfCount = new AtomicInteger();
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
-				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager) {
+				nioEventLoopGroup, scheduled, proxyResourceManager) {
 			@Override
 			protected Command<Object> createReplConf() {
 				replConfCount.incrementAndGet();
@@ -183,7 +186,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(new DefaultLeakyBucket(4));
 
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
-				nioEventLoopGroup, scheduled, replTimeoutMilli, proxyResourceManager);
+				nioEventLoopGroup, scheduled, proxyResourceManager);
 
 		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
 		defaultRedisMasterReplication.initialize();
@@ -197,5 +200,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	@After
 	public void afterDefaultRedisMasterReplicationTest() throws Exception {
 		nioEventLoopGroup.shutdownGracefully();
+		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
 	}
 }

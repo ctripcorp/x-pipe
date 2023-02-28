@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -73,11 +74,42 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                 case MULTI_KEY:
                     submitMultiKeyCommand((RedisOpDataCommand<?>) command);
                     break;
+                case NONE_KEY:
+                    submitNoneKeyCommand(command);
+                    break;
                 case OTHER:
                     submitObstacle(command);
                     break;
             }
         });
+    }
+
+    private Command<?> wrapWithRetry(RedisOpCommand<?> command) {
+        return command.needGuaranteeSuccess() ? new StubbornCommand<>(command, workerThreads) : command;
+    }
+
+    private void submitNoneKeyCommand(RedisOpCommand<?> command) {
+
+        /* find dependencies */
+
+        List<SequenceCommand<?>> dependencies = new ArrayList<>();
+
+        if (obstacle != null) {
+            dependencies.add(obstacle);
+        }
+
+        /* make command */
+
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
+
+        /* do some stuff when finish */
+
+        mergeGtidWhenSuccess(current, command.gtid());
+        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+
+        /* run self */
+
+        current.execute();
     }
 
     private void submitSingleKeyCommand(RedisOpDataCommand<?> command) {
@@ -98,7 +130,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         /* make self a dependency */
 
@@ -123,7 +155,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             dependencies.add(obstacle);
         }
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
@@ -147,7 +179,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* make command */
 
-        SequenceCommand<?> current = new SequenceCommand<>(dependencies, new StubbornCommand<>(command, workerThreads), stateThread, workerThreads);
+        SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
 
         /* make self a dependency */
 

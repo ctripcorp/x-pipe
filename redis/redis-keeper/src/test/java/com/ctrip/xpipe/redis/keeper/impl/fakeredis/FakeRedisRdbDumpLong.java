@@ -52,7 +52,7 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 		fakeRedisServer.setSleepBeforeSendRdb(sleepBeforeSendRdb);
 		fakeRedisServer.setSendLFBeforeSendRdb(false);
 
-		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(100, allCommandsSize, 1000, 200);
 
 		sleep(replicationTimeoutMilli * 3);
 
