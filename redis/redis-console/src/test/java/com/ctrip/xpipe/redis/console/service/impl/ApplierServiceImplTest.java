@@ -1,20 +1,17 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.model.ApplierTbl;
-import com.ctrip.xpipe.redis.console.model.AppliercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
-import com.ctrip.xpipe.redis.console.service.ApplierBasicInfo;
-import com.ctrip.xpipe.redis.console.service.ApplierService;
-import com.ctrip.xpipe.redis.console.service.AppliercontainerService;
-import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.dao.ApplierDao;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.assertj.core.util.Lists;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApplierServiceImplTest extends AbstractServiceImplTest{
@@ -30,6 +27,36 @@ public class ApplierServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     RedisService redisService;
+
+    @Autowired
+    DcService dcService;
+
+    @Test
+    public void testFindAppliersByDcAndShard() {
+        List<ApplierTbl> applierTblList = new ArrayList<>();
+        applierTblList.add(new ApplierTbl().setContainerId(1));
+        applierTblList.add(new ApplierTbl().setContainerId(2));
+        applierTblList.add(new ApplierTbl().setContainerId(1));
+        applierTblList.add(new ApplierTbl().setContainerId(2));
+
+        ApplierDao mockedApplierDao = Mockito.mock(ApplierDao.class);
+        Mockito.when(mockedApplierDao.findByShard(Mockito.anyLong())).thenReturn(applierTblList);
+
+        AppliercontainerService spy = Mockito.spy(appliercontainerService);
+        Mockito.when(spy.findAppliercontainerTblById(1)).thenReturn(new AppliercontainerTbl().setAppliercontainerDc(1));
+        Mockito.when(spy.findAppliercontainerTblById(2)).thenReturn(new AppliercontainerTbl().setAppliercontainerDc(2));
+
+        AppliercontainerService tmpAppliercontainerService = ((ApplierServiceImpl) applierService).getAppliercontainerService();
+        ApplierDao tmpApplierDao = ((ApplierServiceImpl) applierService).getApplierDao();
+        ((ApplierServiceImpl) applierService).setAppliercontainerService(spy);
+        ((ApplierServiceImpl) applierService).setApplierDao(mockedApplierDao);
+
+        List<ApplierTbl> result = applierService.findAppliersByDcAndShard("jq", "cluster1", "shard1");
+        Assert.assertEquals(2, result.size());
+
+        ((ApplierServiceImpl) applierService).setAppliercontainerService(tmpAppliercontainerService);
+        ((ApplierServiceImpl) applierService).setApplierDao(tmpApplierDao);
+    }
 
     @Test
     public void testFind() {
