@@ -28,4 +28,9 @@ public class ProxyEnabledHealthCheckConfig extends AbstractHealthCheckConfig {
     public int getHealthyDelayMilli() {
         return checkerConfig.getHealthyDelayMilliThroughProxy();
     }
+
+    @Override
+    public int downAfterCheckNums() {
+        return checkerConfig.getDownAfterCheckNumsThroughProxy();
+    }
 }

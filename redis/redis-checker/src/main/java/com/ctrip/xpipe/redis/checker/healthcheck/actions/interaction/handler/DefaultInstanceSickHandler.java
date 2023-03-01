@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -35,6 +36,7 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
+    protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN, HEALTH_STATE.SICK, HEALTH_STATE.UNHEALTHY);
 
     @Override
@@ -59,7 +61,23 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
 
     @Override
     protected void doHandle(InstanceSick instanceSick) {
+        if (!shouldMarkdownDcClusterSickInstances(instanceSick))
+            return;
+
         tryMarkDown(instanceSick);
+    }
+
+    boolean shouldMarkdownDcClusterSickInstances(InstanceSick instanceSick) {
+        RedisInstanceInfo info = instanceSick.getInstance().getCheckInfo();
+        if (info.isCrossRegion()) {
+            logger.info("[markdown][{} is cross region, do not call client service ]{}", info, instanceSick);
+            return false;
+        }
+        if (instanceSick.getInstance().getHealthCheckConfig().getDelayConfig(info.getClusterId(), currentDcId, info.getDcId()).getClusterLevelHealthyDelayMilli() < 0) {
+            logger.info("[markdown][cluster {} dcs {}->{} distance is -1, do not call client service ]{}", info.getClusterId(), currentDcId, info.getDcId(), instanceSick);
+            return false;
+        }
+        return true;
     }
 
     @Override

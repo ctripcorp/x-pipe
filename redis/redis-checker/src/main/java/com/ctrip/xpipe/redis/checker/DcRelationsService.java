@@ -6,6 +6,8 @@ public interface DcRelationsService {
 
     List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs);
 
-    int getDcsDelay(String clusterName, String fromDc, String toDc);
+    Integer getDcsDelay(String fromDc, String toDc);
+
+    Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc);
 
 }

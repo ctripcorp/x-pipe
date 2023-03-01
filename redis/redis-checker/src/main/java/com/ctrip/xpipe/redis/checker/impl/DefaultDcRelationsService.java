@@ -16,6 +16,7 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -31,6 +32,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled ;
 
+    private final AtomicInteger delayPerDistance = new AtomicInteger(2000);
     private final AtomicReference<Map<Set<String>, Integer>> dcsDistance = new AtomicReference<>();
     private final AtomicReference<Map<String, Map<Set<String>, Integer>>> clusterDcsDistance = new AtomicReference<>();
     private final AtomicReference<DcsPriority> dcLevelPriority = new AtomicReference<>();
@@ -68,32 +70,29 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
     @Override
-    public int getDcsDelay(String clusterName, String fromDc, String toDc) {
-        Integer delay = getClusterDcsDelay(clusterName.toLowerCase(), fromDc.toUpperCase(), toDc.toUpperCase());
-        if (delay != null) return delay;
-
-        delay = getDcsDelay(fromDc.toLowerCase(), toDc.toUpperCase());
-        if (delay != null) return delay;
-
-        return config.getHealthyDelayMilli();
-    }
-
-    Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc) {
+    public Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc) {
         Map<String, Map<Set<String>, Integer>> clusterDcsDistanceMap = clusterDcsDistance.get();
         if (clusterDcsDistanceMap != null) {
-            Map<Set<String>, Integer> dcsDistanceMap = clusterDcsDistanceMap.get(clusterName);
+            Map<Set<String>, Integer> dcsDistanceMap = clusterDcsDistanceMap.get(clusterName.toLowerCase());
             if (dcsDistanceMap != null) {
-                return dcsDistanceMap.get(Sets.newHashSet(fromDc, toDc));
+                Integer distance = dcsDistanceMap.get(Sets.newHashSet(fromDc.toUpperCase(), toDc.toUpperCase()));
+                if (distance != null) {
+                    return delayPerDistance.get() * distance;
+                }
             }
         }
         return null;
     }
 
-    Integer getDcsDelay(String fromDc, String toDc) {
+    @Override
+    public Integer getDcsDelay(String fromDc, String toDc) {
         Map<Set<String>, Integer> dcsDistanceMap = dcsDistance.get();
-        if (dcsDistanceMap != null)
-            return dcsDistanceMap.get(Sets.newHashSet(fromDc, toDc));
-
+        if (dcsDistanceMap != null) {
+            Integer distance = dcsDistanceMap.get(Sets.newHashSet(fromDc.toUpperCase(), toDc.toUpperCase()));
+            if (distance != null) {
+                return delayPerDistance.get() * distance;
+            }
+        }
         return null;
     }
 
@@ -141,6 +140,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     void refresh() {
         DcsRelations dcsRelations = config.getDcsRelations();
+        delayPerDistance.set(dcsRelations.getDelayPerDistance());
         dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
         clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
         clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));

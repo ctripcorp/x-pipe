@@ -4,6 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,16 +33,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int delayDownAfterMilli() {
         return config.delayDownAfterMilli();
-    }
-
-    @Override
-    public int delayDownAfterMilli(String clusterName, String fromDc, String toDc) {
-        return config.delayDownAfterMilli(clusterName, fromDc, toDc);
-    }
-
-    @Override
-    public int getHealthyDelayMilli(String clusterName, String fromDc, String toDc) {
-        return config.getHealthyDelayMilli(clusterName, fromDc, toDc);
     }
 
     @Override
@@ -97,5 +88,15 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public String getMinDiskLessReplVersion() {
         return config.getMinDiskLessReplVersion();
+    }
+
+    @Override
+    public int downAfterCheckNums() {
+        return config.downAfterCheckNums();
+    }
+
+    @Override
+    public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
+        return config.getDelayConfig(clusterName, fromDc, toDc);
     }
 }

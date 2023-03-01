@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.config;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 
 /**
  * @author chen.zhu
@@ -26,13 +27,13 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public int delayDownAfterMilli(String clusterName, String fromDc, String toDc) {
-        return checkerConfig.getDownAfterCheckNums() * getHealthyDelayMilli(clusterName, fromDc, toDc);
+    public int instanceLongDelayMilli() {
+        return checkerConfig.getInstanceLongDelayMilli();
     }
 
     @Override
-    public int instanceLongDelayMilli() {
-        return checkerConfig.getInstanceLongDelayMilli();
+    public int downAfterCheckNums() {
+        return checkerConfig.getDownAfterCheckNums();
     }
 
     @Override
@@ -53,11 +54,6 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int getHealthyDelayMilli() {
         return checkerConfig.getHealthyDelayMilli();
-    }
-
-    @Override
-    public int getHealthyDelayMilli(String clusterName, String fromDc, String toDc) {
-        return dcRelationsService.getDcsDelay(clusterName, fromDc, toDc);
     }
 
     @Override
@@ -89,4 +85,28 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     public int getNonCoreCheckIntervalMilli(){
         return checkerConfig.getNonCoreCheckIntervalMilli();
     }
+
+    @Override
+    public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
+        DelayConfig config = new DelayConfig(clusterName, fromDc, toDc);
+        config.setDcLevelHealthyDelayMilli(getHealthyDelayMilli());
+        config.setDcLevelDelayDownAfterMilli(downAfterCheckNums() * getHealthyDelayMilli());
+        config.setClusterLevelHealthyDelayMilli(getHealthyDelayMilli());
+        config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * getHealthyDelayMilli());
+
+        Integer dcsDelay = dcRelationsService.getDcsDelay(fromDc, toDc);
+        if (dcsDelay != null) {
+            config.setDcLevelHealthyDelayMilli(dcsDelay);
+            config.setDcLevelDelayDownAfterMilli(downAfterCheckNums() * dcsDelay);
+        }
+
+        Integer clusterDcsDelay = dcRelationsService.getClusterDcsDelay(clusterName, fromDc, toDc);
+        if (clusterDcsDelay != null) {
+            config.setClusterLevelHealthyDelayMilli(clusterDcsDelay);
+            config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * clusterDcsDelay);
+        }
+
+        return config;
+    }
+
 }

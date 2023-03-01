@@ -56,7 +56,9 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         super(scheduled, instance, executors);
         this.pingService = pingService;
         this.foundationService = foundationService;
-        expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
+        DelayConfig instanceDelayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+        int instanceHealthDelayMilli = instanceDelayConfig.getClusterLevelHealthyDelayMilli();
+        expireInterval = (instanceHealthDelayMilli < 0 ? instanceDelayConfig.getDcLevelHealthyDelayMilli() : instanceHealthDelayMilli) + DELTA * 2;
         this.currentDcId = foundationService.getDataCenter();
         this.publish_channel =  publishChannelPrefix() + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
         this.subscribe_channel = getSubscribeChannel();
