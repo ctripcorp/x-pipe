@@ -5,6 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.model.DcsRelations;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 import java.util.*;
@@ -297,6 +298,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public String getClusterExcludedRegex() {
+        return null;
+    }
+
+    @Override
+    public DcsRelations getDcsRelations() {
         return null;
     }
 }

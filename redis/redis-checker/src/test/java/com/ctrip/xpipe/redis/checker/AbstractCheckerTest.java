@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.checker.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -100,7 +101,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
+        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(), buildCheckerConfig()));
         return instance;
     }
@@ -119,7 +120,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster", activeDc,
                 clusterType, 1);
-        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig());
+        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService());
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
 
@@ -128,6 +129,10 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
     protected CheckerConfig buildCheckerConfig() {
         return new TestConfig();
+    }
+
+    protected DcRelationsService buildDcRelationsService() {
+        return new DefaultDcRelationsService();
     }
 
 }
