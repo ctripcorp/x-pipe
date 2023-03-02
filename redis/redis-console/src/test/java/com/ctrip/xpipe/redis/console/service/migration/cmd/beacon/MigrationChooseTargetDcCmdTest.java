@@ -81,8 +81,6 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
 
         when(dcCache.find(dc1.getDcName())).thenReturn(dc1);
         when(dcCache.find(dc2.getDcName())).thenReturn(dc2);
-        when(dcCache.find(dc3.getDcName())).thenReturn(dc3);
-        when(dcCache.find(dc4.getDcName())).thenReturn(dc4);
         when(dcCache.find(dc2.getId())).thenReturn(dc2);
         when(dcClusterService.find(2, 1)).thenReturn(new DcClusterTbl());
     }
@@ -199,7 +197,6 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Test(expected = NoAvailableDcException.class)
     public void testNoAvailableDc() throws Throwable {
         migrationRequest.setAvailableDcs(Collections.emptySet());
-        when(dcRelationsService.getTargetDcsByPriority("cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).thenReturn(Lists.newArrayList(migrationRequest.getAvailableDcs()));
         CommandFuture future = chooseTargetDcCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());
