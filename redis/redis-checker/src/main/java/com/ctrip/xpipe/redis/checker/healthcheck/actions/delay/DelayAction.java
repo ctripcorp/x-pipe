@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 /**
  * @author chen.zhu
@@ -39,7 +40,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     private PingService pingService;
 
-    protected final long expireInterval;
+    protected final LongSupplier expireInterval;
 
     private volatile boolean isContextInited = false;
 
@@ -56,10 +57,13 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
         super(scheduled, instance, executors);
         this.pingService = pingService;
         this.foundationService = foundationService;
-        DelayConfig instanceDelayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
-        int instanceHealthDelayMilli = instanceDelayConfig.getClusterLevelHealthyDelayMilli();
-        expireInterval = (instanceHealthDelayMilli < 0 ? instanceDelayConfig.getDcLevelHealthyDelayMilli() : instanceHealthDelayMilli) + DELTA * 2;
         this.currentDcId = foundationService.getDataCenter();
+
+        expireInterval = () -> {
+            DelayConfig instanceDelayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+            int instanceHealthDelayMilli = instanceDelayConfig.getClusterLevelHealthyDelayMilli();
+            return (instanceHealthDelayMilli < 0 ? instanceDelayConfig.getDcLevelHealthyDelayMilli() : instanceHealthDelayMilli) + DELTA * 2;
+        };
         this.publish_channel =  publishChannelPrefix() + foundationService.getLocalIp() + "-" + instance.getCheckInfo().getShardDbId();
         this.subscribe_channel = getSubscribeChannel();
     }
@@ -169,7 +173,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     protected boolean isExpired(DelayActionContext context) {
         long lastDelay = System.currentTimeMillis() - context.getRecvTimeMilli();
-        return lastDelay >= expireInterval;
+        return lastDelay >= expireInterval.getAsLong();
     }
 
 }

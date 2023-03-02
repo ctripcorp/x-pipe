@@ -22,18 +22,8 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public int delayDownAfterMilli() {
-        return checkerConfig.getDownAfterCheckNums() * checkerConfig.getHealthyDelayMilli();
-    }
-
-    @Override
     public int instanceLongDelayMilli() {
         return checkerConfig.getInstanceLongDelayMilli();
-    }
-
-    @Override
-    public int downAfterCheckNums() {
-        return checkerConfig.getDownAfterCheckNums();
     }
 
     @Override
@@ -49,11 +39,6 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int clusterCheckIntervalMilli() {
         return checkerConfig.getClusterHealthCheckInterval();
-    }
-
-    @Override
-    public int getHealthyDelayMilli() {
-        return checkerConfig.getHealthyDelayMilli();
     }
 
     @Override
@@ -107,6 +92,14 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
         }
 
         return config;
+    }
+
+    protected int getHealthyDelayMilli() {
+        return checkerConfig.getHealthyDelayMilli();
+    }
+
+    protected int downAfterCheckNums() {
+        return checkerConfig.getDownAfterCheckNums();
     }
 
 }

@@ -52,9 +52,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.scheduled = scheduled;
         this.pingDownAfterMilli = ()->instance.getHealthCheckConfig().pingDownAfterMilli();
         this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
-        DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
-        this.delayDownAfterMilli = () -> delayConfig.getClusterLevelDelayDownAfterMilli() > 0 ? delayConfig.getClusterLevelDelayDownAfterMilli() : delayConfig.getDcLevelDelayDownAfterMilli();
-        this.healthyDelayMilli = () -> delayConfig.getClusterLevelHealthyDelayMilli() > 0 ? delayConfig.getClusterLevelHealthyDelayMilli() : delayConfig.getDcLevelHealthyDelayMilli();
+        this.delayDownAfterMilli = () -> {
+            DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+            return delayConfig.getClusterLevelDelayDownAfterMilli() > 0 ? delayConfig.getClusterLevelDelayDownAfterMilli() : delayConfig.getDcLevelDelayDownAfterMilli();};
+        this.healthyDelayMilli = () -> {
+            DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+            return delayConfig.getClusterLevelHealthyDelayMilli() > 0 ? delayConfig.getClusterLevelHealthyDelayMilli() : delayConfig.getDcLevelHealthyDelayMilli();};
         checkParam();
     }
 

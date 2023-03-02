@@ -1,15 +1,16 @@
-package com.ctrip.xpipe.redis.checker.impl;
+package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.model.*;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -18,16 +19,17 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
-@Service
+
 public class DefaultDcRelationsService implements DcRelationsService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private CheckerConfig config;
+    private ConsoleConfig config;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled ;
@@ -53,7 +55,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
                     }
                 }
             }
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 0, 60, TimeUnit.SECONDS);
     }
 
     @Override
@@ -121,9 +123,12 @@ public class DefaultDcRelationsService implements DcRelationsService {
         if (priority2Dcs.isEmpty())
             return new ArrayList<>();
 
+
+        List<String> availableDcsCopy = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toList());
+
         for (int priority : priority2Dcs.keySet()) {
             List<String> copy = Lists.newArrayList(priority2Dcs.get(priority));
-            copy.retainAll(availableDcs);
+            copy.retainAll(availableDcsCopy);
             if (!copy.isEmpty())
                 return copy;
         }
@@ -132,22 +137,43 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
 
+
     private void buildDcPriority(Map<String, DcPriority> dcPriorityMap, String fromDc, String toDc, int distance) {
         DcPriority dcPriority = dcPriorityMap.getOrDefault(fromDc, new DcPriority().setDc(fromDc));
         if (distance > 0) dcPriority.addPriorityAndDc(distance, toDc);
         dcPriorityMap.put(fromDc, dcPriority);
     }
 
-    void refresh() {
-        DcsRelations dcsRelations = config.getDcsRelations();
-        delayPerDistance.set(dcsRelations.getDelayPerDistance());
-        dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
-        clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
-        clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
-        dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
+    void refresh() throws Exception {
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+
+        transaction.logTransaction("dc.relations", "refresh", new Task() {
+            @Override
+            public void go() throws Exception {
+                DcsRelations dcsRelations = config.getDcsRelations();
+                delayPerDistance.set(dcsRelations.getDelayPerDistance());
+                dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
+                clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
+                clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
+                dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
+            }
+
+            @Override
+            public Map<String, Object> getData() {
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("delayPerDistance", delayPerDistance.get());
+                transactionData.put("dcsDistance", dcsDistance.get());
+                transactionData.put("clusterDcsDistance", clusterDcsDistance.get());
+                transactionData.put("clusterLevelDcPriority", clusterLevelDcPriority.get());
+                transactionData.put("dcLevelPriority", dcLevelPriority.get());
+                return transactionData;
+            }
+        });
+
     }
 
     private Map<Set<String>, Integer> buildDcsDistance(List<DcRelation> dcRelations) {
+        if (dcRelations == null) return null;
         Map<Set<String>, Integer> dcsDistanceMap = new HashMap<>();
         dcRelations.forEach(dcDistance -> {
             Set<String> dcSet = Sets.newHashSet(dcDistance.getDcs().toUpperCase().split("\\s*,\\s*"));
@@ -157,6 +183,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
     private Map<String, Map<Set<String>, Integer>> buildClusterDcsDistance(List<ClusterDcRelations> relations) {
+        if (relations == null) return null;
         Map<String, Map<Set<String>, Integer>> clusterDcsDistance = new HashMap<>();
         relations.forEach(clusterDcRelations -> {
             Map<Set<String>, Integer> dcsDistanceMap = buildDcsDistance(clusterDcRelations.getRelations());
@@ -205,4 +232,18 @@ public class DefaultDcRelationsService implements DcRelationsService {
         return clusterLevelDcPriority.get();
     }
 
+    @VisibleForTesting
+    Integer getDelayPerDistance() {
+        return delayPerDistance.get();
+    }
+
+    @VisibleForTesting
+    Map<Set<String>, Integer> getDcsDistance() {
+        return dcsDistance.get();
+    }
+
+    @VisibleForTesting
+    Map<String, Map<Set<String>, Integer>> getClusterDcsDistance() {
+        return clusterDcsDistance.get();
+    }
 }

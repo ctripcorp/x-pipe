@@ -31,4 +31,11 @@ public class DcPriority {
         else existed.add(targetDc);
     }
 
+    @Override
+    public String toString() {
+        return "DcPriority{" +
+                "dc='" + dc + '\'' +
+                ", priority2Dcs=" + priority2Dcs +
+                '}';
+    }
 }

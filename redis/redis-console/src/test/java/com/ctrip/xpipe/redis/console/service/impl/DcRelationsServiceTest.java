@@ -1,0 +1,291 @@
+package com.ctrip.xpipe.redis.console.service.impl;
+
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.checker.model.ClusterDcRelations;
+import com.ctrip.xpipe.redis.checker.model.DcRelation;
+import com.ctrip.xpipe.redis.checker.model.DcsPriority;
+import com.ctrip.xpipe.redis.checker.model.DcsRelations;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@RunWith(MockitoJUnitRunner.class)
+public class DcRelationsServiceTest {
+
+    @InjectMocks
+    private final DefaultDcRelationsService dcRelationsService=new DefaultDcRelationsService();
+
+    @Mock
+    private ConsoleConfig config;
+
+    @Test
+    public void jsonTest() {
+        String configStr = "{\n" +
+                "    \"delayPerDistance\":3000,"+
+                "    \"dcLevel\":[\n" +
+                "        {\n" +
+                "            \"dcs\":\"SHARB,SHAXY\",\n" +
+                "            \"distance\":1\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"dcs\":\"SHARB,SHA-ALI\",\n" +
+                "            \"distance\":15\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"dcs\":\"SHAXY,SHA-ALI\",\n" +
+                "            \"distance\":15\n" +
+                "        }\n" +
+                "    ],\n" +
+                "    \"clusterLevel\":[\n" +
+                "        {\n" +
+                "            \"clusterName\":\"cluster1\", \n" +
+                "            \"relations\":[\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHARB,SHAXY\",\n" +
+                "                    \"distance\":-1\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHARB,SHA-ALI\",\n" +
+                "                    \"distance\":-1\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHAXY,SHA-ALI\",\n" +
+                "                    \"distance\":-1\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"clusterName\":\"cluster2\",   \n" +
+                "            \"relations\":[\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHARB,SHAXY\",\n" +
+                "                    \"distance\":1\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHARB,SHA-ALI\",\n" +
+                "                    \"distance\":-1\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"dcs\":\"SHAXY,SHA-ALI\",\n" +
+                "                    \"distance\":-1\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    ]\n" +
+                "}";
+
+        DcsRelations dcsRelations = JsonCodec.INSTANCE.decode(configStr, DcsRelations.class);
+        List<DcRelation> dcRelations = dcsRelations.getDcLevel();
+        List<ClusterDcRelations> clusterDcRelations = dcsRelations.getClusterLevel();
+        Assert.assertEquals(3, dcRelations.size());
+        Assert.assertEquals(2, clusterDcRelations.size());
+    }
+
+    @Test
+    public void refreshTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        Map<String, DcsPriority> clusterLevelDcPriority = dcRelationsService.getClusterLevelDcPriority();
+        DcsPriority dcsPriority = dcRelationsService.getDcLevelPriority();
+        Map<Set<String>, Integer> dcDistances = dcRelationsService.getDcsDistance();
+        Map<String, Map<Set<String>, Integer>> clusterDcsDistance = dcRelationsService.getClusterDcsDistance();
+
+        //check dcsPriority
+        Assert.assertNotNull(dcsPriority);
+        Map<Integer, List<String>> aliPriority = dcsPriority.getDcPriority("SHA-ALI").getPriority2Dcs();
+        Assert.assertEquals(1, aliPriority.size());
+        Assert.assertEquals(2, aliPriority.get(15).size());
+        Assert.assertTrue(aliPriority.get(15).contains("SHARB"));
+        Assert.assertTrue(aliPriority.get(15).contains("SHAXY"));
+
+        Map<Integer, List<String>> rbPriority = dcsPriority.getDcPriority("SHARB").getPriority2Dcs();
+        Assert.assertEquals(2, rbPriority.size());
+        Assert.assertEquals(1, rbPriority.get(1).size());
+        Assert.assertEquals(1, rbPriority.get(15).size());
+        Assert.assertTrue(rbPriority.get(1).contains("SHAXY"));
+        Assert.assertTrue(rbPriority.get(15).contains("SHA-ALI"));
+
+        Map<Integer, List<String>> xyPriority = dcsPriority.getDcPriority("SHAXY").getPriority2Dcs();
+        Assert.assertEquals(2, xyPriority.size());
+        Assert.assertEquals(1, xyPriority.get(1).size());
+        Assert.assertEquals(1, xyPriority.get(15).size());
+        Assert.assertTrue(xyPriority.get(1).contains("SHARB"));
+        Assert.assertTrue(xyPriority.get(15).contains("SHA-ALI"));
+
+        //check clusterLevelDcPriority
+        Assert.assertNotNull(clusterLevelDcPriority);
+        Assert.assertEquals(2, clusterLevelDcPriority.size());
+        DcsPriority cluster1DcPriority = clusterLevelDcPriority.get("cluster1");
+        aliPriority = cluster1DcPriority.getDcPriority("SHA-ALI").getPriority2Dcs();
+        Assert.assertEquals(0, aliPriority.size());
+
+        rbPriority = cluster1DcPriority.getDcPriority("SHARB").getPriority2Dcs();
+        Assert.assertEquals(1, rbPriority.size());
+        Assert.assertEquals(1, rbPriority.get(1).size());
+        Assert.assertTrue(rbPriority.get(1).contains("SHAXY"));
+
+        xyPriority = cluster1DcPriority.getDcPriority("SHAXY").getPriority2Dcs();
+        Assert.assertEquals(1, xyPriority.size());
+        Assert.assertEquals(1, xyPriority.get(1).size());
+        Assert.assertTrue(xyPriority.get(1).contains("SHARB"));
+
+
+        DcsPriority cluster2DcPriority = clusterLevelDcPriority.get("cluster2");
+        aliPriority = cluster2DcPriority.getDcPriority("SHA-ALI").getPriority2Dcs();
+        Assert.assertEquals(2, aliPriority.size());
+        Assert.assertEquals(1, aliPriority.get(15).size());
+        Assert.assertTrue(aliPriority.get(15).contains("SHAXY"));
+        Assert.assertEquals(1, aliPriority.get(30).size());
+        Assert.assertTrue(aliPriority.get(30).contains("SHARB"));
+
+
+        rbPriority = cluster2DcPriority.getDcPriority("SHARB").getPriority2Dcs();
+        Assert.assertEquals(2, rbPriority.size());
+        Assert.assertEquals(1, rbPriority.get(2).size());
+        Assert.assertTrue(rbPriority.get(2).contains("SHAXY"));
+        Assert.assertEquals(1, rbPriority.get(30).size());
+        Assert.assertTrue(rbPriority.get(30).contains("SHA-ALI"));
+
+        xyPriority = cluster2DcPriority.getDcPriority("SHAXY").getPriority2Dcs();
+        Assert.assertEquals(2, xyPriority.size());
+        Assert.assertEquals(1, xyPriority.get(2).size());
+        Assert.assertTrue(xyPriority.get(2).contains("SHARB"));
+        Assert.assertEquals(1, xyPriority.get(15).size());
+        Assert.assertTrue(xyPriority.get(15).contains("SHA-ALI"));
+
+        //check delay per distantce
+        Assert.assertEquals(3000, dcRelationsService.getDelayPerDistance().intValue());
+
+        //check dcs distance
+        Assert.assertEquals(15, dcDistances.get(Sets.newHashSet("SHA-ALI", "SHARB")).intValue());
+        Assert.assertEquals(15, dcDistances.get(Sets.newHashSet("SHA-ALI", "SHAXY")).intValue());
+        Assert.assertEquals(1, dcDistances.get(Sets.newHashSet("SHAXY", "SHARB")).intValue());
+        Assert.assertNull(dcDistances.get(Sets.newHashSet("SHAXY", "SHAFQ")));
+
+        //check cluster dcs distance
+        Map<Set<String>, Integer> cluster1 = clusterDcsDistance.get("cluster1");
+        Assert.assertEquals(-1, cluster1.get(Sets.newHashSet("SHA-ALI", "SHARB")).intValue());
+        Assert.assertEquals(-1, cluster1.get(Sets.newHashSet("SHA-ALI", "SHAXY")).intValue());
+        Assert.assertEquals(1, cluster1.get(Sets.newHashSet("SHAXY", "SHARB")).intValue());
+
+        Map<Set<String>, Integer> cluster2 = clusterDcsDistance.get("cluster2");
+        Assert.assertEquals(30, cluster2.get(Sets.newHashSet("SHA-ALI", "SHARB")).intValue());
+        Assert.assertEquals(15, cluster2.get(Sets.newHashSet("SHA-ALI", "SHAXY")).intValue());
+        Assert.assertEquals(2, cluster2.get(Sets.newHashSet("SHAXY", "SHARB")).intValue());
+
+        Assert.assertNull(clusterDcsDistance.get("cluster3"));
+    }
+
+    @Test
+    public void getClusterLevelTargetDcsTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        List<String> targetDcs = dcRelationsService.getTargetDcsByPriority("cluSter2", "sha-ali", Lists.newArrayList("sharb", "shaxy"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertEquals("SHAXY", targetDcs.get(0));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("clusTer2", "sharb", Lists.newArrayList("sha-ali", "SHAXY"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertEquals("SHAXY", targetDcs.get(0));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("clusTer1", "shaxy", Lists.newArrayList("SHA-ALI", "sharb"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("SHARB"));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("clusTer1", "sha-ali", Lists.newArrayList("shaxy", "SHARB"));
+        Assert.assertEquals(0, targetDcs.size());
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("clUster1", "CFTRB", Lists.newArrayList("CFTXY"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("CFTXY"));
+    }
+
+    @Test
+    public void getDcLevelTargetDcsTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        List<String> targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "SHA-ALI", Lists.newArrayList("SHARB", "SHAXY"));
+        Assert.assertEquals(2, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("SHARB"));
+        Assert.assertTrue(targetDcs.contains("SHAXY"));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "SHARB", Lists.newArrayList("SHA-ALI", "SHAXY"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("SHAXY"));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "SHAXY", Lists.newArrayList("SHA-ALI", "SHARB"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("SHARB"));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "SHAFQ", Lists.newArrayList("SHAXY", "SHARB"));
+        Assert.assertEquals(2, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("SHARB"));
+        Assert.assertTrue(targetDcs.contains("SHAXY"));
+
+        targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "CFTRB", Lists.newArrayList("CFTXY"));
+        Assert.assertEquals(1, targetDcs.size());
+        Assert.assertTrue(targetDcs.contains("CFTXY"));
+    }
+
+    @Test
+    public void getClusterDcsDelayTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        Assert.assertEquals(-3000, dcRelationsService.getClusterDcsDelay("clUster1", "SHA-ALI", "sharb").intValue());
+        Assert.assertEquals(-3000, dcRelationsService.getClusterDcsDelay("clUster1", "SHA-Ali", "shaxy").intValue());
+        Assert.assertEquals(3000, dcRelationsService.getClusterDcsDelay("clusTer1", "SHAxy", "sharb").intValue());
+        Assert.assertNull(dcRelationsService.getClusterDcsDelay("clusTer1", "shaxy", "shafq"));
+
+        Assert.assertNull(dcRelationsService.getClusterDcsDelay("clusTer3", "SHAxy", "sharb"));
+
+        Assert.assertEquals(90000, dcRelationsService.getClusterDcsDelay("clUster2", "SHA-ALI", "sharb").intValue());
+        Assert.assertEquals(45000, dcRelationsService.getClusterDcsDelay("clUster2", "SHA-Ali", "shaxy").intValue());
+        Assert.assertEquals(6000, dcRelationsService.getClusterDcsDelay("clusTer2", "SHAxy", "sharb").intValue());
+    }
+
+    @Test
+    public void getDcsDelayTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        Assert.assertEquals(45000, dcRelationsService.getDcsDelay("SHA-ALI", "sharb").intValue());
+        Assert.assertEquals(45000, dcRelationsService.getDcsDelay("SHA-Ali", "shaxy").intValue());
+        Assert.assertEquals(3000, dcRelationsService.getDcsDelay("SHAxy", "sharb").intValue());
+        Assert.assertNull(dcRelationsService.getDcsDelay("shaxy", "shafq"));
+    }
+
+    private DcsRelations buildDcsDistances() {
+        List<DcRelation> dcRelations = Lists.newArrayList(
+                new DcRelation().setDcs("sharb,shaxy").setDistance(1),
+                new DcRelation().setDcs("SHA-ALI,SHAXY").setDistance(15),
+                new DcRelation().setDcs("SHA-ALI,SHARB").setDistance(15));
+
+        List<ClusterDcRelations> clusterDcRelations = Lists.newArrayList(
+                new ClusterDcRelations().setClusterName("Cluster1").setRelations(Lists.newArrayList(
+                        new DcRelation().setDcs("SHARB,SHAXY").setDistance(1),
+                        new DcRelation().setDcs("sha-ali,shaxy").setDistance(-1),
+                        new DcRelation().setDcs("SHA-ALI,SHARB").setDistance(-1))),
+                new ClusterDcRelations().setClusterName("Cluster2").setRelations(Lists.newArrayList(
+                        new DcRelation().setDcs("sharb,shaxy").setDistance(2),
+                        new DcRelation().setDcs("SHA-ALI,SHAXY").setDistance(15),
+                        new DcRelation().setDcs("SHA-ALI,SHARB").setDistance(30))));
+
+        return new DcsRelations().setDcLevel(dcRelations).setClusterLevel(clusterDcRelations).setDelayPerDistance(3000);
+    }
+
+}

@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.checker.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -132,7 +131,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
     }
 
     protected DcRelationsService buildDcRelationsService() {
-        return new DefaultDcRelationsService();
+        return new TestDcRelationsService();
     }
 
 }

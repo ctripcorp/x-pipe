@@ -93,6 +93,12 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
             }
 
             List<String> targetDcs = dcRelationsService.getTargetDcsByPriority(clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
+            if (targetDcs.isEmpty()) {
+                logger.info("[doExecute][{}] refused to migrate from {} to {}", clusterName, sourcedDc.getDcName(), availableDcs);
+                future().setFailure(new NoAvailableDcException(clusterName));
+                return;
+            }
+
             int dcCount = targetDcs.size();
             long clusterId = cluster.getId();
             int index = (int) (clusterId % dcCount);

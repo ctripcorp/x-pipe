@@ -18,4 +18,10 @@ public class DcsPriority {
     }
 
 
+    @Override
+    public String toString() {
+        return "DcsPriority{" +
+                "dcPriorityMap=" + dcPriorityMap +
+                '}';
+    }
 }

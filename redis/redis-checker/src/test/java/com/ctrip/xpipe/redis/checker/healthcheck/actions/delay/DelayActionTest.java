@@ -190,7 +190,8 @@ public class DelayActionTest extends AbstractRedisTest {
 
     private void initConfig() {
         when(config.checkIntervalMilli()).thenReturn(CHECK_INTERVAL);
-        when(config.getHealthyDelayMilli()).thenReturn(CHECK_INTERVAL);
+        when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").setDcLevelHealthyDelayMilli(CHECK_INTERVAL).setClusterLevelHealthyDelayMilli(CHECK_INTERVAL*-1));
         when(info.isMaster()).thenReturn(true);
         when(info.getDcId()).thenReturn(FoundationService.DEFAULT.getDataCenter());
     }

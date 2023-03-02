@@ -199,6 +199,11 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
             };
         }
 
+        @Bean
+        public DcRelationsService dcRelationsService(){
+            return new TestDcRelationsService();
+        }
+
     }
 
 }

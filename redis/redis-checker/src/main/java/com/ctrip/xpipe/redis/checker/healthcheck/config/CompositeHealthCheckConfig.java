@@ -31,11 +31,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public int delayDownAfterMilli() {
-        return config.delayDownAfterMilli();
-    }
-
-    @Override
     public int instanceLongDelayMilli() {
         return config.instanceLongDelayMilli();
     }
@@ -53,11 +48,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int clusterCheckIntervalMilli() {
         return config.clusterCheckIntervalMilli();
-    }
-
-    @Override
-    public int getHealthyDelayMilli() {
-        return config.getHealthyDelayMilli();
     }
 
     @Override
@@ -88,11 +78,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public String getMinDiskLessReplVersion() {
         return config.getMinDiskLessReplVersion();
-    }
-
-    @Override
-    public int downAfterCheckNums() {
-        return config.downAfterCheckNums();
     }
 
     @Override

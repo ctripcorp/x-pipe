@@ -10,19 +10,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
  */
 public interface HealthCheckConfig {
 
-    int delayDownAfterMilli();
-
     int instanceLongDelayMilli();
-
-    int downAfterCheckNums();
 
     int pingDownAfterMilli();
 
     int checkIntervalMilli();
 
     int clusterCheckIntervalMilli();
-
-    int getHealthyDelayMilli();
 
     int getRedisConfCheckIntervalMilli();
 

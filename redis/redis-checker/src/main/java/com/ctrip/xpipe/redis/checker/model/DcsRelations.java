@@ -29,7 +29,8 @@ public class DcsRelations {
         return delayPerDistance;
     }
 
-    public void setDelayPerDistance(int delayPerDistance) {
+    public DcsRelations setDelayPerDistance(int delayPerDistance) {
         this.delayPerDistance = delayPerDistance;
+        return this;
     }
 }
