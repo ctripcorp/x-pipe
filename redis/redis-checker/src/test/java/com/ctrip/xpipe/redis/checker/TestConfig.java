@@ -305,4 +305,14 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public DcsRelations getDcsRelations() {
         return null;
     }
+
+    @Override
+    public int maxRemovedDcsCnt() {
+        return 1;
+    }
+
+    @Override
+    public int maxRemovedClustersPercent() {
+        return 50;
+    }
 }

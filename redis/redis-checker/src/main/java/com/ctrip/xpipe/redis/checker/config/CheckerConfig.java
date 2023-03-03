@@ -195,4 +195,8 @@ public interface CheckerConfig {
     long subscribeTimeoutMilli();
 
     DcsRelations getDcsRelations();
+
+    int maxRemovedDcsCnt();
+
+    int maxRemovedClustersPercent();
 }

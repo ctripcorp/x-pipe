@@ -46,6 +46,7 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache,
                 if(pauseing) return;
                 logger.debug("[loadMeta] start");
                 XpipeMeta xpipeMeta = checkerConsoleService.getXpipeAllMeta(config.getConsoleAddress());
+                checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
                 refreshMeta(xpipeMeta);
             }
         } catch (Throwable th) {
