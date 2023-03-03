@@ -105,7 +105,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* do some stuff when finish */
 
         mergeGtidWhenSuccess(current, command.gtid());
-        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -140,7 +140,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* do some stuff when finish */
 
         mergeGtidWhenSuccess(current, command.gtid());
-        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -163,7 +163,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         }
 
         mergeGtidWhenSuccess(current, command.gtid());
-        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         current.execute();
     }
@@ -191,7 +191,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* do some stuff when finish */
 
         mergeGtidWhenSuccess(current, command.gtid());
-        releaseMemoryThresholdWhenSuccess(current, command.redisOp().estimatedSize());
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -230,12 +230,10 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         });
     }
 
-    private void releaseMemoryThresholdWhenSuccess(SequenceCommand<?> sequenceCommand, long memory) {
+    private void releaseMemoryThresholdWhenDone(SequenceCommand<?> sequenceCommand, long memory) {
         sequenceCommand.future().addListener((f)->{
-            if (f.isSuccess()) {
-                concurrencyThreshold.release();
-                memoryThreshold.release(memory);
-            }
+            concurrencyThreshold.release();
+            memoryThreshold.release(memory);
         });
     }
 }
