@@ -29,22 +29,14 @@ public class ApplierTransMeta {
     public ApplierTransMeta() {}
 
     public ApplierTransMeta(String clusterName, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
-        this(clusterName, clusterDbId, shardDbId, applierMeta, null, null, null, null);
-    }
-
-    public ApplierTransMeta(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
-        this(null, clusterDbId, shardDbId, applierMeta);
-    }
-
-    public ApplierTransMeta(String clusterName, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta, Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold) {
         this.clusterName = clusterName;
         this.clusterDbId = clusterDbId;
         this.shardDbId = shardDbId;
         this.applierMeta = applierMeta;
-        this.qpsThreshold = qpsThreshold;
-        this.bytesPerSecondThreshold = bytesPerSecondThreshold;
-        this.memoryThreshold = memoryThreshold;
-        this.concurrencyThreshold = concurrencyThreshold;
+    }
+
+    public ApplierTransMeta(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
+        this(null, clusterDbId, shardDbId, applierMeta);
     }
 
     public ApplierMeta getApplierMeta() {
