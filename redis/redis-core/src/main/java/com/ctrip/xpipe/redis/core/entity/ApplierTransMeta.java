@@ -17,18 +17,34 @@ public class ApplierTransMeta {
 
     private ApplierMeta applierMeta;
 
+    private Long qpsThreshold;
+
+    private Long bytesPerSecondThreshold;
+
+    private Long memoryThreshold;
+
+    private Long concurrencyThreshold;
+
     //for json conversion
     public ApplierTransMeta() {}
 
     public ApplierTransMeta(String clusterName, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
-        this.clusterName = clusterName;
-        this.clusterDbId = clusterDbId;
-        this.shardDbId = shardDbId;
-        this.applierMeta = applierMeta;
+        this(clusterName, clusterDbId, shardDbId, applierMeta, null, null, null, null);
     }
 
     public ApplierTransMeta(Long clusterDbId, Long shardDbId, ApplierMeta applierMeta) {
         this(null, clusterDbId, shardDbId, applierMeta);
+    }
+
+    public ApplierTransMeta(String clusterName, Long clusterDbId, Long shardDbId, ApplierMeta applierMeta, Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold) {
+        this.clusterName = clusterName;
+        this.clusterDbId = clusterDbId;
+        this.shardDbId = shardDbId;
+        this.applierMeta = applierMeta;
+        this.qpsThreshold = qpsThreshold;
+        this.bytesPerSecondThreshold = bytesPerSecondThreshold;
+        this.memoryThreshold = memoryThreshold;
+        this.concurrencyThreshold = concurrencyThreshold;
     }
 
     public ApplierMeta getApplierMeta() {
@@ -61,6 +77,38 @@ public class ApplierTransMeta {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public Long getQpsThreshold() {
+        return qpsThreshold;
+    }
+
+    public void setQpsThreshold(Long qpsThreshold) {
+        this.qpsThreshold = qpsThreshold;
+    }
+
+    public Long getBytesPerSecondThreshold() {
+        return bytesPerSecondThreshold;
+    }
+
+    public void setBytesPerSecondThreshold(Long bytesPerSecondThreshold) {
+        this.bytesPerSecondThreshold = bytesPerSecondThreshold;
+    }
+
+    public Long getMemoryThreshold() {
+        return memoryThreshold;
+    }
+
+    public void setMemoryThreshold(Long memoryThreshold) {
+        this.memoryThreshold = memoryThreshold;
+    }
+
+    public Long getConcurrencyThreshold() {
+        return concurrencyThreshold;
+    }
+
+    public void setConcurrencyThreshold(Long concurrencyThreshold) {
+        this.concurrencyThreshold = concurrencyThreshold;
     }
 
     @Override
