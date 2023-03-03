@@ -50,7 +50,7 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache,
                 refreshMeta(xpipeMeta);
             }
         } catch (Throwable th) {
-            logger.info("[loadMeta] fail", th);
+            logger.error("[loadMeta] fail", th);
         }
     }
 
