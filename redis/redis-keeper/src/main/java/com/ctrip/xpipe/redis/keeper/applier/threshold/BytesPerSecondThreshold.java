@@ -7,7 +7,7 @@ public class BytesPerSecondThreshold extends AbstractThreshold {
 
     public BytesPerSecondThreshold(long maxBytesOneSecond, ScheduledExecutorService scheduled) {
         super(maxBytesOneSecond);
-        scheduled.scheduleAtFixedRate(this::reset, 0, 1, TimeUnit.SECONDS);
+        scheduled.scheduleAtFixedRate(this::reset, 1, 1, TimeUnit.SECONDS);
     }
 
     @Override
