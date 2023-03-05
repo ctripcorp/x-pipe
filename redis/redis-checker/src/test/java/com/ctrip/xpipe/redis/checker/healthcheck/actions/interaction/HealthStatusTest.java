@@ -6,6 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -15,8 +16,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,12 +49,12 @@ public class HealthStatusTest extends AbstractRedisTest {
         when(instance.getCheckInfo()).thenReturn(info);
 
         config = mock(HealthCheckConfig.class);
-        when(config.getHealthyDelayMilli()).thenReturn(2000);
-        when(config.delayDownAfterMilli()).thenReturn(2000 * 8);
+        when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").
+                        setDcLevelHealthyDelayMilli(2000).setClusterLevelHealthyDelayMilli(2000).
+                        setDcLevelDelayDownAfterMilli(2000 * 8).setClusterLevelDelayDownAfterMilli(2000 * 8));
         when(config.pingDownAfterMilli()).thenReturn(12 * 1000);
         when(instance.getHealthCheckConfig()).thenReturn(config);
-        healthStatus = new HealthStatus(instance, scheduled);
-
         healthStatus = new HealthStatus(instance, scheduled);
         System.gc();
         sleep(10);
@@ -86,10 +90,10 @@ public class HealthStatusTest extends AbstractRedisTest {
         healthStatus.pong();
         assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
-        healthStatus.delay(config.getHealthyDelayMilli() + 1);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli() + 1);
         assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
-        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli()/2);
         assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
 
     }
@@ -98,22 +102,25 @@ public class HealthStatusTest extends AbstractRedisTest {
     public void testStateSwitchFromUpToUnhealthyToSick() throws Exception {
         markup();
         when(config.instanceLongDelayMilli()).thenReturn(10);
-        when(config.delayDownAfterMilli()).thenReturn(100);
+        when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").
+                        setDcLevelHealthyDelayMilli(2000).setClusterLevelHealthyDelayMilli(2000).
+                        setDcLevelDelayDownAfterMilli(100).setClusterLevelDelayDownAfterMilli(100));
 
-        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getDcLevelHealthyDelayMilli()/2);
         Thread.sleep(config.instanceLongDelayMilli());
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         waitConditionUntilTimeOut(()->HEALTH_STATE.UNHEALTHY == healthStatus.getState(), 1000);
         assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
 
-        Thread.sleep(config.getHealthyDelayMilli()/2);
+        Thread.sleep(config.getDelayConfig("test","test","test").getDcLevelHealthyDelayMilli()/2);
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         waitConditionUntilTimeOut(()->HEALTH_STATE.SICK == healthStatus.getState(), 1000);
         assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
 
-        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getDcLevelHealthyDelayMilli()/2);
         healthStatus.healthStatusUpdate();
         waitConditionUntilTimeOut(()->HEALTH_STATE.HEALTHY == healthStatus.getState(), 1000);
         assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
@@ -139,7 +146,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         int N = 100;
         for(int i = 0; i < N; i++) {
-            healthStatus.delay(config.getHealthyDelayMilli()/2);
+            healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli()/2);
         }
         assertEquals(0, markup.get());
         assertEquals(0, markdown.get());
@@ -148,11 +155,11 @@ public class HealthStatusTest extends AbstractRedisTest {
         assertEquals(0, markup.get());
         assertEquals(0, markdown.get());
 
-        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli()/2);
         assertEquals(1, markup.get());
         assertEquals(0, markdown.get());
 
-        when(config.delayDownAfterMilli()).thenReturn(10);
+        when(config.getDelayConfig("test","test","test").getClusterLevelDelayDownAfterMilli()).thenReturn(10);
         Thread.sleep(12);
         healthStatus.healthStatusUpdate();
 
@@ -236,9 +243,10 @@ public class HealthStatusTest extends AbstractRedisTest {
         int baseInterval = 20;
 
         when(config.pingDownAfterMilli()).thenReturn(20);
-        when(config.getHealthyDelayMilli()).thenReturn(baseInterval);
         when(config.instanceLongDelayMilli()).thenReturn(baseInterval * 2);
-        when(config.delayDownAfterMilli()).thenReturn(baseInterval * 5);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test").
+                        setClusterLevelDelayDownAfterMilli(baseInterval * 5).setClusterLevelHealthyDelayMilli(baseInterval));
 
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
@@ -294,8 +302,10 @@ public class HealthStatusTest extends AbstractRedisTest {
         int baseInterval = 20;
 
         when(config.pingDownAfterMilli()).thenReturn(50);
-        when(config.getHealthyDelayMilli()).thenReturn(1000);
-        when(config.delayDownAfterMilli()).thenReturn(baseInterval);
+        when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").
+                        setDcLevelHealthyDelayMilli(1000).setClusterLevelHealthyDelayMilli(1000).
+                        setDcLevelDelayDownAfterMilli(baseInterval).setClusterLevelDelayDownAfterMilli(baseInterval));
 
         AtomicInteger markup = new AtomicInteger(0);
         AtomicInteger markdown = new AtomicInteger(0);
@@ -339,8 +349,9 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testHealthyHalfDown() throws TimeoutException {
         when(config.pingDownAfterMilli()).thenReturn(50);
-        when(config.delayDownAfterMilli()).thenReturn(100);
-        when(config.getHealthyDelayMilli()).thenReturn(50);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                .setClusterLevelHealthyDelayMilli(50).setClusterLevelDelayDownAfterMilli(100));
         markup();
 
         sleep(config.pingDownAfterMilli()/2);
@@ -352,11 +363,12 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testUnhealthyToHalfDown() {
         when(config.pingDownAfterMilli()).thenReturn(50);
-        when(config.delayDownAfterMilli()).thenReturn(100);
-        when(config.getHealthyDelayMilli()).thenReturn(50);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(50).setClusterLevelDelayDownAfterMilli(100));
         markup();
 
-        sleep(config.delayDownAfterMilli()/2);
+        sleep(config.getDelayConfig("test","test","test").getClusterLevelDelayDownAfterMilli()/2);
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
@@ -369,8 +381,9 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testSickDownThenDownSendOnceNotify() {
         when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(10);
-        when(config.getHealthyDelayMilli()).thenReturn(10);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(10).setClusterLevelDelayDownAfterMilli(10));
         markup();
 
         AtomicInteger markdownCount = new AtomicInteger(0);
@@ -401,8 +414,9 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testNewAddedRedis() {
         when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(60);
-        when(config.getHealthyDelayMilli()).thenReturn(20);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(20).setClusterLevelDelayDownAfterMilli(60));
 
         assertEquals(UNKNOWN, healthStatus.getState());
         healthStatus.pong();
@@ -414,8 +428,9 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testNewAddedRedisUnHealthy() {
         when(config.pingDownAfterMilli()).thenReturn(80);
-        when(config.delayDownAfterMilli()).thenReturn(120);
-        when(config.getHealthyDelayMilli()).thenReturn(40);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(40).setClusterLevelDelayDownAfterMilli(120));
 
         assertEquals(UNKNOWN, healthStatus.getState());
         healthStatus.pong();
@@ -440,8 +455,10 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testPingFailNotify() {
         when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(60);
-        when(config.getHealthyDelayMilli()).thenReturn(20);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(20).setClusterLevelDelayDownAfterMilli(60));
+
         healthStatus.pongInit();
         sleep(40 * 2 + 5);
         healthStatus.healthStatusUpdate();
@@ -451,8 +468,10 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testInitToPingDownShouldNotifyOuterClinet() {
         when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(60);
-        when(config.getHealthyDelayMilli()).thenReturn(20);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(20).setClusterLevelDelayDownAfterMilli(60));
+
         AtomicInteger counter = new AtomicInteger();
         healthStatus.addObserver(new Observer() {
             @Override
@@ -507,7 +526,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
     private void markup() {
         healthStatus.pong();
-        healthStatus.delay(config.getHealthyDelayMilli()/2);
+        healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli()/2);
         assertEquals(HEALTH_STATE.HEALTHY, healthStatus.getState());
     }
 }

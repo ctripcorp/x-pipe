@@ -65,9 +65,10 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
         try {
             logger.debug("[loadMeta] start");
             XpipeMeta xpipeMeta = checkerConsoleService.getXpipeMeta(config.getConsoleAddress(), config.getClustersPartIndex());
+            checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
             refreshMeta(xpipeMeta);
         } catch (Throwable th) {
-            logger.info("[loadMeta] fail", th);
+            logger.error("[loadMeta] fail", th);
         }
     }
 

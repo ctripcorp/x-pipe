@@ -222,7 +222,8 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterTypeUpdateEventListenerTest.class,
 
         RouteInfoControllerTest.class,
-        RedisController.class
+        RedisController.class,
+        DcRelationsServiceTest.class
 })
 public class AllTests {
 

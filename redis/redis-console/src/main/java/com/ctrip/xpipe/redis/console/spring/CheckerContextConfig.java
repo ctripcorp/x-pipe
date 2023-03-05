@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.console.resources.CheckerOuterClientCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
@@ -92,6 +93,11 @@ public class CheckerContextConfig {
     @Bean
     public CheckerDbConfig checkerDbConfig(PersistenceCache persistenceCache) {
         return new DefaultCheckerDbConfig(persistenceCache);
+    }
+
+    @Bean
+    public DcRelationsService dcRelationsService(){
+        return new DefaultDcRelationsService();
     }
 
     @Bean

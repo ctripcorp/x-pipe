@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -68,9 +70,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     @Mock
     private StabilityHolder siteStability;
 
-//    @Mock
-//    private SiteReliabilityChecker checker;
-
     @Mock
     private FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
 
@@ -87,6 +86,12 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
         when(instance.getCheckInfo()).thenReturn(info);
+
+        HealthCheckConfig config = mock(HealthCheckConfig.class);
+        when(config.getDelayConfig(any(), any(), any())).thenReturn(
+                new DelayConfig("test", "test", "test")
+                        .setClusterLevelHealthyDelayMilli(2000).setClusterLevelDelayDownAfterMilli(24000));
+        when(instance.getHealthCheckConfig()).thenReturn(config);
 
         when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
@@ -144,6 +149,25 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         verify(finalStateSetterManager, times(1)).set(any(ClusterShardHostPort.class), anyBoolean());
 
         event = new InstanceSick(instance);
+        upHandler.handle(event);
+        downHandler.handle(event);
+        sickHandler.handle(event);
+        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+
+        //do not markdown cross region instance
+        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
+        instanceInfo.setCrossRegion(true);
+        upHandler.handle(event);
+        downHandler.handle(event);
+        sickHandler.handle(event);
+        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+
+        //do not markdown instance which dcs distance is -1
+        instanceInfo.setCrossRegion(false);
+        HealthCheckConfig config = instance.getHealthCheckConfig();
+        when(config.getDelayConfig(any(), any(), any())).thenReturn(
+                new DelayConfig("test", "test", "test")
+                        .setClusterLevelHealthyDelayMilli(-2000).setClusterLevelDelayDownAfterMilli(-24000));
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);

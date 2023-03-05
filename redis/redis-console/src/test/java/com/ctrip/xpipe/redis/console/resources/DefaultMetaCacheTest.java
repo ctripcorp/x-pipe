@@ -3,12 +3,15 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
+import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.impl.RedisCheckRuleServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
@@ -195,6 +198,87 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name());
         metaCache.chooseRoutes("cluster1", "fra", Lists.newArrayList("jq"), 1);
     }
+
+    @Test
+    public void checkDcsCntTest() {
+        metaCache.setMeta(null);
+        try {
+            metaCache.checkMeta(new XpipeMeta(), 1, 50);
+        } catch (Throwable th) {
+            Assert.fail();
+        }
+
+        //removed too many dcs
+        XpipeMeta currentMeta = new XpipeMeta();
+        currentMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")))
+                .addDc(new DcMeta("dc2").addCluster(new ClusterMeta("cluster1")))
+                .addDc(new DcMeta("dc3").addCluster(new ClusterMeta("cluster1")))
+                .addDc(new DcMeta("dc4").addCluster(new ClusterMeta("cluster1")));
+
+        XpipeMeta futureMeta = new XpipeMeta();
+        futureMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")))
+                .addDc(new DcMeta("dc2").addCluster(new ClusterMeta("cluster1")));
+
+        Pair<XpipeMeta, XpipeMetaManager> current = new Pair<>(currentMeta, new DefaultXpipeMetaManager(currentMeta));
+        metaCache.setMeta(current);
+        try {
+            metaCache.checkMeta(futureMeta, 1, 50);
+            Assert.fail();
+        } catch (Throwable th) {
+            Assert.assertTrue(th instanceof TooManyDcsRemovedException);
+        }
+        try {
+            metaCache.checkMeta(futureMeta, 2, 50);
+        } catch (Throwable th) {
+            Assert.fail();
+        }
+
+        //add dcs
+        current = new Pair<>(futureMeta, new DefaultXpipeMetaManager(futureMeta));
+        metaCache.setMeta(current);
+        try {
+            metaCache.checkMeta(currentMeta, 1, 50);
+        } catch (Throwable th) {
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void checkClustersCntTest() {
+        //removed too many clusters
+        XpipeMeta currentMeta = new XpipeMeta();
+        currentMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")).addCluster(new ClusterMeta("cluster2")).addCluster(new ClusterMeta("cluster3")))
+                .addDc(new DcMeta("dc2").addCluster(new ClusterMeta("cluster1")));
+
+
+        XpipeMeta futureMeta = new XpipeMeta();
+        futureMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")))
+                .addDc(new DcMeta("dc2").addCluster(new ClusterMeta("cluster1")));
+
+        Pair<XpipeMeta, XpipeMetaManager> current = new Pair<>(currentMeta, new DefaultXpipeMetaManager(currentMeta));
+        metaCache.setMeta(current);
+        try {
+            metaCache.checkMeta(futureMeta, 1, 50);
+            Assert.fail();
+        } catch (Throwable th) {
+            Assert.assertTrue(th instanceof TooManyClustersRemovedException);
+        }
+        try {
+            metaCache.checkMeta(futureMeta, 1, 80);
+        } catch (Throwable th) {
+            Assert.fail();
+        }
+
+        //add clusters
+        current = new Pair<>(futureMeta, new DefaultXpipeMetaManager(futureMeta));
+        metaCache.setMeta(current);
+        try {
+            metaCache.checkMeta(currentMeta, 1, 50);
+        } catch (Throwable th) {
+            Assert.fail();
+        }
+    }
+
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }

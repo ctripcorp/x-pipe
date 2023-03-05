@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.model.DcsRelations;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
@@ -99,6 +100,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
+
+    private static final String KEY_DCS_RELATIONS = "dcs.relations";
+
+    private static final String KEY_MAX_REMOVED_DCS_CNT = "max.removed.dcs.count";
+    private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -633,6 +639,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public DcsRelations getDcsRelations() {
+        String property = getProperty(KEY_DCS_RELATIONS, "{}");
+        return JsonCodec.INSTANCE.decode(property, DcsRelations.class);
+    }
+
+    @Override
     public Set<String> getClustersSupportBiMigration() {
         String raw = getProperty(KEY_BI_MIGRATION_CLUSTERS, "");
 
@@ -651,4 +663,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public String getClusterExcludedRegex() {
         return getProperty(KEY_ALERT_CLUSTER_EXCLUDED_REGEX, "");
     }
+
+    @Override
+    public int maxRemovedDcsCnt() {
+        return getIntProperty(KEY_MAX_REMOVED_DCS_CNT, 1);
+    }
+
+    @Override
+    public int maxRemovedClustersPercent() {
+        return getIntProperty(KEY_MAX_REMOVED_CLUSTERS_PERCENT, 50);
+    }
+
 }
