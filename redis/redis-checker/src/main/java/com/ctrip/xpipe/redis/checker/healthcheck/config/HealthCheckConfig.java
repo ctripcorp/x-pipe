@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 
 /**
  * @author chen.zhu
@@ -9,8 +10,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
  */
 public interface HealthCheckConfig {
 
-    int delayDownAfterMilli();
-
     int instanceLongDelayMilli();
 
     int pingDownAfterMilli();
@@ -18,8 +17,6 @@ public interface HealthCheckConfig {
     int checkIntervalMilli();
 
     int clusterCheckIntervalMilli();
-
-    int getHealthyDelayMilli();
 
     int getRedisConfCheckIntervalMilli();
 
@@ -32,4 +29,6 @@ public interface HealthCheckConfig {
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 
     int getNonCoreCheckIntervalMilli();
+
+    DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc);
 }

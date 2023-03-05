@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Insta
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessorException;
-import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
@@ -25,7 +24,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Mockito.*;
@@ -105,10 +103,6 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1);
         when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
 
-        HealthCheckConfig config = mock(HealthCheckConfig.class);
-        when(config.delayDownAfterMilli()).thenReturn((int) TimeUnit.MINUTES.toMillis(10));
-        when(instance.getHealthCheckConfig()).thenReturn(config);
-
         when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
         processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(1)).tryRecover(any(), any());
@@ -122,10 +116,6 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1).thenReturn(1);
         when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
-
-        HealthCheckConfig config = mock(HealthCheckConfig.class);
-        when(config.delayDownAfterMilli()).thenReturn((int) TimeUnit.SECONDS.toMillis(1));
-        when(instance.getHealthCheckConfig()).thenReturn(config);
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 

@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,20 +19,15 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
     private HealthCheckConfig config;
 
-    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig) {
+    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
         logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
         if(instanceInfo.isCrossRegion()) {
-            config = new ProxyEnabledHealthCheckConfig(checkerConfig);
+            config = new ProxyEnabledHealthCheckConfig(checkerConfig, dcRelationsService);
             logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {
-            config = new DefaultHealthCheckConfig(checkerConfig);
+            config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
         }
         logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
-    }
-
-    @Override
-    public int delayDownAfterMilli() {
-        return config.delayDownAfterMilli();
     }
 
     @Override
@@ -51,11 +48,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int clusterCheckIntervalMilli() {
         return config.clusterCheckIntervalMilli();
-    }
-
-    @Override
-    public int getHealthyDelayMilli() {
-        return config.getHealthyDelayMilli();
     }
 
     @Override
@@ -86,5 +78,10 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public String getMinDiskLessReplVersion() {
         return config.getMinDiskLessReplVersion();
+    }
+
+    @Override
+    public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
+        return config.getDelayConfig(clusterName, fromDc, toDc);
     }
 }

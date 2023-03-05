@@ -398,6 +398,81 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     }
 
+    @Test
+    public void generateCRossDCHealthCheckInstancesTest() throws Exception {
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setParent(new DcMeta("jq"));
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setParent(new DcMeta("oy"));
+
+        Assert.assertFalse(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
+
+        jqClusterMeta.setActiveDc("jq");
+        oyClusterMeta.setActiveDc("jq");
+        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
+
+    }
+
+    @Test
+    public void generateSingleDcHealthCheckInstancesTest() throws Exception {
+        ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq").setParent(new DcMeta("jq"));
+        Assert.assertTrue(manager.isInterestedInCluster(clusterMeta));
+
+        clusterMeta.setActiveDc("oy").setDcGroupName("oy");
+        Assert.assertFalse(manager.isInterestedInCluster(clusterMeta));
+    }
+
+    @Test
+    public void generateLocalDCHealthCheckInstancesTest() throws Exception {
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setParent(new DcMeta("jq"));
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setParent(new DcMeta("oy"));
+
+        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
+    }
+
+    @Test
+    public void generateOneWayHealthCheckInstancesTest() throws Exception {
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setDcGroupType("DR_MASTER");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setDcGroupType("DR_MASTER");
+        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
+
+        jqClusterMeta.setActiveDc("oy");
+        oyClusterMeta.setActiveDc("oy");
+        Assert.assertFalse(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
+    }
+
+    @Test
+    public void generateHeteroHealthCheckInstancesTest() throws Exception {
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setDcGroupType("DR_MASTER");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setDcGroupType("DR_MASTER");
+        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("aws")).setDcGroupType("MASTER");
+
+
+        // current dc is active dc
+        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
+        Assert.assertTrue(manager.isInterestedInCluster(awsClusterMeta));
+
+        //current dc is not active dc but in dr master type
+        jqClusterMeta.setActiveDc("oy");
+        oyClusterMeta.setActiveDc("oy");
+        awsClusterMeta.setActiveDc("oy");
+        Assert.assertFalse(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
+
+        //current dc is in master type
+        jqClusterMeta.setDcGroupType("MASTER");
+        oyClusterMeta.setDcGroupType("DR_MASTER");
+        awsClusterMeta.setDcGroupType("DR_MASTER");
+        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
+        Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
+    }
+
     protected DcMeta getDcMeta(String dc) {
         Map<String, DcMeta> dcMetaMap = getXpipeMeta().getDcs();
         DcMeta dcMeta = dcMetaMap.get(dc);

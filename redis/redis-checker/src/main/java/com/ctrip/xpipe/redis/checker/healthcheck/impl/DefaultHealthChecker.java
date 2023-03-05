@@ -107,7 +107,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
 
-    private void generateHealthCheckInstances() {
+    void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
 
         for(DcMeta dcMeta : meta.getDcs().values()) {
@@ -124,7 +124,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
                     generateHealthCheckInstances(cluster);
                 }
-                if (clusterType.supportMultiActiveDC() && isClusterInCurrentIdc(cluster)) {
+                if (hasMultipleActiveDcs(clusterType) && isClusterInCurrentIdc(cluster)) {
                     generateHealthCheckInstances(cluster);
                 }
 
@@ -167,6 +167,10 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {
         return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
+    }
+
+    private boolean hasMultipleActiveDcs(ClusterType clusterType) {
+        return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
     }
 
 }

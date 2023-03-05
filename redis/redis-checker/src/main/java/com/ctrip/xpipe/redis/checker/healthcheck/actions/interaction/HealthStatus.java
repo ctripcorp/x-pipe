@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -42,7 +44,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
-
+    protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     protected static Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
 
     public HealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
@@ -50,8 +52,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.scheduled = scheduled;
         this.pingDownAfterMilli = ()->instance.getHealthCheckConfig().pingDownAfterMilli();
         this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
-        this.delayDownAfterMilli = ()->instance.getHealthCheckConfig().delayDownAfterMilli();
-        this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
+        this.delayDownAfterMilli = () -> {
+            DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+            return delayConfig.getClusterLevelDelayDownAfterMilli() > 0 ? delayConfig.getClusterLevelDelayDownAfterMilli() : delayConfig.getDcLevelDelayDownAfterMilli();};
+        this.healthyDelayMilli = () -> {
+            DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
+            return delayConfig.getClusterLevelHealthyDelayMilli() > 0 ? delayConfig.getClusterLevelHealthyDelayMilli() : delayConfig.getDcLevelHealthyDelayMilli();};
         checkParam();
     }
 

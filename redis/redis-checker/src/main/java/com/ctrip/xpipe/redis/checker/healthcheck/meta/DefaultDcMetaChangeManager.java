@@ -170,7 +170,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             result = clusterDcIsCurrentDc(cluster);
         if (hasSingleActiveDc(clusterType))
             result = result || cluster.getActiveDc().equalsIgnoreCase(currentDcId);
-        if (clusterType.supportMultiActiveDC()) {
+        if (hasMultipleActiveDcs(clusterType)) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
             result = result || Arrays.asList(dcs).contains(currentDcId.toLowerCase());
@@ -189,6 +189,10 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {
         return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
+    }
+
+    private boolean hasMultipleActiveDcs(ClusterType clusterType) {
+        return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
     }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {

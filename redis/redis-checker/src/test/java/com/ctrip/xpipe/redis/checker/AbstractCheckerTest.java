@@ -100,7 +100,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
+        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(), buildCheckerConfig()));
         return instance;
     }
@@ -119,7 +119,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster", activeDc,
                 clusterType, 1);
-        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig());
+        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService());
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
 
@@ -128,6 +128,10 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
     protected CheckerConfig buildCheckerConfig() {
         return new TestConfig();
+    }
+
+    protected DcRelationsService buildDcRelationsService() {
+        return new TestDcRelationsService();
     }
 
 }

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.HeteroInstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,8 +39,10 @@ public class HeteroHealthStatusTest extends AbstractRedisTest {
         when(instance.getCheckInfo()).thenReturn(info);
 
         config = mock(HealthCheckConfig.class);
-        when(config.getHealthyDelayMilli()).thenReturn(2000);
-        when(config.instanceLongDelayMilli()).thenReturn(2000 * 8);
+        when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").
+                        setDcLevelHealthyDelayMilli(2000).setClusterLevelHealthyDelayMilli(-2000).
+                        setDcLevelDelayDownAfterMilli(2000 * 8).setClusterLevelDelayDownAfterMilli(-2000 * 8));
         when(instance.getHealthCheckConfig()).thenReturn(config);
         healthStatus = new HeteroHealthStatus(instance, scheduled);
 
@@ -60,7 +64,8 @@ public class HeteroHealthStatusTest extends AbstractRedisTest {
 
     @Test
     public void testInstanceLongDelay() throws InterruptedException, TimeoutException {
-        when(config.getHealthyDelayMilli()).thenReturn(200);
+        when(config.getDelayConfig(Mockito.any(),Mockito.any(),Mockito.any())).thenReturn(
+                new DelayConfig("test","test","test").setDcLevelHealthyDelayMilli(200));
         when(config.instanceLongDelayMilli()).thenReturn(300);
         when(config.checkIntervalMilli()).thenReturn(100);
 
