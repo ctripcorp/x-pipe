@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.exception.UnexpectMigrationDataException;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -174,7 +175,14 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         Set<String> downs = new HashSet<>();
         Set<String> ups = new HashSet<>();
         Set<String> all = new HashSet<>();
+
+        String dcs = config.getBiDirectionMigrationDcPriority().toLowerCase();
+        String[] dcArray = dcs.split(",");
+        Set<String> migrationTargetDcs = Sets.newHashSet(dcArray);
+
         for (MonitorGroupMeta group : groups) {
+            if (!migrationTargetDcs.contains(group.getIdc().toLowerCase()))
+                continue;
             if (group.getDown()) {
                 downs.add(group.getIdc().toLowerCase());
             }
@@ -184,9 +192,6 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
         //til this moment, ups means all
         ups.removeAll(downs);
-
-        String dcs = config.getBiDirectionMigrationDcPriority().toLowerCase();
-        String[] dcArray = dcs.split(",");
 
         String choice = null;
         for (String dc : dcArray) {
