@@ -72,6 +72,56 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
     @Override
+    public Set<String> getExcludedDcsForBiCluster(String clusterName, Set<String> downDcs, Set<String> availableDcs) {
+        if (availableDcs.isEmpty())
+            return new HashSet<>();
+
+        Set<String> downDcsToUpperCase = downDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> availableDcsToUpperCase = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Map<String, DcsPriority> clusterDcsPriorityMap = clusterLevelDcPriority.get();
+        if (clusterDcsPriorityMap == null || clusterDcsPriorityMap.get(clusterName.toLowerCase()) == null) {
+            return new HashSet<>();
+        }
+
+        Set<String> ignoreDcs = new HashSet<>();
+        for (String downDc : downDcsToUpperCase) {
+            ignoreDcs.addAll(getClusterIgnoreDcs(clusterName, downDc));
+        }
+        availableDcsToUpperCase.removeAll(ignoreDcs);
+        if (availableDcsToUpperCase.isEmpty())
+            return new HashSet<>();
+
+        return doGetExcludedDcs(downDcsToUpperCase, availableDcsToUpperCase);
+    }
+
+    Set<String> doGetExcludedDcs(Set<String> downDcs, Set<String> availableDcs) {
+        Set<String> excludedDcs = new HashSet<>();
+        String targetDc = availableDcs.iterator().next();
+        availableDcs.remove(targetDc);
+        excludedDcs.addAll(availableDcs);
+        excludedDcs.addAll(downDcs);
+        return excludedDcs;
+    }
+
+    Set<String> getClusterIgnoreDcs(String clusterName, String downDc) {
+        Set<String> ignoreDcs = new HashSet<>();
+        DcPriority downDcPriority = getClusterLevelDcPriority(clusterName, downDc);
+
+        if (downDcPriority != null) {
+            ignoreDcs.addAll(getIgnoreDcs(downDcPriority));
+        }
+
+        return ignoreDcs;
+    }
+
+    private Set<String> getIgnoreDcs(DcPriority dcPriority) {
+        Map<Integer, List<String>> priority2Dcs = dcPriority.getPriority2Dcs();
+        return priority2Dcs.entrySet().stream()
+                .filter(entry -> entry.getKey() < 0)
+                .map(Map.Entry::getValue).flatMap(Collection::stream).collect(Collectors.toSet());
+    }
+
+    @Override
     public Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc) {
         Map<String, Map<Set<String>, Integer>> clusterDcsDistanceMap = clusterDcsDistance.get();
         if (clusterDcsDistanceMap != null) {
@@ -104,8 +154,9 @@ public class DefaultDcRelationsService implements DcRelationsService {
             return null;
 
         DcsPriority clusterDcsPriority = clusterDcsPriorityMap.get(clusterName.toLowerCase());
-        if (clusterDcsPriority != null)
+        if (clusterDcsPriority != null) {
             return clusterDcsPriority.getDcPriority(downDc.toUpperCase());
+        }
 
         return null;
     }
@@ -119,15 +170,18 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     private List<String> getTargetDcs(DcPriority dcPriority, List<String> availableDcs) {
         Map<Integer, List<String>> priority2Dcs = dcPriority.getPriority2Dcs();
+        Map<Integer, List<String>> priority2AvailableDcs = new TreeMap<>();
+        for (int priority : priority2Dcs.keySet()) {
+            if (priority > 0) priority2AvailableDcs.put(priority, priority2Dcs.get(priority));
+        }
 
-        if (priority2Dcs.isEmpty())
+        if (priority2AvailableDcs.isEmpty())
             return new ArrayList<>();
-
 
         List<String> availableDcsCopy = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toList());
 
-        for (int priority : priority2Dcs.keySet()) {
-            List<String> copy = Lists.newArrayList(priority2Dcs.get(priority));
+        for (int priority : priority2AvailableDcs.keySet()) {
+            List<String> copy = Lists.newArrayList(priority2AvailableDcs.get(priority));
             copy.retainAll(availableDcsCopy);
             if (!copy.isEmpty())
                 return copy;
@@ -140,7 +194,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     private void buildDcPriority(Map<String, DcPriority> dcPriorityMap, String fromDc, String toDc, int distance) {
         DcPriority dcPriority = dcPriorityMap.getOrDefault(fromDc, new DcPriority().setDc(fromDc));
-        if (distance > 0) dcPriority.addPriorityAndDc(distance, toDc);
+        dcPriority.addPriorityAndDc(distance, toDc);
         dcPriorityMap.put(fromDc, dcPriority);
     }
 

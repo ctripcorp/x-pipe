@@ -129,17 +129,23 @@ public class DcRelationsServiceTest {
         Assert.assertEquals(2, clusterLevelDcPriority.size());
         DcsPriority cluster1DcPriority = clusterLevelDcPriority.get("cluster1");
         aliPriority = cluster1DcPriority.getDcPriority("SHA-ALI").getPriority2Dcs();
-        Assert.assertEquals(0, aliPriority.size());
+        Assert.assertEquals(1, aliPriority.size());
+        Assert.assertTrue(aliPriority.get(-1).contains("SHAXY"));
+        Assert.assertTrue(aliPriority.get(-1).contains("SHARB"));
 
         rbPriority = cluster1DcPriority.getDcPriority("SHARB").getPriority2Dcs();
-        Assert.assertEquals(1, rbPriority.size());
+        Assert.assertEquals(2, rbPriority.size());
+        Assert.assertEquals(1, rbPriority.get(-1).size());
         Assert.assertEquals(1, rbPriority.get(1).size());
         Assert.assertTrue(rbPriority.get(1).contains("SHAXY"));
+        Assert.assertTrue(rbPriority.get(-1).contains("SHA-ALI"));
 
         xyPriority = cluster1DcPriority.getDcPriority("SHAXY").getPriority2Dcs();
-        Assert.assertEquals(1, xyPriority.size());
+        Assert.assertEquals(2, xyPriority.size());
+        Assert.assertEquals(1, xyPriority.get(-1).size());
         Assert.assertEquals(1, xyPriority.get(1).size());
         Assert.assertTrue(xyPriority.get(1).contains("SHARB"));
+        Assert.assertTrue(xyPriority.get(-1).contains("SHA-ALI"));
 
 
         DcsPriority cluster2DcPriority = clusterLevelDcPriority.get("cluster2");
@@ -267,6 +273,50 @@ public class DcRelationsServiceTest {
         Assert.assertEquals(45000, dcRelationsService.getDcsDelay("SHA-Ali", "shaxy").intValue());
         Assert.assertEquals(3000, dcRelationsService.getDcsDelay("SHAxy", "sharb").intValue());
         Assert.assertNull(dcRelationsService.getDcsDelay("shaxy", "shafq"));
+    }
+
+    @Test
+    public void getExcludeDcsForBiClusterTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+
+        //not initialized
+        Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
+        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+
+        dcRelationsService.refresh();
+
+        //empty available dcs
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet());
+        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+
+        //not existed cluster
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster3", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
+        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+
+        //sharb down, ignore ali
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
+        Assert.assertEquals(Sets.newHashSet("SHARB"), excludedDcs);
+
+        //shaxy down, ignore ali
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("shaXy"), Sets.newHashSet("shaRB", "shA-ali"));
+        Assert.assertEquals(Sets.newHashSet("SHAXY"), excludedDcs);
+
+        //ali down
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sha-ALI"), Sets.newHashSet("shaRB", "shaXY"));
+        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+
+        //shaxy and sharb down
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharb","shaxy"), Sets.newHashSet("sha-ali"));
+        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+
+        //multi target dcs
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("sha-ali", "shaXY","shafq"));
+        Assert.assertEquals(Sets.newHashSet("SHAXY","SHARB"), excludedDcs);
+
+        //no ignore dcs
+        excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster2", Sets.newHashSet("sharB"), Sets.newHashSet("sha-ali", "shaXY"));
+        Assert.assertEquals(Sets.newHashSet("SHAXY","SHARB"), excludedDcs);
+
     }
 
     private DcsRelations buildDcsDistances() {

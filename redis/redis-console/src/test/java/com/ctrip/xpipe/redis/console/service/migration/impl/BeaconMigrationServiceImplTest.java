@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.console.service.migration.impl;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigrationNotSuccessException;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,6 +40,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
 
     private MetaCache metaCache;
 
+    private DcRelationsService dcRelationsService;
+
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/beacon-migration-test.sql");
@@ -60,6 +64,10 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
         beaconMetaService.setMetaCache(metaCache);
+
+        dcRelationsService = Mockito.mock(DcRelationsService.class);
+        Mockito.when(dcRelationsService.getTargetDcsByPriority(Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn(Lists.newArrayList("oy"));
+        migrationService.setDcRelationsService(dcRelationsService);
     }
 
     @DirtiesContext
@@ -141,45 +149,22 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testExcludeChoiceInPriority() {
         Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("A", "SHA-ALI", false));
-        groups.add(buildSimpleGroup("B", "SHARB", false));
-        groups.add(buildSimpleGroup("C", "SHAXY", true));
-        groups.add(buildSimpleGroup("d", "SHAJQ", false));
+        groups.add(buildSimpleGroup("A", "SHa-ALI", false));
+        groups.add(buildSimpleGroup("B", "SHArB", false));
+        groups.add(buildSimpleGroup("C", "SHaXY", true));
+        groups.add(buildSimpleGroup("d", "SHAjQ", false));
 
-        assertArrayEqualsDespiteOrder(new String[]{"shaxy"}, migrationService.decideExcludes(groups));
-    }
+        Mockito.when(dcRelationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(new HashSet<>());
 
-    @Test
-    public void testExcludeChoiceDespiteOfCase() {
-        Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("A", "sha-ali", false));
-        groups.add(buildSimpleGroup("B", "sharb", false));
-        groups.add(buildSimpleGroup("C", "SHAXY", true));
-        groups.add(buildSimpleGroup("d", "shajq", false));
+        try {
+            migrationService.decideExcludes("test", groups);
+        } catch (Exception e) {
+            assertTrue(e instanceof XpipeRuntimeException);
+            assertTrue(e.getMessage().contains("cannot make a choice"));
+        }
 
-        assertArrayEqualsDespiteOrder(new String[]{"shaxy"}, migrationService.decideExcludes(groups));
-    }
-
-    @Test (expected = XpipeRuntimeException.class)
-    public void testExcludeChoiceCannotMakeChoice() {
-        Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("A", "SHA-ALI", false));
-        groups.add(buildSimpleGroup("B", "sharb", true));
-        groups.add(buildSimpleGroup("C", "shaXY", true));
-        groups.add(buildSimpleGroup("d", "shajq", true));
-
-        migrationService.decideExcludes(groups);
-    }
-
-    @Test
-    public void testExcludeMultiShard() {
-        Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("A","sharb", false));
-        groups.add(buildSimpleGroup("B","sharb", true));
-        groups.add(buildSimpleGroup("C","shaxy", false));
-        groups.add(buildSimpleGroup("d","shaxy", false));
-
-        assertArrayEqualsDespiteOrder(new String[]{"sharb"}, migrationService.decideExcludes(groups));
+        Mockito.when(dcRelationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(Sets.newHashSet("SHAXY", "SHAJQ"));
+        assertArrayEqualsDespiteOrder(new String[]{"SHAXY", "SHAJQ"}, migrationService.decideExcludes("test", groups));
     }
 
     private MonitorGroupMeta buildSimpleGroup(String name, String idc, boolean isDown) {
