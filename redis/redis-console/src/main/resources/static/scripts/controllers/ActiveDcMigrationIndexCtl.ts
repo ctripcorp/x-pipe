@@ -15,7 +15,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 	$scope.doMigrate = doMigrate;
 	$scope.clusterOrgNameSelected = clusterOrgNameSelected;
 	$scope.getMasterUnhealthyClusters = getMasterUnhealthyClusters;
-
+	$scope.migrationUnsupportedClusters = [];
     $scope.migrationSysCheckResp = {};
     $scope.enableMigrationButton = false;
 
@@ -41,6 +41,11 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 				MigrationService.getDefaultMigrationCluster().then(showCluster);
 			}
 		});
+		MigrationService.getMigrationUnsupportedClusters().then(
+			function (result) {
+				$scope.migrationUnsupportedClusters = result;
+			}
+		);
         intervalRetriveInfo();
 	}
 
@@ -59,7 +64,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		focusDcByCluster(clusters[0]);
 		const clusterNames = clusters.map(c => c.clusterName);
 		ClusterService.findClustersByNames.apply(ClusterService, clusterNames).then(result=>{
-			$scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType).supportMigration && !!c.activedcId && !!$scope.sourceDcInfo && c.activedcId == $scope.sourceDcInfo.id);
+			$scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType).supportMigration && !$scope.migrationUnsupportedClusters.includes(c.clusterName.toLowerCase()) && !!c.activedcId && !!$scope.sourceDcInfo && c.activedcId == $scope.sourceDcInfo.id);
 			$scope.tableParams.reload();
 		});
 	}

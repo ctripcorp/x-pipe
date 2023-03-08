@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
 import com.ctrip.xpipe.api.migration.DcMapper;
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -189,6 +190,11 @@ public class MigrationApi extends AbstractConsoleController {
             logger.error("[getMigrationSystemHealthStatus]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @RequestMapping(value = "/unsupported/clusters", method = RequestMethod.GET)
+    public Set<String> getMigrationUnsupportedClusters() {
+        return migrationService.migrationUnsupportedClusters();
     }
 
 

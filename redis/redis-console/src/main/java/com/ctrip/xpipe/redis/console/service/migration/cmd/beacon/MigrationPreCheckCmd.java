@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -29,16 +30,19 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
     private BeaconMetaService beaconMetaService;
 
+    private ConsoleConfig config;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationPreCheckCmd.class);
 
     public MigrationPreCheckCmd(BeaconMigrationRequest migrationRequest, MigrationSystemAvailableChecker checker, ConfigService configService,
-                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService) {
+                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService, ConsoleConfig config) {
         super(migrationRequest);
         this.checker = checker;
         this.configService = configService;
         this.clusterService = clusterService;
         this.dcCache = dcCache;
         this.beaconMetaService = beaconMetaService;
+        this.config = config;
     }
 
     @Override
@@ -54,6 +58,10 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
         BeaconMigrationRequest migrationRequest = getMigrationRequest();
         String clusterName = migrationRequest.getClusterName();
+        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
+            future().setFailure(new MigrationNotSupportException(clusterName));
+            return;
+        }
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (null == clusterTbl) {
             future().setFailure(new ClusterNotFoundException(clusterName));

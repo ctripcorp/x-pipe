@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
@@ -74,6 +75,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private ConsoleConfig config;
 
     private MigrationShardTblDao migrationShardTblDao;
 
@@ -264,15 +268,19 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
 
             ClusterType clusterType;
+            String clusterName;
             if (StringUtil.isEmpty(clusterInfo.getClusterName())) {
                 ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterId());
                 clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+                clusterName = clusterTbl.getClusterName();
             } else {
                 clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
+                clusterName = clusterInfo.getClusterName();
             }
 
-            if (null == clusterType || !clusterType.supportMigration())
+            if (null == clusterType || !clusterType.supportMigration() || config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase()))
                 throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
+
         }
     }
 
@@ -416,6 +424,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMigration()) {
             throw new MigrationNotSupportException(clusterName);
         }
+        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
+            throw new MigrationNotSupportException(clusterName);
+        }
 
         MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());
         if (unfinished != null) {
@@ -441,7 +452,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
 
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterName);
-        logger.debug("[tryMigrate][clusterRelatedDc]", clusterRelatedDc);
+        logger.debug("[tryMigrate][clusterRelatedDc]{}", clusterRelatedDc);
 
         DcTbl toDc = findToDc(fromIdc, toIdc, clusterRelatedDc);
         return new TryMigrateResult(clusterTbl, activeDc, toDc);
@@ -491,6 +502,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         progress.setActiveDcs(clusterService.getMigratableClustersCountByActiveDc());
 
         return progress;
+    }
+
+    @Override
+    public Set<String> migrationUnsupportedClusters() {
+        return config.getMigrationUnsupportedClusters();
     }
 
     @Override

@@ -199,4 +199,6 @@ public interface CheckerConfig {
     int maxRemovedDcsCnt();
 
     int maxRemovedClustersPercent();
+
+    Set<String> getMigrationUnsupportedClusters();
 }

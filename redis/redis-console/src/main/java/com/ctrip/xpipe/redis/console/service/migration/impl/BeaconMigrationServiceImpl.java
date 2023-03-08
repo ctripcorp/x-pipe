@@ -106,7 +106,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     public CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest) {
         logger.debug("[migrate][{}] begin", migrationRequest.getClusterName());
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
-        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService));
+        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
         migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
