@@ -139,8 +139,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public BeaconManager beaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService) {
-        return new DefaultBeaconManager(monitorServiceManager, beaconMetaService);
+    public BeaconManager beaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
+        return new DefaultBeaconManager(monitorServiceManager, beaconMetaService, config);
     }
 
     @Bean

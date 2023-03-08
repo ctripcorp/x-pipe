@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconBiClusterMonitorRegister;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Before;
 import org.junit.Test;
