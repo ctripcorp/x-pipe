@@ -23,4 +23,5 @@ public class TestDcRelationsService implements DcRelationsService {
     public Set<String> getExcludedDcsForBiCluster(String clusterName, Set<String> downDcs, Set<String> availableDcs) {
         return null;
     }
+
 }

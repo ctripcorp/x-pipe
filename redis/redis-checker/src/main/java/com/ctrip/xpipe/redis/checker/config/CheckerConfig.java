@@ -201,4 +201,5 @@ public interface CheckerConfig {
     int maxRemovedClustersPercent();
 
     Set<String> getMigrationUnsupportedClusters();
+
 }

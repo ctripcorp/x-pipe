@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.DefaultBroadcastCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.LwmCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
@@ -39,6 +38,9 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
 
     @InstanceDependency
     public ExecutorService stateThread;
+
+    @InstanceDependency
+    public ExecutorService lwmThread;
 
     @InstanceDependency
     public ApplierSequenceController sequenceController;
@@ -94,22 +96,24 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     }
 
     public void doSendLWM(String sid, long lwm) {
-        RedisOp redisOp = new RedisOpLwm(sid, lwm);
+        lwmThread.submit(()-> {
+            RedisOp redisOp = new RedisOpLwm(sid, lwm);
 
-        try {
-            LwmCommand command = new LwmCommand(client, redisOp);
-            command.future().addListener((f)->{
-                if (!f.isSuccess()) {
-                    EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
-                    logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
-                }
-            });
-            // submit to sequenceController to avoid conflict with transaction command
-            sequenceController.submit(command);
-        } catch (Throwable t) {
-            EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
-            logger.error("failed to apply: " + redisOp.toString(), t);
-        }
+            try {
+                LwmCommand command = new LwmCommand(client, redisOp);
+                command.future().addListener((f) -> {
+                    if (!f.isSuccess()) {
+                        EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
+                        logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
+                    }
+                });
+                // submit to sequenceController to avoid conflict with transaction command
+                sequenceController.submit(command);
+            } catch (Throwable t) {
+                EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
+                logger.error("failed to apply: " + redisOp.toString(), t);
+            }
+        });
     }
 
     @Override
