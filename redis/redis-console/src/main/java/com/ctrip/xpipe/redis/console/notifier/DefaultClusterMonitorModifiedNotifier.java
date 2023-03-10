@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
-import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -30,6 +31,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     private BeaconMetaService beaconMetaService;
 
+    private ConsoleConfig config;
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterMonitorModifiedNotifier.class);
 
     protected static final int MONITOR_NOTIFIER_THREAD_CNT = 5;
@@ -38,11 +41,12 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
     private KeyedOneThreadTaskExecutor<String> keyedExecutor;
 
     @Autowired
-    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, MonitorServiceManager monitorServiceManager) {
+    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, MonitorServiceManager monitorServiceManager, ConsoleConfig config) {
         this.monitorServiceManager = monitorServiceManager;
         this.beaconMetaService = beaconMetaService;
         this.executors = Executors.newFixedThreadPool(MONITOR_NOTIFIER_THREAD_CNT, XpipeThreadFactory.create("ClusterMonitorNotifier"));
         this.keyedExecutor = new KeyedOneThreadTaskExecutor<>(executors);
+        this.config = config;
     }
 
     @PreDestroy
@@ -57,6 +61,11 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     @Override
     public void notifyClusterUpdate(final String clusterName, long orgId) {
+        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
+            logger.info("[notifyClusterUpdate][{}] migration unsupported", clusterName);
+            return;
+        }
+
         MonitorService monitorService = monitorServiceManager.getOrCreate(orgId);
         if (null == monitorService) {
             logger.info("[notifyClusterUpdate][{}] no beacon for {}, skip", clusterName, orgId);

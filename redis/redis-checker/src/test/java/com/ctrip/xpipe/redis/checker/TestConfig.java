@@ -315,4 +315,10 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public int maxRemovedClustersPercent() {
         return 50;
     }
+
+    @Override
+    public Set<String> getMigrationUnsupportedClusters() {
+        return new HashSet<>();
+    }
+
 }

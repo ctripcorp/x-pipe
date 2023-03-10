@@ -191,6 +191,23 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return convertDcTblToDcModel(find(dcId));
 	}
 
+	@Override
+	public void updateDcZone(DcModel dcModel) {
+		DcTbl dcTbl = find(dcModel.getDc_name());
+		if (dcTbl == null)
+			throw new IllegalArgumentException(String.format("dc with name:%s not exist", dcModel.getDc_name()));
+
+		dcTbl.setZoneId(dcModel.getZone_id());
+		dcTbl.setDcDescription(dcModel.getDescription());
+
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(dcTbl, DcTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
 	private DcModel convertDcTblToDcModel(DcTbl dcTbl) {
 		if (dcTbl == null) {
 			return null;

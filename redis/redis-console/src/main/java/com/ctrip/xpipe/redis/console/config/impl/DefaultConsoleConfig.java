@@ -96,6 +96,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
 
     private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
+    private static final String KEY_MIGRATION_UNSUPPORTED_CLUSTERS = "migration.unsupported.clusters";
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
@@ -674,4 +675,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getIntProperty(KEY_MAX_REMOVED_CLUSTERS_PERCENT, 50);
     }
 
+    @Override
+    public Set<String> getMigrationUnsupportedClusters() {
+        String raw = getProperty(KEY_MIGRATION_UNSUPPORTED_CLUSTERS, "").toLowerCase();
+        return getSplitStringSet(raw);
+    }
 }

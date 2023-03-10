@@ -11,6 +11,11 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -33,7 +38,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author lishanglin
@@ -58,6 +65,10 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
     private ScheduledExecutorService scheduled;
 
+    private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
+
+    private HealthCheckInstanceManager healthCheckInstanceManager;
+
     private static final Logger logger = LoggerFactory.getLogger(InstanceHealthStatusConsistenceInspector.class);
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
@@ -69,13 +80,16 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
                                                     @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
                                                     StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
-                                                    MetaCache metaCache) {
+                                                    MetaCache metaCache, DefaultDelayPingActionCollector delayPingActionCollector,
+                                                    HealthCheckInstanceManager healthCheckInstanceManager) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
         this.leaderElector = groupCheckerLeaderElector;
         this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         this.metaCache = metaCache;
+        this.defaultDelayPingActionCollector = delayPingActionCollector;
+        this.healthCheckInstanceManager = healthCheckInstanceManager;
     }
 
     @VisibleForTesting
@@ -167,7 +181,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         needMarkUpInstances.retainAll(outClientInstances.getUnhealthyInstances());
         needMarkDownInstances.retainAll(outClientInstances.getHealthyInstances());
         needMarkDownInstances = filterMasterHealthyInstances(xpipeInstanceHealthHolder, needMarkDownInstances, quorum);
-
+        needMarkDownInstances = filterMarkDowUnsupportedInstances(needMarkDownInstances);
         return new UpDownInstances(needMarkUpInstances, needMarkDownInstances);
     }
 
@@ -197,6 +211,33 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
         return masterHealthyInstances;
     }
+
+    protected Set<HostPort> filterMarkDowUnsupportedInstances(Set<HostPort> instances) {
+        Set<HostPort> wontMarkdownInstances = new HashSet<>();
+        for (HostPort instance : instances) {
+            HEALTH_STATE healthState = defaultDelayPingActionCollector.getState(instance);
+            if (healthState.equals(HEALTH_STATE.SICK)) {
+                if (!shouldMarkdownDcClusterSickInstances(healthCheckInstanceManager.findRedisHealthCheckInstance(instance)))
+                    wontMarkdownInstances.add(instance);
+            }
+        }
+        instances.removeAll(wontMarkdownInstances);
+        return instances;
+    }
+
+    boolean shouldMarkdownDcClusterSickInstances(RedisHealthCheckInstance healthCheckInstance) {
+        RedisInstanceInfo info = healthCheckInstance.getCheckInfo();
+        if (info.isCrossRegion()) {
+            logger.info("[markdown][{} is cross region, do not call client service ]", info.getHostPort());
+            return false;
+        }
+        if (healthCheckInstance.getHealthCheckConfig().getDelayConfig(info.getClusterId(), currentDc, info.getDcId()).getClusterLevelHealthyDelayMilli() < 0) {
+            logger.info("[markdown][cluster {} dcs {}->{} distance is -1, do not call client service ]", info.getClusterId(), currentDc, info.getDcId());
+            return false;
+        }
+        return true;
+    }
+
 
     @Override
     protected void doInitialize() throws Exception {
