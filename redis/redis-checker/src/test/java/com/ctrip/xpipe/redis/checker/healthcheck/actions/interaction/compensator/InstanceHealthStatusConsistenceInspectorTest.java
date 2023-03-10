@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensato
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -57,6 +60,12 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
     @Mock
     private OutClientInstanceHealthHolder outClientInstanceHealthHolder;
 
+    @Mock
+    private DefaultDelayPingActionCollector delayPingActionCollector;
+
+    @Mock
+    private HealthCheckInstanceManager healthCheckInstanceManager;
+
     private InstanceHealthStatusConsistenceInspector inspector;
 
     private String cluster = "cluster1", shard = "shard1";
@@ -65,7 +74,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
 
     @Before
     public void setupInstanceHealthStatusConsistenceCheckerTest() throws Exception {
-        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, siteStability, config, metaCache);
+        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, siteStability, config, metaCache, delayPingActionCollector, healthCheckInstanceManager);
         Mockito.when(leaderElector.amILeader()).thenReturn(true);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.when(metaCache.findClusterShard(any())).thenReturn(Pair.of(cluster, shard));
@@ -75,6 +84,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
         Mockito.when(config.getDownAfterCheckNums()).thenReturn(5);
         Mockito.when(siteStability.isSiteStable()).thenReturn(true);
+        Mockito.when(delayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
     }
 
     @Override

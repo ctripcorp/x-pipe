@@ -106,7 +106,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     public CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest) {
         logger.debug("[migrate][{}] begin", migrationRequest.getClusterName());
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
-        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService));
+        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
         migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
@@ -155,7 +155,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         biDirectionMigrationExecutors.execute(()->{
             try {
                 Set<MonitorGroupMeta> groups = migrationRequest.getGroups();
-                String[] excludes = decideExcludes(groups);
+                String[] excludes = decideExcludes(migrationRequest.getClusterName(), groups);
                 boolean result = OuterClientService.DEFAULT.excludeIdcs(migrationRequest.getClusterName(), excludes);
                 if (result) {
                     commandFuture.setSuccess();
@@ -170,42 +170,31 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     }
 
     @VisibleForTesting
-    String[] decideExcludes(Set<MonitorGroupMeta> groups) {
+    String[] decideExcludes(String clusterName, Set<MonitorGroupMeta> groups) {
         Set<String> downs = new HashSet<>();
         Set<String> ups = new HashSet<>();
-        Set<String> all = new HashSet<>();
         for (MonitorGroupMeta group : groups) {
             if (group.getDown()) {
                 downs.add(group.getIdc().toLowerCase());
             }
             ups.add(group.getIdc().toLowerCase());
-            all.add(group.getIdc().toLowerCase());
         }
 
         //til this moment, ups means all
         ups.removeAll(downs);
 
-        String dcs = config.getBiDirectionMigrationDcPriority().toLowerCase();
-        String[] dcArray = dcs.split(",");
-
-        String choice = null;
-        for (String dc : dcArray) {
-            if (ups.contains(dc)) {
-                choice = dc;
-                break;
-            }
-        }
-
-        if (choice == null && !ups.isEmpty()) {
-            choice = ups.stream().findFirst().get();
-        }
-
-        if (choice == null) {
+        Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster(clusterName, downs, ups);
+        if (excludedDcs.isEmpty()) {
             logger.warn("[bi migrate] cannot make a choice, {}", groups);
             throw new XpipeRuntimeException("[bi migrate] cannot make a choice");
         }
 
-        all.remove(choice);
-        return all.toArray(new String[0]);
+        return excludedDcs.toArray(new String[0]);
     }
+
+    @VisibleForTesting
+    void setDcRelationsService(DcRelationsService dcRelationsService) {
+        this.dcRelationsService = dcRelationsService;
+    }
+
 }

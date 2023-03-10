@@ -45,6 +45,22 @@ public class DcApiController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
+    @RequestMapping(value = "/dc", method = RequestMethod.PUT)
+    public RetMessage updateDc(HttpServletRequest request, @RequestBody DcModel dcModel){
+
+        logger.info("[DcApiController][updateDc]request ip:{}, update dc, dc_name:{}, zoneId:{}, description:{}",request.getRemoteHost(),
+                dcModel.getDc_name(), dcModel.getZone_id(), dcModel.getDescription());
+
+        try {
+            dcService.updateDcZone(dcModel);
+        }catch (Exception e){
+            logger.error("[DcApiController][updateDc]update dc exception!", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+        return RetMessage.createSuccessMessage();
+    }
+
     @RequestMapping(value = "/debug/reset/clusters/{dcName}", method = RequestMethod.POST)
     public RetMessage resetDcClusters(HttpServletRequest request, @PathVariable String dcName){
 
