@@ -10,6 +10,11 @@ public class TestDcRelationsService implements DcRelationsService {
     }
 
     @Override
+    public String getClusterTargetDcByPriority(long clusterId, String clusterName, String downDc, List<String> availableDcs) {
+        return null;
+    }
+
+    @Override
     public Integer getDcsDelay(String fromDc, String toDc) {
         return null;
     }

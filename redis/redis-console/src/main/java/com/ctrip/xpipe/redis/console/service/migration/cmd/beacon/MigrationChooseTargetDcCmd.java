@@ -11,7 +11,6 @@ import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -92,17 +91,13 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
                 return;
             }
 
-            List<String> targetDcs = dcRelationsService.getTargetDcsByPriority(clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
-            if (targetDcs.isEmpty()) {
+            String targetDcName = dcRelationsService.getClusterTargetDcByPriority(cluster.getId(), clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
+            if (targetDcName == null) {
                 logger.info("[doExecute][{}] refused to migrate from {} to {}", clusterName, sourcedDc.getDcName(), availableDcs);
                 future().setFailure(new NoAvailableDcException(clusterName));
                 return;
             }
 
-            int dcCount = targetDcs.size();
-            long clusterId = cluster.getId();
-            int index = (int) (clusterId % dcCount);
-            String targetDcName = targetDcs.get(index);
             DcTbl targetDc = dcCache.find(targetDcName);
             if (null == targetDc) {
                 future().setFailure(new UnknownTargetDcException(clusterName, targetDcName));

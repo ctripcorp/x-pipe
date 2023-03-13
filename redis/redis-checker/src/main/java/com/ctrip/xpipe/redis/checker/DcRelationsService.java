@@ -7,6 +7,8 @@ public interface DcRelationsService {
 
     List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs);
 
+    String getClusterTargetDcByPriority(long clusterId, String clusterName, String downDc, List<String> availableDcs);
+
     Set<String> getExcludedDcsForBiCluster(String clusterName, Set<String> downDcs, Set<String> availableDcs);
 
     Integer getDcsDelay(String fromDc, String toDc);

@@ -72,6 +72,18 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
     @Override
+    public String getClusterTargetDcByPriority(long clusterId, String clusterName, String downDc, List<String> availableDcs) {
+        if (availableDcs == null || availableDcs.isEmpty()) return null;
+
+        List<String> targetDcs = getTargetDcsByPriority(clusterName, downDc, availableDcs);
+        if (targetDcs.isEmpty()) return null;
+
+        int dcCount = targetDcs.size();
+        int index = (int) (clusterId % dcCount);
+        return targetDcs.get(index);
+    }
+
+    @Override
     public Set<String> getExcludedDcsForBiCluster(String clusterName, Set<String> downDcs, Set<String> availableDcs) {
         if (availableDcs.isEmpty())
             return new HashSet<>();
