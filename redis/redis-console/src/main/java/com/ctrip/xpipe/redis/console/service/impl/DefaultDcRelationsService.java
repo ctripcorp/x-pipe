@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,6 +44,8 @@ public class DefaultDcRelationsService implements DcRelationsService {
     private final AtomicReference<DcsPriority> dcLevelPriority = new AtomicReference<>();
     private final AtomicReference<Map<String, DcsPriority>> clusterLevelDcPriority = new AtomicReference<>();
 
+    private final Map<Pair<String, Set<String>>, List<String>> dcLevelTargetDcsCache = new ConcurrentHashMap<>();
+
     @PostConstruct
     public void start() throws Exception {
         scheduled.scheduleWithFixedDelay(new Runnable() {
@@ -58,17 +64,35 @@ public class DefaultDcRelationsService implements DcRelationsService {
         }, 0, 60, TimeUnit.SECONDS);
     }
 
-    @Override
-    public List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs) {
+    List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs) {
+        boolean dcLevel = false;
+
+        String localClusterName = clusterName.toLowerCase();
+        String localDownDc = downDc.toUpperCase();
+        Set<String> localAvailableDcs = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
+
         // cluster level first
-        DcPriority downDcPriority = getClusterLevelDcPriority(clusterName, downDc);
+        DcPriority downDcPriority = getClusterLevelDcPriority(localClusterName, localDownDc);
 
         // dc level next if no cluster level config
-        if (downDcPriority == null) downDcPriority = getDcLevelPriority(downDc);
+        if (downDcPriority == null) {
+            downDcPriority = getDcLevelPriority(localDownDc);
+            dcLevel = true;
+        }
 
         if (downDcPriority == null) return availableDcs;
 
-        return getTargetDcs(downDcPriority, availableDcs);
+        if (dcLevel) {
+            DcPriority finalDownDcPriority = downDcPriority;
+            return MapUtils.getOrCreate(dcLevelTargetDcsCache, new Pair<>(localDownDc, localAvailableDcs), new ObjectFactory<List<String>>() {
+                @Override
+                public List<String> create() {
+                    return getTargetDcs(finalDownDcPriority, localAvailableDcs);
+                }
+            });
+        }
+
+        return getTargetDcs(downDcPriority, localAvailableDcs);
     }
 
     @Override
@@ -180,7 +204,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
         return dcsPriority.getDcPriority(downDc.toUpperCase());
     }
 
-    private List<String> getTargetDcs(DcPriority dcPriority, List<String> availableDcs) {
+    private List<String> getTargetDcs(DcPriority dcPriority, Set<String> availableDcs) {
         Map<Integer, List<String>> priority2Dcs = dcPriority.getPriority2Dcs();
         Map<Integer, List<String>> priority2AvailableDcs = new TreeMap<>();
         for (int priority : priority2Dcs.keySet()) {
@@ -190,11 +214,9 @@ public class DefaultDcRelationsService implements DcRelationsService {
         if (priority2AvailableDcs.isEmpty())
             return new ArrayList<>();
 
-        List<String> availableDcsCopy = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toList());
-
         for (int priority : priority2AvailableDcs.keySet()) {
             List<String> copy = Lists.newArrayList(priority2AvailableDcs.get(priority));
-            copy.retainAll(availableDcsCopy);
+            copy.retainAll(availableDcs);
             if (!copy.isEmpty())
                 return copy;
         }
@@ -222,6 +244,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
                 clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
                 clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
                 dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
+                dcLevelTargetDcsCache.clear();
             }
 
             @Override

@@ -195,6 +195,20 @@ public class DcRelationsServiceTest {
     }
 
     @Test
+    public void getClusterTargetDcByPriorityTest() throws Exception {
+        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        dcRelationsService.refresh();
+
+        for (int i = 0; i < 1000; i++) {
+            Assert.assertEquals("SHAXY", dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList("shaRB", "Shaxy")));
+        }
+
+        Assert.assertNull(dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", null));
+        Assert.assertNull(dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList()));
+        Assert.assertNull(dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList("SHAFQ")));
+    }
+
+    @Test
     public void getClusterLevelTargetDcsTest() throws Exception {
         Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
         dcRelationsService.refresh();

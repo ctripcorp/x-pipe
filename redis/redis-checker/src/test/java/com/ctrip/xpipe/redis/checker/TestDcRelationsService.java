@@ -4,10 +4,6 @@ import java.util.List;
 import java.util.Set;
 
 public class TestDcRelationsService implements DcRelationsService {
-    @Override
-    public List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs) {
-        return null;
-    }
 
     @Override
     public String getClusterTargetDcByPriority(long clusterId, String clusterName, String downDc, List<String> availableDcs) {
