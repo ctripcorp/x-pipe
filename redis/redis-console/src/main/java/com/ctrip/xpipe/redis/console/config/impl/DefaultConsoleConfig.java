@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
-import com.ctrip.xpipe.redis.checker.model.DcsRelations;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
@@ -640,9 +639,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public DcsRelations getDcsRelations() {
-        String property = getProperty(KEY_DCS_RELATIONS, "{}");
-        return JsonCodec.INSTANCE.decode(property, DcsRelations.class);
+    public String getDcsRelations() {
+        return getProperty(KEY_DCS_RELATIONS, "{}");
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.retry.RetryTemplate;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -30,6 +31,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,6 +80,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private ConsoleConfig config;
+
+    @Autowired
+    private DcRelationsService dcRelationsService;
 
     private MigrationShardTblDao migrationShardTblDao;
 
@@ -454,7 +459,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterName);
         logger.debug("[tryMigrate][clusterRelatedDc]{}", clusterRelatedDc);
 
-        DcTbl toDc = findToDc(fromIdc, toIdc, clusterRelatedDc);
+        DcTbl toDc = findToDc(clusterTbl, fromIdc, toIdc, clusterRelatedDc);
         return new TryMigrateResult(clusterTbl, activeDc, toDc);
     }
 
@@ -578,7 +583,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         logger.info("[updateStorageClusterStatus][getdb]{}, {}", clusterName, newCluster != null ? newCluster.getStatus() : null);
     }
 
-    protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
+    protected DcTbl findToDc(ClusterTbl cluster, String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
 
         DcTbl fromIdcInfo = null;
         for(DcTbl dcTbl : clusterRelatedDc) {
@@ -588,13 +593,21 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
         }
         if(StringUtil.isEmpty(toIdc)){
-            //simple
+            Map<String, DcTbl> availableDcs = new HashMap<>();
             for (DcTbl dcTbl : clusterRelatedDc) {
                 if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc) && isSameZone(fromIdcInfo, dcTbl)) {
-                    return dcTbl;
+                    availableDcs.put(dcTbl.getDcName().toUpperCase(), dcTbl);
                 }
             }
-            throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, can not find target dc %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
+            if (availableDcs.isEmpty())
+                throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, no available dcs found from related dcs: %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
+
+            toIdc = dcRelationsService.getClusterTargetDcByPriority(cluster.getId(), cluster.getClusterName(), fromIdc, Lists.newArrayList(availableDcs.keySet()));
+            if (StringUtil.isEmpty(toIdc)) {
+                logger.error("[findToDc][{}]fromIdc:{}, can not find target dc from available dcs: {}", cluster.getClusterName(), fromIdc, availableDcs);
+                throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, can not find target dc %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
+            }
+            return availableDcs.get(toIdc.toUpperCase());
         }else {
 
             if(toIdc.equalsIgnoreCase(fromIdc)){
@@ -682,5 +695,10 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public MigrationServiceImpl setMigrationShardTblDao(MigrationShardTblDao migrationShardTblDao) {
         this.migrationShardTblDao = migrationShardTblDao;
         return this;
+    }
+
+    @VisibleForTesting
+    void setDcRelationsService(DcRelationsService dcRelationsService) {
+        this.dcRelationsService = dcRelationsService;
     }
 }

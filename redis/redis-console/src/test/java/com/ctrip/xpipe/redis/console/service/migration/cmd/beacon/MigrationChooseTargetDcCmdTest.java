@@ -80,7 +80,6 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
         migrationRequest.setAvailableDcs(Sets.newHashSet(dc1.getDcName(), dc2.getDcName()));
 
         when(dcCache.find(dc1.getDcName())).thenReturn(dc1);
-        when(dcCache.find(dc2.getDcName())).thenReturn(dc2);
         when(dcCache.find(dc2.getId())).thenReturn(dc2);
         when(dcClusterService.find(2, 1)).thenReturn(new DcClusterTbl());
     }
@@ -107,7 +106,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Test
     public void chooseAvailableDc() throws Throwable {
         migrationRequest.setAvailableDcs(Collections.singleton(dc1.getDcName()));
-        when(dcRelationsService.getTargetDcsByPriority("cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).thenReturn(Lists.newArrayList(migrationRequest.getAvailableDcs()));
+        when(dcRelationsService.getClusterTargetDcByPriority(1,"cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).thenReturn(dc1.getDcName());
         CommandFuture future = chooseTargetDcCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertTrue(future.isSuccess());
@@ -117,26 +116,10 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Test(expected = NoAvailableDcException.class)
     public void clusterRefuseMigration() throws Throwable {
         migrationRequest.setAvailableDcs(Collections.singleton(dc1.getDcName()));
-        when(dcRelationsService.getTargetDcsByPriority("cluster1", migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).
-                thenReturn(Lists.newArrayList());
         CommandFuture future = chooseTargetDcCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());
         throw future.cause();
-    }
-
-    @Test
-    public void multipleTargetDcs() throws Throwable {
-        migrationRequest.setAvailableDcs(Sets.newHashSet(dc1.getDcName(),dc2.getDcName(),dc3.getDcName(),dc4.getDcName()));
-        when(dcRelationsService.getTargetDcsByPriority("cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).
-                thenReturn(Lists.newArrayList(migrationRequest.getAvailableDcs()));
-        migrationRequest.getClusterTbl().setId(100);
-        for (int i = 0; i < 100; i++) {
-            CommandFuture future = chooseTargetDcCmd.execute();
-            waitConditionUntilTimeOut(() -> future.isDone());
-            Assert.assertTrue(future.isSuccess());
-            Assert.assertEquals(dc2, migrationRequest.getTargetDcTbl());
-        }
     }
 
     @Test(expected = UnknownTargetDcException.class)

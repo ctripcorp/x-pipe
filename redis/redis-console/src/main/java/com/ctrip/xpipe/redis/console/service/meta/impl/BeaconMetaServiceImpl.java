@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -101,14 +100,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
             String supportZone = config.getBeaconSupportZone();
             if (null == xpipeMeta || StringUtil.isEmpty(supportZone)) return false;
-            if (!supportZone.equalsIgnoreCase(clusterMeta.parent().getZone())) return false;
 
-            Set<String> supportedBIDcs = Sets.newHashSet(config.getBiDirectionMigrationDcPriority().toUpperCase().split(","));
-            Set<String> supportedBIClusters = config.getClustersSupportBiMigration().stream().map(String::toLowerCase).collect(Collectors.toSet());
-            if (supportedBIClusters.contains(clusterMeta.getId().toLowerCase())) {
-                return supportedBIDcs.contains(dc.toUpperCase());
-            }
-            return true;
+            return supportZone.equalsIgnoreCase(clusterMeta.parent().getZone());
         }
     }
 
