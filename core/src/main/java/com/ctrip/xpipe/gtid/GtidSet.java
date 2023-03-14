@@ -246,11 +246,14 @@ public class GtidSet {
         for (Map.Entry<String, UUIDSet> entry : otherClone.map.entrySet()) {
             String uuid = entry.getKey();
             UUIDSet uuidSet = clone.getUUIDSet(uuid);
-            if (uuidSet == null) {
+            if (uuidSet == null || uuidSet.isZero()) {
                 clone.putUUIDSet(entry.getValue());
                 continue;
             }
             UUIDSet otherUUIDSet = entry.getValue();
+            if(otherUUIDSet.isZero()){
+                continue;
+            }
             for (Interval interval : otherUUIDSet.getIntervals()) {
                 addInterval(uuidSet, interval);
             }
@@ -499,6 +502,10 @@ public class GtidSet {
             }
         }
 
+        private boolean isZero() {
+            return intervals.size() == 1 && intervals.get(0).end == 0;
+        }
+
         public byte[] encode() throws IOException {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -596,6 +603,12 @@ public class GtidSet {
                 return;
             }
 
+            if (isZero()) {
+                intervals.get(0).start = from;
+                intervals.get(0).end = to;
+                return;
+            }
+
             int fromIndex = findInterval(from);
             int toIndex = findInterval(to);
 
@@ -617,7 +630,7 @@ public class GtidSet {
         }
 
         private boolean add(long transactionId) {
-            if (intervals.size() == 1 && intervals.get(0).end == 0) {
+            if (isZero()) {
                 intervals.get(0).start = transactionId;
                 intervals.get(0).end = transactionId;
             }
