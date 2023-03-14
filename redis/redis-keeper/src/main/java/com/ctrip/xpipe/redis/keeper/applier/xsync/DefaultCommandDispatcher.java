@@ -99,6 +99,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
 
         this.resetState(rdbGtidSet);
+        if (this.rdbParser != null) {
+            this.rdbParser.reset();
+        }
         this.rdbParser = createRdbParser();
     }
 

@@ -178,4 +178,9 @@ public class DefaultRdbParseContext implements RdbParseContext {
         this.lruIdle.set(-1);
         this.lfuFreq.set(-1);
     }
+
+    @Override
+    public void reset() {
+        parsers.values().forEach(RdbParser::reset);
+    }
 }

@@ -125,6 +125,10 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
         this.state = STATE.READ_INIT;
         temp = null;
     }

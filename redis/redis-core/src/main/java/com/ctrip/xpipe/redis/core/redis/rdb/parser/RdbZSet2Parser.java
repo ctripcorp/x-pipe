@@ -128,6 +128,10 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
         this.state = STATE.READ_INIT;
         this.member = null;
         this.score = null;

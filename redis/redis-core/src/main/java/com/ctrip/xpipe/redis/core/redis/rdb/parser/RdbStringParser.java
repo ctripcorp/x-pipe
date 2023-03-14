@@ -221,6 +221,10 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
 
     @Override
     public void reset() {
+        super.reset();
+        if (temp != null) {
+            temp.release();
+        }
         this.state = STATE.READ_INIT;
         lzfContent = null;
         redisString = null;

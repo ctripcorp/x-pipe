@@ -128,6 +128,7 @@ public class RdbHashParser extends AbstractRdbParser<Integer> implements RdbPars
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
         this.field = null;
         this.value = null;

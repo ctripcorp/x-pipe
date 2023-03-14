@@ -72,6 +72,7 @@ public class RdbResizeDbParser extends AbstractRdbParser<Pair<Integer, Integer>>
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
     }
 

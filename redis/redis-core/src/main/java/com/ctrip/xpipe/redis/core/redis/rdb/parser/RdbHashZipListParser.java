@@ -102,6 +102,10 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
         this.state = STATE.READ_INIT;
         this.temp = null;
         this.ziplist = null;

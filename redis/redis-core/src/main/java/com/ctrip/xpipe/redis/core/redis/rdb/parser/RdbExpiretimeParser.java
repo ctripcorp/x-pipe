@@ -51,6 +51,8 @@ public class RdbExpiretimeParser extends AbstractRdbParser<Integer> implements R
                         expiretimeSecond = temp.readInt();
                         context.setExpireMilli(expiretimeSecond * 1000L);
                         state = STATE.READ_END;
+                        temp.release();
+                        temp = null;
                     }
                     break;
 
@@ -71,6 +73,10 @@ public class RdbExpiretimeParser extends AbstractRdbParser<Integer> implements R
 
     @Override
     public void reset() {
+        super.reset();
+        if (temp != null) {
+            temp.release();
+        }
         this.state = STATE.READ_INIT;
     }
 
