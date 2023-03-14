@@ -299,4 +299,25 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public String getClusterExcludedRegex() {
         return null;
     }
+
+    @Override
+    public String getDcsRelations() {
+        return "{}";
+    }
+
+    @Override
+    public int maxRemovedDcsCnt() {
+        return 1;
+    }
+
+    @Override
+    public int maxRemovedClustersPercent() {
+        return 50;
+    }
+
+    @Override
+    public Set<String> getMigrationUnsupportedClusters() {
+        return new HashSet<>();
+    }
+
 }

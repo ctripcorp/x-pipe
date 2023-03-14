@@ -40,6 +40,9 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     public ExecutorService stateThread;
 
     @InstanceDependency
+    public ExecutorService lwmThread;
+
+    @InstanceDependency
     public ApplierSequenceController sequenceController;
 
     @Override
@@ -93,22 +96,24 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
     }
 
     public void doSendLWM(String sid, long lwm) {
-        RedisOp redisOp = new RedisOpLwm(sid, lwm);
+        lwmThread.submit(()-> {
+            RedisOp redisOp = new RedisOpLwm(sid, lwm);
 
-        try {
-            LwmCommand command = new LwmCommand(client, redisOp);
-            command.future().addListener((f)->{
-                if (!f.isSuccess()) {
-                    EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
-                    logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
-                }
-            });
-            // submit to sequenceController to avoid conflict with transaction command
-            sequenceController.submit(command);
-        } catch (Throwable t) {
-            EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
-            logger.error("failed to apply: " + redisOp.toString(), t);
-        }
+            try {
+                LwmCommand command = new LwmCommand(client, redisOp);
+                command.future().addListener((f) -> {
+                    if (!f.isSuccess()) {
+                        EventMonitor.DEFAULT.logAlertEvent("[async] failed to apply: " + redisOp.toString());
+                        logger.error("[async] failed to apply: " + redisOp.toString(), f.cause());
+                    }
+                });
+                // submit to sequenceController to avoid conflict with transaction command
+                sequenceController.submit(command);
+            } catch (Throwable t) {
+                EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
+                logger.error("failed to apply: " + redisOp.toString(), t);
+            }
+        });
     }
 
     @Override

@@ -65,6 +65,7 @@ public class RdbFreqParser extends AbstractRdbParser<Short> implements RdbParser
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
     }
 

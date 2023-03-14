@@ -37,7 +37,7 @@ public class DcCacheImpl implements DcCache {
 
     @Override
     public DcTbl find(String dcName) {
-        return MapUtils.getOrCreate(dcNameToTbl, dcName,
+        return MapUtils.getOrCreate(dcNameToTbl, dcName.toUpperCase(),
                 () -> new TimeBoundCache<>(config::getCacheRefreshInterval, () -> dcService.find(dcName)))
                 .getData(false);
     }

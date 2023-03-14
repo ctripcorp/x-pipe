@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,12 +23,15 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
 
     private DcClusterService dcClusterService;
 
+    private DcRelationsService dcRelationsService;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationChooseTargetDcCmd.class);
 
-    public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache, DcClusterService dcClusterService) {
+    public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache, DcClusterService dcClusterService, DcRelationsService dcRelationsService) {
         super(migrationRequest);
         this.dcCache = dcCache;
         this.dcClusterService = dcClusterService;
+        this.dcRelationsService = dcRelationsService;
     }
 
     @Override
@@ -86,7 +91,13 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
                 return;
             }
 
-            String targetDcName = availableDcs.iterator().next();
+            String targetDcName = dcRelationsService.getClusterTargetDcByPriority(cluster.getId(), clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
+            if (targetDcName == null) {
+                logger.info("[doExecute][{}] refused to migrate from {} to {}", clusterName, sourcedDc.getDcName(), availableDcs);
+                future().setFailure(new NoAvailableDcException(clusterName));
+                return;
+            }
+
             DcTbl targetDc = dcCache.find(targetDcName);
             if (null == targetDc) {
                 future().setFailure(new UnknownTargetDcException(clusterName, targetDcName));

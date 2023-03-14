@@ -11,11 +11,13 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -92,6 +94,11 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
 
         instance = mock(RedisHealthCheckInstance.class);
         when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort, dc, ClusterType.ONE_WAY));
+
+        HealthCheckConfig config = mock(HealthCheckConfig.class);
+        when(config.getDelayConfig(any(), any(), any())).thenReturn(new DelayConfig("test", "test", "test").
+                setClusterLevelDelayDownAfterMilli(24000).setClusterLevelHealthyDelayMilli(2000));
+        when(instance.getHealthCheckConfig()).thenReturn(config);
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
         when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(manager);

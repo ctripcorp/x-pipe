@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.console.resources.CheckerOuterClientCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
@@ -95,6 +96,11 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    public DcRelationsService dcRelationsService(){
+        return new DefaultDcRelationsService();
+    }
+
+    @Bean
     public DcIgnoredConfigChangeListener dcIgnoredConfigChangeListener() {
         return new DcIgnoredConfigChangeListener();
     }
@@ -141,8 +147,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public BeaconManager beaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService) {
-        return new DefaultBeaconManager(monitorServiceManager, beaconMetaService);
+    public BeaconManager beaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
+        return new DefaultBeaconManager(monitorServiceManager, beaconMetaService, config);
     }
 
     @Bean

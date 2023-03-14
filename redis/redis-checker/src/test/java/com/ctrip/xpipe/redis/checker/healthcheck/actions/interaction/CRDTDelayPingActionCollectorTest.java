@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -55,8 +56,10 @@ public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
         Mockito.when(instance.getCheckInfo()).thenReturn(currentMaster);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
         Mockito.when(healthCheckConfig.pingDownAfterMilli()).thenReturn(downAfterMilli);
-        Mockito.when(healthCheckConfig.delayDownAfterMilli()).thenReturn(downAfterMilli);
-        Mockito.when(healthCheckConfig.getHealthyDelayMilli()).thenReturn(healthyDelayMilli);
+        Mockito.when(healthCheckConfig.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
+                new DelayConfig("test", "test", "test").
+                        setDcLevelHealthyDelayMilli(healthyDelayMilli).setClusterLevelHealthyDelayMilli(healthyDelayMilli).
+                        setClusterLevelDelayDownAfterMilli(downAfterMilli).setDcLevelDelayDownAfterMilli(downAfterMilli));
         Mockito.when(healthCheckConfig.checkIntervalMilli()).thenReturn(checkIntervalMilli);
         delayActionListener = collector.createDelayActionListener();
         pingActionListener = collector.createPingActionListener();

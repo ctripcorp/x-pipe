@@ -7,6 +7,7 @@ import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
@@ -26,16 +27,15 @@ import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.exception.UnexpectMigrationDataException;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
@@ -66,6 +66,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private AlertManager alertManager;
 
+    private DcRelationsService dcRelationsService;
+
     @Resource( name = MigrationResources.MIGRATION_PREPARE_EXECUTOR )
     private Executor prepareExecutors;
 
@@ -84,7 +86,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
                                       ConfigService configService, ConsoleConfig config, DcCache dcCache,
                                       ClusterService clusterService, DcClusterService dcClusterService,
                                       MigrationEventDao migrationEventDao, MigrationClusterDao migrationClusterDao,
-                                      BeaconMetaService beaconMetaService, AlertManager alertManager) {
+                                      BeaconMetaService beaconMetaService, AlertManager alertManager, DcRelationsService dcRelationsService) {
         this.checker = checker;
         this.migrationEventManager = migrationEventManager;
         this.configService = configService;
@@ -96,6 +98,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         this.migrationClusterDao = migrationClusterDao;
         this.beaconMetaService = beaconMetaService;
         this.alertManager = alertManager;
+        this.dcRelationsService = dcRelationsService;
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("BeaconMigrationTimeout"));
     }
 
@@ -103,9 +106,9 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     public CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest) {
         logger.debug("[migrate][{}] begin", migrationRequest.getClusterName());
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
-        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService));
+        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
-        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService));
+        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
         migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
         CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);
@@ -152,7 +155,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         biDirectionMigrationExecutors.execute(()->{
             try {
                 Set<MonitorGroupMeta> groups = migrationRequest.getGroups();
-                String[] excludes = decideExcludes(groups);
+                String[] excludes = decideExcludes(migrationRequest.getClusterName(), groups);
                 boolean result = OuterClientService.DEFAULT.excludeIdcs(migrationRequest.getClusterName(), excludes);
                 if (result) {
                     commandFuture.setSuccess();
@@ -167,42 +170,31 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     }
 
     @VisibleForTesting
-    String[] decideExcludes(Set<MonitorGroupMeta> groups) {
+    String[] decideExcludes(String clusterName, Set<MonitorGroupMeta> groups) {
         Set<String> downs = new HashSet<>();
         Set<String> ups = new HashSet<>();
-        Set<String> all = new HashSet<>();
         for (MonitorGroupMeta group : groups) {
             if (group.getDown()) {
                 downs.add(group.getIdc().toLowerCase());
             }
             ups.add(group.getIdc().toLowerCase());
-            all.add(group.getIdc().toLowerCase());
         }
 
         //til this moment, ups means all
         ups.removeAll(downs);
 
-        String dcs = config.getBiDirectionMigrationDcPriority().toLowerCase();
-        String[] dcArray = dcs.split(",");
-
-        String choice = null;
-        for (String dc : dcArray) {
-            if (ups.contains(dc)) {
-                choice = dc;
-                break;
-            }
-        }
-
-        if (choice == null && !ups.isEmpty()) {
-            choice = ups.stream().findFirst().get();
-        }
-
-        if (choice == null) {
+        Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster(clusterName, downs, ups);
+        if (excludedDcs.isEmpty()) {
             logger.warn("[bi migrate] cannot make a choice, {}", groups);
             throw new XpipeRuntimeException("[bi migrate] cannot make a choice");
         }
 
-        all.remove(choice);
-        return all.toArray(new String[0]);
+        return excludedDcs.toArray(new String[0]);
     }
+
+    @VisibleForTesting
+    void setDcRelationsService(DcRelationsService dcRelationsService) {
+        this.dcRelationsService = dcRelationsService;
+    }
+
 }

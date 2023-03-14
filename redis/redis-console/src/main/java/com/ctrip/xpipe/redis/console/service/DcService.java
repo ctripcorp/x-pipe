@@ -26,4 +26,5 @@ public interface DcService {
 	DcModel findDcModelByDcName(String dcName);
 
 	DcModel findDcModelByDcId(long dcId);
+	void updateDcZone(DcModel dcModel);
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -23,10 +24,7 @@ import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
-import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
-import com.ctrip.xpipe.redis.console.service.impl.ConsoleCachedPingService;
-import com.ctrip.xpipe.redis.console.service.impl.ConsoleRedisInfoService;
-import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
+import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -104,6 +102,11 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	public ConsoleDbConfig consoleDbConfig() {
 		return new DefaultConsoleDbConfig();
+	}
+
+	@Bean
+	public DcRelationsService dcRelationsService(){
+		return new DefaultDcRelationsService();
 	}
 
 	@Bean

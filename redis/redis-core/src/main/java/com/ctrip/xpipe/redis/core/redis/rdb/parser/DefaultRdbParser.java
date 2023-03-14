@@ -186,6 +186,13 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     @Override
     public void reset() {
+        super.reset();
+        if (temp != null) {
+            temp.release();
+        }
+        if (rdbParseContext != null) {
+            rdbParseContext.reset();
+        }
         this.state = STATE.READ_INIT;
     }
 

@@ -4,6 +4,9 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.exception.LoadConsoleMetaException;
+import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
+import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -502,6 +505,34 @@ public abstract class AbstractMetaCache implements MetaCache {
         ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
         if (clusterMeta == null) return new HashMap<>();
         return clusterMeta.getShards().values().stream().collect(Collectors.toMap(ShardMeta::getDbId, ShardMeta::getId));
+    }
+
+    protected void checkMeta(XpipeMeta future, int maxRemovedDcs, int maxRemovedClusterPercent) {
+        if (meta == null) return;
+        if (future == null) throw new LoadConsoleMetaException("xpipe meta from console is null");
+
+        checkDcsCnt(meta.getKey(), future, maxRemovedDcs);
+
+        for (DcMeta currentDcMeta : meta.getKey().getDcs().values()) {
+            DcMeta futureDcMeta = future.findDc(currentDcMeta.getId());
+            checkDcClustersCnt(currentDcMeta, futureDcMeta, maxRemovedClusterPercent);
+        }
+    }
+
+    private void checkDcsCnt(XpipeMeta current, XpipeMeta future, int maxRemovedDcs) {
+        int currentDcCount = current.getDcs().size();
+        int futureDcCount = future.getDcs().size();
+        if (currentDcCount - futureDcCount > maxRemovedDcs)
+            throw new TooManyDcsRemovedException(String.format("current dcs:%s,future dcs:%s", current.getDcs().keySet(), future.getDcs().keySet()));
+    }
+
+    private void checkDcClustersCnt(DcMeta currentDcMeta, DcMeta futureDcMeta, int maxRemovedClusterPercent) {
+        if (futureDcMeta == null) return;
+
+        int currentClusterCount = currentDcMeta.getClusters().size();
+        int futureClusterCount = futureDcMeta.getClusters().size();
+        if ((currentClusterCount - futureClusterCount) > currentClusterCount * maxRemovedClusterPercent / 100)
+            throw new TooManyClustersRemovedException(String.format("dc:{}, current cluster count:%d,future cluster count:%d", currentClusterCount, futureClusterCount));
     }
 
     @VisibleForTesting

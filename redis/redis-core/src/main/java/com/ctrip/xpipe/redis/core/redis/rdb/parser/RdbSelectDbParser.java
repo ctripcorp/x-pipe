@@ -75,6 +75,7 @@ public class RdbSelectDbParser extends AbstractRdbParser<Integer> implements Rdb
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
     }
 

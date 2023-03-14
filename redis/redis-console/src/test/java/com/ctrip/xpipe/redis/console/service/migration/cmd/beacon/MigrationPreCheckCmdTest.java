@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -54,6 +55,9 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
     @Mock
     private MigrationSystemAvailableChecker.MigrationSystemAvailability availability;
 
+    @Mock
+    private ConsoleConfig config;
+
     private BeaconMigrationRequest migrationRequest;
 
     private String clusterName = "cluster1";
@@ -71,7 +75,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         migrationRequest = new BeaconMigrationRequest();
         clusterTbl = new ClusterTbl();
         dcTbl = new DcTbl();
-        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService);
+        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config);
 
         dcTbl.setDcName(dcName);
         migrationRequest.setFailoverGroups(Sets.newHashSet("shard1+dc1"));

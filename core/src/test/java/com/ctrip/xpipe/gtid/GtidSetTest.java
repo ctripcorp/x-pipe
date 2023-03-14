@@ -50,68 +50,75 @@ public class GtidSetTest {
 
         //near
         result = new GtidSet("A:3-5:10-11");
-        result.compensate("A", 1,2);
+        result.compensate("A", 1, 2);
         Assert.assertEquals(new GtidSet("A:1-5:10-11"), result);
 
         result = new GtidSet("A:3-5:10-11");
-        result.compensate("A", 6,9);
+        result.compensate("A", 6, 9);
         Assert.assertEquals(new GtidSet("A:3-11"), result);
 
         result = new GtidSet("A:3-5:10-11");
-        result.compensate("A", 12,20);
+        result.compensate("A", 12, 20);
         Assert.assertEquals(new GtidSet("A:3-5:10-20"), result);
 
         //overlap
         result = new GtidSet("A:3-6:10-13");
-        result.compensate("A", 1,5);
+        result.compensate("A", 1, 5);
         Assert.assertEquals(new GtidSet("A:1-6:10-13"), result);
 
         result = new GtidSet("A:3-6:10-13");
-        result.compensate("A", 5,11);
+        result.compensate("A", 5, 11);
         Assert.assertEquals(new GtidSet("A:3-13"), result);
 
         result = new GtidSet("A:3-6:10-13");
-        result.compensate("A", 5,13);
+        result.compensate("A", 5, 13);
         Assert.assertEquals(new GtidSet("A:3-13"), result);
 
         result = new GtidSet("A:3-6:10-13");
-        result.compensate("A", 11,20);
+        result.compensate("A", 11, 20);
         Assert.assertEquals(new GtidSet("A:3-6:10-20"), result);
 
         //all over
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 3,25);
+        result.compensate("A", 3, 25);
         Assert.assertEquals(new GtidSet("A:3-25"), result);
 
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 4,24);
+        result.compensate("A", 4, 24);
         Assert.assertEquals(new GtidSet("A:3-25"), result);
 
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 2,26);
+        result.compensate("A", 2, 26);
         Assert.assertEquals(new GtidSet("A:2-26"), result);
 
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 1,27);
+        result.compensate("A", 1, 27);
         Assert.assertEquals(new GtidSet("A:1-27"), result);
 
         //add
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 7,7);
+        result.compensate("A", 7, 7);
         Assert.assertEquals(new GtidSet("A:3-7:10-13:20-25"), result);
 
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 24,24);
+        result.compensate("A", 24, 24);
         Assert.assertEquals(new GtidSet("A:3-6:10-13:20-25"), result);
 
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 26,26);
+        result.compensate("A", 26, 26);
         Assert.assertEquals(new GtidSet("A:3-6:10-13:20-26"), result);
 
         //from > to
         result = new GtidSet("A:3-6:10-13:20-25");
-        result.compensate("A", 27,26);
+        result.compensate("A", 27, 26);
         Assert.assertEquals(new GtidSet("A:3-6:10-13:20-25"), result);
+    }
+
+    @Test
+    public void compensateWithZero() {
+        GtidSet gtidSet1 = new GtidSet(UUID + ":0");
+        gtidSet1.compensate(UUID, 10, 20);
+        Assert.assertEquals(new GtidSet(UUID+":10-20"), gtidSet1);
     }
 
     @Test
@@ -424,7 +431,7 @@ public class GtidSetTest {
         big = new GtidSet("");
         small = new GtidSet(UUID + ":3-8:75-85:98");
         res = big.subtract(small);
-        Assert.assertEquals(res.toString(),  "");
+        Assert.assertEquals(res.toString(), "");
 
         big = new GtidSet(UUID + ":1-10:50-100");
         small = new GtidSet(UUID + ":3-8:75-85:98-99");
@@ -738,6 +745,21 @@ public class GtidSetTest {
         small = new GtidSet(gtidSetStringSmall);
         res = big.union(small);
         Assert.assertEquals(res.toString(), "56027356-0d03-11ea-a2f0-c6a9fbf1c3fe:1-2172782,e7d82d84-036c-11ea-bb09-075284a09713:1-427,3f40568c-6364-11ea-98b4-fa163ec90ff6:1-3");
+    }
+
+    @Test
+    public void testUnionWithZero() {
+        GtidSet gtidSet1 = new GtidSet(UUID + ":0");
+        GtidSet gtidSet2 = new GtidSet(UUID + ":1");
+        Assert.assertEquals(new GtidSet(UUID + ":1"), gtidSet1.union(gtidSet2));
+
+        gtidSet1 = new GtidSet(UUID + ":1-10");
+        gtidSet2 = new GtidSet(UUID + ":0");
+        Assert.assertEquals(new GtidSet(UUID + ":1-10"), gtidSet1.union(gtidSet2));
+
+        gtidSet1 = new GtidSet(UUID + ":0");
+        gtidSet2 = new GtidSet(UUID + ":0");
+        Assert.assertEquals(new GtidSet(UUID + ":0"), gtidSet1.union(gtidSet2));
     }
 
     @Test

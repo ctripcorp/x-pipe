@@ -192,4 +192,13 @@ public interface CheckerConfig {
     Map<String, String> sentinelMasterConfig();
 
     long subscribeTimeoutMilli();
+
+    String getDcsRelations();
+
+    int maxRemovedDcsCnt();
+
+    int maxRemovedClustersPercent();
+
+    Set<String> getMigrationUnsupportedClusters();
+
 }

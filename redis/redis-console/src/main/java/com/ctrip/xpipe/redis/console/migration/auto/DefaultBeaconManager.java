@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.auto;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,16 +21,24 @@ public class DefaultBeaconManager implements BeaconManager {
 
     private BeaconMetaService beaconMetaService;
 
+    private CheckerConfig config;
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultBeaconManager.class);
 
     @Autowired
-    public DefaultBeaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService) {
+    public DefaultBeaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
         this.monitorServiceManager = monitorServiceManager;
         this.beaconMetaService = beaconMetaService;
+        this.config = config;
     }
 
     @Override
     public void registerCluster(String clusterId, ClusterType clusterType, int orgId) {
+        if (config.getMigrationUnsupportedClusters().contains(clusterId.toLowerCase())) {
+            logger.debug("[registerCluster][{}] migration unsupported", clusterId);
+            return;
+        }
+
         MonitorService service = monitorServiceManager.getOrCreate(orgId);
         if (null == service) {
             logger.debug("[registerCluster][{}] no beacon service for org {}, skip", clusterId, orgId);

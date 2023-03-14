@@ -199,7 +199,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
+        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(),buildCheckerConfig()));
         checkerPersistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.MASTER);
 

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 public interface MigrationService {
 
@@ -84,4 +85,5 @@ public interface MigrationService {
 
     void updateMigrationStatus(MigrationCluster migrationCluster, MigrationStatus status);
 
+    Set<String> migrationUnsupportedClusters();
 }
