@@ -115,6 +115,13 @@ public class GtidSetTest {
     }
 
     @Test
+    public void compensateWithZero() {
+        GtidSet gtidSet1 = new GtidSet(UUID + ":0");
+        gtidSet1.compensate(UUID, 10, 20);
+        Assert.assertEquals(new GtidSet(UUID+":10-20"), gtidSet1);
+    }
+
+    @Test
     public void testDistanceFrom() {
         Assert.assertEquals(2, new GtidSet("A:1-5").lwmDistance(new GtidSet("A:1-3")));
         Assert.assertEquals(12, new GtidSet("A:1-5,B:1-10").lwmDistance(new GtidSet("A:1-3")));
