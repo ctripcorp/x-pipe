@@ -153,6 +153,7 @@ public class RdbStreamConsumerGroupParser extends AbstractRdbParser<byte[]> impl
                     if (null != nackDeliverCnt) {
                         StreamID nackId = new StreamID(nackRawId);
                         pel.put(nackId, new StreamNack(nackId, nackDeliveryMs, nackDeliverCnt.getLenLongValue()));
+                        nackRawId.release();
                         nackRawId = null;
                         nackDeliveryMs = null;
                         nackDeliverCnt = null;
@@ -211,6 +212,7 @@ public class RdbStreamConsumerGroupParser extends AbstractRdbParser<byte[]> impl
                         }
                         propagateConsumerNack(name, consumerName, pel.get(consumerNackId));
 
+                        nackRawId.release();
                         nackRawId = null;
                         consumerPelReadCnt++;
                         if (consumerPelReadCnt >= consumerPelLen.getLenLongValue()) {
@@ -308,6 +310,13 @@ public class RdbStreamConsumerGroupParser extends AbstractRdbParser<byte[]> impl
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
+        if (nackRawId != null) {
+            nackRawId.release();
+        }
         name = null;
         ms = null;
         seq = null;

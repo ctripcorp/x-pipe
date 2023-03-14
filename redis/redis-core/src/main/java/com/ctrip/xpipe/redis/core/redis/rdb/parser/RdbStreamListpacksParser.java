@@ -204,6 +204,13 @@ public class RdbStreamListpacksParser extends AbstractRdbParser<Integer> impleme
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
+        if (streamConsumerGroupParser != null) {
+            streamConsumerGroupParser.reset();
+        }
         listpacksLen = null;
         length = null;
         readListpacks = 0;

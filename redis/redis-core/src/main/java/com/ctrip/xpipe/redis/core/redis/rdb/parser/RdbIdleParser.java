@@ -69,6 +69,7 @@ public class RdbIdleParser extends AbstractRdbParser<Integer> implements RdbPars
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
     }
 

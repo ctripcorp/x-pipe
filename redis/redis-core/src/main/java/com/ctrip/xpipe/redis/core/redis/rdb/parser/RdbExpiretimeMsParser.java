@@ -67,6 +67,7 @@ public class RdbExpiretimeMsParser extends AbstractRdbParser<Long> implements Rd
 
     @Override
     public void reset() {
+        super.reset();
         this.state = STATE.READ_INIT;
     }
 

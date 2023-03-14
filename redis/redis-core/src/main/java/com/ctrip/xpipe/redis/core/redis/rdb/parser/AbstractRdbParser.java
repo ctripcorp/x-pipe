@@ -121,6 +121,7 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
             }
         } else return null;
 
+        millSecondTemp.release();
         millSecondTemp = null;
         return millSecond;
     }
@@ -210,5 +211,16 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
     @Override
     public void unregisterListener(RdbParseListener listener) {
         listeners.remove(listener);
+    }
+
+    @Override
+    public void reset() {
+        if (lenTemp != null) {
+            lenTemp.release();
+        }
+        if (millSecondTemp != null){
+            millSecondTemp.release();
+        }
+        this.lenReadState = LEN_READ_STATE.READ_INIT;
     }
 }
