@@ -55,6 +55,8 @@ public interface RdbParseContext {
 
     void clearKvContext();
 
+    void reset();
+
     enum RdbType {
 
         STRING(RdbConstant.REDIS_RDB_TYPE_STRING, false, RdbStringParser::new),

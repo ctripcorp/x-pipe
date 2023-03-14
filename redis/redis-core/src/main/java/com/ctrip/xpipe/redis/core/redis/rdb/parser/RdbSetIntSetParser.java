@@ -105,6 +105,10 @@ public class RdbSetIntSetParser extends AbstractRdbParser<List<byte[]>> implemen
 
     @Override
     public void reset() {
+        super.reset();
+        if (rdbStringParser != null) {
+            rdbStringParser.reset();
+        }
         this.state = STATE.READ_INIT;
         this.intset = null;
         this.temp = null;
