@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigrationNotSuccessException;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,7 +65,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         beaconMetaService.setMetaCache(metaCache);
 
         dcRelationsService = Mockito.mock(DcRelationsService.class);
-        Mockito.when(dcRelationsService.getTargetDcsByPriority(Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn(Lists.newArrayList("oy"));
+        Mockito.when(dcRelationsService.getClusterTargetDcByPriority(Mockito.anyLong(), Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn("oy");
         migrationService.setDcRelationsService(dcRelationsService);
     }
 

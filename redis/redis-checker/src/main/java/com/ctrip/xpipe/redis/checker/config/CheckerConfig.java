@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.checker.config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
-import com.ctrip.xpipe.redis.checker.model.DcsRelations;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 import java.util.List;
@@ -194,7 +193,7 @@ public interface CheckerConfig {
 
     long subscribeTimeoutMilli();
 
-    DcsRelations getDcsRelations();
+    String getDcsRelations();
 
     int maxRemovedDcsCnt();
 
