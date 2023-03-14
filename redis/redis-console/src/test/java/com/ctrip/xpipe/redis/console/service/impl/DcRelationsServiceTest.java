@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.List;
@@ -24,67 +25,68 @@ import java.util.Set;
 public class DcRelationsServiceTest {
 
     @InjectMocks
+    @Spy
     private final DefaultDcRelationsService dcRelationsService=new DefaultDcRelationsService();
 
     @Mock
     private ConsoleConfig config;
 
+    private String configStr = "{\n" +
+            "    \"delayPerDistance\":3000,"+
+            "    \"dcLevel\":[\n" +
+            "        {\n" +
+            "            \"dcs\":\"sharb,shaxy\",\n" +
+            "            \"distance\":1\n" +
+            "        },\n" +
+            "        {\n" +
+            "            \"dcs\":\"SHARB,SHA-ALI\",\n" +
+            "            \"distance\":15\n" +
+            "        },\n" +
+            "        {\n" +
+            "            \"dcs\":\"SHAXY,SHA-ALI\",\n" +
+            "            \"distance\":15\n" +
+            "        }\n" +
+            "    ],\n" +
+            "    \"clusterLevel\":[\n" +
+            "        {\n" +
+            "            \"clusterName\":\"Cluster1\", \n" +
+            "            \"relations\":[\n" +
+            "                {\n" +
+            "                    \"dcs\":\"SHARB,SHAXY\",\n" +
+            "                    \"distance\":1\n" +
+            "                },\n" +
+            "                {\n" +
+            "                    \"dcs\":\"sha-ali,shaxy\",\n" +
+            "                    \"distance\":-1\n" +
+            "                },\n" +
+            "                {\n" +
+            "                    \"dcs\":\"SHA-ALI,SHARB\",\n" +
+            "                    \"distance\":-1\n" +
+            "                }\n" +
+            "            ]\n" +
+            "        },\n" +
+            "        {\n" +
+            "            \"clusterName\":\"Cluster2\",   \n" +
+            "            \"relations\":[\n" +
+            "                {\n" +
+            "                    \"dcs\":\"sharb,shaxy\",\n" +
+            "                    \"distance\":2\n" +
+            "                },\n" +
+            "                {\n" +
+            "                    \"dcs\":\"SHA-ALI,SHAXY\",\n" +
+            "                    \"distance\":15\n" +
+            "                },\n" +
+            "                {\n" +
+            "                    \"dcs\":\"SHA-ALI,SHARB\",\n" +
+            "                    \"distance\":30\n" +
+            "                }\n" +
+            "            ]\n" +
+            "        }\n" +
+            "    ]\n" +
+            "}";
+
     @Test
     public void jsonTest() {
-        String configStr = "{\n" +
-                "    \"delayPerDistance\":3000,"+
-                "    \"dcLevel\":[\n" +
-                "        {\n" +
-                "            \"dcs\":\"SHARB,SHAXY\",\n" +
-                "            \"distance\":1\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"dcs\":\"SHARB,SHA-ALI\",\n" +
-                "            \"distance\":15\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"dcs\":\"SHAXY,SHA-ALI\",\n" +
-                "            \"distance\":15\n" +
-                "        }\n" +
-                "    ],\n" +
-                "    \"clusterLevel\":[\n" +
-                "        {\n" +
-                "            \"clusterName\":\"cluster1\", \n" +
-                "            \"relations\":[\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHARB,SHAXY\",\n" +
-                "                    \"distance\":-1\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHARB,SHA-ALI\",\n" +
-                "                    \"distance\":-1\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHAXY,SHA-ALI\",\n" +
-                "                    \"distance\":-1\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"clusterName\":\"cluster2\",   \n" +
-                "            \"relations\":[\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHARB,SHAXY\",\n" +
-                "                    \"distance\":1\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHARB,SHA-ALI\",\n" +
-                "                    \"distance\":-1\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"dcs\":\"SHAXY,SHA-ALI\",\n" +
-                "                    \"distance\":-1\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        }\n" +
-                "    ]\n" +
-                "}";
-
         DcsRelations dcsRelations = JsonCodec.INSTANCE.decode(configStr, DcsRelations.class);
         List<DcRelation> dcRelations = dcsRelations.getDcLevel();
         List<ClusterDcRelations> clusterDcRelations = dcsRelations.getClusterLevel();
@@ -94,7 +96,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void refreshTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         Map<String, DcsPriority> clusterLevelDcPriority = dcRelationsService.getClusterLevelDcPriority();
@@ -196,12 +198,14 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getClusterTargetDcByPriorityTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         for (int i = 0; i < 1000; i++) {
-            Assert.assertEquals("SHAXY", dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList("shaRB", "Shaxy")));
+            Assert.assertEquals("SHARB", dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList("shaRB", "Shaxy")));
         }
+
+        Mockito.verify(dcRelationsService, Mockito.times(1)).getTargetDcs(Mockito.any(), Mockito.any());
 
         Assert.assertNull(dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", null));
         Assert.assertNull(dcRelationsService.getClusterTargetDcByPriority(234, "clustEr3", "sha-ALi", Lists.newArrayList()));
@@ -210,7 +214,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getClusterLevelTargetDcsTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         List<String> targetDcs = dcRelationsService.getTargetDcsByPriority("cluSter2", "sha-ali", Lists.newArrayList("sharb", "shaxy"));
@@ -235,7 +239,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getDcLevelTargetDcsTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         List<String> targetDcs = dcRelationsService.getTargetDcsByPriority("cluster3", "SHA-ALI", Lists.newArrayList("SHARB", "SHAXY"));
@@ -263,7 +267,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getClusterDcsDelayTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         Assert.assertEquals(-3000, dcRelationsService.getClusterDcsDelay("clUster1", "SHA-ALI", "sharb").intValue());
@@ -280,7 +284,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getDcsDelayTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
         dcRelationsService.refresh();
 
         Assert.assertEquals(45000, dcRelationsService.getDcsDelay("SHA-ALI", "sharb").intValue());
@@ -291,7 +295,7 @@ public class DcRelationsServiceTest {
 
     @Test
     public void getExcludeDcsForBiClusterTest() throws Exception {
-        Mockito.when(config.getDcsRelations()).thenReturn(buildDcsDistances());
+        Mockito.when(config.getDcsRelations()).thenReturn(configStr);
 
         //not initialized
         Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -39,6 +40,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
     private ScheduledExecutorService scheduled ;
 
     private final AtomicInteger delayPerDistance = new AtomicInteger(2000);
+    private final AtomicReference<String> dcsRelationsConfig = new AtomicReference<>();
     private final AtomicReference<Map<Set<String>, Integer>> dcsDistance = new AtomicReference<>();
     private final AtomicReference<Map<String, Map<Set<String>, Integer>>> clusterDcsDistance = new AtomicReference<>();
     private final AtomicReference<DcsPriority> dcLevelPriority = new AtomicReference<>();
@@ -204,7 +206,7 @@ public class DefaultDcRelationsService implements DcRelationsService {
         return dcsPriority.getDcPriority(downDc.toUpperCase());
     }
 
-    private List<String> getTargetDcs(DcPriority dcPriority, Set<String> availableDcs) {
+    List<String> getTargetDcs(DcPriority dcPriority, Set<String> availableDcs) {
         Map<Integer, List<String>> priority2Dcs = dcPriority.getPriority2Dcs();
         Map<Integer, List<String>> priority2AvailableDcs = new TreeMap<>();
         for (int priority : priority2Dcs.keySet()) {
@@ -238,13 +240,17 @@ public class DefaultDcRelationsService implements DcRelationsService {
         transaction.logTransaction("dc.relations", "refresh", new Task() {
             @Override
             public void go() throws Exception {
-                DcsRelations dcsRelations = config.getDcsRelations();
-                delayPerDistance.set(dcsRelations.getDelayPerDistance());
-                dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
-                clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
-                clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
-                dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
-                dcLevelTargetDcsCache.clear();
+                String remoteDcsRelationsConfig = config.getDcsRelations();
+                if (dcsRelationsConfig.get() == null || !remoteDcsRelationsConfig.equalsIgnoreCase(dcsRelationsConfig.get())) {
+                    DcsRelations dcsRelations = JsonCodec.INSTANCE.decode(remoteDcsRelationsConfig, DcsRelations.class);
+                    dcsRelationsConfig.set(remoteDcsRelationsConfig);
+                    delayPerDistance.set(dcsRelations.getDelayPerDistance());
+                    dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
+                    clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
+                    clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
+                    dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
+                    dcLevelTargetDcsCache.clear();
+                }
             }
 
             @Override
