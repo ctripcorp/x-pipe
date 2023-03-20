@@ -173,6 +173,10 @@
                     <artifactId>dubbo</artifactId>
                     <groupId>org.apache.dubbo</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>plexus-utils</artifactId>
+                    <groupId>org.codehaus.plexus</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
