@@ -162,20 +162,12 @@
             <version>1.2.2</version>
             <exclusions>
                 <exclusion>
-                    <artifactId>protobuf-java</artifactId>
-                    <groupId>com.google.protobuf</groupId>
+                    <groupId>com.ctrip.framework.cdubbo</groupId>
+                    <artifactId>cdubbo</artifactId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>jsr305</artifactId>
-                    <groupId>com.google.code.findbugs</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>dubbo</artifactId>
-                    <groupId>org.apache.dubbo</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>plexus-utils</artifactId>
-                    <groupId>org.codehaus.plexus</groupId>
+                    <groupId>com.ctrip.framework.cdubbo</groupId>
+                    <artifactId>cdubbo-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
