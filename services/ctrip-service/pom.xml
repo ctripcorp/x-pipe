@@ -160,6 +160,16 @@
             <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
             <artifactId>emailservice</artifactId>
             <version>1.2.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.ctrip.framework.cdubbo</groupId>
+                    <artifactId>cdubbo</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.framework.cdubbo</groupId>
+                    <artifactId>cdubbo-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

@@ -83,6 +83,8 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
         if (dcsDelay != null) {
             config.setDcLevelHealthyDelayMilli(dcsDelay);
             config.setDcLevelDelayDownAfterMilli(downAfterCheckNums() * dcsDelay);
+            config.setClusterLevelHealthyDelayMilli(dcsDelay);
+            config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * dcsDelay);
         }
 
         Integer clusterDcsDelay = dcRelationsService.getClusterDcsDelay(clusterName, fromDc, toDc);

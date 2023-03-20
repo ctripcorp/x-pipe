@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +35,8 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
     @Autowired
     private AlertManager alertManager;
 
-    protected static int MONITOR_UNREGISTER_PROTECT_COUNT = 10;
+    @Autowired
+    private ConsoleConfig config;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -55,7 +57,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
         }
 
         clustersByOrg.forEach((orgId, clusters) -> {
-            new UnknownClusterExcludeJob(clusters, services.get(orgId), MONITOR_UNREGISTER_PROTECT_COUNT).execute()
+            new UnknownClusterExcludeJob(clusters, services.get(orgId), config.monitorUnregisterProtectCount()).execute()
                 .addListener(commandFuture -> {
                     if (commandFuture.isSuccess()) {
                         logger.info("[doCheck][{}] unregister clusters {}", orgId, commandFuture.get());
@@ -79,6 +81,10 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 if (!ClusterType.lookup(clusterMeta.getType()).supportMigration()) {
+                    continue;
+                }
+
+                if (config.getMigrationUnsupportedClusters().contains(clusterMeta.getId().toLowerCase())) {
                     continue;
                 }
 
