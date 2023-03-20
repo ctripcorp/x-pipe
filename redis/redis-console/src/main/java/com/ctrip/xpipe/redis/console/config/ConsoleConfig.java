@@ -152,4 +152,5 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getChooseRouteStrategyType();
 
+	int monitorUnregisterProtectCount();
 }

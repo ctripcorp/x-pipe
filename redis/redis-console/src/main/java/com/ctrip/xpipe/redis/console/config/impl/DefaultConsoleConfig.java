@@ -105,6 +105,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MAX_REMOVED_DCS_CNT = "max.removed.dcs.count";
     private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
+    private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -678,4 +679,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String raw = getProperty(KEY_MIGRATION_UNSUPPORTED_CLUSTERS, "").toLowerCase();
         return getSplitStringSet(raw);
     }
+
+    @Override
+    public int monitorUnregisterProtectCount() {
+        return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
+    }
+
 }

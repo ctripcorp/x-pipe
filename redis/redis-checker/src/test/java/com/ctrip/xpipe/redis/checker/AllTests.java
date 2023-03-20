@@ -75,6 +75,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonito
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelBindTaskTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconActiveDcControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconMetaCheckActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfigTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
@@ -193,7 +194,9 @@ import org.junit.runners.Suite;
         SentinelBindTaskTest.class,
 
         GtidGapCheckActionTest.class,
-        GtidGapCheckActionControllerTest.class
+        GtidGapCheckActionControllerTest.class,
+
+        DefaultHealthCheckConfigTest.class
 })
 public class AllTests {
 }
