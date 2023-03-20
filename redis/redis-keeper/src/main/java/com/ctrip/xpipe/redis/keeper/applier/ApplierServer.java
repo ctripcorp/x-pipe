@@ -23,6 +23,12 @@ public interface ApplierServer extends Lifecycle, RedisServer {
 
     void setStateBackup();
 
+    void freezeConfig();
+
+    void stopFreezeConfig();
+
+    long getFreezeLastMillis();
+
     STATE getState();
 
     Endpoint getUpstreamEndpoint();

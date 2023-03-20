@@ -6,11 +6,12 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
 import credis.java.client.AsyncCacheProvider;
+import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
-import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
+import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
@@ -37,13 +38,17 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     Logger logger = LoggerFactory.getLogger(getClass());
 
-    final AsyncCacheProviderImpl asyncProvider;
+    final String clusterName;
+
+    final AsyncApplierCacheProvider asyncProvider;
 
     final Codec codec;
 
     final ApplierCacheProvider txnProvider;
 
     final ExecutorService credisNotifyThread;
+
+    final ConfigFrozenAware configFrozenAware;
 
     boolean isInMulti = false;
 
@@ -52,9 +57,11 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor) {
-        this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
+    public CRedisAsyncClient(String clusterName, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
+        this.clusterName = clusterName;
+        this.asyncProvider = (AsyncApplierCacheProvider) asyncProvider;
         this.txnProvider = txnProvider;
+        this.configFrozenAware = configFrozenAware;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
     }
@@ -202,6 +209,21 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             isInMulti = false;
             return errorFuture("txnClients not valid when exec() called");
         }
+    }
+
+    @Override
+    public void freezeConfig() {
+        configFrozenAware.startFreeze();
+    }
+
+    @Override
+    public void stopFreezeConfig() {
+        configFrozenAware.stopFreeze();
+    }
+
+    @Override
+    public long getFreezeLastMillis() {
+        return configFrozenAware.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
