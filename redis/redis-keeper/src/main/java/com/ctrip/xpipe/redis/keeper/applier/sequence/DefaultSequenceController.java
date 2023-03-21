@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
@@ -37,33 +38,65 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
-    public MemoryThreshold memoryThreshold = new MemoryThreshold(32 * 1024 * 1024/* 32M */);
+    public MemoryThreshold memoryThreshold;
 
-    public ConcurrencyThreshold concurrencyThreshold = new ConcurrencyThreshold(10000);
+    public ConcurrencyThreshold concurrencyThreshold;
 
     public QPSThreshold qpsThreshold;
+
+    public BytesPerSecondThreshold bytesPerSecondThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
     SequenceCommand<?> obstacle;
 
+    private long qpsThresholdValue;
+
+    private long bytesPerSecondThresholdValue;
+
+    public static final long DEFAULT_QPS_THRESHOLD = 5000;
+
+    // 100MB
+    public static final long DEFAULT_BYTES_PER_SECOND_THRESHOLD = 100 * 1024 * 1024;
+
+    // 32MB
+    public static final long DEFAULT_MEMORY_THRESHOLD = 32 * 1024 * 1024;
+
+    public static final long DEFAULT_CONCURRENCY_THRESHOLD = 10000;
+
+    public DefaultSequenceController() {
+        this(DEFAULT_QPS_THRESHOLD, DEFAULT_BYTES_PER_SECOND_THRESHOLD, DEFAULT_MEMORY_THRESHOLD, DEFAULT_CONCURRENCY_THRESHOLD);
+    }
+
+    public DefaultSequenceController(Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold) {
+        this.qpsThresholdValue = qpsThreshold == null ? DEFAULT_QPS_THRESHOLD : qpsThreshold;
+        this.bytesPerSecondThresholdValue = bytesPerSecondThreshold == null ? DEFAULT_BYTES_PER_SECOND_THRESHOLD : bytesPerSecondThreshold;
+        this.memoryThreshold = new MemoryThreshold(memoryThreshold == null ? DEFAULT_MEMORY_THRESHOLD : memoryThreshold);
+        this.concurrencyThreshold = new ConcurrencyThreshold(concurrencyThreshold == null ? DEFAULT_CONCURRENCY_THRESHOLD : concurrencyThreshold);
+    }
 
     @Override
     protected void doInitialize() throws Exception {
-        qpsThreshold = new QPSThreshold(5000, scheduled);
+        qpsThreshold = new QPSThreshold(qpsThresholdValue, scheduled);
+        bytesPerSecondThreshold = new BytesPerSecondThreshold(bytesPerSecondThresholdValue, scheduled);
     }
 
     @Override
     public void submit(RedisOpCommand<?> command) {
 
-        memoryThreshold.tryPass(command.redisOp().estimatedSize());
+        long bytes = command.redisOp().estimatedSize();
+        memoryThreshold.tryPass(bytes);
         concurrencyThreshold.tryPass();
+
+        if (bytesPerSecondThreshold != null) {
+            bytesPerSecondThreshold.tryPass(bytes);
+        }
 
         if (qpsThreshold != null) {
             qpsThreshold.tryPass();
         }
 
-        stateThread.execute(()->{
+        stateThread.execute(() -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
             }
@@ -199,7 +232,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     private void forgetObstacleWhenSuccess(SequenceCommand<?> sequenceCommand) {
-        sequenceCommand.future().addListener((f)->{
+        sequenceCommand.future().addListener((f) -> {
             if (f.isSuccess()) {
                 if (sequenceCommand == obstacle) {
                     obstacle = null;
@@ -209,7 +242,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     private void forgetWhenSuccess(SequenceCommand<?> sequenceCommand, RedisKey key) {
-        sequenceCommand.future().addListener((f)->{
+        sequenceCommand.future().addListener((f) -> {
             if (f.isSuccess()) {
                 if (sequenceCommand == runningCommands.get(key)) {
                     runningCommands.remove(key);
@@ -219,7 +252,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     private void mergeGtidWhenSuccess(SequenceCommand<?> sequenceCommand, String gtid) {
-        sequenceCommand.future().addListener((f)->{
+        sequenceCommand.future().addListener((f) -> {
             if (f.isSuccess()) {
                 if (gtid != null) {
                     if (lwmManager != null) {

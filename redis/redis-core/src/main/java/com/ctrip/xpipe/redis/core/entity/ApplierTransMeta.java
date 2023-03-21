@@ -17,6 +17,14 @@ public class ApplierTransMeta {
 
     private ApplierMeta applierMeta;
 
+    private Long qpsThreshold;
+
+    private Long bytesPerSecondThreshold;
+
+    private Long memoryThreshold;
+
+    private Long concurrencyThreshold;
+
     //for json conversion
     public ApplierTransMeta() {}
 
@@ -61,6 +69,38 @@ public class ApplierTransMeta {
 
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
+    }
+
+    public Long getQpsThreshold() {
+        return qpsThreshold;
+    }
+
+    public void setQpsThreshold(Long qpsThreshold) {
+        this.qpsThreshold = qpsThreshold;
+    }
+
+    public Long getBytesPerSecondThreshold() {
+        return bytesPerSecondThreshold;
+    }
+
+    public void setBytesPerSecondThreshold(Long bytesPerSecondThreshold) {
+        this.bytesPerSecondThreshold = bytesPerSecondThreshold;
+    }
+
+    public Long getMemoryThreshold() {
+        return memoryThreshold;
+    }
+
+    public void setMemoryThreshold(Long memoryThreshold) {
+        this.memoryThreshold = memoryThreshold;
+    }
+
+    public Long getConcurrencyThreshold() {
+        return concurrencyThreshold;
+    }
+
+    public void setConcurrencyThreshold(Long concurrencyThreshold) {
+        this.concurrencyThreshold = concurrencyThreshold;
     }
 
     @Override
