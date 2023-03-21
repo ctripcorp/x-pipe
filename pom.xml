@@ -67,7 +67,7 @@
         <zstd.version>1.3.6-1</zstd.version>
         <jackson.version>2.10.3</jackson.version>
         <jedis.version>2.8.1.2-ctrip-SNAPSHOT</jedis.version>
-        <soa.version>2.24.8</soa.version>
+        <soa.version>2.21.17</soa.version>
         <sso.version>0.1.3</sso.version>
         <vi.version>0.11.33</vi.version>
         <dal.version>2.3.38</dal.version>
