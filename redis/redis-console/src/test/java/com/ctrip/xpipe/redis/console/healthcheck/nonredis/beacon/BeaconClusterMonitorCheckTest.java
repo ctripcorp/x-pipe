@@ -1,15 +1,17 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,9 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     @Mock
     private MonitorService monitorService1;
 
+    @Mock
+    private ConsoleConfig config;
+
 
     @Before
     public void setupBeaconClusterMonitorCheckTest() {
@@ -68,7 +73,9 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Test
     public void testTooManyClusterNeedExcluded() {
-        check.MONITOR_UNREGISTER_PROTECT_COUNT = 1;
+        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
+        Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(Sets.newHashSet("cluster1","cluster2","cluster3","clusterx"));
+
         Set<String> needExcludeClusters = Sets.newHashSet("clusterx", "clustery");
         Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
 
@@ -78,6 +85,19 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
         Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(Mockito.anyString(), Mockito.anyString());
         Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, needExcludeClusters.toString());
+    }
+
+    @Test
+    public void testUnsupportedMigrationClusters(){
+        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(10);
+        Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(Sets.newHashSet("cluster1","cluster3"));
+        Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("cluster1", "cluster2"));
+
+        check.doCheck();
+        sleep(1000);
+        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
+        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
+        Mockito.verify(monitorService0, Mockito.times(1)).unregisterCluster(BeaconSystem.getDefault().getSystemName(), "cluster1");
     }
 
     private XpipeMeta mockXPipeMeta() {
