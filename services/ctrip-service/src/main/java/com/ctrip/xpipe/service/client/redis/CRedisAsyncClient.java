@@ -6,8 +6,8 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
 import credis.java.client.AsyncCacheProvider;
-import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
+import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
@@ -15,8 +15,6 @@ import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
@@ -36,11 +34,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class CRedisAsyncClient implements AsyncRedisClient {
 
-    Logger logger = LoggerFactory.getLogger(getClass());
-
-    final String clusterName;
-
-    final AsyncApplierCacheProvider asyncProvider;
+    final AsyncCacheProviderImpl asyncProvider;
 
     final Codec codec;
 
@@ -57,9 +51,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(String clusterName, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
-        this.clusterName = clusterName;
-        this.asyncProvider = (AsyncApplierCacheProvider) asyncProvider;
+    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
+        this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
         this.configFrozenAware = configFrozenAware;
         this.codec = new SedisCodec();
