@@ -10,6 +10,8 @@ import com.ctrip.xpipe.utils.StringUtil;
  */
 public class ShardCreateInfo extends AbstractCreateInfo{
 
+    protected Long shardId;
+
     protected String shardName;
 
     protected String shardMonitorName;
@@ -20,14 +22,19 @@ public class ShardCreateInfo extends AbstractCreateInfo{
 
     }
 
-    public ShardCreateInfo(String shardName, String shardMonitorName){
-        this(shardName, shardMonitorName, null);
-    }
-
-    public ShardCreateInfo(String shardName, String shardMonitorName, String dcId) {
+    public ShardCreateInfo(Long shardId, String shardName, String shardMonitorName, String dcId) {
+        this.shardId = shardId;
         this.shardName = shardName;
         this.shardMonitorName = shardMonitorName;
         this.dcId = dcId;
+    }
+
+    public Long getShardId() {
+        return shardId;
+    }
+
+    public void setShardId(Long shardId) {
+        this.shardId = shardId;
     }
 
     public String getShardName() {
