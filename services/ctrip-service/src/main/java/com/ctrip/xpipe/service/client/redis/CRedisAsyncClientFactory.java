@@ -3,11 +3,13 @@ package com.ctrip.xpipe.service.client.redis;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import credis.java.client.AbstractAsyncConfig;
+import credis.java.client.ClientType;
 import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.config.DefaultAsyncConfig;
 import credis.java.client.config.PropertiesAware;
 import credis.java.client.config.impl.DelegateClusterLevelConfig;
 import credis.java.client.config.impl.PropertiesDecorator;
+import credis.java.client.config.route.ConfigFrozenRoute;
 import credis.java.client.config.route.DefaultRouteManager;
 import credis.java.client.exception.CRedisException;
 import credis.java.client.sync.applier.ApplierCacheProvider;
@@ -23,10 +25,11 @@ import java.util.concurrent.ExecutorService;
 public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
     private CRedisAsyncClient doCreate(String clusterName, ExecutorService credisNotifyExecutor) {
-        return new CRedisAsyncClient(
-                new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
-                        decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), new DefaultHashStrategyFactory()),
-                new ApplierCacheProvider(clusterName, DelegateClusterLevelConfig.newBuilder().build()) , credisNotifyExecutor);
+        DefaultHashStrategyFactory hashStrategyFactory = new DefaultHashStrategyFactory();
+        ConfigFrozenRoute route = DefaultRouteManager.create().createConfigFrozenRoute(clusterName, hashStrategyFactory, ClientType.APPLIER);
+        return new CRedisAsyncClient(new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
+                        decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), hashStrategyFactory, route),
+                new ApplierCacheProvider(clusterName, DelegateClusterLevelConfig.newBuilder().build(), route) , credisNotifyExecutor, route);
     }
 
     @Override

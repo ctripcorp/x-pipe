@@ -26,5 +26,11 @@ public interface AsyncRedisClient {
 
     CommandFuture<Object> exec(Object... rawArgs);
 
+    void freezeConfig();
+
+    void stopFreezeConfig();
+
+    long getFreezeLastMillis();
+
     void shutdown();
 }
