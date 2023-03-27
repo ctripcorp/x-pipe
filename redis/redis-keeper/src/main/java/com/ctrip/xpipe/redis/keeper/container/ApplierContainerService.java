@@ -181,7 +181,9 @@ public class ApplierContainerService {
     private ApplierServer createApplierServer(ApplierTransMeta applierTransMeta) throws Exception {
         ApplierServer applierServer = new DefaultApplierServer(applierTransMeta.getClusterName(),
                 ClusterId.from(applierTransMeta.getClusterDbId()), ShardId.from(applierTransMeta.getShardDbId()),
-                applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser, keeperConfig);
+                applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser, keeperConfig,
+                applierTransMeta.getQpsThreshold(), applierTransMeta.getBytesPerSecondThreshold(),
+                applierTransMeta.getMemoryThreshold(), applierTransMeta.getConcurrencyThreshold());
         register(applierServer);
 
         return applierServer;

@@ -459,7 +459,7 @@ public class MetaUpdate extends AbstractConsoleController {
         for (ShardTbl shardTbl : allByClusterName) {
             List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardTbl.getShardName());
             for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                result.add(new ShardCreateInfo(shardTbl.getShardName(), shardTbl.getSetinelMonitorName(),
+                result.add(new ShardCreateInfo(shardTbl.getId(), shardTbl.getShardName(), shardTbl.getSetinelMonitorName(),
                         dcIdNameMap.get(dcClusterShardTbl.getDcClusterInfo().getDcId())));
             }
         }
