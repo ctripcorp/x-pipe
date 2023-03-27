@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.Arrays;
 
@@ -33,6 +32,12 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
     public final static String STATE_ACTIVE = "active";
 
     public final static String STATE_BACKUP = "backup";
+
+    public final static String FREEZE_CONFIG = "freezeconfig";
+
+    public final static String STOP_FREEZE_CONFIG = "stopfreezeconfig";
+
+    public final static String GET_FREEZE_LAST = "getfreezelast";
 
     @Override
     public String[] getCommands() {
@@ -58,7 +63,16 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
                 } else{
                     throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
                 }
-            }else{
+            } else if (FREEZE_CONFIG.equalsIgnoreCase(args[0])) {
+                ((ApplierServer)redisClient.getRedisServer()).freezeConfig();
+                redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
+            } else if (STOP_FREEZE_CONFIG.equalsIgnoreCase(args[0])){
+                ((ApplierServer)redisClient.getRedisServer()).stopFreezeConfig();
+                redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
+            } else if (GET_FREEZE_LAST.equalsIgnoreCase(args[0])) {
+                long freezeLastMillis = ((ApplierServer) redisClient.getRedisServer()).getFreezeLastMillis();
+                redisClient.sendMessage(new SimpleStringParser(Long.toString(freezeLastMillis)).format());
+            } else{
                 throw new IllegalStateException("unknown command:" + args[0]);
             }
         }

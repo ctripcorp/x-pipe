@@ -256,6 +256,21 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     }
 
     @Override
+    public void freezeConfig() {
+        client.freezeConfig();
+    }
+
+    @Override
+    public void stopFreezeConfig() {
+        client.stopFreezeConfig();
+    }
+
+    @Override
+    public long getFreezeLastMillis() {
+        return client.getFreezeLastMillis();
+    }
+
+    @Override
     public STATE getState() {
         return state;
     }

@@ -11,11 +11,10 @@ import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
+import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
@@ -35,8 +34,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class CRedisAsyncClient implements AsyncRedisClient {
 
-    Logger logger = LoggerFactory.getLogger(getClass());
-
     final AsyncCacheProviderImpl asyncProvider;
 
     final Codec codec;
@@ -45,6 +42,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final ExecutorService credisNotifyThread;
 
+    final ConfigFrozenAware configFrozenAware;
+
     boolean isInMulti = false;
 
     int db = 0;
@@ -52,9 +51,10 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor) {
+    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
+        this.configFrozenAware = configFrozenAware;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
     }
@@ -202,6 +202,21 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             isInMulti = false;
             return errorFuture("txnClients not valid when exec() called");
         }
+    }
+
+    @Override
+    public void freezeConfig() {
+        configFrozenAware.startFreeze();
+    }
+
+    @Override
+    public void stopFreezeConfig() {
+        configFrozenAware.stopFreeze();
+    }
+
+    @Override
+    public long getFreezeLastMillis() {
+        return configFrozenAware.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override

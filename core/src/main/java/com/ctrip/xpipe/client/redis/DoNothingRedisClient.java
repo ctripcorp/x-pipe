@@ -57,6 +57,21 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
+    public void freezeConfig() {
+
+    }
+
+    @Override
+    public void stopFreezeConfig() {
+
+    }
+
+    @Override
+    public long getFreezeLastMillis() {
+        return 0;
+    }
+
+    @Override
     public void shutdown() {
 
     }
