@@ -222,8 +222,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public void shutdown() {
-        configFrozenRoute.destroy();
         ((CRedisClusterSessionLocator) locator()).destroy();
+        configFrozenRoute.destroy();
     }
 
     private CRedisSessionLocator locator() {
