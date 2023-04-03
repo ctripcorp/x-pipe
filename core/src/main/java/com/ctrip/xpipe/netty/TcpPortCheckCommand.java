@@ -26,6 +26,7 @@ public class TcpPortCheckCommand extends AbstractCommand<Boolean> {
     private String host;
     private int port;
     private static Logger logger = LoggerFactory.getLogger(TcpPortCheckCommand.class);
+    private static LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
     private static NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("tcp-port-check", true));
     private Bootstrap b = new Bootstrap();
 
@@ -41,7 +42,7 @@ public class TcpPortCheckCommand extends AbstractCommand<Boolean> {
             @Override
             protected void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
+                pipeline.addLast(loggingHandler);
                 pipeline.addLast(new ChannelDuplexHandler() {
                     @Override
                     public void channelActive(ChannelHandlerContext ctx) throws Exception {
