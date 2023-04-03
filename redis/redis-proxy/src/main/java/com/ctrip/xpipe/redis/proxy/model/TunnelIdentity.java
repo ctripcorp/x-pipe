@@ -18,6 +18,8 @@ public class TunnelIdentity {
 
     private String source;
 
+    private String identityString;
+
     public TunnelIdentity(Channel frontend, String destination, String source) {
         this.frontend = frontend;
         this.destination = destination;
@@ -53,7 +55,7 @@ public class TunnelIdentity {
 
     @Override
     public String toString() {
-        return String.format("%s-%s-%s-%s", source, ChannelUtil.getRemoteAddr(frontend),
-                ChannelUtil.getDesc(backend), destination);
+        return identityString != null ? identityString : String.format("%s-%s-%s-%s",
+                    source, ChannelUtil.getRemoteAddr(frontend), ChannelUtil.getDesc(backend), destination);
     }
 }
