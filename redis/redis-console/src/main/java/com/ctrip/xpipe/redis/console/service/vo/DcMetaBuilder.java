@@ -263,11 +263,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 dcCluster2DcClusterShardMap = Maps.newHashMap();
                 dc2DcClusterShardMap = Maps.newHashMap();
 
-                List<DcClusterShardTbl> allDcClusterShards = new LinkedList<>();
-                for (DcTbl dcTbl : allDcsTblList) {
-                    allDcClusterShards.addAll(dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), interestClusterTypes));
-                }
-
+                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByDcIdAndInClusterTypes(allDcsTblList, interestClusterTypes);
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
                         getLogger().warn("dcClusterInfo in dcClusterShard null");

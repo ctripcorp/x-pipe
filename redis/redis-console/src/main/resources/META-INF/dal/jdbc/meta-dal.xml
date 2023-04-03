@@ -591,6 +591,15 @@
 		</readsets>
 
 		<query-defs>
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-all-by-cluster-id" type="SELECT" multiple="true">
 				<param name='cluster-id'/>
 				<statement>
@@ -1144,6 +1153,18 @@
 					</IF>
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/>
+					]]>
+				</statement>
+			</query>
+			<query name='find-by-role' type='SELECT' multiple="true">
+				<param name='redis-role'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE
+					<FIELD name='redis-role'/> = ${redis-role}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

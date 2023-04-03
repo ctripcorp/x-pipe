@@ -9,7 +9,8 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.List;
 
 public interface RedisService {
-	
+	List<RedisTbl> findByRole(String role);
+
 	RedisTbl find(long id);
 
 	RedisTbl findByIpPort(String ip, int port);

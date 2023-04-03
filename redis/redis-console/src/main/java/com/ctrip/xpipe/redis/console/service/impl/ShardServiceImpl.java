@@ -76,6 +76,17 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		this.consoleConfig = consoleConfig;
 	}
 
+
+	@Override
+	public List<ShardTbl> findAll() {
+		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return dao.findAll(ShardTblEntity.READSET_FULL);
+			}
+		});
+	}
+
 	@Override
 	public ShardTbl find(final long shardId) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
