@@ -38,6 +38,8 @@ public class DefaultProxyServer implements ProxyServer {
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyServer.class);
 
+    private LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
+
     @Autowired
     private ResourceManager resourceManager;
 
@@ -85,7 +87,7 @@ public class DefaultProxyServer implements ProxyServer {
 
                 ChannelPipeline p = ch.pipeline();
                 p.addLast(new InternalNetworkHandler(config.getInternalNetworkPrefix()));
-                p.addLast(new LoggingHandler(LogLevel.DEBUG));
+                p.addLast(loggingHandler);
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
                 p.addLast(new ProxyProtocolHandler(tunnelManager, resourceManager, pingStatsManager));
             }
@@ -111,7 +113,7 @@ public class DefaultProxyServer implements ProxyServer {
                 if(!config.noTlsNettyHandler()) {
                     p.addLast(resourceManager.getServerSslHandlerFactory().createSslHandler(ch));
                 }
-                p.addLast(new LoggingHandler(LogLevel.DEBUG));
+                p.addLast(loggingHandler);
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
                 p.addLast(new ProxyProtocolHandler(tunnelManager, resourceManager, pingStatsManager));
             }
