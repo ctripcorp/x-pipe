@@ -39,6 +39,7 @@ import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MAR
  * May 24, 2018
  */
 public class DefaultBackendSession extends AbstractSession implements BackendSession {
+    private static LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
 
     @VisibleForTesting
     static final String BACKEND_SESSION_HANDLER = "backendSessionHandler";
@@ -115,7 +116,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                         if(endpoint.isSslEnabled()) {
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
-                        p.addLast(new LoggingHandler(LogLevel.DEBUG));
+                        p.addLast(loggingHandler);
                         p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
                         p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                     }

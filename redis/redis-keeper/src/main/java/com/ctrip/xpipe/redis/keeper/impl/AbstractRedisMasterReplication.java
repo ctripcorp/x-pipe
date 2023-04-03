@@ -66,6 +66,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));
 
+	private static LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
+
 	private final int replTimeoutMilli;
 
 	private long repl_transfer_lastio;
@@ -157,7 +159,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					@Override
 					public void initChannel(SocketChannel ch) throws Exception {
 						ChannelPipeline p = ch.pipeline();
-						p.addLast(new LoggingHandler(LogLevel.DEBUG));
+						p.addLast(loggingHandler);
 						p.addLast(new NettySimpleMessageHandler());
 						p.addLast(createHandler());
 					}
