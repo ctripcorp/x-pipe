@@ -104,6 +104,15 @@ public class AdvancedDcMetaService implements DcMetaService {
     @Resource(name=SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
+    @Autowired
+    private ClusterService clusterService;
+
+    @Autowired
+    private ShardService shardService;
+
+    @Autowired
+    private RedisService redisService;
+
     private ExecutorService executors;
 
     private RetryCommandFactory factory;
@@ -144,7 +153,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService, replDirectionService, zoneService, keeperContainerService,
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
@@ -178,7 +187,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         }
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
+                clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService, replDirectionService, zoneService, keeperContainerService,
                 applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 

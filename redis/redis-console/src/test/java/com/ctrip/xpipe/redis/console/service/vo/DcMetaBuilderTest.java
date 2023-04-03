@@ -92,7 +92,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         dcId = dcNameMap.keySet().iterator().next();
         List<DcTbl> dcTblList = dcService.findAllDcs();
         builder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.toString()),
-                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService,
                 replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
 
@@ -209,7 +209,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         List<DcTbl> dcTblList = dcService.findAllDcs();
 
         new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
-                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 
@@ -246,7 +246,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         List<DcTbl> dcTblList = dcService.findAllDcs();
 
         DcMetaBuilder dcMetaBuilder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
-                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig);
 
@@ -264,7 +264,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         List<DcTbl> dcTblList = dcService.findAllDcs();
 
         new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()),
-                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 
@@ -307,7 +307,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         List<DcTbl> dcTblList = dcService.findAllDcs();
 
         new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(clusterType.toString()),
-                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService, clusterService, shardService, redisService,
                 replDirectionService, zoneService, keeperContainerService, applierService,
                 new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 

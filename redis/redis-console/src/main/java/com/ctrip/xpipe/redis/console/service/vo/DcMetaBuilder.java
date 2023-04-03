@@ -11,6 +11,7 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -70,6 +71,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     private DcService dcService;
 
+    private ClusterService clusterService;
+
+    private ShardService shardService;
+
+    private RedisService redisService;
+
     private ExecutorService executors;
 
     private RetryCommandFactory factory;
@@ -88,7 +95,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     private static final String DC_NAME_DELIMITER = ",";
 
     public DcMetaBuilder(Map<String, DcMeta> dcMetaMap, List<DcTbl> allDcsList, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
-                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService,
+                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService,
                          ReplDirectionService replDirectionService, ZoneService zoneService, KeeperContainerService keeperContainerService, ApplierService applierService,
                          RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMetaMap = dcMetaMap;
@@ -100,6 +107,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
         this.clusterMetaService = clusterMetaService;
         this.dcClusterShardService = dcClusterShardService;
         this.dcService = dcService;
+        this.clusterService = clusterService;
+        this.shardService = shardService;
+        this.redisService = redisService;
         this.replDirectionService = replDirectionService;
         this.zoneService = zoneService;
         this.keeperContainerService = keeperContainerService;
@@ -263,7 +273,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 dcCluster2DcClusterShardMap = Maps.newHashMap();
                 dc2DcClusterShardMap = Maps.newHashMap();
 
-                List<DcClusterShardTbl> allDcClusterShards = dcClusterShardService.findAllByDcIdAndInClusterTypes(allDcsTblList, interestClusterTypes);
+                List<DcClusterShardTbl> allDcClusterShards = findAllByDcIdAndInClusterTypes();
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
                         getLogger().warn("dcClusterInfo in dcClusterShard null");
@@ -282,6 +292,88 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             } catch (Exception e) {
                 future().setFailure(e);
             }
+        }
+
+        private List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes() {
+
+            List<ClusterTbl> allClusterTbls = clusterService.findAllClustersWithOrgInfo();
+            List<DcClusterTbl> allDcClusterTbls = dcClusterService.findAllDcClusters();
+            List<DcClusterShardTbl> allDcClusterShardTbls = dcClusterShardService.findAll();
+            List<ShardTbl> allShardTbls = shardService.findAll();
+            List<RedisTbl> allRedisTbls = redisService.findByRole(XPipeConsoleConstant.ROLE_REDIS);
+            allRedisTbls.addAll(redisService.findByRole(XPipeConsoleConstant.ROLE_KEEPER));
+
+            Map<Long, ClusterTbl> clusterId2ClusterTbl = allClusterTbls.stream().filter(clusterTbl -> interestClusterTypes.contains(clusterTbl.getClusterType().toUpperCase())).collect(Collectors.toMap(ClusterTbl::getId, clusterTbl -> clusterTbl));
+            Map<Long, List<DcClusterTbl>> dcId2DcClusterTbls = new HashMap<>();
+            for (DcClusterTbl dcClusterTbl : allDcClusterTbls) {
+                List<DcClusterTbl> dcClusterTbls = MapUtils.getOrCreate(dcId2DcClusterTbls, dcClusterTbl.getDcId(), LinkedList::new);
+                dcClusterTbls.add(dcClusterTbl);
+            }
+
+            Map<Long, List<DcClusterShardTbl>> dcClusterId2DcClusterShardTbls = new HashMap<>();
+            for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShardTbls) {
+                List<DcClusterShardTbl> dcClusterShardTbls = MapUtils.getOrCreate(dcClusterId2DcClusterShardTbls, dcClusterShardTbl.getDcClusterId(), LinkedList::new);
+                dcClusterShardTbls.add(dcClusterShardTbl);
+            }
+
+            Map<Long, ShardTbl> shardTblMap = allShardTbls.stream().collect(Collectors.toMap(ShardTbl::getId, shardTbl -> shardTbl));
+            Map<Long, List<RedisTbl>> dcClusterShardId2RedisTbls = new HashMap<>();
+            for (RedisTbl redisTbl : allRedisTbls) {
+                List<RedisTbl> redisTbls = MapUtils.getOrCreate(dcClusterShardId2RedisTbls, redisTbl.getDcClusterShardId(), LinkedList::new);
+                redisTbls.add(redisTbl);
+            }
+
+            return buildDcClusterShardTbls(allDcsTblList, clusterId2ClusterTbl, dcId2DcClusterTbls, dcClusterId2DcClusterShardTbls, shardTblMap, dcClusterShardId2RedisTbls);
+        }
+
+        List<DcClusterShardTbl> buildDcClusterShardTbls(List<DcTbl> allDcsTblList, Map<Long, ClusterTbl> clusterId2ClusterTbl,
+                                                        Map<Long, List<DcClusterTbl>> dcId2DcClusterTbls, Map<Long, List<DcClusterShardTbl>> dcClusterId2DcClusterShardTbls,
+                                                        Map<Long, ShardTbl> shardTblMap, Map<Long, List<RedisTbl>> dcClusterShardId2RedisTbls) {
+            List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
+            for (DcTbl dcTbl : allDcsTblList) {
+
+                List<DcClusterTbl> dcClusterTbls = dcId2DcClusterTbls.get(dcTbl.getId());
+                if (dcClusterTbls == null)
+                    continue;
+
+                for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
+                    List<DcClusterShardTbl> dcClusterShardTbls1 = dcClusterId2DcClusterShardTbls.get(dcClusterTbl.getDcClusterId());
+                    if (dcClusterShardTbls1 == null)
+                        continue;
+
+                    ClusterTbl clusterTbl = clusterId2ClusterTbl.get(dcClusterTbl.getClusterId());
+                    if (clusterTbl == null)
+                        continue;
+
+                    List<DcClusterShardTbl> dcClusterShardTblsWithRedis = new LinkedList<>();
+
+                    for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls1) {
+                        ShardTbl shardTbl = shardTblMap.get(dcClusterShardTbl.getShardId());
+                        if (shardTbl == null)
+                            continue;
+
+                        List<RedisTbl> redisTbls = dcClusterShardId2RedisTbls.get(dcClusterShardTbl.getDcClusterShardId());
+                        if (redisTbls == null)
+                            continue;
+
+                        redisTbls.forEach(redisTbl -> {
+                            DcClusterShardTbl local = new DcClusterShardTbl().
+                                    setDcClusterShardId(dcClusterShardTbl.getDcClusterShardId()).
+                                    setDcClusterId(dcClusterShardTbl.getDcClusterId()).
+                                    setShardId(dcClusterShardTbl.getShardId()).
+                                    setSetinelId(dcClusterShardTbl.getSetinelId());
+                            local.setDcClusterInfo(dcClusterTbl);
+                            local.setClusterInfo(clusterTbl);
+                            local.setShardInfo(shardTbl);
+                            local.setRedisInfo(redisTbl);
+                            dcClusterShardTblsWithRedis.add(local);
+                        });
+                    }
+
+                    dcClusterShardTbls.addAll(dcClusterShardTblsWithRedis);
+                }
+            }
+            return dcClusterShardTbls;
         }
 
         @Override
