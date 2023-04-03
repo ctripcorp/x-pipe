@@ -45,7 +45,7 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
     protected void doTask() {
         Channel channel = session.getChannel();
         if(channel == null || !channel.isActive()) {
-            logger.warn("[doTask] Channel null");
+            logger.debug("[doTask] Channel null");
             return;
         }
         if(localPort == -1 && remotePort == -1) {
