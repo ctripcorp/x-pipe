@@ -58,11 +58,11 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     };
 
     @Override
-    public List<RedisTbl> findByRole(String role) {
+    public List<RedisTbl> findAll() {
         return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
             @Override
             public List<RedisTbl> doQuery() throws DalException {
-                return dao.findByRole(role, RedisTblEntity.READSET_FULL);
+                return dao.findAll(RedisTblEntity.READSET_FULL);
             }
         });
     }

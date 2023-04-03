@@ -9,7 +9,7 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.List;
 
 public interface RedisService {
-	List<RedisTbl> findByRole(String role);
+	List<RedisTbl> findAll();
 
 	RedisTbl find(long id);
 

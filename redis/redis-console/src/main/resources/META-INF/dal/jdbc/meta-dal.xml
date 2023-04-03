@@ -1156,15 +1156,12 @@
 					]]>
 				</statement>
 			</query>
-			<query name='find-by-role' type='SELECT' multiple="true">
-				<param name='redis-role'/>
+			<query name="find-all" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
-					WHERE
-					<FIELD name='redis-role'/> = ${redis-role}
-					AND <FIELD name='deleted'/> = 0
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

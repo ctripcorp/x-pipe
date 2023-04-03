@@ -11,7 +11,6 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -300,8 +299,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             List<DcClusterTbl> allDcClusterTbls = dcClusterService.findAllDcClusters();
             List<DcClusterShardTbl> allDcClusterShardTbls = dcClusterShardService.findAll();
             List<ShardTbl> allShardTbls = shardService.findAll();
-            List<RedisTbl> allRedisTbls = redisService.findByRole(XPipeConsoleConstant.ROLE_REDIS);
-            allRedisTbls.addAll(redisService.findByRole(XPipeConsoleConstant.ROLE_KEEPER));
+            List<RedisTbl> allRedisTbls = redisService.findAll();
 
             Map<Long, ClusterTbl> clusterId2ClusterTbl = allClusterTbls.stream().filter(clusterTbl -> interestClusterTypes.contains(clusterTbl.getClusterType().toUpperCase())).collect(Collectors.toMap(ClusterTbl::getId, clusterTbl -> clusterTbl));
             Map<Long, List<DcClusterTbl>> dcId2DcClusterTbls = new HashMap<>();
