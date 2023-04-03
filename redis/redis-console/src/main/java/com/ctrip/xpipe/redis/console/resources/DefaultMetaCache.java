@@ -3,11 +3,11 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -21,8 +21,6 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  *         <p>
  *         Mar 31, 2017
  */
-public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
+public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, ConsoleLeaderAware {
 
     private int refreshIntervalMilli = 2000;
 
@@ -62,8 +60,17 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     }
 
-    @PostConstruct
-    public void postConstruct() {
+    @Override
+    public void isleader() {
+        loadMeta();
+    }
+
+    @Override
+    public void notLeader() {
+        shutdown();
+    }
+
+    public void loadMeta() {
 
         logger.info("[postConstruct]{}", this);
 
@@ -78,7 +85,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    @PreDestroy
+
     public void shutdown() {
         if(scheduled != null) {
             scheduled.shutdownNow();
