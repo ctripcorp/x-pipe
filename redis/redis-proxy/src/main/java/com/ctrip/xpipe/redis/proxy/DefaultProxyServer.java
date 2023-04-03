@@ -38,7 +38,7 @@ public class DefaultProxyServer implements ProxyServer {
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyServer.class);
 
-    private LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
+    private static LoggingHandler loggingHandler = new LoggingHandler(LogLevel.DEBUG);
 
     @Autowired
     private ResourceManager resourceManager;
@@ -132,7 +132,7 @@ public class DefaultProxyServer implements ProxyServer {
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(WRITE_LOW_WATER_MARK, WRITE_HIGH_WATER_MARK))
                 .childOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(config.getFixedRecvBufferSize()))
-                .handler(new LoggingHandler(LogLevel.DEBUG));
+                .handler(loggingHandler);
         return bootstrap;
     }
 
