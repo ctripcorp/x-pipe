@@ -23,10 +23,6 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
 
     private static final String TYPE = "delay";
 
-    private static final String SAME_DC = "sameDc";
-
-    private static final String CROSS_DC = "crossDc";
-
     private static final double THOUSAND = 1000.0;
 
     @Autowired
@@ -44,7 +40,7 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
 
         data.setClusterType(info.getClusterType());
         data.addTag("delayType", context.getDelayType());
-        data.addTag("delayCrossDc", foundationService.getDataCenter().equalsIgnoreCase(info.getDcId()) ? SAME_DC : CROSS_DC);
+        data.addTag("crossDc", String.valueOf(foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         if (context instanceof HeteroDelayActionContext) {
             data.addTag("srcShardId", String.valueOf(((HeteroDelayActionContext) context).getShardDbId()));
         }
