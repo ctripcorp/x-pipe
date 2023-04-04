@@ -56,10 +56,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    public DefaultMetaCache() {
-
-    }
-
     @Override
     public void isleader() {
         loadMeta();
