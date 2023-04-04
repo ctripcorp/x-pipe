@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 
@@ -21,7 +23,14 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
 
     private static final String TYPE = "delay";
 
+    private static final String SAME_DC = "sameDc";
+
+    private static final String CROSS_DC = "crossDc";
+
     private static final double THOUSAND = 1000.0;
+
+    @Autowired
+    private FoundationService foundationService;
 
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
@@ -32,8 +41,10 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
         data.setValue(context.getResult() / THOUSAND);
         data.setTimestampMilli(context.getRecvTimeMilli());
         data.setHostPort(info.getHostPort());
+
         data.setClusterType(info.getClusterType());
         data.addTag("delayType", context.getDelayType());
+        data.addTag("delayCrossDc", foundationService.getDataCenter().equalsIgnoreCase(info.getDcId()) ? SAME_DC : CROSS_DC);
         if (context instanceof HeteroDelayActionContext) {
             data.addTag("srcShardId", String.valueOf(((HeteroDelayActionContext) context).getShardDbId()));
         }
