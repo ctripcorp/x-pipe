@@ -21,10 +21,13 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -56,40 +59,59 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
+    ScheduledFuture<?> future;
+
+    AtomicBoolean taskTrigger = new AtomicBoolean(false);
+
     @Override
     public void isleader() {
-        loadMeta();
+        taskTrigger.set(true);
+        stopLoadMeta();
+        startLoadMeta();
     }
 
     @Override
     public void notLeader() {
-        shutdown();
+        taskTrigger.set(false);
+        stopLoadMeta();
     }
 
-    public void loadMeta() {
+    private void stopLoadMeta(){
+        if (future != null)
+            future.cancel(true);
+        future = null;
 
-        logger.info("[postConstruct]{}", this);
+        meta = null;
+        monitor2ClusterShard = null;
+        allKeepers = null;
+        allKeeperSize = DEFAULT_KEEPER_NUMBERS;
+        lastUpdateTime = 0;
+    }
+
+    public void startLoadMeta() {
+        logger.info("[loadMeta]{}", this);
 
         refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+                if(!taskTrigger.get())
+                    return;
                 loadCache();
             }
 
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-
+    @PreDestroy
     public void shutdown() {
         if(scheduled != null) {
             scheduled.shutdownNow();
         }
     }
 
-    private void loadCache() throws Exception {
-
+    void loadCache() throws Exception {
 
         TransactionMonitor.DEFAULT.logTransaction("MetaCache", "load", new Task() {
 
