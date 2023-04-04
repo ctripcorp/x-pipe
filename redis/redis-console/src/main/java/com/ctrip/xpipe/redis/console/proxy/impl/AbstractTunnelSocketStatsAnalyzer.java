@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
@@ -21,6 +22,8 @@ import java.util.List;
 public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketStatsAnalyzer {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final int THOUSAND = 1000;
 
     private static final List<FrontendAndBackendMetrics> EMPTY_METRICS = Collections.EMPTY_LIST;
 
@@ -79,8 +82,10 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getBackendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
+        HostPort originHostPort = tunnelStatsResult.getBackend();
+        metric.setHostPort(new HostPort(originHostPort.getHost(), originHostPort.getPort() % THOUSAND));
+        metric.addTag("thousandfoldPort", String.valueOf(originHostPort.getPort() / THOUSAND));
 
-        metric.setHostPort(tunnelStatsResult.getBackend());
         return metric;
     }
 
@@ -100,8 +105,10 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getFrontendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
+        HostPort originHostPort = tunnelStatsResult.getFrontend();
+        metric.setHostPort(new HostPort(originHostPort.getHost(), originHostPort.getPort() % THOUSAND));
+        metric.addTag("thousandfoldPort", String.valueOf(originHostPort.getPort() / THOUSAND));
 
-        metric.setHostPort(tunnelStatsResult.getFrontend());
         return metric;
     }
 
