@@ -82,12 +82,11 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getBackendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
-        HostPort originHostPort = tunnelStatsResult.getBackend();
-        metric.setHostPort(new HostPort(originHostPort.getHost(), originHostPort.getPort() % THOUSAND));
-        metric.addTag("thousandfoldPort", String.valueOf(originHostPort.getPort() / THOUSAND));
+        setHostPortTag(metric, tunnelStatsResult.getBackend());
 
         return metric;
     }
+
 
     private MetricData getFrontendMetric(MetricData metric, TunnelInfo info) {
         TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
@@ -105,11 +104,14 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getFrontendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
-        HostPort originHostPort = tunnelStatsResult.getFrontend();
+
+        setHostPortTag(metric, tunnelStatsResult.getFrontend());
+        return metric;
+    }
+
+    private void setHostPortTag(MetricData metric, HostPort originHostPort) {
         metric.setHostPort(new HostPort(originHostPort.getHost(), originHostPort.getPort() % THOUSAND));
         metric.addTag("thousandfoldPort", String.valueOf(originHostPort.getPort() / THOUSAND));
-
-        return metric;
     }
 
     private MetricData getMetricTemplate(TunnelInfo info, String clusterId, String shardId) {
