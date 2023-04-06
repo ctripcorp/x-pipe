@@ -3,11 +3,11 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -19,21 +19,23 @@ import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
  *         <p>
  *         Mar 31, 2017
  */
-public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
+public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, ConsoleLeaderAware {
 
     private int refreshIntervalMilli = 2000;
 
@@ -58,20 +60,46 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    public DefaultMetaCache() {
+    private ScheduledFuture<?> future;
 
+    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
+
+    @Override
+    public void isleader() {
+        if (taskTrigger.compareAndSet(false, true)) {
+            stopLoadMeta();
+            startLoadMeta();
+        }
     }
 
-    @PostConstruct
-    public void postConstruct() {
+    @Override
+    public void notLeader() {
+        if (taskTrigger.compareAndSet(true, false))
+            stopLoadMeta();
+    }
 
-        logger.info("[postConstruct]{}", this);
+    private void stopLoadMeta(){
+        if (future != null)
+            future.cancel(true);
+        future = null;
+
+        meta = null;
+        monitor2ClusterShard = null;
+        allKeepers = null;
+        allKeeperSize = DEFAULT_KEEPER_NUMBERS;
+        lastUpdateTime = 0;
+    }
+
+    public void startLoadMeta() {
+        logger.info("[loadMeta]{}", this);
 
         refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+                if(!taskTrigger.get())
+                    return;
                 loadCache();
             }
 
@@ -85,8 +113,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         }
     }
 
-    private void loadCache() throws Exception {
-
+    void loadCache() throws Exception {
 
         TransactionMonitor.DEFAULT.logTransaction("MetaCache", "load", new Task() {
 
@@ -177,4 +204,13 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         return createDividedMeta(xpipeMeta, requestClusters);
     }
 
+    @VisibleForTesting
+    ScheduledFuture<?> getFuture() {
+        return future;
+    }
+
+    @VisibleForTesting
+    AtomicBoolean getTaskTrigger() {
+        return taskTrigger;
+    }
 }

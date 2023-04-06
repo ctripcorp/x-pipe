@@ -62,6 +62,27 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         metaCache.setMonitor2ClusterShard(Maps.newHashMap());
     }
 
+    @Test
+    public void leaderTest() throws Exception {
+        when(consoleConfig.getCacheRefreshInterval()).thenReturn(10);
+        metaCache.isleader();
+        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertNotNull(metaCache.getFuture());
+
+        metaCache.notLeader();
+
+        Assert.assertFalse(metaCache.getTaskTrigger().get());
+        Assert.assertNull(metaCache.getFuture());
+        Assert.assertNull(metaCache.meta);
+        Assert.assertEquals(metaCache.DEFAULT_KEEPER_NUMBERS, metaCache.allKeeperSize);
+        Assert.assertEquals(0, metaCache.lastUpdateTime);
+        Assert.assertNull(metaCache.allKeepers);
+
+        metaCache.isleader();
+        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertNotNull(metaCache.getFuture());
+    }
+
 
     @Test
     public void getRouteIfPossible() {
