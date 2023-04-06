@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PreDestroy;
@@ -59,21 +60,22 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    ScheduledFuture<?> future;
+    private ScheduledFuture<?> future;
 
-    AtomicBoolean taskTrigger = new AtomicBoolean(false);
+    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
     @Override
     public void isleader() {
-        taskTrigger.set(true);
-        stopLoadMeta();
-        startLoadMeta();
+        if (taskTrigger.compareAndSet(false, true)) {
+            stopLoadMeta();
+            startLoadMeta();
+        }
     }
 
     @Override
     public void notLeader() {
-        taskTrigger.set(false);
-        stopLoadMeta();
+        if (taskTrigger.compareAndSet(true, false))
+            stopLoadMeta();
     }
 
     private void stopLoadMeta(){
@@ -202,4 +204,13 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return createDividedMeta(xpipeMeta, requestClusters);
     }
 
+    @VisibleForTesting
+    ScheduledFuture<?> getFuture() {
+        return future;
+    }
+
+    @VisibleForTesting
+    AtomicBoolean getTaskTrigger() {
+        return taskTrigger;
+    }
 }
