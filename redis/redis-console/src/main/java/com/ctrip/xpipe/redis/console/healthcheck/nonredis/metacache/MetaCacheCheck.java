@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class MetaCacheCheck extends AbstractIntervalCheck {
+public class MetaCacheCheck extends AbstractSiteLeaderIntervalCheck {
 
     @Autowired
     private MetaCache metaCache;
