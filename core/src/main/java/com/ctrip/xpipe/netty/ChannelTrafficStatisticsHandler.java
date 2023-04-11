@@ -97,7 +97,7 @@ public abstract class ChannelTrafficStatisticsHandler extends AbstractNettyHandl
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof ByteBuf) {
-            logger.debug("[write]{}", ((ByteBuf) msg).toString(CharsetUtil.UTF_8));
+            if (logger.isDebugEnabled()) logger.debug("[write]{}", ((ByteBuf) msg).toString(CharsetUtil.UTF_8));
             writtenBytes.addAndGet(((ByteBuf) msg).readableBytes());
         } else if (msg instanceof FileRegion) {
             writtenBytes.addAndGet(((FileRegion) msg).count());
