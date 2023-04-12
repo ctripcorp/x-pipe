@@ -78,11 +78,12 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             stopLoadMeta();
     }
 
-    private void stopLoadMeta(){
+    private synchronized void stopLoadMeta(){
         if (future != null)
             future.cancel(true);
         future = null;
 
+        clusterParts = null;
         meta = null;
         monitor2ClusterShard = null;
         allKeepers = null;
@@ -135,10 +136,11 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                     redisCheckRuleMetas.add(redisCheckRuleMeta);
                 }
 
-
-                refreshClusterParts();
-                XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
-                refreshMeta(xpipeMeta);
+                synchronized (this) {
+                    refreshClusterParts();
+                    XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
+                    refreshMeta(xpipeMeta);
+                }
             }
 
             @Override
@@ -194,7 +196,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     }
 
     @Override
-    public XpipeMeta getDividedXpipeMeta(int partIndex) {
+    public synchronized XpipeMeta getDividedXpipeMeta(int partIndex) {
         if (null == meta || null == clusterParts) throw new DataNotFoundException("data not ready");
         if (partIndex >= clusterParts.size()) throw new DataNotFoundException("no part " + partIndex);
 
