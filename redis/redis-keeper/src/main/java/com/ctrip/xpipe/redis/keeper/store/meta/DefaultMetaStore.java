@@ -74,7 +74,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	public boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
-			if (metaDup.getRdbFile().equals(rdbFile)) {
+			if (rdbFile.equals(metaDup.getRdbFile())) {
 				metaDup.setRdbGtidSet(gtidSet);
 				saveMeta(metaDup);
 				return true;
