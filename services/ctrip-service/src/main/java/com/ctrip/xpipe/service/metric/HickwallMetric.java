@@ -146,10 +146,7 @@ public class HickwallMetric implements MetricProxy {
                 .tag("source", CURRENT_DC_ID);
 
         if (null != md.getDcName()) pointBuilder.tag("dc", md.getDcName());
-        if (null != md.getHostPort()) {
-            pointBuilder.tag("endpoint", getEndpoint(md));
-            pointBuilder.tag("address", md.getHostPort().toString());
-        }
+        if (null != md.getHostPort()) pointBuilder.tag("address", md.getHostPort().toString());
         if (null != md.getClusterName()) pointBuilder.tag("cluster", md.getClusterName());
         if (null != md.getShardName()) pointBuilder.tag("shard", md.getShardName());
         if (null != md.getClusterType()) pointBuilder.tag("clustertype", md.getClusterType());
@@ -164,13 +161,6 @@ public class HickwallMetric implements MetricProxy {
 
     private String getLocalIP() {
         return Foundation.net().getHostAddress();
-    }
-
-    private String getEndpoint(MetricData md) {
-        String redisToPattern = getFormattedRedisAddr(md.getHostPort());
-        String srcConsoleIpToPattern = srcConsoleIpTag;
-        return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
-
     }
 
     @VisibleForTesting
