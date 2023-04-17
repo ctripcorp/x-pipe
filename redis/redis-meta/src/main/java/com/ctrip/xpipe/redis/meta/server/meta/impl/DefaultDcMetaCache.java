@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.*;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,12 +30,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author wenchao.meng
@@ -51,6 +50,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public static int META_MODIFY_PROTECT_COUNT = 20;
 
 	public static final String META_CHANGE_TYPE = "MetaChange";
+
+	private Map<Long, ReentrantLock> lockMap = Maps.newConcurrentMap();
 
 	@Autowired(required = false)
 	private ConsoleService consoleService;
@@ -326,8 +327,19 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("mod:%s", clusterMeta.getId()));
 
-		ClusterMeta current = dcMetaManager.get().getClusterMeta(clusterMeta.getId());
-		dcMetaManager.get().update(clusterMeta);
+		ReentrantLock lock = lockMap.computeIfAbsent(clusterMeta.getDbId(), key -> new ReentrantLock());
+
+		ClusterMeta current = null;
+		try {
+			lock.lock();
+			current = dcMetaManager.get().getClusterMeta(clusterMeta.getId());
+			dcMetaManager.get().update(clusterMeta);
+		} catch (Exception e) {
+			logger.info("[clusterModified]exception{}, {}", current, clusterMeta, e);
+			throw e;
+		} finally {
+			lock.unlock();
+		}
 
 		logger.info("[clusterModified]{}, {}", current, clusterMeta);
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterChanged(current, clusterMeta);
