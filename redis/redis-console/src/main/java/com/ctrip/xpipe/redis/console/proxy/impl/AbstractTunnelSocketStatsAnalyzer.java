@@ -25,6 +25,10 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     private static final int THOUSAND = 1000;
 
+    private static final String SOCKET_STATS_SPLITTER = "\\s* \\s*";
+
+    private static final String HOST_SPLITTER = "\\s*:\\s*";
+
     private static final List<FrontendAndBackendMetrics> EMPTY_METRICS = Collections.EMPTY_LIST;
 
     @Override
@@ -82,7 +86,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getBackendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
-        setHostPortTag(metric, tunnelStatsResult.getBackend());
+        setLocalRemoteHostPorts(metric, socketStatsResult);
 
         return metric;
     }
@@ -105,13 +109,24 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
 
-        setHostPortTag(metric, tunnelStatsResult.getFrontend());
+        setLocalRemoteHostPorts(metric, socketStatsResult);
         return metric;
     }
+    private void setLocalRemoteHostPorts(MetricData metric, SocketStatsResult socketStatsResult) {
+        String[] splits = socketStatsResult.getResult().get(0).split(SOCKET_STATS_SPLITTER);
+        if (splits.length < 5) return ;
 
-    private void setHostPortTag(MetricData metric, HostPort originHostPort) {
-        metric.setHostPort(new HostPort(originHostPort.getHost(), originHostPort.getPort() % THOUSAND));
-        metric.addTag("thousandfoldPort", String.valueOf(originHostPort.getPort() / THOUSAND));
+        String[] localSplits = splits[3].split(HOST_SPLITTER);
+        setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), "local");
+
+        String[] remoteSplits = splits[4].split(HOST_SPLITTER);
+        setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), "remote");
+
+    }
+
+    private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
+        metric.addTag(prefix + "HostPort", new HostPort(host, port % THOUSAND).toString());
+        metric.addTag(prefix + "ThousandfoldPort", String.valueOf(port / THOUSAND));
     }
 
     private MetricData getMetricTemplate(TunnelInfo info, String clusterId, String shardId) {
