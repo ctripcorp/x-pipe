@@ -86,8 +86,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getBackendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
-        setLocalRemoteHostPorts(metric, socketStatsResult);
-
+        setSrcDstHostPorts(metric, socketStatsResult, false);
         return metric;
     }
 
@@ -108,20 +107,19 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             logger.warn("[getFrontendMetric]no tunnelStatsResult found in tunnelInfo {}:{}", info.getTunnelDcId(), info.getTunnelId());
             throw new XPipeProxyResultException("no tunnelStatsResult found in tunnelInfo");
         }
-
-        setLocalRemoteHostPorts(metric, socketStatsResult);
+        setSrcDstHostPorts(metric, socketStatsResult, true);
         return metric;
     }
-    private void setLocalRemoteHostPorts(MetricData metric, SocketStatsResult socketStatsResult) {
+    private void setSrcDstHostPorts(MetricData metric, SocketStatsResult socketStatsResult, boolean isFrontend) {
+        metric.addTag("socketType", isFrontend ? "frontend" : "backend");
         String[] splits = socketStatsResult.getResult().get(0).split(SOCKET_STATS_SPLITTER);
-        if (splits.length < 5) return ;
+        if (splits.length < 5) return;
 
         String[] localSplits = splits[3].split(HOST_SPLITTER);
-        setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), "local");
+        setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? "src" : "dst");
 
         String[] remoteSplits = splits[4].split(HOST_SPLITTER);
-        setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), "remote");
-
+        setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? "dst" : "src");
     }
 
     private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
