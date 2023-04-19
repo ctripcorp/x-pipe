@@ -21,7 +21,7 @@ function ProxyService($resource, $q, $http) {
         },
         get_proxy_chain_hickwall_addr:{
             method: 'GET',
-            url: '/console/proxy/chain/hickwall/:clusterId/:shardId',
+            url: '/console/proxy/chain/hickwall/:clusterId/:shardId/:dstDc',
             isArray: false
         },
         get_proxy_status_all: {
@@ -72,11 +72,12 @@ function ProxyService($resource, $q, $http) {
         return d.promise;
     }
 
-    function getProxyChainHickwall(clusterId, shardId) {
+    function getProxyChainHickwall(clusterId, shardId, dstDc) {
         var d = $q.defer();
         resource.get_proxy_chain_hickwall_addr({
                 clusterId: clusterId,
-                shardId: shardId
+                shardId: shardId,
+                dstDc: dstDc
             },
             function (result) {
                 d.resolve(result);

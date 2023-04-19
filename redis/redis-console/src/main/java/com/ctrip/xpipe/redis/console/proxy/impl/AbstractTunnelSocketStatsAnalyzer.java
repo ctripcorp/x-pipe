@@ -29,9 +29,9 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     private static final String HOST_SPLITTER = "\\s*:\\s*";
 
-    private static final String METRIC_TAG_BACKUP_DC = "backupDc";
+    private static final String METRIC_TAG_DST_DC = "dstDc";
 
-    private static final String METRIC_TAG_PEER_DC = "peerDc";
+    private static final String METRIC_TAG_SRC_DC = "srcDc";
 
     private static final String METRIC_TAG_SOCKET_TYPE = "socketType";
     private static final String METRIC_TAG_SOCKET_TYPE_FRONTEND = "frontend";
@@ -95,8 +95,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_BACKUP_DC, backupDc);
-        metric.addTag(METRIC_TAG_PEER_DC, peerDc);
+        metric.addTag(METRIC_TAG_DST_DC, backupDc);
+        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -120,8 +120,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_BACKUP_DC, backupDc);
-        metric.addTag(METRIC_TAG_PEER_DC, peerDc);
+        metric.addTag(METRIC_TAG_DST_DC, backupDc);
+        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -144,8 +144,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
     }
 
     private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
-        metric.addTag(prefix + "HostPort", new HostPort(host, port % THOUSAND).toString());
-        metric.addTag(prefix + "ThousandfoldPort", String.valueOf(port / THOUSAND));
+        metric.addTag(prefix + "HostPort", new HostPort(host, port / THOUSAND).toString());
+        metric.addTag(prefix + "PortReminder", String.valueOf(port % THOUSAND));
     }
 
     private MetricData getMetricTemplate(TunnelInfo info, String clusterId, String shardId) {

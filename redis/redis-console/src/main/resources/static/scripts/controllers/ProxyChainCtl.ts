@@ -83,7 +83,7 @@ function ProxyChainCtl($rootScope, $scope, $window, AppUtil, toastr, ProxyServic
                 for (var shardId in result.toJSON()) {
                     var shardChains = result[shardId];
                     shardChains.forEach(function (chain) {
-                        getMetricHickwalls(clusterName, shardId)
+                        getMetricHickwalls(clusterName, shardId, $scope.currentDcName)
                             .then(function (value) { chain.metrics = value });
                      });
                 }
@@ -97,8 +97,8 @@ function ProxyChainCtl($rootScope, $scope, $window, AppUtil, toastr, ProxyServic
         $window.open(uri);
     }
 
-    function getMetricHickwalls(clusterId, shardId) {
-        return ProxyService.getProxyChainHickwall(clusterId, shardId);
+    function getMetricHickwalls(clusterId, shardId, dstDc) {
+        return ProxyService.getProxyChainHickwall(clusterId, shardId, dstDc);
     }
 
     function gotoHickwallWebSite(addr) {
