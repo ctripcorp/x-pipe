@@ -29,7 +29,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
     @Before
     public void beforeSentinelServiceImplTest() {
         MockitoAnnotations.initMocks(this);
-        int size = randomInt(0, 100);
+        int size = randomInt(1, 100);
         for (int i = 0; i < size; i++) {
             sentinels.add(new SetinelTbl().setSetinelId(i));
         }

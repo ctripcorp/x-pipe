@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisInstanceInfoT
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.RedisController;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.RedisControllerTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.RouteInfoControllerTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.ExclusiveThreadsForMigrationTest;
 import com.ctrip.xpipe.redis.console.dao.*;
@@ -222,7 +223,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterTypeUpdateEventListenerTest.class,
 
         RouteInfoControllerTest.class,
-        RedisController.class,
+        RedisControllerTest.class,
         DcRelationsServiceTest.class
 })
 public class AllTests {

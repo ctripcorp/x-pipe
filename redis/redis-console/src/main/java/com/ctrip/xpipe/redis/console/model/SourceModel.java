@@ -18,6 +18,10 @@ public class SourceModel implements java.io.Serializable{
 		return shards;
 	}
 
+	public void setShards(List<ShardModel> shards) {
+		this.shards = shards;
+	}
+
 	public SourceModel addShardModel(ShardModel shardModel) {
 		shards.add(shardModel);
 		return this;
