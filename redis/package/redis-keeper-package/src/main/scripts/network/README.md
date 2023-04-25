@@ -19,7 +19,7 @@
   - iplist_ptoy
   - consoleiplist_ptoy
   - a10ip_ptoy
-- iplist_ptjq 包含ptfq的beacon，mysql，credis client的ip
+- iplist_ptfq 包含ptfq的beacon，mysql，credis client的ip
 - 假设ptjq是主机房, ptoy是备机房。断网时, ptjq的所有ip会使用iptables drop掉ptoy和ptfq的所有ip，ptjq的console会多drop掉a10ptoy的ip; ptoy的console会drop掉a10ptjq的ip
 
 2.执行断网
