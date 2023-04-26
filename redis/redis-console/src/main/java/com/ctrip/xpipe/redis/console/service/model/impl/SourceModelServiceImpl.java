@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SourceModelServiceImpl implements SourceModelService {
@@ -53,11 +54,9 @@ public class SourceModelServiceImpl implements SourceModelService {
 
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
             SourceModel sourceModel = new SourceModel().setReplDirectionInfoModel(replDirectionInfoModel);
-            for (ShardTbl shard : shards) {
-                ShardModel sourceShard = shardModelService.getShardModel(dcName, clusterName, shard.getShardName(),
-                        true, replDirectionInfoModel);
-                if (sourceShard != null) sourceModel.addShardModel(sourceShard);
-            }
+            List<ShardModel> shardModels = shardModelService.getMultiShardModel(dcName, clusterName,
+                shards, true, replDirectionInfoModel);
+            sourceModel.setShards(shardModels);
             sourceModels.add(sourceModel);
         }
         return sourceModels;
@@ -71,10 +70,8 @@ public class SourceModelServiceImpl implements SourceModelService {
         if (null == shards) return null;
 
         SourceModel sourceModel = new SourceModel().setReplDirectionInfoModel(replDirection);
-        for (ShardTbl shard : shards) {
-            ShardModel sourceShard = shardModelService.getShardModel(dcName, clusterName, shard.getShardName(), true, replDirection);
-            if (sourceShard != null) sourceModel.addShardModel(sourceShard);
-        }
+        List<ShardModel> shardModels = shardModelService.getMultiShardModel(dcName, clusterName, shards, true, replDirection);
+        sourceModel.setShards(shardModels);
 
         return sourceModel;
     }
