@@ -20,7 +20,7 @@ import javax.annotation.PostConstruct;
  * date 2021/5/5
  */
 @RestController
-@RequestMapping("/api/migration")
+@RequestMapping("/api")
 public class MigrationInfoApi extends AbstractConsoleController {
 
     @Autowired
@@ -41,7 +41,7 @@ public class MigrationInfoApi extends AbstractConsoleController {
         cachedProgress = new TimeBoundCache<>(config::getCacheRefreshInterval, () -> migrationService.buildMigrationProgress(DEFAULT_HOURS));
     }
 
-    @GetMapping("/system/health")
+    @GetMapping("/migration/system/health")
     public MigrationSystemStatus getMigrationSystemHealth() {
         MigrationSystemAvailableChecker.MigrationSystemAvailability systemAvailability = migrationSystemAvailableChecker.getResult();
 
@@ -52,7 +52,7 @@ public class MigrationInfoApi extends AbstractConsoleController {
         return migrationSystemStatus;
     }
 
-    @GetMapping("/info/progress")
+    @GetMapping("/dr/progress")
     public MigrationProgress getCurrentMigrationProgress(@RequestParam(defaultValue = "false") Boolean disableCache,
                                                          @RequestParam(required = false) Integer hours) {
         if (null != hours && disableCache) {

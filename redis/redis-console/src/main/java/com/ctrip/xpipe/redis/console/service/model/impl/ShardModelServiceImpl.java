@@ -8,10 +8,16 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.dianping.cat.utils.StringUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -38,20 +44,92 @@ public class ShardModelServiceImpl implements ShardModelService{
 	@Autowired
 	private KeeperContainerService keeperContainerService;
 
+    private static final Logger logger = LoggerFactory.getLogger(ShardModelServiceImpl.class);
+
+    private final ExecutorService FIXED_THREAD_POOL = Executors
+        .newFixedThreadPool(6, XpipeThreadFactory.create(getClass().getSimpleName()));
+
 	@Override
-	public List<ShardModel> getAllShardModel(String dcName, String clusterName) {
-		List<ShardModel> shardModels = new ArrayList<ShardModel>(); 
-		List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
-		
-		if(null != shards) {
-			for(ShardTbl shard : shards) {
-				ShardModel shardModel = getShardModel(dcName, clusterName, shard.getShardName(), false, null);
-				if (shardModel != null) shardModels.add(shardModel);
-			}
-		}
-			
-		return shardModels;
+    public List<ShardModel> getAllShardModel(String dcName, String clusterName) {
+        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
+
+        if (CollectionUtils.isEmpty(shards)) {
+            return new ArrayList<>();
+        } else {
+            return this.getMultiShardModel(dcName, clusterName, shards, false, null);
+        }
 	}
+
+    @Override
+    public List<ShardModel> getMultiShardModel(final String dcName, final String clusterName,
+        final List<ShardTbl> shards, final boolean isSourceShard,
+        final ReplDirectionInfoModel replDirectionInfoModel) {
+        if (StringUtils.isEmpty(dcName) || StringUtils.isEmpty(clusterName)
+            || CollectionUtils.isEmpty(shards)) {
+            return new ArrayList<>();
+        }
+
+        Future<DcTbl> dcFuture = FIXED_THREAD_POOL.submit(() -> dcService.find(dcName));
+        Future<ClusterTbl> clusterFuture = FIXED_THREAD_POOL.submit(() -> clusterService.find(clusterName));
+        Future<DcClusterTbl> dcClusterFuture = FIXED_THREAD_POOL.submit(() -> dcClusterService.find(dcName, clusterName));
+
+        List<Future<DcClusterShardTbl>> dcClusterShardFutures = new ArrayList<>();
+        shards.forEach(shard -> {
+            Future<DcClusterShardTbl> dcClusterShardFuture = FIXED_THREAD_POOL.submit(() -> {
+                if (isSourceShard) {
+                    return dcClusterShardService.find(replDirectionInfoModel.getSrcDcName(),
+                        clusterName, shard.getShardName());
+                } else {
+                    return dcClusterShardService.find(dcName, clusterName, shard.getShardName());
+                }
+            });
+            dcClusterShardFutures.add(dcClusterShardFuture);
+        });
+
+        List<ShardModel> shardModels = new ArrayList<>();
+        try {
+            DcTbl dcInfo = dcFuture.get(6, TimeUnit.SECONDS);
+            ClusterTbl clusterInfo = clusterFuture.get(6, TimeUnit.SECONDS);
+            DcClusterTbl dcClusterInfo = dcClusterFuture.get(6, TimeUnit.SECONDS);
+            if(null == dcInfo || null == clusterInfo || null == dcClusterInfo) {
+                return shardModels;
+            }
+
+            Map<Long, Long> containerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
+            for (int i = 0; i < shards.size(); i++) {
+                ShardTbl shardInfo = shards.get(i);
+                Future<DcClusterShardTbl> dcClusterShardFuture = dcClusterShardFutures.get(i);
+                try{
+                    if (null == dcClusterShardFuture.get(4, TimeUnit.SECONDS)) {
+                        continue;
+                    }
+                } catch (TimeoutException e) {
+                    logger.warn("get shard timeout, dc: {}, cluster: {}, shard: {}",
+                        dcInfo.getDcName(), clusterInfo.getClusterName(), shardInfo.getShardName());
+
+                    ShardModel fakeModel = new ShardModel();
+                    fakeModel.setShardTbl(shardInfo);
+                    shardModels.add(fakeModel);
+                    continue;
+                }
+
+                ShardModel shardModel = this.getShardModel(dcInfo, clusterInfo, shardInfo,
+                    dcClusterInfo, dcClusterShardFuture.get(), isSourceShard,
+                    replDirectionInfoModel, containerIdDcMap);
+                if (null != shardModel) {
+                    shardModels.add(shardModel);
+                }
+            }
+
+            return shardModels;
+        } catch (TimeoutException e) {
+            throw new ServerException("Server busy, please try again later", e);
+        } catch (ExecutionException e) {
+            throw new DataNotFoundException("Cannot construct shard-model", e);
+        } catch (InterruptedException e) {
+            throw new ServerException("Concurrent execution failed.", e);
+        }
+    }
 
 	@Override
 	public ShardModel getSourceShardModel(String clusterName, String srcDcName, String toDcName, String shardName) {
@@ -63,64 +141,27 @@ public class ShardModelServiceImpl implements ShardModelService{
 	}
 
 	@Override
-	public ShardModel getShardModel(final String dcName, final String clusterName, final String shardName,
-									boolean isSourceShard, final ReplDirectionInfoModel replDirectionInfoModel) {
-		ExecutorService fixedThreadPool = Executors.newFixedThreadPool(5);
-		Future<DcTbl> future_dcInfo = fixedThreadPool.submit(new Callable<DcTbl>() {
-			@Override
-			public DcTbl call() throws Exception {
-				return dcService.find(dcName);
-			}
-		});
-		Future<ClusterTbl> future_clusterInfo = fixedThreadPool.submit(new Callable<ClusterTbl>() {
-			@Override
-			public ClusterTbl call() throws Exception {
-				return clusterService.find(clusterName);
-			}
-		});
-		Future<ShardTbl> future_shardInfo = fixedThreadPool.submit(new Callable<ShardTbl>() {
-			@Override
-			public ShardTbl call() throws Exception {
-				return shardService.find(clusterName, shardName);
-			}
-		});
-		Future<DcClusterTbl> future_dcClusterInfo = fixedThreadPool.submit(new Callable<DcClusterTbl>() {
-			@Override
-			public DcClusterTbl call() throws Exception {
-				return dcClusterService.find(dcName, clusterName);
-			}
-		});
-		Future<DcClusterShardTbl> future_dcClusterShardInfo = fixedThreadPool.submit(new Callable<DcClusterShardTbl>() {
-			@Override
-			public DcClusterShardTbl call() throws Exception {
-				if (isSourceShard) {
-					return dcClusterShardService.find(replDirectionInfoModel.getSrcDcName(), clusterName, shardName);
-				} else {
-					return dcClusterShardService.find(dcName, clusterName, shardName);
-				}
-			}
-		});
-		
-		try {
-			if(null == future_dcInfo.get() || null == future_clusterInfo.get() || null == future_shardInfo.get()
-					|| null == future_dcClusterInfo.get() || future_dcClusterShardInfo.get() == null) {
-				return null;
-			}
-			return getShardModel(future_dcInfo.get(),future_clusterInfo.get(),future_shardInfo.get(),
-					future_dcClusterInfo.get(), future_dcClusterShardInfo.get(), isSourceShard, replDirectionInfoModel);
-		} catch (ExecutionException e) {
-			throw new DataNotFoundException("Cannot construct shard-model", e);
-		} catch (InterruptedException e) {
-			throw new ServerException("Concurrent execution failed.", e);
-		} finally {
-			fixedThreadPool.shutdown();
-		}
+	public ShardModel getShardModel(final String dcName, final String clusterName,
+        final String shardName, boolean isSourceShard,
+        final ReplDirectionInfoModel replDirectionInfoModel) {
+        ShardTbl shard = shardService.find(clusterName, shardName);
+        if (null == shard) {
+            return null;
+        }
+		List<ShardModel> shardModels = this.getMultiShardModel(dcName, clusterName,
+            Collections.singletonList(shard), isSourceShard, replDirectionInfoModel);
+        if (CollectionUtils.isEmpty(shardModels)) {
+            return null;
+        } else {
+            return shardModels.get(0);
+        }
 	}
-	
-	private ShardModel getShardModel(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, DcClusterTbl dcClusterInfo,
-			 DcClusterShardTbl dcClusterShardInfo, boolean isSourceShard, ReplDirectionInfoModel replDirectionInfoModel) {
+
+	private ShardModel getShardModel(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo,
+        DcClusterTbl dcClusterInfo, DcClusterShardTbl dcClusterShardInfo, boolean isSourceShard,
+        ReplDirectionInfoModel replDirectionInfoModel, Map<Long, Long> containerIdDcMap) {
 		if(null == dcInfo || null == clusterInfo || null == shardInfo
-				|| null == dcClusterInfo || null == dcClusterShardInfo) {
+            || null == dcClusterInfo || null == dcClusterShardInfo) {
 			return null;
 		}
 
@@ -130,45 +171,45 @@ public class ShardModelServiceImpl implements ShardModelService{
 
 		ShardModel shardModel = new ShardModel();
 		shardModel.setShardTbl(shardInfo);
-		Map<Long, Long> keeperContainerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
 		if (isSourceShard && replDirectionInfoModel != null) {
-			addAppliersAndKeepersToSourceShard(shardModel, shardInfo.getId(), replDirectionInfoModel.getId(), dcInfo.getId(),
-					dcClusterShardInfo.getDcClusterShardId(), keeperContainerIdDcMap);
+			this.addAppliersAndKeepersToSourceShard(shardModel, shardInfo.getId(),
+                replDirectionInfoModel.getId(), dcInfo.getId(),
+                dcClusterShardInfo.getDcClusterShardId(), containerIdDcMap);
 		} else {
-			addRedisesAndKeepersToNormalShard(shardModel, dcClusterShardInfo.getDcClusterShardId(),
-														dcInfo.getId(), keeperContainerIdDcMap);
+			this.addRedisesAndKeepersToNormalShard(shardModel,
+                dcClusterShardInfo.getDcClusterShardId(), dcInfo.getId(), containerIdDcMap);
 		}
-		
+
 		return shardModel;
 	}
 
-	private void addAppliersAndKeepersToSourceShard(ShardModel shardModel, long shardId, long replDirectionId,
-													long dcId, long dcClusterShardId, Map<Long, Long> keeperContainerIdDcMap) {
+	private void addAppliersAndKeepersToSourceShard(ShardModel shardModel, long shardId,
+        long replDirectionId, long dcId, long dcClusterShardId, Map<Long, Long> containerIdDcMap) {
 		List<ApplierTbl> appliers = applierService.findApplierTblByShardAndReplDirection(shardId, replDirectionId);
-        appliers.forEach(applier -> shardModel.addApplier(applier));
+        appliers.forEach(shardModel::addApplier);
 
         List<RedisTbl> keepers = redisService.findAllByDcClusterShard(dcClusterShardId);
 		if(null != keepers) {
-			for (RedisTbl keeper : keepers) {
-				if (keeper.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER) &&
-						ObjectUtils.equals(Long.valueOf(dcId), keeperContainerIdDcMap.get(Long.valueOf(keeper.getKeepercontainerId())))) {
+            for (RedisTbl keeper : keepers) {
+                Long containerDcId = containerIdDcMap.get(keeper.getKeepercontainerId());
+                if (keeper.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)
+                    && ObjectUtils.equals(dcId, containerDcId)) {
 					shardModel.addKeeper(keeper);
 				}
 			}
 		}
 	}
 
-	private void addRedisesAndKeepersToNormalShard(ShardModel shardModel, long dcClusterShardId, long dcId,
-												   Map<Long, Long> keeperContainerIdDcMap) {
-		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardId);
-		if(null != shard_redises) {
-			for(RedisTbl redis : shard_redises) {
+	private void addRedisesAndKeepersToNormalShard(ShardModel shardModel, long dcClusterShardId,
+        long dcId, Map<Long, Long> containerIdDcMap) {
+		List<RedisTbl> shardRedises = redisService.findAllByDcClusterShard(dcClusterShardId);
+		if(null != shardRedises) {
+			for(RedisTbl redis : shardRedises) {
 				if(redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
 					shardModel.addRedis(redis);
 				} else {
-					if (ObjectUtils.equals(Long.valueOf(dcId),
-							keeperContainerIdDcMap.get(Long.valueOf(redis.getKeepercontainerId())))) {
-						shardModel.addKeeper(redis);
+                    if (ObjectUtils.equals(dcId, containerIdDcMap.get(redis.getKeepercontainerId()))) {
+                        shardModel.addKeeper(redis);
 					}
 				}
 			}
