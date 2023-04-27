@@ -63,8 +63,8 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public List<ProxyModel> getMonitorActiveProxies() {
-        return convert(proxyDao.getMonitorActiveProxyTbls());
+    public List<ProxyModel> getMonitorActiveProxiesByDc(String dcName) {
+        return convert(proxyDao.getMonitorActiveProxyTblsByDc(dcName));
     }
 
     private List<ProxyModel> convert(List<ProxyTbl> proxyTbls) {

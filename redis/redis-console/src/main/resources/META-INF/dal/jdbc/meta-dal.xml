@@ -2391,6 +2391,8 @@
 	</entity>
 
 	<entity name="proxy-tbl" table="proxy_tbl" alias="pt">
+		<var name="dc-name" value-type="String"/>
+		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 
 		<readsets>
 			<readset name="id-dc-uri">
@@ -2424,13 +2426,17 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-all-monitor-active" type="SELECT" multiple="true">
+			<query name="find-all-monitor-active-by-dc" type="SELECT" multiple="true">
+				<param name="dc-name"/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='deleted'/> = 0
+					FROM <TABLE/>, <TABLE name='dc-info'/>
+					WHERE dt.dc_name = ${dc-name}
+					AND <FIELD name='dc-id'/> = dt.id
 					AND <FIELD name='monitor-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					AND dt.deleted = 0
 					]]>
 				</statement>
 			</query>

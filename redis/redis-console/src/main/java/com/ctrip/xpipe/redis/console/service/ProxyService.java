@@ -25,7 +25,7 @@ public interface ProxyService extends ProxyManager {
 
     List<ProxyModel> getAllProxies();
 
-    List<ProxyModel> getMonitorActiveProxies();
+    List<ProxyModel> getMonitorActiveProxiesByDc(String dcName);
 
     void updateProxy(ProxyModel model);
 
