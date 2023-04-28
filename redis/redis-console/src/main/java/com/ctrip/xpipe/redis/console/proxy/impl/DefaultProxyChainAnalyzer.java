@@ -271,13 +271,25 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
                         break;
                     }
                 }
-                if(backupDcId != null) {
-                    DcClusterShardPeer key = new DcClusterShardPeer(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId);
-                    DefaultProxyChain chain = new DefaultProxyChain(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId, entry.getValue());
-
-                    results.put(key,chain);
-                    entry.getValue().forEach(tunnelInfo -> tunnelMapping.put(tunnelInfo.getTunnelId(), key));
+                if (backupDcId == null) {
+                    backupDcId = metaCache.getAllKeeperContainersDcMap().get(chainSrc.getHost());
                 }
+                if (backupDcId == null) {
+                    backupDcId = metaCache.getAllApplierContainersDcMap().get(chainSrc.getHost());
+                }
+                if (backupDcId == null) {
+                    backupDcId = metaCache.getDcByIpAndClusterShard(chainSrc.getHost(), peerClusterShard);
+                }
+                if (backupDcId == null) {
+                    logger.debug("[analyzeProxyChain] get backupDc fail by chainSrc {}", chainSrc);
+                    continue;
+                }
+
+                DcClusterShardPeer key = new DcClusterShardPeer(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId);
+                DefaultProxyChain chain = new DefaultProxyChain(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId, entry.getValue());
+
+                results.put(key,chain);
+                entry.getValue().forEach(tunnelInfo -> tunnelMapping.put(tunnelInfo.getTunnelId(), key));
             }
 
             synchronized (DefaultProxyChainAnalyzer.this) {

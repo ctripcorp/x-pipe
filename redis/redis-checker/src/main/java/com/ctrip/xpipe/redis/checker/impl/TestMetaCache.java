@@ -52,7 +52,17 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Map<String, String> getAllKeeperContainersDcMap() {
+        return null;
+    }
+
+    @Override
     public Pair<String, String> findClusterShard(HostPort hostPort) {
+        return null;
+    }
+
+    @Override
+    public Map<String, String> getAllApplierContainersDcMap() {
         return null;
     }
 

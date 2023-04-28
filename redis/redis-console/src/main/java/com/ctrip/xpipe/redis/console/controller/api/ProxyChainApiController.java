@@ -18,7 +18,7 @@ public class ProxyChainApiController {
     private ProxyChainAnalyzer analyzer;
 
 
-    @RequestMapping(value = "/proxy/{ip}/", method = RequestMethod.GET)
+    @RequestMapping(value = "/proxy/chains/", method = RequestMethod.GET)
     public List<ProxyChain> getProxyChains() {
         return analyzer.getProxyChains();
     }

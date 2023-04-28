@@ -44,6 +44,10 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Set<HostPort> allKeepers;
 
+    protected Map<String, String> allKeeperContainersDcMap;
+
+    protected Map<String, String> allApplierContainersDcMap;
+
     protected int allKeeperSize = DEFAULT_KEEPER_NUMBERS;
 
     protected long lastUpdateTime = 0;
@@ -315,6 +319,43 @@ public abstract class AbstractMetaCache implements MetaCache {
         return allKeepers;
     }
 
+    @Override
+    public Map<String, String> getAllKeeperContainersDcMap(){
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        if (allKeeperContainersDcMap == null) {
+            synchronized (this) {
+                if (allKeeperContainersDcMap == null) {
+                    Map<String, String> tempKeeperContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
+                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
+                        dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
+                            tempKeeperContainersDcMap.put(keeperContainerMeta.getIp(), dcName);
+                        });
+                    });
+                    allKeeperContainersDcMap = tempKeeperContainersDcMap;
+                }
+            }
+        }
+        return allKeeperContainersDcMap;
+    }
+
+    @Override
+    public Map<String, String> getAllApplierContainersDcMap(){
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        if (allApplierContainersDcMap == null) {
+            synchronized (this) {
+                if (allApplierContainersDcMap == null) {
+                    Map<String, String> tempApplierContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
+                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
+                        dcMeta.getApplierContainers().forEach(applierContainerMeta -> {
+                            tempApplierContainersDcMap.put(applierContainerMeta.getIp(), dcName);
+                        });
+                    });
+                    allApplierContainersDcMap = tempApplierContainersDcMap;
+                }
+            }
+        }
+        return allApplierContainersDcMap;
+    }
 
     @Override
     public String getSentinelMonitorName(String clusterId, String shardId) {
@@ -402,6 +443,21 @@ public abstract class AbstractMetaCache implements MetaCache {
             throw new IllegalStateException("unfound shard for instance:" + hostPort);
         }
         return metaDesc.getDcId();
+    }
+
+    @Override
+    public String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        Set<String> relatedDcs = xpipeMetaManager.getRelatedDcs(clusterShard.getKey(), clusterShard.getValue());
+
+        for (String dc : relatedDcs) {
+            for (RedisMeta redis : xpipeMetaManager.getRedises(dc, clusterShard.getKey(), clusterShard.getValue())) {
+                if (redis.getIp().equals(hostIp)) {
+                   return dc;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
