@@ -73,21 +73,8 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
     public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "30000"));
 
     @Override
-    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
-        return chains.get(new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId));
-    }
-
-    @Override
-    public ProxyChain getProxyChain(String tunnelId) {
-        if(reverseMap.containsKey(tunnelId)) {
-            return chains.get(reverseMap.get(tunnelId));
-        }
-        return null;
-    }
-
-    @Override
-    public List<ProxyChain> getProxyChains() {
-        return Lists.newArrayList(chains.values());
+    public Map<DcClusterShardPeer, ProxyChain> getClusterShardChainMap() {
+        return chains;
     }
 
     @Override

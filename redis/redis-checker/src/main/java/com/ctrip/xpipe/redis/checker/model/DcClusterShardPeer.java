@@ -28,6 +28,11 @@ public final class DcClusterShardPeer extends DcClusterShard {
         return Objects.equals(peerDcId, that.peerDcId);
     }
 
+    public DcClusterShardPeer setPeerDcId(String peerDcId) {
+        this.peerDcId = peerDcId;
+        return this;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(getDcId(), getClusterId(), getShardId(), getPeerDcId());

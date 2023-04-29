@@ -20,6 +20,21 @@ public class DcClusterShard {
         this.shardId = shardId;
     }
 
+    public DcClusterShard setDcId(String dcId) {
+        this.dcId = dcId;
+        return this;
+    }
+
+    public DcClusterShard setClusterId(String clusterId) {
+        this.clusterId = clusterId;
+        return this;
+    }
+
+    public DcClusterShard setShardId(String shardId) {
+        this.shardId = shardId;
+        return this;
+    }
+
     public String getDcId() {
         return dcId;
     }

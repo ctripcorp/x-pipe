@@ -26,10 +26,10 @@
 			<keeperContainer id="1" ip="1.1.1.1" port="8080" az_id="1234567890123456789"/>
 			<keeperContainer id="2" ip="1.1.1.2" port="8080" az_id="1234567890123456789"/>
 		</keeperContainers>
-		<appContainers>
-			<appContainer id="11" ip="1.1.1.11" port="8080" az_id="1234567890123456789"/>
-			<appContainer id="12" ip="1.1.1.12" port="8080" az_id="1234567890123456789"/>
-		</appContainers>
+		<applierContainers>
+			<applierContainer id="11" ip="1.1.1.11" port="8080" az_id="1234567890123456789"/>
+			<applierContainer id="12" ip="1.1.1.12" port="8080" az_id="1234567890123456789"/>
+		</applierContainers>
 	</dc>
 	<dc id="oy" zone="SHA">
 		<zkServer address="127.0.0.1:2281"/>
@@ -64,10 +64,10 @@
 			<keeperContainer id="3" ip="1.1.1.3" port="8080" az_id="1234567890123456789"/>
 			<keeperContainer id="4" ip="1.1.1.4" port="8080" az_id="1234567890123456789"/>
 		</keeperContainers>
-		<appContainers>
-			<appContainer id="13" ip="1.1.1.13" port="8080" az_id="1234567890123456789"/>
-			<appContainer id="14" ip="1.1.1.14" port="8080" az_id="1234567890123456789"/>
-		</appContainers>
+		<applierContainers>
+			<applierContainer id="13" ip="1.1.1.13" port="8080" az_id="1234567890123456789"/>
+			<applierContainer id="14" ip="1.1.1.14" port="8080" az_id="1234567890123456789"/>
+		</applierContainers>
 	</dc>
 	<dc id="fra-aws" zone="FRA">
 

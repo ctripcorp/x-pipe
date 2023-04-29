@@ -41,7 +41,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     private ProxyService proxyService;
 
     @Autowired
-    private ProxyChainAnalyzer analyzer;
+    private ProxyChainCollector proxyChainCollector;
 
     @Autowired
     private ProxyMonitorCollectorManager proxyMonitorCollectorManager;
@@ -122,12 +122,12 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Override
     public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
-        return analyzer.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
+        return proxyChainCollector.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
     }
 
     @Override
     public ProxyChain getProxyChain(String tunnelId) {
-        return analyzer.getProxyChain(tunnelId);
+        return proxyChainCollector.getProxyChain(tunnelId);
     }
 
     @Override
@@ -154,7 +154,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
                 String peerDc = peerDcTbl.getDcName();
                 if (peerDc.equals(backupDcId)) continue;
 
-                ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterName, shardId, peerDc);
+                ProxyChain chain = proxyChainCollector.getProxyChain(backupDcId, clusterName, shardId, peerDc);
                 if(chain != null) {
                     peerChains.add(chain);
                 }
@@ -215,7 +215,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Override
     public List<ProxyTunnelInfo> getAllProxyTunnels() {
-        List<ProxyChain> chains = analyzer.getProxyChains();
+        List<ProxyChain> chains = proxyChainCollector.getProxyChains();
         List<ProxyTunnelInfo> proxyTunnelInfos = new ArrayList<>();
         chains.forEach(chain -> proxyTunnelInfos.add(chain.buildProxyTunnelInfo()));
         return proxyTunnelInfos;
@@ -223,7 +223,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Override
     public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId) {
-        ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
+        ProxyChain chain = proxyChainCollector.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
         if (null == chain) return null;
         return chain.buildProxyTunnelInfo();
     }
@@ -251,7 +251,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
         List<TunnelInfo> tunnels = proxy.getTunnelInfos();
         int result = 0;
         for(TunnelInfo info : tunnels) {
-            if(analyzer.getProxyChain(info.getTunnelId()) != null) {
+            if(proxyChainCollector.getProxyChain(info.getTunnelId()) != null) {
                 result ++;
             }
         }
@@ -265,10 +265,11 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @VisibleForTesting
-    public ProxyServiceImpl setProxyChainAnalyzer(ProxyChainAnalyzer analyzer) {
-        this.analyzer = analyzer;
+    public ProxyServiceImpl setProxyChainCollector(ProxyChainCollector proxyChainCollector) {
+        this.proxyChainCollector = proxyChainCollector;
         return this;
     }
+
     @VisibleForTesting
     public ProxyServiceImpl setClusterService(ClusterService service) {
         this.clusterService = service;

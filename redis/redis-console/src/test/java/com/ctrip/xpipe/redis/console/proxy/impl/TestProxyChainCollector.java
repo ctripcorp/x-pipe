@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Lists;
@@ -19,7 +19,7 @@ import java.util.Map;
 @Component
 @Lazy
 @Profile(AbstractProfile.PROFILE_NAME_TEST)
-public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements ProxyChainAnalyzer {
+public class TestProxyChainCollector extends AbstractProxyChainTest implements ProxyChainCollector {
 
     private Map<DcClusterShardPeer, ProxyChain> chains = Maps.newConcurrentMap();
 
@@ -45,18 +45,23 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     }
 
     @Override
-    public Map<DcClusterShardPeer, ProxyChain> getClusterShardChainMap() {
-        return chains;
+    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
+        return chains.get(new DcClusterShardPeer(backupDcId, clusterId, shardId,peerDcId));
     }
 
     @Override
-    public void addListener(Listener listener) {
-
+    public ProxyChain getProxyChain(String tunnelId) {
+        return tunnels.get(tunnelId);
     }
 
     @Override
-    public void removeListener(Listener listener) {
+    public List<ProxyChain> getProxyChains() {
+        return Lists.newArrayList(tunnels.values());
+    }
 
+    @Override
+    public Map<DcClusterShardPeer, ProxyChain> getAllProxyChains() {
+        return null;
     }
 
 

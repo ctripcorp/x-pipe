@@ -87,6 +87,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard) {
+        return null;
+    }
+
+    @Override
     public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
         return null;
     }
