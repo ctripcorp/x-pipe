@@ -12,6 +12,8 @@ import java.util.*;
 
 public class GtidSet {
 
+    public static final String EMPTY_GTIDSET = "";
+
     public static Pair<String, Long> parseGtid(String gtid) {
         String[] split = gtid.split(":");
         if (split.length != 2) {

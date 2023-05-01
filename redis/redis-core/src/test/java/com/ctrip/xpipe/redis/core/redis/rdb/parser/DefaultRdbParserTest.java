@@ -232,4 +232,9 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
     public void onFinish(RdbParser<?> parser) {
         logger.info("[onFinish] {}", parser);
     }
+
+    @Override
+    public void onAuxFinish() {
+        logger.info("[onAuxFinish]");
+    }
 }

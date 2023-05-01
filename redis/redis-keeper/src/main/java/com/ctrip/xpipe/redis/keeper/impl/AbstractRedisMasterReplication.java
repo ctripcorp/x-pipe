@@ -10,6 +10,7 @@ import com.ctrip.xpipe.command.FailSafeCommandWrapper;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
@@ -442,6 +443,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 
 		getRdbDumper().rdbGtidSetParsed();
+	}
+
+	@Override
+	public void readAuxEnd(RdbStore rdbStore) {
+		// no gtidset read when read aux end, may need refactor by capa gtid ?
+		if (rdbStore.getGtidSet() == null) {
+			this.readRdbGtidSet(rdbStore, GtidSet.EMPTY_GTIDSET);
+		}
 	}
 
 	protected abstract void doReFullSync();

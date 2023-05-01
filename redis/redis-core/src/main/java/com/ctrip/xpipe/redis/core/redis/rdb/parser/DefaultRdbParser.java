@@ -85,7 +85,12 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
                 case READ_TYPE:
                     short type = byteBuf.readUnsignedByte();
-                    currentType = RdbParseContext.RdbType.findByCode(type);
+                    RdbParseContext.RdbType newType = RdbParseContext.RdbType.findByCode(type);
+                    if (isAuxFinish(newType)) {
+                       notifyAuxEnd();
+                    }
+
+                    currentType = newType;
 
                     getLogger().debug("[read][type] {}", currentType);
                     if (null == currentType) {
@@ -150,6 +155,10 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         }
 
         return null;
+    }
+
+    private boolean isAuxFinish(RdbParseContext.RdbType newType) {
+        return currentType == RdbParseContext.RdbType.AUX && newType != RdbParseContext.RdbType.AUX;
     }
 
     private int checkMagic(ByteBuf byteBuf, int checkIdx) {

@@ -632,6 +632,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public void readAuxEnd(RdbStore rdbStore) {
+		/*NOOP*/
+	}
+
+	@Override
 	public void closeSlaves(String reason) {
 		
 		for(RedisSlave redisSlave : slaves()){
@@ -1006,6 +1011,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			@Override
 			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 				redisKeeperServer.readRdbGtidSet(rdbStore, gtidSet);
+			}
+
+			@Override
+			public void readAuxEnd(RdbStore rdbStore) {
+
 			}
 
 			@Override

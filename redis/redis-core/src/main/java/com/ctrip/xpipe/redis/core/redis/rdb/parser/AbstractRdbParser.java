@@ -176,6 +176,17 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
         }
     }
 
+    protected void notifyAuxEnd() {
+        getLogger().debug("[notifyAuxEnd]");
+        for (RdbParseListener listener : listeners) {
+            try {
+                listener.onAuxFinish();
+            } catch (Throwable t){
+                getLogger().info("[notifyAuxEnd][fail][{}]", listener, t);
+            }
+        }
+    }
+
     protected void notifyFinish() {
         if (!needFinishNotify) return;
 

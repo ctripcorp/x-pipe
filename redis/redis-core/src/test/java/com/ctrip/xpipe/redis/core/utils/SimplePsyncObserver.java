@@ -36,6 +36,11 @@ public class SimplePsyncObserver implements PsyncObserver {
     }
 
     @Override
+    public void readAuxEnd(RdbStore rdbStore) {
+
+    }
+
+    @Override
     public void endWriteRdb() {
         online.set(true);
     }

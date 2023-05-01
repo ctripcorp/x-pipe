@@ -96,7 +96,10 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
             @Override
             public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
             }
-        });
+			@Override
+			public void readAuxEnd(RdbStore rdbStore) {
+			}
+		});
         psync.execute().addListener(new CommandFutureListener<Object>() {
 
 			@Override

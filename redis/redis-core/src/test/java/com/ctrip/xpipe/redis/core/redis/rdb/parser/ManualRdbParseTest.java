@@ -69,4 +69,9 @@ public class ManualRdbParseTest extends AbstractTest implements RdbParseListener
         logger.info("[onFinish] {}", parser);
     }
 
+    @Override
+    public void onAuxFinish() {
+        logger.info("[onAuxFinish]");
+    }
+
 }

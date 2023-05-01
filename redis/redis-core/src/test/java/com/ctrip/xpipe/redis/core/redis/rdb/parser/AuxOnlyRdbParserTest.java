@@ -66,4 +66,8 @@ public class AuxOnlyRdbParserTest extends AbstractTest implements RdbParseListen
         logger.info("[onFinish] {}", parser);
     }
 
+    @Override
+    public void onAuxFinish() {
+        logger.info("[onAuxFinish]");
+    }
 }

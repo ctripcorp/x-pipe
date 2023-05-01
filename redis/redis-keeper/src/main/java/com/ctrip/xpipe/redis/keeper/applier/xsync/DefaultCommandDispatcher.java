@@ -309,4 +309,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void onFinish(RdbParser<?> parser) {
 
     }
+
+    @Override
+    public void onAuxFinish() {
+
+    }
 }

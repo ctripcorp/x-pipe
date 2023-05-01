@@ -135,6 +135,19 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 		}
 	}
 
+	@Override
+	public void onAuxFinish() {
+		getLogger().info("[onAuxFinish] aux is finish");
+
+		for (PsyncObserver observer : observers) {
+			try {
+				observer.readAuxEnd(rdbStore);
+			} catch (Throwable th) {
+				getLogger().error("[onAuxFinish]" + this, th);
+			}
+		}
+	}
+
 	protected void readRdbGtidSet(String gtidSet) {
 
 		getLogger().info("[readRdbGtidSet]{}, gtidset:{}", this, gtidSet);

@@ -121,4 +121,9 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
     public void onFinish(RdbParser<?> parser) {
         logger.info("[onFinish] {}", parser);
     }
+
+    @Override
+    public void onAuxFinish() {
+        logger.info("[onAuxFinish]");
+    }
 }

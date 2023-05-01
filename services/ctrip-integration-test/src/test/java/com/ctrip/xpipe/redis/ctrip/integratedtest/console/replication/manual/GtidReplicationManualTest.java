@@ -140,4 +140,9 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
     public void onFinish(RdbParser<?> parser) {
         logger.info("[onFinish] {}", parser);
     }
+
+    @Override
+    public void onAuxFinish() {
+        logger.info("[onAuxFinish]");
+    }
 }
