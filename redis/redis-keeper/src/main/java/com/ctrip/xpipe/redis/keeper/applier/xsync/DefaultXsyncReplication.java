@@ -101,7 +101,7 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
     protected void refreshStateWhenReconnect() {
         GtidSet gtidReceived = dispatcher.getGtidReceived();
         if (gtidReceived != null) {
-            this.gtidSetExcluded = gtidReceived;
+            this.gtidSetExcluded = gtidReceived.union(this.gtidSetExcluded);
         }
     }
 
