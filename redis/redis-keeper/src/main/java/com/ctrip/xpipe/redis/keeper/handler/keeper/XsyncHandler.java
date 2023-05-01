@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,7 +47,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         GtidSet localBegin = keeperRepl.getBeginGtidSet();
         GtidSet localEnd = keeperRepl.getEndGtidSet();
 
-        if (null == localBegin) {
+        if (null == localBegin || localBegin.isEmpty()) {
             logger.info("[innerDoHandle][localBegin is null]");
             doFullSync(redisSlave);
             return;

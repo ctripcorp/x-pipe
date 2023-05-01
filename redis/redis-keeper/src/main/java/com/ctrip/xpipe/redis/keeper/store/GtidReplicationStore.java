@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.Gtid2OffsetIndexGenerator;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +100,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         }
 
         FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
-        if (ctx.isFullSyncPossible() && StringUtil.isEmpty(((GtidRdbStore)ctx.getRdbStore()).getGtidSet())) {
+        if (ctx.isFullSyncPossible() && ctx.getRdbStore().getGtidSet() == null) {
             ctx.getRdbStore().decrementRefCount();
             return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
         }
@@ -150,7 +149,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             }
 
             FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
-            if (ctx.isFullSyncPossible() && StringUtil.isEmpty(ctx.getRdbStore().getGtidSet())) {
+            if (ctx.isFullSyncPossible() && ctx.getRdbStore().getGtidSet() == null) {
                 ctx.getRdbStore().decrementRefCount();
                 return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
             }

@@ -12,13 +12,25 @@ public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet> 
 
     private GtidSet gtidSet;
 
+    private String progressMark;
+
     public GtidSetReplicationProgress(GtidSet gtidSet) {
+        this(gtidSet, gtidSet.toString());
+    }
+
+    public GtidSetReplicationProgress(GtidSet gtidSet, String progressMark) {
         this.gtidSet = gtidSet;
+        this.progressMark = progressMark;
     }
 
     @Override
     public GtidSet getProgress() {
         return gtidSet;
+    }
+
+    @Override
+    public String getProgressMark() {
+        return progressMark;
     }
 
     @Override

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -11,7 +13,9 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.*;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.Xsync;
+import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
@@ -20,14 +24,15 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.ctrip.xpipe.redis.core.protocal.Xsync.XSYNC_STATE.READING_COMMANDS;
 
@@ -53,6 +58,10 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     protected Xsync.XSYNC_STATE xsyncState = XSYNC_STATE.XSYNC_COMMAND_WAIT_RESPONSE;
 
+    private AtomicLong offsetRecorder;
+
+    private ScheduledFuture<?> replConfFuture;
+
     public DefaultXsync(String host, int port, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled) {
         super(host, port, scheduled);
         this.gitdSetExcluded = gtidSetExcluded;
@@ -63,6 +72,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         super(clientPool, scheduled);
         this.gitdSetExcluded = gtidSetExcluded;
         this.vectorClockExcluded = vectorClockExcluded;
+        this.offsetRecorder = new AtomicLong(0);
     }
 
     @Override
@@ -75,6 +85,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         if (nettyClient != null && nettyClient.channel() != null) {
             nettyClient.channel().close();
         }
+        cancelReplConf();
     }
 
     @Override
@@ -118,7 +129,9 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                     break;
 
                 case READING_COMMANDS:
+                    int prev = byteBuf.readerIndex();
                     Object cmdPayload = super.doReceiveResponse(channel, byteBuf);
+                    offsetRecorder.addAndGet(byteBuf.readerIndex() - prev);
                     if (cmdPayload instanceof Object[]) {
                         doOnCommand((Object[]) cmdPayload);
                     } else if (null != cmdPayload) {
@@ -147,16 +160,19 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             getLogger().info("[handleRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, xsync);
         }
 
-        String[] split = splitSpace(xsync);
+        String[] split = xsync.split("\\s");
         if (split.length == 0) {
             throw new RedisRuntimeException("wrong reply:" + xsync);
         }
 
         if (split[0].equalsIgnoreCase(FULL_SYNC)) {
-            if (split.length != 2) {
+            if (split.length < 2) {
                 throw new RedisRuntimeException("unknown reply:" + xsync);
             }
             this.rdbDataGtidSet = new GtidSet(split[1]);
+            if (split.length > 2) {
+                this.offsetRecorder.set(Long.parseLong(split[2]));
+            }
             getLogger().debug("[readRedisResponse][FULL]{}, {} {}", ChannelUtil.getDesc(channel), this, rdbDataGtidSet);
             xsyncState = XSYNC_STATE.READING_RDB;
             doOnFullSync();
@@ -229,22 +245,46 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     private void endReadRdb() {
         getLogger().debug("[endReadRdb] {}", this);
-        if (eofType.putOnLineOnAck()) {
-            Replconf replconf = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, "1");
-            replconf.execute().addListener(commandFuture -> {
-                if (!commandFuture.isSuccess()) {
-                    getLogger().info("[endReadRdb][ack] fail", commandFuture.cause());
-                    future().setFailure(new XpipeRuntimeException("ack after rdb fail", commandFuture.cause()));
-                }
-            });
-        }
 
+        scheduleReplconf();
         for (XsyncObserver observer: observers) {
             try {
                 observer.endReadRdb(eofType, rdbDataGtidSet);
             } catch (Throwable th) {
                 getLogger().error("[notifyRdbData][fail] {}", observer, th);
             }
+        }
+    }
+
+    // only use for full sync (source is non-gtid redis, dest is gtid redis, full sync)
+    private void scheduleReplconf() {
+
+        if (getLogger().isInfoEnabled()) {
+            getLogger().info("[scheduleReplconf]" + this);
+        }
+
+        cancelReplConf();
+
+        replConfFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+
+            @Override
+            protected void doRun() throws Exception {
+
+                getLogger().debug("[run][send ack]{}", nettyClient.channel());
+
+                Command<Object> command = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
+                command.execute();
+
+            }
+
+        }, 0, 1000, TimeUnit.MILLISECONDS);
+    }
+
+    protected void cancelReplConf() {
+
+        if (replConfFuture != null) {
+            replConfFuture.cancel(true);
+            replConfFuture = null;
         }
     }
 
