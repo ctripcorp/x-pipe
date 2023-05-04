@@ -61,7 +61,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         //USE CREDIS
         //client = new CRedisAsyncClientFactory().getOrCreateClient("ApplierTest");
 
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", executors);
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", null, executors);
         sequenceController = new DefaultSequenceController();
         sequenceController.initialize();
     }

@@ -22,7 +22,7 @@ public class CRedisAsyncClientTest {
     public void setKV() throws Throwable {
 
         ExecutorService executorService = Executors.newFixedThreadPool(1);
-        AsyncRedisClient client = CRedisAsyncClientFactory.DEFAULT.getOrCreateClient("BBZ_RedisGovUni", executorService);
+        AsyncRedisClient client = CRedisAsyncClientFactory.DEFAULT.getOrCreateClient("BBZ_RedisGovUni", null, executorService);
         Object resource = client.select("K");
         CommandFuture<Object> future = client.write(resource, "SET", "K", "K1");
         assertArrayEquals("OK".getBytes(), (byte[]) future.get());

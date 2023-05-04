@@ -142,12 +142,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig) throws Exception {
-        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, null, null, null, null);
+        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, null, null, null, null, null);
     }
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig,
-                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold) throws Exception {
+                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.lwmManager = new DefaultLwmManager();
         this.replication = new DefaultXsyncReplication();
@@ -171,7 +171,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         /* TODO: dispose client when applier closed */
-        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, workerThreads);
+        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, subenv, workerThreads);
 
         lwmThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(10), ClusterShardAwareThreadFactory.create(clusterId, shardId, "lwm-" + makeApplierThreadName()),

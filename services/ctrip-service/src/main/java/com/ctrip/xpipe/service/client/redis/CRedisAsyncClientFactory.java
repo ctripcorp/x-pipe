@@ -24,22 +24,22 @@ import java.util.concurrent.ExecutorService;
  */
 public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
-    private CRedisAsyncClient doCreate(String clusterName, ExecutorService credisNotifyExecutor) {
+    private CRedisAsyncClient doCreate(String clusterName, String subenv, ExecutorService credisNotifyExecutor) {
         DefaultHashStrategyFactory hashStrategyFactory = new DefaultHashStrategyFactory();
-        ConfigFrozenRoute route = DefaultRouteManager.create().createConfigFrozenRoute(clusterName, hashStrategyFactory, ClientType.APPLIER);
+        ConfigFrozenRoute route = DefaultRouteManager.create().createConfigFrozenRoute(clusterName, hashStrategyFactory, ClientType.APPLIER, subenv);
         return new CRedisAsyncClient(new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
                         decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), hashStrategyFactory, route),
                 new ApplierCacheProvider(clusterName, DelegateClusterLevelConfig.newBuilder().build(), route) , credisNotifyExecutor, route);
     }
 
     @Override
-    public AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
-        return doCreate(clusterName, credisNotifyExecutor);
+    public AsyncRedisClient getOrCreateClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) throws CRedisException {
+        return doCreate(clusterName, subenv, credisNotifyExecutor);
     }
 
     @Override
-    public AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) throws CRedisException {
-        return doCreate(clusterName, credisNotifyExecutor);
+    public AsyncRedisClient createClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) throws CRedisException {
+        return doCreate(clusterName, subenv, credisNotifyExecutor);
     }
 
     private AbstractAsyncConfig decorateConfig(AbstractAsyncConfig config, String clusterName) {

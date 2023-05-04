@@ -51,7 +51,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
 
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", executors);
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", null, executors);
         sequenceController = new DefaultSequenceController();
         sequenceController.initialize();
     }

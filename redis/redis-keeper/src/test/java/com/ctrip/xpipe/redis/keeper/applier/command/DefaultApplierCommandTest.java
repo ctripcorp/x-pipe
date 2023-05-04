@@ -36,7 +36,7 @@ public class DefaultApplierCommandTest extends AbstractTest {
     public static void beforeClass() throws Throwable {
 
         executorService = Executors.newFixedThreadPool(1);
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("DefaultApplierRedisCommandTest", executorService);
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("DefaultApplierRedisCommandTest", null, executorService);
     }
 
     @AfterClass
