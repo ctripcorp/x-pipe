@@ -110,6 +110,11 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
 
+        if (rdbGtidSet.isEmpty()) {
+            logger.info("[beginReadRdb] rdbGtidSet is empty, skip merge start");
+            return;
+        }
+
         //ctrip.merge_start
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()));
     }
@@ -127,6 +132,11 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
+
+        if (rdbGtidSet.isEmpty()) {
+            logger.info("[endReadRdb] rdbGtidSet is empty, skip merge end");
+            return;
+        }
 
         //ctrip.merge_start [gtid_set]
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
