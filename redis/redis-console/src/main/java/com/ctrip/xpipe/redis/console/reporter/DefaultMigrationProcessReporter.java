@@ -31,6 +31,8 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalActi
 
     private static String REPORT_EVENT = "migration.process.report";
 
+    private DefaultHttpService httpService = new DefaultHttpService();
+
     @Override
     protected void doAction() {
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
@@ -50,7 +52,7 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalActi
         }
 
         model.setService(DEFAULT_SERVICE).setTimestamp(DateTimeUtils.currentTimeAsString(DEFAULT_TIME_FORMAT)).setOperator(DEFAULT_OPERATOR);
-        restTemplate.postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, MigrationProcessReportResponseModel.class);
+        httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, MigrationProcessReportResponseModel.class);
     }
 
     @Override
