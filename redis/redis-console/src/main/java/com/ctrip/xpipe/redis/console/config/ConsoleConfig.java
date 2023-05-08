@@ -153,4 +153,10 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	String getChooseRouteStrategyType();
 
 	int monitorUnregisterProtectCount();
+
+	boolean isMigrationProcessReportOpen();
+
+	String getKeyMigrationProcessReportUrl();
+
+	long getConsoleReportIntervalMill();
 }

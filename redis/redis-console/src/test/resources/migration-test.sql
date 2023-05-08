@@ -39,6 +39,12 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(18,'unknown',4,'127.0.0.1',9380,'redis',0,-1,null);
 
 insert into MIGRATION_EVENT_TBL (id,event_tag) values (2,'xpipe-test-event-2');
+insert into MIGRATION_EVENT_TBL (id,event_tag) values (3,'xpipe-test-event-3');
+insert into MIGRATION_EVENT_TBL (id,event_tag) values (4,'xpipe-test-event-4');
+insert into MIGRATION_EVENT_TBL (id,event_tag, operator) values (5,'xpipe-test-event-5', 'beacon');
+insert into MIGRATION_EVENT_TBL (id,event_tag, operator) values (6,'xpipe-test-event-6', 'beacon');
+insert into MIGRATION_EVENT_TBL (id,event_tag, operator) values (7,'xpipe-test-event-5', 'some');
+insert into MIGRATION_EVENT_TBL (id,event_tag, operator) values (8,'xpipe-test-event-6', 'some');
 
 insert into MIGRATION_CLUSTER_TBL (id,migration_event_id,cluster_id, source_dc_id, destination_dc_id,status) values (2,2,2,1,2,'Checking');
 
