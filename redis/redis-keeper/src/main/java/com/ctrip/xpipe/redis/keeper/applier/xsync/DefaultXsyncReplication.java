@@ -8,6 +8,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
 
@@ -33,6 +34,8 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
     @InstanceDependency
     public ScheduledExecutorService scheduled;
 
+    private ApplierServer applierServer;
+
     private Endpoint endpoint;
 
     private GtidSet gtidSetExcluded;
@@ -40,6 +43,10 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
     private Xsync currentXsync;
 
     private CloseState closeState = new CloseState();
+
+    public DefaultXsyncReplication(ApplierServer applierServer) {
+        this.applierServer = applierServer;
+    }
 
     @Override
     protected void doStart() throws Exception {
@@ -69,7 +76,7 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
 
         /* TODO connect with master first, then handler notify to xsyncReplication with nettyClient, then use fixedObjectPool to create xsync */
-        Xsync xsync = new DefaultXsync(objectPool, gtidSetExcluded, null, scheduled);
+        Xsync xsync = new DefaultXsync(objectPool, gtidSetExcluded, null, scheduled, applierServer.getListeningPort());
         xsync.addXsyncObserver(dispatcher);
 
         this.currentXsync = xsync;

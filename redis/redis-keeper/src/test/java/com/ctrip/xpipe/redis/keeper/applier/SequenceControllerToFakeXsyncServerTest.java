@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +46,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
     public void setup() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
-                gtidSet, null, scheduled);
+                gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
 

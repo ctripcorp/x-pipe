@@ -150,7 +150,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.lwmManager = new DefaultLwmManager();
-        this.replication = new DefaultXsyncReplication();
+        this.replication = new DefaultXsyncReplication(this);
         this.dispatcher = new DefaultCommandDispatcher();
 
         this.parser = parser;

@@ -58,6 +58,8 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     protected Xsync.XSYNC_STATE xsyncState = XSYNC_STATE.XSYNC_COMMAND_WAIT_RESPONSE;
 
+    private int listeningPort;
+
     private AtomicLong offsetRecorder;
 
     private ScheduledFuture<?> replConfFuture;
@@ -68,10 +70,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         this.vectorClockExcluded = vectorClockExcluded;
     }
 
-    public DefaultXsync(SimpleObjectPool<NettyClient> clientPool, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled) {
+    public DefaultXsync(SimpleObjectPool<NettyClient> clientPool, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled, int listeningPort) {
         super(clientPool, scheduled);
         this.gitdSetExcluded = gtidSetExcluded;
         this.vectorClockExcluded = vectorClockExcluded;
+        this.listeningPort = listeningPort;
         this.offsetRecorder = new AtomicLong(0);
     }
 
@@ -288,11 +291,27 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         }
     }
 
+    private Command<Object> replConfListeningPort() {
+
+        return new Replconf(getClientPool(), Replconf.ReplConfType.LISTENING_PORT, scheduled,
+                String.valueOf(listeningPort));
+    }
+
     @Override
     protected void afterCommandExecute(NettyClient nettyClient) {
         // temporary solution, handle channel evicted by channel pool
 
         this.nettyClient = nettyClient;
+
+        replConfListeningPort().execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    close();
+                }
+            }
+        });
+
         nettyClient.channel().closeFuture().addListener(closeFuture -> {
             if (!future().isDone()) {
                 future().setFailure(new XpipeRuntimeException("channel closed"));

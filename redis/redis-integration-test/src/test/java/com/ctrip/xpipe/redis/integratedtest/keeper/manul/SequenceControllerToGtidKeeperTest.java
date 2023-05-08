@@ -54,7 +54,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
 
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
-                gtidSet, null, scheduled);
+                gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
 
