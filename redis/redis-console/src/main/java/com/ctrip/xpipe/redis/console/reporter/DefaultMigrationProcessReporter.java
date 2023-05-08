@@ -61,7 +61,7 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalActi
 
     @Override
     protected long getIntervalMilli() {
-        return consoleConfig.getConsoleReportIntervalMill();
+        return consoleConfig.getMigrationProcessReportIntervalMill();
     }
 
     @Override
@@ -71,6 +71,6 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalActi
 
     @Override
     protected long getLeastIntervalMilli() {
-        return consoleConfig.getConsoleReportIntervalMill();
+        return consoleConfig.getMigrationProcessReportIntervalMill();
     }
 }

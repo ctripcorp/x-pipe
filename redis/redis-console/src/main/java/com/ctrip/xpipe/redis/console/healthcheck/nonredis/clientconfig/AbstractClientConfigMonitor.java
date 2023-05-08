@@ -42,7 +42,7 @@ public class AbstractClientConfigMonitor extends AbstractIntervalAction {
     @Override
     protected void doAction() {
 
-        logger.info("[doCheck]");
+        logger.info("[doAction]");
 
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
 
@@ -71,7 +71,7 @@ public class AbstractClientConfigMonitor extends AbstractIntervalAction {
                 try {
                     checkCluster(clusterMeta.getId(), xpipeMeta);
                 } catch (Exception e) {
-                    logger.info("[doCheck][{}]{}" + clusterMeta.getId(), e);
+                    logger.info("[doAction][{}]{}" + clusterMeta.getId(), e);
                 }
 
             }

@@ -107,7 +107,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
-    private static final String KEY_CONSOLE_REPORT_INTERVAL_MILLI = "console.report.interval.milli";
+    private static final String KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI = "migration.process.report.interval.milli";
     private static final String KEY_MIGRATION_PROCESS_REPORT_OPEN = "migration.process.report.open";
     private static final String KEY_MIGRATION_PROCESS_REPORT_URL = "migration.process.report.url";
 
@@ -700,7 +700,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public long getConsoleReportIntervalMill() {
-        return getLongProperty(KEY_CONSOLE_REPORT_INTERVAL_MILLI, 10000L);
+    public long getMigrationProcessReportIntervalMill() {
+        return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
     }
 }
