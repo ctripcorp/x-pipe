@@ -5,7 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
+public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalAction {
     @Autowired
     private MetaCache metaCache;
 
@@ -27,7 +27,7 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
     private static final String KEEPER_AVAILABLE_ZONE_CHECK_TYPE = "keeper.available.zone.check";
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         EventMonitor.DEFAULT.logEvent(KEEPER_AVAILABLE_ZONE_CHECK_TYPE, "Do keeper available zone check");
 

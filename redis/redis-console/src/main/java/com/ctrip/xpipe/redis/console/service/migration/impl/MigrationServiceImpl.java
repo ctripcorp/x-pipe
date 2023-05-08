@@ -634,6 +634,12 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
     }
 
+    @Override
+    public Set<String> getLatestMigrationOperators(int hours) {
+        List<MigrationEventTbl> latestMigrateEvents = migrationEventDao.findLatestMigrateEvent(DateTimeUtils.getHoursBeforeDate(new Date(), hours));
+        return latestMigrateEvents.stream().map(migrationEventTbl ->  migrationEventTbl.getOperator()).collect(Collectors.toSet());
+    }
+
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {
         return StringUtil.join(",", (dcTbl) -> dcTbl.getDcName() , clusterRelatedDc);
     }

@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,7 +17,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.*;
 
@@ -66,15 +67,15 @@ public class RedisConfigCheckMonitorTest {
     @Test
     public void testDoCheck() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn("2,3");
-        redisConfigCheckMonitor.doCheck();
+        redisConfigCheckMonitor.doAction();
         verify(dcClusterService, times(1)).updateDcCluster(any(DcClusterCreateInfo.class));
     }
 
     @Test
     public void testDoCheckWithNullRedisConfigCheckRule() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn(null);
-        if(redisConfigCheckMonitor.shouldCheck()) {
-            redisConfigCheckMonitor.doCheck();
+        if(redisConfigCheckMonitor.shouldDoAction()) {
+            redisConfigCheckMonitor.doAction();
         }
         verify(dcClusterService, times(0)).updateDcCluster(any(DcClusterCreateInfo.class));
     }
@@ -82,8 +83,8 @@ public class RedisConfigCheckMonitorTest {
     @Test
     public void testDoCheckWithNonRedisConfigCheckRule() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn("");
-        if(redisConfigCheckMonitor.shouldCheck()) {
-            redisConfigCheckMonitor.doCheck();
+        if(redisConfigCheckMonitor.shouldDoAction()) {
+            redisConfigCheckMonitor.doAction();
         }
         verify(dcClusterService, times(0)).updateDcCluster(any(DcClusterCreateInfo.class));
     }

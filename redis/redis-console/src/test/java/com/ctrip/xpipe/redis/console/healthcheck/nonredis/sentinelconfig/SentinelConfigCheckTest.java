@@ -99,14 +99,14 @@ public class SentinelConfigCheckTest {
                 Mockito.any(), Mockito.any(), Mockito.any());
 
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(false);
-        sentinelConfigCheck.doCheck();
+        sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());
 
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
-        sentinelConfigCheck.doCheck();
+        sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, Mockito.times(6))
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
@@ -118,7 +118,7 @@ public class SentinelConfigCheckTest {
         this.mockClusterType = ClusterType.BI_DIRECTION;
         when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
-        sentinelConfigCheck.doCheck();
+        sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, Mockito.times(12))
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
@@ -128,7 +128,7 @@ public class SentinelConfigCheckTest {
     @Test
     public void testCheckWithSentinelCheckWhitelist() {
         when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(new HashSet<>(mockClusters));
-        sentinelConfigCheck.doCheck();
+        sentinelConfigCheck.doAction();
         Mockito.verify(alertManager, Mockito.never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());

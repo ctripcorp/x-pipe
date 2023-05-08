@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -21,7 +21,7 @@ import java.util.Set;
  * date 2022/4/8
  */
 @Component
-public class BeaconBiClusterMonitorRegister extends AbstractCrossDcIntervalCheck {
+public class BeaconBiClusterMonitorRegister extends AbstractCrossDcIntervalAction {
 
     private MetaCache metaCache;
 
@@ -38,7 +38,7 @@ public class BeaconBiClusterMonitorRegister extends AbstractCrossDcIntervalCheck
     }
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
         Set<String> clusters = config.getClustersSupportBiMigration();
         for (String cluster: clusters) {
             logger.debug("[doCheck][{}] register", cluster);

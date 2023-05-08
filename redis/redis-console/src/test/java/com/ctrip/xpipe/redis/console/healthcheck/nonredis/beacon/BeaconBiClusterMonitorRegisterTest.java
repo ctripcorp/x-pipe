@@ -43,7 +43,7 @@ public class BeaconBiClusterMonitorRegisterTest extends AbstractConsoleTest {
 
     @Test
     public void testRegisterBiCluster() throws Exception {
-        register.doCheck();
+        register.doAction();
         Mockito.verify(beaconManager).registerCluster(cluster, ClusterType.BI_DIRECTION, 1);
     }
 

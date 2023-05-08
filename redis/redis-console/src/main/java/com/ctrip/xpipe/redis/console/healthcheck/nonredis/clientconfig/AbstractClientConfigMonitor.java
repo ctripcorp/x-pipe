@@ -7,7 +7,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
+import com.ctrip.xpipe.redis.console.AbstractIntervalAction;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
-import com.ctrip.xpipe.utils.ServicesUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,7 +26,7 @@ import java.util.List;
  *         Aug 15, 2017
  */
 
-public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
+public class AbstractClientConfigMonitor extends AbstractIntervalAction {
 
     @Autowired
     private OuterClientCache outerClientCache;
@@ -41,9 +40,9 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
 
-        logger.info("[doCheck]");
+        logger.info("[doAction]");
 
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
 
@@ -72,7 +71,7 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
                 try {
                     checkCluster(clusterMeta.getId(), xpipeMeta);
                 } catch (Exception e) {
-                    logger.info("[doCheck][{}]{}" + clusterMeta.getId(), e);
+                    logger.info("[doAction][{}]{}" + clusterMeta.getId(), e);
                 }
 
             }

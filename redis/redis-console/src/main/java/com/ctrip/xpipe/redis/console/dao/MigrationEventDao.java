@@ -187,6 +187,15 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		return result;
 	}
 
+	public List<MigrationEventTbl> findLatestMigrateEvent(Date date) {
+		return queryHandler.handleQuery(new DalQuery<List<MigrationEventTbl>>() {
+			@Override
+			public List<MigrationEventTbl> doQuery() throws DalException {
+				return migrationEventTblDao.findLatestMigrationEvents(date, MigrationEventTblEntity.READSET_FULL);
+			}
+		});
+	}
+
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
 
 		if(!CollectionUtils.isEmpty(details)) {
