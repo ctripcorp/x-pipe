@@ -47,13 +47,13 @@ public class MigrationSystemAvailableCheckTest extends AbstractConsoleDbTest {
 
     @Test
     public void testInitBuilder() {
-        check.doCheck();
+        check.doAction();
         Assert.assertNotNull(check.getBuilder());
     }
 
     @Test
     public void testDoCheck() {
-        check.doCheck();
+        check.doAction();
         verify(dcService).findClusterRelatedDc(anyString());
         DefaultMigrationSystemAvailableChecker.MigrationSystemAvailability availability = check.getResult();
         Assert.assertFalse(availability.isAvaiable());

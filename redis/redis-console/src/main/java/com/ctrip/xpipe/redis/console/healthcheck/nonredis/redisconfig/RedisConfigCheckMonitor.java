@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -18,11 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
-public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
+public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalAction {
 
     @Autowired
     private MetaCache metaCache;
@@ -36,15 +34,15 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
     private static final String ACTIVE_DEFAULT_REDIS_CHECK_RULE = "active.default.redis.check.rule";
 
     @Override
-    protected boolean shouldCheck() {
-        if(super.shouldCheck() && consoleConfig.isRedisConfigCheckMonitorOpen() && !StringUtil.isEmpty(consoleConfig.getRedisConfigCheckRules())) {
+    protected boolean shouldDoAction() {
+        if(super.shouldDoAction() && consoleConfig.isRedisConfigCheckMonitorOpen() && !StringUtil.isEmpty(consoleConfig.getRedisConfigCheckRules())) {
             return true;
         }
         return false;
     }
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
         Set<String> redisConfigCheckRule = Sets.newHashSet(consoleConfig.getRedisConfigCheckRules().split(","));
         Map<String, Long> dcNameZoneMap = dcService.dcNameZoneMap();
 

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
+import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class MetaCacheCheck extends AbstractSiteLeaderIntervalCheck {
+public class MetaCacheCheck extends AbstractSiteLeaderIntervalAction {
 
     @Autowired
     private MetaCache metaCache;
@@ -28,7 +28,7 @@ public class MetaCacheCheck extends AbstractSiteLeaderIntervalCheck {
     private final int META_CACHE_UPDATE_THREASHOLD = 10 * 1000;
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
         if (isMetaCacheOverDue()) {
             alertManager.alert(null, null, null, ALERT_TYPE.META_CACHE_BLOCKED, "meta-cache-not-update-for-long-time");
         }

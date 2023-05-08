@@ -6,11 +6,14 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResult;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterInfo;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
+import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,6 +64,13 @@ public class MigrationEventDaoTest extends AbstractConsoleIntegrationTest {
                 Assert.assertTrue(all.add(id));
             }
         );
+    }
+
+    @Test
+    public void testGetLatestMigrationOperators(){
+
+        List<MigrationEventTbl> latestMigrateEvent = migrationEventDao.findLatestMigrateEvent(DateTimeUtils.getHoursBeforeDate(new Date(), 1));
+        Assert.assertEquals(7, latestMigrateEvent.size());
     }
 
     @Test

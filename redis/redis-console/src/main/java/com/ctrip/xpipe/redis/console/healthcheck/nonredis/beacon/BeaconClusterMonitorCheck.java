@@ -4,8 +4,8 @@ import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -24,7 +24,7 @@ import static com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant.DEFAUL
  * date 2021/1/17
  */
 @Component
-public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
+public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
 
     @Autowired
     private MonitorServiceManager monitorServiceManager;
@@ -44,7 +44,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
     }
 
     @Override
-    public void doCheck() {
+    public void doAction() {
         Map<Long, MonitorService> services = monitorServiceManager.getAllServices();
         if (services.isEmpty()) {
             logger.debug("[doCheck] no beacon service, skip");

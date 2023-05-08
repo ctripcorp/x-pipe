@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -18,7 +18,7 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 
 @Component
-public class DBVariablesCheck extends AbstractCrossDcIntervalCheck {
+public class DBVariablesCheck extends AbstractCrossDcIntervalAction {
 
     @Autowired
     private List<VariableChecker> variableCheckers;
@@ -42,7 +42,7 @@ public class DBVariablesCheck extends AbstractCrossDcIntervalCheck {
         }
     }
 
-    protected void doCheck() {
+    protected void doAction() {
         refreshInterestedDataSources();
 
         interestedDataSources.forEach(dataSourceName -> {

@@ -107,6 +107,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
+    private static final String KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI = "migration.process.report.interval.milli";
+    private static final String KEY_MIGRATION_PROCESS_REPORT_OPEN = "migration.process.report.open";
+    private static final String KEY_MIGRATION_PROCESS_REPORT_URL = "migration.process.report.url";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
@@ -685,4 +689,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
     }
 
+    @Override
+    public boolean isMigrationProcessReportOpen() {
+        return getBooleanProperty(KEY_MIGRATION_PROCESS_REPORT_OPEN, false);
+    }
+
+    @Override
+    public String getKeyMigrationProcessReportUrl() {
+        return getProperty(KEY_MIGRATION_PROCESS_REPORT_URL, "127.0.0.1:8080");
+    }
+
+    @Override
+    public long getMigrationProcessReportIntervalMill() {
+        return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
+    }
 }

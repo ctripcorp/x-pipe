@@ -10,7 +10,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
+import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.CheckMigrationCommandBuilder;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIntervalCheck implements MigrationSystemAvailableChecker {
+public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIntervalAction implements MigrationSystemAvailableChecker {
 
     private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.migrate.system.check.interval", "30000"));
 
@@ -58,7 +58,7 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
             = new AtomicReference<>(MigrationSystemAvailableChecker.MigrationSystemAvailability.createAvailableResponse());
 
     @Override
-    protected void doCheck() {
+    protected void doAction() {
         if(builder == null) {
             synchronized (this) {
                 if(builder == null) {
@@ -186,8 +186,8 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     }
 
     @Override
-    protected boolean shouldCheck() {
-        if (!super.shouldCheck()) return false;
+    protected boolean shouldDoAction() {
+        if (!super.shouldDoAction()) return false;
 
         // only check migration system when the cluster in manage can migrate
         Set<String> ownTypes =  consoleConfig.getOwnClusterType();

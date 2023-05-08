@@ -86,4 +86,6 @@ public interface MigrationService {
     void updateMigrationStatus(MigrationCluster migrationCluster, MigrationStatus status);
 
     Set<String> migrationUnsupportedClusters();
+
+    Set<String> getLatestMigrationOperators(int hours);
 }
