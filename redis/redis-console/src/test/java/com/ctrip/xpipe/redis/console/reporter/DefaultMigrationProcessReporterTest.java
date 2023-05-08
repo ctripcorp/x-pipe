@@ -32,6 +32,10 @@ public class DefaultMigrationProcessReporterTest {
     RestOperations restTemplate;
 
     @Mock
+    DefaultHttpService httpService;
+
+
+    @Mock
     private CrossDcClusterServer clusterServer;
 
     @Mock
@@ -40,6 +44,7 @@ public class DefaultMigrationProcessReporterTest {
     @Before
     public void before() {
         Mockito.when(consoleConfig.getKeyMigrationProcessReportUrl()).thenReturn("127.0.0.1:8080");
+        Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
                 migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class)))
                 .thenReturn(null);
