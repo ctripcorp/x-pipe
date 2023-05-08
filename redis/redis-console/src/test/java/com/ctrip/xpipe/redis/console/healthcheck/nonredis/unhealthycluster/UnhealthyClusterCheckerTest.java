@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.cluster.ClusterType.BI_DIRECTION;
@@ -80,7 +79,7 @@ public class UnhealthyClusterCheckerTest extends AbstractConsoleTest {
             return null;
         }).when(metricProxy).writeBinMultiDataPoint(Mockito.any());
 
-        checker.doCheck();
+        checker.doAction();
         Mockito.verify(metricProxy, Mockito.times(2)).writeBinMultiDataPoint(Mockito.any());
         Assert.assertEquals(0, unhealthyClusters.get());
         Assert.assertEquals(0, unhealthyInstances.get());
@@ -104,7 +103,7 @@ public class UnhealthyClusterCheckerTest extends AbstractConsoleTest {
             return null;
         }).when(metricProxy).writeBinMultiDataPoint(Mockito.any());
 
-        checker.doCheck();
+        checker.doAction();
         Mockito.verify(metricProxy, Mockito.times(4)).writeBinMultiDataPoint(Mockito.any());
         Assert.assertEquals(2, unhealthyClusters.get());
         Assert.assertEquals(2, unhealthyInstances.get());

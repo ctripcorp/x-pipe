@@ -22,7 +22,7 @@ public class ClientConfigMonitor4MasterStatus extends AbstractClientConfigMonito
     private ConsoleLeaderElector consoleSiteLeader;
 
     @Override
-    protected boolean shouldCheck() {
+    protected boolean shouldDoAction() {
         if(consoleSiteLeader != null && !consoleSiteLeader.amILeader()) {
             logger.debug("[shouldCheck][not local dc leader, quit]");
             return false;

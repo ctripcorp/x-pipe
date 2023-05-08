@@ -82,7 +82,7 @@ public class DBVariablesCheckTest extends AbstractTest {
             return null;
         }).when(checker).check(Matchers.any());
 
-        dbVariablesCheck.doCheck();
+        dbVariablesCheck.doAction();
         Assert.assertEquals(2, checkCnt.get());
     }
 

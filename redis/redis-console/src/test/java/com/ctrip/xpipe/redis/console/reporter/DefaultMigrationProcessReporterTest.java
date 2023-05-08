@@ -53,7 +53,7 @@ public class DefaultMigrationProcessReporterTest {
 
         Mockito.when(migrationService.buildMigrationProgress(1)).thenReturn(migrationProgress);
 
-        migrationReporter.doReport();
+        migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(1))
                 .postForEntity(Mockito.anyString(),
                         migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));

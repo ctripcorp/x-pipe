@@ -4,9 +4,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
+public class SentinelConfigCheck extends AbstractCrossDcIntervalAction {
 
     @Autowired
     private MetaCache metaCache;
@@ -37,7 +37,7 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.SENTINEL_CONFIG_MISSING);
 
-    protected void doCheck() {
+    protected void doAction() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta) return;
 

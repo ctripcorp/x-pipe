@@ -1,17 +1,22 @@
 package com.ctrip.xpipe.redis.console.reporter;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalReport implements MigrationReporter{
+public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalAction implements MigrationReporter{
 
     @Autowired
     private MigrationService migrationService;
@@ -27,7 +32,7 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalRepo
     private static String REPORT_EVENT = "migration.process.report";
 
     @Override
-    protected void doReport() {
+    protected void doAction() {
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
         MigrationProcessReportModel model = new MigrationProcessReportModel();
         MigrationProgress migrationProgress = migrationService.buildMigrationProgress(DEFAULT_HOURS);
@@ -49,8 +54,23 @@ public class DefaultMigrationProcessReporter extends AbstractCrossDcIntervalRepo
     }
 
     @Override
-    protected boolean shouldReport() {
+    protected boolean shouldDoAction() {
         logger.debug("[DefaultMigrationReporter]get switch {}", consoleConfig.isMigrationProcessReportOpen());
-        return consoleConfig.isMigrationProcessReportOpen() && super.shouldReport();
+        return consoleConfig.isMigrationProcessReportOpen() && super.shouldDoAction();
+    }
+
+    @Override
+    protected long getIntervalMilli() {
+        return consoleConfig.getConsoleReportIntervalMill();
+    }
+
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList();
+    }
+
+    @Override
+    protected long getLeastIntervalMilli() {
+        return consoleConfig.getConsoleReportIntervalMill();
     }
 }
