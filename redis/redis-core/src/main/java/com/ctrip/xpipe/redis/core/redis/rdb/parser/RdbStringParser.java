@@ -224,6 +224,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
         super.reset();
         if (temp != null) {
             temp.release();
+            temp = null;
         }
         this.state = STATE.READ_INIT;
         lzfContent = null;

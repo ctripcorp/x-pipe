@@ -228,9 +228,11 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
     public void reset() {
         if (lenTemp != null) {
             lenTemp.release();
+            lenTemp = null;
         }
         if (millSecondTemp != null){
             millSecondTemp.release();
+            millSecondTemp = null;
         }
         this.lenReadState = LEN_READ_STATE.READ_INIT;
     }

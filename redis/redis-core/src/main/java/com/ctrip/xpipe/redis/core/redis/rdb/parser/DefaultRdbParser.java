@@ -204,6 +204,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         super.reset();
         if (temp != null) {
             temp.release();
+            temp = null;
         }
         if (rdbParseContext != null) {
             rdbParseContext.reset();
