@@ -139,7 +139,7 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     USED_MEM=`getSafeXmx`
     XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=2
-    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
+    JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
 else
     changeConfigLogFile $FULL_DIR log4j2-uat.xml
 
