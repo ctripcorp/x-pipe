@@ -6,6 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -74,6 +75,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BEACON_DEFAULT_HOST = "beacon.host.default";
 
     private static final String KEY_BEACON_HOST_BY_ORG = "beacon.host.org";
+
+    public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
 
     private static final String KEY_CLUSTER_DIVIDED_PARTS = "console.cluster.divide.parts";
 
@@ -532,6 +535,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Map<Long, String> getBeaconHosts() {
         String property = getProperty(KEY_BEACON_HOST_BY_ORG, "{}");
         return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<Long, String>>() {});
+    }
+
+    @Override
+    public List<BeaconOrgRoute> getBeaconOrgRoutes() {
+        String property = getProperty(KEY_BEACON_ORG_ROUTE, "[]");
+        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<List<BeaconOrgRoute>>() {});
     }
 
     @Override
