@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
+import com.ctrip.xpipe.redis.console.reporter.DefaultHttpService;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -48,7 +48,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     @Autowired
     private ConsoleConfig consoleConfig;
 
-    private final RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 20, 3000, 5000);;
+    private DefaultHttpService httpService = new DefaultHttpService();
 
     private ScheduledFuture future;
 
@@ -120,7 +120,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
             if(currentDc.equalsIgnoreCase(dc)) {
                 dcProxyChainMap.put(dc, proxyChainAnalyzer.getClusterShardChainMap());
             } else {
-                Command command = new ProxyChainGetCommand(dc, domain , restTemplate);
+                Command command = new ProxyChainGetCommand(dc, domain , httpService.getRestTemplate());
                 command.future().addListener(commandFuture -> {
                     logger.info("success to get proxy chain from dc {} {} {}", dc, domain, commandFuture.isSuccess());
                     if (commandFuture.isSuccess()) dcProxyChainMap.put(dc, (Map<DcClusterShardPeer, ProxyChain>) commandFuture.get());

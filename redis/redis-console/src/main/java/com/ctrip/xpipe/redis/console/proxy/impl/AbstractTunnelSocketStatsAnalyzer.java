@@ -95,8 +95,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_DST_DC, backupDc);
-        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
+        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
+        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -120,8 +120,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_DST_DC, backupDc);
-        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
+        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
+        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -137,10 +137,10 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         if (splits.length < 5) return;
 
         String[] localSplits = splits[3].split(HOST_SPLITTER);
-        setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
+        if (localSplits.length >= 5) setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
 
         String[] remoteSplits = splits[4].split(HOST_SPLITTER);
-        setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
+        if (remoteSplits.length >= 5) setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
     }
 
     private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
