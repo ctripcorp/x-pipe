@@ -10,7 +10,16 @@ import java.util.Set;
  */
 public interface MonitorService {
 
+    int MIN_WEIGHT = 0;
+    int MAX_WEIGHT = 100;
+
+    String getName();
+
     String getHost();
+
+    int getWeight();
+
+    void setWeight(int weight);
 
     Set<String> fetchAllClusters(String system);
 

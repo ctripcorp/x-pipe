@@ -11,6 +11,6 @@ public interface MonitorServiceFactory extends Ordered {
 
     MonitorServiceFactory DEFAULT = ServicesUtil.getMonitorServiceFactory();
 
-    MonitorService build(String host);
+    MonitorService build(String name, String host, int weight);
 
 }

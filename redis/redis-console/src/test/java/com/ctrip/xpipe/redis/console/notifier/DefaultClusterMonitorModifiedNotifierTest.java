@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
-import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +25,7 @@ import java.util.HashSet;
 public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTest {
 
     @Mock
-    private MonitorServiceManager monitorServiceManager;
+    private MonitorManager monitorManager;
 
     @Mock
     private BeaconMetaService beaconMetaService;
@@ -41,9 +41,9 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
     @Before
     public void setupDefaultClusterMonitorModifiedNotifierTest() {
         Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(new HashSet<>());
-        notifier = new DefaultClusterMonitorModifiedNotifier(beaconMetaService, monitorServiceManager, config);
+        notifier = new DefaultClusterMonitorModifiedNotifier(beaconMetaService, monitorManager, config);
 
-        Mockito.when(monitorServiceManager.getOrCreate(Mockito.anyLong())).thenReturn(monitorService);
+        Mockito.when(monitorManager.get(Mockito.anyLong(), Mockito.anyString())).thenReturn(monitorService);
         Mockito.when(beaconMetaService.buildCurrentBeaconGroups(Mockito.anyString())).thenReturn(Collections.singleton(new MonitorGroupMeta()));
     }
 
