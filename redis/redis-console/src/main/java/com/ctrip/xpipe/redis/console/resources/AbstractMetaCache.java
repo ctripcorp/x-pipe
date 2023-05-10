@@ -588,7 +588,7 @@ public abstract class AbstractMetaCache implements MetaCache {
         int currentClusterCount = currentDcMeta.getClusters().size();
         int futureClusterCount = futureDcMeta.getClusters().size();
         if ((currentClusterCount - futureClusterCount) > currentClusterCount * maxRemovedClusterPercent / 100)
-            throw new TooManyClustersRemovedException(String.format("dc:{}, current cluster count:%d,future cluster count:%d", currentClusterCount, futureClusterCount));
+            throw new TooManyClustersRemovedException(String.format("dc:%s, current cluster count:%d,future cluster count:%d", currentDcMeta.getId(), currentClusterCount, futureClusterCount));
     }
 
     @VisibleForTesting

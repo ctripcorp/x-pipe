@@ -1799,6 +1799,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-latest-migration-events" type="SELECT" multiple="true">
+				<param name="data-change-last-time"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted' /> = 0
+					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
+					]]>
+				</statement>
+			</query>
 			<query name="find-all" type="SELECT" multiple="true">
 				<statement>
 				<![CDATA[

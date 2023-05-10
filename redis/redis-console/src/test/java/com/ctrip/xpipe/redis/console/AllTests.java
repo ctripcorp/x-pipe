@@ -58,6 +58,7 @@ import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
+import com.ctrip.xpipe.redis.console.reporter.DefaultMigrationProcessReporterTest;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
@@ -224,7 +225,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
         RouteInfoControllerTest.class,
         RedisControllerTest.class,
-        DcRelationsServiceTest.class
+        DcRelationsServiceTest.class,
+        DefaultMigrationProcessReporterTest.class
 })
 public class AllTests {
 

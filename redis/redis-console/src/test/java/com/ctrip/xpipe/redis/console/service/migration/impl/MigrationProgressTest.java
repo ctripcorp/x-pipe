@@ -4,12 +4,14 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -41,6 +43,12 @@ public class MigrationProgressTest extends AbstractConsoleIntegrationTest {
         }}, progress.getMigrationStatuses());
     }
 
+    @Test
+    public void testGetLatestMigrationOperators() {
+        Set<String> latestMigrationOperators = migrationService.getLatestMigrationOperators(1);
+        Assert.assertEquals(3, latestMigrationOperators.size());
+        Assert.assertEquals(Sets.newHashSet("xpipe", "beacon", "some"), latestMigrationOperators);
+    }
 
     @Override
     protected String prepareDatas() throws IOException {

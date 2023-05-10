@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.healthcheck.nonredis;
+package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
-public abstract class AbstractIntervalCheck {
+public abstract class AbstractIntervalAction {
+
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource(name = SCHEDULED_EXECUTOR)
@@ -28,38 +29,30 @@ public abstract class AbstractIntervalCheck {
     protected Executor executors;
 
     @Autowired
-    protected ConsoleConfig consoleConfig;
+    protected AlertPolicyManager alertPolicyManager;
 
     @Autowired
-    protected AlertPolicyManager alertPolicyManager;
+    protected ConsoleConfig consoleConfig;
 
     private long lastStartTime = System.currentTimeMillis();
 
     @PostConstruct
     public void postConstruct(){
-
         logger.info("[postConstruct]{}", this);
 
         for(ALERT_TYPE type : alertTypes()) {
             alertPolicyManager.markCheckInterval(type, this::getIntervalMilli);
         }
 
-        scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() throws Exception {
-                checkStart();
-            }
-        },1, 30, TimeUnit.SECONDS);
-
+        scheduled.scheduleAtFixedRate(() -> {
+            actionStart();
+        }, 1000, getLeastIntervalMilli(), TimeUnit.MILLISECONDS);
     }
 
-    protected void checkStart(){
-
-        if(!shouldCheck()){
+    protected void actionStart(){
+        if(!shouldDoAction()){
             return;
         }
-
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
             logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
@@ -70,20 +63,24 @@ public abstract class AbstractIntervalCheck {
         executors.execute(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                doCheck();
+                doAction();
             }
         });
     }
 
-    protected abstract void doCheck();
+    protected abstract void doAction();
 
-    protected long getIntervalMilli(){
+    protected long getIntervalMilli() {
         return consoleConfig.getRedisConfCheckIntervalMilli();
     }
 
     protected abstract List<ALERT_TYPE> alertTypes();
 
-    protected boolean shouldCheck() {
+    protected long getLeastIntervalMilli() {
+        return 30000L;
+    }
+
+    protected boolean shouldDoAction() {
         return true;
     }
 }

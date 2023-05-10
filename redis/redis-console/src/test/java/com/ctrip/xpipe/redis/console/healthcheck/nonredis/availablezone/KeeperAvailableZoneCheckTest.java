@@ -53,7 +53,7 @@ public class KeeperAvailableZoneCheckTest {
 
     @Test
     public void testKeeperAvailableZoneCheck() {
-        keeperAvailableZoneCheck.doCheck();
+        keeperAvailableZoneCheck.doAction();
         Mockito.verify(alertManager, Mockito.times(1))
                 .alert(dcCaptor.capture(), clusterCaptor.capture(), shardCaptor.capture(), Mockito.any(), Mockito.any(), Mockito.anyString());
 

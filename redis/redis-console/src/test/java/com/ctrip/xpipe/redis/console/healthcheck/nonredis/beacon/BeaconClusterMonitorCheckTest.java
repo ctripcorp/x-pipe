@@ -65,7 +65,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Test
     public void testDoCheck() {
-        check.doCheck();
+        check.doAction();
         sleep(1000);
         Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
         Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
@@ -79,7 +79,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         Set<String> needExcludeClusters = Sets.newHashSet("clusterx", "clustery");
         Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
 
-        check.doCheck();
+        check.doAction();
         sleep(1000);
         Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
         Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
@@ -93,7 +93,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(Sets.newHashSet("cluster1","cluster3"));
         Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("cluster1", "cluster2"));
 
-        check.doCheck();
+        check.doAction();
         sleep(1000);
         Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
         Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());

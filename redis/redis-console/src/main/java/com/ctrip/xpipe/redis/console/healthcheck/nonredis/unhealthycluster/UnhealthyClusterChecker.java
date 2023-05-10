@@ -7,10 +7,10 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -25,7 +25,7 @@ import java.util.*;
  * Date 2020/11/10
  */
 @Component
-public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
+public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalAction {
 
     private DelayService delayService;
 
@@ -52,8 +52,8 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
 
     private MetricProxy metricProxy = ServicesUtil.getMetricProxy();
 
-    protected void doCheck() {
-        logger.info("[doCheck] begin");
+    protected void doAction() {
+        logger.info("[doAction] begin");
         UnhealthyInfoModel unhealthyInfoModel = delayService.getDcActiveClusterUnhealthyInstance(CURRENT_IDC);
         Map<ClusterType, Integer> unhealthyClustersByType = new EnumMap<>(ClusterType.class);
         config.getOwnClusterType().forEach(type -> unhealthyClustersByType.put(ClusterType.lookup(type), 0));
@@ -70,7 +70,7 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
                 int origin = unhealthyClustersByType.get(clusterType);
                 unhealthyClustersByType.put(clusterType, origin + 1);
             } catch (Exception e) {
-                logger.info("[doCheck] count fail", e);
+                logger.info("[doAction] count fail", e);
             }
         });
 

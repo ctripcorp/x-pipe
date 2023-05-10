@@ -32,7 +32,7 @@ public class MetaCacheCheckTest {
     public void doCheck() {
         doNothing().when(alertManager).alert(any(), any(), any());
         when(metaCache.getLastUpdateTime()).thenReturn(System.currentTimeMillis());
-        metaCacheCheck.doCheck();
+        metaCacheCheck.doAction();
         verify(alertManager, never()).alert(any(), any(), any());
     }
 
@@ -40,7 +40,7 @@ public class MetaCacheCheckTest {
     public void doCheckWithAlert() {
         doNothing().when(alertManager).alert(any(), any(), any());
         when(metaCache.getLastUpdateTime()).thenReturn(System.currentTimeMillis() - 15 * 1000);
-        metaCacheCheck.doCheck();
+        metaCacheCheck.doAction();
         verify(alertManager, times(1)).alert(any(), any(), any(), any(), any());
     }
 }

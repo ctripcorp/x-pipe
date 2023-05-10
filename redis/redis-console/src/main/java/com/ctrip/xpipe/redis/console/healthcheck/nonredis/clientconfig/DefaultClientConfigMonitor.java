@@ -14,7 +14,7 @@ public class DefaultClientConfigMonitor extends AbstractClientConfigMonitor {
     private ConsoleLeaderElector clusterServer;
 
     @Override
-    protected boolean shouldCheck() {
+    protected boolean shouldDoAction() {
         if(clusterServer != null && !clusterServer.amILeader()) {
             logger.debug("[shouldCheck][not site leader, quit]");
             return false;
