@@ -26,9 +26,19 @@ public class ProxyChainApiController extends AbstractController {
     @Autowired
     private ProxyChainCollector collector;
 
-    @RequestMapping(value = "/proxy/chains/", method = RequestMethod.GET)
+    @RequestMapping(value = "/proxy/chains/all", method = RequestMethod.GET)
     public List<ProxyChain> getProxyChains() {
         return collector.getProxyChains();
+    }
+
+    @RequestMapping(value = "/proxy/chains/shard", method = RequestMethod.GET)
+    public Map<DcClusterShardPeer, ProxyChain> getShardProxyChainMap() {
+        return collector.getShardProxyChainMap();
+    }
+
+    @RequestMapping(value = "/proxy/chains/dc/shard", method = RequestMethod.GET)
+    public Map<String, Map<DcClusterShardPeer, ProxyChain>> getDCShardProxyChainMap() {
+        return collector.getDcProxyChainMap();
     }
 
     @RequestMapping(value = "/proxy/chains/{dcName}", method = RequestMethod.GET)

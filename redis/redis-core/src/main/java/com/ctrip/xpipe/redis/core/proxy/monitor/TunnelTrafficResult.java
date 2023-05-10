@@ -2,15 +2,19 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TunnelTrafficResult {
+public class TunnelTrafficResult implements Serializable {
 
     private String tunnelId;
 
     private SessionTrafficResult frontend;
 
     private SessionTrafficResult backend;
+
+    public TunnelTrafficResult() {
+    }
 
     public TunnelTrafficResult(String tunnelId, SessionTrafficResult frontendResult,
                                SessionTrafficResult backendResult) {
@@ -54,6 +58,21 @@ public class TunnelTrafficResult {
 
     public SessionTrafficResult getBackend() {
         return backend;
+    }
+
+    public TunnelTrafficResult setTunnelId(String tunnelId) {
+        this.tunnelId = tunnelId;
+        return this;
+    }
+
+    public TunnelTrafficResult setFrontend(SessionTrafficResult frontend) {
+        this.frontend = frontend;
+        return this;
+    }
+
+    public TunnelTrafficResult setBackend(SessionTrafficResult backend) {
+        this.backend = backend;
+        return this;
     }
 
     @Override

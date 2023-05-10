@@ -47,12 +47,12 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
         try {
             DefaultProxyMonitorCollector collector1 = mock(DefaultProxyMonitorCollector.class);
             when(collector1.getProxyInfo()).thenReturn(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)).setUri("TCP://127.0.0.1:443"));
-            when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnels().get(0), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnels().get(0)));
+            when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnelInfos().get(0), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnelInfos().get(0)));
             when(collector1.getPingStatsResults()).thenReturn(Lists.newArrayList());
 
             DefaultProxyMonitorCollector collector2 = mock(DefaultProxyMonitorCollector.class);
             when(collector2.getProxyInfo()).thenReturn(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)).setUri("TCP://127.0.0.3:80"));
-            when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnels().get(1), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnels().get(1)));
+            when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnelInfos().get(1), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnelInfos().get(1)));
             when(collector2.getPingStatsResults()).thenReturn(
                     Lists.newArrayList(new PingStatsResult(System.currentTimeMillis() - 1000 * 60 - 10, System.currentTimeMillis() - 1000 * 60, new HostPort("127.0.0.1", 443), new HostPort("192.168.0.1", 443)),
                             new PingStatsResult(System.currentTimeMillis() - 1000 * 60 - 10, System.currentTimeMillis() - 1000 * 60, new HostPort("127.0.0.1", 443), new HostPort("192.168.0.2", 443)),

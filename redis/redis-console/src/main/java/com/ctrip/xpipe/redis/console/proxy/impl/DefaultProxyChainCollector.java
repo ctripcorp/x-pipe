@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.redis.console.reporter.DefaultHttpService;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -26,7 +27,6 @@ import org.springframework.web.client.RestOperations;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -103,6 +103,11 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     }
 
     @Override
+    public Map<String, Map<DcClusterShardPeer, ProxyChain>> getDcProxyChainMap() {
+        return dcProxyChainMap;
+    }
+
+    @Override
     protected void doStart() throws Exception {
         scheduled.scheduleWithFixedDelay(() -> {
             if (!taskTrigger.get()) {
@@ -134,24 +139,42 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         });
     }
 
-    private void updateShardProxyChainMap() {
+    @VisibleForTesting
+    void updateShardProxyChainMap() {
         Map<DcClusterShardPeer, ProxyChain> tempShardProxyChain = Maps.newConcurrentMap();
         Map<String, DcClusterShardPeer> tempTunnelClusterShardMap = Maps.newConcurrentMap();
         logger.info("update proxy chains {}", dcProxyChainMap);
         dcProxyChainMap.forEach((dc, proxyChainMap) -> {
             proxyChainMap.forEach((clusterShard, proxyChain) -> {
                 if (tempShardProxyChain.containsKey(clusterShard)) {
-                    tempShardProxyChain.get(clusterShard).getTunnels().add(proxyChain.getTunnels().get(0));
+                    tempShardProxyChain.get(clusterShard).getTunnelInfos().add(proxyChain.getTunnelInfos().get(0));
                 } else {
                     tempShardProxyChain.put(clusterShard, proxyChain);
                 }
-                tempTunnelClusterShardMap.put(proxyChain.getTunnels().get(0).getTunnelId(), clusterShard);
+                tempTunnelClusterShardMap.put(proxyChain.getTunnelInfos().get(0).getTunnelId(), clusterShard);
             });
         });
         synchronized (DefaultProxyChainCollector.this) {
             tunnelClusterShardMap = tempTunnelClusterShardMap;
             shardProxyChainMap = tempShardProxyChain;
+            logger.info("after update {}", shardProxyChainMap);
         }
+    }
+
+    @VisibleForTesting
+    DefaultProxyChainCollector setDcProxyChainMap(Map<String, Map<DcClusterShardPeer, ProxyChain>> dcProxyChainMap) {
+        this.dcProxyChainMap = dcProxyChainMap;
+        return this;
+    }
+
+    @Override
+    public Map<DcClusterShardPeer, ProxyChain> getShardProxyChainMap() {
+        return shardProxyChainMap;
+    }
+
+    @VisibleForTesting
+    Map<String, DcClusterShardPeer> getTunnelClusterShardMap() {
+        return tunnelClusterShardMap;
     }
 
     protected int getStartTime() {
@@ -178,7 +201,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         return shardProxyChainMap;
     }
 
-    class  ProxyChainGetCommand extends AbstractCommand<Map<DcClusterShardPeer, ProxyChain>> {
+    class  ProxyChainGetCommand extends AbstractCommand<Map<DcClusterShardPeer, DefaultProxyChain>> {
         private String dcName;
         private String domain;
         private RestOperations restTemplate;
@@ -197,16 +220,10 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         @Override
         protected void doExecute() throws Throwable {
             try {
-//                ResponseEntity<Map<String, Pair<HostPort, Long>>> response = restTemplate.exchange(innerCrossMasterDelayUrl, HttpMethod.GET,
-//                        null, crossMasterDelayDef, clusterId, shardId);
-//                return response.getBody();
-
-                ResponseEntity<Map<DcClusterShardPeer, ProxyChain>> result =
+                ResponseEntity<Map<DcClusterShardPeer, DefaultProxyChain>> result =
                         restTemplate.exchange(format("%s/api/proxy/chains/{dcName}",
-                        domain), HttpMethod.GET, null,  new ParameterizedTypeReference<Map<DcClusterShardPeer, ProxyChain>>(){}, dcName);
+                        domain), HttpMethod.GET, null,  new ParameterizedTypeReference<Map<DcClusterShardPeer, DefaultProxyChain>>(){}, dcName);
                 future().setSuccess(result.getBody());
-//                Map<DcClusterShardPeer, ProxyChain> result = restTemplate.getForObject(domain + "/api/proxy/chains/{dcName}", ProxyChainResultMap.class, dcName);
-//                future().setSuccess(result);
             } catch (Throwable th) {
                 getLogger().error("get proxy chain for dc:{} fail", dcName, th);
                 future().setFailure(th);
@@ -218,6 +235,4 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
 
         }
     }
-
-    class ProxyChainResultMap extends ConcurrentHashMap<DcClusterShardPeer, ProxyChain> {}
 }

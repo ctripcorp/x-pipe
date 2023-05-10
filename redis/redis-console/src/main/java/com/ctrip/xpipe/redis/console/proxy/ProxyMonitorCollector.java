@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.proxy;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
@@ -22,7 +23,7 @@ public interface ProxyMonitorCollector extends Startable, Stoppable {
 
     List<TunnelTrafficResult> getTunnelTrafficResults();
 
-    List<TunnelInfo> getTunnelInfos();
+    List<DefaultTunnelInfo> getTunnelInfos();
 
     void addListener(Listener listener);
 

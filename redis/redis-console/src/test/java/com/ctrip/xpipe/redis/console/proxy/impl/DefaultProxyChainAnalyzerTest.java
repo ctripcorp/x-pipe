@@ -38,9 +38,9 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         String tunnelId1 = generateTunnelId();
         String tunnelId2 = generateTunnelId();
         when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("SHAOY"), tunnelId1)
-                .setSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
+                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
         when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("FRA-AWS"), tunnelId2)
-                .setSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
+                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
         when(manager.getProxyMonitorResults()).thenReturn(Lists.newArrayList(collector1, collector2));
 
         String cluster = "cluster", shard = "shard";

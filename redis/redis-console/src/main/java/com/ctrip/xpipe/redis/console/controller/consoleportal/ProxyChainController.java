@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzerManager;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
@@ -63,19 +63,19 @@ public class ProxyChainController extends AbstractConsoleController {
     @RequestMapping(value = "/proxy/{proxyIp}/{dcName}", method = RequestMethod.GET)
     public List<TunnelModel> getTunnelModels(@PathVariable String dcName, @PathVariable String proxyIp) {
         logger.info("[getTunnelModels] {}, {}", dcName, proxyIp);
-        List<TunnelInfo> tunnelInfos = proxyService.getProxyTunnels(dcName, proxyIp);
+        List<DefaultTunnelInfo> tunnelInfos = proxyService.getProxyTunnels(dcName, proxyIp);
         if(tunnelInfos == null) {
             return Collections.emptyList();
         }
         List<TunnelModel> results = Lists.newArrayListWithCapacity(tunnelInfos.size());
-        for(TunnelInfo info : tunnelInfos) {
+        for(DefaultTunnelInfo info : tunnelInfos) {
             ProxyChain chain = proxyService.getProxyChain(info.getTunnelId());
             if(chain == null) {
                 logger.warn("[tunnelId] {}, no chains", info.getTunnelId());
                 continue;
             }
             TunnelSocketStatsMetricOverview overview = socketStatsAnalyzerManager.analyze(info.getTunnelSocketStatsResult());
-            results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(),
+            results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDcId(), chain.getClusterId(), chain.getShardId(),
                     chain.getPeerDcId(), info.getTunnelStatsResult(), overview));
         }
         return results;

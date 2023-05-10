@@ -6,7 +6,11 @@ import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
-import com.ctrip.xpipe.redis.console.proxy.*;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
@@ -131,7 +135,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public List<TunnelInfo> getProxyTunnels(String dcId, String ip) {
+    public List<DefaultTunnelInfo> getProxyTunnels(String dcId, String ip) {
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
         for(ProxyMonitorCollector collector : collectors) {
             if(collector.getProxyInfo().getDcName().equalsIgnoreCase(dcId)
@@ -248,9 +252,9 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
 
     private int getChainNumber(ProxyMonitorCollector proxy) {
-        List<TunnelInfo> tunnels = proxy.getTunnelInfos();
+        List<DefaultTunnelInfo> tunnels = proxy.getTunnelInfos();
         int result = 0;
-        for(TunnelInfo info : tunnels) {
+        for(DefaultTunnelInfo info : tunnels) {
             if(proxyChainCollector.getProxyChain(info.getTunnelId()) != null) {
                 result ++;
             }

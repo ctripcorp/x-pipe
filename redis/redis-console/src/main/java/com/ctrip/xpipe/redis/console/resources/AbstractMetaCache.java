@@ -452,7 +452,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         for (String dc : relatedDcs) {
             for (RedisMeta redis : xpipeMetaManager.getRedises(dc, clusterShard.getKey(), clusterShard.getValue())) {
-                if (redis.getIp().equals(hostIp)) {
+                if (redis.getIp().equalsIgnoreCase(hostIp)) {
                    return dc;
                 }
             }

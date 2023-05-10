@@ -14,7 +14,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.core.proxy.command.AbstractProxyMonitorCommand;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
@@ -51,7 +50,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
     @JsonIgnore
-    private List<TunnelInfo> tunnelInfos;
+    private List<DefaultTunnelInfo> tunnelInfos;
 
     @JsonIgnore
     private ScheduledFuture future;
@@ -103,7 +102,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     @Override
-    public List<TunnelInfo> getTunnelInfos() {
+    public List<DefaultTunnelInfo> getTunnelInfos() {
         return tunnelInfos == null ? Collections.emptyList() : tunnelInfos;
     }
 
@@ -277,7 +276,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                 if(!tunnels.containsKey(id)) {
                     tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
                 }
-                tunnels.get(id).setSocketStatsResult(socketStats);
+                tunnels.get(id).setTunnelSocketStatsResult(socketStats);
             }
             for(TunnelTrafficResult trafficResult : getTunnelTrafficResults()) {
                 String id = trafficResult.getTunnelId();
@@ -287,6 +286,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                 tunnels.get(id).setTunnelTrafficResult(trafficResult);
             }
             tunnelInfos = Lists.newArrayList(tunnels.values());
+            logger.debug("[TunnelAggregator] {}", tunnelInfos);
         }
     }
 }

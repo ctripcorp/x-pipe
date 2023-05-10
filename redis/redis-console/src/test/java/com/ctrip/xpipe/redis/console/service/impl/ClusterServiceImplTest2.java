@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.UnexpectedRouteUsageInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -91,8 +90,8 @@ public class ClusterServiceImplTest2 {
         ProxyModel proxyModel1 = new ProxyModel().setActive(true).setDcName(mockDcs.get(0)).setId(1).setUri("PROXYTCP://1.1.1.1:8080");
         ProxyModel proxyModel2 = new ProxyModel().setActive(true).setDcName(mockDcs.get(0)).setId(1).setUri("PROXYTCP://1.1.1.3:8080");
 
-        TunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel1, tunnelId1);
-        List<TunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
+        DefaultTunnelInfo tunnelInfo1 = new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel1, tunnelId1);
+        List<DefaultTunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1))
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
@@ -102,7 +101,7 @@ public class ClusterServiceImplTest2 {
         Assert.assertEquals(0, useWrongRouteClusterInfos.getUnexpectedRouteUsedClusterNum());
 
         //test use wrong route
-        tunnelInfo1 = new DefaultTunnelInfo(proxyModel2, tunnelId2);
+        tunnelInfo1 = new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel2, tunnelId2);
         tunnelInfos = Lists.newArrayList(tunnelInfo1);
         proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
@@ -134,8 +133,8 @@ public class ClusterServiceImplTest2 {
         ProxyModel proxyModel1 = new ProxyModel().setActive(true).setDcName(mockDcs.get(0)).setId(1).setUri("PROXYTCP://1.1.1.1:8080");
         ProxyModel proxyModel2 = new ProxyModel().setActive(true).setDcName(mockDcs.get(0)).setId(1).setUri("PROXYTCP://1.1.1.3:8080");
 
-        TunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel1, tunnelId1);
-        List<TunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
+        DefaultTunnelInfo tunnelInfo1 = new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel1, tunnelId1);
+        List<DefaultTunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(RouteMeta.TAG_META, mockDcs.get(0)))
                 .thenReturn(Lists.newArrayList(routeInfoModel1, routeInfoModel2));

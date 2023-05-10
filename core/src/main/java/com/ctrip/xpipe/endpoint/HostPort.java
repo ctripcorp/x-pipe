@@ -2,10 +2,11 @@ package com.ctrip.xpipe.endpoint;
 
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
-public class HostPort {
+public class HostPort implements Serializable {
 
 	private String m_host;
 

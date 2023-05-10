@@ -1,5 +1,4 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
-
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -8,7 +7,10 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
-import com.ctrip.xpipe.redis.console.proxy.*;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
 import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
@@ -18,6 +20,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +31,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -74,7 +75,10 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
     @Override
     public Map<DcClusterShardPeer, ProxyChain> getClusterShardChainMap() {
-        return chains;
+        logger.info("[analyzeProxyChain] get chains {} ", chains);
+//        Map<DcClusterShardPeer, ProxyChain> result = new ConcurrentHashMap<>();
+//        result.putAll(chains);
+        return chains.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> SerializationUtils.clone(e.getValue())));
     }
 
     @Override
@@ -100,13 +104,13 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
     @VisibleForTesting
     protected void fullUpdate() {
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
-        List<TunnelInfo> tunnels = Lists.newArrayList();
+        List<DefaultTunnelInfo> tunnels = Lists.newArrayList();
         for(ProxyMonitorCollector collector : collectors) {
             logger.debug("[fullUpdate] {}, {}", collector.getProxyInfo(), collector.getTunnelInfos());
             tunnels.addAll(collector.getTunnelInfos());
         }
-
-        CommandFuture<Map<SourceDest, List<TunnelInfo>>> future = new ProxyChainBuilder(tunnels).execute(executors);
+        logger.info("[fullUpdate] {}", tunnels);
+        CommandFuture<Map<SourceDest, List<DefaultTunnelInfo>>> future = new ProxyChainBuilder(tunnels).execute(executors);
         future.addListener(commandFuture -> {
             if(!commandFuture.isSuccess()) {
                 logger.error("[fullUpdate]", commandFuture.cause());
@@ -189,20 +193,21 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
         chains.clear();
     }
 
-    private final class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {
+    private final class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<DefaultTunnelInfo>>> {
 
-        private List<TunnelInfo> tunnels;
+        private List<DefaultTunnelInfo> tunnels;
 
-        private Map<SourceDest, List<TunnelInfo>> result = Maps.newHashMap();
+        private Map<SourceDest, List<DefaultTunnelInfo>> result = Maps.newHashMap();
 
-        private ProxyChainBuilder(List<TunnelInfo> tunnels) {
+        private ProxyChainBuilder(List<DefaultTunnelInfo> tunnels) {
             this.tunnels = tunnels;
         }
 
         @Override
         protected void doExecute() {
-            for(TunnelInfo tunnelInfo : tunnels) {
+            for(DefaultTunnelInfo tunnelInfo : tunnels) {
                 SourceDest sourceDest = SourceDest.parse(tunnelInfo.getTunnelId());
+                logger.debug("[ProxyChainBuilder] {}:{}, {}", sourceDest, tunnelInfo.getTunnelId(), tunnelInfo.getProxyModel());
                 if(!result.containsKey(sourceDest)) {
                     result.put(sourceDest, Lists.newArrayListWithExpectedSize(2));
                 }
@@ -224,9 +229,9 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
     private final class ShardTunnelsUpdater extends AbstractCommand<Void> {
 
-        private Map<SourceDest, List<TunnelInfo>> notReadyChains;
+        private Map<SourceDest, List<DefaultTunnelInfo>> notReadyChains;
 
-        private ShardTunnelsUpdater(Map<SourceDest, List<TunnelInfo>> notReadyChains) {
+        private ShardTunnelsUpdater(Map<SourceDest, List<DefaultTunnelInfo>> notReadyChains) {
             this.notReadyChains = notReadyChains;
         }
 
@@ -234,11 +239,12 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
         protected void doExecute() {
             Map<DcClusterShardPeer, ProxyChain> results = Maps.newConcurrentMap();
             Map<String, DcClusterShardPeer> tunnelMapping = Maps.newConcurrentMap();
-            for(Map.Entry<SourceDest, List<TunnelInfo>> entry : notReadyChains.entrySet()) {
+            for(Map.Entry<SourceDest, List<DefaultTunnelInfo>> entry : notReadyChains.entrySet()) {
                 HostPort chainSrc = HostPort.fromString(entry.getKey().getKey());
                 HostPort chainDst = getProxyChainDst(entry.getKey());
                 Pair<String, String> peerClusterShard = metaCache.findClusterShard(chainDst);
                 String peerDcId = findDc(chainDst);
+                logger.info("[analyzeProxyChain] get peerDcID {} from src {}, dst {}, tunnels:{}", peerDcId, chainSrc, chainDst, entry.getValue());
                 if(peerClusterShard == null || peerDcId == null ||
                         StringUtil.isEmpty(peerDcId) ||
                         StringUtil.isEmpty(peerClusterShard.getKey()) ||
@@ -251,13 +257,14 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
                 }
 
                 String backupDcId = null;
-                for(TunnelInfo info : entry.getValue()) {
+                for(DefaultTunnelInfo info : entry.getValue()) {
                     String tunnelDcId = info.getTunnelDcId();
                     if(!tunnelDcId.equalsIgnoreCase(peerDcId) && routeService.existsRouteBetweenDc(peerDcId, tunnelDcId)) {
                         backupDcId = tunnelDcId;
                         break;
                     }
                 }
+
                 if (backupDcId == null) {
                     backupDcId = metaCache.getAllKeeperContainersDcMap().get(chainSrc.getHost());
                 }
@@ -268,12 +275,12 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
                     backupDcId = metaCache.getDcByIpAndClusterShard(chainSrc.getHost(), peerClusterShard);
                 }
                 if (backupDcId == null) {
-                    logger.debug("[analyzeProxyChain] get backupDc fail by chainSrc {}", chainSrc);
+                    logger.info("[analyzeProxyChain] get backupDc fail by chainSrc {}", chainSrc);
                     continue;
                 }
-
-                DcClusterShardPeer key = new DcClusterShardPeer(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId);
-                DefaultProxyChain chain = new DefaultProxyChain(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId, entry.getValue());
+                logger.info("[analyzeProxyChain] get backupDc {} from src {}, dst {}, tunnels:{}", backupDcId, chainSrc, chainDst, entry.getValue());
+                DcClusterShardPeer key = new DcClusterShardPeer(backupDcId.toUpperCase(), peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId.toUpperCase());
+                DefaultProxyChain chain = new DefaultProxyChain(backupDcId.toUpperCase(), peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId.toUpperCase(), entry.getValue());
 
                 results.put(key,chain);
                 entry.getValue().forEach(tunnelInfo -> tunnelMapping.put(tunnelInfo.getTunnelId(), key));
@@ -282,6 +289,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
             synchronized (DefaultProxyChainAnalyzer.this) {
                 Map<DcClusterShardPeer, ProxyChain> expired = chains;
                 chains = results;
+                logger.info("[analyzeProxyChain] chains {} ", chains);
                 reverseMap = tunnelMapping;
                 notifyListeners(expired, results);
             }
