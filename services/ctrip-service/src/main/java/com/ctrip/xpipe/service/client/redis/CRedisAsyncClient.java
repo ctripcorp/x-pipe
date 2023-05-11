@@ -11,7 +11,6 @@ import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
-import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.config.route.ConfigFrozenRoute;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
@@ -222,6 +221,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public void shutdown() {
+        txnProvider.destroy();
+
         ((CRedisClusterSessionLocator) locator()).destroy();
         configFrozenRoute.destroy();
     }

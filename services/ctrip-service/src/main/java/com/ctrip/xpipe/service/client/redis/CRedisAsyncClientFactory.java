@@ -26,9 +26,10 @@ public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
 
     private CRedisAsyncClient doCreate(String clusterName, String subenv, ExecutorService credisNotifyExecutor) {
         DefaultHashStrategyFactory hashStrategyFactory = new DefaultHashStrategyFactory();
-        ConfigFrozenRoute route = DefaultRouteManager.create().createConfigFrozenRoute(clusterName, hashStrategyFactory, ClientType.APPLIER, subenv);
-        return new CRedisAsyncClient(new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(),
-                        decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName), hashStrategyFactory, route),
+        AbstractAsyncConfig asyncConfig = decorateConfig(DefaultAsyncConfig.newBuilder().build(), clusterName);
+        ConfigFrozenRoute route = DefaultRouteManager.create().createConfigFrozenRoute(clusterName, hashStrategyFactory, ClientType.APPLIER, subenv, asyncConfig);
+
+        return new CRedisAsyncClient(new AsyncApplierCacheProvider(clusterName, DefaultRouteManager.create(), asyncConfig, hashStrategyFactory, route),
                 new ApplierCacheProvider(clusterName, DelegateClusterLevelConfig.newBuilder().build(), route) , credisNotifyExecutor, route);
     }
 
