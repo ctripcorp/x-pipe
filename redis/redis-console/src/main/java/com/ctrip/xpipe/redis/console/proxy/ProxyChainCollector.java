@@ -17,6 +17,8 @@ public interface ProxyChainCollector extends ConsoleLeaderAware {
 
     Map<String, Map<DcClusterShardPeer, ProxyChain>> getDcProxyChainMap();
 
+    Map<String, DcClusterShardPeer> getTunnelClusterShardMap();
+
     @VisibleForTesting
     Map<DcClusterShardPeer, ProxyChain> getShardProxyChainMap();
 

@@ -1001,7 +1001,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private RouteMeta getShardUsedRouteByDirection(String srcDc, String dstDc, String clusterName, String shardName, List<RouteMeta> allDcRoutes) {
-		//TODO 去各自console 去找chain
 		ProxyChain chain = proxyService.getProxyChain(srcDc, clusterName, shardName, dstDc);
 		return chain == null ? null : getRouteMetaFromProxyChainModel(allDcRoutes, new ProxyChainModel(chain, chain.getPeerDcId(), srcDc));
 	}

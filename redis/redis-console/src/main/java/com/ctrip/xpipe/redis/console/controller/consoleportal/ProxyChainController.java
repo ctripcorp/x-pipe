@@ -33,7 +33,7 @@ public class ProxyChainController extends AbstractConsoleController {
 
     private static final String PROXY_PING_HICKWALL_TEMPLATE = "&panelId=%d";
 
-    private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "&panelId=%d&var-measure=%s&var-cluster=%s&var-shard=%s&var-dstDc=%s";
+    private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "&panelId=%d&var-measure=%s&var-cluster=%s&var-shard=%s&var-srcDc=%s";
 
     private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "&panelId=%d&var-address=%s:%d";
 
@@ -57,7 +57,7 @@ public class ProxyChainController extends AbstractConsoleController {
 
     @RequestMapping(value = "/proxy/collectors/{dcName}", method = RequestMethod.GET)
     public List<ProxyPingStatsModel> getProxyMonitorCollectors(@PathVariable String dcName) {
-        return proxyService.getProxyMonitorCollectors(dcName);
+        return proxyService.getProxyPingStatsModels(dcName);
     }
 
     @RequestMapping(value = "/proxy/{proxyIp}/{dcName}", method = RequestMethod.GET)
@@ -114,10 +114,10 @@ public class ProxyChainController extends AbstractConsoleController {
         return ImmutableMap.of("addr", getHickwall(template));
     }
 
-    @RequestMapping(value = {"/proxy/chain/hickwall/{clusterId}/{shardId}/{dstDc}",
+    @RequestMapping(value = {"/proxy/chain/hickwall/{clusterId}/{shardId}/{srcDc}",
                             "/proxy/chain/hickwall/{clusterId}/{shardId}"}, method = RequestMethod.GET)
     public Map<String, String> getChainHickwall(@PathVariable String clusterId, @PathVariable String shardId,
-                                                @PathVariable(required = false) String dstDc) {
+                                                @PathVariable(required = false) String srcDc) {
         List<String> metricTypes = socketStatsAnalyzerManager.getMetricTypes();
         Map<String, String> result = Maps.newHashMap();
         String template = null;
@@ -125,7 +125,7 @@ public class ProxyChainController extends AbstractConsoleController {
             try {
                 template = String.format(PROXY_CHAIN_HICKWALL_TEMPLATE,
                         consoleConfig.getHickwallMetricInfo().getProxyCollectionPanelId(),
-                        metricType + "_value", clusterId, shardId, dstDc);
+                        metricType + "_value", clusterId, shardId, srcDc);
                 result.put(metricType, getHickwall(template));
             } catch (Exception e) {
                 logger.error("[getHickwallAddress]", e);

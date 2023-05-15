@@ -73,7 +73,7 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
             @Override
             public ProxyMonitorCollector create() {
                 logger.info("[create proxy monitor collector] {}", proxyModel);
-                ProxyMonitorCollector result = new DefaultProxyMonitorCollector(
+                ProxyMonitorCollector result = new com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector(
                         scheduled, keyedObjectPool, proxyModel,
                         ()->consoleConfig.getProxyInfoCollectInterval()
                 );
@@ -109,7 +109,7 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
     protected void update() {
         List<ProxyModel> proxies = proxyService.getMonitorActiveProxiesByDc(currentDc);
-        logger.info("get proxies {} by current dc {}",proxies, currentDc);
+
         if (proxies == null || proxies.isEmpty()) return;
         addActiveProxies(proxies);
         removeUnusedProxies(proxies);

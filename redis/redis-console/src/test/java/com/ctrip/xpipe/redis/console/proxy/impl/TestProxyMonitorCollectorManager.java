@@ -35,7 +35,7 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
     @Override
     public ProxyMonitorCollector getOrCreate(ProxyModel proxyModel) {
         try {
-            return new DefaultProxyMonitorCollector(scheduled, getXpipeNettyClientKeyedObjectPool(), proxyModel, ()->10000);
+            return new com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector(scheduled, getXpipeNettyClientKeyedObjectPool(), proxyModel, ()->10000);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,12 +45,12 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
     @Override
     public List<ProxyMonitorCollector> getProxyMonitorResults() {
         try {
-            DefaultProxyMonitorCollector collector1 = mock(DefaultProxyMonitorCollector.class);
+            com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector collector1 = mock(com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector.class);
             when(collector1.getProxyInfo()).thenReturn(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)).setUri("TCP://127.0.0.1:443"));
             when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnelInfos().get(0), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnelInfos().get(0)));
             when(collector1.getPingStatsResults()).thenReturn(Lists.newArrayList());
 
-            DefaultProxyMonitorCollector collector2 = mock(DefaultProxyMonitorCollector.class);
+            com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector collector2 = mock(com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector.class);
             when(collector2.getProxyInfo()).thenReturn(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)).setUri("TCP://127.0.0.3:80"));
             when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(proxyChainCollector.getProxyChain("fra", "cluster1", "shard1","sharb").getTunnelInfos().get(1), proxyChainCollector.getProxyChain("fra", "cluster1", "shard2","sharb").getTunnelInfos().get(1)));
             when(collector2.getPingStatsResults()).thenReturn(

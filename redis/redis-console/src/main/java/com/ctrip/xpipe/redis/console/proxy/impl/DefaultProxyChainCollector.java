@@ -56,7 +56,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
 
     private String currentDc = FoundationService.DEFAULT.getDataCenter();
 
-    private Map<DcClusterShardPeer, ProxyChain> shardProxyChainMap = Maps.newConcurrentMap();
+    private volatile Map<DcClusterShardPeer, ProxyChain> shardProxyChainMap = Maps.newConcurrentMap();
 
     private volatile Map<String, DcClusterShardPeer> tunnelClusterShardMap = Maps.newConcurrentMap();
 
@@ -108,12 +108,17 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     }
 
     @Override
+    public Map<String, DcClusterShardPeer> getTunnelClusterShardMap() {
+        return tunnelClusterShardMap;
+    }
+
+    @Override
     protected void doStart() throws Exception {
         scheduled.scheduleWithFixedDelay(() -> {
             if (!taskTrigger.get()) {
                 return;
             }
-            logger.info("proxy chain collector started");
+            logger.debug("proxy chain collector started");
             getAllDcProxyChains();
         }, getStartTime(), getPeriodic(), TimeUnit.MILLISECONDS);
     }
@@ -121,20 +126,20 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     private void getAllDcProxyChains() {
         ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
         consoleConfig.getConsoleDomains().forEach((dc, domain)->{
-            logger.info("begin to get proxy chain from dc {} {}", dc, domain);
+            logger.debug("begin to get proxy chain from dc {} {}", dc, domain);
             if(currentDc.equalsIgnoreCase(dc)) {
                 dcProxyChainMap.put(dc, proxyChainAnalyzer.getClusterShardChainMap());
             } else {
                 Command command = new ProxyChainGetCommand(dc, domain , httpService.getRestTemplate());
                 command.future().addListener(commandFuture -> {
-                    logger.info("success to get proxy chain from dc {} {} {}", dc, domain, commandFuture.isSuccess());
-                    if (commandFuture.isSuccess()) dcProxyChainMap.put(dc, (Map<DcClusterShardPeer, ProxyChain>) commandFuture.get());
+                    logger.debug("success to get proxy chain from dc {} {} {}", dc, domain, commandFuture.isSuccess());
+                    if (commandFuture.isSuccess() && commandFuture.get() != null)
+                        dcProxyChainMap.put(dc, (Map<DcClusterShardPeer, ProxyChain>) commandFuture.get());
                 });
                 commandChain.add(command);
             }
         });
         commandChain.execute().addListener(commandFuture -> {
-            logger.info("start to aggregate proxy chain");
             updateShardProxyChainMap();
         });
     }
@@ -143,21 +148,22 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     void updateShardProxyChainMap() {
         Map<DcClusterShardPeer, ProxyChain> tempShardProxyChain = Maps.newConcurrentMap();
         Map<String, DcClusterShardPeer> tempTunnelClusterShardMap = Maps.newConcurrentMap();
-        logger.info("update proxy chains {}", dcProxyChainMap);
+
         dcProxyChainMap.forEach((dc, proxyChainMap) -> {
             proxyChainMap.forEach((clusterShard, proxyChain) -> {
+                DefaultTunnelInfo tunnel = proxyChain.getTunnelInfos().get(0);
                 if (tempShardProxyChain.containsKey(clusterShard)) {
-                    tempShardProxyChain.get(clusterShard).getTunnelInfos().add(proxyChain.getTunnelInfos().get(0));
+                    tempShardProxyChain.get(clusterShard).getTunnelInfos().add(tunnel);
                 } else {
                     tempShardProxyChain.put(clusterShard, proxyChain);
                 }
-                tempTunnelClusterShardMap.put(proxyChain.getTunnelInfos().get(0).getTunnelId(), clusterShard);
+
+                tempTunnelClusterShardMap.put(tunnel.getTunnelId(), clusterShard);
             });
         });
         synchronized (DefaultProxyChainCollector.this) {
             tunnelClusterShardMap = tempTunnelClusterShardMap;
             shardProxyChainMap = tempShardProxyChain;
-            logger.info("after update {}", shardProxyChainMap);
         }
     }
 
@@ -172,10 +178,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         return shardProxyChainMap;
     }
 
-    @VisibleForTesting
-    Map<String, DcClusterShardPeer> getTunnelClusterShardMap() {
-        return tunnelClusterShardMap;
-    }
+
 
     protected int getStartTime() {
         return 2 * 1000;
@@ -202,6 +205,7 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
     }
 
     class  ProxyChainGetCommand extends AbstractCommand<Map<DcClusterShardPeer, DefaultProxyChain>> {
+
         private String dcName;
         private String domain;
         private RestOperations restTemplate;
@@ -221,8 +225,8 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         protected void doExecute() throws Throwable {
             try {
                 ResponseEntity<Map<DcClusterShardPeer, DefaultProxyChain>> result =
-                        restTemplate.exchange(format("%s/api/proxy/chains/{dcName}",
-                        domain), HttpMethod.GET, null,  new ParameterizedTypeReference<Map<DcClusterShardPeer, DefaultProxyChain>>(){}, dcName);
+                        restTemplate.exchange(format("%s/api/proxy/chains/{dcName}", domain), HttpMethod.GET, null,
+                                new ParameterizedTypeReference<Map<DcClusterShardPeer, DefaultProxyChain>>(){}, dcName);
                 future().setSuccess(result.getBody());
             } catch (Throwable th) {
                 getLogger().error("get proxy chain for dc:{} fail", dcName, th);

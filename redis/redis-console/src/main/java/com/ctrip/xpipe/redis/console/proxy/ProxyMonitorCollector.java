@@ -19,7 +19,7 @@ public interface ProxyMonitorCollector extends Startable, Stoppable {
 
     List<TunnelStatsResult> getTunnelStatsResults();
 
-    List<TunnelSocketStatsResult> getTunnelSocketStatsResults();
+    List<TunnelSocketStatsResult> getSocketStatsResults();
 
     List<TunnelTrafficResult> getTunnelTrafficResults();
 

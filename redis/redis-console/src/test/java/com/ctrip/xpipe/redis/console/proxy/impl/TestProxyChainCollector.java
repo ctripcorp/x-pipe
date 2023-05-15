@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @Lazy
@@ -32,6 +34,22 @@ public class TestProxyChainCollector extends AbstractProxyChainTest implements P
 
     @PostConstruct
     public void postConstruct() {
+        String tunnelId1 = generateTunnelId(), tunnelId2 = generateTunnelId();
+        List<DefaultTunnelInfo> infos = Lists.newArrayList(new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)), tunnelId1)
+                        .setTunnelStatsResult(genTunnelSR(tunnelId1)).setTunnelSocketStatsResult(genTunnelSSR(tunnelId1)),
+                new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)), tunnelId2)
+                        .setTunnelStatsResult(genTunnelSR(tunnelId2)).setTunnelSocketStatsResult(genTunnelSSR(tunnelId2)));
+        ProxyChain chain = new DefaultProxyChain("fra", "cluster1", "shard1", "sharb", infos);
+        addProxyChain(new DcClusterShardPeer("fra", "cluster1", "shard1","sharb"), chain);
+
+        String tunnelId3 = generateTunnelId(), tunnelId4 = generateTunnelId();
+        infos = Lists.newArrayList(new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)), tunnelId3)
+                        .setTunnelStatsResult(genTunnelSR(tunnelId3)).setTunnelSocketStatsResult(genTunnelSSR(tunnelId3)),
+                new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)), tunnelId4)
+                        .setTunnelStatsResult(genTunnelSR(tunnelId4)).setTunnelSocketStatsResult(genTunnelSSR(tunnelId4)));
+        chain = new DefaultProxyChain("fra", "cluster1", "shard2","sharb", infos);
+        addProxyChain(new DcClusterShardPeer("fra", "cluster1", "shard2","sharb"), chain);
+
         proxyModelJq = new ProxyModel();
         proxyModelJq.setActive(true).setUri("PROXYTCP://10.15.190.149:80").setId(13)
                 .setMonitorActive(true).setDcName("SIN-AWS").setHostPort(new HostPort("10.15.190.149", 80));
@@ -80,7 +98,7 @@ public class TestProxyChainCollector extends AbstractProxyChainTest implements P
 
     @Override
     public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
-        return null;
+        return shardProxyChainMap.get(new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId));
     }
 
     @Override
@@ -90,11 +108,16 @@ public class TestProxyChainCollector extends AbstractProxyChainTest implements P
 
     @Override
     public List<ProxyChain> getProxyChains() {
-        return null;
+        return shardProxyChainMap.values().stream().collect(Collectors.toList());
     }
 
     @Override
     public Map<String, Map<DcClusterShardPeer, ProxyChain>> getDcProxyChainMap() {
+        return null;
+    }
+
+    @Override
+    public Map<String, DcClusterShardPeer> getTunnelClusterShardMap() {
         return null;
     }
 
@@ -108,7 +131,9 @@ public class TestProxyChainCollector extends AbstractProxyChainTest implements P
         return null;
     }
 
-
+    public void addProxyChain(DcClusterShardPeer dcClusterShardPeer, ProxyChain chain) {
+        shardProxyChainMap.put(dcClusterShardPeer, chain);
+    }
 
     @Override
     public void isleader() {

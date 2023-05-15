@@ -2451,6 +2451,16 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-monitor-active" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>,
+					WHERE <FIELD name='monitor-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-all" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[

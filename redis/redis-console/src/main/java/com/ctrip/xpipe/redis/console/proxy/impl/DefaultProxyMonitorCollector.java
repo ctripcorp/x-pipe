@@ -49,7 +49,6 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
-    @JsonIgnore
     private List<DefaultTunnelInfo> tunnelInfos;
 
     @JsonIgnore
@@ -66,6 +65,9 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     private IntSupplier checkInterval;
 
     private Random random = new Random();
+
+    public DefaultProxyMonitorCollector() {
+    }
 
     public DefaultProxyMonitorCollector(ScheduledExecutorService scheduled,
                                         SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool,
@@ -92,7 +94,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     @Override
-    public List<TunnelSocketStatsResult> getTunnelSocketStatsResults() {
+    public List<TunnelSocketStatsResult> getSocketStatsResults() {
         return socketStatsResults == null ? Collections.emptyList() : socketStatsResults;
     }
 
@@ -101,9 +103,25 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
         return tunnelTrafficResults == null ? Collections.emptyList() : tunnelTrafficResults;
     }
 
+    public ProxyModel getModel() {
+        return model;
+    }
+
     @Override
     public List<DefaultTunnelInfo> getTunnelInfos() {
         return tunnelInfos == null ? Collections.emptyList() : tunnelInfos;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultProxyMonitorCollector{" +
+                "pingStatsResults=" + pingStatsResults +
+                ", tunnelStatsResults=" + tunnelStatsResults +
+                ", socketStatsResults=" + socketStatsResults +
+                ", tunnelTrafficResults=" + tunnelTrafficResults +
+                ", tunnelInfos=" + tunnelInfos +
+                ", model=" + model +
+                '}';
     }
 
     @Override
@@ -271,7 +289,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                 }
                 tunnels.get(id).setTunnelStatsResult(tunnelStats);
             }
-            for(TunnelSocketStatsResult socketStats : getTunnelSocketStatsResults()) {
+            for(TunnelSocketStatsResult socketStats : getSocketStatsResults()) {
                 String id = socketStats.getTunnelId();
                 if(!tunnels.containsKey(id)) {
                     tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
