@@ -53,8 +53,8 @@ public class DefaultSequenceControllerTest extends AbstractTest {
 
         assertEquals(first.key(), second.key());
 
-        controller.submit(first);
-        controller.submit(second);
+        controller.submit(first, 0);
+        controller.submit(second, 0);
 
         first.future().get();
         second.future().get();
@@ -75,7 +75,7 @@ public class DefaultSequenceControllerTest extends AbstractTest {
 
         when(command.gtid()).thenReturn("A:1");
 
-        controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)));
+        controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)), 0);
 
         first.future().get();
         second.future().get();

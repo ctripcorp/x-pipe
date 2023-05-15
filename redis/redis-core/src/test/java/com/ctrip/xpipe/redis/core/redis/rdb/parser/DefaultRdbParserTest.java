@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.*;
 

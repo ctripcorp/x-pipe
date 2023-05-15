@@ -85,12 +85,12 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet) {
+    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
     @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
@@ -100,7 +100,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
@@ -110,7 +110,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
         redisOps.add(redisOp);
     }

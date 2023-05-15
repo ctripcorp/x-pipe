@@ -94,7 +94,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet) {
+    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
 
         logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
 
@@ -106,7 +106,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
         logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
 
@@ -116,7 +116,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         //ctrip.merge_start
-        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()));
+        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
 
@@ -139,7 +139,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         //ctrip.merge_start [gtid_set]
-        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())));
+        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())), 0);
     }
 
     @Override
@@ -149,11 +149,11 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = null;
         try {
             redisOp = parser.parse(rawCmdArgs);
-            onRedisOp(redisOp);
+            doOnRedisOp(redisOp, commandOffset);
         } catch (Throwable unlikely) {
             try {
                 logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
@@ -256,27 +256,26 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return rt;
     }
 
-    private void addTransactionStart(RedisOpCommand<?> multiCommand) {
+    private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate) {
         transactionCommand.set(new TransactionCommand());
-        transactionCommand.get().addTransactionStart(multiCommand);
+        transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate);
     }
 
-    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand) {
-        transactionCommand.get().addTransactionEnd(execCommand);
-        sequenceController.submit(transactionCommand.getAndSet(null));
+    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate) {
+        transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate);
+        TransactionCommand command = transactionCommand.getAndSet(null);
+        sequenceController.submit(command, command.commandOffset());
     }
 
-    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand) {
+    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand, long commandOffsetToAccumulate) {
         if (transactionCommand.get() != null) {
-            transactionCommand.get().addTransactionCommands(redisOpCommand);
+            transactionCommand.get().addTransactionCommands(redisOpCommand, commandOffsetToAccumulate);
         } else {
-            sequenceController.submit(redisOpCommand);
+            sequenceController.submit(redisOpCommand, commandOffsetToAccumulate);
         }
     }
 
-    @Override
-    public void onRedisOp(RedisOp redisOp) {
-
+    private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
@@ -300,14 +299,19 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         if (RedisOpType.MULTI.equals(redisOp.getOpType())) {
-            addTransactionStart(new DefaultMultiCommand(client, redisOp));
+            addTransactionStart(new DefaultMultiCommand(client, redisOp), commandOffsetToAccumulate);
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
-            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp));
+            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads));
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads), commandOffsetToAccumulate);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp));
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp), commandOffsetToAccumulate);
         }
+    }
+
+    @Override
+    public void onRedisOp(RedisOp redisOp) {
+        doOnRedisOp(redisOp, 0);
     }
 
     @Override

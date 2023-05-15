@@ -76,18 +76,18 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = redisOpParser.parse(rawCmdArgs);
         logger.info("[onCommand] {}", redisOp);
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet) {
+    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
         logger.info("[onFullSync] {}", rdbGtidSet);
     }
 
     @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
         logger.info("[beginReadRdb] {} {}", eofType, rdbGtidSet);
     }
 
@@ -98,7 +98,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
         logger.info("[endReadRdb] {} {}", eofType, rdbGtidSet);
     }
 

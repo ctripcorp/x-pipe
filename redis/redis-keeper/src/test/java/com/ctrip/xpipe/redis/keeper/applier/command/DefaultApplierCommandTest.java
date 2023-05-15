@@ -78,9 +78,9 @@ public class DefaultApplierCommandTest extends AbstractTest {
         RedisOpDataCommand c3 = new DefaultDataCommand(client, newSetOp("SET", "K", "V14"));
         RedisOpDataCommand c4 = new DefaultDataCommand(client, newSetOp("SET", "K", "V16"));
 
-        controller.submit(c1);
-        controller.submit(c2);
-        controller.submit(c3);
-        controller.submit(c4);
+        controller.submit(c1, 0);
+        controller.submit(c2, 0);
+        controller.submit(c3, 0);
+        controller.submit(c4, 0);
     }
 }

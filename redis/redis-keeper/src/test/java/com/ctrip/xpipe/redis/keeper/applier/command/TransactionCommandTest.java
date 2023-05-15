@@ -22,11 +22,11 @@ public class TransactionCommandTest extends AbstractTest {
 
         TransactionCommand transactionCommand = new TransactionCommand();
         TestMultiCommand multiCommand = spy(new TestMultiCommand(100, "MULTI"));
-        transactionCommand.addTransactionStart(multiCommand);
+        transactionCommand.addTransactionStart(multiCommand, 30);
         TestSetCommand dataCommand = spy(new TestSetCommand(100, "SET", "K", "V"));
-        transactionCommand.addTransactionCommands(dataCommand);
+        transactionCommand.addTransactionCommands(dataCommand, 20);
         TestExecCommand execCommand = spy(new TestExecCommand(100, "GTID", "A:2", "0", "EXEC"));
-        transactionCommand.addTransactionEnd(execCommand);
+        transactionCommand.addTransactionEnd(execCommand, 10);
 
         Assert.assertEquals(transactionCommand.redisOp().getOpType(), RedisOpType.MULTI);
         Assert.assertEquals(transactionCommand.gtid(), "A:2");
@@ -42,5 +42,6 @@ public class TransactionCommandTest extends AbstractTest {
 
         Assert.assertTrue(dataCommand.startTime > multiCommand.endTime);
         Assert.assertTrue(execCommand.startTime > dataCommand.endTime);
+        Assert.assertEquals(60, transactionCommand.commandOffset());
     }
 }

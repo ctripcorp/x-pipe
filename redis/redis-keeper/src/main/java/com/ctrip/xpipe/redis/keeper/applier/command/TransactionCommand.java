@@ -26,6 +26,8 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     private CommandChain<Object> commandChain;
 
+    private long commandOffset;
+
     public TransactionCommand() {
         this.transactionCommands = new LinkedList<>();
         this.redisOp = new RedisOpTransactionAdapter();
@@ -41,19 +43,30 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
         return sequenceCommandChain;
     }
 
-    public void addTransactionStart(RedisOpCommand<?> multi) {
+    private void addCommandOffset(long commandOffset) {
+        this.commandOffset += commandOffset;
+    }
+
+    public void addTransactionStart(RedisOpCommand<?> multi, long commandOffset) {
         multiCommand = multi;
         redisOp.addMultiOp(multi.redisOp());
+        addCommandOffset(commandOffset);
     }
 
-    public void addTransactionEnd(RedisOpCommand<?> exec) {
+    public void addTransactionEnd(RedisOpCommand<?> exec, long commandOffset) {
         execCommand = exec;
         redisOp.addExecOp(exec.redisOp());
+        addCommandOffset(commandOffset);
     }
 
-    public void addTransactionCommands(RedisOpCommand<?> redisOpCommand) {
+    public void addTransactionCommands(RedisOpCommand<?> redisOpCommand, long commandOffset) {
         transactionCommands.add(redisOpCommand);
         redisOp.addTransactionOp(redisOpCommand.redisOp());
+        addCommandOffset(commandOffset);
+    }
+
+    public long commandOffset() {
+        return commandOffset;
     }
 
     @Override

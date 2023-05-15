@@ -49,6 +49,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -71,6 +72,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
+
+    @InstanceDependency
+    public AtomicLong offsetRecorder;
 
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
@@ -152,6 +156,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.lwmManager = new DefaultLwmManager();
         this.replication = new DefaultXsyncReplication(this);
         this.dispatcher = new DefaultCommandDispatcher();
+        this.offsetRecorder = new AtomicLong(0);
 
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,

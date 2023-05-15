@@ -72,12 +72,12 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
         if (redisOp.getOpType().equals(RedisOpType.PING) || redisOp.getOpType().equals(RedisOpType.SELECT)) {
             return;
         }
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
-        sequenceController.submit(command);
+        sequenceController.submit(command, commandOffset);
     }
 }
