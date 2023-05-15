@@ -11,6 +11,7 @@ import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
+import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.config.route.ConfigFrozenRoute;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
@@ -42,7 +43,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final ExecutorService credisNotifyThread;
 
-    final ConfigFrozenRoute configFrozenRoute;
+    final ConfigFrozenAware configFrozenAware;
 
     boolean isInMulti = false;
 
@@ -51,10 +52,10 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenRoute configFrozenRoute) {
+    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
-        this.configFrozenRoute = configFrozenRoute;
+        this.configFrozenAware = configFrozenAware;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
     }
@@ -206,17 +207,17 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public void freezeConfig() {
-        configFrozenRoute.startFreeze();
+        configFrozenAware.startFreeze();
     }
 
     @Override
     public void stopFreezeConfig() {
-        configFrozenRoute.stopFreeze();
+        configFrozenAware.stopFreeze();
     }
 
     @Override
     public long getFreezeLastMillis() {
-        return configFrozenRoute.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        return configFrozenAware.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -224,7 +225,6 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         txnProvider.destroy();
 
         ((CRedisClusterSessionLocator) locator()).destroy();
-        configFrozenRoute.destroy();
     }
 
     private CRedisSessionLocator locator() {
