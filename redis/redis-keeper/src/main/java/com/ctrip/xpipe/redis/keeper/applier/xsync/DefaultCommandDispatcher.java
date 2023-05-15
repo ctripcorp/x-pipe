@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -56,6 +57,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
+
+    @InstanceDependency
+    public AtomicLong offsetRecorder;
 
     /* why not a global resource */
     @VisibleForTesting
@@ -279,6 +283,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
+            offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
@@ -289,6 +294,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
                 logger.error("[onRedisOp] unlikely - fail to select db]", unlikely);
             }
+            offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
 
