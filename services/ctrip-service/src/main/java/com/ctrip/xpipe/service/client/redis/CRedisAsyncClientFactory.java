@@ -10,7 +10,6 @@ import credis.java.client.config.PropertiesAware;
 import credis.java.client.config.impl.DelegateClusterLevelConfig;
 import credis.java.client.config.impl.PropertiesDecorator;
 import credis.java.client.config.route.ConfigFrozenRouteManager;
-import credis.java.client.config.route.DefaultRouteManager;
 import credis.java.client.config.route.RouteManager;
 import credis.java.client.exception.CRedisException;
 import credis.java.client.sync.applier.ApplierCacheProvider;
@@ -32,7 +31,7 @@ public class CRedisAsyncClientFactory implements AsyncRedisClientFactory {
         ApplierCacheProvider applierCacheProvider = new ApplierCacheProvider(clusterName, subenv, DelegateClusterLevelConfig.newBuilder().build(), routeManager);
 
         return new CRedisAsyncClient(clusterName, subenv, new AsyncApplierCacheProvider(clusterName, routeManager, asyncConfig, hashStrategyFactory, subenv, true),
-                 applierCacheProvider, credisNotifyExecutor, (ConfigFrozenAware) applierCacheProvider.getProviderRoute());
+                 applierCacheProvider, credisNotifyExecutor, (ConfigFrozenAware) applierCacheProvider.getProviderRoute(), hashStrategyFactory);
     }
 
     @Override

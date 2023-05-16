@@ -31,7 +31,7 @@ public class KeeperServerTest extends AbstractRedisKeeperContextTest {
         redisKeeperServer.start();
 
         redisKeeperServer.getReplicationStore().getMetaStore().becomeActive();
-        redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 6379)));
+        redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 6479)));
         redisKeeperServer.reconnectMaster();
 
         redisKeeperServer.startIndexing();

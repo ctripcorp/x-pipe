@@ -12,10 +12,12 @@ import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
 import credis.java.client.config.ConfigFrozenAware;
+import credis.java.client.config.route.ConfigFrozenRouteManager;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
 import credis.java.client.util.ClusterFactory;
+import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
@@ -49,6 +51,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final ConfigFrozenAware configFrozenAware;
 
+    final HashStrategyFactory hashStrategyFactory;
+
     boolean isInMulti = false;
 
     int db = 0;
@@ -56,12 +60,13 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(String clusterName, String subenv, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware) {
+    public CRedisAsyncClient(String clusterName, String subenv, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware, HashStrategyFactory hashStrategyFactory) {
         this.clusterName = clusterName;
         this.subenv = subenv;
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
         this.configFrozenAware = configFrozenAware;
+        this.hashStrategyFactory = hashStrategyFactory;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
     }
@@ -231,6 +236,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         txnProvider.destroy();
 
         ((CRedisClusterSessionLocator) locator()).destroy();
+
+        ConfigFrozenRouteManager.create().remove(clusterName, hashStrategyFactory, subenv);
 
         ClusterFactory.create().removeCluster(clusterName, subenv);
     }
