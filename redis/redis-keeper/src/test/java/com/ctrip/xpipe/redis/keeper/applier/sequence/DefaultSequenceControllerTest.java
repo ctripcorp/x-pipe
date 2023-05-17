@@ -15,6 +15,7 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,6 +38,7 @@ public class DefaultSequenceControllerTest extends AbstractTest {
         controller.workerThreads = Executors.newScheduledThreadPool(8,
                 ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "worker-test-thread"));
         controller.scheduled = scheduled;
+        controller.offsetRecorder = new AtomicLong(0);
         controller.initialize();
     }
 
