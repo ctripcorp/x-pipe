@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.Mockito.mock;
 
@@ -51,6 +52,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
         keyedObjectPool.initialize();
         xsyncReplication.pool = keyedObjectPool;
         xsyncReplication.dispatcher = new DefaultCommandDispatcher();
+        xsyncReplication.offsetRecorder = new AtomicLong(0);
         xsyncReplication.initialize();
         xsyncReplication.start();
         return xsyncReplication;
@@ -60,7 +62,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
     public void doDisconnect() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
 
-        Xsync xsync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet(""), null, scheduled);
+        Xsync xsync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet("mockRunid:0"), null, scheduled);
         xsync.execute();
 
         NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
