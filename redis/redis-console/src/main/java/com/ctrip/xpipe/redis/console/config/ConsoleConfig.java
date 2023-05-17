@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.console.config;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -131,6 +133,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	String getDefaultBeaconHost();
 
 	Map<Long, String> getBeaconHosts();
+
+	List<BeaconOrgRoute> getBeaconOrgRoutes();
 
 	int getClusterDividedParts();
 
