@@ -73,7 +73,7 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
             @Override
             public ProxyMonitorCollector create() {
                 logger.info("[create proxy monitor collector] {}", proxyModel);
-                ProxyMonitorCollector result = new com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector(
+                ProxyMonitorCollector result = new DefaultProxyMonitorCollector(
                         scheduled, keyedObjectPool, proxyModel,
                         ()->consoleConfig.getProxyInfoCollectInterval()
                 );

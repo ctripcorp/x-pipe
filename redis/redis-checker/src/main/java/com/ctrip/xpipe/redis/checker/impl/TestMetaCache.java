@@ -52,6 +52,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard) {
+        return null;
+    }
+
+    @Override
     public Map<String, String> getAllKeeperContainersDcMap() {
         return null;
     }

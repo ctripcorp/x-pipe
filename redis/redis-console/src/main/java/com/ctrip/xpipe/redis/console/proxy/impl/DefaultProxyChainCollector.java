@@ -178,8 +178,6 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         return shardProxyChainMap;
     }
 
-
-
     protected int getStartTime() {
         return 2 * 1000;
     }

@@ -320,6 +320,19 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard) {
+        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
+            return getAllKeeperContainersDcMap().get(hostIp);
+        }
+
+        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
+            return getAllKeeperContainersDcMap().get(hostIp);
+        }
+
+        return getDcByIpAndClusterShard(hostIp, peerClusterShard);
+    }
+
+    @Override
     public Map<String, String> getAllKeeperContainersDcMap(){
         XpipeMeta xpipeMeta = getXpipeMeta();
         if (allKeeperContainersDcMap == null) {

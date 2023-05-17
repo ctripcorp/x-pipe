@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestOperations;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -244,12 +245,12 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
         });
 
         try {
-            commandChain.execute().get();
+            commandChain.execute().get(10, TimeUnit.SECONDS);
         } catch (Throwable th) {
             logger.warn("[getAllProxyInfo] error:", th);
-        } finally {
-            return result;
         }
+
+        return result;
     }
 
     private void updateAllProxyInfo(List<ProxyInfoModel> result, List<? extends ProxyMonitorCollector> proxyMonitorCollectors) {

@@ -263,13 +263,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
                 }
 
                 if (backupDcId == null) {
-                    backupDcId = metaCache.getAllKeeperContainersDcMap().get(chainSrc.getHost());
-                }
-                if (backupDcId == null) {
-                    backupDcId = metaCache.getAllApplierContainersDcMap().get(chainSrc.getHost());
-                }
-                if (backupDcId == null) {
-                    backupDcId = metaCache.getDcByIpAndClusterShard(chainSrc.getHost(), peerClusterShard);
+                    backupDcId = metaCache.getDcByIpAndPeerClusterShard(chainSrc.getHost(), peerClusterShard);
                 }
                 if (backupDcId == null) {
                     logger.info("[analyzeProxyChain] get backupDc fail by chainSrc {}", chainSrc);

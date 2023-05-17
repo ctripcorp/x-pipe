@@ -29,6 +29,8 @@ public interface MetaCache {
 
     Set<HostPort> getAllKeepers();
 
+    String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard);
+
     Map<String, String> getAllKeeperContainersDcMap();
 
     Pair<String, String> findClusterShard(HostPort hostPort);
