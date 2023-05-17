@@ -284,6 +284,11 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     }
 
     @Override
+    public long getEndOffset() {
+        return offsetRecorder.get();
+    }
+
+    @Override
     public void processCommandSequentially(Runnable runnable) {
         clientExecutors.execute(new LongTimeAlertTask(runnable, DEFAULT_LONG_TIME_ALERT_TASK_MILLI));
     }

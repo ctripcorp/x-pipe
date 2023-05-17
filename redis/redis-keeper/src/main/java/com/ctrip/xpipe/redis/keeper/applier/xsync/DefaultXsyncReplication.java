@@ -76,8 +76,8 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
     protected void doStop() throws Exception {
         this.closeState.setClosing();
 
-        disconnect();
         cancelReplConf();
+        disconnect();
 
         synchronized (closeState) {
             this.closeState.setClosed();
@@ -204,8 +204,9 @@ public class DefaultXsyncReplication extends StubbornNetworkCommunication implem
     }
 
     @Override
-    public void onContinue(GtidSet gtidSetExcluded) {
-
+    public void onContinue(GtidSet gtidSetExcluded, long continueOffset) {
+        offsetRecorder.set(continueOffset);
+        scheduleReplconf();
     }
 
     @Override

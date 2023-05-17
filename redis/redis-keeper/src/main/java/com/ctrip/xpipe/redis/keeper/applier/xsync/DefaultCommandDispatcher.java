@@ -147,7 +147,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void onContinue(GtidSet gtidSetExcluded) {
+    public void onContinue(GtidSet gtidSetExcluded, long continueOffset) {
         logger.info("[onContinue]");
         this.resetState(gtidSetExcluded);
     }

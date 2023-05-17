@@ -3,11 +3,11 @@ package com.ctrip.xpipe.redis.keeper.handler.keeper;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
-import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 
 import java.io.IOException;
@@ -53,6 +53,8 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
             return;
         }
 
+        long continueOffset = keeperRepl.getEndOffset() + 1;
+
         GtidSet filteredLocalBegin = localBegin.filterGtid(interestedSids);
         GtidSet filteredLocalEnd = localEnd.filterGtid(interestedSids);
 
@@ -67,12 +69,12 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
         } else if (filteredLocalEnd.isContainedWithin(reqExcludedGtidSet)) {
             logger.info("[innerDoHandle][neededGtidSet not contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {}",
                     reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd);
-            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+            doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet, continueOffset);
         } else {
             if (filteredLocalEnd.lwmDistance(reqExcludedGtidSet) < keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb()) {
                 logger.info("[innerDoHandle][neededGtidSet contain][do partial sync][req-excluded loc-excluded loc-end] {} {} {} {}",
                         reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
-                doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet);
+                doPartialSync(redisSlave, interestedSids, reqExcludedGtidSet, continueOffset);
             } else {
                 logger.info("[innerDoHandle][too much commands to transfer] {} {} {} {}",
                         reqExcludedGtidSet, filteredLocalBegin, filteredLocalEnd, keeperConfig.getReplicationStoreMaxLWMDistanceToTransferBeforeCreateRdb());
@@ -83,9 +85,10 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
     }
 
     // +CONTINUE
-    protected void doPartialSync(RedisSlave redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet) {
+    protected void doPartialSync(RedisSlave redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet, long continueOffset) {
         logger.info("[doPartialSync] {}", redisSlave);
-        SimpleStringParser simpleStringParser = new SimpleStringParser(Xsync.PARTIAL_SYNC);
+        SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %d",
+                Xsync.PARTIAL_SYNC, continueOffset));
 
         redisSlave.sendMessage(simpleStringParser.format());
         redisSlave.markPsyncProcessed();

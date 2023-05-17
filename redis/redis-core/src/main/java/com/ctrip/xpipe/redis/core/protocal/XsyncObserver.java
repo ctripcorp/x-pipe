@@ -18,7 +18,7 @@ public interface XsyncObserver {
 
     void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset);
 
-    void onContinue(GtidSet gtidSetExcluded);
+    void onContinue(GtidSet gtidSetExcluded, long continueOffset);
 
     void onCommand(long commandOffset, Object[] rawCmdArgs);
 

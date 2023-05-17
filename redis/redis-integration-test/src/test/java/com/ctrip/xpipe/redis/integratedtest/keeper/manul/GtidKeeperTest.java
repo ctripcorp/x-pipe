@@ -103,7 +103,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
     }
 
     @Override
-    public void onContinue(GtidSet gtidSet) {
+    public void onContinue(GtidSet gtidSet, long continueOffset) {
         logger.info("[onContinue]");
     }
 

@@ -114,7 +114,7 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
     }
 
     @Override
-    public void onContinue(GtidSet gtidSet) {
+    public void onContinue(GtidSet gtidSet, long continueOffset) {
 
     }
 

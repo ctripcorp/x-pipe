@@ -181,7 +181,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         } else if (split[0].equalsIgnoreCase(PARTIAL_SYNC)) {
             xsyncState = READING_COMMANDS;
             getLogger().debug("[readRedisResponse][PARTIAL]{}, {}", ChannelUtil.getDesc(channel), this);
-            doOnContinue();
+            long continueOffset = 0;
+            if (split.length > 1) {
+                continueOffset = Long.parseLong(split[1]);
+            }
+            doOnContinue(continueOffset);
         } else {
             throw new RedisRuntimeException("unknown reply:" + xsync);
         }
@@ -199,11 +203,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         resetClient();
     }
 
-    private void doOnContinue() {
+    private void doOnContinue(long continueOffset) {
         getLogger().debug("[doOnContinue] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onContinue(gitdSetExcluded);
+                observer.onContinue(gitdSetExcluded, continueOffset);
             } catch (Throwable th) {
                 getLogger().error("[doOnContinue][fail] {}", observer, th);
             }
