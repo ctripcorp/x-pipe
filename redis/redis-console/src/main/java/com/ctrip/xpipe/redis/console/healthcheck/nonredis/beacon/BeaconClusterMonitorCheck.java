@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -27,7 +27,7 @@ import static com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant.DEFAUL
 public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
 
     @Autowired
-    private MonitorServiceManager monitorServiceManager;
+    private MonitorManager monitorManager;
 
     @Autowired
     private MetaCache metaCache;
@@ -45,7 +45,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
 
     @Override
     public void doAction() {
-        Map<Long, MonitorService> services = monitorServiceManager.getAllServices();
+        Map<Long, List<MonitorService>> services = monitorManager.getAllServices();
         if (services.isEmpty()) {
             logger.debug("[doCheck] no beacon service, skip");
         }
@@ -57,7 +57,9 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
         }
 
         clustersByOrg.forEach((orgId, clusters) -> {
-            new UnknownClusterExcludeJob(clusters, services.get(orgId), config.monitorUnregisterProtectCount()).execute()
+            List<MonitorService> monitorServices = services.get(orgId);
+            new UnknownClusterExcludeJob(clusters, monitorServices, config.monitorUnregisterProtectCount())
+                .execute()
                 .addListener(commandFuture -> {
                     if (commandFuture.isSuccess()) {
                         logger.info("[doCheck][{}] unregister clusters {}", orgId, commandFuture.get());
