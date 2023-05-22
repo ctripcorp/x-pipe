@@ -5,7 +5,7 @@ package com.ctrip.xpipe.redis.console.service.migration;
  * date 2021/6/1
  */
 
-import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
+import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventConcurrentCreateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
 
-        DefaultMonitorManagerTest.class,
+        DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
 })

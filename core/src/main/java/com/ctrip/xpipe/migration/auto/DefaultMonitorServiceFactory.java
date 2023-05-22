@@ -10,8 +10,8 @@ import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 public class DefaultMonitorServiceFactory implements MonitorServiceFactory {
 
     @Override
-    public MonitorService build(String name, String host, int weight) {
-        return new DefaultMonitorService(name, host, weight);
+    public MonitorService build(String host) {
+        return new DefaultMonitorService(host);
     }
 
     @Override

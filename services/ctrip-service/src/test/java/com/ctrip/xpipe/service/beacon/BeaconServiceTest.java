@@ -14,33 +14,31 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.ctrip.xpipe.service.beacon.BeaconService.PATH_GET_CLUSTERS;
+
 /**
  * @author lishanglin
  * date 2021/1/26
  */
-@RunWith(MockitoJUnitRunner.class)
 public class BeaconServiceTest extends AbstractServiceTest {
 
     private BeaconService beaconService;
 
     private MockWebServer webServer;
 
-    private final String system = "xpipe";
-    private final int weight = 20;
+    private String system = "xpipe";
 
     @Before
     public void setupDefaultBeaconServiceTest() throws Exception {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        beaconService = new BeaconService("beacon", "http://127.0.0.1:" + webServer.getPort(), weight);
+        beaconService = new BeaconService("http://127.0.0.1:" + webServer.getPort());
     }
 
     @After
