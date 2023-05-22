@@ -4,10 +4,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -18,31 +15,24 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
 
     private Set<String> expectClusters;
 
-    private List<MonitorService> monitorServices;
+    private MonitorService monitorService;
 
     private int maxExcludeClusters;
 
-    public UnknownClusterExcludeJob(Set<String> expectClusters, List<MonitorService> monitorServices, int maxExcludeClusters) {
+    public UnknownClusterExcludeJob(Set<String> expectClusters, MonitorService monitorService, int maxExcludeClusters) {
         this.expectClusters = expectClusters;
-        this.monitorServices = monitorServices;
+        this.monitorService = monitorService;
         this.maxExcludeClusters = maxExcludeClusters;
     }
 
     @Override
     protected void doExecute() throws Throwable {
-        Set<String> realClusters = new HashSet<>();
-        Map<MonitorService, Set<String>> serviceClustersMap = new HashMap<>();
-        String system = BeaconSystem.getDefault().getSystemName();
-        monitorServices.forEach(ms -> {
-            Set<String> clusters = ms.fetchAllClusters(system);
-            serviceClustersMap.put(ms, clusters);
-            realClusters.addAll(clusters);
-        });
+        Set<String> realClusters = monitorService.fetchAllClusters(BeaconSystem.getDefault().getSystemName());
         Set<String> needExcludeClusters = new HashSet<>(realClusters);
 
         needExcludeClusters.removeAll(expectClusters);
         if (needExcludeClusters.size() > maxExcludeClusters) {
-            getLogger().warn("[doExecute][{}] need exclude clusters too many, {}", monitorServices, needExcludeClusters);
+            getLogger().info("[doExecute][{}] need exclude clusters too many, {}", monitorService, needExcludeClusters);
             future().setFailure(new TooManyNeedExcludeClusterException(needExcludeClusters));
             return;
         }
@@ -50,14 +40,10 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
         Set<String> excludeClusters = new HashSet<>();
         for (String cluster: needExcludeClusters) {
             try {
-                serviceClustersMap.forEach((ms, clusters) -> {
-                    if (clusters.contains(cluster)) {
-                        ms.unregisterCluster(system, cluster);
-                    }
-                });
+                monitorService.unregisterCluster(BeaconSystem.getDefault().getSystemName(), cluster);
                 excludeClusters.add(cluster);
             } catch (Throwable th) {
-                getLogger().info("[doExecute][{}] unregister cluster {} fail", monitorServices, cluster, th);
+                getLogger().info("[doExecute][{}] unregister cluster {} fail", monitorService, cluster, th);
             }
         }
 
@@ -70,6 +56,6 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
 
     @Override
     public String getName() {
-        return "[UnknownClusterExcludeJob] " + monitorServices;
+        return "[UnknownClusterExcludeJob] " + monitorService;
     }
 }
