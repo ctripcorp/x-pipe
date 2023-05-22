@@ -22,8 +22,8 @@ import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
-import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
-import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
@@ -129,8 +129,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public MonitorManager monitorServiceManager(MetaCache metaCache, ConsoleConfig config) {
-        return new DefaultMonitorManager(metaCache, config);
+    public MonitorServiceManager monitorServiceManager(ConsoleConfig config) {
+        return new DefaultMonitorServiceManager(config);
     }
 
     @Bean
@@ -139,8 +139,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public BeaconManager beaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
-        return new DefaultBeaconManager(monitorManager, beaconMetaService, config);
+    public BeaconManager beaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
+        return new DefaultBeaconManager(monitorServiceManager, beaconMetaService, config);
     }
 
     @Bean

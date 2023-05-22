@@ -6,17 +6,12 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestOperations;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -30,46 +25,25 @@ public class BeaconService implements MonitorService {
     protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/{system}/clusters";
     protected static final String PATH_CLUSTER = "/api/v1/monitor/{system}/cluster/{cluster}";
 
-    private final String getAllClustersPath;
-    private final String clusterPath;
+    private String getAllClustersPath;
+    private String clusterPath;
 
-    private String name;
     private String host;
-    private int weight;
 
-    private final PropertyChangeSupport support = new PropertyChangeSupport(this);
-
-    private final Logger logger = LoggerFactory.getLogger(BeaconService.class);
+    private Logger logger = LoggerFactory.getLogger(BeaconService.class);
 
     private static final ParameterizedTypeReference<BeaconResp<Set<String>>> clustersRespTypeDef =
             new ParameterizedTypeReference<BeaconResp<Set<String>>>(){};
 
-    public BeaconService(String name, String host, int weight) {
-        this.name = name;
+    public BeaconService(String host) {
         this.host = host;
-        this.weight = weight;
         getAllClustersPath = host + PATH_GET_CLUSTERS;
         clusterPath = host + PATH_CLUSTER;
     }
 
     @Override
-    public String getName() {
-        return this.name;
-    }
-
-    @Override
     public String getHost() {
         return this.host;
-    }
-
-    @Override
-    public int getWeight() {
-        return this.weight;
-    }
-
-    @Override
-    public void setWeight(int weight) {
-        this.weight = weight;
     }
 
     @Override
@@ -96,63 +70,23 @@ public class BeaconService implements MonitorService {
             logger.info("[registerCluster] fail, {}", beaconResp.getMsg());
             throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
         }
-//        this.support.firePropertyChange(MonitorService.REGISTER, null,
-//            system + MonitorService.SEPARATOR + clusterName);
     }
 
     @Override
     public void unregisterCluster(String system, String clusterName) {
-        if (system == null || clusterName == null) {
-            return;
-        }
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE,
-            null, BeaconResp.class, system, clusterName);
+        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE, null, BeaconResp.class, system, clusterName);
         BeaconResp beaconResp = respResponseEntity.getBody();
         if (!beaconResp.isSuccess()) {
             logger.info("[unregisterCluster] fail, {}", beaconResp.getMsg());
             throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
         }
-//        this.support.firePropertyChange(MonitorService.UNREGISTER, new Pair<>(system, clusterName), null);
-    }
-
-    @Override
-    public void addChangeListener(PropertyChangeListener listener) {
-        this.support.addPropertyChangeListener(listener);
-    }
-
-    @Override
-    public void removeAllChangeListener() {
-        PropertyChangeListener[] listeners = this.support.getPropertyChangeListeners();
-        Arrays.stream(listeners).forEach(this.support::removePropertyChangeListener);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        BeaconService that = (BeaconService)o;
-
-        if (weight != that.weight)
-            return false;
-        if (!Objects.equals(name, that.name))
-            return false;
-        return Objects.equals(host, that.host);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name != null ? name.hashCode() : 0;
-        result = 31 * result + (host != null ? host.hashCode() : 0);
-        result = 31 * result + weight;
-        return result;
     }
 
     @Override
     public String toString() {
-        return "BeaconService{" + "name='" + name + '\'' + ", host='" + host + '\'' + ", weight=" + weight + '}';
+        return "BeaconService{" +
+                "host='" + host + '\'' +
+                '}';
     }
 }
 
