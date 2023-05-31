@@ -2,7 +2,8 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
-import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
+import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorClusterManagerTest;
+import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
@@ -206,7 +207,8 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationDoExecuteCmdTest.class,
         MultiClusterMigrationTest.class,
 
-        DefaultMonitorServiceManagerTest.class,
+        DefaultMonitorManagerTest.class,
+        DefaultMonitorClusterManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
 

@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
-import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -21,7 +21,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,7 +38,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     private BeaconClusterMonitorCheck check;
     
     @Mock
-    private MonitorServiceManager monitorServiceManager;
+    private MonitorManager monitorManager;
 
     @Mock
     private MetaCache metaCache;
@@ -55,11 +58,10 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Before
     public void setupBeaconClusterMonitorCheckTest() {
-        Mockito.when(monitorServiceManager.getAllServices())
-                .thenReturn(new HashMap<Long, MonitorService>() {{
-                    put(0L, monitorService0);
-                    put(1L, monitorService1);
-                }});
+        Map<Long, List<MonitorService>> orgServicesMap = new HashMap<>();
+        orgServicesMap.put(0L, Collections.singletonList(monitorService0));
+        orgServicesMap.put(1L, Collections.singletonList(monitorService1));
+        Mockito.when(monitorManager.getAllServices()).thenReturn(orgServicesMap);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXPipeMeta());
     }
 

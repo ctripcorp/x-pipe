@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DefaultBeaconManager implements BeaconManager {
 
-    private MonitorServiceManager monitorServiceManager;
+    private MonitorManager monitorManager;
 
     private BeaconMetaService beaconMetaService;
 
@@ -26,8 +26,8 @@ public class DefaultBeaconManager implements BeaconManager {
     private static final Logger logger = LoggerFactory.getLogger(DefaultBeaconManager.class);
 
     @Autowired
-    public DefaultBeaconManager(MonitorServiceManager monitorServiceManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
-        this.monitorServiceManager = monitorServiceManager;
+    public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
+        this.monitorManager = monitorManager;
         this.beaconMetaService = beaconMetaService;
         this.config = config;
     }
@@ -39,7 +39,7 @@ public class DefaultBeaconManager implements BeaconManager {
             return;
         }
 
-        MonitorService service = monitorServiceManager.getOrCreate(orgId);
+        MonitorService service = monitorManager.get(orgId, clusterId);
         if (null == service) {
             logger.debug("[registerCluster][{}] no beacon service for org {}, skip", clusterId, orgId);
             return;

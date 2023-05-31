@@ -10,8 +10,8 @@ import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 public class BeaconServiceFactory implements MonitorServiceFactory {
 
     @Override
-    public MonitorService build(String host) {
-        return new BeaconService(host);
+    public MonitorService build(String name, String host, int weight) {
+        return new BeaconService(name, host, weight);
     }
 
     @Override

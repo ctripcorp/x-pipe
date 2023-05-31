@@ -12,15 +12,34 @@ import java.util.Set;
  */
 public class DefaultMonitorService implements MonitorService {
 
+    private String name;
     private String host;
+    private int weight;
 
-    public DefaultMonitorService(String host) {
+    public DefaultMonitorService(String name, String host, int weight) {
+        this.name = name;
         this.host = host;
+        this.weight = weight;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     @Override
     public String getHost() {
         return host;
+    }
+
+    @Override
+    public int getWeight() {
+        return weight;
+    }
+
+    @Override
+    public void setWeight(int weight) {
+        this.weight = weight;
     }
 
     @Override
@@ -34,7 +53,8 @@ public class DefaultMonitorService implements MonitorService {
     }
 
     @Override
-    public void unregisterCluster(String systemm, String clusterName) {
+    public void unregisterCluster(String system, String clusterName) {
         // do nothing
     }
+
 }
