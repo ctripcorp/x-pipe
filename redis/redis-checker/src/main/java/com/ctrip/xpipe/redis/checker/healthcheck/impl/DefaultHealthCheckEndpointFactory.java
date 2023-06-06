@@ -42,9 +42,9 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     static final Logger logger = LoggerFactory.getLogger(DefaultHealthCheckEndpointFactory.class);
 
     private final String PROXY_UP_EVENT = "proxy.client.up";
-    
+
     private final String PROXY_DOWN_EVENT = "proxy.client.down";
-    
+
     private ConcurrentMap<HostPort, Endpoint> map = Maps.newConcurrentMap();
 
     @Autowired
@@ -52,13 +52,13 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
 
     @Autowired
     CheckerConfig config;
-    
+
     @Autowired
     private MetaCache metaCache;
-    
+
     Map<String, List<RouteMeta>> routes;
-    
-    
+
+
     public synchronized void initRoutes() {
         if(this.routes != null) {
             return;
@@ -68,13 +68,13 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
             this.routes = Maps.newConcurrentMap();
         }
     }
-    
+
     @Override
     public synchronized void updateRoutes() {
         logger.info("[DefaultHealthCheckEndpointFactory][updateRoutes]");
         List<RouteMeta> allRoutes = metaCache.getRoutes();
         if(allRoutes == null || allRoutes.size() == 0) return;
-        
+
         ConcurrentHashMap<String, List<RouteMeta>> newRoutes = new ConcurrentHashMap<>();
         allRoutes.forEach(routeMeta -> {
             if(routeMeta.getIsPublic()) {
@@ -114,15 +114,15 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
             initRoutes();
         }
         List<RouteMeta> list = routes.get(dst);
-        
+
         if(list != null && !list.isEmpty()) {
             RouteMeta route = selectRoute(list, hostPort);
             logger.info("register proxy: {}:{} {}", hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
             ProxyRegistry.registerProxy(hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
-        } 
-        
+        }
+
     }
-    
+
     @PostConstruct
     public void postConstruct() {
         ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
@@ -139,7 +139,7 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
             }
         }, 0, 2, TimeUnit.SECONDS);
     }
-    
+
     public void initEndpointChecker() {
         logger.info("[initEndpointChecker][begin]");
         ProxyRegistry.setChecker(proxyChecker::check, proxyChecker::getRetryUpTimes, proxyChecker::getRetryDownTimes);
@@ -164,7 +164,7 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         });
         logger.info("[initEndpointChecker][success]");
     }
-    
+
     @Override
     public Endpoint getOrCreateEndpoint(RedisMeta redisMeta) {
         HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
@@ -198,10 +198,11 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     public MetaCache getMetaCache() {
         return this.metaCache;
     }
-    
+
     @VisibleForTesting
     public DefaultHealthCheckEndpointFactory setMetaCache(MetaCache metaCache) {
         this.metaCache = metaCache;
         return this;
     }
+
 }

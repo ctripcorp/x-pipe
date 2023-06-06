@@ -44,8 +44,8 @@ public class DefaultMonitorClusterManager {
             this.addService(service);
         }
 
-        if (null == metaCache) {
-            logger.info("console mode, don't execute sync ring task");
+        if (null == metaCache || null == metaCache.getXpipeMeta()) {
+            logger.info("not checker mode, don't execute sync ring task");
             return;
         }
         Random random = new Random();
