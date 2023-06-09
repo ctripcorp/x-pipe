@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcModel;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.spring.AbstractController;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author taotaotu
@@ -43,6 +46,20 @@ public class DcApiController extends AbstractConsoleController {
         }
 
         return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/dc", method = RequestMethod.GET)
+    public RetMessage getAllDcs(HttpServletRequest request) {
+        logger.info("[DcApiController][getAllDcs]request ip:{}", request.getRemoteHost());
+
+        try {
+            List<DcTbl> dcTbls = valueOrEmptySet(DcTbl.class, dcService.findAllDcBasic());
+            List<DcModel> dcModels = dcTbls.stream().map(DcModel::fromDcTbl).collect(Collectors.toList());
+            return GenericRetMessage.createGenericRetMessage(dcModels);
+        } catch (Exception e) {
+            logger.error("[DcApiController][getAllDcs]get all dcs exception!", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
     @RequestMapping(value = "/dc", method = RequestMethod.PUT)
