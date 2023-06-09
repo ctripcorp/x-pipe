@@ -199,6 +199,30 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = {"/sentinels/info/dc/{dcName}"}, method = RequestMethod.GET)
+    public RetMessage getDcSentinels(@PathVariable String dcName) {
+        logger.info("[getDcSentinels] begin to get dc {} sentinels", dcName);
+        try {
+            List<SentinelGroupModel> allDcSentinels = sentinelGroupService.findAllByDcName(dcName);
+            return GenericRetMessage.createGenericRetMessage(allDcSentinels);
+        } catch (Exception e){
+            logger.error("[getDcSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = {"/sentinels/info/dc/{dcName}/clusterType/{clusterType}"}, method = RequestMethod.GET)
+    public RetMessage getDcClusterTypeSentinels(@PathVariable String dcName, @PathVariable String clusterType) {
+        logger.info("[getDcClusterTypeSentinels] begin to get dc {} clusterType {} sentinels", dcName, clusterType);
+        try {
+            List<SentinelGroupModel> allDcClusterTypeSentinels = sentinelGroupService.findAllByDcAndType(dcName, ClusterType.lookup(clusterType));
+            return GenericRetMessage.createGenericRetMessage(allDcClusterTypeSentinels);
+        } catch (Exception e){
+            logger.error("[getDcClusterTypeSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @RequestMapping(value = {"/dc/sentinels/{clusterType}", "/dc/sentinels"}, method = RequestMethod.GET)
     public RetMessage dcSentinelUsage(@RequestParam String dc, @PathVariable(required = false) String clusterType) {
         logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
