@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.rdb;
 
 import com.ctrip.xpipe.redis.core.redis.rdb.encoding.IntsetTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.encoding.StreamListpackTest;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.AuxOnlyRdbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbAuxParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParserTest;
@@ -16,6 +17,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         DefaultRdbParserTest.class,
+        AuxOnlyRdbParserTest.class,
         RdbAuxParserTest.class,
         RdbStringParserTest.class,
 

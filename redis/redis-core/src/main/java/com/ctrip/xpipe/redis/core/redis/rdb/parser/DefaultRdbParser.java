@@ -91,8 +91,10 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                     if (null == currentType) {
                         throw new XpipeRuntimeException("unknown rdb type:" + type);
                     } else if (currentType.equals(RdbParseContext.RdbType.EOF)) {
+                        this.rdbParseContext.setCurrentType(null);
                         state = STATE.READ_END;
                     } else if (currentType.isRdbOp()) {
+                        this.rdbParseContext.setCurrentType(currentType);
                         state = STATE.READ_OP;
                     } else {
                         this.rdbParseContext.setCurrentType(currentType);
@@ -165,6 +167,10 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     public short getRdbVersion() {
         return rdbVersion;
+    }
+
+    protected RdbParseContext getContext() {
+        return rdbParseContext;
     }
 
     @Override

@@ -21,7 +21,8 @@ public class AuxOnlyRdbParser extends DefaultRdbParser {
 
     @Override
     public boolean isFinish() {
-        return super.isFinish() || STATE.READ_KEY.equals(state);
+        // RDB end or start reading DB
+        return super.isFinish() || RdbParseContext.RdbType.SELECTDB.equals(getContext().getCurrentType());
     }
 
     @Override

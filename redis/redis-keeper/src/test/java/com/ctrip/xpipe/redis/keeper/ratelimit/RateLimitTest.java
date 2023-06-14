@@ -94,7 +94,7 @@ public class RateLimitTest extends AbstractFakeRedisTest {
     @Test
     public void testBackupDcActiveKeeper_DownForALongTime_ShouldLimit() throws Exception {
 
-        redisKeeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", fakeRedisServer.getPort()));
+        redisKeeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", fakeRedisServer.getPort()));
 
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
         waitRedisKeeperServerConnected(redisKeeperServer2);

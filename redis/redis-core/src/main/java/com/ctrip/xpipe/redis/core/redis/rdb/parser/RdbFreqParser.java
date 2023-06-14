@@ -44,7 +44,7 @@ public class RdbFreqParser extends AbstractRdbParser<Short> implements RdbParser
 
                 case READ_FREQ:
                     freq = byteBuf.readUnsignedByte();
-                    this.context.setLruIdle(freq);
+                    this.context.setLfuFreq(freq);
                     state = STATE.READ_END;
                     break;
 

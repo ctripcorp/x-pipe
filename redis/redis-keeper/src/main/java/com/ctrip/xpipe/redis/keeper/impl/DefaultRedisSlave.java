@@ -583,7 +583,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public String toString() {
-		return this.redisClient.toString();
+		return String.format("%s[ack:%d]", this.redisClient.toString(), this.getAck());
 	}
 
 	@Override
