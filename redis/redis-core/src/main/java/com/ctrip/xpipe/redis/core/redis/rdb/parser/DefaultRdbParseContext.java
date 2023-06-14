@@ -23,9 +23,9 @@ public class DefaultRdbParseContext implements RdbParseContext {
 
     private Set<RdbParseListener> listeners = new HashSet<>();
 
-    private AtomicInteger dbId = new AtomicInteger();
+    private AtomicInteger dbId = new AtomicInteger(-1);
 
-    private AtomicInteger version = new AtomicInteger();
+    private AtomicInteger version = new AtomicInteger(-1);
 
     private AtomicReference<RdbType> currentType = new AtomicReference<>();
 
