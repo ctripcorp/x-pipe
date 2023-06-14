@@ -117,7 +117,7 @@ public class MetaserverContinueMigrationTest extends AbstractConsoleIntegrationT
     }
 
     @Override
-    protected boolean resetDbData() {
+    protected boolean resetMysql() {
         return false;
     }
 

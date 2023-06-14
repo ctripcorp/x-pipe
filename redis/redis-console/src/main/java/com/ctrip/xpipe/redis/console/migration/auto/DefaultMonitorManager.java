@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
-import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 import com.ctrip.xpipe.codec.JsonCodec;
@@ -53,8 +52,8 @@ public class DefaultMonitorManager implements MonitorManager {
     private void init() {
         long checkInterval = this.config.getClusterHealthCheckInterval() / 1000; // 秒
         String serverMode = this.config.getServerMode();
-        MetaCache cache = ConsoleServerModeCondition.SERVER_MODE.CONSOLE.name().equals(serverMode.toUpperCase()) ?
-            null : metaCache;
+        MetaCache cache = ConsoleServerModeCondition.SERVER_MODE.CHECKER.name().equals(serverMode.toUpperCase()) ?
+            metaCache : null;
         List<BeaconOrgRoute> beaconOrgRoutes = this.config.getBeaconOrgRoutes();
         this.orgMonitorMap = beaconOrgRoutes.stream().collect(
             Collectors.toMap(BeaconOrgRoute::getOrgId, orgRoute -> {

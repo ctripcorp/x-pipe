@@ -85,7 +85,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
             registerMySQLFunctions();
             executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
-        } else if (resetDbData()) {
+        } else if (resetMysql()) {
             executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_DATA));
         }
@@ -159,8 +159,9 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         return IOUtils.toString(ins);
     }
 
-    protected boolean resetDbData() {
-        return true;
+    protected boolean resetMysql() {
+        String reset = System.getProperty("reset.mysql", "false");
+        return "true".equals(reset);
     }
 
 }
