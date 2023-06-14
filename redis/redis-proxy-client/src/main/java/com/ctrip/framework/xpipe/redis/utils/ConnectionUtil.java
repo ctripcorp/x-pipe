@@ -11,7 +11,11 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,6 +24,14 @@ public class ConnectionUtil {
     private static final Logger logger = LoggerFactory.getLogger(ConnectionUtil.class);
 
     public static Map<SocketChannel, Lock> socketChannelMap = new ConcurrentHashMap<>();
+
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor(
+        runnable -> new Thread(runnable, ConnectionUtil.class.getSimpleName() + "-Executor")
+    );
+
+    static {
+        EXECUTOR.scheduleWithFixedDelay(new SocketChannelMapCheckTask(), 60L, 30L, TimeUnit.SECONDS);
+    }
 
     public static InetSocketAddress getAddress(Object o, InetSocketAddress socketAddress) {
         if (ProxyUtil.getInstance().needProxy(socketAddress)) {
@@ -99,6 +111,37 @@ public class ConnectionUtil {
             }
         } finally {
             lock.unlock();
+        }
+    }
+
+    static class SocketChannelMapCheckTask implements Runnable {
+        @Override
+        public void run() {
+            try {
+                this.check();
+            } catch (Exception e) {
+                logger.error("SocketChannelMapCheckTask Error — {}", e, e);
+            }
+        }
+
+        private void check() {
+            Set<SocketChannel> channels = socketChannelMap.keySet();
+            if (!channels.isEmpty()) {
+                logger.info("socket channel size: {}", channels.size());
+                channels.forEach(channel -> {
+                    try {
+                        if (!channel.finishConnect()) {
+                            logger.warn("socket channel - [self: {}, remote: {}] pending",
+                                channel.getLocalAddress(), channel.getRemoteAddress());
+                        }
+                    } catch (IOException e) {
+                        logger.warn("socket channel connect failed - {}", channel);
+                        socketChannelMap.remove(channel);
+                    } catch (Exception e) {
+                        logger.error("socket channel in wrong state - {}", channel, e);
+                    }
+                });
+            }
         }
     }
 

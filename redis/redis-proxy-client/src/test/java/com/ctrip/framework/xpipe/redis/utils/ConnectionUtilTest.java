@@ -5,14 +5,24 @@ import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.ctrip.framework.xpipe.redis.AllTests.IP;
@@ -23,8 +33,13 @@ import static org.mockito.Mockito.*;
  * @Author limingdong
  * @create 2021/4/22
  */
+@RunWith(MockitoJUnitRunner.class)
 public class ConnectionUtilTest extends AbstractProxyTest {
 
+    @Mock
+    private SocketChannel channel1;
+    @Mock
+    private SocketChannel channel2;
     final int defaultCheckInterval = 100;   
     protected void restoredProxyState() throws TimeoutException {
         ProxyUtil.getInstance().setCheckInterval(defaultCheckInterval);
@@ -167,6 +182,23 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             ProxyUtil.getInstance().unregisterProxy(IP, PORT);
             ConnectionUtil.removeAddress(socketChannel);
         }
+    }
+
+    @Test
+    public void testSocketChannelCheckTask() throws Exception {
+        Mockito.when(channel1.finishConnect()).thenReturn(true);
+        Mockito.when(channel2.finishConnect()).thenThrow(IOException.class);
+
+        ConnectionUtil.socketChannelMap.put(channel1, new ReentrantLock());
+        ConnectionUtil.socketChannelMap.put(channel2, new ReentrantLock());
+
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.schedule(new ConnectionUtil.SocketChannelMapCheckTask(), 0, TimeUnit.SECONDS);
+
+        Thread.sleep(100L);
+        Assert.assertEquals(ConnectionUtil.socketChannelMap.size(), 1);
+        Assert.assertEquals(new ArrayList<>(ConnectionUtil.socketChannelMap.keySet()),
+            Collections.singletonList(channel1));
     }
 
 }

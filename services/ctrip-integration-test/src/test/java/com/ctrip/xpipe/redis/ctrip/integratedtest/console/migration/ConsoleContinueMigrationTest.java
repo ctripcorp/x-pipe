@@ -143,7 +143,7 @@ public class ConsoleContinueMigrationTest extends AbstractConsoleIntegrationTest
     }
 
     @Override
-    protected boolean resetDbData() {
+    protected boolean resetMysql() {
         return false;
     }
 

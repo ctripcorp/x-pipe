@@ -47,6 +47,9 @@ public class AppTest extends AbstratAppTest {
 	@Test
 	public void startConsole8080() throws IOException, SQLException {
 
+		// mysql重置命令，首次连接本地mysql时使用。非本地环境禁止开启
+		// System.setProperty("reset.mysql", "true");
+
 		System.setProperty("server.port", "8080");
 		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER.name());
 		start();
