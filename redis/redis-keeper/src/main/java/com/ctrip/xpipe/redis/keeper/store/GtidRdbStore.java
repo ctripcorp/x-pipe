@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
-import com.sun.org.apache.xpath.internal.operations.Gt;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
