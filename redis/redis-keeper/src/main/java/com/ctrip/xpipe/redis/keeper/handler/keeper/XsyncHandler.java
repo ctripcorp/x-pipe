@@ -44,14 +44,14 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
             return;
         }
 
-        GtidSet localBegin = keeperRepl.getBeginGtidSet();
-        GtidSet localEnd = keeperRepl.getEndGtidSet();
-
-        if (null == localBegin || localBegin.isEmpty()) {
-            logger.info("[innerDoHandle][localBegin is null]");
+        if (!keeperRepl.supportGtidSet()) {
+            logger.info("[innerDoHandle][not support gtidSet]");
             doFullSync(redisSlave);
             return;
         }
+
+        GtidSet localBegin = keeperRepl.getBeginGtidSet();
+        GtidSet localEnd = keeperRepl.getEndGtidSet();
 
         long continueOffset = keeperRepl.getEndOffset() + 1;
 

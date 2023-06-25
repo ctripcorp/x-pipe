@@ -100,7 +100,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         }
 
         FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
-        if (ctx.isFullSyncPossible() && ctx.getRdbStore().getGtidSet() == null) {
+        if (ctx.isFullSyncPossible() && !ctx.getRdbStore().isGtidSetInit()) {
             ctx.getRdbStore().decrementRefCount();
             return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
         }
@@ -149,7 +149,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             }
 
             FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
-            if (ctx.isFullSyncPossible() && ctx.getRdbStore().getGtidSet() == null) {
+            if (ctx.isFullSyncPossible() && !ctx.getRdbStore().isGtidSetInit()) {
                 ctx.getRdbStore().decrementRefCount();
                 return FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
             }
@@ -208,5 +208,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         } else {
             return null;
         }
+    }
+
+    @Override
+    public boolean supportGtidSet() {
+        return getRdbStore().supportGtidSet();
     }
 }

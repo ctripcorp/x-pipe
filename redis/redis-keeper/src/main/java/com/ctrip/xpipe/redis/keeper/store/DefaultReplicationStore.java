@@ -416,6 +416,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public boolean supportGtidSet() {
+		return false;
+	}
+
+	@Override
 	public boolean isFresh() {
 		return metaStore == null || metaStore.isFresh();
 	}

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Objects;
 
@@ -12,15 +13,15 @@ public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet> 
 
     private GtidSet gtidSet;
 
-    private String progressMark;
+    private Long offset;
 
     public GtidSetReplicationProgress(GtidSet gtidSet) {
-        this(gtidSet, gtidSet.toString());
+        this(gtidSet, null);
     }
 
-    public GtidSetReplicationProgress(GtidSet gtidSet, String progressMark) {
+    public GtidSetReplicationProgress(GtidSet gtidSet, Long offset) {
         this.gtidSet = gtidSet;
-        this.progressMark = progressMark;
+        this.offset = offset;
     }
 
     @Override
@@ -30,7 +31,8 @@ public class GtidSetReplicationProgress implements ReplicationProgress<GtidSet> 
 
     @Override
     public String getProgressMark() {
-        return progressMark;
+        return offset == null ? gtidSet.toString() : StringUtil.join(" ",
+                gtidSet.isEmpty() ? GtidSet.PLACE_HOLDER : gtidSet.toString(), offset);
     }
 
     @Override

@@ -162,7 +162,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             getLogger().info("[handleRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, xsync);
         }
 
-        String[] split = xsync.split("\\s");
+        String[] split = splitSpace(xsync);
         if (split.length == 0) {
             throw new RedisRuntimeException("wrong reply:" + xsync);
         }
@@ -171,7 +171,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
             if (split.length < 2) {
                 throw new RedisRuntimeException("unknown reply:" + xsync);
             }
-            this.rdbDataGtidSet = new GtidSet(split[1]);
+            this.rdbDataGtidSet = GtidSet.PLACE_HOLDER.equals(split[1]) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(split[1]);
             if (split.length > 2) {
                 this.rdbOffset = Long.parseLong(split[2]);
             }

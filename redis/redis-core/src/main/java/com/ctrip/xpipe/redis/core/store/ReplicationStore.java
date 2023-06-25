@@ -54,6 +54,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	GtidSet getEndGtidSet();
 
+	boolean supportGtidSet();
+
 	long beginOffsetWhenCreated();
 
 	long lastReplDataUpdatedAt();

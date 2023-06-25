@@ -448,7 +448,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public void readAuxEnd(RdbStore rdbStore) {
 		// no gtidset read when read aux end, may need refactor by capa gtid ?
-		if (rdbStore.getGtidSet() == null) {
+		if (!rdbStore.isGtidSetInit()) {
 			this.readRdbGtidSet(rdbStore, GtidSet.EMPTY_GTIDSET);
 		}
 	}
