@@ -104,7 +104,16 @@
                     <groupId>javax.persistence</groupId>
                     <artifactId>persistence-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.ops</groupId>
+                    <artifactId>hickwall-sdk</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ctrip.platform</groupId>
+            <artifactId>ctrip-dal-client</artifactId>
         </dependency>
 
         <dependency>
