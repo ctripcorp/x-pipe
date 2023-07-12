@@ -245,6 +245,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                 observer.onRdbData(byteBuf.slice());
             } catch (Throwable th) {
                 getLogger().error("[notifyRdbData][fail] {}", observer, th);
+                throw th;
             }
         }
     }

@@ -375,11 +375,6 @@ public class DefaultRedisSlave implements RedisSlave {
 		Object command = cmd;
 
 		if (cmd instanceof RedisOp) {
-			if (shouldFilter((RedisOp) cmd)) {
-				ChannelPromise result = channel().newPromise();
-			    result.setSuccess();
-			    return result;
-			}
 		    command = ((RedisOp) cmd).buildRESP();
 		}
 

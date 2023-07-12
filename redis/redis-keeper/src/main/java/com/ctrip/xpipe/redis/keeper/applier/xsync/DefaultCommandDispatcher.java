@@ -129,6 +129,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             rdbParser.read(rdbData);
         } catch (Throwable t) {
             logger.error("[onRdbData] unlikely - error", t);
+            throw t;
         }
     }
 
@@ -279,6 +280,23 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
+    @VisibleForTesting
+    protected boolean shouldFilter(RedisOp redisOp) {
+        if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
+            int length = redisOp.buildRawOpArgs().length;
+            if (length < 5) {
+                logger.warn("publish command {} length={} < 5, filtered", redisOp, length);
+                return true;
+            }
+            String channel = new String(redisOp.buildRawOpArgs()[4]);
+            if (!channel.startsWith("xpipe-hetero-")) {
+                logger.warn("publish command {} channel: [{}] filtered", redisOp, channel);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
@@ -294,6 +312,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
                 logger.error("[onRedisOp] unlikely - fail to select db]", unlikely);
             }
+            offsetRecorder.addAndGet(commandOffsetToAccumulate);
+            return;
+        }
+        if (shouldFilter(redisOp)) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
