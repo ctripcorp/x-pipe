@@ -284,11 +284,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     protected boolean shouldFilter(RedisOp redisOp) {
         if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
             int length = redisOp.buildRawOpArgs().length;
-            if (length < 5) {
-                logger.warn("publish command {} length={} < 5, filtered", redisOp, length);
+            String channel;
+            if (length == 3) {
+                channel = new String(redisOp.buildRawOpArgs()[1]);
+            } else if(length >= 5) {
+                channel = new String(redisOp.buildRawOpArgs()[4]);
+            } else {
+                logger.warn("publish command {} length={} unexpected, filtered", redisOp, length);
                 return true;
             }
-            String channel = new String(redisOp.buildRawOpArgs()[4]);
             if (!channel.startsWith("xpipe-hetero-")) {
                 logger.warn("publish command {} channel: [{}] filtered", redisOp, channel);
                 return true;
