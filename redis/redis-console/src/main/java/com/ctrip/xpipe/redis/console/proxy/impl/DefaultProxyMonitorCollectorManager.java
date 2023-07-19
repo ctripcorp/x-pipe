@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -64,6 +65,8 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
+    private String currentDc = FoundationService.DEFAULT.getDataCenter();
+
     @Override
     public ProxyMonitorCollector getOrCreate(ProxyModel proxyModel) {
         return MapUtils.getOrCreate(proxySamples, proxyModel, new ObjectFactory<ProxyMonitorCollector>() {
@@ -105,8 +108,9 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
 
     protected void update() {
-        List<ProxyModel> proxies = proxyService.getMonitorActiveProxies();
+        List<ProxyModel> proxies = proxyService.getMonitorActiveProxiesByDc(currentDc);
 
+        if (proxies == null || proxies.isEmpty()) return;
         addActiveProxies(proxies);
         removeUnusedProxies(proxies);
 

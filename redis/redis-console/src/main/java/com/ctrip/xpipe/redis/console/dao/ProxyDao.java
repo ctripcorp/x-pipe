@@ -51,6 +51,15 @@ public class ProxyDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<ProxyTbl> getMonitorActiveProxyTblsByDc(String dcName) {
+        return queryHandler.handleQuery(new DalQuery<List<ProxyTbl>>() {
+            @Override
+            public List<ProxyTbl> doQuery() throws DalException {
+                return dao.findAllMonitorActiveByDc(dcName, ProxyTblEntity.READSET_ID_DC_URI);
+            }
+        });
+    }
+
     public List<ProxyTbl> getMonitorActiveProxyTbls() {
         return queryHandler.handleQuery(new DalQuery<List<ProxyTbl>>() {
             @Override

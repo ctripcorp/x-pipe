@@ -12,10 +12,13 @@ import java.util.Objects;
  */
 public class PingStatsResult {
 
-    final private long start;
-    final private long end;
-    final private HostPort direct;
-    final private HostPort real;
+    private long start;
+    private long end;
+    private HostPort direct;
+    private HostPort real;
+
+    public PingStatsResult() {
+    }
 
     public PingStatsResult(long start, long end, HostPort direct, HostPort real) {
         this.start = start;
@@ -38,6 +41,26 @@ public class PingStatsResult {
 
     public HostPort getReal() {
         return real;
+    }
+
+    public PingStatsResult setStart(long start) {
+        this.start = start;
+        return this;
+    }
+
+    public PingStatsResult setEnd(long end) {
+        this.end = end;
+        return this;
+    }
+
+    public PingStatsResult setDirect(HostPort direct) {
+        this.direct = direct;
+        return this;
+    }
+
+    public PingStatsResult setReal(HostPort real) {
+        this.real = real;
+        return this;
     }
 
     public Object toArrayObject() {

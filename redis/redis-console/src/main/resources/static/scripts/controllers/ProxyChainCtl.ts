@@ -97,8 +97,8 @@ function ProxyChainCtl($rootScope, $scope, $window, AppUtil, toastr, ProxyServic
         $window.open(uri);
     }
 
-    function getMetricHickwalls(clusterId, shardId, dstDc) {
-        return ProxyService.getProxyChainHickwall(clusterId, shardId, dstDc);
+    function getMetricHickwalls(clusterId, shardId, srcDc) {
+        return ProxyService.getProxyChainHickwall(clusterId, shardId, srcDc);
     }
 
     function gotoHickwallWebSite(addr) {

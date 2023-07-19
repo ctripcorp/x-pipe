@@ -1,17 +1,19 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RouteService;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Map;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -36,9 +38,9 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         String tunnelId1 = generateTunnelId();
         String tunnelId2 = generateTunnelId();
         when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("SHAOY"), tunnelId1)
-                .setSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
+                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
         when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("FRA-AWS"), tunnelId2)
-                .setSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
+                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
         when(manager.getProxyMonitorResults()).thenReturn(Lists.newArrayList(collector1, collector2));
 
         String cluster = "cluster", shard = "shard";
@@ -59,17 +61,9 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
     }
 
     @Test
-    public void testGetProxyChain() {
-
-        ProxyChain chain = analyzer.getProxyChain("FRA-AWS", "cluster", "shard","SHAOY");
-        Assert.assertNotNull(chain);
-        logger.info("[chain] {}", chain);
-    }
-
-    @Test
-    public void testGetProxyChainUseTunnelId() {
-        ProxyChain chain = analyzer.getProxyChain(manager.getProxyMonitorResults().get(0).getTunnelInfos().get(0).getTunnelId());
-        Assert.assertNotNull(chain);
-        logger.info("[chain] {}", chain);
+    public void testGetClusterShardChainMap() {
+        Map<DcClusterShardPeer, ProxyChain> clusterShardChainMap = analyzer.getClusterShardChainMap();
+        Assert.assertNotNull(clusterShardChainMap);
+        logger.info("[chain] {}", clusterShardChainMap);
     }
 }

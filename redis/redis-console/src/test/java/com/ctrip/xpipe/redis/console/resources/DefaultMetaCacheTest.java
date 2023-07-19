@@ -144,6 +144,27 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     }
 
     @Test
+    public void testGetAllKeeperContainersDcMap() {
+        Map<String, String> allKeeperContainersDcMap = metaCache.getAllKeeperContainersDcMap();
+        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.1"));
+        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.2"));
+        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.3"));
+        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.4"));
+        Assert.assertEquals(4, allKeeperContainersDcMap.size());
+    }
+
+    @Test
+    public void testGetAllApplierContainersDcMap() {
+        Map<String, String> allKeeperContainersDcMap = metaCache.getAllApplierContainersDcMap();
+        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.11"));
+        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.12"));
+        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.13"));
+        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.14"));
+        Assert.assertEquals(4, allKeeperContainersDcMap.size());
+    }
+
+
+    @Test
     public void testFindBiClusterShardBySentinelMonitor() {
         String monitorNameOY = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "oy");
         String monitorNameJQ = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "jq");

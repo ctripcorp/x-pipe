@@ -18,11 +18,11 @@ public class ProxyPingStatsModel {
         this.pingStatsResults = pingStatsResults;
     }
 
-    public ProxyModel getProxyInfo() {
+    public ProxyModel getProxyModel() {
         return model;
     }
 
-    public ProxyPingStatsModel setProxyInfo(ProxyModel model) {
+    public ProxyPingStatsModel setProxyModel(ProxyModel model) {
         this.model = model;
         return this;
     }

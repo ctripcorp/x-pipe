@@ -6,11 +6,12 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class DefaultTunnelInfo implements TunnelInfo {
+public class DefaultTunnelInfo implements TunnelInfo, Serializable {
 
-    private String dcId;
+    private String tunnelDcId;
 
     private String tunnelId;
 
@@ -18,19 +19,22 @@ public class DefaultTunnelInfo implements TunnelInfo {
 
     private TunnelStatsResult tunnelStatsResult;
 
-    private TunnelSocketStatsResult socketStatsResult;
+    private TunnelSocketStatsResult tunnelSocketStatsResult;
 
     private TunnelTrafficResult tunnelTrafficResult;
 
+    public DefaultTunnelInfo() {
+    }
+
     public DefaultTunnelInfo(ProxyModel proxyModel, String tunnelId) {
         this.proxyModel = proxyModel;
-        this.dcId = proxyModel.getDcName();
+        this.tunnelDcId = proxyModel.getDcName();
         this.tunnelId = tunnelId;
     }
 
     @Override
     public String getTunnelDcId() {
-        return dcId;
+        return tunnelDcId;
     }
 
     @Override
@@ -50,7 +54,7 @@ public class DefaultTunnelInfo implements TunnelInfo {
 
     @Override
     public TunnelSocketStatsResult getTunnelSocketStatsResult() {
-        return socketStatsResult;
+        return tunnelSocketStatsResult;
     }
 
     @Override
@@ -63,13 +67,28 @@ public class DefaultTunnelInfo implements TunnelInfo {
         return this;
     }
 
-    public DefaultTunnelInfo setSocketStatsResult(TunnelSocketStatsResult socketStatsResult) {
-        this.socketStatsResult = socketStatsResult;
+    public DefaultTunnelInfo setTunnelSocketStatsResult(TunnelSocketStatsResult tunnelSocketStatsResult) {
+        this.tunnelSocketStatsResult = tunnelSocketStatsResult;
         return this;
     }
 
     public DefaultTunnelInfo setTunnelTrafficResult(TunnelTrafficResult tunnelTrafficResult) {
         this.tunnelTrafficResult = tunnelTrafficResult;
+        return this;
+    }
+
+    public DefaultTunnelInfo setTunnelDcId(String tunnelDcId) {
+        this.tunnelDcId = tunnelDcId;
+        return this;
+    }
+
+    public DefaultTunnelInfo setTunnelId(String tunnelId) {
+        this.tunnelId = tunnelId;
+        return this;
+    }
+
+    public DefaultTunnelInfo setProxyModel(ProxyModel proxyModel) {
+        this.proxyModel = proxyModel;
         return this;
     }
 
@@ -90,11 +109,11 @@ public class DefaultTunnelInfo implements TunnelInfo {
     @Override
     public String toString() {
         return "DefaultTunnelInfo{" +
-                "dcId='" + dcId + '\'' +
+                "dcId='" + tunnelDcId + '\'' +
                 ", tunnelId='" + tunnelId + '\'' +
                 ", proxyModel=" + proxyModel.toString() +
                 ", tunnelStatsResult=" + tunnelStatsResult.toString() +
-                ", socketStatsResult=" + socketStatsResult.toString() +
+                ", socketStatsResult=" + tunnelSocketStatsResult.toString() +
                 '}';
     }
 }
