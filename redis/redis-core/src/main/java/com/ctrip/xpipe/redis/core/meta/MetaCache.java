@@ -29,7 +29,13 @@ public interface MetaCache {
 
     Set<HostPort> getAllKeepers();
 
+    String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard);
+
+    Map<String, String> getAllKeeperContainersDcMap();
+
     Pair<String, String> findClusterShard(HostPort hostPort);
+
+    Map<String, String> getAllApplierContainersDcMap();
 
     String getSentinelMonitorName(String clusterId, String shardId);
 
@@ -46,6 +52,8 @@ public interface MetaCache {
     List<RedisMeta> getAllInstancesOfShard(String cluster, String shard);
 
     String getDc(HostPort hostPort);
+
+    String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard);
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 

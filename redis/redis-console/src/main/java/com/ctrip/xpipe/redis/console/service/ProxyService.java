@@ -8,7 +8,8 @@ import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public interface ProxyService extends ProxyManager {
 
     List<ProxyModel> getAllProxies();
 
-    List<ProxyModel> getMonitorActiveProxies();
+    List<ProxyModel> getMonitorActiveProxiesByDc(String dcName);
 
     void updateProxy(ProxyModel model);
 
@@ -42,11 +43,13 @@ public interface ProxyService extends ProxyManager {
 
     ProxyChain getProxyChain(String tunnelId);
 
-    List<TunnelInfo> getProxyTunnels(String dcId, String ip);
+    List<DefaultTunnelInfo> getProxyTunnels(String dcId, String ip);
 
     Map<String, List<ProxyChain>> getProxyChains(String backupDcId, String clusterId);
 
-    List<ProxyPingStatsModel> getProxyMonitorCollectors(String dcName);
+    List<ProxyPingStatsModel> getProxyPingStatsModels(String dcName);
+
+    List<ProxyMonitorCollector> getAllProxyMonitorCollectors();
 
     List<ProxyInfoModel> getAllProxyInfo();
 

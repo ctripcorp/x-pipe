@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
+import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
@@ -36,7 +36,7 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
     @Mock
     private ClusterService clusterService;
     @Mock
-    private ProxyChainAnalyzer analyzer;
+    private ProxyChainCollector collector;
 
     private static final String DC_AWS = "FRA-AWS";
 
@@ -68,12 +68,12 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
         peerDcs.add(new DcTbl().setDcName(DC_OY).setClusterName(CLUSTER_NAME));
         when(shardService.findAllShardNamesByClusterName(CLUSTER_NAME)).thenReturn(shards);
         when(clusterService.getClusterRelatedDcs(CLUSTER_NAME)).thenReturn(peerDcs);
-        when(analyzer.getProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_RB)).thenReturn(rbChain);
-        when(analyzer.getProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_OY)).thenReturn(oyChain);
+        when(collector.getProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_RB)).thenReturn(rbChain);
+        when(collector.getProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_OY)).thenReturn(oyChain);
 
         service.setShardService(shardService)
                 .setClusterService(clusterService)
-                .setProxyChainAnalyzer(analyzer);
+                .setProxyChainCollector(collector);
     }
 
     @Test

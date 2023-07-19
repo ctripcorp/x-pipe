@@ -1,13 +1,25 @@
 package com.ctrip.xpipe.redis.checker.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public final class DcClusterShardPeer extends DcClusterShard {
+public final class DcClusterShardPeer extends DcClusterShard implements Serializable {
+    private static final String SPLITTER = ":";
 
     private String peerDcId;
 
     public DcClusterShardPeer() {
 
+    }
+
+    public DcClusterShardPeer(String info) {
+        String[] split = info.split(SPLITTER);
+        if (split.length >= 4) {
+            this.dcId = split[0];
+            this.clusterId = split[1];
+            this.shardId = split[2];
+            this.peerDcId = split[3];
+        }
     }
 
     public DcClusterShardPeer(String dcId, String clusterId, String shardId, String peerDcId) {
@@ -28,6 +40,11 @@ public final class DcClusterShardPeer extends DcClusterShard {
         return Objects.equals(peerDcId, that.peerDcId);
     }
 
+    public DcClusterShardPeer setPeerDcId(String peerDcId) {
+        this.peerDcId = peerDcId;
+        return this;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(getDcId(), getClusterId(), getShardId(), getPeerDcId());
@@ -35,11 +52,7 @@ public final class DcClusterShardPeer extends DcClusterShard {
 
     @Override
     public String toString() {
-        return "DcClusterShardPeer{" +
-                "dcId='" + getDcId() + '\'' +
-                ", clusterId='" + getClusterId() + '\'' +
-                ", shardId='" + getShardId() + '\'' +
-                ", peerDcId='" + getPeerDcId() + '\'' +
-                '}';
+        return getDcId() + SPLITTER + getClusterId() + SPLITTER + getShardId() + SPLITTER + getPeerDcId();
     }
+
 }

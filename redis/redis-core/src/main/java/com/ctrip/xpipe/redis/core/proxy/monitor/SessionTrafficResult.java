@@ -2,20 +2,23 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class SessionTrafficResult {
+public class SessionTrafficResult implements Serializable {
 
-    private final long timestamp;
+    private long timestamp;
 
-    private final long inputBytes;
+    private long inputBytes;
 
-    private final long outputBytes;
+    private long outputBytes;
 
-    private final long inputRates;
+    private long inputRates;
 
-    private final long outputRates;
+    private long outputRates;
 
+    public SessionTrafficResult() {
+    }
 
     public SessionTrafficResult(long timestamp, long inputBytes, long outputBytes, long inputRates, long outputRates) {
         this.timestamp = timestamp;
@@ -67,6 +70,31 @@ public class SessionTrafficResult {
 
     public long getOutputRates() {
         return outputRates;
+    }
+
+    public SessionTrafficResult setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
+    }
+
+    public SessionTrafficResult setInputBytes(long inputBytes) {
+        this.inputBytes = inputBytes;
+        return this;
+    }
+
+    public SessionTrafficResult setOutputBytes(long outputBytes) {
+        this.outputBytes = outputBytes;
+        return this;
+    }
+
+    public SessionTrafficResult setInputRates(long inputRates) {
+        this.inputRates = inputRates;
+        return this;
+    }
+
+    public SessionTrafficResult setOutputRates(long outputRates) {
+        this.outputRates = outputRates;
+        return this;
     }
 
     @Override
