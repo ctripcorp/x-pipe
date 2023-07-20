@@ -205,6 +205,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public Long getCountByActiveDcAndClusterType(long activeDc, String clusterType) {
+		return queryHandler.handleQuery(new DalQuery<Long>() {
+			@Override
+			public Long doQuery() throws DalException {
+				return dao.countByActiveDcAndClusterType(activeDc, clusterType, ClusterTblEntity.READSET_COUNT).getCount();
+			}
+		});
+	}
+
+	@Override
 	public Long getAllCount() {
 		return queryHandler.handleQuery(new DalQuery<Long>() {
 			@Override
