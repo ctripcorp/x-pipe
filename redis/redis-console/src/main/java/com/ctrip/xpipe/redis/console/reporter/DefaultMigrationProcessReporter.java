@@ -45,6 +45,7 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
         MigrationProcessReportModel model = new MigrationProcessReportModel();
 
+        // TODO AzGroup need to be  considered after hetero cluster type online
         Long nonMigrateClustersNum = clusterService.getCountByActiveDcAndClusterType(dcService.find(consoleConfig.getBreakDownDc()).getId(), ClusterType.ONE_WAY.name());
         if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;
