@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.reporter;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -44,25 +45,19 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
         MigrationProcessReportModel model = new MigrationProcessReportModel();
 
-        Long nonMigrateClustersNum = clusterService.getCountByActiveDc(dcService.find(consoleConfig.getBreakDownDc()).getId());
-        if (totalClusters == 0) {
+        Long nonMigrateClustersNum = clusterService.getCountByActiveDcAndClusterType(dcService.find(consoleConfig.getBreakDownDc()).getId(), ClusterType.ONE_WAY.name());
+        if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;
         }
 
-        if (nonMigrateClustersNum > totalClusters) {
-            EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "wrong migrationProgress");
-            logger.warn("[DefaultMigrationReporter] build migration progress fail: nonMigrationClustersNum {} is greater than total {}", nonMigrateClustersNum, totalClusters);
-            return;
-        } else {
-            model.setObjectCount((int)totalClusters).setProcess((int)((100 * (totalClusters - nonMigrateClustersNum) / totalClusters)));
-        }
+        model.setObjectCount((int)totalClusters).setProcess((int)((100 * (totalClusters - nonMigrateClustersNum) / totalClusters)));
 
         model.setService(DEFAULT_SERVICE).setTimestamp(DateTimeUtils.currentTimeAsString(DEFAULT_TIME_FORMAT)).setOperator(DEFAULT_OPERATOR);
         logger.info("[DefaultMigrationReporter] send migration report model: {}，migration clusters:{}", model, totalClusters - nonMigrateClustersNum);
 
         ResponseEntity<MigrationProcessReportResponseModel> responseEntity
                 = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, MigrationProcessReportResponseModel.class);
-        if (responseEntity.getBody().getCode() != 200) {
+        if (responseEntity != null && responseEntity.getBody() != null &&  responseEntity.getBody().getCode() != 200) {
             logger.warn("[DefaultMigrationReporter] send migration report fail! migration model: {}, result:{}", model, responseEntity.getBody());
         }
     }

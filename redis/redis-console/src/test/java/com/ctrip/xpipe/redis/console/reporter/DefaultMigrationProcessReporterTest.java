@@ -11,6 +11,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
 
@@ -52,13 +54,13 @@ public class DefaultMigrationProcessReporterTest {
         Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
                 migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class)))
-                .thenReturn(null);
+                .thenReturn(new ResponseEntity<MigrationProcessReportResponseModel>(new MigrationProcessReportResponseModel().setCode(200), HttpStatus.OK));
         Mockito.when(dcService.find(Mockito.anyString())).thenReturn(new DcTbl());
     }
 
     @Test
     public void testReportSuccess() {
-        Mockito.when(clusterService.getCountByActiveDc(Mockito.anyLong())).thenReturn(1000L);
+        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(1000L);
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(1))
                 .postForEntity(Mockito.anyString(),
@@ -68,14 +70,22 @@ public class DefaultMigrationProcessReporterTest {
         Assert.assertEquals(1000, value.getObjectCount());
         Assert.assertEquals("redis", value.getService());
 
-        Mockito.when(clusterService.getCountByActiveDc(Mockito.anyLong())).thenReturn(400L);
+        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(1001L);
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(2))
                 .postForEntity(Mockito.anyString(),
                         migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));
         value = migrationProcessReportModelArgumentCaptor.getValue();
-        Assert.assertEquals(60, value.getProcess());
-        Assert.assertEquals(1000, value.getObjectCount());
+        Assert.assertEquals(0, value.getProcess());
+        Assert.assertEquals(1001, value.getObjectCount());
 
+        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(400L);
+        migrationReporter.doAction();
+        Mockito.verify(restTemplate, Mockito.times(3))
+                .postForEntity(Mockito.anyString(),
+                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));
+        value = migrationProcessReportModelArgumentCaptor.getValue();
+        Assert.assertEquals(60, value.getProcess());
+        Assert.assertEquals(1001, value.getObjectCount());
     }
 }

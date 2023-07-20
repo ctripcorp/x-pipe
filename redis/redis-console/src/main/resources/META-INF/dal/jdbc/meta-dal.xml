@@ -201,6 +201,19 @@
 					]]>
 				</statement>
 			</query>
+			<query name="count-by-active-dc-and-cluster-type" type="SELECT" multiple="false">
+				<param name='activedc-id'/>
+				<param name="cluster-type" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='cluster-type' /> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="atomic-set-status" type="UPDATE" batch='false'>
 				<param name="id" />
 				<param name="origin-status" />
