@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.spring;
+package com.ctrip.xpipe.redis.console.ignite;
 
 import com.ctrip.platform.dal.dao.DalClientFactory;
 import com.ctrip.platform.dal.dao.configure.ignite.IgniteResult;
