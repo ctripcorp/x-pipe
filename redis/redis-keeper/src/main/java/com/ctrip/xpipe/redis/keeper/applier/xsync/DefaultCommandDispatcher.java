@@ -319,14 +319,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
-        if (shouldFilter(redisOp)) {
-            offsetRecorder.addAndGet(commandOffsetToAccumulate);
-            return;
-        }
 
         if (updateGtidState(redisOp.getOpGtid())) {
             // MULTI and command in transaction not have gtid, so clean the transaction command if redisOp skip
             transactionCommand.set(null);
+            return;
+        }
+
+        if (shouldFilter(redisOp)) {
+            offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
 
