@@ -164,5 +164,13 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getKeyMigrationProcessReportUrl();
 
-	long getMigrationProcessReportIntervalMill();
+    String getKeyMigrationResultReportUrl();
+
+    String getKeyMigrationResultReportToken();
+
+	boolean isMigrationResultReportOpen();
+
+	int getKeyMigrationResultReportRetryTimes();
+
+    long getMigrationProcessReportIntervalMill();
 }

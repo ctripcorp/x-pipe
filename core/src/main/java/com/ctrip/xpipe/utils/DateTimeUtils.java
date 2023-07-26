@@ -63,6 +63,14 @@ public class DateTimeUtils {
 		return cal.getTime();
 	}
 
+	public static Date getSecondBeforeDate(Date date, int second) {
+		int minusSecond = -Math.abs(second);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.SECOND, minusSecond);
+		return cal.getTime();
+	}
+
 	public static Date getNearestHour() {
 		return DateUtils.ceiling(new Date(), Calendar.HOUR);
 	}

@@ -167,6 +167,11 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="organization-info"/>
 			</readset>
+			<readset name="NAME_AND_ORG">
+				<member name="id"/>
+				<member name='cluster-name'/>
+				<member name='cluster-org-id'/>
+			</readset>
 			<readset name="CLUSTER_META_INFO">
 				<member name="id"/>
 				<member name="cluster-name"/>
@@ -1898,6 +1903,11 @@
 				<readset-ref name="FULL" relation-name="migration-event" />
 				<readset-ref name="NAME" relation-name="cluster" />
 			</readset>
+			<readset name="FULL_WITH_CLUSTER_NAME">
+				<readset-ref name="FULL"/>
+				<readset-ref name="NAME_AND_ORG" relation-name="cluster" />
+			</readset>
+
 		</readsets>
 		
 		<query-defs>
@@ -1912,6 +1922,20 @@
 					]]>
 				</statement>
 			</query>
+
+			<query name="find-latest-migration-clusters-with-cluster-name" type="SELECT" multiple="true">
+				<param name="data-change-last-time"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster'/>
+					WHERE <FIELD name='deleted' /> = 0
+					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
+					AND <FIELD name='cluster-id'/> = ct.id
+					]]>
+				</statement>
+			</query>
+
 			<query name="find-migration-clusters" type="SELECT" multiple="true">
 				<param name="size"/>
 				<param name="offset"/>
