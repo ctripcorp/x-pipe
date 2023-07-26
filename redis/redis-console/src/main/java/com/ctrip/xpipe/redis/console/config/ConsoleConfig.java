@@ -175,4 +175,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getKeyMigrationResultReportRetryTimes();
 
     long getMigrationProcessReportIntervalMill();
+
+	long getMigrationResultReportIntervalMill();
 }

@@ -1919,6 +1919,7 @@
 			<readset name="FULL_WITH_CLUSTER_NAME">
 				<readset-ref name="FULL"/>
 				<readset-ref name="NAME_AND_ORG" relation-name="cluster" />
+				<readset-ref name="FULL" relation-name="migration-event" />
 			</readset>
 
 		</readsets>
@@ -1941,10 +1942,11 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>, <TABLE name='cluster'/>
+					FROM <TABLE/>, <TABLE name='cluster'/>, <TABLE name='migration-event'/>
 					WHERE <FIELD name='deleted' /> = 0
-					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
 					AND <FIELD name='cluster-id'/> = ct.id
+					AND <FIELD name='migration-event-id'/> = met.id
+					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
 					]]>
 				</statement>
 			</query>

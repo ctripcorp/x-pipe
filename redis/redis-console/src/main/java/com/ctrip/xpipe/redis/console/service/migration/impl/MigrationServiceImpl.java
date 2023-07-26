@@ -643,7 +643,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Override
     public List<MigrationClusterTbl> getLatestMigrationClusters(int seconds) {
-        return migrationClusterDao.findLatestMigrationClusters(DateTimeUtils.getSecondBeforeDate(new Date(), seconds));
+        return migrationClusterDao.findLatestMigrationClusterWithClusterName(DateTimeUtils.getSecondBeforeDate(new Date(), seconds));
     }
 
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {
