@@ -9,9 +9,8 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
-import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.core.entity.Route;
@@ -575,7 +574,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         String tunnelId1 =  "127.0.0.1:1880-R(127.0.0.1:1880)-L(1.1.1.1:80)->R(1.1.1.2:443)-TCP://127.0.0.3:6380";
         ProxyModel proxyModel1 = new ProxyModel().setActive(true).setDcName("jq").setId(1).setUri("PROXYTCP://1.1.1.1:80");
-        List<TunnelInfo> tunnelInfo1 = Lists.newArrayList(new DefaultTunnelInfo(proxyModel1, tunnelId1));
+        List<DefaultTunnelInfo> tunnelInfo1 = Lists.newArrayList(new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel1, tunnelId1));
         ProxyChain proxyChain1 = new DefaultProxyChain("jq", biClusterName, shardNames[0],"oy", tunnelInfo1);
 
         List<RouteInfoModel> allDcRoutes = routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, "jq");
@@ -589,8 +588,8 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         ProxyModel proxyModel2 = new ProxyModel().setActive(true).setDcName("jq").setId(3);
         ProxyModel proxyModel3 = new ProxyModel().setActive(true).setDcName("fra").setId(4);
         ProxyModel proxyModel4 = new ProxyModel().setActive(true).setDcName("oy").setId(20);
-        List<TunnelInfo> tunnelInfos2 = Lists.newArrayList(new DefaultTunnelInfo(proxyModel2, tunnelId2),
-                new DefaultTunnelInfo(proxyModel3, tunnelId3), new DefaultTunnelInfo(proxyModel4, tunnelId4));
+        List<DefaultTunnelInfo> tunnelInfos2 = Lists.newArrayList(new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel2, tunnelId2),
+                new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel3, tunnelId3), new com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo(proxyModel4, tunnelId4));
         ProxyChain proxyChain2 = new DefaultProxyChain("jq", biClusterName, shardNames[0],"oy", tunnelInfos2);
 
         route = clusterService.getRouteInfoModelFromProxyChainModel(allDcRoutes, new ProxyChainModel(proxyChain2, proxyChain1.getPeerDcId(), "jq"));

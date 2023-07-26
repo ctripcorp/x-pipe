@@ -162,6 +162,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	boolean isMigrationProcessReportOpen();
 
+	String getBreakDownDc();
+
 	String getKeyMigrationProcessReportUrl();
 
     String getKeyMigrationResultReportUrl();

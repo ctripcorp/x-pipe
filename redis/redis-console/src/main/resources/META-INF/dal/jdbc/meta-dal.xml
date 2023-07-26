@@ -206,6 +206,19 @@
 					]]>
 				</statement>
 			</query>
+			<query name="count-by-active-dc-and-cluster-type" type="SELECT" multiple="false">
+				<param name='activedc-id'/>
+				<param name="cluster-type" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='cluster-type' /> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="atomic-set-status" type="UPDATE" batch='false'>
 				<param name="id" />
 				<param name="origin-status" />
@@ -2426,6 +2439,8 @@
 	</entity>
 
 	<entity name="proxy-tbl" table="proxy_tbl" alias="pt">
+		<var name="dc-name" value-type="String"/>
+		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 
 		<readsets>
 			<readset name="id-dc-uri">
@@ -2459,13 +2474,27 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-monitor-active-by-dc" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>
+					WHERE dt.dc_name = ${dc-name}
+					AND <FIELD name='dc-id'/> = dt.id
+					AND <FIELD name='monitor-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					AND dt.deleted = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-all-monitor-active" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='deleted'/> = 0
-					AND <FIELD name='monitor-active'/> = 1
+					FROM <TABLE/>,
+					WHERE <FIELD name='monitor-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

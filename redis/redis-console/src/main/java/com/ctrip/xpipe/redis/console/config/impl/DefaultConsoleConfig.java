@@ -114,6 +114,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI = "migration.process.report.interval.milli";
     private static final String KEY_MIGRATION_PROCESS_REPORT_OPEN = "migration.process.report.open";
     private static final String KEY_MIGRATION_PROCESS_REPORT_URL = "migration.process.report.url";
+    private static final String KEY_MIGRATION_BREAK_DOWN_DC= "migration.break.down.dc";
 
     private static final String KEY_MIGRATION_RESULT_REPORT_URL = "migration.result.report.url";
     private static final String KEY_MIGRATION_RESULT_REPORT_Retry_TIMES = "migration.result.report.retry.times";
@@ -719,6 +720,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getKeyMigrationProcessReportUrl() {
         return getProperty(KEY_MIGRATION_PROCESS_REPORT_URL, "127.0.0.1:8080");
+    }
+
+    public String getBreakDownDc() {
+        return getProperty(KEY_MIGRATION_BREAK_DOWN_DC, "jq");
     }
 
     @Override

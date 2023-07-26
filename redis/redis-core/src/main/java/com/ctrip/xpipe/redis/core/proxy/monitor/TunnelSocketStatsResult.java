@@ -3,15 +3,19 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class TunnelSocketStatsResult {
+public class TunnelSocketStatsResult implements Serializable {
 
     private String tunnelId;
 
     private SocketStatsResult frontendSocketStats;
 
     private SocketStatsResult backendSocketStats;
+
+    public TunnelSocketStatsResult() {
+    }
 
     public TunnelSocketStatsResult(String tunnelId, SocketStatsResult frontendSocketStats,
                                    SocketStatsResult backendSocketStats) {
@@ -55,6 +59,21 @@ public class TunnelSocketStatsResult {
 
     public SocketStatsResult getBackendSocketStats() {
         return backendSocketStats;
+    }
+
+    public TunnelSocketStatsResult setTunnelId(String tunnelId) {
+        this.tunnelId = tunnelId;
+        return this;
+    }
+
+    public TunnelSocketStatsResult setFrontendSocketStats(SocketStatsResult frontendSocketStats) {
+        this.frontendSocketStats = frontendSocketStats;
+        return this;
+    }
+
+    public TunnelSocketStatsResult setBackendSocketStats(SocketStatsResult backendSocketStats) {
+        this.backendSocketStats = backendSocketStats;
+        return this;
     }
 
     @Override

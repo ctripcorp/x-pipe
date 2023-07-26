@@ -5,7 +5,6 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
 import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
@@ -44,15 +43,15 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     @Override
     public List<FrontendAndBackendMetrics> analyze(ProxyChain chain) {
-        List<TunnelInfo> tunnelInfos = chain.getTunnels();
+        List<DefaultTunnelInfo> tunnelInfos = chain.getTunnelInfos();
         if(tunnelInfos == null || tunnelInfos.isEmpty()) {
-            logger.warn("[analyze] chain contains no tunnel info; cluster: {}, shard: {}", chain.getCluster(), chain.getShard());
+            logger.warn("[analyze] chain contains no tunnel info; cluster: {}, shard: {}", chain.getClusterId(), chain.getShardId());
             return EMPTY_METRICS;
         }
         List<FrontendAndBackendMetrics> result = Lists.newArrayList();
-        String clusterId = chain.getCluster(), shardId = chain.getShard();
-        String backupDcId = chain.getBackupDc(), peerDcId = chain.getPeerDcId();
-        for(TunnelInfo info : tunnelInfos) {
+        String clusterId = chain.getClusterId(), shardId = chain.getShardId();
+        String backupDcId = chain.getBackupDcId(), peerDcId = chain.getPeerDcId();
+        for(DefaultTunnelInfo info : tunnelInfos) {
             logger.debug("[analyze each info] {}", info);
             try {
                 result.add(getMetrics(info, clusterId, shardId, backupDcId, peerDcId));
@@ -76,15 +75,15 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
 
     }
 
-    private FrontendAndBackendMetrics getMetrics(TunnelInfo info, String clusterId,
-                                                    String shardId, String backupDc, String peerDc) {
+    private FrontendAndBackendMetrics getMetrics(DefaultTunnelInfo info, String clusterId,
+                                                 String shardId, String backupDc, String peerDc) {
         MetricData frontendMetric = getMetricTemplate(info, clusterId, shardId);
         MetricData backendMetric = getMetricTemplate(info, clusterId, shardId);
         return new FrontendAndBackendMetrics(getFrontendMetric(frontendMetric, info, backupDc, peerDc),
                 getBackendMetric(backendMetric, info, backupDc, peerDc));
     }
 
-    private MetricData getBackendMetric(MetricData metric, TunnelInfo info, String backupDc, String peerDc) {
+    private MetricData getBackendMetric(MetricData metric, DefaultTunnelInfo info, String backupDc, String peerDc) {
         TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
         if (tunnelSocketStatsResult == null) {
             logger.warn("[getBackendMetric]no tunnelSocketStatsResult found in tunnelInfo {}:{}",
@@ -95,8 +94,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_DST_DC, backupDc);
-        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
+        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
+        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -109,7 +108,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
     }
 
 
-    private MetricData getFrontendMetric(MetricData metric, TunnelInfo info, String backupDc, String peerDc) {
+    private MetricData getFrontendMetric(MetricData metric, DefaultTunnelInfo info, String backupDc, String peerDc) {
         TunnelSocketStatsResult tunnelSocketStatsResult = info.getTunnelSocketStatsResult();
         if (tunnelSocketStatsResult == null) {
             logger.warn("[getFrontendMetric]no tunnelSocketStatsResult found in tunnelInfo {}:{}",
@@ -120,8 +119,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        metric.addTag(METRIC_TAG_DST_DC, backupDc);
-        metric.addTag(METRIC_TAG_SRC_DC, peerDc);
+        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
+        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -137,10 +136,10 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         if (splits.length < 5) return;
 
         String[] localSplits = splits[3].split(HOST_SPLITTER);
-        setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
+        if (localSplits.length >= 5) setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
 
         String[] remoteSplits = splits[4].split(HOST_SPLITTER);
-        setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
+        if (remoteSplits.length >= 5) setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
     }
 
     private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
@@ -148,7 +147,7 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         metric.addTag(prefix + "PortReminder", String.valueOf(port % THOUSAND));
     }
 
-    private MetricData getMetricTemplate(TunnelInfo info, String clusterId, String shardId) {
+    private MetricData getMetricTemplate(DefaultTunnelInfo info, String clusterId, String shardId) {
         ProxyModel proxyModel = info.getProxyModel();
         return new MetricData(getType(), proxyModel.getDcName(), clusterId, shardId);
     }

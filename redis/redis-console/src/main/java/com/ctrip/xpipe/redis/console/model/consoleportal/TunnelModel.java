@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
-import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
-
-import java.util.Objects;
 
 public class TunnelModel {
 
