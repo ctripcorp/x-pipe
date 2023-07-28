@@ -116,6 +116,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MIGRATION_PROCESS_REPORT_URL = "migration.process.report.url";
     private static final String KEY_MIGRATION_BREAK_DOWN_DC= "migration.break.down.dc";
 
+    private static final String KEY_MIGRATION_RESULT_REPORT_URL = "migration.result.report.url";
+    private static final String KEY_MIGRATION_RESULT_REPORT_Retry_TIMES = "migration.result.report.retry.times";
+    private static final String KEY_MIGRATION_RESULT_REPORT_TOKEN = "migration.result.report.token";
+    private static final String KEY_MIGRATION_RESULT_REPORT_OPEN = "migration.result.report.open";
+    private static final String KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI = "migration.result.report.interval.milli";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
@@ -716,12 +722,36 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public long getMigrationProcessReportIntervalMill() {
+        return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
+    }
+
     public String getBreakDownDc() {
         return getProperty(KEY_MIGRATION_BREAK_DOWN_DC, "jq");
     }
 
     @Override
-    public long getMigrationProcessReportIntervalMill() {
-        return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
+    public String getKeyMigrationResultReportUrl() {
+        return getProperty(KEY_MIGRATION_RESULT_REPORT_URL, "127.0.0.1:8080");
     }
+
+    @Override
+    public String getKeyMigrationResultReportToken() {
+        return getProperty(KEY_MIGRATION_RESULT_REPORT_TOKEN, "");
+    }
+
+    @Override
+    public boolean isMigrationResultReportOpen() {
+        return getBooleanProperty(KEY_MIGRATION_RESULT_REPORT_OPEN, false);
+    }
+
+    @Override
+    public int getKeyMigrationResultReportRetryTimes() {
+        return getIntProperty(KEY_MIGRATION_RESULT_REPORT_Retry_TIMES, 3);
+    }
+    @Override
+    public long getMigrationResultReportIntervalMill() {
+        return getLongProperty(KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI, 10000L);
+    }
+
 }

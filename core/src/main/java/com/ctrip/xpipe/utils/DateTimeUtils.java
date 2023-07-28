@@ -27,6 +27,10 @@ public class DateTimeUtils {
 		return FastDateFormat.getInstance(format).format(date);
 	}
 
+	public static String timeAsString(Date date, String currentFormat) {
+		return FastDateFormat.getInstance(currentFormat).format(date);
+	}
+
 	public static String timeAsString(long timeMilli) {
 		if(timeMilli < 0){
 			return String.format("wrong time: %d", timeMilli);
@@ -60,6 +64,14 @@ public class DateTimeUtils {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date);
 		cal.add(Calendar.HOUR_OF_DAY, minusHours);
+		return cal.getTime();
+	}
+
+	public static Date getSecondBeforeDate(Date date, int second) {
+		int minusSecond = -Math.abs(second);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.SECOND, minusSecond);
 		return cal.getTime();
 	}
 

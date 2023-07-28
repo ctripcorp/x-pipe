@@ -88,4 +88,6 @@ public interface MigrationService {
     Set<String> migrationUnsupportedClusters();
 
     Set<String> getLatestMigrationOperators(int hours);
+
+    List<MigrationClusterTbl> getLatestMigrationClusters(int seconds);
 }

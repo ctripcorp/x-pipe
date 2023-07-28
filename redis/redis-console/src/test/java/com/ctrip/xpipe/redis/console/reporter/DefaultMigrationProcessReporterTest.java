@@ -32,7 +32,7 @@ public class DefaultMigrationProcessReporterTest {
     ArgumentCaptor<MigrationProcessReportModel> migrationProcessReportModelArgumentCaptor;
 
     @Captor
-    ArgumentCaptor<MigrationProcessReportResponseModel> responseModelArgumentCaptor;
+    ArgumentCaptor<NocReportResponseModel> responseModelArgumentCaptor;
 
     @Mock
     RestOperations restTemplate;
@@ -53,8 +53,8 @@ public class DefaultMigrationProcessReporterTest {
         Mockito.when(consoleConfig.getBreakDownDc()).thenReturn("jq");
         Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
-                migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class)))
-                .thenReturn(new ResponseEntity<MigrationProcessReportResponseModel>(new MigrationProcessReportResponseModel().setCode(200), HttpStatus.OK));
+                migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class)))
+                .thenReturn(new ResponseEntity<NocReportResponseModel>(new NocReportResponseModel().setCode(200), HttpStatus.OK));
         Mockito.when(dcService.find(Mockito.anyString())).thenReturn(new DcTbl());
     }
 
@@ -64,7 +64,7 @@ public class DefaultMigrationProcessReporterTest {
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(1))
                 .postForEntity(Mockito.anyString(),
-                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));
+                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         MigrationProcessReportModel value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(0, value.getProcess());
         Assert.assertEquals(1000, value.getObjectCount());
@@ -74,7 +74,7 @@ public class DefaultMigrationProcessReporterTest {
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(2))
                 .postForEntity(Mockito.anyString(),
-                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));
+                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(0, value.getProcess());
         Assert.assertEquals(1001, value.getObjectCount());
@@ -83,7 +83,7 @@ public class DefaultMigrationProcessReporterTest {
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(3))
                 .postForEntity(Mockito.anyString(),
-                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(MigrationProcessReportResponseModel.class));
+                        migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(60, value.getProcess());
         Assert.assertEquals(1001, value.getObjectCount());
