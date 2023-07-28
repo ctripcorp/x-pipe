@@ -56,8 +56,8 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         model.setService(DEFAULT_SERVICE).setTimestamp(DateTimeUtils.currentTimeAsString(DEFAULT_TIME_FORMAT)).setOperator(DEFAULT_OPERATOR);
         logger.info("[DefaultMigrationReporter] send migration report model: {}，migration clusters:{}", model, totalClusters - nonMigrateClustersNum);
 
-        ResponseEntity<MigrationProcessReportResponseModel> responseEntity
-                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, MigrationProcessReportResponseModel.class);
+        ResponseEntity<NocReportResponseModel> responseEntity
+                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, NocReportResponseModel.class);
         if (responseEntity != null && responseEntity.getBody() != null &&  responseEntity.getBody().getCode() != 200) {
             logger.warn("[DefaultMigrationReporter] send migration report fail! migration model: {}, result:{}", model, responseEntity.getBody());
         }
