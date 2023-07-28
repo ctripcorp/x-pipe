@@ -94,8 +94,8 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
                                                 .setAccess_token(consoleConfig.getKeyMigrationResultReportToken());
 
         logger.debug("[DefaultMigrationResultReporter] report to noc {}", JsonCodec.DEFAULT.encode(migrationResultReportModel));
-        ResponseEntity<MigrationResultReportResponseModel> response
-                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationResultReportUrl(), migrationResultReportModel, MigrationResultReportResponseModel.class);
+        ResponseEntity<NocReportResponseModel> response
+                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationResultReportUrl(), migrationResultReportModel, NocReportResponseModel.class);
         if (response != null && response.getBody() != null && response.getBody().getCode() != 200) {
             logger.warn("[reportToNoc] send migration result fail! migration result: {}, result:{}", migrationResult, response.getBody());
         }

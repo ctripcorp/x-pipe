@@ -87,20 +87,20 @@ public class DefaultMigrationResultReporterTest {
 
         Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
-                migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(MigrationResultReportResponseModel.class)))
-                .thenReturn(new ResponseEntity<MigrationResultReportResponseModel>(new MigrationResultReportResponseModel().setCode(200), HttpStatus.OK));
+                migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class)))
+                .thenReturn(new ResponseEntity<NocReportResponseModel>(new NocReportResponseModel().setCode(200), HttpStatus.OK));
     }
 
     @Test
     public void testReport() {
         migrationResultReporter.init();
         migrationResultReporter.doAction();
-        Mockito.verify(restTemplate, Mockito.times(1)).postForEntity(Mockito.anyString(), migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(MigrationResultReportResponseModel.class));
+        Mockito.verify(restTemplate, Mockito.times(1)).postForEntity(Mockito.anyString(), migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         MigrationResultReportModel value = migrationResultReportModelArgumentCaptor.getValue();
 
         Assert.assertEquals(11, value.getRequest_body().size());
         Mockito.when(migrationService.getLatestMigrationClusters(Mockito.anyInt())).thenReturn(new ArrayList<>());
-        Mockito.verify(restTemplate, Mockito.times(1)).postForEntity(Mockito.anyString(), migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(MigrationResultReportResponseModel.class));
+        Mockito.verify(restTemplate, Mockito.times(1)).postForEntity(Mockito.anyString(), migrationResultReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
 
     }
 
