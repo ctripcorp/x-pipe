@@ -253,6 +253,18 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	    return keyReplicationTimeoutMilli;
 	}
 
+	private int maxLoadingSlaves = -1;
+
+	public TestKeeperConfig setMaxLoadingSlaves(int slaves) {
+		this.maxLoadingSlaves = slaves;
+		return this;
+	}
+
+	@Override
+	public int getMaxLoadingSlavesCnt() {
+		return maxLoadingSlaves;
+	}
+
 	@Override
 	public int getApplierReadIdleSeconds() {
 		return 60;

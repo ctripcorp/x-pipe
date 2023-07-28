@@ -13,6 +13,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.cluster.ElectContext;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.LongTimeAlertTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -49,6 +50,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,8 +62,10 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.RDB_GTIDSET_NOT_READY;
+import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 
 /**
  * @author wenchao.meng
@@ -81,6 +85,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
+	private static String KEY_SEQ_FSYNC_CHECK_PERIOD_SEC = "SEQ_FSYNC_CHECK_PERIOD_SEC";
+	public static int DEFAULT_FSYNC_CHECK_PERIOD_SEC = Integer.parseInt(System.getProperty(KEY_SEQ_FSYNC_CHECK_PERIOD_SEC, "5"));
+
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
@@ -98,6 +105,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private final Map<Channel, RedisClient<RedisKeeperServer>>  redisClients = new ConcurrentHashMap<>();
+
+	/**
+	 * redis slaves receiving rdb or loading rdb
+	 */
+	private final Set<RedisSlave> loadingSlaves = new ConcurrentSet<>();
+
+	ScheduledFuture<?> fsyncSeqScheduledFuture;
 
 	private String threadPoolName;
 
@@ -272,12 +286,64 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		startServer();
 		LifecycleHelper.startIfPossible(keeperRedisMaster);
 		this.leaderElector.start();
+		fsyncSeqScheduledFuture = this.scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+			@Override
+			protected void doRun() throws Exception {
+				updateLoadingSlaves();
+				continueFsyncSequentially();
+			}
+		}, DEFAULT_FSYNC_CHECK_PERIOD_SEC, DEFAULT_FSYNC_CHECK_PERIOD_SEC, TimeUnit.SECONDS);
+	}
+
+	@VisibleForTesting
+	protected void continueFsyncSequentially() {
+		if (!getRedisKeeperServerState().keeperState().isActive()) return;
+
+		int maxLoadingSlavesCnt = keeperConfig.getMaxLoadingSlavesCnt();
+		Set<RedisSlave> slaves = slaves();
+		int currentLoadingSlaves = loadingSlaves.size();
+		if (maxLoadingSlavesCnt >= 0 && currentLoadingSlaves >= maxLoadingSlavesCnt) return;
+
+		for (RedisSlave slave: slaves) {
+			if (slave.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC) {
+				continueFsyncToSlave(slave);
+			}
+		}
+	}
+
+	private void continueFsyncToSlave(RedisSlave slave) {
+		try {
+			logger.info("[continueFsyncToSlave]{}", slave);
+			slave.processPsyncSequentially(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						fullSyncToSlave(slave);
+					} catch (Throwable th) {
+						try {
+							logger.error("[continueFsyncToSlave][run]{}", slave, th);
+							if(slave.isOpen()){
+								slave.close();
+							}
+						} catch (IOException e) {
+							logger.error("[continueFsyncToSlave][close]{}", slave, th);
+						}
+					}
+				}
+			});
+		} catch (Throwable th) {
+			logger.info("[continueFsyncToSlave][fail]{}", slave, th);
+		}
 	}
 	
 	@Override
 	protected void doStop() throws Exception {
+		if (null != fsyncSeqScheduledFuture) {
+			fsyncSeqScheduledFuture.cancel(false);
+		}
 		keeperMonitor.stop();
 		clearClients();
+		clearLoadingSlaves();
 		this.leaderElector.stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
@@ -655,6 +721,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
 		
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
+		if (!tryFullSyncToSlaveWithOthers(redisSlave)) {
+			redisSlave.waitForSeqFsync();
+			return;
+		}
+
 		if(rdbDumper.get() == null){
 			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
@@ -679,6 +750,33 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}else{
 			rdbDumper.get().tryFullSync(redisSlave);
 		}
+	}
+
+	private synchronized boolean tryFullSyncToSlaveWithOthers(RedisSlave redisSlave) {
+		if (redisSlave.isKeeper()) return true;
+		if (loadingSlaves.contains(redisSlave)) return true;
+
+		int maxConcurrentLoadingSlaves = keeperConfig.getMaxLoadingSlavesCnt();
+		if (redisSlave.isColdStart() || maxConcurrentLoadingSlaves < 0 || loadingSlaves.size() < maxConcurrentLoadingSlaves) {
+			loadingSlaves.add(redisSlave);
+			return true;
+		}
+
+		return false;
+	}
+
+	@VisibleForTesting
+	protected synchronized void updateLoadingSlaves() {
+		Set<RedisSlave> filterSlaves = loadingSlaves.stream()
+				.filter(slave -> slave.isKeeper() || !slave.isOpen()
+						|| (slave.getSlaveState() == REDIS_REPL_ONLINE && slave.getAck() != null))
+				.collect(Collectors.toSet());
+
+		filterSlaves.forEach(loadingSlaves::remove);
+	}
+
+	private synchronized void clearLoadingSlaves() {
+		loadingSlaves.clear();
 	}
 
 	@Override

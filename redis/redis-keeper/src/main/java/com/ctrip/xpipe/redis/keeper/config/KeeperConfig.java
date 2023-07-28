@@ -64,4 +64,11 @@ public interface KeeperConfig extends CoreConfig{
 	int getApplierReadIdleSeconds();
 
     int getKeyReplicationTimeoutMilli();
+
+	/**
+	 * max redis slaves allowed to loading rdb at the same time
+	 * -1 means no limit
+	 */
+    int getMaxLoadingSlavesCnt();
+
 }
