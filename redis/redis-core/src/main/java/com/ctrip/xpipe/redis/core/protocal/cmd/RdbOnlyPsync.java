@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -34,6 +31,19 @@ public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 	@Override
 	protected boolean useKeeperPsync() {
 		return false;
+	}
+
+	protected void failPsync(Throwable throwable) {
+		super.failPsync(throwable);
+		if (psyncState == PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE) {
+			try {
+				getLogger().debug("[failPsync] psync fail before beginReadRdb");
+				currentReplicationStore.close();
+				currentReplicationStore.destroy();
+			} catch (Throwable th) {
+				getLogger().warn("[failPsync] release rdb file fail", th);
+			}
+		}
 	}
 
 }
