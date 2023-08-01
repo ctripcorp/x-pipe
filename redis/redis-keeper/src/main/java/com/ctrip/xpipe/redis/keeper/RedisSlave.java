@@ -18,6 +18,8 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	void waitForRdbDumping();
 
 	void waitForGtidParse();
+
+	void waitForSeqFsync();
 	
 	SLAVE_STATE getSlaveState();
 
@@ -43,6 +45,13 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	 * if partial sync, do real close after continue sent
 	 */
 	void markPsyncProcessed();
+
+	/**
+	 * If psync ? -1, slave start with no data, we should fsync immediately
+	 */
+	void markColdStart();
+
+	boolean isColdStart();
 
 	String metaInfo();
 

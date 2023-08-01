@@ -47,6 +47,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_APPLIER_READ_IDLE_SECONDS = "applier.read.idle.seconds";
 
+	private static String KEY_MAX_FSYNC_SLAVES = "replication.loading.slaves.max";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -180,5 +182,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getKeyReplicationTimeoutMilli() {
 	    return getIntProperty(KEY_REPLICATION_TIMEOUT_MILLI, AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI);
+	}
+
+	@Override
+	public int getMaxLoadingSlavesCnt() {
+		return getIntProperty(KEY_MAX_FSYNC_SLAVES, -1);
 	}
 }

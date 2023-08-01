@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
-import com.ctrip.xpipe.redis.keeper.handler.keeper.AbstractSyncCommandHandler;
 
 import java.io.IOException;
 
@@ -37,8 +36,10 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		
 		Long 	   offsetRequest = Long.valueOf(args[1]);
 		String 	   replIdRequest = args[0];
-		
+
 		if(replIdRequest.equals("?")){
+			redisSlave.markColdStart();
+
 			if (redisSlave.isKeeper() && offsetRequest.equals(KEEPER_PARTIAL_SYNC_OFFSET) && null != keeperRepl.replId()) {
 				logger.info("[innerDoHandler][keeper psync]");
 				long continueOffset = keeperRepl.getEndOffset() + 1; // continue from next byte

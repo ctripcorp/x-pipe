@@ -72,6 +72,8 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	private AtomicBoolean writingCommands = new AtomicBoolean(false);
 
+	private volatile boolean coldStart = false;
+
 	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
 
 		private AtomicLong atomicLong = new AtomicLong(0);
@@ -122,7 +124,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		}
 		
 		this.slaveState = SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING;
-		this.waitForRdb();
+		if (null == pingFuture || pingFuture.isDone()) {
+			waitForRdb();
+		} else {
+			getLogger().info("[waitForRdbDumping][already start wait]{}", this);
+		}
 	}
 
 	@Override
@@ -139,6 +145,23 @@ public class DefaultRedisSlave implements RedisSlave {
 			waitForRdb();
 		} else {
 			getLogger().info("[waitForGtidParse][already start wait]{}", this);
+		}
+	}
+
+	@Override
+	public void waitForSeqFsync() {
+		if(this.slaveState == SLAVE_STATE.REDIS_REPL_WAIT_SEQ_FSYNC) {
+			getLogger().info("[waitForSeqFsync][already waiting]{}", this);
+			return;
+		}
+
+		logger.info("[waitForSeqFsync]{}", this);
+		this.slaveState = SLAVE_STATE.REDIS_REPL_WAIT_SEQ_FSYNC;
+
+		if (null == pingFuture || pingFuture.isDone()) {
+			waitForRdb();
+		} else {
+			getLogger().info("[waitForSeqFsync][already start wait]{}", this);
 		}
 	}
 
@@ -164,6 +187,16 @@ public class DefaultRedisSlave implements RedisSlave {
 				close();
 			}
 		}, rdbDumpMaxWaitMilli, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public void markColdStart() {
+		this.coldStart = true;
+	}
+
+	@Override
+	public boolean isColdStart() {
+		return coldStart;
 	}
 
 	@Override

@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,8 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng
@@ -268,4 +271,45 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RedisSlave slave = client.becomeSlave();
 		assertFalse(redisKeeperServer.allClients().contains(slave));
 	}
+
+	private RedisSlave mockRedisSlave(RedisKeeperServer redisKeeperServer) {
+		ChannelFuture future = Mockito.mock(ChannelFuture.class);
+		Channel channel = Mockito.mock(Channel.class);
+		when(channel.closeFuture()).thenReturn(future);
+		RedisClient client =  redisKeeperServer.clientConnected(channel);
+		RedisSlave slave = client.becomeSlave();
+		return slave;
+	}
+
+	@Test
+	public void testReqFsyncSeq() throws Exception {
+		((TestKeeperConfig)keeperConfig).setMaxLoadingSlaves(1);
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(
+				redisKeeperServer, new DefaultEndPoint("10.0.0.1", 6379)));
+		RdbDumper dumper = Mockito.mock(RdbDumper.class);
+		redisKeeperServer.setRdbDumper(dumper);
+
+		RedisSlave slave1 = mockRedisSlave(redisKeeperServer);
+		RedisSlave slave2 = mockRedisSlave(redisKeeperServer);
+
+		redisKeeperServer.fullSyncToSlave(slave1);
+		redisKeeperServer.fullSyncToSlave(slave2);
+		Assert.assertEquals(slave2.getSlaveState(), REDIS_REPL_WAIT_SEQ_FSYNC);
+
+		slave1.close();
+		redisKeeperServer.clientDisconnected(slave1.channel());
+		((DefaultRedisKeeperServer)redisKeeperServer).updateLoadingSlaves();
+		((DefaultRedisKeeperServer)redisKeeperServer).continueFsyncSequentially();
+		waitConditionUntilTimeOut(() -> {
+			try {
+				verify(dumper, times(2)).tryFullSync(any());
+				return true;
+			} catch (Throwable e) {
+				return false;
+			}
+		});
+	}
+
 }
