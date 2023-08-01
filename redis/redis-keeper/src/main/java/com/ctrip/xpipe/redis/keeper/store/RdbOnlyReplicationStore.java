@@ -132,6 +132,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void close() throws IOException {
+		dumpedRdbStore.close();
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		dumpedRdbStore.destroy();
 	}
 
 	@Override
@@ -150,11 +156,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	
 	@Override
 	public long firstAvailableOffset() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void destroy() {
 		throw new UnsupportedOperationException();
 	}
 
