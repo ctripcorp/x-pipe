@@ -56,6 +56,24 @@ public class ProxyUtilTest extends AbstractProxyTest {
         String protocol = new String(protocolBytes);
         Assert.assertEquals(EXPECT_PROTOCOL, protocol);
     }
+
+    @Test
+    public void testProxyConnectProtocolWithRegisterKey() {
+        proxyUtil.removeProxyAddress(socket);
+        proxyUtil.unregisterProxy(IP, PORT);
+
+        String registerKey1 = "registerKey1";
+        String registerKey2 = "registerKey2";
+        proxyUtil.registerProxy(registerKey1, IP, PORT, ROUTE_INFO);
+        Assert.assertTrue(proxyUtil.needProxy(socketAddress));
+
+        proxyUtil.registerProxy(registerKey2, IP, PORT, ROUTE_INFO);
+        proxyUtil.unregisterProxy(registerKey1, IP, PORT);
+        Assert.assertTrue(proxyUtil.needProxy(socketAddress));
+
+        proxyUtil.unregisterProxy(registerKey2, IP, PORT);
+        Assert.assertFalse(proxyUtil.needProxy(socketAddress));
+    }
     
     @Test
     public void testSetChecker() throws InterruptedException, TimeoutException {
