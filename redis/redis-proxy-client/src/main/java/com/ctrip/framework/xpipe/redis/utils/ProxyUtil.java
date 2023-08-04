@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> implements ThreadFactory {
     private ConcurrentMap<Object, SocketAddress> socketAddressMap = new ConcurrentHashMap<>();
 
+    private ConcurrentMap<String, SocketAddress> registeredMap = new ConcurrentHashMap<>();
+
     Consumer<ProxyInetSocketAddress> upAction;
 
     Consumer<ProxyInetSocketAddress> downAction;
@@ -43,6 +45,20 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
             });
         }
         return proxyResourceManager;
+    }
+
+    public synchronized void registerProxy(String registerKey, String ip, int port, String routeInfo) {
+        InetSocketAddress address = new InetSocketAddress(ip, port);
+        registeredMap.put(registerKey, address);
+        registerProxy(ip, port, routeInfo);
+    }
+
+    public synchronized ProxyResourceManager unregisterProxy(String registerKey, String ip, int port) {
+        registeredMap.remove(registerKey);
+        if (!registeredMap.containsValue(new InetSocketAddress(ip, port))) {
+            return unregisterProxy(ip, port);
+        }
+        return null;
     }
 
     protected boolean needProxy(SocketAddress socketAddress){
