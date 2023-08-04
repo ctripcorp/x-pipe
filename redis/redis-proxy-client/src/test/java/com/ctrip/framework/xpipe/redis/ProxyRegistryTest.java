@@ -37,4 +37,30 @@ public class ProxyRegistryTest {
         Assert.assertNotNull(ProxyRegistry.unregisterProxy(ip, port));
     }
 
+    @Test
+    public void testProxyRegistryWithKey() throws Exception {
+        String ip = "127.0.1.2";
+        String registerKey = "registerKey";
+        int port = new Random().nextInt(1000) + 1;
+        Assert.assertNull(ProxyRegistry.unregisterProxy(registerKey, ip, port));
+
+        Assert.assertFalse(ProxyRegistry.registerProxy(registerKey, ip, port, null));
+
+        Assert.assertTrue(ProxyRegistry.registerProxy(registerKey, ip, port, EXPECT_PROTOCOL));
+        Assert.assertNotNull(ProxyRegistry.unregisterProxy(registerKey, ip, port));
+    }
+
+    @Test
+    public void testProxyRegistry2WithKey() throws Exception {
+        String ip = "127.0.1.2";
+        String registerKey = "registerKey";
+        int port = new Random().nextInt(1000) + 1;
+        Assert.assertNull(ProxyRegistry.unregisterProxy(registerKey, ip, port));
+
+        Assert.assertFalse(ProxyRegistry.registerProxy(registerKey, ip, port, null));
+
+        Assert.assertTrue(ProxyRegistry.registerProxy(registerKey, ip, port, EXPECT_PROTOCOL + "://" + ip + ":" + port));
+        Assert.assertNotNull(ProxyRegistry.unregisterProxy(registerKey, ip, port));
+    }
+
 }
