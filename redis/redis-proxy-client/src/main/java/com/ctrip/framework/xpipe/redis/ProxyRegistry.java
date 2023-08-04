@@ -25,6 +25,18 @@ public class ProxyRegistry {
     public static ProxyResourceManager unregisterProxy(String ip, int port) {
         return ProxyUtil.getInstance().unregisterProxy(ip, port);
     }
+
+    public static boolean registerProxy(String registerKey, String ip, int port, String routeInfo) {
+        if (routeInfo != null && routeInfo.startsWith(PROXY_KEY_WORD)) {
+            ProxyUtil.getInstance().registerProxy(registerKey, ip, port, routeInfo);
+            return true;
+        }
+        return false;
+    }
+
+    public static ProxyResourceManager unregisterProxy(String registerKey, String ip, int port) {
+        return ProxyUtil.getInstance().unregisterProxy(registerKey, ip, port);
+    }
     
     public static ProxyResourceManager getProxy(String ip, int port) {
         return ProxyUtil.getInstance().get(new InetSocketAddress(ip, port));
