@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+    <dc id="jq" lastModifiedTime="0000000000000000" zone="SHA">
+        <keeperContainers>
+            <keeperContainer id="1" ip="127.0.0.1" port="7080"/>
+            <keeperContainer id="2" ip="127.0.0.2" port="7080"/>
+            <keeperContainer id="3" ip="127.0.0.3" port="7080"/>
+        </keeperContainers>
+        <sentinel id="1" address="127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"/>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1+shard1+jq">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6000" active="true" keeperContainerId="1"/>
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.2" port="6001" active="false" keeperContainerId="2"/>
+                <redis id="unknown" ip="127.0.0.1" port="6379" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6380" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster1+shard2+jq">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.2" port="6000" active="true" keeperContainerId="2"/>
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.3" port="6001" active="false" keeperContainerId="3"/>
+                <redis id="unknown" ip="127.0.0.1" port="6381" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6382" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster2+shard1+jq">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.2" port="6004" active="true" keeperContainerId="2"/>
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.3" port="6005" active="false" keeperContainerId="3"/>
+                <redis id="unknown" ip="127.0.0.1" port="6479" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6480" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster2+shard2+jq">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6007" active="true" keeperContainerId="1"/>
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.3" port="6008" active="false" keeperContainerId="3"/>
+                <redis id="unknown" ip="127.0.0.1" port="6481" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6482" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>
