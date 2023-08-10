@@ -6,10 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.Route;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -78,7 +75,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         KeeperContainerMetaComparator keeperContainerMetaComparator = new KeeperContainerMetaComparator(current, future);
         keeperContainerMetaComparator.compare();
-
+        keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
 
         comparator.accept(this);
         removeAndAdd();
@@ -236,6 +233,43 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         logger.info("[stop] {}", current.getId());
         for(ClusterMeta cluster : current.getClusters().values()) {
             visitRemoved(cluster);
+        }
+    }
+
+    private void removeKeeper(KeeperMeta removed) {
+        if (null != instanceManager.removeKeeper(new HostPort(removed.getIp(), removed.getPort()))) {
+            logger.info("[removeKeeper][{}:{}] {}", removed.getIp(), removed.getPort(), removed);
+        }
+    }
+
+    private void addKeeper(KeeperMeta added) {
+        logger.info("[addKeeper][{}:{}] {}", added.getIp(), added.getPort(), added);
+        instanceManager.getOrCreate(added);
+    }
+
+    private class KeeperContainerMetaComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
+
+        @Override
+        public void visitAdded(InstanceNode added) {
+            if (added instanceof KeeperMeta) {
+                addKeeper((KeeperMeta) added);
+            } else {
+                logger.debug("[visitAdded][do nothng]{}", added);
+            }
+        }
+
+        @Override
+        public void visitModified(MetaComparator comparator) {
+            // nothing to do
+        }
+
+        @Override
+        public void visitRemoved(InstanceNode removed) {
+            if (removed instanceof KeeperMeta) {
+                removeKeeper((KeeperMeta) removed);
+            } else {
+                logger.debug("[visitRemoved][do nothng]{}", removed);
+            }
         }
     }
 }

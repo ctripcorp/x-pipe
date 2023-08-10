@@ -21,6 +21,8 @@ public class InfoResultExtractor {
     private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
     private static final String KEY_SLAVE_REPL_OFFSET = "slave_repl_offset";
 
+    private static final String KEY_INSTANTANEOUS_INPUT_KBPS = "instantaneous_input_kbps";
+
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
     private String result;
@@ -100,6 +102,8 @@ public class InfoResultExtractor {
     public long getSyncPartialErr() {
         return extractAsLong(KEY_SYNC_PARTIAL_ERR);
     }
+
+    public long getKeeperInstantaneousInputKbps() { return extractAsLong(KEY_INSTANTANEOUS_INPUT_KBPS);}
 
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);

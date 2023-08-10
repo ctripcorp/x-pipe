@@ -22,6 +22,7 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
 
     @Override
     public void compare() {
+        //TODO 如何获取所有的Meta信息
         Map<Long, KeeperContainerDetailInfo> currentDetailInfo = getAllKeeperContainerDetailInfoFromDcMeta(current);
         Map<Long, KeeperContainerDetailInfo> futureDetailInfo= getAllKeeperContainerDetailInfoFromDcMeta(future);
 
