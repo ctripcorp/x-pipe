@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.exception.ErrorMessage;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
@@ -17,6 +18,8 @@ import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -50,6 +53,8 @@ public class KeeperContainerService {
 
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
+    private Logger logger = LoggerFactory.getLogger(KeeperContainerService.class);
+
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {
         KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
         enrichKeeperMetaFromKeeperTransMeta(keeperMeta, keeperTransMeta);
@@ -66,11 +71,29 @@ public class KeeperContainerService {
                                 null);
                     }
 
+                    File baseDir = getReplicationStoreDir(keeperMeta);
+                    RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
+                            keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, redisOpParser);
+
                     try {
-                        RedisKeeperServer redisKeeperServer = doAdd(keeperTransMeta, keeperMeta);
+                        register(redisKeeperServer);
                         redisKeeperServers.put(keeperServerKey, redisKeeperServer);
                         return redisKeeperServer;
-                    } catch (Throwable ex) {
+                    } catch (Throwable regTh) {
+                        logger.info("[add] register fail", regTh);
+                        try {
+                            deRegister(redisKeeperServer);
+                        } catch (Throwable deregTh) {
+                            logger.info("[add][rollback] deregister fail", deregTh);
+                        }
+                        if (!redisKeeperServer.getLifecycleState().isDisposed()) {
+                            try {
+                                LifecycleHelper.stopIfPossible(redisKeeperServer);
+                                LifecycleHelper.disposeIfPossible(redisKeeperServer);
+                            } catch (Throwable th) {
+                                logger.info("[add][rollback] dispose fail", th);
+                            }
+                        }
                         if (!redisKeeperServers.containsKey(keeperServerKey)) {
                             containerResourceManager.releasePort(keeperMeta.getPort());
                         }
@@ -78,7 +101,7 @@ public class KeeperContainerService {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                                         String.format("Add keeper for cluster %d shard %d failed",
-                                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), ex);
+                                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), regTh);
                     }
                 }
             }
