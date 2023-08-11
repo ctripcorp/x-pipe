@@ -8,15 +8,13 @@ import com.google.common.util.concurrent.FutureCallback;
 import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
-import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
 import credis.java.client.config.ConfigFrozenAware;
-import credis.java.client.config.route.ConfigFrozenRouteManager;
+import credis.java.client.lifecycle.LifecycleUtil;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
-import credis.java.client.util.ClusterFactory;
 import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
@@ -233,13 +231,8 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public void shutdown() {
-        txnProvider.destroy();
-
-        ((CRedisClusterSessionLocator) locator()).destroy();
-
-        ConfigFrozenRouteManager.create().remove(clusterName, hashStrategyFactory, subenv);
-
-        ClusterFactory.create().removeCluster(clusterName, subenv);
+        LifecycleUtil.destroyIfPossible(txnProvider);
+        LifecycleUtil.destroyIfPossible(asyncProvider);
     }
 
     private CRedisSessionLocator locator() {
