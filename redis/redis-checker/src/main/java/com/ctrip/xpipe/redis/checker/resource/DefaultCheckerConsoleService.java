@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.checker.resource;
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
@@ -17,10 +16,8 @@ import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -65,6 +62,15 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     public XpipeMeta getXpipeAllMeta(String console) throws  SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_META)
                 .queryParam("format", "xml").build();
+
+        String raw = restTemplate.getForObject(comp.toString(), String.class);
+        if (StringUtil.isEmpty(raw)) return null;
+        return DefaultSaxParser.parse(raw);
+    }
+
+    public XpipeMeta getXpipeAllDCMeta(String console, String dcName) throws  SAXException, IOException {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_DC_META)
+                .queryParam("format", "xml").buildAndExpand(dcName);
 
         String raw = restTemplate.getForObject(comp.toString(), String.class);
         if (StringUtil.isEmpty(raw)) return null;

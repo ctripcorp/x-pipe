@@ -23,6 +23,7 @@ import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,6 +87,13 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)
     public String getDividedMeta(@RequestParam(value="format", required = false) String format) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+    }
+
+    @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_DC_META)
+    public String getAllDcMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
+        DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);
+        XpipeMeta xpipeMeta = new XpipeMeta().addDc(dcMeta);
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
 

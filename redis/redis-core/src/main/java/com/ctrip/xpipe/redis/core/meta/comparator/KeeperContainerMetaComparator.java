@@ -13,18 +13,19 @@ import java.util.stream.Collectors;
 
 public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparator {
 
-    private DcMeta current, future;
+    private DcMeta current, future, currentAllDcMeta, futureAllDcMeta;
 
-    public KeeperContainerMetaComparator(DcMeta current, DcMeta future) {
+    public KeeperContainerMetaComparator(DcMeta current, DcMeta future, DcMeta currentAllDcMeta, DcMeta futureAllDcMeta) {
         this.current = current;
         this.future = future;
+        this.currentAllDcMeta = currentAllDcMeta;
+        this.futureAllDcMeta = futureAllDcMeta;
     }
 
     @Override
     public void compare() {
-        //TODO 如何获取所有的Meta信息
-        Map<Long, KeeperContainerDetailInfo> currentDetailInfo = getAllKeeperContainerDetailInfoFromDcMeta(current);
-        Map<Long, KeeperContainerDetailInfo> futureDetailInfo= getAllKeeperContainerDetailInfoFromDcMeta(future);
+        Map<Long, KeeperContainerDetailInfo> currentDetailInfo = getAllKeeperContainerDetailInfoFromDcMeta(current, currentAllDcMeta);
+        Map<Long, KeeperContainerDetailInfo> futureDetailInfo= getAllKeeperContainerDetailInfoFromDcMeta(future, futureAllDcMeta);
 
         Triple<Set<Long>, Set<Long>, Set<Long>> result = getDiff(currentDetailInfo.keySet(), futureDetailInfo.keySet());
 
@@ -58,13 +59,16 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         return current.getId();
     }
 
-    private Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta) {
+    private Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
         Map<Long, KeeperContainerDetailInfo> map = dcMeta.getKeeperContainers().stream()
                 .collect(Collectors.toMap(KeeperContainerMeta::getId,
                         keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<KeeperMeta>())));
-        dcMeta.getClusters().values().forEach(clusterMeta -> {
+        allDcMeta.getClusters().values().forEach(clusterMeta -> {
             clusterMeta.getAllShards().values().forEach(shardMeta -> {
-                shardMeta.getKeepers().forEach(keeperMeta -> map.get(keeperMeta.getKeeperContainerId()).getKeeperInstances().add(keeperMeta));
+                shardMeta.getKeepers().forEach(keeperMeta -> {
+                    if (map.containsKey(keeperMeta.getKeeperContainerId()))
+                        map.get(keeperMeta.getKeeperContainerId()).getKeeperInstances().add(keeperMeta);
+                });
             });
         });
 

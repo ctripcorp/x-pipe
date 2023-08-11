@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -17,7 +19,9 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,11 +38,17 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private DcMeta current;
 
+    private DcMeta currentDcAllMeta;
+
     private HealthCheckInstanceManager instanceManager;
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
+
+    private CheckerConsoleService checkerConsoleService;
+
+    private CheckerConfig checkerConfig;
 
     private final String dcId;
 
@@ -47,10 +57,15 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private final List<RedisMeta> redisListToDelete = new ArrayList<>();
     private final List<RedisMeta> redisListToAdd = new ArrayList<>();
 
-    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager,
+                                      HealthCheckEndpointFactory healthCheckEndpointFactory,
+                                      CheckerConsoleService checkerConsoleService,
+                                      CheckerConfig checkerConfig) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
         this.healthCheckEndpointFactory = healthCheckEndpointFactory;
+        this.checkerConsoleService = checkerConsoleService;
+        this.checkerConfig = checkerConfig;
     }
 
     @Override
@@ -59,8 +74,10 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         if(current == null) {
             healthCheckEndpointFactory.updateRoutes();
             current = future;
+            currentDcAllMeta = currentDcId.equalsIgnoreCase(dcId) ? getCurrentDcMeta(dcId) : null;
             return;
         }
+
 
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
@@ -73,15 +90,29 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             healthCheckEndpointFactory.updateRoutes();
         }
 
-        KeeperContainerMetaComparator keeperContainerMetaComparator = new KeeperContainerMetaComparator(current, future);
-        keeperContainerMetaComparator.compare();
-        keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
-
+        if (currentDcId.equalsIgnoreCase(dcId)) {
+            KeeperContainerMetaComparator keeperContainerMetaComparator
+                    = new KeeperContainerMetaComparator(current, future, currentDcAllMeta, getCurrentDcMeta(dcId));
+            keeperContainerMetaComparator.compare();
+            keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
+        }
         comparator.accept(this);
         removeAndAdd();
         clearUp();
 
         this.current = future;
+    }
+
+    private DcMeta getCurrentDcMeta(String dcId) {
+        try {
+            return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
+                    .getDcs().get(dcId);
+        } catch (SAXException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private void removeAndAdd() {
