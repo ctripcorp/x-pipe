@@ -11,7 +11,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class KeeperInfoStatsActionFactory extends AbstractKeeperInfoCommandActionFactory<KeeperInfoStatsActionListener, KeeperInfoStatsAction>
+public class KeeperInfoStatsActionFactory
+        extends AbstractKeeperInfoCommandActionFactory<KeeperInfoStatsActionListener, KeeperInfoStatsAction>
         implements KeeperSupport {
 
     @Override

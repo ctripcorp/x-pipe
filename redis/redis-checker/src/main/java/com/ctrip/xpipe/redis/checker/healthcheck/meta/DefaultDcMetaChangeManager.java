@@ -78,7 +78,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             return;
         }
 
-
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
         DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
@@ -96,6 +95,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             keeperContainerMetaComparator.compare();
             keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
         }
+
         comparator.accept(this);
         removeAndAdd();
         clearUp();

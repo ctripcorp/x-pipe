@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
-public class DefaultKeeperInfoStatsActionListener implements KeeperInfoStatsActionListener, KeeperSupport {
+public class KeeperFlowCollector implements KeeperInfoStatsActionListener, KeeperSupport {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

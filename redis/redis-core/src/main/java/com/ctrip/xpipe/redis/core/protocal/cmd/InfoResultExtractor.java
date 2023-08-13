@@ -23,6 +23,9 @@ public class InfoResultExtractor {
 
     private static final String KEY_INSTANTANEOUS_INPUT_KBPS = "instantaneous_input_kbps";
 
+    private static final String KEY_SWAP_USED_DB_SIZE = "swap_used_db_size";
+    private static final String KEY_USED_MEMORY ="used_memory";
+
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
     private String result;
@@ -104,6 +107,10 @@ public class InfoResultExtractor {
     }
 
     public long getKeeperInstantaneousInputKbps() { return extractAsLong(KEY_INSTANTANEOUS_INPUT_KBPS);}
+
+    public long getUsedMemory() { return extractAsLong(KEY_USED_MEMORY);}
+
+    public Long getSwapUsedDbSize() { return extractAsLong(KEY_SWAP_USED_DB_SIZE);}
 
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);
