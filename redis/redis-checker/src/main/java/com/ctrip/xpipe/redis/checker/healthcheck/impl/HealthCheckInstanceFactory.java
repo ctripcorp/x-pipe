@@ -26,4 +26,5 @@ public interface HealthCheckInstanceFactory {
     
     void remove(ClusterHealthCheckInstance instance);
 
+    RedisHealthCheckInstance createRedisInstanceOnlyForUsedMemory(RedisMeta redis);
 }

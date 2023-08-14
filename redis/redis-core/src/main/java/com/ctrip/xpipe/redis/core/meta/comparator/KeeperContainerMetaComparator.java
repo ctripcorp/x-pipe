@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.InstanceNode;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.KeeperContainerDetailInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.tuple.Triple;
@@ -33,24 +30,37 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         result.getLast().forEach(id -> removed.addAll(currentDetailInfo.get(id).getKeeperInstances()));
 
         result.getMiddle().forEach(id -> {
-            List<InstanceNode> currentKeeperInstances = getAllKeeperInstances(currentDetailInfo.get(id).getKeeperInstances());
-            List<InstanceNode> futureKeeperInstances = getAllKeeperInstances(futureDetailInfo.get(id).getKeeperInstances());
+            compareInstanceNode(getAllKeeperInstances(currentDetailInfo.get(id).getKeeperInstances()),
+                                getAllKeeperInstances(futureDetailInfo.get(id).getKeeperInstances()));
 
-            Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>> subResult = sub(futureKeeperInstances, currentKeeperInstances);
-            List<InstanceNode> tAdded = subResult.getKey();
-            added.addAll(tAdded);
+            compareInstanceNode(getAllRedisInstances(currentDetailInfo.get(id).getRedisInstances()),
+                                getAllRedisInstances(futureDetailInfo.get(id).getRedisInstances()));
 
-            List<Pair<InstanceNode, InstanceNode>> modified = subResult.getValue();
-            compareConfigConfig(modified);
-
-            List<InstanceNode> tRemoved = sub(currentKeeperInstances, futureKeeperInstances).getKey();
-            removed.addAll(tRemoved);
         });
+    }
+
+    public void compareInstanceNode(List<InstanceNode> current, List<InstanceNode> future) {
+        Pair<List<InstanceNode>, List<Pair<InstanceNode, InstanceNode>>> subResult = sub(future, current);
+        List<InstanceNode> tAdded = subResult.getKey();
+        added.addAll(tAdded);
+
+        List<Pair<InstanceNode, InstanceNode>> modified = subResult.getValue();
+        compareConfigConfig(modified);
+
+        List<InstanceNode> tRemoved = sub(current, future).getKey();
+        removed.addAll(tRemoved);
+
     }
 
     private List<InstanceNode> getAllKeeperInstances(List<KeeperMeta> keeperInstances) {
         List<InstanceNode> result = new LinkedList<>();
         result.addAll(keeperInstances);
+        return result;
+    }
+
+    private List<InstanceNode> getAllRedisInstances(List<RedisMeta> redisInstances) {
+        List<InstanceNode> result = new LinkedList<>();
+        result.addAll(redisInstances);
         return result;
     }
 
@@ -62,16 +72,26 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
     private Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
         Map<Long, KeeperContainerDetailInfo> map = dcMeta.getKeeperContainers().stream()
                 .collect(Collectors.toMap(KeeperContainerMeta::getId,
-                        keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<KeeperMeta>())));
+                        keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<>(), new ArrayList<>())));
         allDcMeta.getClusters().values().forEach(clusterMeta -> {
-            clusterMeta.getAllShards().values().forEach(shardMeta -> {
+            for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
+                if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
+                RedisMeta monitorRedis = getMonitorRedisMeta(shardMeta.getRedises());
                 shardMeta.getKeepers().forEach(keeperMeta -> {
-                    if (map.containsKey(keeperMeta.getKeeperContainerId()))
+                    if (map.containsKey(keeperMeta.getKeeperContainerId())) {
                         map.get(keeperMeta.getKeeperContainerId()).getKeeperInstances().add(keeperMeta);
+                        map.get(keeperMeta.getKeeperContainerId()).getRedisInstances().add(monitorRedis);
+                    }
                 });
-            });
+            }
         });
 
         return map;
+    }
+
+    private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
+        if (redisMetas == null || redisMetas.isEmpty()) return null;
+        return redisMetas.stream().sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
+                .collect(Collectors.toList()).get(0);
     }
 }

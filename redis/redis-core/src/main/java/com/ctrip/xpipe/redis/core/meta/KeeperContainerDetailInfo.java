@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -13,12 +13,15 @@ public class KeeperContainerDetailInfo {
 
     private List<KeeperMeta> keeperInstances;
 
+    private List<RedisMeta> redisInstances;
+
     public KeeperContainerDetailInfo() {
     }
 
-    public KeeperContainerDetailInfo(KeeperContainerMeta keeperContainerMeta, ArrayList<KeeperMeta> keeperInstances) {
-        this.keeperContainer = keeperContainerMeta;
+    public KeeperContainerDetailInfo(KeeperContainerMeta keeperContainer, List<KeeperMeta> keeperInstances, List<RedisMeta> redisInstances) {
+        this.keeperContainer = keeperContainer;
         this.keeperInstances = keeperInstances;
+        this.redisInstances = redisInstances;
     }
 
     public KeeperContainerMeta getKeeperContainer() {
@@ -36,6 +39,15 @@ public class KeeperContainerDetailInfo {
 
     public KeeperContainerDetailInfo setKeeperInstances(List<KeeperMeta> keeperInstances) {
         this.keeperInstances = keeperInstances;
+        return this;
+    }
+
+    public List<RedisMeta> getRedisInstances() {
+        return redisInstances;
+    }
+
+    public KeeperContainerDetailInfo setRedisInstances(List<RedisMeta> redisInstances) {
+        this.redisInstances = redisInstances;
         return this;
     }
 

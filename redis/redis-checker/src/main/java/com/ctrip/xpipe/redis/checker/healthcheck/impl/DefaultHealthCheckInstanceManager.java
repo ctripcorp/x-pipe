@@ -33,6 +33,8 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<HostPort, KeeperHealthCheckInstance> keeperInstances = Maps.newConcurrentMap();
 
+    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceOnlyForUsedMemory = Maps.newConcurrentMap();
+
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
 
@@ -48,12 +50,24 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
+    public RedisHealthCheckInstance getOrCreateRedisInstanceOnlyForUsedMemory(RedisMeta redis) {
+        try {
+            HostPort key = new HostPort(redis.getIp(), redis.getPort());
+            return MapUtils.getOrCreate(redisInstanceOnlyForUsedMemory, key,
+                    () -> instanceFactory.createRedisInstanceOnlyForUsedMemory(redis));
+        } catch (Throwable th) {
+            logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort());
+        }
+        return null;
+    }
+
+    @Override
     public KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper) {
         try {
             HostPort key = new HostPort(keeper.getIp(), keeper.getPort());
             return MapUtils.getOrCreate(keeperInstances, key, () -> instanceFactory.create(keeper));
         } catch (Throwable th) {
-            logger.error("getOrCreate health check instance:{}:{}", keeper.getIp(), keeper.getPort());
+            logger.error("getOrCreate health check keeper instance:{}:{}", keeper.getIp(), keeper.getPort());
         }
         return null;
     }
@@ -98,6 +112,14 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
         if (null != instance) instanceFactory.remove(instance);
         return instance;
     }
+
+    @Override
+    public RedisHealthCheckInstance  removeRedisOnlyForUsedMemory (HostPort hostPort) {
+        RedisHealthCheckInstance instance = redisInstanceOnlyForUsedMemory.remove(hostPort);
+        if (null != instance) instanceFactory.remove(instance);
+        return instance;
+    }
+
 
     @Override
     public ClusterHealthCheckInstance remove(String cluster) {

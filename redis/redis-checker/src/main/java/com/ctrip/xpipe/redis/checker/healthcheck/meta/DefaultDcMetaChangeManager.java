@@ -278,12 +278,25 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         instanceManager.getOrCreate(added);
     }
 
+    private void removeRedisOnlyForUsedMemory(RedisMeta removed) {
+        if (null != instanceManager.removeRedisOnlyForUsedMemory(new HostPort(removed.getIp(), removed.getPort()))) {
+            logger.info("[removeRedisOnlyForUsedMemory][{}:{}] {}", removed.getIp(), removed.getPort(), removed);
+        }
+    }
+
+    private void addRedisOnlyForUsedMemory(RedisMeta added) {
+        logger.info("[addRedisOnlyForUsedMemory][{}:{}] {}", added.getIp(), added.getPort(), added);
+        instanceManager.getOrCreateRedisInstanceOnlyForUsedMemory(added);
+    }
+
     private class KeeperContainerMetaComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {
 
         @Override
         public void visitAdded(InstanceNode added) {
             if (added instanceof KeeperMeta) {
                 addKeeper((KeeperMeta) added);
+            } else if (added instanceof RedisMeta) {
+                addRedisOnlyForUsedMemory((RedisMeta) added);
             } else {
                 logger.debug("[visitAdded][do nothng]{}", added);
             }
@@ -298,6 +311,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         public void visitRemoved(InstanceNode removed) {
             if (removed instanceof KeeperMeta) {
                 removeKeeper((KeeperMeta) removed);
+            } else if (removed instanceof RedisMeta){
+                removeRedisOnlyForUsedMemory((RedisMeta) removed);
             } else {
                 logger.debug("[visitRemoved][do nothng]{}", removed);
             }

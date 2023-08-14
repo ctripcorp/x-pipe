@@ -16,6 +16,8 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
+    RedisHealthCheckInstance getOrCreateRedisInstanceOnlyForUsedMemory(RedisMeta redis);
+
     KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
     ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
@@ -29,6 +31,8 @@ public interface HealthCheckInstanceManager {
     RedisHealthCheckInstance remove(HostPort hostPort);
 
     KeeperHealthCheckInstance removeKeeper(HostPort hostPort);
+
+    RedisHealthCheckInstance  removeRedisOnlyForUsedMemory(HostPort hostPort);
 
     ClusterHealthCheckInstance remove(String cluster);
 

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoCommandActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
@@ -11,7 +12,7 @@ import java.util.List;
 
 public class RedisInfoActionFactory
         extends AbstractInfoCommandActionFactory<RedisInfoActionListener, RedisInfoAction>
-        implements KeeperSupport {
+        implements KeeperSupport, OneWaySupport {
 
 
     @Override

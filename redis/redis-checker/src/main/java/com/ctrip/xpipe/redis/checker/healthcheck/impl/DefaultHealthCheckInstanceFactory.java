@@ -101,6 +101,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Override
     public void remove(KeeperHealthCheckInstance instance) {
+        Endpoint endpoint = instance.getEndpoint();
+        endpointFactory.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
         stopCheck(instance);
     }
 
@@ -195,7 +197,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         startCheck(instance);
 
         return instance;
-
     }
 
     private KeeperInstanceInfo createKeeperInstanceInfo(KeeperMeta keeperMeta) {
@@ -207,7 +208,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 keeperMeta.parent().getId(),
                 new HostPort(keeperMeta.getIp(), keeperMeta.getPort()),
                 keeperMeta.parent().getActiveDc(), clusterType);
-
         info.setActive(keeperMeta.isActive());
 
         return info;
@@ -217,7 +217,32 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         keeperHealthCheckActionFactories.forEach(keeperHealthCheckActionFactory -> {
             initActions(instance, keeperHealthCheckActionFactory);
         });
+    }
 
+    @Override
+    public RedisHealthCheckInstance createRedisInstanceOnlyForUsedMemory(RedisMeta redis) {
+        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+
+        RedisInstanceInfo info = createRedisInstanceInfo(redis);
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService);
+        Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redis);
+
+        instance.setEndpoint(endpoint)
+                .setSession(redisSessionManager.findOrCreateSession(endpoint))
+                .setInstanceInfo(info)
+                .setHealthCheckConfig(config);
+
+        initActionsForRedisOnlyForUsedMemory(instance);
+        startCheck(instance);
+
+        return instance;
+    }
+
+    private void initActionsForRedisOnlyForUsedMemory(DefaultRedisHealthCheckInstance instance) {
+        for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+            if (factory instanceof KeeperSupport)
+                initActions(instance, factory);
+        }
     }
 
     @SuppressWarnings("unchecked")
