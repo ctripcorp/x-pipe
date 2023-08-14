@@ -16,7 +16,7 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
-    RedisHealthCheckInstance getOrCreateRedisInstanceOnlyForUsedMemory(RedisMeta redis);
+    RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis);
 
     KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
@@ -39,6 +39,8 @@ public interface HealthCheckInstanceManager {
     List<RedisHealthCheckInstance> getAllRedisInstance();
 
     List<KeeperHealthCheckInstance> getAllKeeperInstance();
+
+    List<RedisHealthCheckInstance> getAllRedisInstanceForAssignedAction();
 
     List<ClusterHealthCheckInstance> getAllClusterInstance();
 

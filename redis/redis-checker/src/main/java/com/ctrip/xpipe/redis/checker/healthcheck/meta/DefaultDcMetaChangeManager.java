@@ -286,7 +286,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private void addRedisOnlyForUsedMemory(RedisMeta added) {
         logger.info("[addRedisOnlyForUsedMemory][{}:{}] {}", added.getIp(), added.getPort(), added);
-        instanceManager.getOrCreateRedisInstanceOnlyForUsedMemory(added);
+        instanceManager.getOrCreateRedisInstanceForAssignedAction(added);
     }
 
     private class KeeperContainerMetaComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {

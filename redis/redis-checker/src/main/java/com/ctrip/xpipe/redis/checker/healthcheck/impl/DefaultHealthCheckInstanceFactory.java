@@ -220,7 +220,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     @Override
-    public RedisHealthCheckInstance createRedisInstanceOnlyForUsedMemory(RedisMeta redis) {
+    public RedisHealthCheckInstance createRedisInstanceForAssignedAction(RedisMeta redis) {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redis);
@@ -232,13 +232,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 .setInstanceInfo(info)
                 .setHealthCheckConfig(config);
 
-        initActionsForRedisOnlyForUsedMemory(instance);
+        initActionsForRedisForAssignedAction(instance);
         startCheck(instance);
 
         return instance;
     }
 
-    private void initActionsForRedisOnlyForUsedMemory(DefaultRedisHealthCheckInstance instance) {
+    private void initActionsForRedisForAssignedAction(DefaultRedisHealthCheckInstance instance) {
         for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
             if (factory instanceof KeeperSupport)
                 initActions(instance, factory);

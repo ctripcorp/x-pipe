@@ -4,25 +4,29 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoCommandActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisWithAssignedLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class RedisInfoActionFactory
-        extends AbstractInfoCommandActionFactory<RedisInfoActionListener, RedisInfoAction>
+public class RedisInfoActionFactory extends AbstractRedisWithAssignedLeaderAwareHealthCheckActionFactory
         implements KeeperSupport, OneWaySupport {
 
-
-    @Override
-    protected RedisInfoAction createAction(RedisHealthCheckInstance instance) {
-        return new RedisInfoAction(scheduled, instance, executors);
-    }
+    @Autowired
+    private List<RedisInfoActionListener> listeners;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
         return Lists.newArrayList();
+    }
+
+    @Override
+    public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
+        RedisInfoAction action = new RedisInfoAction(scheduled, instance, executors);
+        action.addListeners(listeners);
+        return action;
     }
 
     @Override

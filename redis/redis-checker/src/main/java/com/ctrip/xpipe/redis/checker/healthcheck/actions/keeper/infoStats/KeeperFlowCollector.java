@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.MapUtils;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected ConcurrentMap<String, Map<HostPort, Long>> hostPort2InputFlow = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, Map<DcClusterShard, Long>> hostPort2InputFlow = new ConcurrentHashMap<>();
 
     @Override
     public void onAction(KeeperInfoStatsActionContext context) {
@@ -27,8 +27,8 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
             InfoResultExtractor extractor = context.getResult();
             KeeperInstanceInfo info = context.instance().getCheckInfo();
             long keeperFlow = extractor.getKeeperInstantaneousInputKbps();
-            Map<HostPort, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ()->new ConcurrentHashMap<>());
-            keeperContainerResult.put(info.getHostPort(), keeperFlow);
+            Map<DcClusterShard, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ()->new ConcurrentHashMap<>());
+            keeperContainerResult.put(new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()), keeperFlow);
         } catch (Throwable throwable) {
             logger.error("get instantaneous input kbps of keeper:{} error: ", context.instance().getCheckInfo().getHostPort(), throwable);
         }

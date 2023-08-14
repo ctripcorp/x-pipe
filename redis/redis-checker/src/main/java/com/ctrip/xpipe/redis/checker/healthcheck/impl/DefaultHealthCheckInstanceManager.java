@@ -33,7 +33,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<HostPort, KeeperHealthCheckInstance> keeperInstances = Maps.newConcurrentMap();
 
-    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceOnlyForUsedMemory = Maps.newConcurrentMap();
+    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForAssignedAction = Maps.newConcurrentMap();
 
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
@@ -50,11 +50,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceOnlyForUsedMemory(RedisMeta redis) {
+    public RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis) {
         try {
             HostPort key = new HostPort(redis.getIp(), redis.getPort());
-            return MapUtils.getOrCreate(redisInstanceOnlyForUsedMemory, key,
-                    () -> instanceFactory.createRedisInstanceOnlyForUsedMemory(redis));
+            return MapUtils.getOrCreate(redisInstanceForAssignedAction, key,
+                    () -> instanceFactory.createRedisInstanceForAssignedAction(redis));
         } catch (Throwable th) {
             logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort());
         }
@@ -114,8 +114,8 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance  removeRedisOnlyForUsedMemory (HostPort hostPort) {
-        RedisHealthCheckInstance instance = redisInstanceOnlyForUsedMemory.remove(hostPort);
+    public RedisHealthCheckInstance  removeRedisOnlyForUsedMemory(HostPort hostPort) {
+        RedisHealthCheckInstance instance = redisInstanceForAssignedAction.remove(hostPort);
         if (null != instance) instanceFactory.remove(instance);
         return instance;
     }
@@ -136,6 +136,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public List<KeeperHealthCheckInstance> getAllKeeperInstance() {
         return Lists.newLinkedList(keeperInstances.values());
+    }
+
+    @Override
+    public List<RedisHealthCheckInstance> getAllRedisInstanceForAssignedAction() {
+        return Lists.newLinkedList(redisInstanceForAssignedAction.values());
     }
 
     @Override
