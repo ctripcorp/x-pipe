@@ -19,6 +19,7 @@ import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
+import qunar.tc.qclient.redis.exception.checked.RedisException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Slight
@@ -233,6 +235,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     public void shutdown() {
         LifecycleUtil.destroyIfPossible(txnProvider);
         LifecycleUtil.destroyIfPossible(asyncProvider);
+        LifecycleUtil.destroyIfPossible(locator());
     }
 
     private CRedisSessionLocator locator() {
