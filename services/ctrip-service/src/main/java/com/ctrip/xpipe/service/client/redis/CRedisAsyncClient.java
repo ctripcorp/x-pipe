@@ -235,7 +235,6 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     public void shutdown() {
         LifecycleUtil.destroyIfPossible(txnProvider);
         LifecycleUtil.destroyIfPossible(asyncProvider);
-        LifecycleUtil.destroyIfPossible(locator());
     }
 
     private CRedisSessionLocator locator() {
