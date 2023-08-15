@@ -501,7 +501,8 @@ public class DefaultRedisSlave implements RedisSlave {
 			getLogger().info("[doRealClose]{}", this);
 			closeState.setClosed();
 			redisClient.close();
-			psyncExecutor.shutdownNow();
+			/* shutdown single thread pool after other tasks finished */
+			psyncExecutor.submit(psyncExecutor::shutdown);
 			scheduled.shutdownNow();
 		}
 	}
