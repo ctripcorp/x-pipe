@@ -108,6 +108,10 @@
                     <groupId>com.ctrip.ops</groupId>
                     <artifactId>hickwall-sdk</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>qunar.tc.qconfig</groupId>
+                    <artifactId>qconfig-common</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -141,6 +145,10 @@
                     <groupId>com.ctrip.framework</groupId>
                     <artifactId>framework-bom</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -169,6 +177,27 @@
             <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
             <artifactId>emailservice</artifactId>
             <version>1.2.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.framework.cdubbo</groupId>
+                    <artifactId>cdubbo-serialization</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework.cdubbo</groupId>
+            <artifactId>cdubbo-serialization</artifactId>
+            <version>2.1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.dubbo</groupId>
+                    <artifactId>dubbo</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
