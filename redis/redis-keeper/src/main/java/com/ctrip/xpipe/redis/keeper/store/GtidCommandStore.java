@@ -70,7 +70,7 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
         try {
             while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
-                final RedisOp redisOp = cmdReader.read();
+                final RedisOp redisOp = cmdReader.read(1000);
 
                 if (null == redisOp) continue;
 

@@ -56,6 +56,11 @@ public class GtidCmdOneSegmentReader implements CommandReader<RedisOp> {
     }
 
     @Override
+    public RedisOp read(long milliSeconds) throws IOException {
+        return read();
+    }
+
+    @Override
     public RedisOp read() throws IOException {
         if (finished.get()) return null;
 
