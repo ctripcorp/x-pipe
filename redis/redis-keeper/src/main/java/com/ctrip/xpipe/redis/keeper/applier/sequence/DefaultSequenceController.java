@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
+import com.ctrip.xpipe.utils.CloseState;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -68,6 +69,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public static final long DEFAULT_CONCURRENCY_THRESHOLD = 10000;
 
+    private static final CloseState closeState = new CloseState();
+
     public DefaultSequenceController() {
         this(DEFAULT_QPS_THRESHOLD, DEFAULT_BYTES_PER_SECOND_THRESHOLD, DEFAULT_MEMORY_THRESHOLD, DEFAULT_CONCURRENCY_THRESHOLD);
     }
@@ -86,7 +89,19 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     @Override
+    protected void doDispose() throws Exception {
+        super.doDispose();
+        closeState.setClosed();
+        runningCommands.clear();
+    }
+
+    @Override
     public void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate) {
+
+        if (closeState.isClosed()) {
+           logger.debug("[submit] already closed");
+           return;
+        }
 
         long bytes = command.redisOp().estimatedSize();
         memoryThreshold.tryPass(bytes);
@@ -173,7 +188,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* make self a dependency */
 
         runningCommands.put(key, current);
-        forgetWhenSuccess(current, key);
+        forgetWhenDone(current, key);
 
         /* do some stuff when finish */
 
@@ -198,7 +213,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         for (RedisKey key : keys) {
             runningCommands.put(key, current);
-            forgetWhenSuccess(current, key);
+            forgetWhenDone(current, key);
         }
 
         mergeGtidWhenSuccess(current, command.gtid());
@@ -226,7 +241,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         runningCommands = new HashMap<>();
         obstacle = current;
 
-        forgetObstacleWhenSuccess(current);
+        forgetObstacleWhenDone(current);
 
         /* do some stuff when finish */
 
@@ -239,22 +254,18 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         current.execute();
     }
 
-    private void forgetObstacleWhenSuccess(SequenceCommand<?> sequenceCommand) {
+    private void forgetObstacleWhenDone(SequenceCommand<?> sequenceCommand) {
         sequenceCommand.future().addListener((f) -> {
-            if (f.isSuccess()) {
-                if (sequenceCommand == obstacle) {
-                    obstacle = null;
-                }
+            if (sequenceCommand == obstacle) {
+                obstacle = null;
             }
         });
     }
 
-    private void forgetWhenSuccess(SequenceCommand<?> sequenceCommand, RedisKey key) {
+    private void forgetWhenDone(SequenceCommand<?> sequenceCommand, RedisKey key) {
         sequenceCommand.future().addListener((f) -> {
-            if (f.isSuccess()) {
-                if (sequenceCommand == runningCommands.get(key)) {
-                    runningCommands.remove(key);
-                }
+            if (sequenceCommand == runningCommands.get(key)) {
+                runningCommands.remove(key);
             }
         });
     }
