@@ -53,7 +53,8 @@ public class ProxyController {
         Tunnel targetTunnel = null;
         List<Tunnel> tunnels = tunnelManager.tunnels();
         for(Tunnel tunnel : tunnels) {
-            if(tunnel == null || tunnel.backend() == null || tunnel.frontend() == null) {
+            if(tunnel == null || tunnel.backend() == null || tunnel.frontend() == null
+                    || tunnel.backend().getChannel() == null || tunnel.frontend().getChannel() == null) {
                 continue;
             }
             InetSocketAddress address = (InetSocketAddress) tunnel.backend().getChannel().localAddress();
