@@ -20,4 +20,9 @@ public class MemoryThreshold extends AbstractThreshold {
     public void release(long bytes) {
         super.release(bytes);
     }
+
+    @Override
+    public void reset() {
+        super.reset();
+    }
 }

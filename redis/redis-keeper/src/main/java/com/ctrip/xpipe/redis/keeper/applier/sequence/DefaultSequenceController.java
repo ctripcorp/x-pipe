@@ -93,6 +93,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         super.doDispose();
         closeState.setClosed();
         runningCommands.clear();
+        memoryThreshold.reset();
+        concurrencyThreshold.reset();
     }
 
     @Override
