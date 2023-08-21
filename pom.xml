@@ -73,7 +73,7 @@
         <dal.version>2.4.43</dal.version>
         <ucs.version>0.5.4</ucs.version>
         <artemis.version>1.9.6</artemis.version>
-        <caravan.version>1.17.13</caravan.version>
+        <caravan.version>1.19.18</caravan.version>
         <velocity.version>1.7</velocity.version>
         <lettuce.version>3.2.Final</lettuce.version>
         <commons-collections.version>3.2.2</commons-collections.version>
