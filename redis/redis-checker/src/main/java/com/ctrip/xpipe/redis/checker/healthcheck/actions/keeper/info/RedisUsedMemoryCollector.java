@@ -36,4 +36,8 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
     public void stopWatch(HealthCheckAction action) {
 
     }
+
+    public ConcurrentMap<DcClusterShard, Long> getDcClusterShardUsedMemory() {
+        return dcClusterShardUsedMemory;
+    }
 }

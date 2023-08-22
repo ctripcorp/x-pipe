@@ -7,6 +7,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
+import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -121,6 +122,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MIGRATION_RESULT_REPORT_TOKEN = "migration.result.report.token";
     private static final String KEY_MIGRATION_RESULT_REPORT_OPEN = "migration.result.report.open";
     private static final String KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI = "migration.result.report.interval.milli";
+
+    private static final String KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD = "console.keepercontainer.overlaod.standard";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -752,6 +755,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long getMigrationResultReportIntervalMill() {
         return getLongProperty(KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI, 10000L);
+    }
+
+    @Override
+    public Map<String,KeeperContainerOverloadStandardModel>  getKeeperContainerOverloadStandards() {
+        String property = getProperty(KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD, "{}");
+        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<String,KeeperContainerOverloadStandardModel>>() {});
     }
 
 }

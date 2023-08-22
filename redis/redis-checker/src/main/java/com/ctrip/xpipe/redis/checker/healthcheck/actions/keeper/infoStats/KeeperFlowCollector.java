@@ -40,4 +40,7 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
 
     }
 
+    public ConcurrentMap<String, Map<DcClusterShard, Long>> getHostPort2InputFlow() {
+        return hostPort2InputFlow;
+    }
 }

@@ -13,12 +13,14 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
+import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -74,6 +76,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @Autowired
     private OuterClientCache outerClientCache;
 
+    @Autowired
+    private KeeperContainerUsedInfoAnalyzer keeperContainerUsedInfoCollector;
+
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
@@ -120,6 +125,15 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
         if (null != checkResult.getHeteroShardsDelay()) delayService.updateHeteroShardsDelays(checkResult.getHeteroShardsDelay());
     }
+
+    @PutMapping(ConsoleCheckerPath.PATH_PUT_KEEPER_CONTAINER_INFO_RESULT)
+    public void reportHealthCheckResult(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerInfoModel> keeperContainerInfoModels) {
+        logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), keeperContainerInfoModels);
+        if (keeperContainerInfoModels == null || keeperContainerInfoModels.isEmpty()) return;
+
+        keeperContainerUsedInfoCollector.updateKeeperContainerUsedInfo(index, keeperContainerInfoModels);
+    }
+
 
     @Resource
     PersistenceCache persistenceCache;
