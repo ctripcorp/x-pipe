@@ -179,5 +179,9 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getMigrationResultReportIntervalMill();
 
+    boolean isAutoMigrateOverloadKeeperContainerOpen();
+
+	long getAutoMigrateOverloadKeeperContainerIntervalMilli();
+
 	Map<String,KeeperContainerOverloadStandardModel> getKeeperContainerOverloadStandards();
 }

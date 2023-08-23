@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerInfoModel;
-import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerOverloadCause;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
@@ -15,16 +13,17 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
-public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractSiteLeaderIntervalAction implements KeeperContainerUsedInfoAnalyzer {
+
+public class DefaultKeeperContainerUsedInfoAnalyzer implements KeeperContainerUsedInfoAnalyzer {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzer.class);
 
+    @Autowired
     private ConsoleConfig config;
 
     private Set<Integer> checkerIndexes = new HashSet<>();
@@ -178,15 +177,5 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractSiteLeaderIn
     public synchronized void updateKeeperContainerUsedInfo(int index, List<KeeperContainerInfoModel> keeperContainerInfoModels) {
         checkerIndexes.add(index);
         allKeeperContainerInfoModels.addAll(keeperContainerInfoModels);
-    }
-
-    @Override
-    protected void doAction() {
-
-    }
-
-    @Override
-    protected List<ALERT_TYPE> alertTypes() {
-        return null;
     }
 }

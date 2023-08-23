@@ -55,6 +55,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
+  public KeepercontainerTbl find(final String ip) {
+    return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
+      @Override
+      public KeepercontainerTbl doQuery() throws DalException {
+        return dao.findByIp(ip, KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
+  }
+
+  @Override
   public List<KeepercontainerTbl> findAll() {
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override

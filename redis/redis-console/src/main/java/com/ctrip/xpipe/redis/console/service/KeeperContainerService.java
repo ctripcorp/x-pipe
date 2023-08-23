@@ -10,6 +10,8 @@ import java.util.Map;
 public interface KeeperContainerService {
 
 	KeepercontainerTbl find(long id);
+	KeepercontainerTbl find(String ip);
+
 	List<KeepercontainerTbl> findAll();
 	List<KeepercontainerTbl> findAllByDcName(String dcName);
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);

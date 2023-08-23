@@ -125,6 +125,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD = "console.keepercontainer.overlaod.standard";
 
+    private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_OPEN = "console.auto.migrate.overload.keeper.container.open";
+    private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI = "console.auto.migrate.overload.keeper.container.interval.milli";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
@@ -755,6 +758,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long getMigrationResultReportIntervalMill() {
         return getLongProperty(KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI, 10000L);
+    }
+
+    @Override
+    public boolean isAutoMigrateOverloadKeeperContainerOpen() {
+        return getBooleanProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_OPEN, false);
+    }
+
+    @Override
+    public long getAutoMigrateOverloadKeeperContainerIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 12 * 60 * 60 * 1000L);
     }
 
     @Override
