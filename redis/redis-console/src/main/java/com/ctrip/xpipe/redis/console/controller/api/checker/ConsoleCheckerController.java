@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -127,11 +127,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PutMapping(ConsoleCheckerPath.PATH_PUT_KEEPER_CONTAINER_INFO_RESULT)
-    public void reportHealthCheckResult(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerInfoModel> keeperContainerInfoModels) {
-        logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), keeperContainerInfoModels);
-        if (keeperContainerInfoModels == null || keeperContainerInfoModels.isEmpty()) return;
+    public void reportHealthCheckResult(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
+        logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
+        if (keeperContainerUsedInfoModels == null || keeperContainerUsedInfoModels.isEmpty()) return;
 
-        keeperContainerUsedInfoCollector.updateKeeperContainerUsedInfo(index, keeperContainerInfoModels);
+        keeperContainerUsedInfoCollector.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
     }
 
 

@@ -1,43 +1,90 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerOverloadCause;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 
 public class MigrationKeeperContainerDetailModel implements Serializable {
 
-    private String srcKeeperContainerIp;
+    private KeeperContainerUsedInfoModel srcKeeperContainer;
 
-    private KeeperContainerOverloadCause overloadCause;
+    private KeeperContainerUsedInfoModel targetKeeperContainer;
 
-    private List<MigrationKeeperDetailModel> migrationKeeperDetails;
+    private int migrateKeeperCount = 0;
 
+    private int migrateKeeperCompleteCount = 0;
 
-    public String getSrcKeeperContainerIp() {
-        return srcKeeperContainerIp;
+    List<DcClusterShard> migrateShards;
+
+    public MigrationKeeperContainerDetailModel() {
+
     }
 
-    public MigrationKeeperContainerDetailModel setSrcKeeperContainerIp(String srcKeeperContainerIp) {
-        this.srcKeeperContainerIp = srcKeeperContainerIp;
+    public MigrationKeeperContainerDetailModel(KeeperContainerUsedInfoModel srcKeeperContainer, KeeperContainerUsedInfoModel targetKeeperContainer,
+                                               int migrateKeeperCount, List<DcClusterShard> migrateShards) {
+        this.srcKeeperContainer = srcKeeperContainer;
+        this.targetKeeperContainer = targetKeeperContainer;
+        this.migrateKeeperCount = migrateKeeperCount;
+        this.migrateShards = migrateShards;
+    }
+
+    public KeeperContainerUsedInfoModel getSrcKeeperContainer() {
+        return srcKeeperContainer;
+    }
+
+    public MigrationKeeperContainerDetailModel setSrcKeeperContainer(KeeperContainerUsedInfoModel srcKeeperContainer) {
+        this.srcKeeperContainer = srcKeeperContainer;
         return this;
     }
 
-    public KeeperContainerOverloadCause getOverloadCause() {
-        return overloadCause;
+    public KeeperContainerUsedInfoModel getTargetKeeperContainer() {
+        return targetKeeperContainer;
     }
 
-    public MigrationKeeperContainerDetailModel setOverloadCause(KeeperContainerOverloadCause overloadCause) {
-        this.overloadCause = overloadCause;
+    public MigrationKeeperContainerDetailModel setTargetKeeperContainer(KeeperContainerUsedInfoModel targetKeeperContainer) {
+        this.targetKeeperContainer = targetKeeperContainer;
         return this;
     }
 
-    public List<MigrationKeeperDetailModel> getMigrationKeeperDetails() {
-        return migrationKeeperDetails;
+    public int getMigrateKeeperCount() {
+        return migrateKeeperCount;
     }
 
-    public MigrationKeeperContainerDetailModel setMigrationKeeperDetails(List<MigrationKeeperDetailModel> migrationKeeperDetails) {
-        this.migrationKeeperDetails = migrationKeeperDetails;
+    public MigrationKeeperContainerDetailModel setMigrateKeeperCount(int migrateKeeperCount) {
+        this.migrateKeeperCount = migrateKeeperCount;
         return this;
+    }
+
+    public List<DcClusterShard> getMigrateShards() {
+        return migrateShards;
+    }
+
+    public MigrationKeeperContainerDetailModel setMigrateShards(List<DcClusterShard> migrateShards) {
+        this.migrateShards = migrateShards;
+        return this;
+    }
+
+    public void migrateKeeperCountIncrease() {
+        this.migrateKeeperCount++;
+    }
+
+    public void migrateKeeperCompleteCountIncrease() {
+        this.migrateKeeperCompleteCount++;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MigrationKeeperContainerDetailModel that = (MigrationKeeperContainerDetailModel) o;
+        return srcKeeperContainer.equals(that.srcKeeperContainer) && targetKeeperContainer.equals(that.targetKeeperContainer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(srcKeeperContainer, targetKeeperContainer);
     }
 }

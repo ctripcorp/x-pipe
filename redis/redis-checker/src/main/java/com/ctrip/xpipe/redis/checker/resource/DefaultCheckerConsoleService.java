@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
@@ -95,10 +95,10 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public void reportKeeperContainerInfo(String console, List<KeeperContainerInfoModel> keeperContainerInfoModels, int index) {
+    public void reportKeeperContainerInfo(String console, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels, int index) {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_PUT_KEEPER_CONTAINER_INFO_RESULT)
                 .buildAndExpand(index);
-        restTemplate.put(comp.toString(), keeperContainerInfoModels);
+        restTemplate.put(comp.toString(), keeperContainerUsedInfoModels);
     }
 
     @VisibleForTesting
