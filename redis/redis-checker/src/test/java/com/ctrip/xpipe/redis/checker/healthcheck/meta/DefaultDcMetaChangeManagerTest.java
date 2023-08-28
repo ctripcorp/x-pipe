@@ -22,7 +22,9 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,7 +59,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     private Set<HostPort> deletedRedised = new HashSet<>();
 
     @Before
-    public void beforeDefaultDcMetaChangeManagerTest() {
+    public void beforeDefaultDcMetaChangeManagerTest() throws IOException, SAXException {
         MockitoAnnotations.initMocks(this);
         Mockito.doAnswer(invocation -> {
             RedisMeta redis = invocation.getArgument(0, RedisMeta.class);
@@ -70,6 +72,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             deletedRedised.add(redis);
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
+
+        when(checkerConfig.getConsoleAddress()).thenReturn("127.0.0.1");
+        when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(getXpipeMeta());
         
         manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, checkerConsoleService, checkerConfig);
     }
@@ -259,7 +264,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     @Test
-    public void visitRemovedClusterActiveDc() {
+    public void visitRemovedClusterActiveDc(){
         manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig));
         manager.compare(getDcMeta("jq"));
 
