@@ -64,7 +64,7 @@ public class KeeperContainerMetaComparatorTest extends AbstractComparatorTest {
         KeeperContainerMetaComparator comparator = new KeeperContainerMetaComparator(current, future, currentAllDcMeta, futureAllDcMeta);
         comparator.compare();
 
-        Assert.assertEquals(1, comparator.getAdded().size());
+        Assert.assertEquals(2, comparator.getAdded().size());
         Assert.assertEquals(0, comparator.getRemoved().size());
         Assert.assertEquals(0, comparator.getMofified().size());
 
@@ -72,7 +72,7 @@ public class KeeperContainerMetaComparatorTest extends AbstractComparatorTest {
         comparator.compare();
 
         Assert.assertEquals(0, comparator.getAdded().size());
-        Assert.assertEquals(1, comparator.getRemoved().size());
+        Assert.assertEquals(2, comparator.getRemoved().size());
         Assert.assertEquals(0, comparator.getMofified().size());
 
     }
