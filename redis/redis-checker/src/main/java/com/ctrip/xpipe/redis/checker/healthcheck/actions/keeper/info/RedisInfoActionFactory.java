@@ -8,9 +8,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisWithAssigne
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 public class RedisInfoActionFactory extends AbstractRedisWithAssignedLeaderAwareHealthCheckActionFactory
         implements KeeperSupport, OneWaySupport {
 
@@ -23,7 +25,7 @@ public class RedisInfoActionFactory extends AbstractRedisWithAssignedLeaderAware
     }
 
     @Override
-    public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
+    public RedisInfoAction create(RedisHealthCheckInstance instance) {
         RedisInfoAction action = new RedisInfoAction(scheduled, instance, executors);
         action.addListeners(listeners);
         return action;

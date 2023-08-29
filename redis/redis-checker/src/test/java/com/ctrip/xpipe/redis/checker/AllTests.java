@@ -27,6 +27,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Tes
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.HeteroRouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisInfoActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisInfoActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperInfoStatsActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperInfoStatsActionTest;
@@ -202,6 +205,10 @@ import org.junit.runners.Suite;
         KeeperFlowCollectorTest.class,
         KeeperInfoStatsActionTest.class,
         KeeperInfoStatsActionFactoryTest.class,
+
+        RedisInfoActionFactoryTest.class,
+        RedisInfoActionTest.class,
+        RedisUsedMemoryCollectorTest.class,
 
         DefaultHealthCheckConfigTest.class
 })
