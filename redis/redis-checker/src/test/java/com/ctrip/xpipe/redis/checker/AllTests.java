@@ -27,6 +27,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Tes
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.HeteroRouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperInfoStatsActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperInfoStatsActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRuleTest;
@@ -195,6 +198,10 @@ import org.junit.runners.Suite;
 
         GtidGapCheckActionTest.class,
         GtidGapCheckActionControllerTest.class,
+
+        KeeperFlowCollectorTest.class,
+        KeeperInfoStatsActionTest.class,
+        KeeperInfoStatsActionFactoryTest.class,
 
         DefaultHealthCheckConfigTest.class
 })

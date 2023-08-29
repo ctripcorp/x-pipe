@@ -287,7 +287,7 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public Map<String, String> sentinelMasterConfig() {
-        return null;
+        return new HashMap<>();
     }
 
     @Override

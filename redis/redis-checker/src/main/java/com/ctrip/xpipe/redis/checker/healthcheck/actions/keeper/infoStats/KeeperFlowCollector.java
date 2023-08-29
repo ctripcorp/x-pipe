@@ -26,7 +26,7 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
         try {
             InfoResultExtractor extractor = context.getResult();
             KeeperInstanceInfo info = context.instance().getCheckInfo();
-            long keeperFlow = extractor.getKeeperInstantaneousInputKbps();
+            long keeperFlow = (long) extractor.getKeeperInstantaneousInputKbps();
             Map<DcClusterShard, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ()->new ConcurrentHashMap<>());
             keeperContainerResult.put(new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()), keeperFlow);
         } catch (Throwable throwable) {

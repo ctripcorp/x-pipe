@@ -54,6 +54,10 @@ public class InfoResultExtractor {
         return extract(key, (value) -> value == null ? null : Long.parseLong(value));
     }
 
+    public Float extractAsFloat(String key) {
+        return extract(key, (value) -> value == null ? null : Float.parseFloat(value));
+    }
+
     public Map<String, String> extract(String[] keys) {
 
         genKeyValues();
@@ -106,7 +110,7 @@ public class InfoResultExtractor {
         return extractAsLong(KEY_SYNC_PARTIAL_ERR);
     }
 
-    public long getKeeperInstantaneousInputKbps() { return extractAsLong(KEY_INSTANTANEOUS_INPUT_KBPS);}
+    public float getKeeperInstantaneousInputKbps() { return extractAsFloat(KEY_INSTANTANEOUS_INPUT_KBPS);}
 
     public long getUsedMemory() { return extractAsLong(KEY_USED_MEMORY);}
 
