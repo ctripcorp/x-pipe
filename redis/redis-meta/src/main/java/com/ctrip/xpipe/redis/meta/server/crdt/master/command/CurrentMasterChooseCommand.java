@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import org.springframework.util.CollectionUtils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -61,6 +62,7 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
     protected List<RedisMeta> getMasters(List<RedisMeta> allRedises) {
 
         List<RedisMeta> result = new LinkedList<>();
+        if (CollectionUtils.isEmpty(allRedises)) return result;
 
         for(RedisMeta redisMeta : allRedises){
             if(isMaster(redisMeta)) {

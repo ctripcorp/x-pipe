@@ -89,6 +89,15 @@ public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
     }
 
     @Test
+    public void testRedisNull() throws Exception {
+        chooseCommand = new CurrentMasterChooseCommand(clusterDbId, shardDbId, null, scheduled,
+                getXpipeNettyClientKeyedObjectPool(), checkRedisTimeoutSeconds);
+
+        RedisMeta master = chooseCommand.choose();
+        Assert.assertNull(master);
+    }
+
+    @Test
     public void testChooseNoMaster() throws Exception {
         redis1Master = false;
         redis2Master = false;
