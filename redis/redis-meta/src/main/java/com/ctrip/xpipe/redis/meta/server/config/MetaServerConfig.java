@@ -50,4 +50,6 @@ public interface MetaServerConfig extends CoreConfig {
 	long getNewMasterCacheTimeoutMilli();
 
 	String getChooseRouteStrategyType();
+
+	int getConsoleNotifycationTaskQueueSize();
 }

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -40,6 +41,9 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
+	@Autowired
+	private MetaServerConfig config;
+
 	private ExecutorService executors;
 
 	private ScheduledExecutorService scheduled;
@@ -61,7 +65,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 		super.doInitialize();
 		scheduled = Executors.newScheduledThreadPool(OsUtils.getMultiCpuOrMax(1, maxScheduled), XpipeThreadFactory.create("ConsoleNotifycationTaskScheduled"));
 		executors = DefaultExecutorFactory.createAllowCoreTimeout("ConsoleNotifycationTask", OsUtils.defaultMaxCoreThreadCount()).createExecutorService();
-		oneThreadTaskExecutor = new OneThreadTaskExecutor(getRetryFactory(), executors);
+		oneThreadTaskExecutor = new OneThreadTaskExecutor(getRetryFactory(), executors, config.getConsoleNotifycationTaskQueueSize());
 	}
 	
 	@Override

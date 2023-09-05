@@ -56,6 +56,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
+	private static final String KEY_CONSOLE_NOTIFYCATION_TASK_QUEUE_SIZE = "console.notifycation.task.queue.size";
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
 	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
@@ -206,6 +208,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public String getChooseRouteStrategyType() {
 		return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);
+	}
+
+	@Override
+	public int getConsoleNotifycationTaskQueueSize() {
+		return getIntProperty(KEY_CONSOLE_NOTIFYCATION_TASK_QUEUE_SIZE, 5000);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {
