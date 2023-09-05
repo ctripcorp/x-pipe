@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -42,6 +43,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver implements KeeperElectorManager, Observer, TopElement{
 
 	public static final int  FIRST_PATH_CHILDREN_CACHE_SLEEP_MILLI = 50;
+
+	public static final String DEFAULT_KEEPER_ELECT_TYPE = "keeperElect";
 
 	@Autowired
 	private ZkClient zkClient;
@@ -161,6 +164,8 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	protected void updateShardLeader(List<List<ChildData>> childrenDataList, Long clusterDbId, Long shardDbId){
 		logger.info("[updateShardLeader]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
+		CatEventMonitor.DEFAULT.logEvent(DEFAULT_KEEPER_ELECT_TYPE, String.format("%s-%s", clusterDbId, shardDbId));
+
 		List<KeeperMeta> survivalKeepers = new ArrayList<>();
 		int expectedKeepers = 0;
 
