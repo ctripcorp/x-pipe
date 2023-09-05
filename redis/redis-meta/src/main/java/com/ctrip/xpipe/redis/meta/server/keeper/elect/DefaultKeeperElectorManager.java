@@ -11,10 +11,13 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkUtils;
@@ -29,10 +32,17 @@ import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
  * @author wenchao.meng
@@ -51,6 +61,29 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
+
+	@Autowired
+	private MetaServerConfig config;
+
+	@Resource(name = SCHEDULED_EXECUTOR)
+	private ScheduledExecutorService scheduled;
+
+	private ScheduledFuture<?> scheduledFuture;
+
+	private Map<String, Integer> shardKeeperElectCount = new HashMap<>();
+
+	@PostConstruct
+	public void init() {
+		scheduledFuture = scheduled.scheduleAtFixedRate(() -> shardKeeperElectCount.clear(), config.getKeeperElectTimingCycleMills(),
+				config.getKeeperElectTimingCycleMills(), TimeUnit.MILLISECONDS);
+	}
+
+	@PreDestroy
+	public void preDestroy() {
+		if (scheduledFuture != null) {
+			scheduledFuture.cancel(true);
+		}
+	}
 
 	private void observeLeader(final ClusterMeta cluster) {
 		logger.info("[observeLeader]{}", cluster.getDbId());
@@ -166,6 +199,14 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		logger.info("[updateShardLeader]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
 		CatEventMonitor.DEFAULT.logEvent(DEFAULT_KEEPER_ELECT_TYPE, String.format("%s-%s", clusterDbId, shardDbId));
 
+		String shardKey = String.format("cluster_%s,shard_%s", clusterDbId, shardDbId);
+		int alreadyKeeperElectCount = MapUtils.getOrCreate(shardKeeperElectCount, shardKey,  () -> 0);
+		if (alreadyKeeperElectCount >= config.getMaxKeeperElectTimesInFixedTime()) {
+			logger.warn("updateShardLeader]cluster_{}, shard_{} changed too much");
+			return;
+		}
+		shardKeeperElectCount.putIfAbsent(shardKey, alreadyKeeperElectCount + 1);
+
 		List<KeeperMeta> survivalKeepers = new ArrayList<>();
 		int expectedKeepers = 0;
 
@@ -226,5 +267,10 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	public void setKeeperActiveElectAlgorithmManager(
 			KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager) {
 		this.keeperActiveElectAlgorithmManager = keeperActiveElectAlgorithmManager;
+	}
+
+	@VisibleForTesting
+	public Map<String, Integer> getShardKeeperElectCount() {
+		return shardKeeperElectCount;
 	}
 }

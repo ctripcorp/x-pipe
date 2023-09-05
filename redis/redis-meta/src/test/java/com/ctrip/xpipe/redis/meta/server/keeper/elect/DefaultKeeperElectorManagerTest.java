@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -22,6 +23,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
@@ -98,6 +100,38 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 			}
 
 		}));
+	}
+
+	@Test
+	public void testUpdateShardLeaderWithAlreadyElected(){
+
+		String prefix = "/path";
+		List<ChildData> dataList = new LinkedList<>();
+		final int portBegin = 4000;
+		final int count = 3;
+
+		dataList.add(new ChildData(prefix + "/" + randomString(10) +"-latch-02", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 1))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
+		Map<String, Integer> shardKeeperElectCount = keeperElectorManager.getShardKeeperElectCount();
+		shardKeeperElectCount.putIfAbsent(String.format("cluster_%s,shard_%s", clusterMeta.getDbId(), shardMeta.getDbId()), 1);
+		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
+		Mockito.verify(keeperActiveElectAlgorithm, Mockito.never()).select(Mockito.any(), Mockito.any(), Mockito.any());
+	}
+
+	@Test
+	public void testUpdateShardLeaderWithoutElected(){
+
+		String prefix = "/path";
+		List<ChildData> dataList = new LinkedList<>();
+		final int portBegin = 4000;
+		final int count = 3;
+
+		dataList.add(new ChildData(prefix + "/" + randomString(10) +"-latch-02", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 1))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
+		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
+		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
+		Mockito.verify(keeperActiveElectAlgorithm, times(1)).select(Mockito.any(), Mockito.any(), Mockito.any());
 	}
 
 	@Test

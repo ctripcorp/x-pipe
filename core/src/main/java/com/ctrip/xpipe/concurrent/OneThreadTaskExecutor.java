@@ -12,9 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -50,13 +50,13 @@ public class OneThreadTaskExecutor implements Destroyable {
     public OneThreadTaskExecutor(RetryCommandFactory<?> retryCommandFactory, Executor executors) {
         this.retryCommandFactory = retryCommandFactory;
         this.executors = executors;
-        tasks = new ConcurrentLinkedDeque<>();
+        tasks = new ConcurrentLinkedQueue<>();
     }
 
     public OneThreadTaskExecutor(RetryCommandFactory<?> retryCommandFactory, Executor executors, int queueCapacity) {
         this.retryCommandFactory = retryCommandFactory;
         this.executors = executors;
-        tasks = new LinkedBlockingDeque<>(queueCapacity);
+        tasks = new LinkedBlockingQueue<>(queueCapacity);
     }
 
     public void executeCommand(Command<?> command) {

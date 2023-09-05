@@ -52,4 +52,8 @@ public interface MetaServerConfig extends CoreConfig {
 	String getChooseRouteStrategyType();
 
 	int getConsoleNotifycationTaskQueueSize();
+
+	int getMaxKeeperElectTimesInFixedTime();
+
+	int getKeeperElectTimingCycleMills();
 }
