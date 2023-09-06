@@ -3,8 +3,11 @@ package com.ctrip.xpipe.redis.core.proxy.endpoint;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -26,7 +29,7 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
 
     protected static long DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI = Long.parseLong(System.getProperty("endpoint.health.check.drop.interval", "600000"));
 
-    private static final int ENDPOINT_HEALTH_CHECK_INTERVAL = Integer.parseInt(System.getProperty("endpoint.health.check.interval", "1000"));
+    protected static int ENDPOINT_HEALTH_CHECK_INTERVAL = Integer.parseInt(System.getProperty("endpoint.health.check.interval", "1000"));
 
     private static final String MONITOR_TYPE = "Endpoint.Health.State.Change";
 
@@ -50,12 +53,33 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
                 return true;
             }
             if(!allHealthStatus.containsKey(endpoint)) {
-                allHealthStatus.put(endpoint, new EndpointHealthStatus(endpoint));
+                EndpointHealthStatus status = new EndpointHealthStatus(endpoint);
+                allHealthStatus.put(endpoint, status);
+                status.start();
             }
             return allHealthStatus.get(endpoint).isHealthy();
         } catch (Exception e) {
             logger.error("[checkConnectivity]", e);
         }
+        return false;
+    }
+
+    @Override
+    public boolean resetIfNeed(ProxyEndpoint endpoint) {
+        if (!allHealthStatus.containsKey(endpoint)) return false;
+        EndpointHealthStatus status = allHealthStatus.get(endpoint);
+
+        long currentTime = System.currentTimeMillis();
+        if(currentTime - status.getLastHealthyTimeMilli() >= DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI) {
+            status = allHealthStatus.remove(endpoint);
+            try {
+                status.stop();
+                return true;
+            } catch (Throwable th) {
+                logger.info("[resetIfNeed][reset fail]", th);
+            }
+        }
+
         return false;
     }
 
@@ -66,7 +90,7 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
 
 
     @VisibleForTesting
-    protected final class EndpointHealthStatus {
+    protected final class EndpointHealthStatus extends AbstractStartStoppable implements Startable, Stoppable {
 
         private AtomicReference<EndpointHealthState> healthState = new AtomicReference<>(EndpointHealthState.UNKNOWN);
 
@@ -76,11 +100,29 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
 
         private Endpoint endpoint;
 
+        private AtomicReference<TcpPortCheckCommand> runningCmd;
+
         private ScheduledFuture future;
 
-        private EndpointHealthStatus(Endpoint endpoint) {
+        protected EndpointHealthStatus(Endpoint endpoint) {
             this.endpoint = endpoint;
-            scheduledHealthCheck();
+            this.runningCmd = new AtomicReference<>();
+        }
+
+        @Override
+        protected void doStart() throws Exception {
+            future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+                @Override
+                protected void doRun() {
+                    check();
+                }
+            }, ENDPOINT_HEALTH_CHECK_INTERVAL, ENDPOINT_HEALTH_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        protected void doStop() throws Exception {
+            future.cancel(true);
+            future = null;
         }
 
         public boolean isHealthy() {
@@ -100,7 +142,6 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
                 isHealthy = true;
             } else if(EndpointHealthState.UNHEALTHY.equals(state)) {
                 isHealthy = false;
-                checkIfNeedRemove();
             }
 
             if(!previous.equals(current)) {
@@ -110,16 +151,13 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
             }
         }
 
-        private void scheduledHealthCheck() {
-            future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() {
-                    check();
-                }
-            }, ENDPOINT_HEALTH_CHECK_INTERVAL, ENDPOINT_HEALTH_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
-        }
+        @VisibleForTesting
+        protected void check() {
+            if (null != runningCmd.get() && !runningCmd.get().future().isDone()) {
+                logger.debug("[check][skip for last check running]");
+                return;
+            }
 
-        private void check() {
             TcpPortCheckCommand command = new TcpPortCheckCommand(endpoint.getHost(), endpoint.getPort());
             command.execute().addListener(new CommandFutureListener<Boolean>() {
                 @Override
@@ -129,21 +167,23 @@ public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChe
                             setHealthState(healthState.get().afterSuccess());
                             return;
                         }
-                    } catch (Exception e) {
-                        logger.error("[check][operationComplete]", e);
+                    } catch (Throwable th) {
+                        logger.error("[check][operationComplete]", th);
                     }
                     setHealthState(healthState.get().afterFail());
                 }
             });
+            runningCmd.set(command);
         }
 
-        private void checkIfNeedRemove() {
-            long currentTime = System.currentTimeMillis();
-            if(currentTime - lastHealthyTimeMilli >= DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI) {
-                logger.warn("[checkIfNeedRemove][over 10 min] remove health check for endpoint, {}", endpoint);
-                future.cancel(true);
-                allHealthStatus.remove(endpoint);
-            }
+        @VisibleForTesting
+        protected CommandFuture<Boolean> getCurrentCheckFuture() {
+            if (null == runningCmd.get()) return null;
+            return runningCmd.get().future();
+        }
+
+        private long getLastHealthyTimeMilli() {
+            return lastHealthyTimeMilli;
         }
 
         @Override

@@ -11,4 +11,6 @@ public interface EndpointHealthChecker<T extends Endpoint> {
 
     boolean checkConnectivity(T endpoint);
 
+    boolean resetIfNeed(T endpoint);
+
 }
