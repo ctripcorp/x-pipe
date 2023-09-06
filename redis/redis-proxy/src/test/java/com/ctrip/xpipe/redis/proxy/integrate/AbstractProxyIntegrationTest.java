@@ -75,6 +75,11 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
             public boolean checkConnectivity(ProxyEndpoint endpoint) {
                 return true;
             }
+
+            @Override
+            public boolean resetIfNeed(ProxyEndpoint endpoint) {
+                return false;
+            }
         });
         TestResourceManager resourceManager = new TestResourceManager();
         resourceManager.setEndpointManager(endpointManager);

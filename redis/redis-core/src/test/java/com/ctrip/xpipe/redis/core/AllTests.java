@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.redis.core.proxy.command.ProxyMonitorCommandTest;
 import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommandTest;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointHealthCheckerTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SessionTrafficResultTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResultTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParserTest;
@@ -97,6 +98,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisReplStreamParseTest.class,
         RedisOpMsetTest.class,
         RedisOpDelTest.class,
+
+        DefaultProxyEndpointHealthCheckerTest.class,
 
         AllRdbTests.class
 })

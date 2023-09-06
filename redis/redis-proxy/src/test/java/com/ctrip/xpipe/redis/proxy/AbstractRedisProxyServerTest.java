@@ -98,6 +98,11 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
             public boolean checkConnectivity(ProxyEndpoint endpoint) {
                 return true;
             }
+
+            @Override
+            public boolean resetIfNeed(ProxyEndpoint endpoint) {
+                return false;
+            }
         });
         tunnelManager = new DefaultTunnelManager();
         tunnelManager = spy(tunnelManager);

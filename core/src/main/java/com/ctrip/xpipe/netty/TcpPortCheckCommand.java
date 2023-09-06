@@ -22,7 +22,7 @@ import java.net.InetSocketAddress;
  */
 public class TcpPortCheckCommand extends AbstractCommand<Boolean> {
 
-    private static final int CHECK_TIMEOUT_MILLI = 10000;
+    public static int CHECK_TIMEOUT_MILLI = 10000;
     private String host;
     private int port;
     private static Logger logger = LoggerFactory.getLogger(TcpPortCheckCommand.class);
