@@ -91,11 +91,13 @@ public class CurrentMeta implements Releasable {
 			currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
 			return true;
 		}
+		logger.debug("[setSurviveKeepers] cluster_{},shard_{} keeper info not changed, ignore", clusterDbId, shardDbId);
 		return false;
 	}
 
 	private boolean isKeeperInfoChanged(CurrentShardKeeperMeta currentShardMeta, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
 		if (CollectionUtils.isEmpty(currentShardMeta.getSurviveKeepers()) || currentShardMeta.getActiveKeeper() == null) return true;
+		if (currentShardMeta.getSurviveKeepers().size() != surviveKeepers.size()) return false;
 
 		Set<KeeperMeta> surviveKeeperSet = new HashSet<>(surviveKeepers);
 		for (KeeperMeta keeperMeta : currentShardMeta.getSurviveKeepers()) {

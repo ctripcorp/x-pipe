@@ -17,7 +17,10 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.impl.ClusterShardCachedNewMast
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.*;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMasterTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
-import com.ctrip.xpipe.redis.meta.server.job.*;
+import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.DefaultApplierStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.appliermaster.impl.DefaultApplierMasterChooserManagerTest;
@@ -31,6 +34,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAl
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.impl.DefaultElectionLimitTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
@@ -119,6 +123,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,
 	DefaultRedisGtidCollectorTest.class,
+	DefaultElectionLimitTest.class,
 })
 public class AllTests {
 
