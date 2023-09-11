@@ -145,10 +145,6 @@
                     <groupId>com.ctrip.framework</groupId>
                     <artifactId>framework-bom</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 
@@ -176,8 +172,12 @@
         <dependency>
             <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
             <artifactId>emailservice</artifactId>
-            <version>1.2.2</version>
+            <version>1.2.9</version>
             <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>com.google.protobuf</groupId>
                     <artifactId>protobuf-java</artifactId>
@@ -185,6 +185,18 @@
                 <exclusion>
                     <groupId>com.ctrip.framework.cdubbo</groupId>
                     <artifactId>cdubbo-serialization</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-protobuf</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-protobuf-lite</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-stub</artifactId>
+                    <groupId>io.grpc</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
