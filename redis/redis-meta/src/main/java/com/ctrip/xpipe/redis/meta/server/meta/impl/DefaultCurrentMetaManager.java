@@ -29,7 +29,6 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -512,8 +511,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 
 	@Override
-	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
-		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviceKeepers, activeKeeper);
+	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
+		if (!currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper)) return ;
 		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
 	}
 

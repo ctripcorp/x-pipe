@@ -175,6 +175,21 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	}
 
 	@Override
+	public int getConsoleNotifycationTaskQueueSize() {
+		return 100;
+	}
+
+	@Override
+	public int getMaxKeeperElectTimesInFixedTime() {
+		return 1;
+	}
+
+	@Override
+	public int getKeeperElectTimingCycleMills() {
+		return 1000;
+	}
+
+	@Override
 	public int getKeeperSetIndexInterval() {
 		return 30 * 1000;
 	}
