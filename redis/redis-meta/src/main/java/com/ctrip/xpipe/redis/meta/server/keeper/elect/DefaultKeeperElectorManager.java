@@ -5,11 +5,13 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.meta.server.keeper.ElectionLimit;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
@@ -43,8 +45,13 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	public static final int  FIRST_PATH_CHILDREN_CACHE_SLEEP_MILLI = 50;
 
+	public static final String DEFAULT_KEEPER_ELECT_TYPE = "keeperElect";
+
 	@Autowired
 	private ZkClient zkClient;
+
+	@Autowired
+	private ElectionLimit electionLimit;
 
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
@@ -160,7 +167,15 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	}
 
 	protected void updateShardLeader(List<List<ChildData>> childrenDataList, Long clusterDbId, Long shardDbId){
-		logger.info("[updateShardLeader]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
+		logger.info("[updateShardLeader]cluster_{},shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
+		String shardKey = String.format("cluster_%s,shard_%s", clusterDbId, shardDbId);
+		CatEventMonitor.DEFAULT.logEvent(DEFAULT_KEEPER_ELECT_TYPE, shardKey);
+
+		if (!electionLimit.tryAcquire(shardKey)) {
+			logger.warn("[updateShardLeader]{} keeper trigger too much elections", shardKey);
+			return;
+		}
+
 		List<KeeperMeta> survivalKeepers = new ArrayList<>();
 		int expectedKeepers = 0;
 

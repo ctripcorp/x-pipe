@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -29,7 +30,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     private Command<?> currentCommand;
 
-    protected Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
+    protected Queue<Command<?>> tasks;
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -42,9 +43,20 @@ public class OneThreadTaskExecutor implements Destroyable {
         this(DefaultRetryCommandFactory.noRetryFactory(), executors);
     }
 
+    public OneThreadTaskExecutor(Executor executors, int queueCapacity) {
+        this(DefaultRetryCommandFactory.noRetryFactory(), executors, queueCapacity);
+    }
+
     public OneThreadTaskExecutor(RetryCommandFactory<?> retryCommandFactory, Executor executors) {
         this.retryCommandFactory = retryCommandFactory;
         this.executors = executors;
+        tasks = new ConcurrentLinkedQueue<>();
+    }
+
+    public OneThreadTaskExecutor(RetryCommandFactory<?> retryCommandFactory, Executor executors, int queueCapacity) {
+        this.retryCommandFactory = retryCommandFactory;
+        this.executors = executors;
+        tasks = new LinkedBlockingQueue<>(queueCapacity);
     }
 
     public void executeCommand(Command<?> command) {

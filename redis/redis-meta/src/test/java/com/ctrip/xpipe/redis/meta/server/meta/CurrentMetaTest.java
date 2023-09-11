@@ -72,6 +72,35 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	}
 
 	@Test
+	public void testSetSurviveKeepers() {
+		List<KeeperMeta> surviveKeepers = new ArrayList<>();
+		KeeperMeta keeperMeta1 = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6000);
+		surviveKeepers.add(keeperMeta1);
+		KeeperMeta activeKeeper = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6001).setActive(true);
+		surviveKeepers.add(activeKeeper);
+		boolean result = currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper);
+		Assert.assertEquals(true, result);
+
+		List<KeeperMeta> surviveKeepers2 = new ArrayList<>();
+		surviveKeepers2.add(activeKeeper);
+		surviveKeepers2.add(keeperMeta1);
+		result = currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers2, activeKeeper);
+		Assert.assertEquals(false, result);
+
+		List<KeeperMeta> surviveKeepers3 = new ArrayList<>();
+		surviveKeepers3.add(activeKeeper);
+		KeeperMeta keeperMeta3 = new KeeperMeta().setSurvive(true).setIp("127.0.0.2").setPort(6000);
+		surviveKeepers3.add(keeperMeta3);
+		result = currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers3, activeKeeper);
+		Assert.assertEquals(true, result);
+
+		keeperMeta3.setActive(true);
+		result = currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers3, keeperMeta3);
+		Assert.assertEquals(true, result);
+		Assert.assertEquals(keeperMeta3, currentMeta.getKeeperActive(clusterDbId, shardDbId));
+	}
+
+	@Test
 	public void testAddResourceConcurrently() throws Exception {
 		int concurrentSize = 1000;
 		AtomicInteger releaseCount = new AtomicInteger(0);

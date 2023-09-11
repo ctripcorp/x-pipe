@@ -56,6 +56,12 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
+	private static final String KEY_CONSOLE_NOTIFYCATION_TASK_QUEUE_SIZE = "console.notifycation.task.queue.size";
+
+	private static final String KEY_MAX_KEEPER_ELECT_TIMES_IN_FIXED_TIME = "max.keeper.elect.times.in.fixed.time";
+
+	private static final String KEY_KEEPER_ELECT_TIMING_CYLCLE_MILLS = "keeper.elect.timing.cycle.mills";
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
 	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
@@ -206,6 +212,21 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public String getChooseRouteStrategyType() {
 		return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);
+	}
+
+	@Override
+	public int getConsoleNotifycationTaskQueueSize() {
+		return getIntProperty(KEY_CONSOLE_NOTIFYCATION_TASK_QUEUE_SIZE, 5000);
+	}
+
+	@Override
+	public int getMaxKeeperElectTimesInFixedTime() {
+		return getIntProperty(KEY_MAX_KEEPER_ELECT_TIMES_IN_FIXED_TIME, 1);
+	}
+
+	@Override
+	public int getKeeperElectTimingCycleMills() {
+		return getIntProperty(KEY_KEEPER_ELECT_TIMING_CYLCLE_MILLS, 1000);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {

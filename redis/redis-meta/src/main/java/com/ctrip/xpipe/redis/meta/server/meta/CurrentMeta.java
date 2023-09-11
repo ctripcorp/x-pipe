@@ -11,14 +11,19 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.*;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentOneWayShardMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentShardApplierMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentShardKeeperMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.*;
@@ -77,13 +82,29 @@ public class CurrentMeta implements Releasable {
 		return currentShardInstanceMeta .watchIfNotWatched();
 	}
 
-	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
+	public boolean setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
 			KeeperMeta activeKeeper) {
 		checkClusterSupportKeeper(clusterDbId);
 
 		CurrentShardKeeperMeta currentShardMeta = currentShardKeeperMetaOrThrowException(clusterDbId, shardDbId);
-		currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
+		if (isKeeperInfoChanged(currentShardMeta, surviveKeepers, activeKeeper)){
+			currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
+			return true;
+		}
+		logger.debug("[setSurviveKeepers] cluster_{},shard_{} keeper info not changed, ignore", clusterDbId, shardDbId);
+		return false;
+	}
 
+	private boolean isKeeperInfoChanged(CurrentShardKeeperMeta currentShardMeta, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
+		if (CollectionUtils.isEmpty(currentShardMeta.getSurviveKeepers()) || currentShardMeta.getActiveKeeper() == null) return true;
+		if (currentShardMeta.getSurviveKeepers().size() != surviveKeepers.size()) return false;
+
+		Set<KeeperMeta> surviveKeeperSet = new HashSet<>(surviveKeepers);
+		for (KeeperMeta keeperMeta : currentShardMeta.getSurviveKeepers()) {
+			if (!surviveKeeperSet.contains(keeperMeta)) return true;
+		}
+
+		return !ObjectUtils.equals(currentShardMeta.getActiveKeeper(), activeKeeper);
 	}
 
 	public void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers,
