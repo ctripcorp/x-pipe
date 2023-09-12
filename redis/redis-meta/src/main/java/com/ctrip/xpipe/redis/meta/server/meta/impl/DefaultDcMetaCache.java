@@ -334,6 +334,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			lock.lock();
 			current = dcMetaManager.get().getClusterMeta(clusterMeta.getId());
 			dcMetaManager.get().update(clusterMeta);
+			updateMetaLastChangeTime();
 		} catch (Exception e) {
 			logger.info("[clusterModified]exception{}, {}", current, clusterMeta, e);
 			throw e;
@@ -344,6 +345,12 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		logger.info("[clusterModified]{}, {}", current, clusterMeta);
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterChanged(current, clusterMeta);
 		notifyObservers(dcMetaComparator);
+	}
+
+	private void updateMetaLastChangeTime() {
+		synchronized (this) {
+			metaModifyTime.set(System.currentTimeMillis());
+		}
 	}
 
 	@Override
@@ -459,10 +466,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	@Override
 	public void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
-		synchronized (this) {
-			// serial with dc meta change
-			metaModifyTime.set(System.currentTimeMillis());
-		}
+		updateMetaLastChangeTime();
 		dcMetaManager.get().primaryDcChanged(clusterDbId, shardDbId, newPrimaryDc);
 	}
 
@@ -510,5 +514,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@VisibleForTesting
 	protected void setRouteChooseStrategyFactory(RouteChooseStrategyFactory routeChooseStrategyFactory) {
 		this.routeChooseStrategyFactory = routeChooseStrategyFactory;
+	}
+
+	@VisibleForTesting
+	protected AtomicLong getMetaModifyTime() {
+		return metaModifyTime;
 	}
 }
