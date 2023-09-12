@@ -81,6 +81,28 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     }
 
     @Test
+    public void testClusterModify() throws Exception {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        dcMetaCache.setMetaServerConfig(new UnitTestServerConfig());
+
+
+        // check change success
+        DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
+        DcMeta future = MetaClone.clone(dcMeta);
+        future.getClusters().put("mockTestClusterForChangeSuccess", new ClusterMeta());
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
+        Assert.assertEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
+        long lastMetaModifyTime = dcMetaCache.getMetaModifyTime().get();
+
+        sleep(1000);
+        ClusterMeta cluster = dcMeta.getClusters().get("cluster1");
+        ClusterMeta newCluster = MetaClone.clone(cluster);
+        newCluster.getShards().put("shard3", new ShardMeta().setId("shard3"));
+        dcMetaCache.clusterModified(newCluster);
+        Assert.assertEquals(true, dcMetaCache.getMetaModifyTime().get() > lastMetaModifyTime);
+    }
+
+    @Test
     public void testChangeDcMetaAndPullOldMeta() {
         XpipeMeta xpipeMeta = getXpipeMeta();
         UnitTestServerConfig localConfig = new UnitTestServerConfig();
