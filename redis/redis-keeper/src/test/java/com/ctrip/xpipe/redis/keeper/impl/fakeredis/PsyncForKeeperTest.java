@@ -7,11 +7,14 @@ import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+
+import static com.ctrip.xpipe.redis.core.protocal.MASTER_STATE.REDIS_REPL_CONNECTING;
 
 /**
  * @author lishanglin
@@ -73,25 +76,53 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
     }
 
     @Test
-    public void testKeeperReFullSyncAfterRedisReplChange() throws Exception {
-        RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis(1000, 10000);
-        RedisKeeperServer keeperServer2 = startRedisKeeperServer(1, 10000, 100000);
-        RedisKeeperServer keeperServer3 = startRedisKeeperServer(1, 10000, 100000);
+    public void testOnlyBackupKeeperPartialSync() throws Exception {
+        RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis(100, 10000);
+        RedisKeeperServer keeperServer2 = startRedisKeeperServer(100, 10000, 100000);
+        RedisKeeperServer keeperServer3 = startRedisKeeperServer(100, 10000, 100000);
 
-        keeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer.getListeningPort()));
-        waitCmdNotContinueWithRdb(keeperServer2);
+        // active keeper do full sync
+        keeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", keeperServer.getListeningPort()));
         waitKeeperSyncWithRedis(keeperServer2);
-        DefaultReplicationStore replicationStore = (DefaultReplicationStore)keeperServer2.getReplicationStore();
+        Assert.assertNotNull(keeperServer2.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbFile());
 
         int port = randomPort();
-        keeperServer3.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("localhost", port));
+        // backup keeper always do partial sync even if not first psync
+        keeperServer3.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", port));
         keeperServer3.reconnectMaster();
-        waitConditionUntilTimeOut(() -> keeperServer3.getTryConnectMasterCnt() > 1, 10000, 1000);
-        // not first connect and send psync ? -1
-        keeperServer3.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("localhost", keeperServer2.getListeningPort()));
-        // keeperServer2 find rdb from keeperServer1 not continue then close store and send psync ? -1
+        keeperServer3.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", keeperServer2.getListeningPort()));
+        waitCmdNotContinueWithRdb(keeperServer3);
         waitKeeperSyncWithRedis(keeperServer3);
-        Assert.assertNotNull(keeperServer3.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbFile());
+    }
+
+    @Test
+    public void testBackupKeeperTerminateRefullsyncAndPartialLater() throws Exception {
+        RedisKeeperServer keeperServer1 = startRedisKeeperServerAndConnectToFakeRedis(1, allCommandsSize);
+        RedisKeeperServer keeperServer2 = startRedisKeeperServer(100, 10000, 100000);
+
+        keeperServer2.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", keeperServer1.getListeningPort()));
+        waitKeeperSyncWithRedis(keeperServer2);
+
+        // disconnect with master
+        int port = randomPort();
+        keeperServer2.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", port));
+        waitConditionUntilTimeOut(() -> keeperServer2.getRedisMaster().getMasterState() == REDIS_REPL_CONNECTING);
+
+        // refresh activeKeeper's backlog
+        fakeRedisServer.setCommandsLength(allCommandsSize * 2);
+        fakeRedisServer.reGenerateRdb();
+        waitCmdNotContinueWithRdb(keeperServer1);
+
+        KeeperStats keeperStats = keeperServer1.getKeeperMonitor().getKeeperStats();
+        long originFsyncCnt = keeperStats.getFullSyncCount();
+
+        // upstream cmd not continue and refullsync
+        logger.info("[lsl] {}", keeperServer1.getListeningPort());
+        keeperServer2.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", keeperServer1.getListeningPort()));
+        waitKeeperSyncWithRedis(keeperServer2);
+
+        Assert.assertNull(keeperServer2.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbFile());
+        Assert.assertEquals(originFsyncCnt + 1, keeperStats.getFullSyncCount());
     }
 
     private RedisKeeperServer restartKeeperServer(RedisKeeperServer keeperServer, long replKeepSecondsAfterDown, long waitSecondsAfterDown) throws Exception {

@@ -93,10 +93,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	KeeperMonitor getKeeperMonitor();
 
-	void tryConnectMaster();
-
-	int getTryConnectMasterCnt();
-
 	void resetDefaultReplication();
 
 	PsyncObserver createPsyncObserverForRdbOnlyRepl();

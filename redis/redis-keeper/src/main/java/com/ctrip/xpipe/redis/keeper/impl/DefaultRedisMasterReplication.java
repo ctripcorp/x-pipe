@@ -7,6 +7,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.PartialOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -180,10 +181,13 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected Psync createPsync() {
 
-		boolean allowKeeperPsync = redisKeeperServer.getTryConnectMasterCnt() <= 1;
+		Psync psync;
+		if (redisKeeperServer.getRedisKeeperServerState().keeperState().isBackup()) {
+			psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+		} else {
+			psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+		}
 
-		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(),
-				allowKeeperPsync, scheduled);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 

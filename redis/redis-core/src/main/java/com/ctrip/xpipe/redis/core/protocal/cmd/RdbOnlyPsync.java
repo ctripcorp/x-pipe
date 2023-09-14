@@ -28,11 +28,6 @@ public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 		// always a fresh ReplicationStore, so do nothing
 	}
 
-	@Override
-	protected boolean useKeeperPsync() {
-		return false;
-	}
-
 	protected void failPsync(Throwable throwable) {
 		super.failPsync(throwable);
 		if (psyncState == PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE) {
