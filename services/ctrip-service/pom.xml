@@ -51,6 +51,16 @@
         <dependency>
             <groupId>com.ctrip.framework.clogging</groupId>
             <artifactId>clogging-agent</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>jackson-core-asl</artifactId>
+                    <groupId>org.codehaus.jackson</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jackson-mapper-asl</artifactId>
+                    <groupId>org.codehaus.jackson</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.unidal.framework</groupId>
@@ -81,6 +91,12 @@
         <dependency>
             <groupId>qunar.tc.qconfig</groupId>
             <artifactId>qconfig-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hickwall-sdk</artifactId>
+                    <groupId>com.ctrip.ops</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
@@ -105,10 +121,6 @@
                     <artifactId>persistence-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.ctrip.ops</groupId>
-                    <artifactId>hickwall-sdk</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>qunar.tc.qconfig</groupId>
                     <artifactId>qconfig-common</artifactId>
                 </exclusion>
@@ -125,6 +137,10 @@
             <artifactId>fireman</artifactId>
             <version>${fireman.version}</version>
             <exclusions>
+                <exclusion>
+                    <artifactId>jsr305</artifactId>
+                    <groupId>com.google.code.findbugs</groupId>
+                </exclusion>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
@@ -151,6 +167,12 @@
         <dependency>
             <groupId>com.ctrip.credis</groupId>
             <artifactId>credis</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hickwall-sdk</artifactId>
+                    <groupId>com.ctrip.ops</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -162,12 +184,32 @@
         <dependency>
             <groupId>org.influxdb</groupId>
             <artifactId>influxdb-java</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>grpc-api</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>grpc-core</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>okio</artifactId>
+                    <groupId>com.squareup.okio</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
+        <dependency>
+            <artifactId>okio</artifactId>
+            <groupId>com.squareup.okio</groupId>
+            <version>1.17.2</version>
+        </dependency>
         <!--Email Service-->
         <dependency>
             <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
@@ -175,30 +217,28 @@
             <version>1.2.9</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
+                    <artifactId>grpc-api</artifactId>
+                    <groupId>io.grpc</groupId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>grpc-core</artifactId>
+                    <groupId>io.grpc</groupId>
+                </exclusion>
+                <exclusion>
                     <artifactId>protobuf-java</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.ctrip.framework.cdubbo</groupId>
-                    <artifactId>cdubbo-serialization</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>grpc-protobuf</artifactId>
-                    <groupId>io.grpc</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>grpc-protobuf-lite</artifactId>
-                    <groupId>io.grpc</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>grpc-stub</artifactId>
-                    <groupId>io.grpc</groupId>
+                    <groupId>com.google.protobuf</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <artifactId>grpc-api</artifactId>
+            <groupId>io.grpc</groupId>
+            <version>1.40.1-ctrip.1</version>
+        </dependency>
+        <dependency>
+            <artifactId>grpc-core</artifactId>
+            <groupId>io.grpc</groupId>
+            <version>1.40.1-ctrip.1</version>
         </dependency>
         <dependency>
             <groupId>com.ctrip.framework.cdubbo</groupId>

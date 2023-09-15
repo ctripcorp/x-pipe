@@ -87,12 +87,23 @@
                <artifactId>persistence-api</artifactId>
             </exclusion>
             <exclusion>
-               <groupId>com.ctrip.ops</groupId>
-               <artifactId>hickwall-sdk</artifactId>
-            </exclusion>
-            <exclusion>
                <groupId>qunar.tc.qconfig</groupId>
                <artifactId>qconfig-common</artifactId>
+            </exclusion>
+            <exclusion>
+               <artifactId>hickwall-sdk</artifactId>
+               <groupId>com.ctrip.ops</groupId>
+            </exclusion>
+         </exclusions>
+      </dependency>
+      <dependency>
+         <artifactId>hickwall-sdk</artifactId>
+         <groupId>com.ctrip.ops</groupId>
+         <version>0.1.13</version>
+         <exclusions>
+            <exclusion>
+               <groupId>com.squareup.okio</groupId>
+               <artifactId>okio</artifactId>
             </exclusion>
          </exclusions>
       </dependency>
