@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
@@ -25,10 +26,7 @@ import org.mockito.MockitoAnnotations;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -480,6 +478,63 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
         Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
     }
+
+    @Test
+    public void visitModified1() {
+        ClusterMeta clusterMeta = getDcMeta("oy").findCluster("cluster2");
+        ClusterMeta clone = MetaClone.clone(clusterMeta);
+        clone.getShards().get("shard2").addRedis(new RedisMeta());
+        manager.visitModified(new ClusterMetaComparator(clusterMeta, clone));
+        verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
+    }
+
+    @Test
+    public void testKeeperChange() throws Exception {
+        String dcId = FoundationService.DEFAULT.getDataCenter();
+        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig);
+        prepareData(dcId);
+        DcMeta future = cloneDcMeta(dcId);
+        future.addKeeperContainer(new KeeperContainerMeta().setId(4L).setIp("1.1.1.4").setPort(8080));
+        KeeperMeta keeperMeta = new KeeperMeta().setKeeperContainerId(4L).setIp("1.1.1.4").setPort(6389);
+        future.findCluster("cluster1").getShards().values().iterator().next().getKeepers().remove(0);
+        future.findCluster("cluster1").getShards().values().iterator().next().getKeepers().add(keeperMeta);
+        future.findCluster("cluster2").getShards().values().iterator().next().getKeepers().remove(1);
+        when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(new XpipeMeta().addDc(future));
+        manager.compare(future);
+
+        // only change keeper reload
+        Mockito.verify(instanceManager, times(2)).removeKeeper(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).getOrCreate(any(KeeperMeta.class));
+        Mockito.verify(instanceManager, times(0)).removeRedisOnlyForUsedMemory(any(HostPort.class));
+        Mockito.verify(instanceManager, times(0)).getOrCreateRedisInstanceForAssignedAction(any(RedisMeta.class));
+
+    }
+
+    @Test
+    public void testRedisChange() throws Exception {
+        String dcId = FoundationService.DEFAULT.getDataCenter();
+        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig);
+        prepareData(dcId);
+        DcMeta future = cloneDcMeta(dcId);
+        future.addKeeperContainer(new KeeperContainerMeta().setId(4L).setIp("1.1.1.4").setPort(8080));
+        KeeperMeta keeperMeta = new KeeperMeta().setKeeperContainerId(4L).setIp("1.1.1.4").setPort(6389);
+        ShardMeta shardMeta = future.findCluster("cluster1").getShards().get("shard1");
+        List<RedisMeta> redises = shardMeta.getRedises();
+        redises.clear();
+        redises.add(new RedisMeta().setIp("1.1.1.1").setPort(6379).setParent(shardMeta));
+        redises.add(new RedisMeta().setIp("2.2.2.2").setPort(6379).setParent(shardMeta));
+        when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(new XpipeMeta().addDc(future));
+        manager.compare(future);
+
+        // only change redis changed
+        Mockito.verify(instanceManager, times(0)).removeKeeper(any(HostPort.class));
+        Mockito.verify(instanceManager, times(0)).getOrCreate(any(KeeperMeta.class));
+        Mockito.verify(instanceManager, times(1)).removeRedisOnlyForUsedMemory(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).getOrCreateRedisInstanceForAssignedAction(any(RedisMeta.class));
+
+    }
+
+
 
     protected DcMeta getDcMeta(String dc) {
         Map<String, DcMeta> dcMetaMap = getXpipeMeta().getDcs();

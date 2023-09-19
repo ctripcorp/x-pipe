@@ -25,18 +25,26 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         Map<Long, KeeperContainerDetailInfo> futureDetailInfo= getAllKeeperContainerDetailInfoFromDcMeta(future, futureAllDcMeta);
 
         Triple<Set<Long>, Set<Long>, Set<Long>> result = getDiff(currentDetailInfo.keySet(), futureDetailInfo.keySet());
-
         result.getFirst().forEach(id -> added.addAll(futureDetailInfo.get(id).getKeeperInstances()));
         result.getLast().forEach(id -> removed.addAll(currentDetailInfo.get(id).getKeeperInstances()));
-
         result.getMiddle().forEach(id -> {
             compareInstanceNode(getAllKeeperInstances(currentDetailInfo.get(id).getKeeperInstances()),
                                 getAllKeeperInstances(futureDetailInfo.get(id).getKeeperInstances()));
-
-            compareInstanceNode(getAllRedisInstances(currentDetailInfo.get(id).getRedisInstances()),
-                                getAllRedisInstances(futureDetailInfo.get(id).getRedisInstances()));
-
         });
+
+        Set<InstanceNode> currentRedises = getAllRedisesFromKeeperDetailInfo(currentDetailInfo);
+        Set<InstanceNode> futureRedises = getAllRedisesFromKeeperDetailInfo(futureDetailInfo);
+        Triple<Set<InstanceNode>, Set<InstanceNode>, Set<InstanceNode>> redisResult = getDiff(currentRedises, futureRedises);
+        redisResult.getFirst().forEach(redis -> added.add(redis));
+        redisResult.getLast().forEach(redis -> removed.add(redis));
+    }
+
+    private Set<InstanceNode> getAllRedisesFromKeeperDetailInfo(Map<Long, KeeperContainerDetailInfo> currentDetailInfo) {
+        Set<InstanceNode> result = new HashSet<>();
+        currentDetailInfo.values().forEach(keeperContainerDetailInfo -> {
+            result.addAll(keeperContainerDetailInfo.getRedisInstances());
+        });
+        return result;
     }
 
     public void compareInstanceNode(List<InstanceNode> current, List<InstanceNode> future) {
