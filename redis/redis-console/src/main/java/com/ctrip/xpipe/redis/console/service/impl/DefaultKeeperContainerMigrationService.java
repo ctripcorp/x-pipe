@@ -32,7 +32,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
 
     @Override
     public void beginMigrateKeeperContainers(List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) {
-        if (!isBegin.compareAndSet(false, true) && readyToMigrationKeeperContainers != null) {
+        if (!isBegin.compareAndSet(false, true)) {
             logger.info("[beginMigrateKeeperContainers] has already begin!!");
             return;
         }
@@ -41,10 +41,6 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
         for (MigrationKeeperContainerDetailModel keeperContainer : readyToMigrationKeeperContainers) {
             List<DcClusterShard> migrateShards = keeperContainer.getMigrateShards();
             if (CollectionUtils.isEmpty(migrateShards)) continue;
-            if (isStop.get() == true) {
-                logger.info("[beginMigrateKeeperContainers] stop migrating");
-                break;
-            }
 
             String srcKeeperContainerIp = keeperContainer.getSrcKeeperContainer().getKeeperIp();
             for (DcClusterShard migrateShard : migrateShards) {
@@ -62,7 +58,6 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
         }
         isBegin.set(false);
         isStop.set(false);
-        readyToMigrationKeeperContainers = null;
     }
 
     @Override

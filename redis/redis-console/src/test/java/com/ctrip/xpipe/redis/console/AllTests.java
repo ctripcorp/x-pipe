@@ -225,6 +225,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
         ClusterTypeUpdateEventListenerTest.class,
 
+        DefaultKeeperContainerMigrationServiceTest.class,
+
         RouteInfoControllerTest.class,
         RedisControllerTest.class,
         DcRelationsServiceTest.class,

@@ -83,6 +83,14 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
         return srcKeeperContainer.equals(that.srcKeeperContainer) && targetKeeperContainer.equals(that.targetKeeperContainer);
     }
 
+    public void setMigrateKeeperCompleteCount(int migrateKeeperCompleteCount) {
+        this.migrateKeeperCompleteCount = migrateKeeperCompleteCount;
+    }
+
+    public int getMigrateKeeperCompleteCount() {
+        return migrateKeeperCompleteCount;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(srcKeeperContainer, targetKeeperContainer);
