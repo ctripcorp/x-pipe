@@ -110,7 +110,7 @@
       <dependency>
          <groupId>qunar.tc.qconfig</groupId>
          <artifactId>qconfig-common</artifactId>
-         <version>${qconfig.client.version}</version>
+<!--         <version>${qconfig.client.version}</version>-->
       </dependency>
 
       <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
