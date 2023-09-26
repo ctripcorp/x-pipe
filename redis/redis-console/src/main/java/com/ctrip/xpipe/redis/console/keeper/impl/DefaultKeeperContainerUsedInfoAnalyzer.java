@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -80,41 +81,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Override
     public List<MigrationKeeperContainerDetailModel> getAllDcReadyToMigrationKeeperContainers() {
         return allDcKeeperContainerDetailModel;
-//
-//        List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels;
-//        synchronized (this) {
-//            if (checkerIndexes.size() != config.getClusterDividedParts()) {
-//                logger.warn("[getAllDcReadyToMigrationKeeperContainers] the info of keeper container is incomplete: {}", checkerIndexes);
-//                return null;
-//            }
-//            newKeeperContainerUsedInfoModels = Lists.newArrayList(allKeeperContainerUsedInfoModels);
-//            allKeeperContainerUsedInfoModels.clear();
-//            checkerIndexes.clear();
-//        }
-//
-//        PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
-//                (keeper1, keeper2) -> (int)(keeper1.getTotalInputFlow() - keeper2.getTotalInputFlow()));
-//        PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
-//                (keeper1, keeper2) -> (int)(keeper1.getTotalRedisUsedMemory() - keeper2.getTotalRedisUsedMemory()));
-//        newKeeperContainerUsedInfoModels.forEach(keeperContainerInfoModel -> {
-//            minPeerDataKeeperContainers.add(keeperContainerInfoModel);
-//            minInputFlowKeeperContainers.add(keeperContainerInfoModel);
-//        });
-//
-//        Map<String, KeeperContainerOverloadStandardModel> keeperContainerOverloadStandards = config.getKeeperContainerOverloadStandards();
-//        KeeperContainerOverloadStandardModel keeperContainerOverloadStandard = keeperContainerOverloadStandards.get(currentDc);
-//        List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
-//        for (KeeperContainerUsedInfoModel keeperContainerUsedInfoModel : newKeeperContainerUsedInfoModels) {
-//            long overloadInputFlow = keeperContainerUsedInfoModel.getTotalInputFlow() - keeperContainerOverloadStandard.getFlowOverload();
-//            long overloadPeerData = keeperContainerUsedInfoModel.getTotalRedisUsedMemory() - keeperContainerOverloadStandard.getPeerDataOverload();
-//
-//            KeeperContainerOverloadCause overloadCause = getKeeperContainerOverloadCause(overloadInputFlow, overloadPeerData);
-//            if (overloadCause == null) continue;
-//
-//            result.addAll(getMigrationKeeperDetails(keeperContainerUsedInfoModel, overloadInputFlow,
-//                    overloadPeerData, overloadCause, keeperContainerOverloadStandard, minInputFlowKeeperContainers, minPeerDataKeeperContainers));
-//        }
-//        return result;
     }
 
     @Override
@@ -139,7 +105,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         });
     }
 
-    private void analyzeKeeperContainerUsedInfo(List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels) {
+    @VisibleForTesting
+    void analyzeKeeperContainerUsedInfo(List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels) {
         PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
                 (keeper1, keeper2) -> (int)(keeper1.getTotalInputFlow() - keeper2.getTotalInputFlow()));
         PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
@@ -172,23 +139,28 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                                                                                 PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers) {
 
         switch (overloadCause) {
-            case PEER_DATA_OVERLoad:
-                return getMigrationKeeperDetailsByPeerData(src, overloadPeerData, keeperContainerOverloadStandard, minPeerDataKeeperContainers);
+            case PEER_DATA_OVERLOAD:
+                return getMigrationKeeperDetails(src, true, overloadPeerData, keeperContainerOverloadStandard, minPeerDataKeeperContainers);
             case INPUT_FLOW_OVERLOAD:
             case BOTH:
-                return getMigrationKeeperDetailsByInputFlow(src, overloadInputFlow, keeperContainerOverloadStandard, minInputFlowKeeperContainers);
+                return getMigrationKeeperDetails(src, false, overloadInputFlow, keeperContainerOverloadStandard, minInputFlowKeeperContainers);
             default:
                 logger.warn("invalid keeper container overload cause {}", overloadCause);
                 return null;
         }
     }
 
-    private List<MigrationKeeperContainerDetailModel> getMigrationKeeperDetailsByInputFlow(KeeperContainerUsedInfoModel src,
-                                                                                           long overloadInputFlow, KeeperContainerOverloadStandardModel keeperContainerOverloadStandard,
-                                                                                           PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers) {
-
-        List<Map.Entry<DcClusterShard, Pair<Long, Long>>> allDcClusterShards = src.getDetailInfo().entrySet().stream()
-                .sorted((o1, o2) -> (int) (o2.getValue().getKey() - o1.getValue().getKey())).collect(Collectors.toList());
+    private List<MigrationKeeperContainerDetailModel> getMigrationKeeperDetails(KeeperContainerUsedInfoModel src,  boolean isPeerDataOverload,
+                                           long overloadData, KeeperContainerOverloadStandardModel keeperContainerOverloadStandard,
+                                           PriorityQueue<KeeperContainerUsedInfoModel> availableKeeperContainers) {
+        List<Map.Entry<DcClusterShard, Pair<Long, Long>>> allDcClusterShards = null;
+        if (isPeerDataOverload) {
+            allDcClusterShards = src.getDetailInfo().entrySet().stream()
+                    .sorted((o1, o2) -> (int) (o2.getValue().getValue() - o1.getValue().getValue())).collect(Collectors.toList());
+        } else {
+            allDcClusterShards = src.getDetailInfo().entrySet().stream()
+                    .sorted((o1, o2) -> (int) (o2.getValue().getKey() - o1.getValue().getKey())).collect(Collectors.toList());
+        }
 
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         KeeperContainerUsedInfoModel target = null;
@@ -196,10 +168,10 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
         for (Map.Entry<DcClusterShard, Pair<Long, Long>> dcClusterShard : allDcClusterShards) {
             if (target == null ) {
-                target = minInputFlowKeeperContainers.poll();
+                target = availableKeeperContainers.poll();
                 if (target == null) {
-                    logger.debug("[getMigrationKeeperDetailsByInputFlow] no available keeper containers {} for overload keeper container {}",
-                            minInputFlowKeeperContainers, src);
+                    logger.warn("[getMigrationKeeperDetails] no available keeper containers {} for overload keeper container {}",
+                            availableKeeperContainers, src);
                     CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, currentDc);
                     return result;
                 }
@@ -210,11 +182,13 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                         0, new ArrayList<>());
             }
 
+            long currentOverLoadData = isPeerDataOverload ? dcClusterShard.getValue().getValue() : dcClusterShard.getValue().getKey();
+
             long targetInputFlow = target.getTotalInputFlow() + dcClusterShard.getValue().getKey();
             long targetPeerData = target.getTotalRedisUsedMemory() + dcClusterShard.getValue().getValue();
             if (targetInputFlow > keeperContainerOverloadStandard.getFlowOverload()
                     || targetPeerData > keeperContainerOverloadStandard.getPeerDataOverload()) {
-                logger.debug("[getMigrationKeeperDetailsByInputFlow] target keeper container {} can not add shard {}",
+                logger.debug("[getMigrationKeeperDetails] target keeper container {} can not add shard {}",
                         target, dcClusterShard);
                 if (keeperContainerDetailModel.getMigrateKeeperCount() != 0) result.add(keeperContainerDetailModel);
                 target = null;
@@ -223,73 +197,43 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             }
             keeperContainerDetailModel.getMigrateShards().add(dcClusterShard.getKey());
             keeperContainerDetailModel.migrateKeeperCountIncrease();
+            target.setTotalInputFlow(targetInputFlow).setTotalRedisUsedMemory(targetPeerData);
+
+            if ((overloadData -= currentOverLoadData) <= 0) break;
+        }
+
+        if (keeperContainerDetailModel != null && keeperContainerDetailModel.getMigrateKeeperCount() != 0) {
             result.add(keeperContainerDetailModel);
-            target.setTotalInputFlow(targetInputFlow).setTotalRedisUsedMemory(targetPeerData);
-
-            if ((overloadInputFlow =- dcClusterShard.getValue().getKey()) < 0) break;
         }
 
-        if (target.getTotalInputFlow() < keeperContainerOverloadStandard.getPeerDataOverload()
+        if (target != null && target.getTotalInputFlow() < keeperContainerOverloadStandard.getPeerDataOverload()
                 && target.getTotalRedisUsedMemory() < keeperContainerOverloadStandard.getPeerDataOverload()) {
-            minInputFlowKeeperContainers.add(target);
-        }
-
-        return result;
-    }
-
-    private List<MigrationKeeperContainerDetailModel> getMigrationKeeperDetailsByPeerData(KeeperContainerUsedInfoModel src,
-                                                                                          long overloadPeerData, KeeperContainerOverloadStandardModel keeperContainerOverloadStandard,
-                                                                                          PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers) {
-
-        List<Map.Entry<DcClusterShard, Pair<Long, Long>>> allDcClusterShards = src.getDetailInfo().entrySet().stream()
-                .sorted((o1, o2) -> (int) (o2.getValue().getValue() - o1.getValue().getValue())).collect(Collectors.toList());
-
-        List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
-        KeeperContainerUsedInfoModel target = null;
-
-        for (Map.Entry<DcClusterShard, Pair<Long, Long>> dcClusterShard : allDcClusterShards) {
-            if (target == null ) {
-                target = minPeerDataKeeperContainers.poll();
-                if (target == null) {
-                    logger.debug("[getMigrationKeeperDetailsByPeerData] no available keeper containers {} for overload keeper container {}",
-                            minPeerDataKeeperContainers, src);
-                    return result;
-                }
-            }
-            MigrationKeeperContainerDetailModel keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(
-                    new KeeperContainerUsedInfoModel(src.getKeeperIp(),src.getDcName(), src.getTotalInputFlow(), src.getTotalRedisUsedMemory()),
-                    new KeeperContainerUsedInfoModel(target.getKeeperIp(),src.getDcName(), target.getTotalInputFlow(), target.getTotalRedisUsedMemory()),
-                    0, new ArrayList<>());
-
-            long targetPeerData = target.getTotalRedisUsedMemory() + dcClusterShard.getValue().getValue();
-            long targetInputFlow = target.getTotalInputFlow() + dcClusterShard.getValue().getKey();
-            if (targetPeerData > keeperContainerOverloadStandard.getPeerDataOverload()
-                    || targetInputFlow > keeperContainerOverloadStandard.getFlowOverload()) {
-                logger.debug("[getMigrationKeeperDetailsByInputFlow] target keeper container {} can not add shard {}", target, dcClusterShard);
-                target = null;
-                if (keeperContainerDetailModel.getMigrateKeeperCount() != 0) result.add(keeperContainerDetailModel);
-                continue;
-            }
-
-            keeperContainerDetailModel.getMigrateShards().add(dcClusterShard.getKey());
-            keeperContainerDetailModel.migrateKeeperCountIncrease();
-            target.setTotalInputFlow(targetInputFlow).setTotalRedisUsedMemory(targetPeerData);
-            if ((overloadPeerData =- dcClusterShard.getValue().getKey()) < 0) break;
+            availableKeeperContainers.add(target);
         }
 
         return result;
     }
 
     private KeeperContainerOverloadCause getKeeperContainerOverloadCause(long overloadInputFlow, long overloadPeerData) {
-        if (overloadInputFlow < 0 && overloadPeerData < 0) {
+        if (overloadInputFlow <= 0 && overloadPeerData <= 0) {
             return null;
         } else if (overloadInputFlow > 0 && overloadPeerData > 0) {
             return KeeperContainerOverloadCause.BOTH;
         } else if (overloadInputFlow > 0) {
             return KeeperContainerOverloadCause.INPUT_FLOW_OVERLOAD;
         } else {
-            return KeeperContainerOverloadCause.PEER_DATA_OVERLoad;
+            return KeeperContainerOverloadCause.PEER_DATA_OVERLOAD;
         }
+    }
+
+    @VisibleForTesting
+    Set<Integer> getCheckerIndexes() {
+        return checkerIndexes;
+    }
+
+    @VisibleForTesting
+    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels() {
+        return allKeeperContainerUsedInfoModels;
     }
 
     class MigrationKeeperContainerDetailInfoGetCommand extends AbstractCommand<List<MigrationKeeperContainerDetailModel>> {

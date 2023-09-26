@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.keeper;
 import com.ctrip.xpipe.utils.StringUtil;
 
 public enum KeeperContainerOverloadCause {
-    PEER_DATA_OVERLoad,
+    PEER_DATA_OVERLOAD,
     INPUT_FLOW_OVERLOAD,
     BOTH;
 
