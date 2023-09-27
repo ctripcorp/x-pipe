@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -15,6 +16,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * @author yu
+ * <p>
+ * 2023/9/27
+ */
 @Component
 public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcIntervalAction {
 
@@ -31,6 +37,11 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
         List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         if (CollectionUtils.isEmpty(readyToMigrationKeeperContainers)) return;
 
+        migrateAllKeepers(readyToMigrationKeeperContainers);
+    }
+
+    @VisibleForTesting
+    void migrateAllKeepers(List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers) {
         Set<DcClusterShard> alreadyMigrateShards = new HashSet<>();
         for (MigrationKeeperContainerDetailModel migrationKeeperContainerDetailModel : readyToMigrationKeeperContainers) {
             List<DcClusterShard> migrateShards = migrationKeeperContainerDetailModel.getMigrateShards();
@@ -38,11 +49,18 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
 
             String srcKeeperContainerIp = migrationKeeperContainerDetailModel.getSrcKeeperContainer().getKeeperIp();
             for (DcClusterShard migrateShard : migrateShards) {
+                if (!alreadyMigrateShards.add(migrateShard)) continue;
+
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
-                if (!alreadyMigrateShards.add(migrateShard)) continue;
-                shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp(), srcKeeperContainerIp);
+
+                if (!shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
+                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp(), srcKeeperContainerIp)) {
+                    logger.warn("[migrateAllKeepers] migrate shard keepers failed, shard: {}", migrateShard);
+                    continue;
+                }
+                migrationKeeperContainerDetailModel.migrateKeeperCompleteCountIncrease();
+
             }
         }
     }
