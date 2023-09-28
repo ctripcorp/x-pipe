@@ -157,4 +157,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.KEEPER);
 		logger.info("[setKeeper]{}", this);
 	}
+
+	@Override
+	public boolean usingProxy() {
+		return null != endpoint.getProxyProtocol();
+	}
 }
