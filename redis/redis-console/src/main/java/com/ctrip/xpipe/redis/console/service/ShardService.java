@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ShardService {
+	List<ShardTbl> findAll();
 	ShardTbl find(long shardId);
 	ShardTbl find(String clusterName, String shardName);
 	List<ShardTbl> findAllByClusterName(String clusterName);

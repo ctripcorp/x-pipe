@@ -120,15 +120,6 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 		});
 	}
 
-	@Override public List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes(long dcId, Set<String> clusterTypes) {
-		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
-			@Override
-			public List<DcClusterShardTbl> doQuery() throws DalException {
-				return dao.findAllByDcIdAndInClusterTypes(dcId, clusterTypes, DcClusterShardTblEntity.READSET_DC_CLUSTER_SHARD_REDIS_META_INFO);
-			}
-		});
-	}
-
 	@Override
 	public List<DcClusterShardTbl> findAllByClusterTypes(Set<String> clusterTypes) {
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
