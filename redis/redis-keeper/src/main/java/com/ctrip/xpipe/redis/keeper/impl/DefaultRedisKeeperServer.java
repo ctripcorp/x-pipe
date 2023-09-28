@@ -146,8 +146,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private KeeperResourceManager resourceManager;
 
-	private AtomicInteger tryConnectMasterCnt = new AtomicInteger();
-
 	private RedisOpParser redisOpParser;
 
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
@@ -962,16 +960,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RdbDumper rdbDumper() {
 		return rdbDumper.get();
-	}
-
-	@Override
-	public void tryConnectMaster() {
-		logger.debug("[tryConnectMaster] {}", tryConnectMasterCnt.incrementAndGet());
-	}
-
-	@Override
-	public int getTryConnectMasterCnt() {
-		return tryConnectMasterCnt.get();
 	}
 
 	@Override

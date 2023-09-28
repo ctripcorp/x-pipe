@@ -21,19 +21,10 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 	
 	private Endpoint masterEndPoint;
 
-	private boolean allowKeeperPsync;
-
 	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool,
 						Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
-		this(clientPool, masterEndPoint, replicationStoreManager, false, scheduled);
-	}
-	
-	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool, 
-			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager,
-						boolean allowKeeperPsync, ScheduledExecutorService scheduled) {
 		super(clientPool, true, scheduled);
 		this.masterEndPoint = masterEndPoint;
-		this.allowKeeperPsync = allowKeeperPsync;
 		this.replicationStoreManager = replicationStoreManager;
 		currentReplicationStore = getCurrentReplicationStore();
 	}
@@ -47,11 +38,6 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 			getLogger().error("[doRequest]" + this + replicationStoreManager, e);
 			throw new XpipeRuntimeException("[doRequest]getReplicationStore failed." + replicationStoreManager, e);
 		}
-	}
-
-	@Override
-	protected boolean useKeeperPsync() {
-		return allowKeeperPsync && currentReplicationStore.isFresh();
 	}
 
 	@Override

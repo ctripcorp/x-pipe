@@ -42,23 +42,18 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 		
 		String replIdRequest = null;
 		long offset = -1;
-		if (useKeeperPsync()) {
-			replIdRequest = "?";
-			offset = KEEPER_PARTIAL_SYNC_OFFSET;
-		} else if(currentReplicationStore == null){
+		if(currentReplicationStore == null){
 			replIdRequest = "?";
 			offset = -1;
 		}else{
 			replIdRequest = currentReplicationStore.getMetaStore().getReplId();
 			offset = currentReplicationStore.getEndOffset() + 1;
 		}
-		return new Pair<String, Long>(replIdRequest, offset);
+		return new Pair<>(replIdRequest, offset);
 	}
 
-	protected abstract boolean useKeeperPsync();
-
 	protected abstract ReplicationStore getCurrentReplicationStore();
-	
+
 	@Override
 	protected void doOnFullSync() throws IOException {
 		
