@@ -1,30 +1,29 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_SESSION_NETTY_CLIENT_POOL;
@@ -46,6 +45,12 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	private MetaCache metaCache;
 
 	@Autowired
+	private CheckerConsoleService checkerConsoleService;
+
+	@Autowired
+	private CheckerConfig checkerConfig;
+
+	@Autowired
 	private HealthCheckEndpointFactory endpointFactory;
 
 	@Resource(name = REDIS_SESSION_NETTY_CLIENT_POOL)
@@ -56,6 +61,8 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
+
+	private String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
 	@Autowired
 	private CheckerConfig config;
@@ -144,12 +151,19 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	}
 
 
-	private Set<HostPort> getInUseRedises() {
+	@VisibleForTesting
+	Set<HostPort> getInUseRedises() {
 		Set<HostPort> redisInUse = new HashSet<>();
 		List<DcMeta> dcMetas = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 		if(dcMetas.isEmpty())	return null;
 		for (DcMeta dcMeta : dcMetas) {
 			if(dcMeta == null)	break;
+
+			if (dcMeta.getId().equalsIgnoreCase(currentDcId)) {
+				DcMeta currentDcAllMeta = getCurrentDcAllMeta(currentDcId);
+				getSessionsForKeeper(dcMeta, currentDcAllMeta, redisInUse);
+			}
+
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
@@ -159,6 +173,42 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			}
 		}
 		return redisInUse;
+	}
+
+	@VisibleForTesting
+	void getSessionsForKeeper(DcMeta dcMeta, DcMeta allDcMeta, Set<HostPort> redisInUse) {
+		Set<Long> set = dcMeta.getKeeperContainers().stream().map(KeeperContainerMeta::getId).collect(Collectors.toSet());
+		allDcMeta.getClusters().values().forEach(clusterMeta -> {
+			for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
+				if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
+				RedisMeta monitorRedis = getMonitorRedisMeta(shardMeta.getRedises());
+				shardMeta.getKeepers().forEach(keeperMeta -> {
+					if (set.contains(keeperMeta.getKeeperContainerId())) {
+						redisInUse.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+						redisInUse.add(new HostPort(monitorRedis.getIp(), monitorRedis.getPort()));
+					}
+				});
+			}
+		});
+	}
+
+
+	private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
+		if (redisMetas == null || redisMetas.isEmpty()) return null;
+		return redisMetas.stream().sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
+				.collect(Collectors.toList()).get(0);
+	}
+
+	private DcMeta getCurrentDcAllMeta(String dcId) {
+		try {
+			return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
+					.getDcs().get(dcId);
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	private void closeAllConnections() {
