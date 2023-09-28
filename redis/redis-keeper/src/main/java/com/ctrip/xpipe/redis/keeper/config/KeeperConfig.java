@@ -67,8 +67,9 @@ public interface KeeperConfig extends CoreConfig{
 
 	/**
 	 * max redis slaves allowed to loading rdb at the same time
+	 * avoid cross region slaves loading RDB at the same time
 	 * -1 means no limit
 	 */
-    int getMaxLoadingSlavesCnt();
+    int getCrossRegionMaxLoadingSlavesCnt();
 
 }

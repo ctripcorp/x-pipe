@@ -36,4 +36,6 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 
 	String metaInfo();
 
+	boolean usingProxy();
+
 }
