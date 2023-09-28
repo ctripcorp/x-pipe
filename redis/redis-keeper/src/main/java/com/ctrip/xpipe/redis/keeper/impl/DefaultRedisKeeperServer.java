@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -92,6 +93,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
 	private volatile RedisMaster keeperRedisMaster;
+
+	private AtomicBoolean crossRegion;
 	
 	private long keeperStartTime;
 	
@@ -168,6 +171,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
 		this.redisOpParser = redisOpParser;
+		this.crossRegion = new AtomicBoolean(false);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
@@ -299,10 +303,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void continueFsyncSequentially() {
 		if (!getRedisKeeperServerState().keeperState().isActive()) return;
 
-		int maxLoadingSlavesCnt = keeperConfig.getMaxLoadingSlavesCnt();
+		int maxLoadingSlavesCnt = keeperConfig.getCrossRegionMaxLoadingSlavesCnt();
 		Set<RedisSlave> slaves = slaves();
 		int currentLoadingSlaves = loadingSlaves.size();
-		if (maxLoadingSlavesCnt >= 0 && currentLoadingSlaves >= maxLoadingSlavesCnt) return;
+		if (maxLoadingSlavesCnt >= 0 && crossRegion.get() && currentLoadingSlaves >= maxLoadingSlavesCnt) return;
 
 		for (RedisSlave slave: slaves) {
 			if (slave.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC) {
@@ -400,6 +404,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			return;
 		}
 		initAndStartMaster(target);
+		this.crossRegion.set(keeperRedisMaster.usingProxy());
 	}
 
 	private boolean isMasterSame(Endpoint current, Endpoint target) {
@@ -721,7 +726,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
 		
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
-		if (!tryFullSyncToSlaveWithOthers(redisSlave)) {
+
+		if (crossRegion.get() && !tryFullSyncToSlaveWithOthers(redisSlave)) {
 			redisSlave.waitForSeqFsync();
 			return;
 		}
@@ -756,7 +762,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if (redisSlave.isKeeper()) return true;
 		if (loadingSlaves.contains(redisSlave)) return true;
 
-		int maxConcurrentLoadingSlaves = keeperConfig.getMaxLoadingSlavesCnt();
+		int maxConcurrentLoadingSlaves = keeperConfig.getCrossRegionMaxLoadingSlavesCnt();
 		if (redisSlave.isColdStart() || maxConcurrentLoadingSlaves < 0 || loadingSlaves.size() < maxConcurrentLoadingSlaves) {
 			loadingSlaves.add(redisSlave);
 			return true;

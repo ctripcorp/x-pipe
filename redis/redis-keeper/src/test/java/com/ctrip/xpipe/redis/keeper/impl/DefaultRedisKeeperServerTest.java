@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -287,7 +289,8 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
 		redisKeeperServer.initialize();
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(
-				redisKeeperServer, new DefaultEndPoint("10.0.0.1", 6379)));
+				redisKeeperServer, new DefaultEndPoint("10.0.0.1", 6379, Mockito.mock(ProxyConnectProtocol.class))));
+		redisKeeperServer.reconnectMaster();
 		RdbDumper dumper = Mockito.mock(RdbDumper.class);
 		redisKeeperServer.setRdbDumper(dumper);
 
