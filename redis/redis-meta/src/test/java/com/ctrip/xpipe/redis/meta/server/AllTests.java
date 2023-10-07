@@ -34,7 +34,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAl
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.impl.DefaultElectionLimitTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
@@ -122,8 +121,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,
-	DefaultRedisGtidCollectorTest.class,
-	DefaultElectionLimitTest.class,
+	DefaultRedisGtidCollectorTest.class
 })
 public class AllTests {
 

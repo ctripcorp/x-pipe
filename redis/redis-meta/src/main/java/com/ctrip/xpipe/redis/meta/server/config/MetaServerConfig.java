@@ -53,7 +53,4 @@ public interface MetaServerConfig extends CoreConfig {
 
 	int getConsoleNotifycationTaskQueueSize();
 
-	int getMaxKeeperElectTimesInFixedTime();
-
-	int getKeeperElectTimingCycleMills();
 }

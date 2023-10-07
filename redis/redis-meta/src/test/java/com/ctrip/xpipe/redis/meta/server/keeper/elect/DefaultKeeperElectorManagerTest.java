@@ -102,25 +102,6 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	}
 
 	@Test
-	public void testUpdateShardLeaderWithAlreadyElected(){
-
-		String prefix = "/path";
-		List<ChildData> dataList = new LinkedList<>();
-		final int portBegin = 4000;
-		final int count = 3;
-
-		dataList.add(new ChildData(prefix + "/" + randomString(10) +"-latch-02", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 1))));
-		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
-		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
-
-		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
-		Mockito.verify(keeperActiveElectAlgorithm, Mockito.times(1)).select(Mockito.any(), Mockito.any(), Mockito.any());
-		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
-		Mockito.verify(keeperActiveElectAlgorithm, Mockito.times(1)).select(Mockito.any(), Mockito.any(), Mockito.any());
-	}
-
-
-	@Test
 	public void testObserverShardLeader() throws Exception {
 		Long clusterDbId = clusterMeta.getDbId();
 		Long shardDbId = shardMeta.getDbId();
