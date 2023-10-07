@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.meta.server.keeper.ElectionLimit;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
@@ -49,9 +48,6 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Autowired
 	private ZkClient zkClient;
-
-	@Autowired
-	private ElectionLimit electionLimit;
 
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
@@ -170,11 +166,6 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		logger.info("[updateShardLeader]cluster_{},shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
 		String shardKey = String.format("cluster_%s,shard_%s", clusterDbId, shardDbId);
 		CatEventMonitor.DEFAULT.logEvent(DEFAULT_KEEPER_ELECT_TYPE, shardKey);
-
-		if (!electionLimit.tryAcquire(shardKey)) {
-			logger.warn("[updateShardLeader]{} keeper trigger too much elections", shardKey);
-			return;
-		}
 
 		List<KeeperMeta> survivalKeepers = new ArrayList<>();
 		int expectedKeepers = 0;

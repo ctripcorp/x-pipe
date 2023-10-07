@@ -97,7 +97,7 @@ public class CurrentMeta implements Releasable {
 
 	private boolean isKeeperInfoChanged(CurrentShardKeeperMeta currentShardMeta, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
 		if (CollectionUtils.isEmpty(currentShardMeta.getSurviveKeepers()) || currentShardMeta.getActiveKeeper() == null) return true;
-		if (currentShardMeta.getSurviveKeepers().size() != surviveKeepers.size()) return false;
+		if (currentShardMeta.getSurviveKeepers().size() != surviveKeepers.size()) return true;
 
 		Set<KeeperMeta> surviveKeeperSet = new HashSet<>(surviveKeepers);
 		for (KeeperMeta keeperMeta : currentShardMeta.getSurviveKeepers()) {
