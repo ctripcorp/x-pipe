@@ -81,7 +81,7 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
 
                 case READ_SCORE:
                     score = readUntilBytesEnough(byteBuf, score, 8);
-                    if (null != score) {
+                    if (score.readableBytes() == 8) {
                         rdbStringParser.reset();
                         propagateCmdIfNeed(member, score.readDoubleLE());
 
