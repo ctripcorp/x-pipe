@@ -2,14 +2,19 @@ package com.ctrip.xpipe.redis.console.migration.model.impl;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.status.*;
+import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -40,6 +45,8 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     private ClusterService clusterService;
     private ShardService shardService;
+    private AzGroupClusterRepository azGroupClusterRepository;
+    private AzGroupCache azGroupCache;
     private DcService dcService;
     private RedisService redisService;
     private MigrationService migrationService;
@@ -49,12 +56,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
-    public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event, MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService, ShardService shardService,
-                                   RedisService redisService, MigrationService migrationService) {
+    public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event,
+        MigrationClusterTbl migrationCluster, AzGroupClusterRepository azGroupClusterRepository,
+        AzGroupCache azGroupCache, DcService dcService, ClusterService clusterService, ShardService shardService,
+        RedisService redisService, MigrationService migrationService) {
         this.event = event;
         this.migrationCluster = migrationCluster;
         this.clusterService = clusterService;
         this.shardService = shardService;
+        this.azGroupClusterRepository = azGroupClusterRepository;
+        this.azGroupCache = azGroupCache;
         this.dcService = dcService;
         this.redisService = redisService;
         this.migrationService = migrationService;
@@ -165,6 +176,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         ClusterTbl cluster = getCurrentCluster();
         cluster.setActivedcId(destDcId);
         clusterService.updateActivedcId(clusterId(), destDcId);
+
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            if (ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
+                continue;
+            }
+            azGroupClusterRepository.updateActiveAzId(azGroupCluster.getId(), destDcId);
+        }
 
     }
 
@@ -279,6 +298,11 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
+    public AzGroupClusterRepository getAzGroupClusterRepository() {
+        return azGroupClusterRepository;
+    }
+
+    @Override
     public DcService getDcService() {
         return dcService;
     }
@@ -317,9 +341,24 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     private Map<Long, DcTbl> generateDcMap(List<DcTbl> dcs) {
 
+        List<AzGroupClusterEntity> azGroupClusters =
+            getAzGroupClusterRepository().selectByClusterId(currentCluster.getId());
+        Map<String, ClusterType> clusterDcTypeMap = new HashMap<>();
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+            for (String az : azGroup.getAzsAsList()) {
+                clusterDcTypeMap.put(az, azGroupType);
+            }
+        }
+
         Map<Long, DcTbl> result = new HashMap<>();
 
         for (DcTbl dc : dcs) {
+            ClusterType dcClusterType = clusterDcTypeMap.get(dc.getDcName());
+            if (dcClusterType != null && !dcClusterType.supportMigration()) {
+                continue;
+            }
             result.put(dc.getId(), dc);
         }
 

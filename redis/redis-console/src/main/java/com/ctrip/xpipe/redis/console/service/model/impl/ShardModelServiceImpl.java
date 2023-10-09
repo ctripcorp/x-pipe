@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.model.impl;
 
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -43,6 +44,8 @@ public class ShardModelServiceImpl implements ShardModelService{
 	private ReplDirectionService replDirectionService;
 	@Autowired
 	private KeeperContainerService keeperContainerService;
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(ShardModelServiceImpl.class);
 
@@ -64,8 +67,7 @@ public class ShardModelServiceImpl implements ShardModelService{
     public List<ShardModel> getMultiShardModel(final String dcName, final String clusterName,
         final List<ShardTbl> shards, final boolean isSourceShard,
         final ReplDirectionInfoModel replDirectionInfoModel) {
-        if (StringUtils.isEmpty(dcName) || StringUtils.isEmpty(clusterName)
-            || CollectionUtils.isEmpty(shards)) {
+        if (StringUtils.isEmpty(dcName) || StringUtils.isEmpty(clusterName) || CollectionUtils.isEmpty(shards)) {
             return new ArrayList<>();
         }
 
@@ -74,14 +76,11 @@ public class ShardModelServiceImpl implements ShardModelService{
         Future<DcClusterTbl> dcClusterFuture = FIXED_THREAD_POOL.submit(() -> dcClusterService.find(dcName, clusterName));
 
         List<Future<DcClusterShardTbl>> dcClusterShardFutures = new ArrayList<>();
+        String srcName = isSourceShard ? replDirectionInfoModel.getSrcDcName() : dcName;
         shards.forEach(shard -> {
             Future<DcClusterShardTbl> dcClusterShardFuture = FIXED_THREAD_POOL.submit(() -> {
-                if (isSourceShard) {
-                    return dcClusterShardService.find(replDirectionInfoModel.getSrcDcName(),
-                        clusterName, shard.getShardName());
-                } else {
-                    return dcClusterShardService.find(dcName, clusterName, shard.getShardName());
-                }
+                DcClusterShardTbl dcClusterShard = dcClusterShardService.find(srcName, clusterName, shard.getShardName());
+                return dcClusterShard;
             });
             dcClusterShardFutures.add(dcClusterShardFuture);
         });
@@ -165,9 +164,13 @@ public class ShardModelServiceImpl implements ShardModelService{
 			return null;
 		}
 
-		if (isSourceShard && DcGroupType.isNullOrDrMaster(dcClusterInfo.getGroupType())) {
-			return null;
-		}
+		if (isSourceShard) {
+            long azGroupClusterId = dcClusterInfo.getAzGroupClusterId();
+            ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(azGroupClusterId);
+            if (azGroupType != ClusterType.SINGLE_DC) {
+                return null;
+            }
+        }
 
 		ShardModel shardModel = new ShardModel();
 		shardModel.setShardTbl(shardInfo);

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.applier.elect;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
@@ -65,7 +65,7 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
         applierElectorManager.setApplierActiveElectAlgorithmManager(applierActiveElectAlgorithmManager);
 
         clusterMeta = differentCluster("oy", 2);
-        clusterMeta.setDcGroupType(DcGroupType.MASTER.name());
+        clusterMeta.setAzGroupType(ClusterType.SINGLE_DC.toString());
         shardMeta = (ShardMeta) clusterMeta.getAllShards().values().toArray()[0];
     }
 

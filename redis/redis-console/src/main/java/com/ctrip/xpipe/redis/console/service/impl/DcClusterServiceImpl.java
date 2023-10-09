@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
@@ -33,6 +35,9 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 	@Autowired
 	private SourceModelService sourceModelService;
+
+	@Autowired
+	private AzGroupClusterRepository azGroupClusterRepository;
 
 	@Override
 	public DcClusterTbl find(final long dcId, final long clusterId) {
@@ -235,7 +240,8 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		result.setDcCluster(dcClusterTbl);
 
 		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
-		if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+		ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
+		if (azGroupType == ClusterType.SINGLE_DC) {
 			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
 		}
 		return result;
@@ -264,7 +270,8 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			dcClusterModel.setDc(dcModel);
 
 			dcClusterModel.setShards(shardModelService.getAllShardModel(dcModel.getDc_name(), clusterName));
-			if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+			ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
+			if (azGroupType == ClusterType.SINGLE_DC) {
 				dcClusterModel.setSources(sourceModelService.getAllSourceModels(dcModel.getDc_name(), clusterName));
 			}
 			result.add(dcClusterModel);

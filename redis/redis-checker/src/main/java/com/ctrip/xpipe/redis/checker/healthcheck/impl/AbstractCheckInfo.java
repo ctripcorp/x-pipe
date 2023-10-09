@@ -20,9 +20,9 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected List<RedisCheckRule> redisCheckRules;
 
-    protected String dcGroupType;
+    protected String azGroupType;
 
-    protected boolean isHeteroCluster;
+    protected boolean asymmetricCluster;
 
     public AbstractCheckInfo() {
 
@@ -75,23 +75,23 @@ public abstract class AbstractCheckInfo implements CheckInfo {
     }
 
     @Override
-    public String getDcGroupType() {
-        return dcGroupType;
+    public String getAzGroupType() {
+        return azGroupType;
     }
 
     @Override
-    public void setDcGroupType(String type) {
-        this.dcGroupType = type;
+    public void setAzGroupType(String azGroupType) {
+        this.azGroupType = azGroupType;
     }
 
     @Override
-    public void setHeteroCluster(boolean isHeteroCluster) {
-        this.isHeteroCluster = isHeteroCluster;
+    public void setAsymmetricCluster(boolean asymmetricCluster) {
+        this.asymmetricCluster = asymmetricCluster;
     }
 
     @Override
-    public boolean isHeteroCluster() {
-        return isHeteroCluster;
+    public boolean isAsymmetricCluster() {
+        return asymmetricCluster;
     }
 
 }

@@ -3,10 +3,13 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.cluster.Hints;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.AbstractMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -35,6 +38,9 @@ import java.util.stream.Collectors;
  */
 @Service
 public class ClusterMetaServiceImpl extends AbstractMetaService implements ClusterMetaService {
+
+    @Autowired
+    private AzGroupCache azGroupCache;
     @Autowired
     private DcService dcService;
     @Autowired
@@ -55,6 +61,8 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
     private KeeperContainerService keeperContainerService;
     @Autowired
     private ApplierService applierService;
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
 
     private static final String DC_NAME_DELIMITER = ",";
 
@@ -99,147 +107,112 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 
     @Override
     public ClusterMeta getClusterMeta(final String dcName, final String clusterName) {
-        ExecutorService fixedThreadPool = Executors.newFixedThreadPool(6);
-
-        Future<DcTbl> future_dcInfo = fixedThreadPool.submit(new Callable<DcTbl>() {
-            @Override
-            public DcTbl call() throws Exception {
-                return dcService.find(dcName);
-            }
-        });
-        Future<ClusterTbl> future_clusterInfo = fixedThreadPool.submit(new Callable<ClusterTbl>() {
-            @Override
-            public ClusterTbl call() throws Exception {
-                return clusterService.find(clusterName);
-            }
-        });
-        Future<DcClusterTbl> future_dcClusterInfo = fixedThreadPool.submit(new Callable<DcClusterTbl>() {
-            @Override
-            public DcClusterTbl call() throws Exception {
-                return dcClusterService.find(dcName, clusterName);
-            }
-        });
-        Future<List<ShardTbl>> future_shardsInfo = fixedThreadPool.submit(new Callable<List<ShardTbl>>() {
-            @Override
-            public List<ShardTbl> call() throws Exception {
-                return shardService.findAllByClusterName(clusterName);
-            }
-        });
-        Future<List<DcTbl>> future_clusterRelatedDc = fixedThreadPool.submit(new Callable<List<DcTbl>>() {
-            @Override
-            public List<DcTbl> call() throws Exception {
-                return dcService.findClusterRelatedDc(clusterName);
-            }
-        });
-        Future<Map<Long, Long>> future_keeperContainerId2DcMap = fixedThreadPool.submit(() ->
-                keeperContainerService.keeperContainerIdDcMap());
-
-        ClusterMeta clusterMeta = new ClusterMeta();
-        clusterMeta.setId(clusterName);
-        try {
-            DcTbl dcInfo = future_dcInfo.get();
-            ClusterTbl clusterInfo = future_clusterInfo.get();
-            DcClusterTbl dcClusterInfo = future_dcClusterInfo.get();
-            List<DcTbl> dcList = future_clusterRelatedDc.get();
-            Map<Long, DcClusterTbl> dcClusterMap = generateDcClusterMap(clusterInfo.getId());
-            Map<Long, Long> keeperContainerId2DcMap = future_keeperContainerId2DcMap.get();
-
-            generateBasicClusterMeta(clusterMeta, dcName, clusterName, dcInfo, clusterInfo,
-                    dcClusterInfo, dcList, dcClusterMap);
-
-            List<ShardTbl> shards = future_shardsInfo.get();
-            if (null != shards) {
-                for (ShardTbl shard : shards) {
-                    ShardMeta shardMeta = shardMetaService.getShardMeta(dcInfo, clusterInfo, shard, keeperContainerId2DcMap);
-                    if (shardMeta != null) {
-                        clusterMeta.addShard(shardMeta);
-                    }
-                }
-            }
-            if (ClusterType.ONE_WAY.name().equalsIgnoreCase(clusterMeta.getType())) {
-                generateHeteroMeta(clusterMeta, dcInfo.getId(), dcClusterInfo, dcList, dcClusterMap, shards, clusterInfo, keeperContainerId2DcMap);
-                addClusterHints(clusterMeta, dcClusterMap, shards);
-            }
-        } catch (ExecutionException e) {
-            throw new DataNotFoundException("Cannot construct cluster-meta", e);
-        } catch (InterruptedException e) {
-            throw new ServerException("Concurrent execution failed.", e);
-        } finally {
-            fixedThreadPool.shutdown();
+        DcTbl dc = dcService.find(dcName);
+        ClusterTbl cluster = clusterService.find(clusterName);
+        DcClusterTbl dcCluster = dcClusterService.find(dcName, clusterName);
+        if (dc == null || cluster == null || dcCluster == null) {
+            throw new DataNotFoundException(String.format("not find dc cluster %s %s", dcName, clusterName));
         }
 
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectById(dcCluster.getAzGroupClusterId());
+        List<DcTbl> clusterRelatedDcs = dcService.findClusterRelatedDc(clusterName);
+        ClusterMeta clusterMeta =
+            generateBasicClusterMeta(dc, cluster, dcCluster, azGroupCluster, clusterRelatedDcs);
+
+        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
+        Map<Long, Long> keeperContainerId2DcMap = keeperContainerService.keeperContainerIdDcMap();
+        if (null != shards) {
+            for (ShardTbl shard : shards) {
+                ShardMeta shardMeta = shardMetaService.getShardMeta(dc, cluster, shard, keeperContainerId2DcMap);
+                if (shardMeta != null) {
+                    clusterMeta.addShard(shardMeta);
+                }
+            }
+        }
+        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+        if (ClusterType.ONE_WAY == clusterType) {
+            Map<Long, DcClusterTbl> dcClusterMap = generateDcClusterMap(cluster.getId());
+            generateAsymmetricMeta(clusterMeta, dc.getId(), azGroupCluster, clusterRelatedDcs, dcClusterMap, shards,
+                cluster, keeperContainerId2DcMap);
+            List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+            addClusterHints(clusterMeta, azGroupClusters, shards);
+        }
+
+        // 异构集群更新类型为az group对应类型
+        if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO)
+            && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
+            ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
+            clusterMeta.setType(azGroupType.toString());
+            clusterMeta.setAzGroupType(null);
+        }
         return clusterMeta;
     }
 
     private Map<Long, DcClusterTbl> generateDcClusterMap(long clusterDbId) {
-
-        ExecutorService fixedThreadPool = Executors.newFixedThreadPool(1);
-
-        Future<List<DcClusterTbl>> futureRelatedDcClusterInfo = fixedThreadPool.submit(
-                () -> dcClusterService.findByClusterIds(Collections.singletonList(clusterDbId)));
-
-        Map<Long, DcClusterTbl> relatedDcClusterMap;
-
-        try {
-            List<DcClusterTbl> relatedDcClusterInfo = futureRelatedDcClusterInfo.get();
-            relatedDcClusterMap = relatedDcClusterInfo.stream().collect(Collectors.toMap(DcClusterTbl::getDcId, Function.identity()));
-        } catch (ExecutionException e) {
-            throw new DataNotFoundException("Cannot gen hetero-meta", e);
-        } catch (InterruptedException e) {
-            throw new ServerException("Concurrent hetero-meta execution failed.", e);
-        } finally {
-            fixedThreadPool.shutdown();
-        }
-
-        return relatedDcClusterMap == null? new HashMap<>(): relatedDcClusterMap;
+        List<DcClusterTbl> relatedDcClusterInfo =
+            dcClusterService.findByClusterIds(Collections.singletonList(clusterDbId));
+        return relatedDcClusterInfo.stream().collect(Collectors.toMap(DcClusterTbl::getDcId, Function.identity()));
     }
 
     @VisibleForTesting
-    protected void generateBasicClusterMeta(ClusterMeta clusterMeta, String dcName, String clusterName,
-                                          DcTbl dcInfo, ClusterTbl clusterInfo, DcClusterTbl dcClusterInfo,
-                                          List<DcTbl> clusterRelatedDc, Map<Long, DcClusterTbl> dcClusterMap) {
-
-        if (null == dcInfo || null == clusterInfo || null == dcClusterInfo)
-            throw new DataNotFoundException(String.format("unfound dc cluster %s %s", dcName, clusterName));
-
-        clusterMeta.setId(clusterInfo.getClusterName());
-        clusterMeta.setDbId(clusterInfo.getId());
-        clusterMeta.setType(clusterInfo.getClusterType());
-        clusterMeta.setActiveRedisCheckRules(dcClusterInfo.getActiveRedisCheckRules());
-        clusterMeta.setClusterDesignatedRouteIds(clusterInfo.getClusterDesignatedRouteIds());
-        clusterMeta.setOrgId(Math.toIntExact(clusterInfo.getClusterOrgId()));
-        clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
+    protected ClusterMeta generateBasicClusterMeta(DcTbl dc, ClusterTbl cluster, DcClusterTbl dcCluster,
+        AzGroupClusterEntity azGroupCluster, List<DcTbl> clusterRelatedDcs) {
+        ClusterMeta clusterMeta = new ClusterMeta();
+        clusterMeta.setId(cluster.getClusterName());
+        clusterMeta.setDbId(cluster.getId());
+        clusterMeta.setType(cluster.getClusterType());
+        clusterMeta.setActiveRedisCheckRules(dcCluster.getActiveRedisCheckRules());
+        clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
+        clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
+        cluster.setActivedcId(getClusterMetaCurrentPrimaryDc(dc, cluster));
         clusterMeta.setBackupDcs("");
         clusterMeta.setDownstreamDcs("");
-        clusterMeta.setDcGroupName(getDcGroupName(dcName, dcClusterInfo));
 
-        if (ClusterType.ONE_WAY.name().equalsIgnoreCase(clusterInfo.getClusterType())) {
-            if (dcClusterInfo.getGroupType() == null) {
+        // TODO: 下一版本删除DcGroup逻辑
+        clusterMeta.setDcGroupName(getDcGroupName(dc.getDcName(), dcCluster));
+        if (ClusterType.ONE_WAY.name().equalsIgnoreCase(cluster.getClusterType())) {
+            if (dcCluster.getGroupType() == null) {
                 clusterMeta.setDcGroupType(DcGroupType.DR_MASTER.toString());
             } else {
-                clusterMeta.setDcGroupType(dcClusterInfo.getGroupType());
+                clusterMeta.setDcGroupType(dcCluster.getGroupType());
             }
         }
 
-        if (ClusterType.lookup(clusterInfo.getClusterType()).supportMultiActiveDC()) {
-            clusterMeta.setDcs(StringUtil.join(",", dcTbl -> dcTbl.getDcName(), clusterRelatedDc));
+        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+        if (clusterType.supportMultiActiveDC()) {
+            clusterMeta.setDcs(StringUtil.join(",", DcTbl::getDcName, clusterRelatedDcs));
         } else {
-            for (DcTbl dc : clusterRelatedDc) {
-                if (dc.getId() == clusterInfo.getActivedcId()) {
-                    clusterMeta.setActiveDc(dc.getDcName());
-                } else {
-                    DcClusterTbl dcClusterTbl = dcClusterMap.get(dc.getId());
-                    if (dcClusterTbl != null && !DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
-                        continue;
-                    }
-                    if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
-                        clusterMeta.setBackupDcs(dc.getDcName());
-                    } else {
-                        clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + "," + dc.getDcName());
-                    }
+            DcTbl activeDc = clusterRelatedDcs.stream()
+                .filter(dcTbl -> dcTbl.getId() == cluster.getActivedcId())
+                .findFirst().orElse(null);
+            if (activeDc == null) {
+                throw new IllegalStateException("active dc not found");
+            }
+            clusterMeta.setActiveDc(activeDc.getDcName());
+            List<DcTbl> backupDcs = clusterRelatedDcs.stream()
+                .filter(dcTbl -> dcTbl.getId() != cluster.getActivedcId())
+                .collect(Collectors.toList());
+            clusterMeta.setBackupDcs(StringUtil.join(",", DcTbl::getDcName, backupDcs));
+        }
+
+        if (azGroupCluster != null) {
+            AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            clusterMeta.setAzGroupName(azGroup.getName());
+            clusterMeta.setAzGroupType(azGroupCluster.getAzGroupClusterType());
+
+            if (clusterType == ClusterType.HETERO) {
+                DcTbl activeAzTbl = dcService.find(azGroupCluster.getActiveAzId());
+                if (activeAzTbl != null) {
+                    String activeAz = activeAzTbl.getDcName();
+                    clusterMeta.setActiveDc(activeAz);
+                    List<String> azs = azGroup.getAzsAsList();
+                    azs.remove(activeAz);
+                    clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, azs));
                 }
             }
         }
+
+        return clusterMeta;
     }
 
     /**
@@ -274,34 +247,28 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
     }
 
     @VisibleForTesting
-    protected void generateHeteroMeta(ClusterMeta clusterMeta, long dcId, DcClusterTbl dcClusterInfo, List<DcTbl> dcList,
-                                    Map<Long, DcClusterTbl> dcClusterMap, List<ShardTbl> shards, ClusterTbl clusterInfo,
-                                    Map<Long, Long> keeperContainerId2DcMap) {
-        ExecutorService fixedThreadPool = Executors.newFixedThreadPool(1);
+    protected void generateAsymmetricMeta(ClusterMeta clusterMeta, long dcId, AzGroupClusterEntity azGroupCluster,
+        List<DcTbl> dcList, Map<Long, DcClusterTbl> dcClusterMap, List<ShardTbl> shards, ClusterTbl clusterInfo,
+        Map<Long, Long> keeperContainerId2DcMap) {
 
-        Future<List<ReplDirectionTbl>> futureReplDirectionList = fixedThreadPool.submit(
-                () -> replDirectionService.findAllReplDirectionTblsByClusterWithSrcDcAndFromDc(clusterMeta.getDbId()));
-
-        try {
-            for (ReplDirectionTbl replDirectionTbl : futureReplDirectionList.get()) {
-                if (replDirectionTbl.getToDcId() == dcId) {
-                    if (DcGroupType.isSameGroupType(dcClusterInfo.getGroupType(), DcGroupType.MASTER)) {
-                        SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirectionTbl.getSrcDcId(),
-                                replDirectionTbl.getFromDcId(), dcList);
-                        buildSourceShardMetas(sourceMeta, clusterMeta.getDbId(), replDirectionTbl.getSrcDcId(), dcId,
-                                dcClusterMap, dcList, shards, clusterInfo, keeperContainerId2DcMap, replDirectionTbl.getId());
-                    }
-                }
-                if (replDirectionTbl.getFromDcId() == dcId) {
-                    setDownstreamDcs(clusterMeta, replDirectionTbl.getToDcId(), dcList);
+        List<ReplDirectionTbl> replDirections =
+            replDirectionService.findAllReplDirectionTblsByClusterWithSrcDcAndFromDc(clusterMeta.getDbId());
+        if (replDirections == null) {
+            return;
+        }
+        for (ReplDirectionTbl replDirectionTbl : replDirections) {
+            if (replDirectionTbl.getToDcId() == dcId) {
+                ClusterType azGroupClusterType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+                if (azGroupClusterType == ClusterType.SINGLE_DC) {
+                    SourceMeta sourceMeta = buildSourceMeta(clusterMeta, replDirectionTbl.getSrcDcId(),
+                            replDirectionTbl.getFromDcId(), dcList);
+                    buildSourceShardMetas(sourceMeta, clusterMeta.getDbId(), replDirectionTbl.getSrcDcId(), dcId,
+                            dcClusterMap, dcList, shards, clusterInfo, keeperContainerId2DcMap, replDirectionTbl.getId());
                 }
             }
-        } catch (ExecutionException e) {
-            throw new DataNotFoundException("Cannot gen hetero-meta", e);
-        } catch (InterruptedException e) {
-            throw new ServerException("Concurrent hetero-meta execution failed.", e);
-        } finally {
-            fixedThreadPool.shutdown();
+            if (replDirectionTbl.getFromDcId() == dcId) {
+                setDownstreamDcs(clusterMeta, replDirectionTbl.getToDcId(), dcList);
+            }
         }
     }
 
@@ -389,18 +356,18 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         }
     }
 
-    private void addClusterHints(ClusterMeta clusterMeta, Map<Long, DcClusterTbl> dcClusterMap, List<ShardTbl> shards) {
+    private void addClusterHints(ClusterMeta clusterMeta, List<AzGroupClusterEntity> azGroupClusters, List<ShardTbl> shards) {
         if (clusterHasApplier(shards)) {
             clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.APPLIER_IN_CLUSTER));
         }
-        if (clusterHasMasterDc(dcClusterMap)) {
+        if (clusterHasMasterDc(azGroupClusters)) {
             clusterMeta.setHints(Hints.append(clusterMeta.getHints(), Hints.MASTER_DC_IN_CLUSTER));
         }
     }
 
-    private boolean clusterHasMasterDc(Map<Long, DcClusterTbl> dcClusterMap) {
-        for (DcClusterTbl dcClusterTbl : dcClusterMap.values()) {
-            if (DcGroupType.MASTER.name().equalsIgnoreCase(dcClusterTbl.getGroupType())) {
+    private boolean clusterHasMasterDc(List<AzGroupClusterEntity> azGroupClusters) {
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            if (ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
                 return true;
             }
         }

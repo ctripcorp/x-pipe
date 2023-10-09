@@ -72,7 +72,7 @@ public interface MetaCache {
 
     String getActiveDc(HostPort hostPort);
 
-    String getDcGroupType(HostPort hostPort);
+    ClusterType getAzGroupType(HostPort hostPort);
 
     long getLastUpdateTime();
 
@@ -82,5 +82,5 @@ public interface MetaCache {
 
     Map<Long, String> dcShardIds(String clusterId, String dcId);
 
-    boolean isHeteroCluster(String clusterName);
+    boolean isAsymmetricCluster(String clusterName);
 }

@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -35,8 +35,18 @@ public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealt
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors);
-        ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addControllers(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? controllersByClusterType.get(ClusterType.SINGLE_DC) : controllersByClusterType.get(clusterType));
+
+        RedisInstanceInfo info = instance.getCheckInfo();
+        ClusterType clusterType = info.getClusterType();
+        String azGroupType = info.getAzGroupType();
+        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
+        List<RedisMasterController> redisMasterControllers;
+        if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
+            redisMasterControllers = controllersByClusterType.get(azGroupClusterType);
+        } else {
+            redisMasterControllers = controllersByClusterType.get(clusterType);
+        }
+        action.addControllers(redisMasterControllers);
         action.addListeners(listenersByClusterType.get(clusterType));
 
         return action;

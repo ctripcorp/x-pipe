@@ -134,7 +134,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public String getDcGroupType(HostPort hostPort) {
+    public ClusterType getAzGroupType(HostPort hostPort) {
         return null;
     }
 
@@ -179,7 +179,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isHeteroCluster(String clusterName) {
+    public boolean isAsymmetricCluster(String clusterName) {
         return false;
     }
 }

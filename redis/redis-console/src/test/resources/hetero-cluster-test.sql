@@ -30,10 +30,12 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(21,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(22,'hetero-cluster_2','hetero-cluster_2', 7);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(23,'hetero-cluster_fra_1','hetero-cluster_fra_1', 7);
 
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (1,7,1,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (2,7,2,3,'SINGLE_DC');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (31,1,7,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (32,2,7,1,0,'oy','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (33,3,7,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (31,1,7,1,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (32,2,7,1,1,0,'oy','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (33,3,7,2,1,0,'fra','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (51,31,21,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (52,31,22,1,1);
@@ -89,9 +91,12 @@ insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, conta
 insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, container_id) values(7, 25, 4, '127.0.0.1', 16003, 1, 1);
 insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, container_id) values(8, 25, 4, '127.0.0.2', 16003, 0, 2);
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (41,1,8,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (42,2,8,1,0,'oy','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (43,3,8,1,0,'fra','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (3,8,1,2,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (4,8,2,3,'SINGLE_DC');
+
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (41,1,8,3,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (42,2,8,3,1,0,'oy','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (43,3,8,4,1,0,'fra','MASTER');
 
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(3, 8, 0, 0, 2);
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(4, 8, 0, 0, 3);

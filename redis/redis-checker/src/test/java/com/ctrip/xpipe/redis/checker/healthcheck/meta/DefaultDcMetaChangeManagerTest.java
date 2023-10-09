@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
@@ -357,14 +356,14 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         DcMeta dcMeta= getDcMeta("jq");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
         cluster1.setBackupDcs("ali");
-        cluster1.setDcGroupType(DcGroupType.DR_MASTER.name());
+        cluster1.setAzGroupType(ClusterType.ONE_WAY.toString());
         manager.compare(dcMeta);
 
 
         DcMeta future = cloneDcMeta(dcMeta);
         ClusterMeta futureCluster = future.findCluster("cluster2");
         futureCluster.setBackupDcs("ali");
-        futureCluster.setDcGroupType(DcGroupType.MASTER.name());
+        futureCluster.setAzGroupType(ClusterType.SINGLE_DC.toString());
 
         manager.compare(future);
 
@@ -418,7 +417,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq").setParent(new DcMeta("jq"));
         Assert.assertTrue(manager.isInterestedInCluster(clusterMeta));
 
-        clusterMeta.setActiveDc("oy").setDcGroupName("oy");
+        clusterMeta.setActiveDc("oy").setAzGroupName("oy");
         Assert.assertFalse(manager.isInterestedInCluster(clusterMeta));
     }
 
@@ -433,8 +432,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateOneWayHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setDcGroupType("DR_MASTER");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setDcGroupType("DR_MASTER");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
         Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
 
@@ -446,9 +445,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateHeteroHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setDcGroupType("DR_MASTER");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setDcGroupType("DR_MASTER");
-        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("aws")).setDcGroupType("MASTER");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
+        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("aws")).setAzGroupType("SINGLE_DC");
 
 
         // current dc is active dc
@@ -465,9 +464,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
 
         //current dc is in master type
-        jqClusterMeta.setDcGroupType("MASTER");
-        oyClusterMeta.setDcGroupType("DR_MASTER");
-        awsClusterMeta.setDcGroupType("DR_MASTER");
+        jqClusterMeta.setAzGroupType("SINGLE_DC");
+        oyClusterMeta.setAzGroupType("ONE_WAY");
+        awsClusterMeta.setAzGroupType("ONE_WAY");
         Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
         Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));

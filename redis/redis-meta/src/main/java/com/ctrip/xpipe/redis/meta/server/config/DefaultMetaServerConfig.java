@@ -180,7 +180,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public Set<String> getOwnClusterType() {
 		String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
 		String[] split = clusterTypes.split("\\s*(,|;)\\s*");
-		return Arrays.stream(split).filter(sp -> !StringUtil.isEmpty(sp)).collect(Collectors.toSet());
+		return Arrays.stream(split).filter(sp -> !StringUtil.isEmpty(sp)).map(String::toUpperCase).collect(Collectors.toSet());
 	}
 
 	@Override

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -184,7 +183,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(clusterMeta.getDcGroupType());
+        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
+            ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
+            return clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC;
+        }
+
+        return false;
     }
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {

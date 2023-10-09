@@ -355,10 +355,14 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	@Override
 	public void clusterDeleted(Long clusterDbId) {
+		ClusterMeta clusterMeta = dcMetaManager.get().getClusterMeta(clusterDbId);
+		if (clusterMeta == null) {
+			logger.warn("[clusterDeleted][already deleted]{}", clusterDbId);
+			return;
+		}
 
 		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("del:%d", clusterDbId));
-
-		ClusterMeta clusterMeta = dcMetaManager.get().removeCluster(clusterDbId);
+		clusterMeta = dcMetaManager.get().removeCluster(clusterDbId);
 		lockMap.remove(clusterDbId);
 
 		logger.info("[clusterDeleted]{}", clusterMeta);

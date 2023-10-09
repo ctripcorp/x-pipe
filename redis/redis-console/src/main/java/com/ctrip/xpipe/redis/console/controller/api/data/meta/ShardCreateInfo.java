@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -20,6 +21,12 @@ public class ShardCreateInfo extends AbstractCreateInfo{
 
     public ShardCreateInfo(){
 
+    }
+
+    public ShardCreateInfo(ShardTbl shardTbl) {
+        this.shardId = shardTbl.getId();
+        this.shardName = shardTbl.getShardName();
+        this.shardMonitorName = shardTbl.getSetinelMonitorName();
     }
 
     public ShardCreateInfo(Long shardId, String shardName, String shardMonitorName, String dcId) {

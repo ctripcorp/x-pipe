@@ -108,7 +108,7 @@ public class StringUtil {
     }
 
     public static boolean isEmpty(String str) {
-        return str == null || str.trim().length() == 0;
+        return str == null || str.trim().isEmpty();
     }
 
     public static String[] splitRemoveEmpty(String regex, String str) {

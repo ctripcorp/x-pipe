@@ -21,11 +21,11 @@ public interface CheckInfo {
 
     List<RedisCheckRule> getRedisCheckRules();
 
-    void setDcGroupType(String type);
+    void setAzGroupType(String type);
 
-    String getDcGroupType();
+    String getAzGroupType();
 
-    void setHeteroCluster(boolean isHeteroCluster);
+    void setAsymmetricCluster(boolean isHeteroCluster);
 
-    boolean isHeteroCluster();
+    boolean isAsymmetricCluster();
 }

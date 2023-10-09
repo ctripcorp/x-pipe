@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
@@ -14,6 +17,7 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -35,6 +39,8 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Repository
 public class MigrationEventDao extends AbstractXpipeConsoleDAO {
@@ -49,6 +55,10 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
+	@Autowired
+	private AzGroupClusterRepository azGroupClusterRepository;
+	@Autowired
+	private AzGroupCache azGroupCache;
 
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
@@ -206,8 +216,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				MigrationShardTbl shard = detail.getRedundantShards();
 				
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
-					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event, detail.getRedundantClusters(),
-							dcService, clusterService, shardService, redisService, migrationService));
+					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event,
+						detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, dcService,
+						clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
 				DefaultMigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, shard,
@@ -270,21 +281,38 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
 		if (null != migrationClusters) {
 			for (final MigrationClusterTbl migrationCluster : migrationClusters) {
-				List<DcClusterShardTbl> /* distinct */ withShardIds = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+				long clusterId = migrationCluster.getClusterId();
+				List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterId);
+				Map<Long, AzGroupClusterEntity> azGroupClusterIdMap = azGroupClusters.stream()
+					.collect(Collectors.toMap(AzGroupClusterEntity::getId, Function.identity()));
+				List<DcClusterShardTbl> dcClusterShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 					@Override
 					public List<DcClusterShardTbl> doQuery() throws DalException {
-						return dcClusterShardTblDao.findByClusterIdForDrSwitch(migrationCluster.getClusterId(),
-								DcClusterShardTblEntity.READSET_SHARD_ID);
+						return dcClusterShardTblDao.findDcClusterShardWithAzGroupByClusterId(clusterId,
+							DcClusterShardTblEntity.READSET_DC_CLUSTER_SHARD_WITH_AZ_GROUP);
 					}
 				});
 
-				if (null != withShardIds) {
-					for (DcClusterShardTbl withShardId : withShardIds) {
-						MigrationShardTbl migrationShardProto = migrationShardTblDao.createLocal();
-						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(withShardId.getShardId())
-						.setLog("");
-						toCreateMigrationShards.add(migrationShardProto);
+				if (null != dcClusterShards) {
+					Set<Long> shardIdSet = new HashSet<>();
+					for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
+						long azGroupClusterId = dcClusterShard.getDcClusterInfo() == null ? 0L
+							: dcClusterShard.getDcClusterInfo().getAzGroupClusterId();
+						if (azGroupClusterId != 0L) {
+							AzGroupClusterEntity azGroupCluster = azGroupClusterIdMap.get(azGroupClusterId);
+							if (azGroupCluster != null && ClusterType.isSameClusterType(
+								azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
+								continue;
+							}
+						}
+						shardIdSet.add(dcClusterShard.getShardId());
 					}
+					shardIdSet.forEach(shardId -> {
+						MigrationShardTbl migrationShardProto = migrationShardTblDao.createLocal();
+						migrationShardProto.setMigrationClusterId(migrationCluster.getId()).setShardId(shardId)
+							.setLog("");
+						toCreateMigrationShards.add(migrationShardProto);
+					});
 				}
 			}
 		}

@@ -134,7 +134,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
 
         leaderDc = "other-dc";
-        sleep(electInterval * 2);
+        sleep(electInterval * 3);
         Assert.assertFalse(crossDcClusterServer.amILeader());
     }
 

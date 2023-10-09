@@ -49,6 +49,16 @@
 				return null;
             }
 		</snippet>
+		<snippet>
+			&#64;com.fasterxml.jackson.annotation.JsonIgnore
+			public String getSourceDc() {
+				String sourceDc = m_activeDc;
+				if (!m_sources.isEmpty()) {
+					sourceDc = m_sources.get(0).getSrcDc();
+				}
+				return sourceDc;
+			}
+		</snippet>
 	</entity>
 	<entity name="source" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Source">
 		<entity-ref name="shard" type="map" />

@@ -52,8 +52,8 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 			return redis;
 		}
 
-		public String getDcGroupType() {
-			return clusterMeta != null ? clusterMeta.getDcGroupType() : null;
+		public String getAzGroupType() {
+			return clusterMeta != null ? clusterMeta.getAzGroupType() : null;
 		}
 	}
 	

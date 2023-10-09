@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.exception.LoadConsoleMetaException;
 import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
@@ -51,6 +50,8 @@ public abstract class AbstractMetaCache implements MetaCache {
     protected int allKeeperSize = DEFAULT_KEEPER_NUMBERS;
 
     protected long lastUpdateTime = 0;
+
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Override
     public XpipeMeta getXpipeMeta() {
@@ -162,15 +163,41 @@ public abstract class AbstractMetaCache implements MetaCache {
             DcMeta partDcMeta = new DcMeta(dcMeta.getId()).setLastModifiedTime(dcMeta.getLastModifiedTime()).setZone(dcMeta.getZone());
             part.addDc(partDcMeta);
 
-            dcMeta.getClusters().values().stream().filter(clusterMeta -> reqClusters.contains(clusterMeta.getId()))
-                    .forEach(partDcMeta::addCluster);
+            for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                if (!reqClusters.contains(clusterMeta.getId())) {
+                    continue;
+                }
+
+                ClusterMeta partClusterMeta = new ClusterMeta(clusterMeta.getId());
+                partClusterMeta.mergeAttributes(clusterMeta);
+                clusterMeta.getSources().forEach(partClusterMeta::addSource);
+                clusterMeta.getShards().forEach((k, v) -> partClusterMeta.addShard(v));
+
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (clusterType == ClusterType.HETERO) {
+                    String activeDc = clusterMeta.getActiveDc();
+                    String[] backupDcs = clusterMeta.getBackupDcs().split("\\s*,\\s*");
+                    Set<String> dcs = new HashSet<>();
+                    dcs.add(activeDc);
+                    dcs.addAll(Arrays.asList(backupDcs));
+
+                    if (dcs.contains(currentDc)) {
+                        ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
+                        partClusterMeta.setType(azGroupType.toString());
+                        partClusterMeta.setAzGroupType(null);
+                    } else {
+                        continue;
+                    }
+                }
+
+                partDcMeta.addCluster(partClusterMeta);
+            }
             dcMeta.getSentinels().values().forEach(partDcMeta::addSentinel);
             dcMeta.getKeeperContainers().forEach(partDcMeta::addKeeperContainer);
             dcMeta.getRoutes().forEach(partDcMeta::addRoute);
             dcMeta.getMetaServers().forEach(partDcMeta::addMetaServer);
         }
-
-        full.getRedisCheckRules().values().forEach(redisCheckRuleMeta -> part.addRedisCheckRule(redisCheckRuleMeta));
+        full.getRedisCheckRules().values().forEach(part::addRedisCheckRule);
 
         return part;
     }
@@ -186,8 +213,10 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         String instanceInDc = metaDesc.getDcId();
         String activeDc = metaDesc.getActiveDc();
-        String dcGroupType = metaDesc.getDcGroupType();
-        return !activeDc.equalsIgnoreCase(instanceInDc) && DcGroupType.isNullOrDrMaster(dcGroupType);
+        String azGroupType = metaDesc.getAzGroupType();
+        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType)
+            ? null : ClusterType.lookup(azGroupType);
+        return !activeDc.equalsIgnoreCase(instanceInDc) && (azGroupClusterType != ClusterType.SINGLE_DC);
     }
 
     @Override
@@ -238,7 +267,7 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public String getDcGroupType(HostPort hostPort) {
+    public ClusterType getAzGroupType(HostPort hostPort) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
         XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
@@ -246,7 +275,9 @@ public abstract class AbstractMetaCache implements MetaCache {
             return null;
         }
 
-        return metaDesc.getDcGroupType();
+        String azGroupType = metaDesc.getAzGroupType();
+        return StringUtil.isEmpty(azGroupType)
+            ? null : ClusterType.lookup(azGroupType);
     }
 
     @Override
@@ -496,14 +527,16 @@ public abstract class AbstractMetaCache implements MetaCache {
             for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
                 for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                     ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-                    String dcGroupType = clusterMeta.getDcGroupType();
-                    if (clusterType.supportSingleActiveDC() && DcGroupType.isNullOrDrMaster(dcGroupType) && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
+                    ClusterType azGroupType = StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                        ? null : ClusterType.lookup(clusterMeta.getAzGroupType());
+                    if (clusterType.supportSingleActiveDC() && azGroupType != ClusterType.SINGLE_DC
+                        && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
                         continue;
                     }
 
                     for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                         monitor2ClusterShard.put(shardMeta.getSentinelMonitorName(),
-                                new Pair<>(clusterMeta.getId(), shardMeta.getId()));
+                            new Pair<>(clusterMeta.getId(), shardMeta.getId()));
                     }
                 }
             }
@@ -552,14 +585,15 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isHeteroCluster(String clusterName) {
+    public boolean isAsymmetricCluster(String clusterName) {
         XpipeMeta xpipeMeta = meta.getKey();
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
             if (clusterMeta != null) {
                 ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-                String dcGroupType = clusterMeta.getDcGroupType();
-                if (clusterType.supportSingleActiveDC() && !DcGroupType.isNullOrDrMaster(dcGroupType)) {
+                ClusterType azGroupType = StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                    ? null : ClusterType.lookup(clusterMeta.getAzGroupType());
+                if (clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC) {
                     return true;
                 }
             }

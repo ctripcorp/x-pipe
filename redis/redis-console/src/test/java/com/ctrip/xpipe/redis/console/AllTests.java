@@ -139,9 +139,9 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisInstanceInfoTest.class,
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
-        MetaUpdateTest.class,
+        ClusterUpdateControllerTest.class,
         MetaUpdateTest2.class,
-        MetaUpdateTest3.class,
+        ShardUpdateControllerTest.class,
         MetaUpdateTest4.class,
 
         ProxyDaoTest.class,

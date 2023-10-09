@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -162,7 +161,12 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
     private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        return clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(clusterMeta.getDcGroupType());
+        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
+            ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
+            return clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC;
+        }
+
+        return false;
     }
 
     private boolean hasSingleActiveDc(ClusterType clusterType) {

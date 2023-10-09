@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
@@ -128,9 +130,6 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 
 	@Test
 	public void testGenerateBasicClusterMeta() {
-
-		ClusterMeta clusterMeta = new ClusterMeta();
-		String dcName = "jq";
 		String clusterName = "cluster1";
 		DcTbl dcInfo = new DcTbl();
 		ClusterTbl clusterInfo = new ClusterTbl();
@@ -146,8 +145,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 
 		Map<Long, DcClusterTbl> dcClusterMap = new HashMap<>();
 
-		clusterMetaServiceImpl.generateBasicClusterMeta(clusterMeta, dcName, clusterName, dcInfo, clusterInfo, dcClusterInfo,
-				clusterRelatedDc, dcClusterMap);
+		ClusterMeta clusterMeta = clusterMetaServiceImpl.generateBasicClusterMeta(dcInfo, clusterInfo, dcClusterInfo, null,
+				clusterRelatedDc);
 
 		Assert.assertEquals(clusterName, clusterMeta.getId());
 	}
@@ -190,7 +189,10 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		when(zoneService.findById(anyLong())).thenReturn(null);
 		clusterMetaServiceImpl.setZoneService(zoneService);
 
-		clusterMetaServiceImpl.generateHeteroMeta(clusterMeta, dcId, dcClusterInfo, dcList, dcClusterMap, shards,
+		AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+		azGroupCluster.setAzGroupClusterType(ClusterType.SINGLE_DC.toString());
+
+		clusterMetaServiceImpl.generateAsymmetricMeta(clusterMeta, dcId, azGroupCluster, dcList, dcClusterMap, shards,
 				clusterInfo, keeperContainerId2DcMap);
 
 		Assert.assertEquals(1, clusterMeta.getSources().size());

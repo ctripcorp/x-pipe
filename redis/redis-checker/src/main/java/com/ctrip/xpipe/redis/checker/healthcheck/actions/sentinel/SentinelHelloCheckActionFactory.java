@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -11,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractClusterLeaderAwa
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,9 +62,19 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
-        ClusterType clusterType = instance.getCheckInfo().getClusterType();
-        action.addListeners(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? collectorsByClusterType.get(ClusterType.SINGLE_DC) : collectorsByClusterType.get(clusterType));
-        action.addControllers(clusterType.equals(ClusterType.ONE_WAY) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType()) ? controllersByClusterType.get(ClusterType.SINGLE_DC) : controllersByClusterType.get(clusterType));
+
+        ClusterInstanceInfo info = instance.getCheckInfo();
+        ClusterType clusterType = info.getClusterType();
+        String azGroupType = info.getAzGroupType();
+        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
+        if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
+            action.addListeners(collectorsByClusterType.get(azGroupClusterType));
+            action.addControllers(controllersByClusterType.get(azGroupClusterType));
+        } else {
+            action.addListeners(collectorsByClusterType.get(clusterType));
+            action.addControllers(controllersByClusterType.get(clusterType));
+        }
+
         return action;
     }
 
