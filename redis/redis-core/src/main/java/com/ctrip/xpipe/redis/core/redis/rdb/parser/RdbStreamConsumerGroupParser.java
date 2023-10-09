@@ -140,7 +140,7 @@ public class RdbStreamConsumerGroupParser extends AbstractRdbParser<byte[]> impl
 
                 case READ_NACK_STREAM_ID:
                     nackRawId = readUntilBytesEnough(byteBuf, nackRawId, StreamID.SIZE_STREAM_ID);
-                    if (null != nackRawId) state = STATE.READ_NACK_DELIVERY_TIME;
+                    if (nackRawId.readableBytes() == StreamID.SIZE_STREAM_ID) state = STATE.READ_NACK_DELIVERY_TIME;
                     break;
 
                 case READ_NACK_DELIVERY_TIME:
@@ -205,7 +205,7 @@ public class RdbStreamConsumerGroupParser extends AbstractRdbParser<byte[]> impl
 
                 case READ_CONSUMER_NACK_ID:
                     nackRawId = readUntilBytesEnough(byteBuf, nackRawId, StreamID.SIZE_STREAM_ID);
-                    if (null != nackRawId) {
+                    if (nackRawId.readableBytes() == StreamID.SIZE_STREAM_ID) {
                         StreamID consumerNackId = new StreamID(nackRawId);
                         if (!pel.containsKey(consumerNackId)) {
                             throw new RdbStreamParseFailException(context.getKey(), "consumer nackId miss " + consumerNackId);
