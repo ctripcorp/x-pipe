@@ -96,11 +96,8 @@ public class CtripPlatformEmailService implements EmailService {
         try {
             String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
             List<String> emailIDList = decodeListString(emailIDListStr);
-            GetEmailStatusRequest emailStatusRequest = new GetEmailStatusRequest();
-            emailStatusRequest.setSendCode(CtripAlertEmailTemplate.SEND_CODE);
-            emailStatusRequest.setEmailIDList(emailIDList);
-            emailStatusRequest.setEmailTypeID(EMAIL_TYPE_ALERT);
-            GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(emailStatusRequest);
+            GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT));
 
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
