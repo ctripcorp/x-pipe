@@ -24,6 +24,8 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
+    RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort);
+
     KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
 
     ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId);
@@ -32,7 +34,7 @@ public interface HealthCheckInstanceManager {
 
     KeeperHealthCheckInstance removeKeeper(HostPort hostPort);
 
-    RedisHealthCheckInstance  removeRedisOnlyForUsedMemory(HostPort hostPort);
+    RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort);
 
     ClusterHealthCheckInstance remove(String cluster);
 

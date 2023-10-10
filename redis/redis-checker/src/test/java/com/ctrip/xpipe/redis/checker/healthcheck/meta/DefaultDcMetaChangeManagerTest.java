@@ -505,7 +505,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         // only change keeper reload
         Mockito.verify(instanceManager, times(2)).removeKeeper(any(HostPort.class));
         Mockito.verify(instanceManager, times(1)).getOrCreate(any(KeeperMeta.class));
-        Mockito.verify(instanceManager, times(0)).removeRedisOnlyForUsedMemory(any(HostPort.class));
+        Mockito.verify(instanceManager, times(0)).removeRedisInstanceForAssignedAction(any(HostPort.class));
         Mockito.verify(instanceManager, times(0)).getOrCreateRedisInstanceForAssignedAction(any(RedisMeta.class));
 
     }
@@ -529,7 +529,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         // only change redis changed
         Mockito.verify(instanceManager, times(0)).removeKeeper(any(HostPort.class));
         Mockito.verify(instanceManager, times(0)).getOrCreate(any(KeeperMeta.class));
-        Mockito.verify(instanceManager, times(1)).removeRedisOnlyForUsedMemory(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).removeRedisInstanceForAssignedAction(any(HostPort.class));
         Mockito.verify(instanceManager, times(1)).getOrCreateRedisInstanceForAssignedAction(any(RedisMeta.class));
 
     }

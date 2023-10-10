@@ -279,7 +279,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private void removeRedisOnlyForUsedMemory(RedisMeta removed) {
-        if (null != instanceManager.removeRedisOnlyForUsedMemory(new HostPort(removed.getIp(), removed.getPort()))) {
+        if (null != instanceManager.removeRedisInstanceForAssignedAction(new HostPort(removed.getIp(), removed.getPort()))) {
             logger.info("[removeRedisOnlyForUsedMemory][{}:{}] {}", removed.getIp(), removed.getPort(), removed);
         }
     }

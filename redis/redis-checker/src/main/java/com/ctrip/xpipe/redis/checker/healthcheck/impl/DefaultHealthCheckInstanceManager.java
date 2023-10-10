@@ -89,6 +89,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
+    public RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort) {
+        return redisInstanceForAssignedAction.get(hostPort);
+    }
+
+    @Override
     public KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort) {
         return keeperInstances.get(hostPort);
     }
@@ -114,7 +119,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance  removeRedisOnlyForUsedMemory(HostPort hostPort) {
+    public RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort) {
         RedisHealthCheckInstance instance = redisInstanceForAssignedAction.remove(hostPort);
         if (null != instance) instanceFactory.remove(instance);
         return instance;
