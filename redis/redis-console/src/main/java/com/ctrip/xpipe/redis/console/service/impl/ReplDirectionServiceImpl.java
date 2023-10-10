@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,9 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
     @Autowired
     ApplierService applierService;
 
+    @Autowired
+    AzGroupClusterRepository azGroupClusterRepository;
+
     @Override
     public List<ReplDirectionTbl> findAllReplDirectionJoinClusterTbl() {
         List<ReplDirectionTbl> replDirectionTbls = queryHandler.handleQuery(new DalQuery<List<ReplDirectionTbl>>() {
@@ -43,8 +48,16 @@ public class ReplDirectionServiceImpl  extends AbstractConsoleService<ReplDirect
         });
 
         Map<Long, Long> clusterIdActiveDcIdMap = new HashMap<>();
-        List<ClusterTbl> allHeteroClusters = clusterService.findClustersByGroupType(DcGroupType.MASTER.name());
-        allHeteroClusters.forEach(heteroCluster -> {
+        List<AzGroupClusterEntity> azGroupClusters =
+            azGroupClusterRepository.selectByAzGroupClusterType(ClusterType.SINGLE_DC.toString());
+        List<ClusterTbl> allAsymmetricClusters = new ArrayList<>();
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            ClusterTbl clusterTbl = clusterService.find(azGroupCluster.getClusterId());
+            if (ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.ONE_WAY)) {
+                allAsymmetricClusters.add(clusterTbl);
+            }
+        }
+        allAsymmetricClusters.forEach(heteroCluster -> {
             clusterIdActiveDcIdMap.put(heteroCluster.getId(), heteroCluster.getActivedcId());
         });
 

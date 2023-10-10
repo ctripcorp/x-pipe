@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -13,7 +12,9 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -79,6 +80,9 @@ public class SentinelUpdateController {
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -490,23 +494,23 @@ public class SentinelUpdateController {
     }
 
 
-    private RetMessage updateShardSentinels(String dcName,ClusterTbl clusterTbl,String shardName,DcClusterShardTbl dcClusterShardTbl) throws DalException {
-        String clusterType = clusterTbl.getClusterType();
+    private RetMessage updateShardSentinels(String dcName, ClusterTbl clusterTbl, String shardName,
+        DcClusterShardTbl dcClusterShardTbl) throws DalException {
         String clusterName = clusterTbl.getClusterName();
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
 
-        SentinelGroupModel selected;
-        if (ClusterType.lookup(clusterType).equals(ClusterType.ONE_WAY)) {
-            DcClusterTbl dcClusterTbl = dcClusterService.find(dcName, clusterName);
-            selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType), DcGroupType.findByValue(dcClusterTbl.getGroupType()));
-        } else {
-            selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType));
-        }
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterIdAndAz(clusterTbl.getId(), dcName);
+        ClusterType azGroupType = azGroupCluster == null
+            ? null : ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+        ClusterType dcClusterType = azGroupType == null
+            ? clusterType : azGroupType;
 
+        SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcName, dcClusterType);
         if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
             return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
 
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
-        if (ClusterType.lookup(clusterType).equals(ClusterType.CROSS_DC)) {
+        if (clusterType.equals(ClusterType.CROSS_DC)) {
             dcClusterShardTbls = dcClusterShardService.find(clusterName, shardName);
         }
 

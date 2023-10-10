@@ -12,7 +12,7 @@ public interface DcService {
 	DcTbl find(long dcId);
 	String getDcName(long dcId);
 	List<DcTbl> findAllDcs();
-	List<DcTbl> findAllDcNames();
+	List<String> findAllDcNames();
 	List<DcTbl> findAllDcBasic();
 	List<DcTbl> findClusterRelatedDc(String clusterName);
 	DcTbl findByDcName(String activeDcName);

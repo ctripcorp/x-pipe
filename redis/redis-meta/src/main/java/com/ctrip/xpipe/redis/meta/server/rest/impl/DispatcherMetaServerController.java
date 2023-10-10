@@ -34,38 +34,34 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
-	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
-	public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+    @RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta,
+        @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+        metaServer.clusterAdded(clusterMeta, forwardInfo.clone());
+    }
 
-		metaServer.clusterAdded(clusterMeta, forwardInfo.clone());
-	}
-	
-	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.PUT,  consumes = MediaType.APPLICATION_JSON_VALUE)
-	public void clusterModified(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
-		
-		metaServer.clusterModified(clusterMeta, forwardInfo.clone());
-	}
+    @RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.PUT,  consumes = MediaType.APPLICATION_JSON_VALUE)
+    public void clusterModified(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta,
+        @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+        metaServer.clusterModified(clusterMeta, forwardInfo.clone());
+    }
 
-	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.DELETE)
-	public void clusterDeleted(@PathVariable String clusterId, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
-
-		metaServer.clusterDeleted(clusterId, forwardInfo.clone());
-	}
+    @RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.DELETE)
+    public void clusterDeleted(@PathVariable String clusterId, @ModelAttribute ForwardInfo forwardInfo,
+        @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+        metaServer.clusterDeleted(clusterId, forwardInfo.clone());
+    }
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
-	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
-			@PathVariable String ip, @PathVariable int port, @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
-		
+	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId,
+		@PathVariable String ip, @PathVariable int port, @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		logger.debug("[upstreamChange]{},{},{},{}", clusterId, shardId, ip, port);
 		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_PEER_CHANGE, method = RequestMethod.PUT)
 	public void upstreamPeerChange(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId,
-									@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[upstreamPeerChange]{},{}", clusterId, shardId);
 		metaServer.upstreamPeerChange(dcId, clusterId, shardId, forwardInfo);
@@ -73,8 +69,8 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<KeeperMeta> getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId,
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
-		
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
 		logger.debug("[getActiveKeeper]{},{},{},{}", clusterId, shardId);
 		return createDeferredResult(new Function<MetaServer, KeeperMeta >() {
 			@Override
@@ -86,7 +82,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@GetMapping(path = META_SERVER_SERVICE.PATH.GET_PEER_MASTER, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<RedisMeta> getPeerMaster(@PathVariable String clusterId, @PathVariable String shardId,
-													  @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[getPeerMaster] {},{}", clusterId, shardId);
 		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
@@ -100,7 +96,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_SIDS_CHANGE, method = RequestMethod.PUT)
 	public void sidsChange(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String sids,
-								   @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[sidsChange]{},{},{}", clusterId, shardId, sids);
 		metaServer.sidsChange(clusterId, shardId, sids, forwardInfo);
@@ -108,20 +104,20 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@GetMapping(path = META_SERVER_SERVICE.PATH.GET_SIDS, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<String> getSids(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId,
-											   @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[getSids] {},{}", clusterId, shardId);
 		return createDeferredResult(new Function<MetaServer, String>() {
 			@Override
 			public String apply(MetaServer metaServer) {
-			    return metaServer.getSids(dcId, clusterId, shardId, forwardInfo);
+				return metaServer.getSids(dcId, clusterId, shardId, forwardInfo);
 			}
 		}, metaServer);
 	}
 
 	@GetMapping(path = META_SERVER_SERVICE.PATH.PATH_GET_CURRENT_MASTER, produces = MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<RedisMeta> getCurrentMaster(@PathVariable String clusterId, @PathVariable String shardId,
-											  @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		logger.debug("[getCurrentMaster] {},{}", clusterId, shardId);
 		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
 			@Override
@@ -133,8 +129,8 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC_CHECK, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<PrimaryDcCheckMessage> changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
-																	 @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
-		
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+
 		logger.info("[changePrimaryDcCheck]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 		return createDeferredResult(new Function<MetaServer, PrimaryDcCheckMessage >() {
 			@Override
@@ -146,8 +142,8 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<MetaServerConsoleService.PreviousPrimaryDcMessage> makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly,
-																				@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
-		
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+
 		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
 		return createDeferredResult(new Function<MetaServer, MetaServerConsoleService.PreviousPrimaryDcMessage >() {
 			@Override
@@ -156,13 +152,13 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 			}
 		}, metaServer);
 	}
-	
+
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT,
-			produces= MediaType.APPLICATION_JSON_VALUE,
-			consumes = MediaType.APPLICATION_JSON_VALUE)
+		produces= MediaType.APPLICATION_JSON_VALUE,
+		consumes = MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<PrimaryDcChangeMessage> doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
-													@RequestBody(required = false) MetaServerConsoleService.PrimaryDcChangeRequest request,
-													@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+		@RequestBody(required = false) MetaServerConsoleService.PrimaryDcChangeRequest request,
+		@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		return createDeferredResult(new Function<MetaServer, PrimaryDcChangeMessage>() {

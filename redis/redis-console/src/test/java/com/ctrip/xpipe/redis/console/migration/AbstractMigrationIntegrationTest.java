@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluste
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImpl;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
@@ -58,6 +60,12 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
 
     @Mock
     protected DcService dcService;
+
+    @Mock
+    protected AzGroupClusterRepository azGroupClusterRepository;
+
+    @Mock
+    protected AzGroupCache azGroupCache;
 
     @Mock
     protected MigrationClusterDao migrationClusterDao;
@@ -197,8 +205,9 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
             MigrationShardTbl shard = detail.getRedundantShards();
 
             if(null == event.getMigrationCluster(cluster.getClusterId())) {
-                event.addMigrationCluster(new DefaultMigrationCluster(migrationExecutor, scheduled, event, detail.getRedundantClusters(),
-                        dcService, clusterService, mockShardService, redisService, migrationService));
+                event.addMigrationCluster(new DefaultMigrationCluster(migrationExecutor, scheduled, event,
+                    detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, dcService, clusterService,
+                    mockShardService, redisService, migrationService));
             }
             MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
             ((DefaultMigrationCluster) migrationCluster).setOuterClientService(outerClientService);

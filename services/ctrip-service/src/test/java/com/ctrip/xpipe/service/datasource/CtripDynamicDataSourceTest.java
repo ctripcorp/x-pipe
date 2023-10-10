@@ -21,8 +21,8 @@ public class CtripDynamicDataSourceTest {
     private CtripDynamicDataSource dataSource;
 
     @Before
-    public void setupCtripDynamicDataSourceTest() {
-        this.dataSource = new CtripDynamicDataSource();
+    public void setupCtripDynamicDataSourceTest() throws Exception {
+        this.dataSource = new CtripDynamicDataSource(new CtripDalDataSourceFactory());
         this.dataSource.initialize(null);
     }
 

@@ -467,12 +467,15 @@
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
 
 		<readsets>
+			<readset name="CLUSTER_ID">
+				<member name="cluster-id" />
+			</readset>
+			<readset name="AZ_GROUP_CLUSTER_ID">
+				<member name="az-group-cluster-id"/>
+			</readset>
 			<readset name="FULL_WITH_DC">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="dc-info"/>
-			</readset>
-			<readset name="CLUSTER_ID">
-				<member name="cluster-id" />
 			</readset>
             <readset name="ID_AND_DC_ID">
 				<member name="dc-cluster-id"/>
@@ -737,6 +740,9 @@
 		<relation name="redis-info" entity-name="redis-tbl" entity-alias="rt"/>
 
 		<readsets>
+			<readset name="DC_CLUSTER_ID">
+				<member name="dc-cluster-id"/>
+			</readset>
 			<readset name="SHARD_ID">
 				<member name="shard-id"/>
 			</readset>
@@ -746,6 +752,11 @@
 			<readset name="CLUSTER_COUNT_AND_SHARD_COUNT">
 				<member name="cluster-count" />
 				<member name="shard-count" />
+			</readset>
+			<readset name="DC_CLUSTER_SHARD_WITH_AZ_GROUP">
+				<readset-ref name="DC_CLUSTER_ID"/>
+				<readset-ref name="SHARD_ID"/>
+				<readset-ref name="AZ_GROUP_CLUSTER_ID" relation-name="dc-cluster-info"/>
 			</readset>
 			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
@@ -829,6 +840,20 @@
 					AND <FIELD name='shard-id'/> != 0
 					AND <FIELD name='deleted'/> = 0
 					AND (dct.group_type = 'DR_MASTER' or dct.group_type is null)
+					AND dct.cluster_id = ${cluster-id}
+					AND dct.deleted = 0;
+					]]>
+				</statement>
+			</query>
+			<query name="find-dc-cluster-shard-with-az-group-by-cluster-id" type="SELECT" multiple="true">
+				<param name="cluster-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-cluster-info'/>
+					WHERE <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND <FIELD name='shard-id'/> != 0
+					AND <FIELD name='deleted'/> = 0
 					AND dct.cluster_id = ${cluster-id}
 					AND dct.deleted = 0;
 					]]>

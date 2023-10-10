@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.DcGroupType;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -38,6 +39,9 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
 
     @Autowired
     private ShardService shardService;
+
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
 
     @Before
     public void beforeStart(){
@@ -113,7 +117,9 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
 
     @Test
     public void testUnBindMasterDc() {
-        clusterService.bindDc(new DcClusterTbl().setClusterName("cluster7").setDcName("oy").setGroupType(DcGroupType.MASTER.toString()));
+        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity().setClusterId(7L).setAzGroupId(4L).setActiveAzId(2L).setAzGroupClusterType("SINGLE_DC");
+        azGroupClusterRepository.insert(azGroupCluster);
+        clusterService.bindRegionAz("cluster7", "SHA", "oy");
 
         DcClusterTbl dcClusterTbl = dcClusterService.find("oy", "cluster7");
 

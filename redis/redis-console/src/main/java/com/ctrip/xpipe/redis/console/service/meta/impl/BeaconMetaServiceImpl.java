@@ -80,8 +80,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             if (isDcNeeded(dc, clusterMeta)) {
                 clusterMeta.getShards().forEach((shard, shardMeta) -> {
                     Set<HostPort> nodes = shardMeta.getRedises().stream()
-                            .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
-                            .collect(Collectors.toSet());
+                        .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
+                        .collect(Collectors.toSet());
                     String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, dc);
                     groups.add(new MonitorGroupMeta(groupName, dc, nodes, dc.equalsIgnoreCase(clusterMeta.getActiveDc())));
                 });
@@ -96,6 +96,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             String activeDc = clusterMeta.getActiveDc();
             // no register cross region dcs to beacon
             return !metaCache.isCrossRegion(activeDc, dc);
+        } else if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO)) {
+            return !ClusterType.isSameClusterType(clusterMeta.getAzGroupType(), ClusterType.SINGLE_DC);
         } else {
             XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
             String supportZone = config.getBeaconSupportZone();

@@ -29,7 +29,8 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "dcGroupType:" + dcGroupType, "isHeteroCluster:" + isHeteroCluster);
+        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "azGroupType:" + azGroupType,
+            "isAsymmetricCluster:" + asymmetricCluster);
     }
 
 }

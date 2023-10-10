@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  *
  * Dec 12, 2016
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 	
 	@Mock

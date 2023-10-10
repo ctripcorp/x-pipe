@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.service.datasource;
 
-import com.ctrip.datasource.configure.DalDataSourceFactory;
 import com.ctrip.platform.dal.dao.configure.FirstAidKit;
 import com.ctrip.platform.dal.dao.configure.SerializableDataSourceConfig;
 import com.ctrip.platform.dal.dao.datasource.ClusterDynamicDataSource;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSourceAdapter;
 import com.ctrip.xpipe.database.ConnectionPoolDesc;
 import com.ctrip.xpipe.database.ConnectionPoolHolder;
+import com.ctrip.xpipe.datasource.DataSourceFactory;
 import com.ctrip.xpipe.service.fireman.ForceSwitchableDataSourceHolder;
 import org.apache.tomcat.jdbc.pool.ConnectionPool;
 import org.apache.tomcat.jdbc.pool.PoolConfiguration;
@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
+import org.unidal.dal.jdbc.datasource.DataSourceException;
 import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptor;
 
 import java.sql.Connection;
@@ -33,13 +34,16 @@ public class CtripDynamicDataSource implements DataSource, ConnectionPoolHolder 
 
     private DataSourceDescriptor descriptor;
 
-    private DalDataSourceFactory factory;
+    public CtripDynamicDataSource(DataSourceFactory factory) throws Exception {
+        javax.sql.DataSource dataSource = factory.getOrCreateDataSource();
+        if (dataSource instanceof ClusterDynamicDataSource) {
+            this.dataSource = (ClusterDynamicDataSource) dataSource;
+        } else {
+            throw new DataSourceException("not a cluster dynamic datasource");
+        }
+    }
 
-    private DataSourceConfig config = new DataSourceConfig();
-
-    private void init() throws Exception {
-        factory = new DalDataSourceFactory();
-        dataSource = (ClusterDynamicDataSource) factory.getOrCreateDataSource(config.getClusterName());
+    private void init() {
         ForceSwitchableDataSourceHolder.getInstance().setDataSource(new ForceSwitchableDataSourceAdapter(dataSource));
     }
 

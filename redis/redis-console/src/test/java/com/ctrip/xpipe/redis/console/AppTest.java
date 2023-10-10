@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -25,12 +26,16 @@ import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KE
  */
 @SpringBootApplication
 @EnableScheduling
+@MapperScan("com.ctrip.xpipe.redis.console.mapper")
 @ComponentScan("com.ctrip.xpipe.redis.console.spring")
 public class AppTest extends AbstratAppTest {
 
 	@BeforeClass
 	public static void beforeAppTestClass() {
 		System.setProperty(HealthChecker.ENABLED, "true");
+
+		// mysql重置命令，首次连接本地mysql时使用。非本地环境禁止开启
+		// System.setProperty("reset.mysql", "true");
 	}
 
 	@Before
@@ -46,9 +51,6 @@ public class AppTest extends AbstratAppTest {
 
 	@Test
 	public void startConsole8080() throws IOException, SQLException {
-
-		// mysql重置命令，首次连接本地mysql时使用。非本地环境禁止开启
-		// System.setProperty("reset.mysql", "true");
 
 		System.setProperty("server.port", "8080");
 		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER.name());

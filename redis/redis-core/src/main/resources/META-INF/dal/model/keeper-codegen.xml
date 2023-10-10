@@ -57,6 +57,8 @@
     <attribute name="db-id" value-type="long" />
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
+    <attribute name="az-group-name" value-type="String" />
+    <attribute name="az-group-type" value-type="String" />
     <attribute name="downstream-dcs" value-type="String" />
     <attribute name="dc-group-type" value-type="String" />
     <attribute name="dc-group-name" value-type="String" />

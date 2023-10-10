@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
@@ -42,6 +44,12 @@ public class MetaUpdateTest2 {
 
     @Mock
     private DcClusterService dcClusterService;
+
+    @Mock
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @Mock
+    private AzGroupCache azGroupCache;
 
     @Spy
     @InjectMocks
@@ -103,14 +111,16 @@ public class MetaUpdateTest2 {
     public void addKeepersWithIsDRMasterDc() throws Exception {
         ClusterTbl clusterTbl = mock(ClusterTbl.class);
         when(clusterTbl.getClusterName()).thenReturn("cluster-test");
+        when(clusterTbl.getId()).thenReturn(1L);
         // TODO: 2022/10/10 remove hetero
 //        when(clusterTbl.getClusterType()).thenReturn(ClusterType.HETERO.toString());
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
         when(clusterTbl.getId()).thenReturn(1L);
         DcClusterTbl dcClusterTbl = mock(DcClusterTbl.class);
-        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
+//        when(dcClusterTbl.getGroupType()).thenReturn(DcGroupType.DR_MASTER.toString());
         when(dcClusterTbl.getDcId()).thenReturn(2L);
         when(dcClusterService.find("SHAJQ", "cluster-test")).thenReturn(dcClusterTbl);
+        when(azGroupClusterRepository.selectByClusterId(any())).thenReturn(Collections.emptyList());
         ShardTbl shardTbl = mock(ShardTbl.class);
         RedisCreateInfo redisCreateInfo = mock(RedisCreateInfo.class);
         when(redisCreateInfo.getDcId()).thenReturn("SHAJQ");

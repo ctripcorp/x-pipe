@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,7 +195,15 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     }
 
     private boolean activeDcCheckerSubscribeMasterTypeInstance(RedisHealthCheckInstance instance) {
-        return currentDcId.equalsIgnoreCase(instance.getCheckInfo().getActiveDc()) && !DcGroupType.isNullOrDrMaster(instance.getCheckInfo().getDcGroupType());
+        String activeDc = instance.getCheckInfo().getActiveDc();
+        if (!currentDcId.equalsIgnoreCase(activeDc)) {
+            return false;
+        }
+        String azGroupType = instance.getCheckInfo().getAzGroupType();
+        if (StringUtil.isEmpty(azGroupType)) {
+            return false;
+        }
+        return ClusterType.lookup(azGroupType) == ClusterType.SINGLE_DC;
     }
 
 }

@@ -10,6 +10,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -38,6 +39,14 @@ public class ShardDaoTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testAddShardThenSentinelNameShouldEqShardName() throws DalException {
         shardDao.createShard("cluster1", new ShardTbl().setShardName("cluster-test-1_1"));
+    }
+
+    @Test
+    public void testQueryAllShardsByClusterId() {
+        List<ShardTbl> shards = shardDao.queryAllShardsByClusterId(1L);
+        Assert.assertEquals(2, shards.size());
+        Assert.assertEquals("shard1", shards.get(0).getShardName());
+        Assert.assertEquals("shard2", shards.get(1).getShardName());
     }
 
     @Override

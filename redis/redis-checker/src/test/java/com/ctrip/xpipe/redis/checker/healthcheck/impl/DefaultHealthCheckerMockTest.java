@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
@@ -75,10 +76,10 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     public void generateCRossDCHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setDcGroupName("jq");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setAzGroupName("jq");
         jqDcMeta.addCluster(jqClusterMeta);
         DcMeta oyDcMeta = new DcMeta("oy");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setDcGroupName("oy");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setAzGroupName("oy");
         oyDcMeta.addCluster(oyClusterMeta);
         xpipeMeta.addDc(jqDcMeta).addDc(oyDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
@@ -96,7 +97,7 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     public void generateSingleDcHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq").setDcGroupName("jq");
+        ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq").setAzGroupName("jq");
         jqDcMeta.addCluster(clusterMeta);
         xpipeMeta.addDc(jqDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
@@ -104,7 +105,7 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
         checker.generateHealthCheckInstances();
         verify(instanceManager, times(1)).getOrCreate(new ClusterMeta().setId("single_dc_cluster"));
 
-        clusterMeta.setActiveDc("oy").setDcGroupName("oy");
+        clusterMeta.setActiveDc("oy").setAzGroupName("oy");
         checker.generateHealthCheckInstances();
         verify(instanceManager, times(1)).getOrCreate(new ClusterMeta().setId("single_dc_cluster"));
     }
@@ -113,10 +114,10 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     public void generateLocalDCHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setDcGroupName("jq");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setAzGroupName("jq");
         jqDcMeta.addCluster(jqClusterMeta);
         DcMeta oyDcMeta = new DcMeta("oy");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setDcGroupName("oy");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setAzGroupName("oy");
         oyDcMeta.addCluster(oyClusterMeta);
         xpipeMeta.addDc(jqDcMeta).addDc(oyDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
@@ -129,10 +130,10 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     public void generateOneWayHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setDcGroupName("jq").setDcGroupType("DR_MASTER");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("jq").setAzGroupType("ONE_WAY");
         jqDcMeta.addCluster(jqClusterMeta);
         DcMeta oyDcMeta = new DcMeta("oy");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setDcGroupName("oy").setDcGroupType("DR_MASTER");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("oy").setAzGroupType("ONE_WAY");
         oyDcMeta.addCluster(oyClusterMeta);
         xpipeMeta.addDc(jqDcMeta).addDc(oyDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
@@ -147,37 +148,44 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void generateHeteroHealthCheckInstancesTest() throws Exception {
+    public void generateAsymmetricHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setDcGroupName("jq").setDcGroupType("DR_MASTER");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("SHA").setAzGroupType("ONE_WAY");
         jqDcMeta.addCluster(jqClusterMeta);
         DcMeta oyDcMeta = new DcMeta("oy");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setDcGroupName("oy").setDcGroupType("DR_MASTER");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("SHA").setAzGroupType("ONE_WAY");
         oyDcMeta.addCluster(oyClusterMeta);
         DcMeta awsDcMeta = new DcMeta("aws");
-        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setDcGroupName("aws").setDcGroupType("MASTER");
+        ClusterMeta awsClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("AWS").setAzGroupType("SINGLE_DC");
+        SourceMeta sourceMeta = new SourceMeta().setParent(awsClusterMeta).setRegion("SHA").setSrcDc("jq").setUpstreamDc("jq");
+        awsClusterMeta.addSource(sourceMeta);
         awsDcMeta.addCluster(awsClusterMeta);
         xpipeMeta.addDc(jqDcMeta).addDc(oyDcMeta).addDc(awsDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
 
         // current dc is active dc
         checker.generateHealthCheckInstances();
-        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("hetero_cluster"));
+        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
 
         //current dc is not active dc but in dr master type
         jqClusterMeta.setActiveDc("oy");
         oyClusterMeta.setActiveDc("oy");
         awsClusterMeta.setActiveDc("oy");
+        sourceMeta.setSrcDc("oy").setUpstreamDc("oy");
         checker.generateHealthCheckInstances();
-        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("hetero_cluster"));
+        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
 
         //current dc is in master type
-        jqClusterMeta.setDcGroupType("MASTER");
-        oyClusterMeta.setDcGroupType("DR_MASTER");
-        awsClusterMeta.setDcGroupType("DR_MASTER");
+        jqClusterMeta.setBackupDcs("").setAzGroupName("JQ").setAzGroupType("SINGLE_DC");
+        jqClusterMeta.getSources().clear();
+        sourceMeta.setRegion("OY");
+        oyClusterMeta.setActiveDc("oy").setBackupDcs("aws").setAzGroupName("OY");
+        oyClusterMeta.addSource(sourceMeta);
+        awsClusterMeta.setActiveDc("oy").setBackupDcs("aws").setAzGroupName("OY").setAzGroupType("ONE_WAY");
+        oyClusterMeta.addSource(sourceMeta);
         checker.generateHealthCheckInstances();
-        verify(instanceManager, times(4)).getOrCreate(new ClusterMeta().setId("hetero_cluster"));
+        verify(instanceManager, times(4)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
 
     }
 

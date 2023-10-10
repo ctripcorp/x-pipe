@@ -117,11 +117,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
+        ClusterMeta clusterMeta = redisMeta.parent().parent();
+        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        if (!StringUtil.isEmpty(((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules())) {
-            for (String ruleId : ((ClusterMeta) redisMeta.parent().parent()).getActiveRedisCheckRules().split(",")) {
+        if (!StringUtil.isEmpty(clusterMeta.getActiveRedisCheckRules())) {
+            for (String ruleId : clusterMeta.getActiveRedisCheckRules().split(",")) {
                 RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
                 if (redisCheckRuleMeta != null) {
                     redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
@@ -131,15 +132,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             }
         }
 
-        DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
-                ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
-                ((ClusterMeta) redisMeta.parent().parent()).getId(),
-                redisMeta.parent().getId(),
-                new HostPort(redisMeta.getIp(), redisMeta.getPort()),
-                redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
+        DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(clusterMeta.parent().getId(), clusterMeta.getId(),
+            redisMeta.parent().getId(), new HostPort(redisMeta.getIp(), redisMeta.getPort()),
+            redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
         info.isMaster(redisMeta.isMaster());
-        info.setDcGroupType(((ClusterMeta) redisMeta.parent().parent()).getDcGroupType());
-        info.setHeteroCluster(metaCache.isHeteroCluster(info.getClusterId()));
+        info.setAzGroupType(clusterMeta.getAzGroupType());
+        info.setAsymmetricCluster(metaCache.isAsymmetricCluster(info.getClusterId()));
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
             info.setShardDbId(redisMeta.parent().getDbId());
@@ -157,9 +155,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-                clusterType, clusterMeta.getOrgId());
-        info.setDcGroupType(clusterMeta.getDcGroupType());
-        info.setHeteroCluster(metaCache.isHeteroCluster(clusterMeta.getId()));
+            clusterType, clusterMeta.getOrgId());
+        info.setAzGroupType(clusterMeta.getAzGroupType());
+        info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);

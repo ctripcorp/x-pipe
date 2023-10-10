@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.dto.ClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
@@ -17,7 +18,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -120,34 +121,32 @@ public class ClusterMetaSynchronizer {
     }
 
     void createCluster(ClusterMeta toAdd){
-        long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
-        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(toAdd.getId()).setClusterType(toAdd.getType()).setClusterAdminEmails(toAdd.getAdminEmails())
-                .setClusterDescription(toAdd.getId());
+        String orgName = null;
         if (toAdd.getOrgId() != null) {
-            clusterTbl.setClusterOrgId(toAdd.getOrgId());
             try {
                 OrganizationTbl orgTbl = organizationService.getOrganization(toAdd.getOrgId());
-                if (orgTbl != null)
-                    clusterTbl.setClusterOrgName(orgTbl.getOrgName());
+                if (orgTbl != null) {
+                    orgName = orgTbl.getOrgName();
+                }
             } catch (Exception e) {
                 logger.warn("[ClusterMetaSynchronizer][bindDc]orgId not found:{},{}", toAdd.getId(), toAdd.getOrgId());
             }
         }
-        ClusterType clusterType = ClusterType.lookup(toAdd.getType());
-        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
-        if (clusterType.supportSingleActiveDC()) {
-            clusterTbl.setActivedcId(currentDcId);
-        }else{
-            List<DcClusterModel> dcClusterModels = new LinkedList<>();
-            DcModel dcModel = new DcModel();
-            dcModel.setDc_name(DcMetaSynchronizer.currentDcId);
-            dcClusterModels.add(new DcClusterModel().setDc(dcModel)
-                    .setDcCluster(new DcClusterTbl()));
-            clusterModel.setDcClusters(dcClusterModels);
-        }
+
+        ClusterCreateDTO clusterCreateDTO = ClusterCreateDTO.builder()
+            .clusterName(toAdd.getId())
+            .clusterType(toAdd.getType())
+            .activeAz(DcMetaSynchronizer.currentDcId)
+            .description(toAdd.getId())
+            .orgName(orgName)
+            .adminEmails(toAdd.getAdminEmails())
+            .build();
+        SingleGroupClusterCreateDTO createDTO = new SingleGroupClusterCreateDTO(clusterCreateDTO,
+            Collections.singletonList(DcMetaSynchronizer.currentDcId));
 
         logger.info("[ClusterMetaSynchronizer][createCluster]{}", toAdd);
-        clusterService.createCluster(clusterModel);
+        clusterService.createSingleGroupCluster(createDTO);
+
         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
     }
 

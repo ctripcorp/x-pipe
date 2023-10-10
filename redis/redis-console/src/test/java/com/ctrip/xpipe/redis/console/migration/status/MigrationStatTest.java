@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -52,12 +54,17 @@ public class MigrationStatTest extends AbstractConsoleTest {
 
     @Mock
     private MigrationShard mockedMigrationShard;
+    @Mock
+    private AzGroupClusterRepository azGroupClusterRepository;
+    @Mock
+    private AzGroupCache azGroupCache;
 
     @Before
     public void setUp() {
 
         prepareData();
-        migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, mockedMigrationCluster, mockedDcService, mockedClusterService,
+        migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, mockedMigrationCluster,
+            azGroupClusterRepository, azGroupCache, mockedDcService, mockedClusterService,
                 mockedShardService, mockedRedisService, mockedMigrationService);
         migrationCluster.addNewMigrationShard(mockedMigrationShard);
     }

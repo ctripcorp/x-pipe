@@ -218,17 +218,19 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls){
-        Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream().
-                collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, sentinelGroupTbl -> new SentinelGroupModel(sentinelGroupTbl)));
+        Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream()
+            .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
 
         List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
-        Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream().filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId())).
-                collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
-                        dcClusterShardTbl -> Sets.newHashSet(new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
-                        (v1, v2) -> {
-                            v1.addAll(v2);
-                            return v1;
-                        }));
+        Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream()
+            .filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId()))
+            .collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
+                dcClusterShardTbl -> Sets.newHashSet(
+                    new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
+                (v1, v2) -> {
+                    v1.addAll(v2);
+                    return v1;
+                }));
 
         groupMap.forEach((k, v) -> {
             Set<Pair<Long, Long>> shardSet = sentinelShardMap.get(k);

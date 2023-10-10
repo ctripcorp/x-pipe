@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
@@ -21,4 +22,7 @@ public interface ShardService {
 	List<ShardListModel> findAllUnhealthy();
     List<ShardTbl> findAllShardByDcCluster(long dcId, long clusterId);
 	void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl);
+
+	void createRegionShard(String clusterName, String regionName, String shardName);
+
 }

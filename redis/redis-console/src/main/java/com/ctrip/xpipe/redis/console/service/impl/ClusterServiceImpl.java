@@ -3,11 +3,23 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
+import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
+import com.ctrip.xpipe.redis.console.dao.ShardDao;
+import com.ctrip.xpipe.redis.console.dto.AzGroupDTO;
+import com.ctrip.xpipe.redis.console.dto.ClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
+import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
+import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -22,6 +34,9 @@ import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
+import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
@@ -38,6 +53,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
@@ -55,7 +73,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private ClusterDao clusterDao;
 	@Autowired
+	private DcClusterDao dcClusterDao;
+	@Autowired
+	private ShardDao shardDao;
+	@Autowired
 	private RouteDao routeDao;
+
 	@Autowired
 	private ApplierService applierService;
 	@Autowired
@@ -101,6 +124,18 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private KeeperAdvancedService keeperAdvancedService;
+
+    @Autowired
+    private AzGroupCache azGroupCache;
+
+	@Autowired
+	private DcClusterRepository dcClusterRepository;
+
+	@Autowired
+	private AzGroupRepository azGroupRepository;
+
+	@Autowired
+	private AzGroupClusterRepository azGroupClusterRepository;
 
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
@@ -153,7 +188,20 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return result;
 	}
 
-	@Override
+    @Override
+    public boolean containsRedisInstance(String clusterName) {
+        List<DcTbl> dcs = this.getClusterRelatedDcs(clusterName);
+        for (DcTbl dc: dcs) {
+            String dcName = dc.getDcName();
+            List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
+			if (!CollectionUtils.isEmpty(redises)) {
+				return true;
+			}
+        }
+        return false;
+    }
+
+    @Override
 	public ClusterTbl find(final long clusterId) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
@@ -225,93 +273,289 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	@DalTransaction
-	public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
-		ClusterTbl cluster = clusterModel.getClusterTbl();
-		List<DcTbl> allDcs = clusterModel.getDcs();
-		List<ShardModel> shards = clusterModel.getShards();
-		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
-		List<ReplDirectionInfoModel> replDirections = clusterModel.getReplDirections();
-		List<DcClusterModel> dcClusters = clusterModel.getDcClusters();
+	public ClusterDTO getCluster(String clusterName) {
+        ClusterTbl clusterTbl = findClusterAndOrg(clusterName);
+        ClusterDTO cluster = new ClusterDTO(clusterTbl);
+        if (clusterTbl.getOrganizationInfo() != null) {
+            cluster.setCmsOrgId(clusterTbl.getOrganizationInfo().getOrgId());
+        } else {
+            cluster.setCmsOrgId(0L);
+        }
 
-		// ensure active dc assigned
-		if (!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
-			throw new BadRequestException("No active dc assigned.");
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
+        cluster.setActiveAz(dcIdNameMap.get(clusterTbl.getActivedcId()));
+
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(clusterTbl.getId());
+        List<String> dcNames = dcClusters.stream()
+            .map(dcCluster -> dcIdNameMap.get(dcCluster.getDcId()))
+            .collect(Collectors.toList());
+        cluster.setAzs(dcNames);
+
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+        List<AzGroupDTO> azGroups = azGroupClusters.stream()
+            .map(azGroupCluster -> {
+                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                return AzGroupDTO.builder()
+                    .region(azGroup.getRegion())
+                    .clusterType(azGroupCluster.getAzGroupClusterType())
+                    .activeAz(dcIdNameMap.get(azGroupCluster.getActiveAzId()))
+                    .azs(azGroup.getAzsAsList())
+                    .build();
+            })
+            .collect(Collectors.toList());
+        cluster.setAzGroups(azGroups);
+
+        return cluster;
+    }
+
+	@Override
+	public List<ClusterDTO> getClusters(String clusterType) {
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
+        List<ClusterTbl> clusterTbls = findClustersWithOrgInfoByClusterType(clusterType);
+        List<Long> clusterIds = clusterTbls.stream().map(ClusterTbl::getId).collect(Collectors.toList());
+
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterIds(clusterIds);
+        Map<Long, List<String>> clusterIdDcsMap = dcClusters.stream()
+            .collect(Collectors.groupingBy(DcClusterEntity::getClusterId,
+                Collectors.mapping(dcCluster -> dcIdNameMap.get(dcCluster.getDcId()), Collectors.toList())));
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterIds(clusterIds);
+        Map<Long, List<AzGroupClusterEntity>> clusterIdAzGroupClusterMap = azGroupClusters.stream()
+            .collect(Collectors.groupingBy(AzGroupClusterEntity::getClusterId));
+
+        List<ClusterDTO> clusters = new ArrayList<>();
+        for (ClusterTbl clusterTbl : clusterTbls) {
+            ClusterDTO cluster = new ClusterDTO(clusterTbl);
+            if (clusterTbl.getOrganizationInfo() != null) {
+                cluster.setCmsOrgId(clusterTbl.getOrganizationInfo().getOrgId());
+            } else {
+                cluster.setCmsOrgId(0L);
+            }
+            cluster.setActiveAz(dcIdNameMap.get(clusterTbl.getActivedcId()));
+
+            List<String> azs = clusterIdDcsMap.getOrDefault(clusterTbl.getId(), Collections.emptyList());
+            cluster.setAzs(azs);
+
+            List<AzGroupClusterEntity> clusterAzGroups = clusterIdAzGroupClusterMap.get(clusterTbl.getId());
+			if (!CollectionUtils.isEmpty(clusterAzGroups)) {
+				List<AzGroupDTO> azGroups = clusterAzGroups.stream()
+					.map(agc -> {
+                        AzGroupModel azGroup = azGroupCache.getAzGroupById(agc.getAzGroupId());
+                        return AzGroupDTO.builder()
+                            .region(azGroup.getRegion())
+                            .clusterType(agc.getAzGroupClusterType())
+                            .activeAz(dcIdNameMap.get(agc.getActiveAzId()))
+                            .azs(azGroup.getAzsAsList())
+                            .build();
+                    })
+					.collect(Collectors.toList());
+				cluster.setAzGroups(azGroups);
+			}
+
+			clusters.add(cluster);
+        }
+
+        return clusters;
+	}
+
+    @Override
+	@Transactional
+    @DalTransaction
+    public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
+        ClusterTbl cluster = clusterModel.getClusterTbl();
+        List<DcTbl> allDcs = clusterModel.getDcs();
+        List<ShardModel> shards = clusterModel.getShards();
+        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+        List<ReplDirectionInfoModel> replDirections = clusterModel.getReplDirections();
+        List<DcClusterModel> dcClusters = clusterModel.getDcClusters();
+
+        // ensure active dc assigned
+        if (!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_AZ_TAG == cluster.getActivedcId()) {
+            throw new BadRequestException("No active dc assigned.");
+        }
+        ClusterTbl proto = dao.createLocal();
+        proto.setClusterName(cluster.getClusterName().trim());
+        proto.setClusterType(cluster.getClusterType());
+        proto.setClusterDescription(cluster.getClusterDescription());
+        proto.setStatus(ClusterStatus.Normal.toString());
+        proto.setIsXpipeInterested(true);
+        proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+        proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
+        if (clusterType.supportMultiActiveDC()) {
+            proto.setActivedcId(0L);
+        } else {
+            proto.setActivedcId(cluster.getActivedcId());
+        }
+        if (!checkEmails(cluster.getClusterAdminEmails())) {
+            throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
+        }
+        proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+        proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+
+        final ClusterTbl queryProto = proto;
+        ClusterTbl result = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+            @Override
+            public ClusterTbl doQuery() throws DalException {
+                return clusterDao.createCluster(queryProto);
+            }
+        });
+
+        if (dcClusters != null) {
+            for (DcClusterModel dcCluster : dcClusters) {
+                DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
+                if (dcTbl == null) {
+                    throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
+                }
+                dcCluster.getDcCluster().setDcId(dcTbl.getId());
+                DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
+                DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl() : dcClusterInfo;
+                dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
+                bindDc(dcProto);
+            }
+
+            for (DcClusterModel dcCluster : dcClusters) {
+                if ((DcGroupType.isNullOrDrMaster(dcCluster.getDcCluster().getGroupType()))
+                    && dcCluster.getDcCluster().getDcId() != result.getActivedcId()) continue;
+
+                if (dcCluster.getShards() != null && !dcCluster.getShards().isEmpty()) {
+                    List<DcClusterTbl> dcClusterTbls =
+                        dcClusterService.findAllByClusterAndGroupType(result.getId(),
+                            dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().getGroupType());
+
+                    dcCluster.getShards().forEach(shardModel -> {
+                        shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
+                            dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                    });
+                }
+            }
+        }
+
+        if (shards != null) {
+            for (ShardModel shard : shards) {
+                shardService.createShard(result.getClusterName(), shard.getShardTbl(), shard.getSentinels());
+            }
+        }
+
+        if (replDirections != null) {
+            for (ReplDirectionInfoModel replDirection : replDirections) {
+                replDirectionService.addReplDirectionByInfoModel(result.getClusterName(), replDirection);
+            }
+        }
+
+        return result;
+    }
+
+	@Transactional
+	@DalTransaction
+	public void createSingleGroupCluster(SingleGroupClusterCreateDTO clusterCreateDTO) {
+		ClusterTbl clusterTbl = createCluster(clusterCreateDTO);
+
+		List<String> azs = clusterCreateDTO.getAzs();
+		for (String az : azs) {
+			DcTbl dcTbl = dcService.find(az);
+			if (dcTbl == null) {
+				throw new BadRequestException(String.format("az - %s does not exist", az));
+			}
+			DcClusterEntity dcCluster = new DcClusterEntity();
+			dcCluster.setClusterId(clusterTbl.getId());
+			dcCluster.setDcId(dcTbl.getId());
+			dcClusterRepository.insert(dcCluster);
 		}
-		ClusterTbl proto = dao.createLocal();
-		proto.setClusterName(cluster.getClusterName().trim());
-		proto.setClusterType(cluster.getClusterType());
-		proto.setClusterDescription(cluster.getClusterDescription());
-		proto.setStatus(ClusterStatus.Normal.toString());
-		proto.setIsXpipeInterested(true);
-		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
+	}
+
+	@Transactional
+	@DalTransaction
+	public void createMultiGroupCluster(MultiGroupClusterCreateDTO clusterCreateDTO) {
+		ClusterTbl clusterTbl = createCluster(clusterCreateDTO);
+
+		List<AzGroupDTO> azGroups = clusterCreateDTO.getAzGroups();
+		for (AzGroupDTO azGroupDTO : azGroups) {
+			List<String> azs = azGroupDTO.getAzs();
+			Map<String, Long> azIdMap = new HashMap<>();
+			for (String az : azs) {
+				DcTbl dcTbl = dcService.find(az);
+				if (dcTbl == null) {
+					throw new BadRequestException(String.format("az - %s does not exist", az));
+				}
+				azIdMap.put(az, dcTbl.getId());
+			}
+
+			AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+			azGroupCluster.setClusterId(clusterTbl.getId());
+
+            String region = azGroupDTO.getRegion();
+            AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(azs);
+			if (azGroup == null || !Objects.equals(azGroup.getRegion(), region)) {
+                throw new BadRequestException(
+                    String.format("Region: %s doesn't contain such azs: %s", region, azs));
+			}
+			azGroupCluster.setAzGroupId(azGroup.getId());
+
+			ClusterType clusterType = ClusterType.lookup(azGroupDTO.getClusterType());
+			azGroupCluster.setAzGroupClusterType(clusterType.toString());
+
+			if (clusterType.supportMultiActiveDC()) {
+				azGroupCluster.setActiveAzId(XPipeConsoleConstant.NO_ACTIVE_AZ_TAG);
+			} else {
+				String activeAz = azGroupDTO.getActiveAz();
+				if (!azIdMap.containsKey(activeAz)) {
+					throw new BadRequestException(String.format("active az - %s not in azs - %s", activeAz, azs));
+				}
+				azGroupCluster.setActiveAzId(azIdMap.get(activeAz));
+			}
+			azGroupClusterRepository.insert(azGroupCluster);
+
+			for (String az : azs) {
+				DcClusterEntity dcCluster = new DcClusterEntity();
+				dcCluster.setClusterId(clusterTbl.getId());
+				dcCluster.setDcId(azIdMap.get(az));
+				dcCluster.setAzGroupClusterId(azGroupCluster.getId());
+				dcClusterRepository.insert(dcCluster);
+			}
+		}
+	}
+
+	private ClusterTbl createCluster(ClusterCreateDTO clusterCreateDTO) {
+		String clusterName = clusterCreateDTO.getClusterName().trim();
+		ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
+		if (clusterTbl != null) {
+			throw new BadRequestException(String.format("cluster - %s exist", clusterName));
+		}
+
+		clusterTbl = new ClusterTbl();
+		clusterTbl.setClusterName(clusterName);
+		clusterTbl.setClusterDescription(clusterCreateDTO.getDescription());
+
+		ClusterType clusterType = ClusterType.lookup(clusterCreateDTO.getClusterType());
+		clusterTbl.setClusterType(clusterType.toString());
+
 		if (clusterType.supportMultiActiveDC()) {
-			proto.setActivedcId(0L);
+			clusterTbl.setActivedcId(XPipeConsoleConstant.NO_ACTIVE_AZ_TAG);
 		} else {
-			proto.setActivedcId(cluster.getActivedcId());
+			String activeAz = clusterCreateDTO.getActiveAz();
+			DcTbl dcTbl = dcService.find(activeAz);
+			if (dcTbl == null) {
+				throw new BadRequestException(String.format("az - %s does not exist", activeAz));
+			}
+			clusterTbl.setActivedcId(dcTbl.getId());
 		}
-		if (!checkEmails(cluster.getClusterAdminEmails())) {
+
+		String orgName = clusterCreateDTO.getOrgName();
+		OrganizationTbl orgTbl = organizationService.getOrgByName(orgName);
+		long orgId = orgTbl == null ? 0L : orgTbl.getId();
+		clusterTbl.setClusterOrgId(orgId);
+
+		String clusterAdminEmails = clusterCreateDTO.getAdminEmails();
+		if (!checkEmails(clusterAdminEmails)) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
-		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
-		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+		clusterTbl.setClusterAdminEmails(clusterAdminEmails);
 
-		final ClusterTbl queryProto = proto;
-		ClusterTbl result = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
-			@Override
-			public ClusterTbl doQuery() throws DalException {
-				return clusterDao.createCluster(queryProto, dcClusters);
-			}
-		});
+		clusterTbl.setStatus(ClusterStatus.Normal.toString());
+		clusterTbl.setIsXpipeInterested(true);
+		clusterTbl.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		clusterTbl.setClusterDesignatedRouteIds("");
 
-		if (dcClusters != null) {
-			for (DcClusterModel dcCluster : dcClusters) {
-				DcTbl dcTbl = dcService.find(dcCluster.getDc().getDc_name());
-				dcCluster.getDcCluster().setDcId(dcTbl.getId());
-				if (dcTbl == null) {
-					throw new BadRequestException(String.format("dc %s does not exist", dcCluster.getDc().getDc_name()));
-				}
-				// single active dc cluster bind active dc when create
-				if (!clusterType.supportMultiActiveDC() && dcTbl.getId() == result.getActivedcId()) {
-					continue;
-				}
-				DcClusterTbl dcClusterInfo = dcCluster.getDcCluster();
-				DcClusterTbl dcProto = dcClusterInfo == null ? new DcClusterTbl() : dcClusterInfo;
-				dcProto.setClusterName(result.getClusterName()).setDcName(dcCluster.getDc().getDc_name());
-				bindDc(dcProto);
-			}
-
-			for (DcClusterModel dcCluster : dcClusters) {
-				if ((DcGroupType.isNullOrDrMaster(dcCluster.getDcCluster().getGroupType()))
-						&& dcCluster.getDcCluster().getDcId() != result.getActivedcId()) continue;
-
-				if (dcCluster.getShards() != null && !dcCluster.getShards().isEmpty()) {
-					List<DcClusterTbl> dcClusterTbls =
-							dcClusterService.findAllByClusterAndGroupType(result.getId(),
-									dcCluster.getDcCluster().getDcId(), dcCluster.getDcCluster().getGroupType());
-
-					dcCluster.getShards().forEach(shardModel -> {
-						shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
-								dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcCluster.getDcCluster().getGroupType())));
-					});
-				}
-			}
-		}
-
-		if (shards != null) {
-			for (ShardModel shard : shards) {
-				shardService.createShard(result.getClusterName(), shard.getShardTbl(), shard.getSentinels());
-			}
-		}
-
-		if (replDirections != null) {
-			for (ReplDirectionInfoModel replDirection : replDirections) {
-				replDirectionService.addReplDirectionByInfoModel(result.getClusterName(), replDirection);
-			}
-		}
-
-		return result;
+		return clusterDao.createCluster(clusterTbl);
 	}
 
 	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {
@@ -402,6 +646,50 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public String updateCluster(ClusterUpdateDTO clusterUpdateDTO) {
+		String clusterName = clusterUpdateDTO.getClusterName();
+		ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
+		if (clusterTbl == null) {
+			throw new BadRequestException("Not find cluster: " + clusterName);
+		}
+
+        boolean needUpdate = false;
+        ClusterType clusterType = StringUtils.isEmpty(clusterUpdateDTO.getClusterType())
+			? null : ClusterType.lookup(clusterUpdateDTO.getClusterType());
+        if (clusterType != null) {
+            String oldClusterType = clusterTbl.getClusterType();
+            if (!ClusterType.isSameClusterType(oldClusterType, clusterType)) {
+                if (ClusterType.isSameClusterType(oldClusterType, ClusterType.ONE_WAY)
+                    && clusterType == ClusterType.HETERO) {
+                    needUpdate = true;
+                    clusterTbl.setClusterType(clusterType.toString());
+                } else {
+                    // 仅允许单向同步集群改为异构集群
+                    throw new BadRequestException("Only ONE_WAY cluster can change type to HETERO");
+                }
+            }
+        }
+
+        Long orgId = clusterUpdateDTO.getOrgId();
+        if (!Objects.equals(orgId, clusterTbl.getClusterOrgId())) {
+            needUpdate = true;
+            clusterTbl.setClusterOrgId(orgId);
+        }
+        String adminEmails = clusterUpdateDTO.getAdminEmails();
+        if (!Objects.equals(adminEmails, clusterTbl.getClusterAdminEmails())) {
+            needUpdate = true;
+            clusterTbl.setClusterAdminEmails(adminEmails);
+        }
+
+		if (needUpdate) {
+			clusterDao.updateCluster(clusterTbl);
+			return RetMessage.SUCCESS;
+		} else {
+			return String.format("No field changes for cluster: %s", clusterName);
+		}
+	}
+
+	@Override
 	@DalTransaction
 	public void updateCluster(String clusterName, ClusterModel cluster) {
 		ClusterTbl proto = find(clusterName);
@@ -467,27 +755,46 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	@Transactional
+	@DalTransaction
 	public void deleteCluster(String clusterName) {
-		ClusterTbl proto = find(clusterName);
-		if (null == proto) throw new BadRequestException("Cannot find cluster");
-		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+		ClusterTbl cluster = this.checkCluster(clusterName);
+		cluster.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 
-		final ClusterTbl queryProto = proto;
-
-		// Call cluster delete event
-		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName, proto);
+        List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName, cluster);
 
 		try {
-			clusterDao.deleteCluster(queryProto);
+			// delete shards
+			List<ShardTbl> shards = shardDao.queryAllShardsByClusterId(cluster.getId());
+			if(!CollectionUtils.isEmpty(shards)) {
+				shardDao.deleteShardsBatch(shards);
+			}
+			// delete dc cluster
+			List<DcClusterTbl> dcClusters = dcClusterService.findClusterRelated(cluster.getId());
+			if(!CollectionUtils.isEmpty(dcClusters)) {
+				dcClusterDao.deleteDcClustersBatch(dcClusters);
+			}
+			//delete az group cluster
+			azGroupClusterRepository.deleteByClusterId(cluster.getId());
+			// delete repl direction
+			List<ReplDirectionTbl> replDirections =
+				replDirectionService.findAllReplDirectionTblsByCluster(cluster.getId());
+			if (!CollectionUtils.isEmpty(replDirections)) {
+				replDirectionService.deleteReplDirectionBatch(replDirections);
+			}
+
+			clusterDao.deleteCluster(cluster);
 		} catch (Exception e) {
 			throw new ServerException(e.getMessage());
 		}
 
-		if (null != clusterEvent) clusterEvent.onEvent();
-
-		/** Notify meta server **/
-		if (consoleConfig.shouldNotifyClusterTypes().contains(queryProto.getClusterType()))
+		if (null != clusterEvent) {
+            // Call cluster delete event
+			clusterEvent.onEvent();
+		}
+		// Notify meta server
+		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
 			notifier.notifyClusterDelete(clusterName, relatedDcs);
 	}
 
@@ -502,16 +809,153 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
 				if (consoleConfig.supportSentinelHealthCheck(clusterType, dcClusterTbl.getClusterName())) {
-					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
+                    AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterIdAndAz(cluster.getId(), dc.getDcName());
+                    if (azGroupCluster != null) {
+                        String azGroupType = azGroupCluster.getAzGroupClusterType();
+                        clusterType = StringUtil.isEmpty(azGroupType) ? clusterType : ClusterType.lookup(azGroupType);
+                    }
+                    SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType);
+					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelGroupModel);
 				} else
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
 			}
 		});
 	}
 
-
+    @Override
+	@Transactional
 	@DalTransaction
-	@Override
+    public void bindDc(String clusterName, String dcName) {
+        ClusterTbl cluster = this.checkCluster(clusterName);
+        DcTbl dc = this.checkDc(dcName);
+        this.checkDcClusterNotExist(cluster, dc);
+
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+        if (!CollectionUtils.isEmpty(azGroupClusters)) {
+            throw new BadRequestException(String.format("Cluster: %s in Az mode, cannot bind dc", clusterName));
+        }
+        DcClusterEntity dcCluster = new DcClusterEntity();
+        dcCluster.setClusterId(cluster.getId());
+        dcCluster.setDcId(dc.getId());
+        dcClusterRepository.insert(dcCluster);
+
+        List<ShardTbl> shards = shardService.findAllByClusterName(clusterName);
+        List<DcClusterShardTbl> dcClusterShards = new ArrayList<>();
+        for (ShardTbl shard : shards) {
+            DcClusterShardTbl dcClusterShard = new DcClusterShardTbl();
+            dcClusterShard.setDcClusterId(dcCluster.getDcClusterId());
+            dcClusterShard.setShardId(shard.getId());
+
+            Long sentinelId = this.findDcClusterShardSentinelId(cluster, dcName, shard.getId());
+            if (sentinelId != null) {
+                dcClusterShard.setSetinelId(sentinelId);
+            }
+            dcClusterShards.add(dcClusterShard);
+        }
+        if (!CollectionUtils.isEmpty(dcClusterShards)) {
+            dcClusterShardService.insertBatch(dcClusterShards);
+        }
+    }
+
+    private Long findDcClusterShardSentinelId(ClusterTbl cluster, String dcName, long shardId) {
+        SentinelGroupModel sentinelGroupModel = null;
+        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+        if (consoleConfig.supportSentinelHealthCheck(clusterType, cluster.getClusterName())) {
+            sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
+        }
+
+        Long sentinelId = sentinelGroupModel == null ? null : sentinelGroupModel.getSentinelGroupId();
+
+        if (clusterType == ClusterType.CROSS_DC) {
+            List<DcClusterShardTbl> existDcClusterShards = dcClusterShardService.findByShardId(shardId);
+            if (!CollectionUtils.isEmpty(existDcClusterShards)) {
+                sentinelId = existDcClusterShards.get(0).getSetinelId();
+            }
+        }
+
+        return sentinelId;
+    }
+
+    @Override
+	@Transactional
+    public void bindRegionAz(String clusterName, String regionName, String azName) {
+        ClusterTbl cluster = this.checkCluster(clusterName);
+        DcTbl dc = this.checkDc(azName);
+        this.checkDcClusterNotExist(cluster, dc);
+
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+        if (CollectionUtils.isEmpty(azGroupClusters)) {
+            throw new BadRequestException(String.format("Cluster: %s in DC mode, cannot bind az", clusterName));
+        }
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            if (Objects.equals(azGroup.getRegion(), regionName)) {
+                // 更改az group name
+                List<String> azs = azGroup.getAzsAsList();
+                azs.add(azName);
+                AzGroupModel newAzGroup = azGroupCache.getAzGroupByAzs(azs);
+                if (newAzGroup == null) {
+                    throw new BadRequestException("No Region contains such azs: " + azName);
+                }
+
+                // 更新az group cluster中对应的az group id
+                azGroupClusterRepository.updateAzGroupId(azGroupCluster.getId(), newAzGroup.getId());
+                // 新增dc cluster
+                DcClusterEntity dcCluster = new DcClusterEntity();
+                dcCluster.setClusterId(cluster.getId());
+                dcCluster.setDcId(dc.getId());
+                dcCluster.setAzGroupClusterId(azGroupCluster.getId());
+                dcClusterRepository.insert(dcCluster);
+
+                // TODO:新dc cluster增加分片
+                return;
+            }
+        }
+        // 不存在对应AzGroup，新建
+        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+        azGroupCluster.setClusterId(cluster.getId());
+        AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(Collections.singletonList(azName));
+		if (azGroup == null) {
+			throw new BadRequestException("No Region contains such azs: " + azName);
+		}
+        azGroupCluster.setAzGroupId(azGroup.getId());
+        Long dcId = dcService.find(azName).getId();
+        azGroupCluster.setActiveAzId(dcId);
+        azGroupCluster.setAzGroupClusterType(ClusterType.SINGLE_DC.toString());
+        azGroupClusterRepository.insert(azGroupCluster);
+
+        DcClusterEntity dcCluster = new DcClusterEntity();
+        dcCluster.setClusterId(cluster.getId());
+        dcCluster.setDcId(dcId);
+        dcCluster.setAzGroupClusterId(azGroupCluster.getId());
+        dcClusterRepository.insert(dcCluster);
+    }
+
+    @Override
+    @DalTransaction
+	public void unbindAz(String clusterName, String azName) {
+		ClusterTbl cluster = this.checkCluster(clusterName);
+		DcTbl dc = this.checkDc(azName);
+		this.checkDcClusterExist(cluster, dc);
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+        if (CollectionUtils.isEmpty(azGroupClusters)) {
+            // dc模式
+            this.unbindDc(cluster, dc);
+        } else {
+            // az模式
+            for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                if (azGroup != null && azGroup.containsAz(azName)) {
+                    this.unbindRegionAz(cluster, azGroup, dc);
+                    return;
+                }
+            }
+            throw new BadRequestException(String.format("Cluster: %s not bind az: %s", clusterName, azName));
+        }
+	}
+
+    @DalTransaction
+    @Override
 	public void unbindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
 		final DcTbl dc = dcService.find(dcName);
@@ -519,27 +963,64 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
 
 		DcClusterTbl dcClusterTbl = dcClusterService.find(dc.getId(), cluster.getId());
-		if (DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+        ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
+		if (azGroupType == ClusterType.SINGLE_DC) {
 			List<ShardTbl> shardTbls = shardService.findAllShardByDcCluster(dc.getId(), cluster.getId());
-			if (null != shardTbls && !shardTbls.isEmpty()) {
+			if (!CollectionUtils.isEmpty(shardTbls)) {
 				List<String> shardNames = shardTbls.stream().map(ShardTbl::getShardName).collect(Collectors.toList());
 				shardService.deleteShards(cluster, shardNames);
 			}
 			applierService.deleteAppliersByClusterAndToDc(dc.getId(), cluster.getId());
 		}
+		queryHandler.handleQuery(() -> clusterDao.unbindDc(cluster, dc));
 
-		queryHandler.handleQuery(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return clusterDao.unbindDc(cluster, dc);
-			}
-		});
-
-		/** Notify meta server **/
+		// Notify meta server
 		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
-			notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
-
+			notifier.notifyClusterDelete(clusterName, Collections.singletonList(dc));
 	}
+
+    private void unbindDc(ClusterTbl cluster, DcTbl dc) {
+        if (cluster.getActivedcId() == dc.getId()) {
+            throw new BadRequestException("cannot unbind active dc");
+        }
+        queryHandler.handleQuery(() -> clusterDao.unbindDc(cluster, dc));
+
+        if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+            notifier.notifyClusterDelete(cluster.getClusterName(), Collections.singletonList(dc));
+    }
+
+    private void unbindRegionAz(ClusterTbl cluster, AzGroupModel azGroup, DcTbl az) {
+        List<String> azs = azGroup.getAzsAsList();
+        String azName = az.getDcName();
+        azs.remove(azName);
+        if (azs.isEmpty()) {
+            azGroupClusterRepository.deleteByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
+            List<ShardTbl> toDeleteShards = shardService.findAllShardByDcCluster(az.getId(), cluster.getId());
+            try {
+                shardDao.deleteShardsBatch(toDeleteShards);
+            } catch (DalException e) {
+                throw new ServerException(e.getMessage());
+            }
+        } else {
+            AzGroupModel newAzGroup = azGroupCache.getAzGroupByAzs(azs);
+            if (newAzGroup == null) {
+				throw new BadRequestException(
+					String.format("Cannot unbind az: %s from Region: %s, rest azs not a region",
+						azName, azGroup.getRegion()));
+            }
+            AzGroupClusterEntity azGroupCluster =
+                azGroupClusterRepository.selectByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
+            if (azGroupCluster.getActiveAzId() == az.getId()) {
+                throw new BadRequestException("not allow unbind active az");
+            }
+
+            azGroupClusterRepository.updateAzGroupId(azGroupCluster.getId(), newAzGroup.getId());
+        }
+
+        queryHandler.handleQuery(() -> clusterDao.unbindDc(cluster, az));
+        if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+            notifier.notifyClusterDelete(cluster.getClusterName(), Collections.singletonList(az));
+    }
 
 	@Override
 	public void update(final ClusterTbl cluster) {
@@ -551,7 +1032,65 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
-	@Override
+    @Override
+    public void upgradeAzGroup(String clusterName) {
+        ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+        if (cluster == null) {
+            throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
+        }
+        long cnt = azGroupClusterRepository.countByClusterId(cluster.getId());
+        if (cnt > 0L) {
+            throw new BadRequestException(String.format("Cluster: %s already in AzGroup mode", clusterName));
+        }
+        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+        if (clusterType != ClusterType.ONE_WAY && clusterType != ClusterType.BI_DIRECTION) {
+            throw new BadRequestException("Only ONE_WAY/BI_DIRECTION cluster can upgrade to az group");
+        }
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(cluster.getId());
+        if (clusterType == ClusterType.ONE_WAY) {
+            AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+            azGroupCluster.setClusterId(cluster.getId());
+            azGroupCluster.setActiveAzId(cluster.getActivedcId());
+            azGroupCluster.setAzGroupClusterType(ClusterType.ONE_WAY.toString());
+
+            List<String> dcs = dcClusters.stream()
+                .map(dcCluster -> dcIdNameMap.get(dcCluster.getDcId()))
+                .collect(Collectors.toList());
+            AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(dcs);
+            if (azGroup == null) {
+                throw new BadRequestException(
+                    String.format("Cluster: %s contains multi region, cannot upgrade", clusterName));
+            }
+            azGroupCluster.setAzGroupId(azGroup.getId());
+
+            azGroupClusterRepository.insert(azGroupCluster);
+
+            List<Long> dcClusterIds = dcClusters.stream()
+                .map(DcClusterEntity::getDcClusterId)
+                .collect(Collectors.toList());
+            dcClusterRepository.batchUpdateAzGroupClusterId(dcClusterIds, azGroupCluster.getId());
+        }
+        if (clusterType == ClusterType.BI_DIRECTION) {
+            for (DcClusterEntity dcCluster : dcClusters) {
+                AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+                azGroupCluster.setClusterId(cluster.getId());
+                String dc = dcIdNameMap.get(dcCluster.getDcId());
+                AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(Collections.singletonList(dc));
+				if (azGroup == null) {
+					throw new BadRequestException(
+						String.format("Cluster: %s contains %s, which can't upgrade to az group", clusterName, dc));
+				}
+                azGroupCluster.setAzGroupId(azGroup.getId());
+                azGroupCluster.setActiveAzId(dcCluster.getDcId());
+
+                azGroupClusterRepository.insert(azGroupCluster);
+                dcClusterRepository.updateAzGroupClusterId(dcCluster.getDcClusterId(), azGroupCluster.getId());
+            }
+        }
+    }
+
+    @Override
 	@DalTransaction
 	public void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName) {
 		logger.info("[exchangeName]{}:{} <-> {}:{}", formerClusterName, formerClusterId, latterClusterName, latterClusterId);
@@ -598,6 +1137,42 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 	}
+
+    // 检测cluster是否存在，不存在则抛出异常
+    private ClusterTbl checkCluster(String clusterName) {
+        ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+        if (cluster == null) {
+            throw new BadRequestException("Cannot find cluster: " + clusterName);
+        }
+        return cluster;
+    }
+
+    // 检测az是否存在，不存在则抛出异常
+    private DcTbl checkDc(String dcName) {
+        DcTbl dc = dcService.find(dcName);
+        if (dc == null) {
+            throw new BadRequestException("Cannot find dc: " + dcName);
+        }
+        return dc;
+    }
+
+    // 检测dc cluster是否存在，不存在则抛异常
+    private void checkDcClusterExist(ClusterTbl cluster, DcTbl dc) {
+        DcClusterEntity dcCluster = dcClusterRepository.selectByClusterIdAndDcId(cluster.getId(), dc.getId());
+        if (dcCluster == null) {
+            throw new BadRequestException(
+                String.format("Cluster: %s not exist %s dc", cluster.getClusterName(), dc.getDcName()));
+        }
+    }
+
+    // 检测dc cluster是否不存在，存在则抛异常
+    private void checkDcClusterNotExist(ClusterTbl cluster, DcTbl dc) {
+        DcClusterEntity dcCluster = dcClusterRepository.selectByClusterIdAndDcId(cluster.getId(), dc.getId());
+        if (dcCluster != null) {
+            throw new BadRequestException(
+                String.format("Cluster: %s already exist %s dc", cluster.getClusterName(), dc.getDcName()));
+        }
+    }
 
 	public boolean checkEmails(String emails) {
 		if (emails == null || emails.trim().isEmpty()) {
@@ -1045,7 +1620,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
-		if (DcGroupType.isNullOrDrMaster(dcClusterService.find(replDirection.getToDcName(), cluster.getClusterName()).getGroupType())) {
+        DcClusterTbl dcCluster = dcClusterService.find(replDirection.getToDcName(), cluster.getClusterName());
+        ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcCluster.getAzGroupClusterId());
+        if (azGroupType != ClusterType.SINGLE_DC) {
 			addKeepersWhenToDcIsDrMasterType(cluster, replDirection);
 		} else if (ObjectUtils.equals(replDirection.getSrcDcName(), replDirection.getFromDcName())) {
 			addKeepersAndAppliersWithNoTransitDc(cluster, replDirection);
@@ -1055,7 +1632,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private void addKeepersAndAppliersWithNoTransitDc(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
-		if (!DcGroupType.isNullOrDrMaster(dcClusterService.find(replDirection.getSrcDcName(), cluster.getClusterName()).getGroupType())) {
+        DcClusterTbl dcCluster = dcClusterService.find(replDirection.getSrcDcName(), cluster.getClusterName());
+        ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcCluster.getAzGroupClusterId());
+        if (azGroupType == ClusterType.SINGLE_DC) {
 			doAddShardKeepersByDcAndCluster(replDirection.getSrcDcName(), cluster.getClusterName(), replDirection);
 		}
 		doAddSourceAppliersByDcAndCluster(replDirection.getToDcName(), cluster.getClusterName(), replDirection);
@@ -1068,7 +1647,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private void addKeepersAndAppliersWithTransitDc(ClusterTbl cluster, ReplDirectionInfoModel replDirection) {
-		if (!DcGroupType.isSameGroupType(dcClusterService.find(replDirection.getFromDcName(), cluster.getClusterName()).getGroupType(), DcGroupType.MASTER)) {
+        DcClusterTbl dcCluster = dcClusterService.find(replDirection.getFromDcName(), cluster.getClusterName());
+        ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcCluster.getAzGroupClusterId());
+        if (azGroupType != ClusterType.SINGLE_DC) {
 			throw new BadRequestException(String.format("transit dc %s in cluster %s is not MASTER type", replDirection.getFromDcName(), cluster.getClusterName()));
 		}
 
@@ -1164,5 +1745,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				throw e;
 			}
 		}
+	}
+
+	@VisibleForTesting
+	public void setClusterDeleteEventFactory(ClusterDeleteEventFactory clusterDeleteEventFactory) {
+		this.clusterDeleteEventFactory = clusterDeleteEventFactory;
+	}
+
+	@VisibleForTesting
+	public void setConsoleConfig(ConsoleConfig consoleConfig) {
+		this.consoleConfig = consoleConfig;
 	}
 }

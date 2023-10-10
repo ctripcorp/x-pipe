@@ -1,9 +1,6 @@
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id,cluster_type) values
-                        (5,'singleDcCluster',1,'Cluster:singleDcCluster , ActiveDC : A','0000000000000000','Normal',1, 1,'SINGLE_DC');
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,status,is_xpipe_interested, cluster_org_id,cluster_type) values
-(6,'credis_trocks_test',0,'Normal',1, 1,'CROSS_DC');
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,status,is_xpipe_interested, cluster_org_id,cluster_type) values
-(11,'test_cluster',1,'Normal',1, 1,'ONE_WAY');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type) values(5, 'singleDcCluster', 1, 'Cluster:singleDcCluster , ActiveDC : A', 1,'SINGLE_DC');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_org_id, cluster_type) values(6,'credis_trocks_test',0, 1,'CROSS_DC');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_org_id, cluster_type) values(11,'test_cluster',1, 1, 'ONE_WAY');
 
 insert into redis_check_rule_tbl (id,check_type,param,description) values (1,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"128\"}', 'rule1');
 insert into redis_check_rule_tbl (id,check_type,param,description) values (2,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"256\"}', 'rule2');
@@ -22,7 +19,7 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (20,13,10,0,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (21,14,10,0,1);
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids) values (1,'cluster1',1,'Cluster:cluster1 , ActiveDC : A','0000000000000000','Normal',1, 1,'1,2');
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_designated_route_ids) values(1, 'cluster1', 1, 'cluster1 desc', 1, '1,2');
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (1,1,1,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (2,2,1,1,0);
@@ -69,7 +66,7 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(26,'unknown',14,'127.0.0.2',8679,'redis',0,0,null);
 
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (2,'cluster2',1,'Cluster:cluster2 , ActiveDC : A','0000000000000000','Normal',1, 2);
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id) values (2, 'cluster2', 1, 'cluster2 desc', 2);
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (3,1,2,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (4,2,2,1,0);
@@ -88,7 +85,7 @@ insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercont
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id) values (10,2,'127.0.1.7',7084,1,2);
 
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (3,'cluster3',2,'Cluster:cluster3 , ActiveDC : B','0000000000000000','Normal',1, 3);
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id) values (3, 'cluster3', 2, 'cluster desc3', 3);
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (5,1,3,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (6,2,3,1,0);
@@ -127,7 +124,7 @@ insert into route_tbl(id, route_org_id, src_dc_id, dst_dc_id, src_proxy_ids, dst
 insert into route_tbl(id, route_org_id, src_dc_id, dst_dc_id, src_proxy_ids, dst_proxy_ids, active, tag, deleted, description) values (13, 0, 3, 2, '1', '7', 1, 'meta', 0, 'desc');
 insert into route_tbl(id, route_org_id, src_dc_id, dst_dc_id, src_proxy_ids, dst_proxy_ids, active, tag, deleted, description) values (14, 0, 3, 2, '1', '6', 1, 'meta', 0, 'desc');
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_type, cluster_designated_route_ids) values (4,'bi-cluster1',0,'bi-cluster:cluster1 , ActiveDC : B','0000000000000000','Normal',1, 4, 'BI_DIRECTION', '1,2');
+insert into CLUSTER_TBL (id, cluster_name, cluster_description, cluster_org_id, cluster_type, cluster_designated_route_ids) values (4, 'bi-cluster1', 'bi-cluster1 desc', 4, 'BI_DIRECTION', '1,2');
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,active_redis_check_rules) values (8,1,4,1,0,'1,2');
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,active_redis_check_rules) values (9,2,4,1,0,'1,2');
@@ -185,16 +182,18 @@ insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appli
 insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appliercontainer_az, appliercontainer_ip, appliercontainer_port, appliercontainer_active, appliercontainer_org) values(8,1,0,'127.0.0.8','8080',1,0);
 insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appliercontainer_az, appliercontainer_ip, appliercontainer_port, appliercontainer_active, appliercontainer_org) values(9,1,0,'127.0.0.9','8080',1,0);
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type, cluster_admin_emails) values (7,'hetero-cluster',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'ONE_WAY', 'test@111.com');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_admin_emails) values (7, 'hetero-cluster', 1, 'hetero cluster1 desc', 1, 'ONE_WAY', 'test@111.com');
 
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(21,'hetero-cluster_1','hetero-cluster_1', 7);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(22,'hetero-cluster_2','hetero-cluster_2', 7);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(23,'hetero-cluster_fra_1','hetero-cluster_fra_1', 7);
+insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(21, 'hetero-cluster_1','hetero-cluster_1', 7);
+insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(22, 'hetero-cluster_2','hetero-cluster_2', 7);
+insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(23, 'hetero-cluster_fra_1','hetero-cluster_fra_1', 7);
 
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(11, 7, 1, 1, 'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(12, 7, 2, 3, 'SINGLE_DC');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (31,1,7,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (32,2,7,1,0,'oy','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (33,3,7,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (31, 1, 7, 11);
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (32, 2, 7, 11);
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (33, 3, 7, 12);
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (51,31,21,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (52,31,22,1,1);
@@ -232,15 +231,18 @@ insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) va
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(2, 7, 0, 0, 3);
 
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type, cluster_admin_emails) values (8,'hetero-cluster2',2,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 2,'', 'ONE_WAY', 'test@111.com');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_admin_emails) values (8, 'hetero-cluster2', 2, 'hetero cluster2 desc', 2, 'ONE_WAY', 'test@111.com');
 
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(24,'hetero-cluster1_1','hetero-cluster1_1', 8);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(25,'hetero-cluster1_2','hetero-cluster1_2', 8);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(26,'hetero-cluster1_fra_1','hetero-cluster1_fra_1', 8);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(24,'hetero-cluster2_1','hetero-cluster2_1', 8);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(25,'hetero-cluster2_2','hetero-cluster2_2', 8);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(26,'hetero-cluster2_fra_1','hetero-cluster2_fra_1', 8);
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (34,1,8,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (35,2,8,1,0,'oy','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (36,3,8,1,0,'fra','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(13, 8, 1, 2, 'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(14, 8, 2, 3, 'SINGLE_DC');
+
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (34, 1, 8, 13);
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (35, 2, 8, 13);
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (36, 3, 8, 14);
 
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (56,34,24,1,1);
@@ -261,14 +263,17 @@ insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) va
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(4, 8, 1, 1, 3);
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(5, 8, 0, 0, 3);
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type) values (9,'hetero-local-cluster',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'ONE_WAY');
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type) values (9, 'hetero-local-cluster', 1, 'hetero local cluster desc', 1, 'ONE_WAY');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (37,1,9,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (38,2,9,1,0,'oy','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(15, 9, 3, 1, 'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(16, 9, 4, 2, 'SINGLE_DC');
 
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(27,'hetero-local-cluster_1','hetero-local-cluster_1', 9);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(28,'hetero-local-cluster_2','hetero-local-cluster_2', 9);
-insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(29,'hetero-local-cluster_oy_1','hetero-local-cluster_oy_1', 9);
+insert into DC_CLUSTER_TBL (dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (37, 1, 9, 15);
+insert into DC_CLUSTER_TBL (dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (38, 2, 9, 16);
+
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(27,'hetero-local-cluster_1', 'hetero-local-cluster_1', 9);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(28,'hetero-local-cluster_2', 'hetero-local-cluster_2', 9);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(29,'hetero-local-cluster_oy_1', 'hetero-local-cluster_oy_1', 9);
 
 insert into REPL_DIRECTION_TBL (id, cluster_id,src_dc_id,from_dc_id,to_dc_id) values(6, 9, 0, 0, 2);
 
@@ -294,10 +299,13 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(88,'unknown',63,'127.0.0.1',6480,'redis',0,0,null);
 
 
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type) values (10,'hetero2-local-cluster',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'ONE_WAY');
+insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type) values (10, 'hetero2-local-cluster', 1, 'hetero2 local cluster desc', 1, 'ONE_WAY');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (39,1,10,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (40,2,10,1,0,'oy','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(17, 10, 3, 1, 'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(18, 10, 4, 2, 'SINGLE_DC');
+
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (39, 1, 10, 17);
+insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (40, 2, 10, 18);
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(30,'hetero2-local-cluster_1','hetero2-local-cluster_1', 10);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(31,'hetero2-local-cluster_2','hetero2-local-cluster_2', 10);
@@ -331,3 +339,47 @@ insert into APPLIER_TBL(id, shard_id, repl_direction_id, ip, port, active, conta
 
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(101,'unknown',66,'127.0.0.1',6381,'redis',0,1,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(102,'unknown',66,'127.0.0.1',6481,'redis',0,0,null);
+
+
+
+--insert into CLUSTER_TBL(id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_admin_emails) values (12, 'hetero-cluster', 1, 'hetero-cluster desc', 1, 'HETERO', 'test@111.com');
+--
+--insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(21, 'hetero-cluster_1','asymmetric-cluster_1', 7);
+--insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(22, 'hetero-cluster_2','asymmetric-cluster_2', 7);
+--insert into SHARD_TBL(id, shard_name, setinel_monitor_name, cluster_id) values(23, 'hetero-cluster_fra_1','asymmetric-cluster_fra_1', 7);
+--
+--insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(19, 11, 1, 1, 'ONE_WAY');
+--insert into AZ_GROUP_CLUSTER_TBL(id, cluster_id, az_group_id, active_az_id, az_group_cluster_type) values(20, 11, 2, 3, 'SINGLE_DC');
+--
+--insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (41, 1, 11, 19);
+--insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (42, 2, 11, 19);
+--insert into DC_CLUSTER_TBL(dc_cluster_id, dc_id, cluster_id, az_group_cluster_id) values (43, 3, 11, 20);
+--
+--insert into DC_CLUSTER_SHARD_TBL(dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (51,31,21,1,1);
+--insert into DC_CLUSTER_SHARD_TBL(dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (52,31,22,1,1);
+--insert into DC_CLUSTER_SHARD_TBL(dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (53,32,21,2,1);
+--insert into DC_CLUSTER_SHARD_TBL(dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (54,32,22,2,1);
+--insert into DC_CLUSTER_SHARD_TBL(dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (55,33,23,3,1);
+
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(61,'ffffffffffffffffffffffffffffffffffffffff',51,'127.0.0.1',6020,'keeper',0,0,1,1);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(62,'ffffffffffffffffffffffffffffffffffffffff',51,'127.0.0.2',6021,'keeper',0,0,2);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(63,'unknown',51,'127.0.1.1',6379,'redis',1,0,null);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(64,'unknown',51,'127.0.1.1',6479,'redis',0,0,null);
+--
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(65,'ffffffffffffffffffffffffffffffffffffffff',52,'127.0.0.1',7020,'keeper',0,0,1,1);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(66,'ffffffffffffffffffffffffffffffffffffffff',52,'127.0.0.2',7021,'keeper',0,0,2);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(67,'unknown',52,'127.0.2.1',6379,'redis',1,0,null);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(68,'unknown',52,'127.0.2.1',6479,'redis',0,0,null);
+--
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(69,'ffffffffffffffffffffffffffffffffffffffff',53,'127.0.0.5',6020,'keeper',0,0,5,1);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(70,'ffffffffffffffffffffffffffffffffffffffff',53,'127.0.0.4',6021,'keeper',0,0,4);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(71,'unknown',53,'127.0.3.1',6379,'redis',0,0,null);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(72,'unknown',53,'127.0.3.1',6479,'redis',0,0,null);
+--
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id, keeper_active) values(73,'ffffffffffffffffffffffffffffffffffffffff',54,'127.0.0.5',7020,'keeper',0,0,5,1);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(74,'ffffffffffffffffffffffffffffffffffffffff',54,'127.0.0.4',7021,'keeper',0,0,4);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(75,'unknown',54,'127.0.4.1',6379,'redis',0,0,null);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(76,'unknown',54,'127.0.4.1',6479,'redis',0,0,null);
+--
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(77,'unknown',55,'127.0.5.1',6379,'redis',1,0,null);
+--insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(78,'unknown',55,'127.0.5.1',6479,'redis',0,0,null);
