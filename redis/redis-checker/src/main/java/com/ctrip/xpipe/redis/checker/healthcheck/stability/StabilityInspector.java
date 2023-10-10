@@ -37,11 +37,11 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
 
     private CheckerConfig config;
 
-    private AtomicBoolean stable;
+    private AtomicBoolean stable = new AtomicBoolean(true);
 
-    private AtomicInteger continuousMismatchTimes;
+    private AtomicInteger continuousMismatchTimes = new AtomicInteger();
 
-    private AtomicInteger continuousNoInterested;
+    private AtomicInteger continuousNoInterested = new AtomicInteger();
 
     private DynamicDelayPeriodTask task;
 
@@ -49,15 +49,14 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
 
     private static final String TYPE = "stability";
 
-    @Autowired
+    public StabilityInspector() {
+    }
+
     public StabilityInspector(DefaultDelayPingActionCollector defaultDelayPingActionCollector, MetaCache metaCache,
                               CheckerConfig checkerConfig) {
         this.collector = defaultDelayPingActionCollector;
         this.metaCache = metaCache;
         this.config = checkerConfig;
-        this.stable = new AtomicBoolean(true);
-        this.continuousMismatchTimes = new AtomicInteger();
-        this.continuousNoInterested = new AtomicInteger();
     }
 
     protected boolean isSiteStable() {
@@ -174,4 +173,18 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
         return LOWEST_PRECEDENCE;
     }
 
+    @Autowired
+    public void setCollector(DefaultDelayPingActionCollector collector) {
+        this.collector = collector;
+    }
+
+    @Autowired
+    public void setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
+    }
+
+    @Autowired
+    public void setConfig(CheckerConfig config) {
+        this.config = config;
+    }
 }
