@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.ds;
 
+import com.ctrip.xpipe.datasource.DataSourceFactory;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.unidal.dal.jdbc.datasource.DataSourceException;
 import org.unidal.lookup.ContainerHolder;
 import org.unidal.lookup.annotation.Named;
 
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -28,11 +30,14 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     private org.codehaus.plexus.logging.Logger m_logger;
 
     private static final String ctripDalDataSource =
-            "com.ctrip.xpipe.service.datasource.CtripDynamicDataSource";
+        "com.ctrip.xpipe.service.datasource.CtripDynamicDataSource";
+    private static final String ctripDalDataSourceFactory =
+        "com.ctrip.xpipe.service.datasource.CtripDalDataSourceFactory";
 
     private static boolean ctripDataSourceEnabled =
-            ClassUtils.isPresent(ctripDalDataSource, XPipeDataSource.class.getClassLoader());
+        ClassUtils.isPresent(ctripDalDataSource, XPipeDataSource.class.getClassLoader());
 
+    private DataSourceFactory m_factory;
     private DataSource m_delegate;
 
     @Override
@@ -49,7 +54,10 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     public void initialize(DataSourceDescriptor descriptor) {
         if (ctripDataSourceEnabled) {
             try {
-                m_delegate = (DataSource)(Class.forName(ctripDalDataSource).newInstance());
+                m_factory = (DataSourceFactory)(Class.forName(ctripDalDataSourceFactory).newInstance());
+                Class<?> clazz = Class.forName(ctripDalDataSource);
+                Constructor<?> constructor = clazz.getConstructor(DataSourceFactory.class);
+                m_delegate = (DataSource) constructor.newInstance(m_factory);
             } catch (Throwable ex) {
                 logger.error("Loading ctrip datasource failed", ex);
             }
@@ -76,6 +84,12 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
 
     public DataSource getInnerDataSource() {
         return m_delegate;
+    }
+
+    public javax.sql.DataSource getBaseDataSource() throws Exception {
+        javax.sql.DataSource dataSource = m_factory.getOrCreateDataSource();
+        logger.info("[getBaseDataSource]{}", dataSource);
+        return dataSource;
     }
 
 }

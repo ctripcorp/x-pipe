@@ -99,7 +99,12 @@ public class ClusterController extends AbstractConsoleController {
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public ClusterTbl loadCluster(@PathVariable String clusterName) {
-        return valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
+        ClusterTbl result = valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
+        //TODO: 管控页面暂时将异构显示为单向同步方便查看redis实例状态，下一版本页面支持异构展示后删除该代码
+        if (ClusterType.isSameClusterType(result.getClusterType(), ClusterType.HETERO)) {
+            result.setClusterType(ClusterType.ONE_WAY.toString());
+        }
+        return result;
     }
 
     @RequestMapping(value = "/clusters/by/names", method = RequestMethod.POST)
@@ -365,21 +370,22 @@ public class ClusterController extends AbstractConsoleController {
             toCreate.getDcCluster().setClusterName(clusterTbl.getClusterName());
             clusterService.bindDc(toCreate.getDcCluster());
 
+            // TODO: 删除此方法（通过AzGroupCluster判断）
             if (DcGroupType.isSameGroupType(toCreate.getDcCluster().getGroupType(), DcGroupType.MASTER) && toCreate.getShards() != null) {
                 List<DcClusterTbl> dcClusterTbls = new ArrayList<>();
                 dcClusterTbls.add(dcClusterService.find(toCreate.getDcCluster().getDcName(),
                         toCreate.getDcCluster().getClusterName()));
 
-                ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
                 toCreate.getShards().forEach(shardModel -> {
                         shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shardModel.getShardTbl(),
-                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.MASTER));
+                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.SINGLE_DC));
                     });
             }
         });
     }
 
     private void deleteDcClusterBatch(List<DcClusterModel> toDeletes, ClusterTbl clusterTbl){
+        // TODO: 删除此方法（通过AzGroupCluster判断）
         for (DcClusterModel toDelete : toDeletes){
             if (toDelete.getDcCluster().getDcId() == clusterTbl.getActivedcId()) {
                 throw new BadRequestException("can not unbind active dc");
@@ -426,13 +432,16 @@ public class ClusterController extends AbstractConsoleController {
         });
         shardService.deleteShards(clusterTbl, toDeleteShardNames);
 
+        // TODO: 删除此方法（通过AzGroupCluster判断）
+        String dcGroupType = dcClusterTbl.getGroupType();
         List<DcClusterTbl> dcClusterTbls =
-                dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcClusterTbl.getGroupType());
+            dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcGroupType);
 
-        toCreates.forEach(toCreate -> {
-            shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate,
-                    dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, DcGroupType.findByValue(dcClusterTbl.getGroupType())));
-        });
+        clusterType = DcGroupType.isNullOrDrMaster(dcGroupType) ? clusterType : ClusterType.SINGLE_DC;
+        Map<Long, SentinelGroupModel> dcSentinelMap = sentinelBalanceService.selectMultiDcSentinels(clusterType);
+        toCreates.forEach(
+            toCreate -> shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate, dcClusterTbls,
+                dcSentinelMap));
     }
 
     protected void updateClusterReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirections) {

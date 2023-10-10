@@ -192,7 +192,7 @@ public class DcMetaSynchronizerTest {
         dcMetaSynchronizer.sync();
 
         verify(clusterService, never()).bindDc(any());
-        verify(clusterService, times(1)).createCluster(any());
+        verify(clusterService, times(1)).createSingleGroupCluster(any());
         verify(clusterService, never()).unbindDc(any(), any());
         verify(clusterService, times(1)).deleteCluster(any());
         verify(clusterService, never()).update(any());

@@ -6,8 +6,9 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionShardsCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -20,8 +21,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -32,10 +34,16 @@ import java.util.stream.Collectors;
  * <p>
  * Jan 30, 2018
  */
-public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
+public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private MetaUpdate metaUpdate;
+
+    @Autowired
+    private ClusterUpdateController clusterUpdateController;
+
+    @Autowired
+    private ShardUpdateController shardUpdateController;
 
     @Autowired
     private ShardService shardService;
@@ -57,13 +65,14 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     @Before
     public void beforeMetaUpdateTest3() throws Exception {
+        clusterUpdateController.deleteCluster(clusterName, false);
         createCluster();
     }
 
     @Test
     public void createShard() throws Exception {
         List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                                                        Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
+            Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
         metaUpdate.createShard(clusterName, shardName, createInfo);
 
         ShardTbl shardTbl = shardService.find(clusterName, shardName);
@@ -78,9 +87,10 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
         logger.info("{}", redisTbls);
 
-        Assert.assertTrue(listEquals(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                redisTbls.stream().map((redisTbl)-> { return redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort();})
-            .collect(Collectors.toList())));
+        List<String> redisIpPorts = redisTbls.stream()
+            .map(redisTbl-> redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort())
+            .collect(Collectors.toList());
+        Assert.assertEquals(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"), redisIpPorts);
 
         Assert.assertEquals(2, keepers.size());
     }
@@ -213,9 +223,9 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
     @Test
     public void testGetCluster() throws Exception {
         createCluster();
-        ClusterCreateInfo clusterCreateInfo = metaUpdate.getCluster(clusterName);
+        ClusterCreateInfo clusterCreateInfo = clusterUpdateController.getCluster(clusterName);
         Assert.assertEquals(clusterName, clusterCreateInfo.getClusterName());
-        Assert.assertEquals(3L, (long)clusterCreateInfo.getOrganizationId());
+        Assert.assertEquals(0L, (long)clusterCreateInfo.getOrganizationId());
         Assert.assertEquals(2, clusterCreateInfo.getDcs().size());
         Assert.assertEquals(activeDC, clusterCreateInfo.getDcs().get(0));
         Assert.assertEquals(backupDC, clusterCreateInfo.getDcs().get(1));
@@ -231,9 +241,9 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         clusterCreateInfo.setDcs(Lists.newArrayList("jq", "oy"));
         clusterCreateInfo.setOrganizationId(3L);
         clusterCreateInfo.setDesc("test cluster");
-        metaUpdate.createCluster(clusterCreateInfo);
+        clusterUpdateController.createCluster(clusterCreateInfo);
 
-        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        ClusterCreateInfo current = clusterUpdateController.getCluster(clusterName);
         Assert.assertEquals("jq", current.getDcs().get(0));
         Assert.assertEquals("oy", current.getDcs().get(1));
     }
@@ -248,9 +258,9 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         clusterCreateInfo.setDcs(Lists.newArrayList("oy", "jq"));
         clusterCreateInfo.setOrganizationId(3L);
         clusterCreateInfo.setDesc("test cluster");
-        metaUpdate.createCluster(clusterCreateInfo);
+        clusterUpdateController.createCluster(clusterCreateInfo);
 
-        ClusterCreateInfo current = metaUpdate.getCluster(clusterName);
+        ClusterCreateInfo current = clusterUpdateController.getCluster(clusterName);
         Assert.assertEquals("oy", current.getDcs().get(0));
         Assert.assertEquals("jq", current.getDcs().get(1));
     }
@@ -261,15 +271,15 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
     }
 
 
-    private void createCluster() throws Exception {
+    private void createCluster() {
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
         clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
         clusterCreateInfo.setClusterName(clusterName);
         clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
         clusterCreateInfo.setDcs(Lists.newArrayList(activeDC, backupDC));
-        clusterCreateInfo.setOrganizationId(3L);
+        clusterCreateInfo.setOrganizationId(0L);
         clusterCreateInfo.setDesc("test cluster");
-        metaUpdate.createCluster(clusterCreateInfo);
+        clusterUpdateController.createCluster(clusterCreateInfo);
 
         logger.info("[Cluster] {}", clusterService.find(clusterName));
     }
@@ -301,60 +311,39 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testBindDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "fra", Optional.ofNullable(null));
-        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
-
-        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-        Assert.assertEquals(3, dcTbls.size());
-        Assert.assertTrue(dcTbls.stream().anyMatch(dc -> dc.getDcName().equals("fra")));
-    }
-
-    @Test
-    public void testBindDuplicatedDc() {
-        RetMessage ret = metaUpdate.bindDc(clusterName, "jq", null);
-        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
-
-        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-        Assert.assertEquals(2, dcTbls.size());
-    }
-
-    @Test
-    public void testUnbindActiveDc() {
-        RetMessage ret = metaUpdate.unbindDc(clusterName, activeDC);
-        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
-
-        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-        Assert.assertEquals(2, dcTbls.size());
-    }
-
-    @Test
-    public void testUnbindBackupDc() {
-        RetMessage ret = metaUpdate.unbindDc(clusterName, backupDC);
-        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
-
-        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-        Assert.assertEquals(1, dcTbls.size());
-        Assert.assertTrue(dcTbls.stream().noneMatch(dc -> dc.getDcName().equals(backupDC)));
-    }
-
-    @Test
-    public void testUnbindNotEmptyDc() {
-        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
-        metaUpdate.createShard(clusterName, shardName, createInfo);
-
-        RetMessage ret = metaUpdate.unbindDc(clusterName, backupDC);
-        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
-
-        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-        Assert.assertEquals(2, dcTbls.size());
-    }
-
-    @Test
     public void getClusters() throws CheckFailException {
-        List<ClusterCreateInfo> clusters = metaUpdate.getClusters(ClusterType.ONE_WAY.toString());
-        Assert.assertNotNull(clusters.get(0).getDcDetails());
+        List<ClusterCreateInfo> clusters = clusterUpdateController.getClusters(ClusterType.ONE_WAY.toString());
+        Assert.assertNotNull(clusters.get(0).getRegions());
         logger.info("{}", clusters);
+    }
+
+    @Test
+    public void testCreateRegionShardsFail() {
+        RegionShardsCreateInfo createInfo = new RegionShardsCreateInfo();
+        createInfo.setShardNames(Arrays.asList("shard1", "shard2"));
+        RetMessage ret = shardUpdateController.createRegionShards(clusterName, "SHA", createInfo);
+
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+    }
+
+    @Test
+    public void testCreateRegionShards() {
+        ClusterCreateInfo createInfo = new ClusterCreateInfo();
+        createInfo.setClusterName("cluster2");
+        createInfo.setClusterType(ClusterType.ONE_WAY.toString());
+        createInfo.setDcs(Lists.newArrayList(activeDC, backupDC, "fra"));
+        createInfo.setOrganizationId(0L);
+        createInfo.setDesc("test cluster2");
+        createInfo.setClusterAdminEmails("xpipe@ctrip.com");
+
+        RegionInfo regionInfo1 = new RegionInfo("SHA", "ONE_WAY", "jq", Arrays.asList("jq", "oy"));
+        RegionInfo regionInfo2 = new RegionInfo("FRA", "SINGLE_DC", "fra", Collections.singletonList("fra"));
+        createInfo.setRegions(Arrays.asList(regionInfo1, regionInfo2));
+        clusterUpdateController.createCluster(createInfo);
+
+        RegionShardsCreateInfo shardsCreateInfo = new RegionShardsCreateInfo();
+        shardsCreateInfo.setShardNames(Arrays.asList("shard1", "shard2"));
+        RetMessage ret = shardUpdateController.createRegionShards("cluster2", "SHA", shardsCreateInfo);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
     }
 }

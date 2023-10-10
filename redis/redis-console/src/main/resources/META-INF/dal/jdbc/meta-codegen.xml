@@ -103,6 +103,7 @@
     <member name="dc-cluster-id" field="dc_cluster_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
+    <member name="az-group-cluster-id" field="az_group_cluster_id" value-type="long" length="20" nullable="false" />
     <member name="metaserver-id" field="metaserver_id" value-type="long" length="20" nullable="false" />
     <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" nullable="false" />
     <member name="active-redis-check-rules" field="active_redis_check_rules" value-type="String" length="128" />

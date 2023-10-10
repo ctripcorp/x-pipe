@@ -1,5 +1,9 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
+import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
+import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
@@ -17,6 +21,7 @@ public interface ClusterService {
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 	List<DcTbl> getClusterRelatedDcs(String clusterName);
+	boolean containsRedisInstance(String clusterName);
 
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClustersWithOrgInfo();
@@ -28,16 +33,28 @@ public interface ClusterService {
 	Map<String, Long> getMigratableClustersCountByActiveDc();
     Long getCountByActiveDcAndClusterType(long activeDc, String clusterType);
     Long getAllCount();
+	ClusterDTO getCluster(String clusterName);
+	List<ClusterDTO> getClusters(String clusterType);
+
 	ClusterTbl createCluster(ClusterModel clusterModel);
+	void createSingleGroupCluster(SingleGroupClusterCreateDTO clusterCreateDTO);
+	void createMultiGroupCluster(MultiGroupClusterCreateDTO clusterCreateDTO);
+
+	String updateCluster(ClusterUpdateDTO clusterUpdateDTO);
 	void updateCluster(String clusterName, ClusterModel cluster);
 
 	void updateActivedcId(long id, long activeDcId);
 	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);
 	void deleteCluster(String clusterName);
 	void bindDc(DcClusterTbl dcClusterTbl);
+	void bindDc(String clusterName, String dcName);
+
+	void unbindAz(String clusterName, String azName);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
+	void upgradeAzGroup(String clusterName);
+	void bindRegionAz(String clusterName, String regionName, String azName);
 
 	Set<String> findMigratingClusterNames();
 	List<ClusterTbl> findErrorMigratingClusters();
@@ -66,4 +83,5 @@ public interface ClusterService {
 	UnexpectedRouteUsageInfoModel findUnexpectedRouteUsageInfoModel();
 
     void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
+
 }

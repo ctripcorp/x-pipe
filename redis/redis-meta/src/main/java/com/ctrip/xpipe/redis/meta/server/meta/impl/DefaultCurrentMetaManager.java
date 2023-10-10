@@ -187,10 +187,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private void clusterRoutesChange(Long clusterDbId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
-		if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
+		if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
 			refreshPeerMasters(clusterMeta);
-		}
-		else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
+		} else if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) {
 			refreshKeeperMaster(clusterMeta);
 			refreshApplierMaster(clusterMeta);
 		}

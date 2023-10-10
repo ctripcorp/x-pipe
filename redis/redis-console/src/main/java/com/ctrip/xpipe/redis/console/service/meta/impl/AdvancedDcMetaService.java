@@ -7,8 +7,10 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.*;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilder;
@@ -90,6 +92,12 @@ public class AdvancedDcMetaService implements DcMetaService {
     private DcClusterService dcClusterService;
 
     @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @Autowired
+    private AzGroupCache azGroupCache;
+
+    @Autowired
     private ClusterMetaService clusterMetaService;
 
     @Autowired
@@ -124,11 +132,9 @@ public class AdvancedDcMetaService implements DcMetaService {
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
         List<DcTbl> dcTblList = dcService.findAllDcs();
-        DcTbl dcTbl = null;
-        for (DcTbl dt : dcTblList) {
-            if (dcName.equalsIgnoreCase(dt.getDcName())) {
-                dcTbl = dt;
-            }
+        DcTbl dcTbl = dcTblList.stream().filter(dc -> dc.getDcName().equalsIgnoreCase(dcName)).findFirst().orElse(null);
+        if (dcTbl == null) {
+            return new DcMeta();
         }
         ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
@@ -143,9 +149,10 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
-                applierService, factory, consoleConfig);
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
+            dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
+            azGroupCache, replDirectionService, zoneService, keeperContainerService, applierService, factory,
+            consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
@@ -177,9 +184,10 @@ public class AdvancedDcMetaService implements DcMetaService {
             chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
         }
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, replDirectionService, zoneService, keeperContainerService,
-                applierService, factory, consoleConfig);
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors,
+            redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
+            applierService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {

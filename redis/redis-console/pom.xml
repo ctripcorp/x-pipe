@@ -73,11 +73,20 @@
          <artifactId>h2</artifactId>
          <scope>test</scope>
       </dependency>
-
+      <!-- mybatis plus + ctrip dal -->
+      <dependency>
+         <groupId>com.baomidou</groupId>
+         <artifactId>mybatis-plus-boot-starter</artifactId>
+         <version>3.5.3.1</version>
+      </dependency>
       <dependency>
          <groupId>com.ctrip.platform</groupId>
          <artifactId>ctrip-datasource</artifactId>
          <exclusions>
+            <exclusion>
+               <groupId>com.github.jsqlparser</groupId>
+               <artifactId>jsqlparser</artifactId>
+            </exclusion>
             <exclusion>
                <groupId>org.apache.tomcat</groupId>
                <artifactId>tomcat-juli</artifactId>
@@ -125,6 +134,12 @@
            <artifactId>mockwebserver</artifactId>
            <scope>test</scope>
        </dependency>
+      <dependency>
+         <groupId>com.baomidou</groupId>
+         <artifactId>mybatis-plus-generator</artifactId>
+         <version>3.5.3.1</version>
+         <scope>test</scope>
+      </dependency>
    </dependencies>
    <profiles>
       <profile>

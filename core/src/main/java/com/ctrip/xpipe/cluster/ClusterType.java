@@ -5,8 +5,6 @@ import com.ctrip.xpipe.utils.StringUtil;
 public enum ClusterType {
     ONE_WAY(true, true, true, false, false, true),
     BI_DIRECTION(false, false, true, true),
-    //TODO remove hetero
-//    HETERO(true, true, true, false, false, true),
     // TODO: single_dc and local_dc support health check
     //
     // Currently, sentinel health check is on for single_dc & local_dc via config/console.sentinel.check.outer.clusters
@@ -16,7 +14,9 @@ public enum ClusterType {
     //     and both sentinel & redis health would be controlled by supportHealthCheck flag.
     SINGLE_DC(false, false, false, false),
     LOCAL_DC(false, false, false, true),
-    CROSS_DC(false, false, false, true,true);
+    CROSS_DC(false, false, false, true,true),
+    // 异构集群，具体集群类型由AzGroup中的clusterType来表示
+    HETERO(true, true, true, false);
 
     private boolean supportKeeper;
     private boolean supportMigration;
@@ -82,6 +82,14 @@ public enum ClusterType {
         }
 
         return false;
+    }
+
+    public static boolean supportMultiGroup(String type) {
+        if (StringUtil.isEmpty(type)) {
+            return false;
+        }
+        return isSameClusterType(type, ONE_WAY) || isSameClusterType(type, BI_DIRECTION)
+            || isSameClusterType(type, HETERO);
     }
 
     public static ClusterType lookup(String name) {

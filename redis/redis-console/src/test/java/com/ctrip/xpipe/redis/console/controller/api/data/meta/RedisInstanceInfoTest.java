@@ -11,7 +11,7 @@ public class RedisInstanceInfoTest extends AbstractConsoleTest {
     @Test
     public void testJson() {
         ObjectMapper objectMapper = new ObjectMapper();
-        String body = "{\"clusterId\":\"test_dbatools_xpipe_v20221117\",\"activeDc\":\"SHARB\",\"clusterType\":\"SINGLE_DC\",\"redisCheckRules\":[],\"dcGroupType\":null,\"dcId\":\"SHARB\",\"shardId\":\"test_dbatools_xpipe_v20221117_1\",\"hostPort\":{\"port\":6379,\"host\":\"127.0.0.1\"},\"crossRegion\":false,\"shardDbId\":51219,\"master\":false,\"activeDcAllShardIds\":{\"1\":\"test\"},\"heteroCluster\":false}";
+        String body = "{\"clusterId\":\"test_dbatools_xpipe_v20221117\",\"activeDc\":\"SHARB\",\"clusterType\":\"SINGLE_DC\",\"redisCheckRules\":[],\"azGroupType\":null,\"dcId\":\"SHARB\",\"shardId\":\"test_dbatools_xpipe_v20221117_1\",\"hostPort\":{\"port\":6379,\"host\":\"127.0.0.1\"},\"crossRegion\":false,\"shardDbId\":51219,\"master\":false,\"activeDcAllShardIds\":{\"1\":\"test\"},\"asymmetricCluster\":false}";
         try {
             DefaultRedisInstanceInfo info = objectMapper.readValue(body, DefaultRedisInstanceInfo.class);
             logger.info("{}", info.toString());

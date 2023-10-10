@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggr
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,10 @@ public class OneWaySentinelHelloCheckController implements OneWaySupport, Sentin
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();
-        if (!DcGroupType.isNullOrDrMaster(info.getDcGroupType())) return false;
+        String azGroupType = instance.getCheckInfo().getAzGroupType();
+        if (!StringUtil.isEmpty(azGroupType) && ClusterType.lookup(azGroupType) == ClusterType.SINGLE_DC) {
+            return false;
+        }
 
         return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheckFromRedis(instance);
     }

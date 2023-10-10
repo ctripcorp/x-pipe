@@ -7,7 +7,7 @@ package com.ctrip.xpipe.redis.console.constant;
  */
 public final class XPipeConsoleConstant {
 	public static int DEFAULT_DC_CLUSTER_PHASE = 1;
-	public static int NO_ACTIVE_DC_TAG = 0;
+	public static long NO_ACTIVE_AZ_TAG = 0L;
 	
 	public static int MASTER_REQUIRED_TAG = -1;
 	public static long NO_EXIST_ID = 0L;

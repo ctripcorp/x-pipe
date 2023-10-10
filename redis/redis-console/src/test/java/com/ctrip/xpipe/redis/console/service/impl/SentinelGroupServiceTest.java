@@ -108,30 +108,34 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
     @Test
     public void getSentinelGroupsWithUsageByType() {
         ConsoleConfig consoleConfig = mock(ConsoleConfig.class);
-        when(consoleConfig.supportSentinelHealthCheck(any(), anyString()))
-                .thenReturn(true);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(true);
         shardService.setConsoleConfig(consoleConfig);
-        SentinelGroupModel sentinelGroupModel1 = new SentinelGroupModel().setClusterType(ClusterType.ONE_WAY.name()).setSentinels(Lists.newArrayList(
+        SentinelGroupModel sentinelGroupModel1 = new SentinelGroupModel().setClusterType(ClusterType.ONE_WAY.name())
+            .setSentinels(Lists.newArrayList(
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6000),
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6001),
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6002)
-        ));
+            ));
         sentinelGroupService.addSentinelGroup(sentinelGroupModel1);
 
-        SentinelGroupModel sentinelGroupModelCrossDc1 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
+        SentinelGroupModel sentinelGroupModelCrossDc1 = new SentinelGroupModel()
+            .setClusterType(ClusterType.CROSS_DC.name())
+            .setSentinels(Lists.newArrayList(
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(7000),
                 new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7001),
                 new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7002)
-        ));
+            ));
         sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc1);
 
-        SentinelGroupModel sentinelGroupModelCrossDc2 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
+        SentinelGroupModel sentinelGroupModelCrossDc2 = new SentinelGroupModel()
+            .setClusterType(ClusterType.CROSS_DC.name())
+            .setSentinels(Lists.newArrayList(
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8000),
                 new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8001),
                 new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(8002),
                 new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8003),
                 new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8004)
-        ));
+            ));
         sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc2);
 
         //force refresh cache

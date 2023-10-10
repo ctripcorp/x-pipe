@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
@@ -14,6 +18,10 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
+import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -22,6 +30,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import javax.annotation.Resource;
@@ -38,6 +47,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private DcService dcService;
 	@Autowired
 	private ShardDao shardDao;
+	@Autowired
+	private ClusterDao clusterDao;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
 
@@ -64,6 +75,17 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Autowired
 	private List<ShardEventListener> shardEventListeners;
+	@Autowired
+	private SentinelBalanceService sentinelBalanceService;
+
+	@Autowired
+	private AzGroupCache azGroupCache;
+	@Autowired
+	private AzGroupRepository azGroupRepository;
+	@Autowired
+	private AzGroupClusterRepository azGroupClusterRepository;
+	@Autowired
+	private DcClusterRepository dcClusterRepository;
 
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
@@ -116,7 +138,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	});
 	}
 
-	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels) {
+	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl,
+		ShardTbl shard, Map<Long, SentinelGroupModel> sentinels) {
 		DcClusterShardTbl dcClusterShardTbl = new DcClusterShardTbl();
 		dcClusterShardTbl.setDcClusterId(dcClusterTbl.getDcClusterId()).setShardId(shard.getId());
 		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
@@ -136,18 +159,21 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Override
 	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard,
 											 final Map<Long, SentinelGroupModel> sentinels) {
-		ShardTbl shardTbl = queryHandler.handleQuery(new DalQuery<ShardTbl>() {
-			@Override
-			public ShardTbl doQuery() throws DalException {
-				return shardDao.createShard(clusterName, shard);
-			}
-		});
-
+		ShardTbl shardTbl = shardDao.createShard(clusterName, shard);
 		ClusterTbl clusterTbl = clusterService.find(clusterName);
+
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+		Set<Long> singleDcAzGroupClusterIds = azGroupClusters.stream()
+			.filter(agc -> ClusterType.isSameClusterType(agc.getAzGroupClusterType(), ClusterType.SINGLE_DC))
+			.map(AzGroupClusterEntity::getId)
+			.collect(Collectors.toSet());
+
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {
-			if(DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) continue;
+			if (singleDcAzGroupClusterIds.contains(dcClusterTbl.getAzGroupClusterId())) {
+				continue;
+			}
 			DcClusterShardTbl dcClusterShardTbl = generateDcClusterShardTbl(clusterTbl, dcClusterTbl, shard, sentinels);
 			dcClusterShardTbls.add(dcClusterShardTbl);
 		}
@@ -156,6 +182,43 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		return shardTbl;
 	}
 
+	@Override
+	public void createRegionShard(String clusterName, String regionName, String shardName) {
+		ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+		if (cluster == null) {
+			throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
+		}
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+		if (CollectionUtils.isEmpty(azGroupClusters)) {
+			throw new BadRequestException(
+				String.format("Cluster: %s in DC mode, cannot create region shard", clusterName));
+		}
+
+		ShardTbl shard = shardDao.createShard(clusterName, new ShardTbl().setShardName(shardName));
+		List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(cluster.getId());
+		Map<Long, List<DcClusterEntity>> azGroupClusterId2DcClustersMap = dcClusters.stream()
+			.collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId));
+		Map<Long, SentinelGroupModel> sentinelModelMap =
+			sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(cluster.getClusterType()));
+		List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
+		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
+				List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
+				for (DcClusterEntity dcCluster : regionDcClusters) {
+					DcClusterTbl dcClusterTbl = new DcClusterTbl();
+					dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
+					dcClusterTbl.setDcId(dcCluster.getDcId());
+					DcClusterShardTbl dcClusterShardTbl =
+						generateDcClusterShardTbl(cluster, dcClusterTbl, shard, sentinelModelMap);
+					dcClusterShardList.add(dcClusterShardTbl);
+				}
+			}
+		}
+		if (!dcClusterShardList.isEmpty()) {
+			dcClusterShardService.insertBatch(dcClusterShardList);
+		}
+	}
 
 	@Override
 	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
@@ -189,12 +252,13 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		ClusterTbl clusterTbl = clusterService.find(clusterName);
 		// create dcClusterShard in all dcClusters of cluster if dcClusterTbls is null
-		if (dcClusterTbls == null) {
-			dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId())
-					.stream()
-					.filter(dcClusterTbl -> DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType()))
-					.collect(Collectors.toList());
-		}
+        if (dcClusterTbls == null) {
+            dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId()).stream().filter(dcClusterTbl -> {
+                ClusterType azGroupType =
+                    azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
+                return azGroupType != ClusterType.SINGLE_DC;
+            }).collect(Collectors.toList());
+        }
 
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();
 		for (DcClusterTbl dcClusterTbl : dcClusterTbls) {

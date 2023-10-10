@@ -5,6 +5,9 @@ insert into AZ_TBL (id, dc_id, az_name, active, description) values (2, 3, 'B', 
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (3, 3, 'C', 0, 'zone for dc:fra zone C');
 
 insert into DC_TBL (id,zone_id,dc_name,dc_active,dc_description,dc_last_modified_time) values (4,1,'rb',1,'DC:rb','0000000000000000');
+
+insert into AZ_GROUP_TBL (id,name,region) values(5,'LOCAL_RB','SHA');
+insert into AZ_GROUP_MAPPING_TBL (id, az_id, az_group_id) values (6,4,5);
 -- 增加 appliercontainer
 -- jq
 insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appliercontainer_az, appliercontainer_ip, appliercontainer_port, appliercontainer_active, appliercontainer_org) values(41,1,0,'127.0.0.41','8080',1,0);
@@ -52,16 +55,19 @@ insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercont
 
 -- 增加hetero集群
 -- 增加 repl-hetero-cluster1
-insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type) values (21,'repl-hetero-cluster1',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'one_way');
+insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_designated_route_ids, cluster_type)
+ values (21,'repl-hetero-cluster1',1,'Cluster:Hetero , ActiveDC : A','0000000000000000','Normal',1, 1,'', 'one_way');
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(41,'repl-hetero-cluster1_1','repl-hetero-cluster1_1', 21);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(42,'repl-hetero-cluster1_2','repl-hetero-cluster1_2', 21);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(43,'repl-hetero-cluster1_fra_1','repl-hetero-cluster1_fra_1', 21);
 
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (10,21,1,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (11,21,2,3,'SINGLE_DC');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (131,1,21,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (132,2,21,1,0,'oy','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (133,3,21,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (131,1,21,10,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (132,2,21,10,1,0,'oy','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (133,3,21,11,1,0,'fra','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (151,131,41,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (152,131,42,1,1);
@@ -83,10 +89,13 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(53,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(54,'repl-hetero-cluster2_fra_1','repl-hetero-cluster2_fra_1', 22);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(55,'repl-hetero-cluster2_fra_2','repl-hetero-cluster2_fra_2', 22);
 
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (12,22,3,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (13,22,4,2,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (14,22,2,3,'SINGLE_DC');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (141,1,22,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (142,2,22,1,0,'oy','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (143,3,22,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (141,1,22,12,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (142,2,22,13,1,0,'oy','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (143,3,22,14,1,0,'fra','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (161,141,51,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (162,141,52,1,1);
@@ -110,9 +119,13 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(65,
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(66,'repl-hetero-cluster3_oy_1','repl-hetero-cluster3_oy_1', 23);
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (151,1,23,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (152,2,23,1,0,'oy','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (153,3,23,1,0,'fra','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (15,23,3,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (16,23,4,2,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (17,23,2,3,'SINGLE_DC');
+
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (151,1,23,15,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (152,2,23,16,1,0,'oy','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (153,3,23,17,1,0,'fra','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (171,151,61,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (172,151,62,1,1);
@@ -135,11 +148,15 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(73,
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(74,'repl-hetero-cluster4_fra_1','repl-hetero-cluster4_fra_1', 24);
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(75,'repl-hetero-cluster4_fra_2','repl-hetero-cluster4_fra_2', 24);
 
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (18,24,3,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (19,24,4,2,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (20,24,2,3,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (21,24,5,4,'SINGLE_DC');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (161,1,24,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (162,2,24,1,0,'oy','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (163,3,24,1,0,'fra','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (164,4,24,1,0,'rb','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (161,1,24,18,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (162,2,24,19,1,0,'oy','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (163,3,24,20,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (164,4,24,21,1,0,'rb','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (181,161,71,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (182,161,72,1,1);
@@ -166,10 +183,15 @@ insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(86,
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(87,'repl-hetero-cluster5_rb_1','repl-hetero-cluster5_rb_1', 25);
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (171,1,25,1,0,'jq','DR_MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (172,2,25,1,0,'oy','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (173,3,25,1,0,'fra','MASTER');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (174,4,25,1,0,'rb','MASTER');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (22,25,3,1,'ONE_WAY');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (23,25,4,2,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (24,25,2,3,'SINGLE_DC');
+insert into AZ_GROUP_CLUSTER_TBL (id,cluster_id,az_group_id,active_az_id,az_group_cluster_type) values (25,25,5,4,'SINGLE_DC');
+
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (171,1,25,22,1,0,'jq','DR_MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (172,2,25,23,1,0,'oy','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (173,3,25,24,1,0,'fra','MASTER');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,az_group_cluster_id,dc_cluster_phase,metaserver_id, group_name, group_type) values (174,4,25,25,1,0,'rb','MASTER');
 
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (191,171,81,1,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (192,171,82,1,1);

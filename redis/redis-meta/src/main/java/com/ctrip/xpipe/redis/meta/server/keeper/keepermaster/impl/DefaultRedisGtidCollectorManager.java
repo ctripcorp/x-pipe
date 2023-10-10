@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.InstanceNode;
@@ -19,6 +18,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.RedisGtidCollectorManage
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -93,8 +93,10 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
         Long shardDbId = shardMeta.getDbId();
         int collectInterval;
 
-        if (DcGroupType.MASTER.name().equals(clusterMeta.getDcGroupType()) &&
-            dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+        String azGroupType = clusterMeta.getAzGroupType();;
+        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
+        if (azGroupClusterType == ClusterType.SINGLE_DC
+            && dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
             collectInterval = DefaultRedisGtidCollector.MASTER_DC_SHARD_DIRECTLY_UNDER_CLUSTER_INTERVAL_SECONDS;
         } else {
             collectInterval = DefaultRedisGtidCollector.DEFAULT_INTERVAL_SECONDS;

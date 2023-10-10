@@ -1,16 +1,18 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
-import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
-import com.ctrip.xpipe.api.monitor.Task;
-import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.DcGroupType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -19,11 +21,10 @@ import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.unidal.dal.jdbc.DalException;
 
@@ -82,15 +83,25 @@ public class MetaUpdate extends AbstractConsoleController {
     private DcClusterService dcClusterService;
 
     @Autowired
+    private DcClusterRepository dcClusterRepository;
+
+    @Autowired
+    private AzGroupCache azGroupCache;
+
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @Autowired
     private ReplDirectionService replDirectionService;
 
     @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
-    private ConsoleConfig config;
+    private DcCache dcCache;
 
-    private static final String TYPE = "MetaUpdate";
+    @Autowired
+    private ConsoleConfig config;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -106,300 +117,7 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
 
-    @RequestMapping(value = "/clusters", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage createCluster(@RequestBody ClusterCreateInfo outerClusterCreateInfo) {
-
-        ClusterCreateInfo clusterCreateInfo = transform(outerClusterCreateInfo, DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
-
-        logger.info("[createCluster]{}", clusterCreateInfo);
-        Map<String, DcClusterModel> dcName2DcClusterModelMap = new LinkedHashMap<>();
-        try {
-            clusterCreateInfo.check();
-
-            ClusterTbl clusterTbl = clusterService.find(clusterCreateInfo.getClusterName());
-            if (clusterTbl != null) {
-                return RetMessage.createFailMessage(String.format("cluster:%s already exist", clusterCreateInfo.getClusterName()));
-            }
-
-            for (String dcName : clusterCreateInfo.getDcs()) {
-                DcTbl dcTbl = dcService.find(dcName);
-                if (dcTbl == null) {
-                    return RetMessage.createFailMessage("dc not exist:" + dcName);
-                }
-                DcModel dcModel = new DcModel();
-                dcModel.setDc_name(dcName);
-                dcName2DcClusterModelMap.put(dcName, new DcClusterModel().setDc(dcModel)
-                        .setDcCluster(new DcClusterTbl()));
-            }
-            if(clusterCreateInfo.getDcDetails() != null) {
-                for (DcDetailInfo dcDetail : clusterCreateInfo.getDcDetails()) {
-                    String dcId = dcDetail.getDcId();
-                    if(!dcName2DcClusterModelMap.containsKey(dcId)) {
-                        return RetMessage.createFailMessage("dcs not contains dc detail info :" + dcDetail);
-                    }
-                    DcClusterTbl dcClusterTbl = dcName2DcClusterModelMap.get(dcId).getDcCluster();
-                    dcClusterTbl.setGroupName(dcDetail.getDcGroupName());
-                    if(dcDetail.getDcGroupType() != null) {
-                        dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetail.getDcGroupType()).toString());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-        List<DcClusterModel> dcClusters = new LinkedList<>(dcName2DcClusterModelMap.values());
-
-        ClusterModel clusterModel = new ClusterModel();
-        ClusterType clusterType = ClusterType.lookup(clusterCreateInfo.getClusterType());
-        OrganizationTbl organizationTbl;
-        try {
-            organizationTbl = getOrganizationTbl(clusterCreateInfo);
-            clusterCreateInfo.check();
-        } catch (Exception e) {
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-
-        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcService.find(clusterCreateInfo.getDcs().get(0)).getId();
-        clusterModel.setClusterTbl(new ClusterTbl()
-                .setActivedcId(activeDcId)
-                .setClusterName(clusterCreateInfo.getClusterName())
-                .setClusterType(clusterCreateInfo.getClusterType())
-                .setClusterDescription(clusterCreateInfo.getDesc())
-                .setClusterAdminEmails(clusterCreateInfo.getClusterAdminEmails())
-                .setOrganizationInfo(organizationTbl)
-                .setClusterOrgName(organizationTbl.getOrgName())
-        );
-
-
-        try {
-            clusterModel.setDcClusters(dcClusters);
-            clusterService.createCluster(clusterModel);
-            return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
-
-    //synchronizelly delete cluster, including meta server
-    @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
-    public RetMessage deleteCluster(@PathVariable String clusterName, @RequestParam(defaultValue = "true") boolean checkEmpty) {
-        logger.info("[deleteCluster]{}", clusterName);
-        try {
-            List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
-            if (checkEmpty) {
-                for (DcTbl dcTbl: dcTbls) {
-                    String dcName = dcTbl.getDcName();
-                    List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
-                    if (!redises.isEmpty()) {
-                        logger.info("[deleteCluster][{}] check empty fail for dc {}", clusterName, dcName);
-                        return RetMessage.createFailMessage("cluster not empty in dc " + dcName);
-                    }
-                }
-            }
-
-            clusterService.deleteCluster(clusterName);
-            return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[deleteCluster]", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        } finally {
-            logger.info("[deleteCluster][end]");
-        }
-
-    }
-
-    private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {
-        Long organizationId = clusterCreateInfo.getOrganizationId();
-        if(organizationId == null) {
-            throw new IllegalStateException("organizationId is required");
-        }
-        OrganizationTbl organizationTbl = organizationService
-            .getOrganizationTblByCMSOrganiztionId(organizationId);
-        // If not exists, pull from cms first
-        if(organizationTbl == null) {
-            organizationService.updateOrganizations();
-            organizationTbl = organizationService
-                .getOrganizationTblByCMSOrganiztionId(organizationId);
-            if(organizationTbl == null) {
-                throw new IllegalStateException("Organization Id: " + organizationId + ", could not be found");
-            }
-        }
-        return organizationTbl;
-
-    }
-
-    private ClusterCreateInfo transform(ClusterCreateInfo clusterCreateInfo, DC_TRANSFORM_DIRECTION direction) {
-
-        List<String> dcs = clusterCreateInfo.getDcs();
-        List<String> trans = new LinkedList<>();
-
-        for (String dc : dcs) {
-
-            String transfer = direction.transform(dc);
-            if (!Objects.equals(transfer, dc)) {
-                logger.info("[transform]{}->{}", dc, transfer);
-            }
-            trans.add(transfer);
-        }
-        clusterCreateInfo.setDcs(trans);
-        return clusterCreateInfo;
-    }
-
-    @RequestMapping(value = "/cluster", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage updateCluster(@RequestBody ClusterCreateInfo clusterInfo) {
-        return updateSingleCluster(clusterInfo);
-    }
-
-    @RequestMapping(value = "/cluster/exchangename", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage clusterExchangeName(@RequestBody ClusterExchangeNameInfo exchangeNameInfo) {
-        ClusterTbl formerClusterTbl = null;
-        ClusterTbl latterClusterTbl = null;
-
-        try {
-            exchangeNameInfo.check();
-            if (!exchangeNameInfo.getToken().equals(config.getOuterClientToken()))
-                return RetMessage.createFailMessage("token error");
-
-            formerClusterTbl = clusterService.find(exchangeNameInfo.getFormerClusterName());
-            if (formerClusterTbl == null) {
-                return RetMessage.createFailMessage("former cluster not exist");
-            }
-
-            if (formerClusterTbl.getId() != exchangeNameInfo.getFormerClusterId()) {
-                return RetMessage.createFailMessage("former cluster id & name not match");
-            }
-
-            latterClusterTbl = clusterService.find(exchangeNameInfo.getLatterClusterName());
-            if (latterClusterTbl == null) {
-                return RetMessage.createFailMessage("latter cluster not exist");
-            }
-
-            if (latterClusterTbl.getId() != exchangeNameInfo.getLatterClusterId()) {
-                return RetMessage.createFailMessage("latter cluster id & name not match");
-            }
-
-            TransactionMonitor.DEFAULT.logTransaction(TYPE, "exchangename", new Task<Object>() {
-                @Override
-                public void go() {
-                    clusterService.exchangeName(exchangeNameInfo.getFormerClusterId(),
-                            exchangeNameInfo.getFormerClusterName(),
-                            exchangeNameInfo.getLatterClusterId(),
-                            exchangeNameInfo.getLatterClusterName());
-                }
-
-                @Override
-                public Map<String, Object> getData() {
-                    return new HashMap<String, Object>() {{
-                        put("formerClusterDbId", exchangeNameInfo.getFormerClusterId());
-                        put("formerClusterId", exchangeNameInfo.getFormerClusterName());
-                        put("latterClusterDbId", exchangeNameInfo.getLatterClusterId());
-                        put("latterClusterId", exchangeNameInfo.getLatterClusterName());
-                    }};
-                }
-            });
-        } catch (CheckFailException cfe) {
-            logger.error("[clusterExchangeName][checkFail] {}", exchangeNameInfo, cfe);
-            return RetMessage.createFailMessage(cfe.getMessage());
-        } catch (Exception e) {
-            logger.error("[clusterExchangeName][fail] {}", exchangeNameInfo, e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-
-        return RetMessage.createSuccessMessage();
-    }
-
-    @RequestMapping(value = "/clusters", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage updateClusters(@RequestBody List<ClusterCreateInfo> clusterInfos) {
-        for(ClusterCreateInfo clusterCreateInfo : clusterInfos) {
-            RetMessage retMessage = updateSingleCluster(clusterCreateInfo);
-            if(ObjectUtils.equals(retMessage.getState(), RetMessage.FAIL_STATE))
-                return retMessage;
-        }
-        return RetMessage.createSuccessMessage();
-    }
-
-    private Long getOrganizationId(ClusterCreateInfo clusterCreateInfo) {
-        OrganizationTbl organizationTbl = getOrganizationTbl(clusterCreateInfo);
-        Long id = organizationTbl.getId();
-        return id == null ? 0L : id;
-    }
-
-    private RetMessage updateSingleCluster(ClusterCreateInfo clusterInfo) {
-        boolean needUpdate = false;
-        try {
-            ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterName());
-            if(clusterTbl == null) {
-                String message = String.format("cluster not found: %s", clusterInfo.getClusterName());
-                return RetMessage.createFailMessage(message);
-            }
-            Long clusterOrgId = getOrganizationId(clusterInfo);
-            if(!ObjectUtils.equals(clusterTbl.getClusterOrgId(), clusterOrgId)) {
-                needUpdate = true;
-                clusterTbl.setClusterOrgId(clusterOrgId);
-            }
-            if(!ObjectUtils.equals(clusterTbl.getClusterAdminEmails(), clusterInfo.getClusterAdminEmails())) {
-                needUpdate = true;
-                clusterTbl.setClusterAdminEmails(clusterInfo.getClusterAdminEmails());
-            }
-            if(needUpdate) {
-                clusterService.update(clusterTbl);
-            } else {
-                String message = String.format("No field changes for cluster: %s", clusterInfo.getClusterName());
-                return RetMessage.createSuccessMessage(message);
-            }
-        } catch (Exception e) {
-            logger.error("{}", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-        return RetMessage.createSuccessMessage();
-    }
-
-    @RequestMapping(value = "/clusters", method = RequestMethod.GET)
-    public List<ClusterCreateInfo> getClusters(
-            @RequestParam(required=false, defaultValue = "one_way", name = "type") String clusterType) throws CheckFailException {
-        if (!ClusterType.isTypeValidate(clusterType)) {
-            throw new CheckFailException("unknow cluster type " + clusterType);
-        }
-
-        logger.info("[getClusters]");
-
-        List<ClusterTbl> allClusters = clusterService.findClustersWithOrgInfoByClusterType(clusterType);
-
-        List<DcClusterTbl> dcClusters = dcClusterService.findAllDcClusters();
-        Map<Long, List<DcClusterTbl>> dcClusterId2DcClusterMap = new HashMap<>();
-        dcClusters.forEach(dcClusterTbl -> dcClusterId2DcClusterMap.computeIfAbsent(dcClusterTbl.getClusterId(),
-                ignore-> new LinkedList<>()).add(dcClusterTbl));
-
-        List<ClusterCreateInfo> result = new LinkedList<>();
-        allClusters.forEach(clusterTbl -> {
-            result.add(ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, dcClusterId2DcClusterMap));
-        });
-
-        return transformFromInner(result);
-    }
-
-    @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public ClusterCreateInfo getCluster(@PathVariable String clusterName) {
-
-        logger.info("[getCluster]{}", clusterName);
-
-        ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
-        List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
-        Map<Long, List<DcClusterTbl>> clusterId2DcClusterTblsMap = new HashMap<>();
-        clusterId2DcClusterTblsMap.put(clusterTbl.getId(), dcClusterTbls);
-        ClusterCreateInfo clusterCreateInfo = ClusterCreateInfo.fromClusterTbl(clusterTbl, dcService, clusterId2DcClusterTblsMap);
-
-        return transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER);
-    }
-
-    private List<ClusterCreateInfo> transformFromInner(List<ClusterCreateInfo> source) {
-
-        List<ClusterCreateInfo> results = new LinkedList<>();
-        source.forEach(clusterCreateInfo -> results.add(transform(clusterCreateInfo, DC_TRANSFORM_DIRECTION.INNER_TO_OUTER)));
-        return results;
-    }
-
-    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public RetMessage createShards(@PathVariable String clusterName, @RequestBody List<ShardCreateInfo> shards) {
 
         logger.info("[createShards]{}, {}", clusterName, shards);
@@ -624,25 +342,35 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName,
-                    redisCreateInfo.getRedisAddresses());
-            addKeepers(clusterTbl, shardTbl, redisCreateInfos);
+            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses());
         }
+        addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }
 
     protected void addKeepers(ClusterTbl clusterTbl, ShardTbl shardTbl, List<RedisCreateInfo> redisCreateInfos) throws Exception {
         if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
             Map<String, DcClusterTbl> dcName2DcClusterTbl = new HashMap<>();
+            Map<String, AzGroupClusterEntity> az2AzGroupClusterMap = new HashMap<>();
+
+            List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+            for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                for (String az : azGroup.getAzs()) {
+                    az2AzGroupClusterMap.put(az.toUpperCase(), azGroupCluster);
+                }
+            }
 
             for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
                 String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
                 String clusterName = clusterTbl.getClusterName();
                 DcClusterTbl dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(), ignore-> dcClusterService.find(dcId, clusterName));
-
                 if (dcClusterTbl == null) {
                     throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
                 }
-                if(DcGroupType.isNullOrDrMaster(dcClusterTbl.getGroupType())) {
+
+                AzGroupClusterEntity azGroupCluster = az2AzGroupClusterMap.get(dcId.toUpperCase());
+                if (azGroupCluster == null
+                    || !ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
                     doAddKeepers(dcId, clusterName, shardTbl, dcId);
                 }
             }
@@ -697,61 +425,6 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
-    @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
-    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName, @RequestBody Optional<DcDetailInfo> dcDetailInfoOptional) {
-        logger.info("[bindDc]{},{},{}", clusterName, dcName, dcDetailInfoOptional);
-
-        ClusterTbl clusterTbl = clusterService.find(clusterName);
-        DcTbl dcTbl = dcService.findByDcName(dcName);
-        if (null == dcTbl || null == clusterTbl) {
-            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
-        }
-        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
-        if (dcTbls.stream().anyMatch(dc -> dc.getId() == dcTbl.getId())) {
-            return RetMessage.createFailMessage("cluster has already contain dc " + dcName);
-        }
-        DcClusterTbl dcClusterTbl = new DcClusterTbl()
-                .setClusterName(clusterName)
-                .setDcName(dcName);
-        if(dcDetailInfoOptional.isPresent()){
-            DcDetailInfo dcDetailInfo = dcDetailInfoOptional.get();
-            if(dcDetailInfo.getDcGroupType() != null){
-                dcClusterTbl.setGroupType(ClusterCreateInfo.outerGroupType2InnerGroupType(dcDetailInfo.getDcGroupType()).toString());
-            }
-            dcClusterTbl.setGroupName(dcDetailInfo.getDcGroupName());
-        }
-        clusterService.bindDc(dcClusterTbl);
-
-        return RetMessage.createSuccessMessage();
-    }
-
-    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
-    public RetMessage unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
-        logger.info("[unbindDc]{}, {}", clusterName, dcName);
-        ClusterTbl clusterTbl = clusterService.find(clusterName);
-        DcTbl dcTbl = dcService.findByDcName(dcName);
-        if (null == dcTbl || null == clusterTbl) {
-            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
-        }
-
-        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
-        if (dcTbls.stream().noneMatch(dc -> dc.getId() == dcTbl.getId())) {
-            return RetMessage.createFailMessage("cluster doesn't contain dc " + dcName);
-        }
-        if (clusterTbl.getActivedcId() == dcTbl.getId()) {
-            return RetMessage.createFailMessage("not allow unbind active dc");
-        }
-
-        List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
-        if (!redises.isEmpty()) {
-            logger.info("[unbindDc][{}] check empty fail for dc {}", clusterName, dcName);
-            return RetMessage.createFailMessage("cluster not empty in dc " + dcName);
-        }
-
-        clusterService.unbindDc(clusterName, dcName);
-        return RetMessage.createSuccessMessage();
-    }
-
     @VisibleForTesting
     protected int addAppliers(String dcId, String clusterName, ShardTbl shardTbl, long replDirectionId) {
 
@@ -786,22 +459,45 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @DalTransaction
     public void doCreateReplDirections(ClusterTbl clusterTbl, List<ReplDirectionInfoModel> replDirectionInfoModels) throws Exception {
-        Map<String, DcClusterTbl> dcName2DcClusterTblMap = new HashMap<>();
+        Set<String> replDcs = new HashSet<>();
+        for (ReplDirectionInfoModel model : replDirectionInfoModels) {
+            replDcs.add(model.getSrcDcName());
+            replDcs.add(model.getFromDcName());
+            replDcs.add(model.getToDcName());
+        }
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(clusterTbl.getId());
+        Set<String> clusterDcs = dcClusters.stream()
+            .map(dcCluster -> dcCache.find(dcCluster.getDcId()).getDcName())
+            .collect(Collectors.toSet());
+        if (!clusterDcs.containsAll(replDcs)) {
+            replDcs.removeAll(clusterDcs);
+            throw new CheckFailException(
+                String.format("dcs %s not exist in cluster %s", replDcs, clusterTbl.getClusterName()));
+        }
+
+        Map<String, AzGroupClusterEntity> az2AzGroupClusterMap = new HashMap<>();
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            for (String az : azGroup.getAzs()) {
+                az2AzGroupClusterMap.put(az, azGroupCluster);
+            }
+        }
+
         ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
         for (ReplDirectionInfoModel replDirectionInfoModel : replDirectionInfoModels) {
             ReplDirectionTbl replDirectionTbl = replDirectionService.addReplDirectionByInfoModel(clusterTbl.getClusterName(), replDirectionInfoModel);
             List<ShardTbl> allSrcDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getSrcDcId(), clusterTbl.getId());
             List<ShardTbl> allToDcShards = shardService.findAllShardByDcCluster(replDirectionTbl.getToDcId(), clusterTbl.getId());
-            DcClusterTbl dcClusterTbl = dcName2DcClusterTblMap.computeIfAbsent(replDirectionInfoModel.getFromDcName().toUpperCase(), ignore -> dcClusterService.find(replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
-            if(dcClusterTbl == null) {
-               throw new CheckFailException(String.format("dc %s not exist in cluster %s", replDirectionInfoModel.getFromDcName(), clusterTbl.getClusterName()));
-            }
-            if(null!=allSrcDcShards && !allSrcDcShards.isEmpty()) {
+
+            AzGroupClusterEntity azGroupCluster = az2AzGroupClusterMap.get(replDirectionInfoModel.getFromDcName());
+            if (!CollectionUtils.isEmpty(allSrcDcShards)) {
                 for (ShardTbl shardTbl : allSrcDcShards) {
-                    if(null!=allToDcShards && !allToDcShards.isEmpty()) {
+                    if (!CollectionUtils.isEmpty(allToDcShards)) {
                         addAppliers(replDirectionInfoModel.getToDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionTbl.getId());
                     }
-                    if(clusterType.supportKeeper() && DcGroupType.isSameGroupType(dcClusterTbl.getGroupType(), DcGroupType.MASTER)) {
+                    if (clusterType.supportKeeper() && azGroupCluster != null && ClusterType.isSameClusterType(
+                        azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
                         doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
                     }
                 }

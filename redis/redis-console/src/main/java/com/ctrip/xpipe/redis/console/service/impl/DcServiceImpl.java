@@ -15,9 +15,11 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements DcService {
@@ -65,13 +67,13 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
-	public List<DcTbl> findAllDcNames() {
-		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
-			@Override
-			public List<DcTbl> doQuery() throws DalException {
-				return dao.findAllDcs(DcTblEntity.READSET_NAME);
-			}
-    	});
+	public List<String> findAllDcNames() {
+		List<DcTbl> dcs = queryHandler.handleQuery(() -> dao.findAllDcs(DcTblEntity.READSET_NAME));
+		if (CollectionUtils.isEmpty(dcs)) {
+			return Collections.emptyList();
+		}
+
+		return dcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
 	}
 
 	@Override
