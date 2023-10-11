@@ -20,7 +20,6 @@ public class App {
 	public static void main(String[] args){
 		System.setProperty("spring.profiles.active", AbstractProfile.PROFILE_NAME_PRODUCTION);
 		System.setProperty(HealthChecker.ENABLED, "true");
-		System.setProperty("DisableLoadProxyAgentJar", "true");
 		SpringApplication.run(App.class, args);
 	}
 }
