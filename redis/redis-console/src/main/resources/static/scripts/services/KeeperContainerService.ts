@@ -47,7 +47,7 @@ angular
         },
         get_overload_keepercontainer_migration_process: {
             method: 'GET',
-            url: '/console/keepercontainers/overload/migration/process',
+            url: '/console/keepercontainer/overload/migration/process',
             isArray: true
         },
         begin_to_migrate_overload_keepercontainer:{

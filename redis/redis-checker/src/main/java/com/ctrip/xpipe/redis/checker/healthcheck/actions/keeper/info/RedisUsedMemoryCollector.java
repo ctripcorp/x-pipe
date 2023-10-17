@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.slf4j.Logger;
@@ -34,7 +33,9 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-
+        DefaultRedisInstanceInfo info = (DefaultRedisInstanceInfo) action.getActionInstance().getCheckInfo();
+        logger.debug("[stopWatch] DcClusterShard: {}", new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()));
+        dcClusterShardUsedMemory.remove(new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()));
     }
 
     public ConcurrentMap<DcClusterShard, Long> getDcClusterShardUsedMemory() {

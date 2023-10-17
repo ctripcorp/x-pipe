@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -37,11 +38,15 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
     @Mock
     private ThreadPoolExecutor executor;
 
+    @Mock
+    private FoundationService service;
+
+
     @Before
     public void before() {
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Map<String, KeeperContainerOverloadStandardModel> standards = Maps.newHashMap();
-        standards.put("jq", new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10));
+        standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10));
         Mockito.when(config.getKeeperContainerOverloadStandards()).thenReturn(standards);
         Mockito.doNothing().when(executor).execute(Mockito.any());
     }

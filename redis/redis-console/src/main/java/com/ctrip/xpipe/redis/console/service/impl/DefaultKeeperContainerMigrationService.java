@@ -36,6 +36,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
             logger.info("[beginMigrateKeeperContainers] has already begin!!");
             return;
         }
+        logger.debug("[beginMigrateKeeperContainers] begin migrate keeper containers {}", keeperContainerDetailModels);
         readyToMigrationKeeperContainers = keeperContainerDetailModels;
         Set<DcClusterShard> alreadyMigrateShards = new HashSet<>();
         for (MigrationKeeperContainerDetailModel keeperContainer : readyToMigrationKeeperContainers) {
@@ -51,9 +52,11 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
                 if (!alreadyMigrateShards.add(migrateShard)) continue;
-                shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                        keeperContainer.getTargetKeeperContainer().getKeeperIp(), srcKeeperContainerIp);
-                keeperContainer.migrateKeeperCompleteCountIncrease();
+                logger.debug("[beginMigrateKeeperContainers] begin migrate shard {} from srcKeeperContainer:{} to targetKeeperContainer:{}",
+                        migrateShard, srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp());
+                if (shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
+                        srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp()))
+                    keeperContainer.migrateKeeperCompleteCountIncrease();
             }
         }
         isBegin.set(false);

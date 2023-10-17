@@ -73,6 +73,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
    @Override
   public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) {
     List<RedisTbl> newKeepers = new ArrayList<>();
+   logger.debug("[migrateKeepers] origin keepers {} from cluster:{}, dc:{}, shard:{}",shardModel.getKeepers(), clusterName, dcName, shardModel.getShardTbl().getShardName());
     for (RedisTbl keeper : shardModel.getKeepers()) {
       if (!ObjectUtils.equals(keeper.getRedisIp(), srcKeeperContainerIp)) {
         newKeepers.add(keeper);
@@ -84,14 +85,17 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     }
 
     if (newKeepers.size() < 1) {
-      logger.info("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}",
+      logger.warn("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}",
               newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
       return newKeepers;
     }
 
     long alreadyUsedAzId = keeperContainerService.find(newKeepers.get(0).getKeepercontainerId()).getAzId();
     List<KeeperBasicInfo> bestKeepers = findBestKeepers(clusterName, dcName, targetKeeperContainerIp);
+    logger.debug("[migrateKeepers] best keepers {} from cluster:{}, dc:{}, shard:{}, targetKeeperContainerIp:{}, srcKeeperContainerIp:{}",
+            bestKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName(), targetKeeperContainerIp, srcKeeperContainerIp);
     for (KeeperBasicInfo keeperSelected : bestKeepers) {
+      logger.debug("[migrateKeepers] keeperSelected {} , result:{}",keeperSelected, ObjectUtils.equals(keeperSelected.getHost(), srcKeeperContainerIp));
       if (!ObjectUtils.equals(keeperSelected.getHost(), srcKeeperContainerIp)
               && keeperSelected.getKeeperContainerId() != newKeepers.get(0).getKeepercontainerId()
               && isDifferentAz(keeperSelected, alreadyUsedAzId, dcName)) {
@@ -102,6 +106,8 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         break;
       }
     }
+    logger.debug("[migrateKeepers] new keepers {} from cluster:{}, dc:{}, shard:{}",
+            newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
     return newKeepers;
   }
 

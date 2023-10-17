@@ -90,10 +90,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         if (currentDcId.equalsIgnoreCase(dcId)) {
+            DcMeta futureDcAllMeta = getCurrentDcMeta(dcId);
             KeeperContainerMetaComparator keeperContainerMetaComparator
-                    = new KeeperContainerMetaComparator(current, future, currentDcAllMeta, getCurrentDcMeta(dcId));
+                    = new KeeperContainerMetaComparator(current, future, currentDcAllMeta, futureDcAllMeta);
             keeperContainerMetaComparator.compare();
             keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
+            currentDcAllMeta = futureDcAllMeta;
         }
 
         comparator.accept(this);

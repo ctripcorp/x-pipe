@@ -2,25 +2,33 @@ package com.ctrip.xpipe.redis.console.model;
 
 public class KeeperContainerOverloadStandardModel {
 
-    private int peerDataOverload;
+    private long peerDataOverload;
 
-    private int flowOverload;
+    private long flowOverload;
 
-    public int getPeerDataOverload() {
+    public long getPeerDataOverload() {
         return peerDataOverload;
     }
 
-    public KeeperContainerOverloadStandardModel setPeerDataOverload(int peerDataOverload) {
+    public KeeperContainerOverloadStandardModel setPeerDataOverload(long peerDataOverload) {
         this.peerDataOverload = peerDataOverload;
         return this;
     }
 
-    public int getFlowOverload() {
+    public long getFlowOverload() {
         return flowOverload;
     }
 
-    public KeeperContainerOverloadStandardModel setFlowOverload(int flowOverload) {
+    public KeeperContainerOverloadStandardModel setFlowOverload(long flowOverload) {
         this.flowOverload = flowOverload;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "KeeperContainerOverloadStandardModel{" +
+                "peerDataOverload=" + peerDataOverload +
+                ", flowOverload=" + flowOverload +
+                '}';
     }
 }

@@ -37,6 +37,10 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzer.class);
 
+    private static final int DEFAULT_PEER_DATA_OVERLOAD = 474 * 1024 * 1024 * 1024;
+
+    private static final int DEFAULT_KEEPER_FLOW_OVERLOAD = 270 * 1024;
+
     @Autowired
     private ConsoleConfig config;
 
@@ -107,6 +111,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @VisibleForTesting
     void analyzeKeeperContainerUsedInfo(List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels) {
+        logger.debug("[analyzeKeeperContainerUsedInfo] newKeeperContainerUsedInfoModels: {}", newKeeperContainerUsedInfoModels);
         PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
                 (keeper1, keeper2) -> (int)(keeper1.getTotalInputFlow() - keeper2.getTotalInputFlow()));
         PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers = new PriorityQueue<>(newKeeperContainerUsedInfoModels.size(),
@@ -117,6 +122,13 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         });
 
         KeeperContainerOverloadStandardModel keeperContainerOverloadStandard = config.getKeeperContainerOverloadStandards().get(currentDc);
+        if (keeperContainerOverloadStandard == null) {
+            logger.warn("[analyzeKeeperContainerUsedInfo] keeperContainerOverloadStandard from dc {} is null," +
+                    " use default config", currentDc);
+            keeperContainerOverloadStandard = new KeeperContainerOverloadStandardModel()
+                    .setFlowOverload(DEFAULT_KEEPER_FLOW_OVERLOAD).setPeerDataOverload(DEFAULT_PEER_DATA_OVERLOAD);
+        }
+        logger.debug("[analyzeKeeperContainerUsedInfo] keeperContainerOverloadStandard: {}", keeperContainerOverloadStandard);
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         for (KeeperContainerUsedInfoModel keeperContainerUsedInfoModel : newKeeperContainerUsedInfoModels) {
             long overloadInputFlow = keeperContainerUsedInfoModel.getTotalInputFlow() - keeperContainerOverloadStandard.getFlowOverload();
@@ -166,11 +178,14 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         KeeperContainerUsedInfoModel target = null;
         MigrationKeeperContainerDetailModel keeperContainerDetailModel = null;
 
+        logger.debug("[analyzeKeeperContainerUsedInfo] src: {}, overlaodCause:{}, overloadData:{}, availableKeeperContainers:{} ",
+                src, isPeerDataOverload, overloadData, availableKeeperContainers);
+
         for (Map.Entry<DcClusterShard, Pair<Long, Long>> dcClusterShard : allDcClusterShards) {
             if (target == null ) {
                 target = availableKeeperContainers.poll();
                 if (target == null) {
-                    logger.warn("[getMigrationKeeperDetails] no available keeper containers {} for overload keeper container {}",
+                    logger.warn("[analyzeKeeperContainerUsedInfo] no available keeper containers {} for overload keeper container {}",
                             availableKeeperContainers, src);
                     CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, currentDc);
                     return result;
@@ -188,7 +203,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             long targetPeerData = target.getTotalRedisUsedMemory() + dcClusterShard.getValue().getValue();
             if (targetInputFlow > keeperContainerOverloadStandard.getFlowOverload()
                     || targetPeerData > keeperContainerOverloadStandard.getPeerDataOverload()) {
-                logger.debug("[getMigrationKeeperDetails] target keeper container {} can not add shard {}",
+                logger.debug("[analyzeKeeperContainerUsedInfo] target keeper container {} can not add shard {}",
                         target, dcClusterShard);
                 if (keeperContainerDetailModel.getMigrateKeeperCount() != 0) result.add(keeperContainerDetailModel);
                 target = null;
@@ -231,8 +246,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         return checkerIndexes;
     }
 
-    @VisibleForTesting
-    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels() {
+    @Override
+    public List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels() {
         return allKeeperContainerUsedInfoModels;
     }
 

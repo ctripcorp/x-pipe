@@ -37,7 +37,10 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-
+        KeeperInstanceInfo instanceInfo = (KeeperInstanceInfo) action.getActionInstance().getCheckInfo();
+        logger.debug("stopWatch: {}", new DcClusterShard(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId()));
+        hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .remove(new DcClusterShard(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId()));
     }
 
     public ConcurrentMap<String, Map<DcClusterShard, Long>> getHostPort2InputFlow() {

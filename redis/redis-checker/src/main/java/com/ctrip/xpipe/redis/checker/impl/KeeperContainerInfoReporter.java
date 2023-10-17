@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.Keeper
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -43,10 +44,11 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
 
     public KeeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector, CheckerConsoleService
-            checkerConsoleService, KeeperFlowCollector keeperFlowCollector) {
+            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config) {
         this.redisUsedMemoryCollector = redisUsedMemoryCollector;
         this.keeperFlowCollector = keeperFlowCollector;
         this.checkerConsoleService = checkerConsoleService;
+        this.config = config;
     }
 
     @PostConstruct
@@ -87,7 +89,8 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
         }
     }
 
-    private void reportKeeperContainerInfo() {
+    @VisibleForTesting
+    void reportKeeperContainerInfo() {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
             Map<String, Map<DcClusterShard, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
@@ -103,14 +106,19 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                 for (Map.Entry<DcClusterShard, Long> entry : inputFlowMap.entrySet()) {
                     totalInputFlow += entry.getValue();
                     Long redisUsedMemory = dcClusterShardUsedMemory.get(entry.getKey());
+                    if (redisUsedMemory == null) {
+                        logger.warn("[reportKeeperContainerInfo] redisUsedMemory is null, dcClusterShard: {}", entry.getKey());
+                        redisUsedMemory = 0L;
+                    }
                     totalRedisUsedMemory += redisUsedMemory;
 
                     detailInfo.put(entry.getKey(), new Pair<>(entry.getValue(), redisUsedMemory));
                 }
 
                 model.setDetailInfo(detailInfo).setTotalInputFlow(totalInputFlow).setTotalRedisUsedMemory(totalRedisUsedMemory);
+                result.add(model);
             });
-
+            logger.debug("[reportKeeperContainerInfo] result: {}", result);
             checkerConsoleService.reportKeeperContainerInfo(config.getConsoleAddress(), result, config.getClustersPartIndex());
         } catch (Throwable th) {
             logger.info("[reportKeeperContainerInfo] fail", th);

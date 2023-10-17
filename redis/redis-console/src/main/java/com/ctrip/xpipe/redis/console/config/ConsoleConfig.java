@@ -179,7 +179,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getMigrationResultReportIntervalMill();
 
-    boolean isAutoMigrateOverloadKeeperContainerOpen();
+	boolean isAutoMigrateOverloadKeeperContainerOpen();
 
 	long getAutoMigrateOverloadKeeperContainerIntervalMilli();
 

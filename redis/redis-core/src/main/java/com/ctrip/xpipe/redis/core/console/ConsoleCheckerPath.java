@@ -22,7 +22,7 @@ public class ConsoleCheckerPath {
 
     public static final String PATH_PUT_HEALTH_CHECK_RESULT = "/api/health/check/result";
 
-    public static final String PATH_PUT_KEEPER_CONTAINER_INFO_RESULT = "/api/keeperContainer/info/result/{index}";
+    public static final String PATH_POST_KEEPER_CONTAINER_INFO_RESULT = "/api/keeperContainer/info/result/{index}";
     
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 

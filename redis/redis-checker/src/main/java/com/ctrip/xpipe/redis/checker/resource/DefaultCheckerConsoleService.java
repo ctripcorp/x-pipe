@@ -96,9 +96,13 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
 
     @Override
     public void reportKeeperContainerInfo(String console, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels, int index) {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_PUT_KEEPER_CONTAINER_INFO_RESULT)
-                .buildAndExpand(index);
-        restTemplate.put(comp.toString(), keeperContainerUsedInfoModels);
+        try {
+            restTemplate.postForEntity(console + ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT,
+                    keeperContainerUsedInfoModels, RetMessage.class, index);
+
+        } catch (Throwable th) {
+            logger.error("report keeper used info fail : {}", index, th);
+        }
     }
 
     @VisibleForTesting

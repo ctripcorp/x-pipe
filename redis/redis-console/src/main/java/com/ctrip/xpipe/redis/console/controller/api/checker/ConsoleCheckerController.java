@@ -126,7 +126,7 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getHeteroShardsDelay()) delayService.updateHeteroShardsDelays(checkResult.getHeteroShardsDelay());
     }
 
-    @PutMapping(ConsoleCheckerPath.PATH_PUT_KEEPER_CONTAINER_INFO_RESULT)
+    @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
     public void reportHealthCheckResult(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
         logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
         if (keeperContainerUsedInfoModels == null || keeperContainerUsedInfoModels.isEmpty()) return;

@@ -95,4 +95,15 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
     public int hashCode() {
         return Objects.hash(srcKeeperContainer, targetKeeperContainer);
     }
+
+    @Override
+    public String toString() {
+        return "MigrationKeeperContainerDetailModel{" +
+                "srcKeeperContainer=" + srcKeeperContainer +
+                ", targetKeeperContainer=" + targetKeeperContainer +
+                ", migrateKeeperCount=" + migrateKeeperCount +
+                ", migrateKeeperCompleteCount=" + migrateKeeperCompleteCount +
+                ", migrateShards=" + migrateShards +
+                '}';
+    }
 }

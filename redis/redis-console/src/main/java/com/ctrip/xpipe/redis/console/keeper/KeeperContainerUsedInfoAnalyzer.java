@@ -12,4 +12,6 @@ public interface KeeperContainerUsedInfoAnalyzer {
     List<MigrationKeeperContainerDetailModel> getAllReadyToMigrationKeeperContainers();
 
     List<MigrationKeeperContainerDetailModel> getAllDcReadyToMigrationKeeperContainers();
+
+    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels();
 }

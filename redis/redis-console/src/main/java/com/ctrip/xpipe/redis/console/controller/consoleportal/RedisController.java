@@ -61,7 +61,8 @@ public class RedisController extends AbstractConsoleController {
             for (ShardModel shardModel : allShardModel) {
                 if (!shardModelService.migrateShardKeepers(model.getSrcKeeperContainer().getDcName(),
                         clusterTbl.getClusterName(), shardModel, model.getSrcKeeperContainer().getAddr().getHost(),
-                        model.getTargetKeeperContainer() == null ? null : model.getTargetKeeperContainer().getAddr().getHost())) {
+                        (model.getTargetKeeperContainer() == null || model.getTargetKeeperContainer().getAddr() == null)
+                                ? null : model.getTargetKeeperContainer().getAddr().getHost())) {
                     continue;
                 }
                 if (model.getMaxMigrationKeeperNum() != 0 && (++count) >= model.getMaxMigrationKeeperNum()) {

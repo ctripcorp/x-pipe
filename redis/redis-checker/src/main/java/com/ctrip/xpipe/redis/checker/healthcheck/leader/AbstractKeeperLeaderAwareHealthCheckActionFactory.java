@@ -24,8 +24,8 @@ public abstract class AbstractKeeperLeaderAwareHealthCheckActionFactory
     @Override
     protected void registerInstance(KeeperHealthCheckInstance instance) {
          ClusterType clusterType = instance.getCheckInfo().getClusterType();
-         //TODO add hetero type
-         if (clusterType.equals(ClusterType.ONE_WAY)
+
+         if ((clusterType.equals(ClusterType.ONE_WAY) || clusterType.equals(ClusterType.HETERO))
                  && AbstractKeeperLeaderAwareHealthCheckActionFactory.this instanceof KeeperSupport){
              registerTo(instance);
          }

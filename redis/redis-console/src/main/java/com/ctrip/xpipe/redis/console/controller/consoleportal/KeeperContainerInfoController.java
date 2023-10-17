@@ -96,7 +96,7 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     @RequestMapping(value = "/keepercontainer/overload/migration/stop", method = RequestMethod.POST)
     public RetMessage stopToMigrateOverloadKeeperContainers() {
         logger.info("stop to migrate over load keeper containers");
-        analyzer.getAllDcReadyToMigrationKeeperContainers();
+        keeperContainerMigrationService.stopMigrateKeeperContainers();
         return RetMessage.createSuccessMessage();
     }
 }
