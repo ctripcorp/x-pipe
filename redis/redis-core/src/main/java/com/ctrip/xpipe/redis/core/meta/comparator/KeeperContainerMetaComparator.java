@@ -8,6 +8,9 @@ import org.unidal.tuple.Triple;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @author yu
+ */
 public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparator {
 
     private DcMeta current, future, currentAllDcMeta, futureAllDcMeta;
@@ -99,7 +102,9 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
 
     private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
         if (redisMetas == null || redisMetas.isEmpty()) return null;
-        return redisMetas.stream().sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
+        return redisMetas.stream().filter(r -> !r.isMaster()).sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
                 .collect(Collectors.toList()).get(0);
     }
 }
+
+

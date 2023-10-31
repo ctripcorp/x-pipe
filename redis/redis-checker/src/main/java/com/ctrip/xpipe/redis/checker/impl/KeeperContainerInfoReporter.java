@@ -121,7 +121,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
             logger.debug("[reportKeeperContainerInfo] result: {}", result);
             checkerConsoleService.reportKeeperContainerInfo(config.getConsoleAddress(), result, config.getClustersPartIndex());
         } catch (Throwable th) {
-            logger.info("[reportKeeperContainerInfo] fail", th);
+            logger.error("[reportKeeperContainerInfo] fail", th);
         }
     }
 }

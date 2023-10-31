@@ -19,9 +19,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -109,10 +107,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         try {
             return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
                     .getDcs().get(dcId);
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Throwable th) {
+            logger.error("[getCurrentDcMeta] get dcMeta from dc {} fail", dcId, th);
         }
         return null;
     }
@@ -300,7 +296,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             } else if (added instanceof RedisMeta) {
                 addRedisOnlyForUsedMemory((RedisMeta) added);
             } else {
-                logger.debug("[visitAdded][do nothng]{}", added);
+                logger.debug("[visitAdded][do nothing]{}", added);
             }
         }
 
@@ -316,7 +312,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             } else if (removed instanceof RedisMeta){
                 removeRedisOnlyForUsedMemory((RedisMeta) removed);
             } else {
-                logger.debug("[visitRemoved][do nothng]{}", removed);
+                logger.debug("[visitRemoved][do nothing]{}", removed);
             }
         }
     }

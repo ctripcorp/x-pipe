@@ -220,7 +220,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
         if (redisMetas == null || redisMetas.isEmpty()) return null;
-        return redisMetas.stream().sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
+        return redisMetas.stream().filter(r -> !r.isMaster()).sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
                 .collect(Collectors.toList()).get(0);
     }
 
