@@ -713,6 +713,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getKeeperCheckerIntervalMilli() {
+        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 3600 * 1000);
+    }
+
+    @Override
     public int monitorUnregisterProtectCount() {
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
     }
@@ -767,7 +772,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public long getAutoMigrateOverloadKeeperContainerIntervalMilli() {
-        return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 12 * 60 * 60 * 1000L);
+        return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 10 * 60 * 1000L);
     }
 
     @Override

@@ -320,4 +320,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
         return new HashSet<>();
     }
 
+    @Override
+    public int getKeeperCheckerIntervalMilli() {
+        return 1000;
+    }
+
 }

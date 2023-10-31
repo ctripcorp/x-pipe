@@ -62,6 +62,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getKeeperCheckerIntervalMilli() {
+        return checkerConfig.getKeeperCheckerIntervalMilli();
+    }
+
+    @Override
     public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
         return checkerConfig.supportSentinelHealthCheck(clusterType, clusterName);
     }

@@ -23,4 +23,9 @@ public class RedisInfoAction extends AbstractInfoCommandAction<RedisInfoActionCo
     protected CommandFuture<String> executeRedisCommandForStats(Callbackable<String> callback) {
         return getActionInstance().getRedisSession().info("", callback);
     }
+
+    @Override
+    protected int getBaseCheckInterval() {
+        return getActionInstance().getHealthCheckConfig().getKeeperCheckerIntervalMilli();
+    }
 }

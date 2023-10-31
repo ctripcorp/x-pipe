@@ -53,6 +53,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getKeeperCheckerIntervalMilli() {
+        return config.getKeeperCheckerIntervalMilli();
+    }
+
+    @Override
     public int clusterCheckIntervalMilli() {
         return config.clusterCheckIntervalMilli();
     }

@@ -23,4 +23,9 @@ public class KeeperInfoStatsAction extends AbstractKeeperInfoCommand<KeeperInfoS
     protected CommandFuture<String> executeRedisCommandForStats(Callbackable<String> callback) {
         return getActionInstance().getRedisSession().infoStats(callback);
     }
+
+    @Override
+    protected int getBaseCheckInterval() {
+        return getActionInstance().getHealthCheckConfig().getKeeperCheckerIntervalMilli();
+    }
 }
