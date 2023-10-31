@@ -76,12 +76,47 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
     public void testLeaderSelect() throws Exception {
         keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
 
+        LeaderElector active = addKeeperZkNode(shardDbId, getZkClient(), keeper1);
+        LeaderElector backup = addKeeperZkNode(shardDbId, getZkClient(), keeper2);
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(currentMetaManager, times(2)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+        }));
+
+        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
+        Assert.assertEquals("1", activeKeeper.get().getId());
+    }
+
+    @Test
+    public void testPathSwitch() throws Exception {
+        keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
+
         LeaderElector active = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper1);
         LeaderElector backup = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper2);
         waitConditionUntilTimeOut(()->assertSuccess(()->{
             verify(currentMetaManager, times(2)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
 
+        // active switch to path for ids
+        active.stop();
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(currentMetaManager, times(3)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+        }));
+        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true)), surviveKeepers.get());
+        Assert.assertEquals("2", activeKeeper.get().getId());
+
+        active = addKeeperZkNode(shardDbId, getZkClient(), keeper1);
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(currentMetaManager, times(4)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+        }));
+        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true), MetaClone.clone(keeper1).setActive(false)), surviveKeepers.get());
+        Assert.assertEquals("2", activeKeeper.get().getId());
+
+        // backup switch to path for ids
+        backup.stop();
+        backup = addKeeperZkNode(shardDbId, getZkClient(), keeper2);
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(currentMetaManager, times(6)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+        }));
         Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
         Assert.assertEquals("1", activeKeeper.get().getId());
     }

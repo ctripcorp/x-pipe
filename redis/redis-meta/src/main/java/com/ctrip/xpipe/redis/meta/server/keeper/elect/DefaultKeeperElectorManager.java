@@ -67,6 +67,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			try {
                 List<PathChildrenCache> pathChildrenCaches = new ArrayList<>();
                 pathChildrenCaches.add(buildPathChildrenCacheByDbId(clusterDbId, shardDbId, client));
+				pathChildrenCaches.add(buildPathChildrenCacheByShard(shardDbId, client));
 
 				ReentrantLock lock = new ReentrantLock();
 				pathChildrenCaches.forEach(pathChildrenCache -> {
@@ -129,6 +130,13 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		logger.info("[observerShardLeader][add PathChildrenCache]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, leaderLatchPath);
 		return new PathChildrenCache(client, leaderLatchPath, true,
 				XpipeThreadFactory.create(String.format("PathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
+	}
+
+	private PathChildrenCache buildPathChildrenCacheByShard(Long shardDbId, CuratorFramework client) {
+		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(shardDbId);
+		logger.info("[observerShardLeader][add PathChildrenCache]shard_{}, {}", shardDbId, leaderLatchPath);
+		return new PathChildrenCache(client, leaderLatchPath, true,
+				XpipeThreadFactory.create(String.format("PathChildrenCache:shard_%d", shardDbId)));
 	}
 
 	private List<List<ChildData>> aggregateChildData(List<PathChildrenCache> pathChildrenCaches) {
