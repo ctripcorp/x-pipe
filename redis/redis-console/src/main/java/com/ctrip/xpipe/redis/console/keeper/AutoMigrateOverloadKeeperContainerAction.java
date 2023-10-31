@@ -59,6 +59,10 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
                     logger.warn("[migrateAllKeepers] migrate shard keepers failed, shard: {}", migrateShard);
                     continue;
                 }
+                // TODO song_yu 删除已迁移的分片, 该定时任务时间调整为10min
+                // TODO song_yu  迁移keeper增加cat打点
+                // TODO 增加alertType 发邮件出来
+//                migrationKeeperContainerDetailModel.getMigrateShards().remove();
                 migrationKeeperContainerDetailModel.migrateKeeperCompleteCountIncrease();
 
             }

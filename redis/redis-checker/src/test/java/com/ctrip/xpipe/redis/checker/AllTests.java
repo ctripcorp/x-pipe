@@ -87,6 +87,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInsta
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
@@ -209,6 +211,9 @@ import org.junit.runners.Suite;
         RedisInfoActionFactoryTest.class,
         RedisInfoActionTest.class,
         RedisUsedMemoryCollectorTest.class,
+
+        DefaultKeeperSessionManagerTest.class,
+        DefaultRedisSessionManagerTest.class,
 
         DefaultHealthCheckConfigTest.class
 })

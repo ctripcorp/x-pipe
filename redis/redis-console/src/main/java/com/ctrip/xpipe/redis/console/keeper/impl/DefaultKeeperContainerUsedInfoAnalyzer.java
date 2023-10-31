@@ -89,15 +89,17 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public synchronized void updateKeeperContainerUsedInfo(int index, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
-        checkerIndexes.add(index);
-        allKeeperContainerUsedInfoModels.addAll(keeperContainerUsedInfoModels);
+        if (keeperContainerUsedInfoModels != null && !keeperContainerUsedInfoModels.isEmpty()){
+            allKeeperContainerUsedInfoModels.addAll(keeperContainerUsedInfoModels);
+        }
 
-        List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels;
+        checkerIndexes.add(index);
+
         if (checkerIndexes.size() < config.getClusterDividedParts()) {
             return;
         }
 
-        newKeeperContainerUsedInfoModels = Lists.newArrayList(allKeeperContainerUsedInfoModels);
+        List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels = Lists.newArrayList(allKeeperContainerUsedInfoModels);
         allKeeperContainerUsedInfoModels.clear();
         checkerIndexes.clear();
 
@@ -210,6 +212,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 keeperContainerDetailModel = null;
                 continue;
             }
+            //TODO song_yu 合并 model 暴露 addShard
             keeperContainerDetailModel.getMigrateShards().add(dcClusterShard.getKey());
             keeperContainerDetailModel.migrateKeeperCountIncrease();
             target.setTotalInputFlow(targetInputFlow).setTotalRedisUsedMemory(targetPeerData);

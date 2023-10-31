@@ -127,9 +127,10 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
+    //TODO song_yu 修改函数名
     public void reportHealthCheckResult(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
         logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
-        if (keeperContainerUsedInfoModels == null || keeperContainerUsedInfoModels.isEmpty()) return;
+
 
         keeperContainerUsedInfoCollector.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
     }

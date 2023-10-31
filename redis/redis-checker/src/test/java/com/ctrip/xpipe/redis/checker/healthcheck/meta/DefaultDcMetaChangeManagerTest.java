@@ -521,7 +521,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         ShardMeta shardMeta = future.findCluster("cluster1").getShards().get("shard1");
         List<RedisMeta> redises = shardMeta.getRedises();
         redises.clear();
-        redises.add(new RedisMeta().setIp("1.1.1.1").setPort(6379).setParent(shardMeta));
+        redises.add(new RedisMeta().setIp("1.1.1.1").setPort(6379).setParent(shardMeta).setMaster("127.0.0.1"));
         redises.add(new RedisMeta().setIp("2.2.2.2").setPort(6379).setParent(shardMeta));
         when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(new XpipeMeta().addDc(future));
         manager.compare(future);

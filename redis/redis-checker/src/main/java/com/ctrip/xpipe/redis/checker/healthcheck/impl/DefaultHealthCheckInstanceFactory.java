@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConf
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.KeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -52,6 +53,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private RedisSessionManager redisSessionManager;
 
+    private KeeperSessionManager keeperSessionManager;
+
     private List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories;
 
     private Map<ClusterType, List<RedisHealthCheckActionFactory<?>>> factoriesByClusterType;
@@ -67,7 +70,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager, List<RedisHealthCheckActionFactory<?>> factories,
+                                             RedisSessionManager redisSessionManager, KeeperSessionManager keeperSessionManager,
+                                             List<RedisHealthCheckActionFactory<?>> factories,
                                              List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              GroupCheckerLeaderElector clusterServer, MetaCache metaCache, DcRelationsService dcRelationsService) {
@@ -75,6 +79,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         this.dcRelationsService = dcRelationsService;
         this.endpointFactory = endpointFactory;
         this.redisSessionManager = redisSessionManager;
+        this.keeperSessionManager = keeperSessionManager;
         this.clusterServer = clusterServer;
         this.metaCache = metaCache;
         this.factoriesByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(factories);
@@ -84,12 +89,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager, List<RedisHealthCheckActionFactory<?>> factories,
+                                             RedisSessionManager redisSessionManager,  KeeperSessionManager keeperSessionManager,
+                                             List<RedisHealthCheckActionFactory<?>> factories,
                                              List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              MetaCache metaCache, DcRelationsService dcRelationsService) {
-        this(checkerConfig, endpointFactory, redisSessionManager, factories, keeperHealthCheckActionFactories,
-                clusterHealthCheckFactories, null, metaCache, dcRelationsService);
+        this(checkerConfig, endpointFactory, redisSessionManager, keeperSessionManager, factories,
+                keeperHealthCheckActionFactories, clusterHealthCheckFactories, null, metaCache, dcRelationsService);
     }
 
     @Override
@@ -190,7 +196,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(keeperMeta);
 
         instance.setEndpoint(endpoint)
-                .setSession(redisSessionManager.findOrCreateSession(endpoint))
+                .setSession(keeperSessionManager.findOrCreateSession(endpoint))
                 .setInstanceInfo(keeper)
                 .setHealthCheckConfig(config);
         initKeeperActions(instance);

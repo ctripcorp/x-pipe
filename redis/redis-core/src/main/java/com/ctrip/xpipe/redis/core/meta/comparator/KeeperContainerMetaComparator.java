@@ -80,7 +80,7 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         return current.getId();
     }
 
-    private Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
+    public static Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
         Map<Long, KeeperContainerDetailInfo> map = dcMeta.getKeeperContainers().stream()
                 .collect(Collectors.toMap(KeeperContainerMeta::getId,
                         keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<>(), new ArrayList<>())));
@@ -91,7 +91,8 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
                 shardMeta.getKeepers().forEach(keeperMeta -> {
                     if (map.containsKey(keeperMeta.getKeeperContainerId())) {
                         map.get(keeperMeta.getKeeperContainerId()).getKeeperInstances().add(keeperMeta);
-                        map.get(keeperMeta.getKeeperContainerId()).getRedisInstances().add(monitorRedis);
+                        if (monitorRedis != null)
+                            map.get(keeperMeta.getKeeperContainerId()).getRedisInstances().add(monitorRedis);
                     }
                 });
             }
@@ -100,10 +101,13 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         return map;
     }
 
-    private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
+    public static RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
         if (redisMetas == null || redisMetas.isEmpty()) return null;
-        return redisMetas.stream().filter(r -> !r.isMaster()).sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
-                .collect(Collectors.toList()).get(0);
+
+        List<RedisMeta> candidates = redisMetas.stream().filter(r -> !r.isMaster())
+                                                .sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
+                                                .collect(Collectors.toList());
+        return candidates.isEmpty() ? null : candidates.get(0);
     }
 }
 

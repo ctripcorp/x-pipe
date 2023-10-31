@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
@@ -21,17 +21,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
  * @author yu
  * <p>
- * 2023/9/28
+ * 2023/10/31
  */
 
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultRedisSessionManagerTest {
+public class DefaultKeeperSessionManagerTest {
 
     @InjectMocks
-    private DefaultRedisSessionManager sessionManager;
+    private DefaultKeeperSessionManager sessionManager;
 
     @Mock
     private CheckerConfig checkerConfig;
@@ -67,7 +69,7 @@ public class DefaultRedisSessionManagerTest {
     @Test
     public void getInUseRedises() {
         Set<HostPort> useRedises = sessionManager.getInUseInstances();
-        Assert.assertEquals(6, useRedises.size());
+        Assert.assertEquals(4, useRedises.size());
     }
 
 

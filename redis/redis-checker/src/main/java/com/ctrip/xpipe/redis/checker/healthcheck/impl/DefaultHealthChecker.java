@@ -16,19 +16,15 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import org.xml.sax.SAXException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getAllKeeperContainerDetailInfoFromDcMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
@@ -190,39 +186,12 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         try {
             return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
                     .getDcs().get(dcId);
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Throwable th) {
+            logger.error("[getCurrentDcMeta] get dc meta of dc {} fail", dcId, th);
         }
         return null;
     }
 
-    private Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
-        Map<Long, KeeperContainerDetailInfo> map = dcMeta.getKeeperContainers().stream()
-                .collect(Collectors.toMap(KeeperContainerMeta::getId,
-                        keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<>(), new ArrayList<>())));
-        allDcMeta.getClusters().values().forEach(clusterMeta -> {
-            for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
-                if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
-                RedisMeta monitorRedis = getMonitorRedisMeta(shardMeta.getRedises());
-                shardMeta.getKeepers().forEach(keeperMeta -> {
-                    if (map.containsKey(keeperMeta.getKeeperContainerId())) {
-                        map.get(keeperMeta.getKeeperContainerId()).getKeeperInstances().add(keeperMeta);
-                        map.get(keeperMeta.getKeeperContainerId()).getRedisInstances().add(monitorRedis);
-                    }
-                });
-            }
-        });
-
-        return map;
-    }
-
-    private RedisMeta getMonitorRedisMeta(List<RedisMeta> redisMetas) {
-        if (redisMetas == null || redisMetas.isEmpty()) return null;
-        return redisMetas.stream().filter(r -> !r.isMaster()).sorted((r1, r2) -> (r1.getIp().hashCode() - r2.getIp().hashCode()))
-                .collect(Collectors.toList()).get(0);
-    }
 
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
