@@ -212,9 +212,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 keeperContainerDetailModel = null;
                 continue;
             }
-            //TODO song_yu 合并 model 暴露 addShard
-            keeperContainerDetailModel.getMigrateShards().add(dcClusterShard.getKey());
-            keeperContainerDetailModel.migrateKeeperCountIncrease();
+            keeperContainerDetailModel.addReadyToMigrateShard(dcClusterShard.getKey());
             target.setTotalInputFlow(targetInputFlow).setTotalRedisUsedMemory(targetPeerData);
 
             if ((overloadData -= currentOverLoadData) <= 0) break;

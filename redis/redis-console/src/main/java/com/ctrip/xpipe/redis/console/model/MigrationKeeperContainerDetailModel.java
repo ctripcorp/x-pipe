@@ -31,6 +31,16 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
         this.migrateShards = migrateShards;
     }
 
+    public void addReadyToMigrateShard( DcClusterShard shard) {
+        migrateShards.add(shard);
+        migrateKeeperCount++;
+    }
+
+    public void migrateShardCompletion(DcClusterShard dcClusterShard) {
+        migrateShards.remove(dcClusterShard);
+        migrateKeeperCompleteCount++;
+    }
+
     public KeeperContainerUsedInfoModel getSrcKeeperContainer() {
         return srcKeeperContainer;
     }

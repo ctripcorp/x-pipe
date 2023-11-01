@@ -2,11 +2,6 @@
 <div class="col-md-12">
 
     <h3 class="header smaller lighter blue">
-
-<!--        <div class="col-md-6">-->
-<!--            <span > OverloadKeeperContainer </span>-->
-<!--            <span ng-if="operateType == 'migrating'"> >> 迁移中 </span>-->
-<!--        </div>-->
         <a>OverloadKeeperContainer</a>
         <span ng-if="operateType == 'migrating'"> >> 迁移中  </span>
     </h3>
@@ -41,12 +36,12 @@
 
                     <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcKeeperContainer.keeperIp}}</td>
                     <td data-title="'dc'" >{{info.srcKeeperContainer.dcName}}</td>
-                    <td data-title="'上游redis数据量'" >{{info.srcKeeperContainer.totalRedisUsedMemory}}</td>
-                    <td data-title="'流量'">{{info.srcKeeperContainer.totalInputFlow}}</td>
+                    <td data-title="'上游redis数据量(GB)'" >{{info.srcKeeperContainer.totalRedisUsedMemory / 1024 / 1024 / 1024}}</td>
+                    <td data-title="'流量(MB)'">{{info.srcKeeperContainer.totalInputFlow / 1024}}</td>
                     <td data-title="'待迁移的分片数'" >{{info.migrateKeeperCount}}</td>
                     <td data-title="'tagetKeeperContainer'" >{{info.targetKeeperContainer.keeperIp}}</td>
-                    <td data-title="'上游redis数据量'" >{{info.targetKeeperContainer.totalRedisUsedMemory}}</td>
-                    <td data-title="'流量'">{{info.targetKeeperContainer.totalInputFlow}}</td>
+                    <td data-title="'上游redis数据量(GB)'" >{{info.targetKeeperContainer.totalRedisUsedMemory / 1024 / 1024 / 1024}}</td>
+                    <td data-title="'流量(MB)'">{{info.targetKeeperContainer.totalInputFlow / 1024}}</td>
                 </tr>
             </table>
         </div>

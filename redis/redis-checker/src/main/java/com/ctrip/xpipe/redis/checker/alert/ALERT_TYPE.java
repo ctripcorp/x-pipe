@@ -570,7 +570,40 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("keepers should in different available zones", "keepers in the same available zone found");
         }
+    },
+    KEEPER_MIGRATION_SUCCESS("keeper migration success", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("keeper migration success", "keeper migration success");
+        }
+    },
+    KEEPER_MIGRATION_FAIL("keeper migration fail", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("keeper migration fail", "keeper migration fail");
+        }
     };
+
 
     private String simpleDesc;
 
