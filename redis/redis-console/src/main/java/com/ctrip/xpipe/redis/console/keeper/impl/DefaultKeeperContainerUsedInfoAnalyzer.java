@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +46,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Set<Integer> checkerIndexes = new HashSet<>();
+    private Map<Date, Integer> checkerIndexes = new TreeMap<>();
 
-    private List<KeeperContainerUsedInfoModel> allKeeperContainerUsedInfoModels = new ArrayList<>();
+    private Map<Integer, List<KeeperContainerUsedInfoModel>> allKeeperContainerUsedInfoModels = new HashMap<>();
 
     private List<MigrationKeeperContainerDetailModel> allDcKeeperContainerDetailModel = new ArrayList<>();
 
@@ -90,16 +89,17 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Override
     public synchronized void updateKeeperContainerUsedInfo(int index, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
         if (keeperContainerUsedInfoModels != null && !keeperContainerUsedInfoModels.isEmpty()){
-            allKeeperContainerUsedInfoModels.addAll(keeperContainerUsedInfoModels);
+            allKeeperContainerUsedInfoModels.put(index, keeperContainerUsedInfoModels);
         }
 
-        checkerIndexes.add(index);
+        Date currentTime = new Date();
+        checkerIndexes.put(currentTime, index);
+        removeExpireData(currentTime);
+        if (!checkDataIntegrity()) return;
 
-        if (checkerIndexes.size() < config.getClusterDividedParts()) {
-            return;
-        }
+        List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels = new ArrayList<>();
+        allKeeperContainerUsedInfoModels.values().forEach(newKeeperContainerUsedInfoModels::addAll);
 
-        List<KeeperContainerUsedInfoModel> newKeeperContainerUsedInfoModels = Lists.newArrayList(allKeeperContainerUsedInfoModels);
         allKeeperContainerUsedInfoModels.clear();
         checkerIndexes.clear();
 
@@ -109,6 +109,23 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 analyzeKeeperContainerUsedInfo(newKeeperContainerUsedInfoModels);
             }
         });
+    }
+
+    private void removeExpireData(Date currentTime) {
+        Iterator<Map.Entry<Date, Integer>> iterator = checkerIndexes.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Date, Integer> entry = iterator.next();
+            logger.warn("[removeExpireData] remove expire index:{} time:{}, expire time:{}", entry.getValue(), entry.getKey(), config.getKeeperCheckerIntervalMilli());
+            if (currentTime.getTime() - entry.getKey().getTime() > config.getKeeperCheckerIntervalMilli()) {
+                allKeeperContainerUsedInfoModels.remove(entry.getValue());
+                iterator.remove();
+            }
+            break;
+        }
+    }
+
+    private boolean checkDataIntegrity() {
+        return checkerIndexes.size() == config.getClusterDividedParts();
     }
 
     @VisibleForTesting
@@ -243,12 +260,12 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @VisibleForTesting
-    Set<Integer> getCheckerIndexes() {
+    Map<Date, Integer> getCheckerIndexes() {
         return checkerIndexes;
     }
 
     @Override
-    public List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels() {
+    public Map<Integer, List<KeeperContainerUsedInfoModel>> getAllKeeperContainerUsedInfoModels() {
         return allKeeperContainerUsedInfoModels;
     }
 

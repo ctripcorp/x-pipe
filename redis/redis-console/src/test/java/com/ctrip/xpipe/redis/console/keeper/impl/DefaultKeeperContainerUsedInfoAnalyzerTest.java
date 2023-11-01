@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author yu
@@ -48,6 +49,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
         Map<String, KeeperContainerOverloadStandardModel> standards = Maps.newHashMap();
         standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10));
         Mockito.when(config.getKeeperContainerOverloadStandards()).thenReturn(standards);
+        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(10 * 1000);
         Mockito.doNothing().when(executor).execute(Mockito.any());
     }
 
@@ -77,6 +79,36 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
         analyzer.updateKeeperContainerUsedInfo(1, models2);
         Assert.assertEquals(0, analyzer.getCheckerIndexes().size());
         Assert.assertEquals(0, analyzer.getAllKeeperContainerUsedInfoModels().size());
+    }
+
+    @Test
+    public void testUpdateKeeperContainerUsedInfoExpired() throws InterruptedException {
+        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
+        Map<DcClusterShard, Pair<Long, Long>> detailInfo1 = Maps.newHashMap();
+        detailInfo1.put(new DcClusterShard("jq", "cluster1", "shard1"), new Pair<>(2L, 2L));
+        detailInfo1.put(new DcClusterShard("jq", "cluster1", "shard2"), new Pair<>(3L, 3L));
+        detailInfo1.put(new DcClusterShard("jq", "cluster2", "shard1"), new Pair<>(4L, 4L));
+        detailInfo1.put(new DcClusterShard("jq", "cluster2", "shard2"), new Pair<>(5L, 5L));
+        model1.setDetailInfo(detailInfo1);
+        models1.add(model1);
+
+        analyzer.updateKeeperContainerUsedInfo(0, models1);
+        Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
+
+        TimeUnit.MILLISECONDS.sleep(11 * 1000);
+
+        List<KeeperContainerUsedInfoModel> models2 = new ArrayList<>();
+        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
+        Map<DcClusterShard, Pair<Long, Long>> detailInfo3 = Maps.newHashMap();
+        detailInfo3.put(new DcClusterShard("jq", "cluster3", "shard1"), new Pair<>(2L, 2L));
+        detailInfo3.put(new DcClusterShard("jq", "cluster4", "shard2"), new Pair<>(3L, 3L));
+        model3.setDetailInfo(detailInfo3);
+        models2.add(model3);
+
+        analyzer.updateKeeperContainerUsedInfo(1, models2);
+        Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
+        Assert.assertEquals(1, analyzer.getAllKeeperContainerUsedInfoModels().size());
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 
 import java.util.List;
+import java.util.Map;
 
 public interface KeeperContainerUsedInfoAnalyzer {
 
@@ -13,5 +14,5 @@ public interface KeeperContainerUsedInfoAnalyzer {
 
     List<MigrationKeeperContainerDetailModel> getAllDcReadyToMigrationKeeperContainers();
 
-    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModels();
+    Map<Integer, List<KeeperContainerUsedInfoModel>> getAllKeeperContainerUsedInfoModels();
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -26,6 +27,8 @@ public class KeeperContainerOverloadController extends AbstractConsoleController
 
     @RequestMapping(value = "/keepercontainer/overload/info/current", method = RequestMethod.GET)
     public List<KeeperContainerUsedInfoModel>  getCurrentReadyToMigrateKeeperContainers() {
-        return analyzer.getAllKeeperContainerUsedInfoModels();
+        List<KeeperContainerUsedInfoModel> result = new ArrayList<>();
+        analyzer.getAllKeeperContainerUsedInfoModels().values().forEach(result::addAll);
+        return result;
     }
 }
