@@ -56,7 +56,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
         logger.debug("[postConstruct] start");
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("KeeperContainerInfoReporter"));
         this.keeperContainerInfoReportTask = new DynamicDelayPeriodTask("KeeperContainerInfoReporter",
-                this::reportKeeperContainerInfo, config::getKeeperCheckerIntervalMilli, scheduled);
+                this::reportKeeperContainerInfo, () -> 2 * config.getKeeperCheckerIntervalMilli(), scheduled);
     }
 
     @PreDestroy

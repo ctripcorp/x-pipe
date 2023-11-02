@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -58,8 +59,13 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
             if (CollectionUtils.isEmpty(migrateShards)) continue;
 
             String srcKeeperContainerIp = migrationKeeperContainerDetailModel.getSrcKeeperContainer().getKeeperIp();
-            for (DcClusterShard migrateShard : migrateShards) {
-                if (!alreadyMigrateShards.add(migrateShard)) continue;
+            Iterator<DcClusterShard> iterator= migrateShards.iterator();
+            while (iterator.hasNext()) {
+                DcClusterShard migrateShard = iterator.next();
+                if (!alreadyMigrateShards.add(migrateShard)) {
+                    logger.info("[migrateAllKeepers] shard {} has already migrated, should not migrate in the same time", migrateShard);
+                    continue;
+                }
 
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
@@ -74,8 +80,8 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
 
                 alertForKeeperMigrationSuccess(migrateShard, srcKeeperContainerIp,
                         migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp());
-                migrationKeeperContainerDetailModel.migrateShardCompletion(migrateShard);
-
+                migrationKeeperContainerDetailModel.migrateKeeperCountIncrease();
+                iterator.remove();
             }
         }
     }

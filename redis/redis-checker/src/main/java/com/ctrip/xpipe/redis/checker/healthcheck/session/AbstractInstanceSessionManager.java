@@ -8,10 +8,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -21,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +27,6 @@ import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_SESSION_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getMonitorRedisMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
@@ -80,7 +77,7 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
                 try {
                     removeUnusedInstances();
                 } catch (Exception e) {
-                    logger.error("[removeUnusedRedises]", e);
+                    logger.error("[removeUnusedInstances]", e);
                 }
 
                 for(RedisSession redisSession : sessions.values()){
@@ -152,27 +149,29 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
         });
     }
 
-    public abstract Set<HostPort> getInUseInstances();
+    protected abstract Set<HostPort> getInUseInstances();
 
     @VisibleForTesting
-    protected void getSessionsForKeeper(DcMeta dcMeta, DcMeta allDcMeta, Set<HostPort> InstanceInUse, boolean isRedis) {
-        Set<Long> set = dcMeta.getKeeperContainers().stream().map(KeeperContainerMeta::getId).collect(Collectors.toSet());
+    protected Set<HostPort> getSessionsForKeeper(DcMeta dcMeta, DcMeta allDcMeta) {
+        Set<HostPort> instanceInUse = new HashSet<>();
+        Set<Long> keeperContainerSet = dcMeta.getKeeperContainers().stream().map(KeeperContainerMeta::getId).collect(Collectors.toSet());
+        if (allDcMeta == null || allDcMeta.getClusters() == null) return instanceInUse;
+
         allDcMeta.getClusters().values().forEach(clusterMeta -> {
             for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
                 if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
                 shardMeta.getKeepers().forEach(keeperMeta -> {
-                    if (set.contains(keeperMeta.getKeeperContainerId())) {
-                        RedisMeta monitorRedis;
-                        if (!isRedis) {
-                            InstanceInUse.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
-                        } else if ((monitorRedis = getMonitorRedisMeta(shardMeta.getRedises())) != null){
-                            InstanceInUse.add(new HostPort(monitorRedis.getIp(), monitorRedis.getPort()));
-                        }
+                    if (keeperContainerSet.contains(keeperMeta.getKeeperContainerId())) {
+                        HostPort monitorInstance = getMonitorInstance(shardMeta.getRedises(), keeperMeta);
+                        if (monitorInstance != null) instanceInUse.add(monitorInstance);
                     }
                 });
             }
         });
+        return instanceInUse;
     }
+
+    protected abstract HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper);
 
     protected DcMeta getCurrentDcAllMeta(String dcId) {
         try {

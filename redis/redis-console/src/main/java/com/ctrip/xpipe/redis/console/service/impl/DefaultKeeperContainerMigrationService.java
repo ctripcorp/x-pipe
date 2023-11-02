@@ -43,6 +43,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
             List<DcClusterShard> migrateShards = keeperContainer.getMigrateShards();
             if (CollectionUtils.isEmpty(migrateShards)) continue;
 
+
             String srcKeeperContainerIp = keeperContainer.getSrcKeeperContainer().getKeeperIp();
             for (DcClusterShard migrateShard : migrateShards) {
                 if (isStop.get() == true) {
@@ -51,7 +52,10 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                 }
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
-                if (!alreadyMigrateShards.add(migrateShard)) continue;
+                if (!alreadyMigrateShards.add(migrateShard)) {
+                    logger.info("[beginMigrateKeeperContainers] shard {} has already migrated, should not migrate in the same time", migrateShard);
+                    continue;
+                }
                 logger.debug("[beginMigrateKeeperContainers] begin migrate shard {} from srcKeeperContainer:{} to targetKeeperContainer:{}",
                         migrateShard, srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp());
                 if (shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,

@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getMonitorRedisMeta;
 
 /**
  * @author marsqing
@@ -21,11 +20,7 @@ import java.util.Set;
 public class DefaultRedisSessionManager extends AbstractInstanceSessionManager implements RedisSessionManager {
 
 	@Override
-	public Set<HostPort> getInUseInstances() {
-		return getInUseRedises();
-	}
-
-	private Set<HostPort> getInUseRedises() {
+	protected Set<HostPort> getInUseInstances() {
 		Set<HostPort> redisInUse = new HashSet<>();
 		List<DcMeta> dcMetas = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
 		if(dcMetas.isEmpty())	return null;
@@ -34,7 +29,7 @@ public class DefaultRedisSessionManager extends AbstractInstanceSessionManager i
 
 			if (dcMeta.getId().equalsIgnoreCase(currentDcId)) {
 				DcMeta currentDcAllMeta = getCurrentDcAllMeta(currentDcId);
-				getSessionsForKeeper(dcMeta, currentDcAllMeta, redisInUse, true);
+				redisInUse.addAll(getSessionsForKeeper(dcMeta, currentDcAllMeta));
 			}
 
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
@@ -46,5 +41,11 @@ public class DefaultRedisSessionManager extends AbstractInstanceSessionManager i
 			}
 		}
 		return redisInUse;
+	}
+
+	@Override
+	protected HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper) {
+		RedisMeta monitorRedisMeta = getMonitorRedisMeta(redises);
+		return monitorRedisMeta == null ? null : new HostPort(monitorRedisMeta.getIp(), monitorRedisMeta.getPort());
 	}
 }
