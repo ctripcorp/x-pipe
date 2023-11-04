@@ -50,7 +50,7 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
     protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
                                                         LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
-        return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, leaderElectorManager,
+        return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
                 keeperMonitorManager, resourceManager) {
             @Override
             public void endWriteRdb() {

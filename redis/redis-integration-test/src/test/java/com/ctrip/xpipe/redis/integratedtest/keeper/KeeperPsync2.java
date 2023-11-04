@@ -89,7 +89,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			partialError += redisKeeperServer.getKeeperMonitor().getKeeperStats().getPartialSyncErrorCount();
 		}
 		Assert.assertEquals(0, partialError);
-		Assert.assertEquals(expectedSyncCnt, full);
+		Assert.assertEquals(redisKeeperServers.size() - 1, full);
 	}
 
 	private void initKeepers() throws Exception {

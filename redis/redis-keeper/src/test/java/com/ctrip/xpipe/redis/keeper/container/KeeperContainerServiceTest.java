@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -46,6 +47,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
     private KeeperContainerService keeperContainerService;
     private ClusterId someClusterId;
     private ShardId someShardId;
+    private ReplId someReplId;
     private int somePort;
     private KeeperTransMeta someKeeperTransMeta;
     private KeeperMeta someKeeperMeta;
@@ -63,13 +65,13 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
         someClusterId = ClusterId.from(randomLong());
         someShardId = ShardId.from(randomLong());
+        someReplId = ReplId.from(randomLong());
         somePort = 6789;
 
         someKeeperMeta = new KeeperMeta();
         someKeeperMeta.setPort(somePort);
         someKeeperTransMeta = new KeeperTransMeta();
-        someKeeperTransMeta.setClusterDbId(someClusterId.id());
-        someKeeperTransMeta.setShardDbId(someShardId.id());
+        someKeeperTransMeta.setReplId(someReplId.id());
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
@@ -84,8 +86,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         RedisKeeperServer redisKeeperServer = keeperContainerService.add(someKeeperTransMeta);
 
         verify(componentRegistry, times(1)).add(redisKeeperServer);
-        assertEquals(someClusterId, redisKeeperServer.getClusterId());
-        assertEquals(someShardId, redisKeeperServer.getShardId());
+        assertEquals(someReplId, redisKeeperServer.getReplId());
         assertEquals(somePort, redisKeeperServer.getListeningPort());
     }
 

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 
 /**
@@ -59,8 +60,12 @@ public class MetaZkConfig {
 		return path;
 	}
 
-	public static String getKeeperLeaderLatchPath(long shardId){
-		return String.format("%s/repl_%d", getZkLeaderLatchRootPath(), shardId);
+	public static String getKeeperLeaderLatchPath(long replId){
+		return String.format("%s/repl_%d", getZkLeaderLatchRootPath(), replId);
+	}
+
+	public static String getKeeperLeaderLatchPath(ReplId replId){
+		return String.format("%s/%s", getZkLeaderLatchRootPath(), replId.toString());
 	}
 
 	public static String getKeeperLeaderLatchPath(long clusterDbId, long shardDbId) {

@@ -10,9 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;

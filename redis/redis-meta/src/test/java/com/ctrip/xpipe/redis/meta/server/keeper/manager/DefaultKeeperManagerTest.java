@@ -83,7 +83,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveKeeper));
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
-        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, metaKeeper));
+        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
         verify(keeperStateController, times(0)).removeKeeper(any());
     }
 
@@ -98,7 +98,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(0)).addKeeper(any());
-        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, surviveKeeper));
+        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper));
     }
 
     @Test

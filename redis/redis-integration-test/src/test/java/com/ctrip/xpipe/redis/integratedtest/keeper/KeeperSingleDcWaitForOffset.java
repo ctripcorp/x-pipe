@@ -20,7 +20,7 @@ public class KeeperSingleDcWaitForOffset extends AbstractKeeperIntegratedSingleD
     public void testMakeBackupActive() throws Exception {
 
         RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
-        Assert.assertEquals(PARTIAL_STATE.FULL, redisKeeperServer.getRedisMaster().partialState());
+        Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
 
         logger.info(remarkableMessage("make keeper active to wrong addr{}"), backupKeeper);
 

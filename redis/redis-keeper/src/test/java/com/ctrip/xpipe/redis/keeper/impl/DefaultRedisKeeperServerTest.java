@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import io.netty.channel.Channel;
@@ -221,8 +222,9 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	public void testKeeperServerInitState() throws Exception {
 
 		KeeperMeta keeperMeta = createKeeperMeta();
+		ReplId replId = getReplId();
 
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta);
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(replId.id(), keeperMeta);
 		redisKeeperServer.initialize();
 
 		Assert.assertEquals(KeeperState.UNKNOWN, redisKeeperServer.getRedisKeeperServerState().keeperState());
@@ -232,7 +234,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.dispose();
 
 
-		redisKeeperServer = createRedisKeeperServer(keeperMeta);
+		redisKeeperServer = createRedisKeeperServer(replId.id(), keeperMeta);
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_ACTIVE, redisKeeperServer.getRedisKeeperServerState().keeperState());
 
@@ -241,7 +243,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.dispose();
 
 
-		redisKeeperServer = createRedisKeeperServer(keeperMeta);
+		redisKeeperServer = createRedisKeeperServer(replId.id(), keeperMeta);
 		redisKeeperServer.initialize();
 		Assert.assertEquals(KeeperState.PRE_BACKUP, redisKeeperServer.getRedisKeeperServerState().keeperState());
 	}

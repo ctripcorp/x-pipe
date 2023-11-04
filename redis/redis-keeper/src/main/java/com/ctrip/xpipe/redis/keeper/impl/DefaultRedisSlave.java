@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
@@ -104,10 +105,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	private void initExecutor(Channel channel) {
 		
 		String threadPrefix = buildThreadPrefix(channel);
-		ClusterId clusterId = redisClient.getRedisServer().getClusterId();
-		ShardId shardId = redisClient.getRedisServer().getShardId();
-		psyncExecutor = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
-		scheduled = Executors.newScheduledThreadPool(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
+		ReplId replId = redisClient.getRedisServer().getReplId();
+		psyncExecutor = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, threadPrefix));
+		scheduled = Executors.newScheduledThreadPool(1, KeeperReplIdAwareThreadFactory.create(replId, threadPrefix));
 	}
 
 	protected String buildThreadPrefix(Channel channel) {

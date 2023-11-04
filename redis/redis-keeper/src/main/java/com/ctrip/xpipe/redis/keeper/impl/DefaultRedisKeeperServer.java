@@ -40,6 +40,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -126,6 +127,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private final ClusterId clusterId;
 	private final ShardId shardId;
+	private final ReplId replId;
 	private final File baseDir;
 	
 	private volatile RedisKeeperServerState redisKeeperServerState;
@@ -148,19 +150,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private RedisOpParser redisOpParser;
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
+	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
 
-		this(currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, null);
 	}
 
-	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
+	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager, RedisOpParser redisOpParser){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
+		this.replId = ReplId.from(replId);
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.baseDir = baseDir;
 		this.keeperConfig = keeperConfig;
@@ -172,14 +175,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
-		return new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor, redisOpParser);
+		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(keeperConfig, replId, currentKeeperMeta.getId(),
+				baseDir, keeperMonitor, redisOpParser).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
 	private LeaderElector createLeaderElector(){
 		
-		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
+		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(replId);
 		String leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(currentKeeperMeta);
 		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
 		return leaderElectorManager.createLeaderElector(ctx);
@@ -189,20 +193,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId,
+		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
 		
-		threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));
+		threadPoolName = String.format("keeper:%s", replId);
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
-		clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "RedisClient-" + threadPoolName));
-		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + threadPoolName));
-		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss-" + threadPoolName));
-		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-"+ threadPoolName));
-		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "master-" + threadPoolName));
-		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "rdbOnly-" + threadPoolName));
+		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
+		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
+		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "boss-" + threadPoolName));
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, KeeperReplIdAwareThreadFactory.create(replId, "work-"+ threadPoolName));
+		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "master-" + threadPoolName));
+		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "rdbOnly-" + threadPoolName));
 
 
 		this.resetReplAfterLongTimeDown();
@@ -505,6 +509,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public ReplId getReplId() {
+		return replId;
+	}
+
+	@Override
 	public String getKeeperRunid() {
 		
 		return this.currentKeeperMeta.getId();
@@ -595,7 +604,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void onFullSync(long masterRdbOffset) {
 		//alert full sync
-		String alert = String.format("FULL(S)->%s[%s,%s]", getRedisMaster().metaInfo(), getClusterId(), getShardId());
+		String alert = String.format("FULL(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
 		EventMonitor.DEFAULT.logAlertEvent(alert);
 
 	}
@@ -604,11 +613,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 		try {
 			if (isStartIndexing) {
-				EventMonitor.DEFAULT.logEvent("INDEX.START", clusterId + "." + shardId + " - " + gtidSet);
+				EventMonitor.DEFAULT.logEvent("INDEX.START", replId + " - " + gtidSet);
 				startIndexing();
 			}
 		} catch (Throwable t) {
-			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + clusterId + "." + shardId + " - " + gtidSet);
+			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + replId + " - " + gtidSet);
 		}
 	}
 
@@ -639,20 +648,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public ClusterId getClusterId() {
-		return this.clusterId;
-	}
-
-	@Override
-	public ShardId getShardId() {
-		return this.shardId;
-	}
-
-	@Override
 	public synchronized void setRedisKeeperServerState(final RedisKeeperServerState redisKeeperServerState){
 		
 		TransactionMonitor transactionMonitor = TransactionMonitor.DEFAULT;
-		String name = String.format("%s,%s,%s", clusterId, shardId, redisKeeperServerState);
+		String name = String.format("%s,%s", replId, redisKeeperServerState);
 		transactionMonitor.logTransactionSwallowException("setRedisKeeperServerState", name, new Task() {
 			
 			@Override
@@ -789,7 +788,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		logger.info("[startIndexing]{}, {}", this, rdbDumper.get());
 
 		if (indexingExecutors == null) {
-			indexingExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "Indexing-" + threadPoolName));
+			indexingExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "Indexing-" + threadPoolName));
 		}
 
 		isStartIndexing = true;
@@ -830,7 +829,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public KeeperInstanceMeta getKeeperInstanceMeta() {
-		return new KeeperInstanceMeta(clusterId, shardId, currentKeeperMeta);
+		return new KeeperInstanceMeta(replId, currentKeeperMeta);
 	}
 	
 	public KeeperConfig getKeeperConfig() {

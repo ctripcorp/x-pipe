@@ -26,7 +26,7 @@ public class KeeperServerTest extends AbstractRedisKeeperContextTest {
 
     @Test
     public void manual() throws Exception {
-        RedisKeeperServer redisKeeperServer = createRedisKeeperServer(createKeeperMeta(6000, "0"));
+        RedisKeeperServer redisKeeperServer = createRedisKeeperServer(getReplId().id(), createKeeperMeta(6000, "0"));
         redisKeeperServer.initialize();
         redisKeeperServer.start();
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.entity;
 
 import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 
 /**
@@ -15,8 +16,8 @@ public class KeeperInstanceMeta extends KeeperTransMeta{
 		
 	}
 
-	public KeeperInstanceMeta(ClusterId clusterId, ShardId shardId, KeeperMeta keeperMeta) {
-		super(clusterId.id(), shardId.id(), keeperMeta);
+	public KeeperInstanceMeta(ReplId replId, KeeperMeta keeperMeta) {
+		super(replId.id(), keeperMeta);
 	}
 
 }
