@@ -291,7 +291,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					channel.close();
 				}
 			}
-		}, replTimeoutMilli, replTimeoutMilli, TimeUnit.MILLISECONDS);
+		}, replTimeoutMilli, 10000, TimeUnit.MILLISECONDS);
 
 		channel.closeFuture().addListener(new ChannelFutureListener() {
 
