@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerMigrationService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,12 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @Autowired
     KeeperContainerService keeperContainerService;
+
+    @Autowired
+    KeeperContainerUsedInfoAnalyzer analyzer;
+
+    @Autowired
+    KeeperContainerMigrationService keeperContainerMigrationService;
 
     @RequestMapping(value = "/keepercontainer/infos/all", method = RequestMethod.GET)
     public List<KeeperContainerInfoModel> getAllKeeperContainerInfos() {
@@ -59,5 +68,35 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     public List<KeeperContainerInfoModel> getAvailableKeeperContainersByDcAzAndOrg(@PathVariable String dcName,
                         @PathVariable(required = false) String azName, @PathVariable(required = false) String orgName) {
         return keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg(dcName, azName, orgName);
+    }
+
+    @RequestMapping(value = "/keepercontainers/overload/all", method = RequestMethod.GET)
+    public List<MigrationKeeperContainerDetailModel> getAllOverloadKeeperContainers() {
+        return analyzer.getAllReadyToMigrationKeeperContainers();
+    }
+
+
+    @RequestMapping(value = "/keepercontainer/overload/migration/process", method = RequestMethod.GET)
+    public List<MigrationKeeperContainerDetailModel> getOverloadKeeperContainerMigrationProcess() {
+        return keeperContainerMigrationService.getMigrationProcess();
+    }
+
+    @RequestMapping(value = "/keepercontainer/overload/migration/begin", method = RequestMethod.POST)
+    public RetMessage beginToMigrateOverloadKeeperContainers(@RequestBody List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) {
+        logger.info("begin to migrate over load keeper containers {}", keeperContainerDetailModels);
+        try {
+            keeperContainerMigrationService.beginMigrateKeeperContainers(keeperContainerDetailModels);
+        } catch (Throwable th) {
+            logger.warn("migrate over load keeper containers {} fail by {}", keeperContainerDetailModels, th.getMessage());
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+        return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/keepercontainer/overload/migration/stop", method = RequestMethod.POST)
+    public RetMessage stopToMigrateOverloadKeeperContainers() {
+        logger.info("stop to migrate over load keeper containers");
+        keeperContainerMigrationService.stopMigrateKeeperContainers();
+        return RetMessage.createSuccessMessage();
     }
 }

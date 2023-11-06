@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -25,12 +26,16 @@ public interface CheckerConsoleService {
     XpipeMeta getXpipeMeta(String console, int clusterPartIndex) throws SAXException, IOException;
 
     XpipeMeta getXpipeAllMeta(String console) throws SAXException, IOException;
+
+    XpipeMeta getXpipeAllDCMeta(String console, String dcName) throws SAXException, IOException;
     
     List<ProxyTunnelInfo> getProxyTunnelInfos(String console);
 
     void ack(String console, CheckerStatus checkerStatus);
 
     void report(String console, HealthCheckResult result);
+
+    void reportKeeperContainerInfo(String console, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels, int index);
     
     boolean isClusterOnMigration(String console, String clusterId);
 

@@ -287,7 +287,7 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public Map<String, String> sentinelMasterConfig() {
-        return null;
+        return new HashMap<>();
     }
 
     @Override
@@ -318,6 +318,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public Set<String> getMigrationUnsupportedClusters() {
         return new HashSet<>();
+    }
+
+    @Override
+    public int getKeeperCheckerIntervalMilli() {
+        return 1000;
     }
 
 }

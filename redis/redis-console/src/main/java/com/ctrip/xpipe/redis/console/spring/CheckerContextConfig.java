@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
@@ -176,6 +178,13 @@ public class CheckerContextConfig {
                                                    @Value("${server.port}") int serverPort) {
         return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
                 crossMasterDelayManager, pingService, clusterHealthManager, serverPort);
+    }
+
+    @Bean
+    @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+    public KeeperContainerInfoReporter keeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector,
+           CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config) {
+        return new KeeperContainerInfoReporter(redisUsedMemoryCollector, checkerConsoleService, keeperFlowCollector, config);
     }
     
     @Bean(name = "ALLCHECKER")

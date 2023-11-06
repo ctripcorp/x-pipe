@@ -15,16 +15,16 @@ public class DefaultStabilityHolder implements StabilityHolder {
 
     private CheckerConfig config;
 
-    private boolean stable;
+    private boolean stable = true;
 
-    private long expiredAtMill;
+    private long expiredAtMill = 0L;
 
-    @Autowired
+    public DefaultStabilityHolder() {
+    }
+
     public DefaultStabilityHolder(StabilityInspector inspector, CheckerConfig config) {
         this.inspector = inspector;
         this.config = config;
-        this.stable = true;
-        this.expiredAtMill = 0L;
     }
 
     @Override
@@ -52,6 +52,16 @@ public class DefaultStabilityHolder implements StabilityHolder {
     public void setStaticStable(boolean stable, int ttl) {
         this.stable = stable;
         this.expiredAtMill = System.currentTimeMillis() + (ttl * 1000);
+    }
+
+    @Autowired
+    public void setInspector(StabilityInspector inspector) {
+        this.inspector = inspector;
+    }
+
+    @Autowired
+    public void setConfig(CheckerConfig config) {
+        this.config = config;
     }
 
     @Override
