@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.checker.model;
 
-import java.io.Serializable;
 import java.util.Objects;
 
-public class DcClusterShard implements Serializable {
-
-    protected static final String SPLITTER = ":";
+public class DcClusterShard {
 
     protected String dcId;
 
@@ -21,15 +18,6 @@ public class DcClusterShard implements Serializable {
         this.dcId = dcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
-    }
-
-    public DcClusterShard(String info) {
-        String[] split = info.split(SPLITTER);
-        if (split.length >= 3) {
-            this.dcId = split[0];
-            this.clusterId = split[1];
-            this.shardId = split[2];
-        }
     }
 
     public DcClusterShard setDcId(String dcId) {
@@ -71,11 +59,16 @@ public class DcClusterShard implements Serializable {
 
     @Override
     public int hashCode() {
+
         return Objects.hash(dcId, clusterId, shardId);
     }
 
     @Override
     public String toString() {
-        return getDcId() + SPLITTER + getClusterId() + SPLITTER + getShardId();
+        return "DcClusterShard{" +
+                "dcId='" + dcId + '\'' +
+                ", clusterId='" + clusterId + '\'' +
+                ", shardId='" + shardId + '\'' +
+                '}';
     }
 }

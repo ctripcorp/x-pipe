@@ -20,8 +20,6 @@ import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -120,11 +118,6 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	public PingService pingService() {
 		return new ConsoleCachedPingService();
-	}
-
-	@Bean
-	public KeeperContainerUsedInfoAnalyzer KeeperContainerUsedInfoAnalyzer() {
-		return new DefaultKeeperContainerUsedInfoAnalyzer();
 	}
 
 	@Bean

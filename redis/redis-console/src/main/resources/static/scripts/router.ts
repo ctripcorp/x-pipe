@@ -199,11 +199,6 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/keeper_migration.html',
             controller: 'KeeperMigrationCtl'
         })
-        .state('keeper_overload', {
-            url: '/keepercontainer_overload?type',
-            templateUrl: 'views/index/keepercontainer_overload.html',
-            controller: 'KeepercontainerOverloadCtl'
-        })
         .state('appliercontainer_list', {
             url: '/appliercontainers',
             templateUrl: 'views/index/appliercontainer_list.html',

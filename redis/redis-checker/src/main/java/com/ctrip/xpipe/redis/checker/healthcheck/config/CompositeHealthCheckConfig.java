@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.config;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import org.slf4j.Logger;
@@ -31,12 +30,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
         logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
     }
 
-    public CompositeHealthCheckConfig(KeeperInstanceInfo instanceInfo, CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
-        logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
-        config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
-        logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
-    }
-
     @Override
     public int instanceLongDelayMilli() {
         return config.instanceLongDelayMilli();
@@ -50,11 +43,6 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int checkIntervalMilli() {
         return config.checkIntervalMilli();
-    }
-
-    @Override
-    public int getKeeperCheckerIntervalMilli() {
-        return config.getKeeperCheckerIntervalMilli();
     }
 
     @Override

@@ -40,4 +40,3 @@ hs_err_pid*
 
 # npm
 node_modules
-*.js

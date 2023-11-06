@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public final class DcClusterShardPeer extends DcClusterShard implements Serializable {
+    private static final String SPLITTER = ":";
 
     private String peerDcId;
 

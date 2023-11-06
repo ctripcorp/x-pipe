@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
@@ -49,9 +48,6 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     @Autowired
     private MetaCache metaCache;
 
-    @Autowired
-    private CheckerConsoleService checkerConsoleService;
-
     private ScheduledFuture future;
 
     private ConcurrentMap<String, DcMetaChangeManager> dcMetaChangeManagers = Maps.newConcurrentMap();
@@ -92,8 +88,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
         return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
                     @Override
                     public DcMetaChangeManager create() {
-                        return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
-                                checkerConsoleService, checkerConfig);
+                        return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory);
                     }
                 });
     }

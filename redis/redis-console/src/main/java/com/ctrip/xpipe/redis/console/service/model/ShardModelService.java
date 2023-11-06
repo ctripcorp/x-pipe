@@ -18,6 +18,4 @@ public interface ShardModelService {
 
 	ShardModel getSourceShardModel(String clusterName, String srcDcName, String toDcName, String shardName);
 
-	boolean migrateShardKeepers(String dcName, String clusterName, ShardModel shardModel,
-								String srcKeeperContainerIp, String targetKeeperContainerIp);
 }

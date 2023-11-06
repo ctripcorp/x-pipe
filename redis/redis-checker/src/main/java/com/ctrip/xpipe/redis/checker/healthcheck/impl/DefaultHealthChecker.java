@@ -4,13 +4,11 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.KeeperContainerDetailInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +18,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getAllKeeperContainerDetailInfoFromDcMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
@@ -47,9 +43,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     @Autowired
     private CheckerConfig checkerConfig;
-
-    @Autowired
-    private CheckerConsoleService checkerConsoleService;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -120,16 +113,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
             }
-
-            if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
-                Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
-                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, getCurrentDcMeta(dcMeta.getId()));
-
-                keeperContainerDetailInfoMap.values().forEach(keeperContainerDetailInfo -> {
-                    generateHealthCheckInstances(keeperContainerDetailInfo);
-                });
-            }
-
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
 
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
@@ -145,15 +128,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 }
 
             }
-        }
-    }
-
-    private void generateHealthCheckInstances(KeeperContainerDetailInfo keeperContainerDetailInfo) {
-        for (KeeperMeta keeperMeta : keeperContainerDetailInfo.getKeeperInstances()) {
-            instanceManager.getOrCreate(keeperMeta);
-        }
-        for (RedisMeta redisMeta : keeperContainerDetailInfo.getRedisInstances()) {
-            instanceManager.getOrCreateRedisInstanceForAssignedAction(redisMeta);
         }
     }
 
@@ -181,17 +155,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
         return false;
     }
-
-    private DcMeta getCurrentDcMeta(String dcId) {
-        try {
-            return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
-                    .getDcs().get(dcId);
-        } catch (Throwable th) {
-            logger.error("[getCurrentDcMeta] get dc meta of dc {} fail", dcId, th);
-        }
-        return null;
-    }
-
 
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);

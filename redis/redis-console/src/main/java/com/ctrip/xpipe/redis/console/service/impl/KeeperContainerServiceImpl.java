@@ -22,7 +22,6 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Service
 public class KeeperContainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
@@ -51,16 +50,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       @Override
       public KeepercontainerTbl doQuery() throws DalException {
         return dao.findByPK(id, KeepercontainerTblEntity.READSET_FULL);
-      }
-    });
-  }
-
-  @Override
-  public KeepercontainerTbl find(final String ip) {
-    return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
-      @Override
-      public KeepercontainerTbl doQuery() throws DalException {
-        return dao.findByIp(ip, KeepercontainerTblEntity.READSET_FULL);
       }
     });
   }
@@ -437,20 +426,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       keeperContainerIdDcMap.put(keeperContainer.getKeyKeepercontainerId(), keeperContainer.getKeepercontainerDc());
     });
     return keeperContainerIdDcMap;
-  }
-
-  @Override
-  public List<Set<Long>> divideKeeperContainers(int partsCount) {
-    List<KeepercontainerTbl> all = findAll();
-    if (all == null) return Collections.emptyList();
-
-    List<Set<Long>> result = new ArrayList<>(partsCount);
-    IntStream.range(0, partsCount).forEach(i -> result.add(new HashSet<>()));
-
-    all.forEach(keeperContainer -> result.get((int) keeperContainer.getKeepercontainerId() % partsCount)
-            .add(keeperContainer.getKeepercontainerId()));
-
-    return result;
   }
 
 

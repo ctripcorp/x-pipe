@@ -8,11 +8,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author lishanglin
@@ -34,12 +30,6 @@ public class CheckerHealthController {
 
     @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
-
-    @Autowired
-    private RedisUsedMemoryCollector redisUsedMemoryCollector;
-
-    @Autowired
-    private KeeperFlowCollector keeperFlowCollector;
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
@@ -76,26 +66,6 @@ public class CheckerHealthController {
         return Codec.DEFAULT.encode(model);
     }
 
-    @RequestMapping(value = "/health/check/keeper/{ip}/{port}", method = RequestMethod.GET)
-    public String getHealthCheckKeeper(@PathVariable String ip, @PathVariable int port) {
-        KeeperHealthCheckInstance instance = instanceManager.findKeeperHealthCheckInstance(new HostPort(ip, port));
-        if(instance == null) {
-            return "Not found";
-        }
-        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
-        return Codec.DEFAULT.encode(model);
-    }
-
-    @RequestMapping(value = "/health/check/redis-for-assigned-action/{ip}/{port}", method = RequestMethod.GET)
-    public String getHealthCheckRedisInstanceForAssignedAction(@PathVariable String ip, @PathVariable int port) {
-        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForAssignedAction(new HostPort(ip, port));
-        if(instance == null) {
-            return "Not found";
-        }
-        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
-        return Codec.DEFAULT.encode(model);
-    }
-
     @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
     public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
         return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
@@ -110,16 +80,6 @@ public class CheckerHealthController {
     public Map<HostPort, HealthStatusDesc> getAllHealthStatusDesc() {
         if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getAllHealthStatus();
         else return Collections.emptyMap();
-    }
-
-    @GetMapping("/health/keeper/status/all")
-    public ConcurrentMap<String, Map<DcClusterShard, Long>> getAllKeeperFlows() {
-        return keeperFlowCollector.getHostPort2InputFlow();
-    }
-
-    @GetMapping("/health/redis/used-memory/all")
-    public ConcurrentMap<DcClusterShard, Long> getAllDclusterShardUsedMemory() {
-        return redisUsedMemoryCollector.getDcClusterShardUsedMemory();
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

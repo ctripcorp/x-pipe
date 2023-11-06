@@ -46,8 +46,6 @@ public class ShardModelServiceImpl implements ShardModelService{
 	private KeeperContainerService keeperContainerService;
     @Autowired
     private AzGroupClusterRepository azGroupClusterRepository;
-	@Autowired
-    private KeeperAdvancedService keeperAdvancedService;
 
     private static final Logger logger = LoggerFactory.getLogger(ShardModelServiceImpl.class);
 
@@ -220,35 +218,5 @@ public class ShardModelServiceImpl implements ShardModelService{
 			}
 		}
 	}
-
-	@Override
-	public boolean migrateShardKeepers(String dcName, String clusterName, ShardModel shardModel,
-                                       String srcKeeperContainerIp, String targetKeeperContainerIp) {
-        List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel,
-                                                                        srcKeeperContainerIp, targetKeeperContainerIp);
-        if (newKeepers == null) {
-            logger.debug("[migrateKeepers] no need to replace keepers");
-            return false;
-        }else if (newKeepers.size() == 2) {
-            return doMigrateKeepers(shardModel, newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
-        } else {
-            logger.info("[migrateKeepers] fail to migrate keepers with unexpected newKeepers {}", newKeepers);
-            return false;
-        }
-    }
-
-    private boolean doMigrateKeepers(ShardModel shardModel, List<RedisTbl> newKeepers, String clusterName,
-                                     String dcName, String shardName) {
-        try {
-            shardModel.setKeepers(newKeepers);
-            logger.info("[Update Redises][construct]{},{},{},{}", clusterName, dcName, shardName, shardModel);
-            redisService.updateRedises(dcName, clusterName, shardName, shardModel);
-            logger.info("[Update Redises][success]{},{},{},{}", clusterName, dcName, shardName, shardModel);
-            return true;
-        } catch (Exception e) {
-            logger.error("[Update Redises][failed]{},{},{},{}", clusterName, dcName, shardName, shardModel, e);
-            return false;
-        }
-    }
 
 }
