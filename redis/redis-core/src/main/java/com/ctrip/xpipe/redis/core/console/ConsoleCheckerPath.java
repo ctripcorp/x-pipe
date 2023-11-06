@@ -12,6 +12,8 @@ public class ConsoleCheckerPath {
     
     public static final String PATH_GET_ALL_META = "/api/meta/divide";
 
+    public static final String PATH_GET_ALL_DC_META = "/api/meta/all/{dcName}";
+
     public static final String PATH_GET_META = "/api/meta/divide/{index}";
 
     public static final String PATH_GET_PROXY_CHAINS = "/api/proxy/chains";
@@ -19,6 +21,8 @@ public class ConsoleCheckerPath {
     public static final String PATH_PUT_CHECKER_STATUS = "/api/health/checker/status";
 
     public static final String PATH_PUT_HEALTH_CHECK_RESULT = "/api/health/check/result";
+
+    public static final String PATH_POST_KEEPER_CONTAINER_INFO_RESULT = "/api/keeperContainer/info/result/{index}";
     
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 

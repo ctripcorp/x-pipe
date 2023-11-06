@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.*;
 
 /**
  * @author chen.zhu
@@ -70,16 +69,21 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
         new SafeLoop<V>(executors, getAllInstances()) {
             @Override
             public void doRun0(V instance) {
-                ClusterType clusterType = instance.getCheckInfo().getClusterType();
-                if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
-                        || (clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport
-                        || clusterType.equals(ClusterType.LOCAL_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof LocalDcSupport
-                        || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport
-                        || clusterType.equals(ClusterType.CROSS_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof CrossDcSupport)) {
-                    registerTo(instance);
-                }
+                registerInstance(instance);
+
             }
         }.run();
+    }
+
+    protected void registerInstance(V instance) {
+        ClusterType clusterType = instance.getCheckInfo().getClusterType();
+        if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
+                || (clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport
+                || clusterType.equals(ClusterType.LOCAL_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof LocalDcSupport
+                || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport
+                || clusterType.equals(ClusterType.CROSS_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof CrossDcSupport)) {
+            registerTo(instance);
+        }
     }
 
     @Override
@@ -92,7 +96,7 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
         }.run();
     }
 
-    private void registerTo(V instance) {
+    protected void registerTo(V instance) {
         if(!supportInstnace(instance))
             return;
         SiteLeaderAwareHealthCheckAction action = create(instance);

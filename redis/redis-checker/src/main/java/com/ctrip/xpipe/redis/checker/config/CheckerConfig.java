@@ -101,6 +101,8 @@ public interface CheckerConfig {
 
     String KEY_SUBSCRIBE_TIMEOUT_MILLI = "checker.subscribe.timeout.milli";
 
+    String KEY_KEEPER_CHECKER_INTERVAL = "keeper.checker.interval";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -200,5 +202,7 @@ public interface CheckerConfig {
     int maxRemovedClustersPercent();
 
     Set<String> getMigrationUnsupportedClusters();
+
+    int getKeeperCheckerIntervalMilli();
 
 }

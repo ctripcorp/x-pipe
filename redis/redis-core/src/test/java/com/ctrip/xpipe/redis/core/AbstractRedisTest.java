@@ -602,4 +602,16 @@ public abstract class AbstractRedisTest extends AbstractTest {
         dcMeta.addCluster(clusterMeta);
         return redis;
     }
+
+    protected KeeperMeta newRandomFakeKeeperMeta(String ip, int port) {
+        DcMeta dcMeta = new DcMeta("dc");
+        ClusterMeta clusterMeta = new ClusterMeta("cluster");
+        clusterMeta.setActiveDc("dc").setType(ClusterType.ONE_WAY.toString()).setActiveRedisCheckRules("0,1");
+        ShardMeta shardMeta = new ShardMeta("shard");
+        KeeperMeta keeper = new KeeperMeta().setIp(ip).setPort(port);
+        shardMeta.addKeeper(keeper);
+        clusterMeta.addShard(shardMeta);
+        dcMeta.addCluster(clusterMeta);
+        return keeper;
+    }
 }
