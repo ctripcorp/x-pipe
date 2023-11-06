@@ -11,7 +11,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -169,12 +168,6 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     @Override
     public Endpoint getOrCreateEndpoint(RedisMeta redisMeta) {
         HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-        return getOrCreateEndpoint(hostPort);
-    }
-
-    @Override
-    public Endpoint getOrCreateEndpoint(KeeperMeta keeperMeta) {
-        HostPort hostPort = new HostPort(keeperMeta.getIp(), keeperMeta.getPort());
         return getOrCreateEndpoint(hostPort);
     }
 

@@ -39,24 +39,6 @@ angular
         update_keepercontainer:{
             method:'PUT',
             url:'/console/keepercontainer'
-        },
-        get_all_overload_keepercontainer: {
-            method: 'GET',
-            url: '/console/keepercontainers/overload/all',
-            isArray: true
-        },
-        get_overload_keepercontainer_migration_process: {
-            method: 'GET',
-            url: '/console/keepercontainer/overload/migration/process',
-            isArray: true
-        },
-        begin_to_migrate_overload_keepercontainer:{
-            method:'POST',
-            url:'/console/keepercontainer/overload/migration/begin'
-        },
-        stop_to_migrate_overload_keepercontainer:{
-            method:'POST',
-            url:'/console/keepercontainer/overload/migration/stop'
         }
     });
 
@@ -184,50 +166,6 @@ angular
         return d.promise;
     }
 
-    function getAllOverloadKeepercontainer() {
-        var d = $q.defer();
-        resource.get_all_overload_keepercontainer({},
-            function (result) {
-                d.resolve(result);
-            }, function (result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
-
-    function getOverloadKeeperContainerMigrationProcess() {
-        var d = $q.defer();
-        resource.get_overload_keepercontainer_migration_process({},
-            function (result) {
-                d.resolve(result);
-            }, function (result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
-
-    function stopToMigrateOverloadKeeperContainers() {
-        var d = $q.defer();
-        resource.stop_to_migrate_overload_keepercontainer({}, {},
-                function(result) {
-                d.resolve(result);
-            }, function(result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
-
-    function beginToMigrateOverloadKeeperContainers() {
-        var d = $q.defer();
-        resource.begin_to_migrate_overload_keepercontainer(
-            Array.from(arguments),
-            function (result) {
-                d.resolve(result);
-            }, function (result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
 
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
@@ -238,9 +176,5 @@ angular
         getAllOrganizations: getAllOrganizations,
         addKeepercontainer: addKeepercontainer,
         updateKeepercontainer: updateKeepercontainer,
-        getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
-        getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
-        stopToMigrateOverloadKeeperContainers : stopToMigrateOverloadKeeperContainers,
-        beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
     }
 }]);

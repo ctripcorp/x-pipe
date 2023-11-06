@@ -16,8 +16,6 @@ public interface AzService {
 
     void updateAvailableZone(AzCreateInfo createInfo);
 
-    boolean isDcSupportMultiAz(String dcName);
-
     List<AzTbl> getDcActiveAvailableZoneTbls(String dcName);
 
     List<AzTbl> getDcAvailableZoneTbls(String dcName);

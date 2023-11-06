@@ -157,7 +157,7 @@ public abstract class AbstractMetaCache implements MetaCache {
         return masterCount.get();
     }
 
-    protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters, Set<Long> requestKeeperContainers) {
+    protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters) {
         XpipeMeta part = new XpipeMeta();
         for (DcMeta dcMeta: full.getDcs().values()) {
             DcMeta partDcMeta = new DcMeta(dcMeta.getId()).setLastModifiedTime(dcMeta.getLastModifiedTime()).setZone(dcMeta.getZone());
@@ -193,12 +193,7 @@ public abstract class AbstractMetaCache implements MetaCache {
                 partDcMeta.addCluster(partClusterMeta);
             }
             dcMeta.getSentinels().values().forEach(partDcMeta::addSentinel);
-
-            dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                if (requestKeeperContainers.contains(keeperContainerMeta.getId())) {
-                    partDcMeta.addKeeperContainer(keeperContainerMeta);
-                }
-            });
+            dcMeta.getKeeperContainers().forEach(partDcMeta::addKeeperContainer);
             dcMeta.getRoutes().forEach(partDcMeta::addRoute);
             dcMeta.getMetaServers().forEach(partDcMeta::addMetaServer);
         }
