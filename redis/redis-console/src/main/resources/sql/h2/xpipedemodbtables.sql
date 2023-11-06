@@ -140,6 +140,7 @@ create table SHARD_TBL
 	id bigint unsigned not null auto_increment primary key,
 	shard_name varchar(128) not null,
 	cluster_id bigint unsigned not null,
+	az_group_cluster_id bigint unsigned not null default 0,
     setinel_monitor_name varchar(128) not null default 'default',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0

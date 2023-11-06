@@ -404,6 +404,22 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     }
 
     @Test
+    public void testBindRegionAz2() {
+        this.createCluster(null, null, null);
+        clusterController.upgradeAzGroup("cluster-name");
+        clusterController.unbindDc("cluster-name", "oy");
+
+        clusterController.bindRegionAz("cluster-name", "SHA", "oy");
+        ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
+        Assert.assertEquals(1, cluster.getRegions().size());
+
+        RegionInfo region = cluster.getRegions().get(0);
+        Assert.assertEquals("ONE_WAY", region.getClusterType());
+        Assert.assertEquals("jq", region.getActiveAz());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), region.getAzs());
+    }
+
+    @Test
     public void testUnbindActiveDc() {
         this.createCluster(null, null, null);
 

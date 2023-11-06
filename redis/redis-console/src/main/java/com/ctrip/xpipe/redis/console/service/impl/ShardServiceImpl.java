@@ -198,12 +198,16 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(cluster.getId());
 		Map<Long, List<DcClusterEntity>> azGroupClusterId2DcClustersMap = dcClusters.stream()
 			.collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId));
-		Map<Long, SentinelGroupModel> sentinelModelMap =
-			sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(cluster.getClusterType()));
+
 		List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
 		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
 			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
 			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
+				String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
+					cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
+				Map<Long, SentinelGroupModel> sentinelModelMap =
+					sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType));
+
 				List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
 				for (DcClusterEntity dcCluster : regionDcClusters) {
 					DcClusterTbl dcClusterTbl = new DcClusterTbl();

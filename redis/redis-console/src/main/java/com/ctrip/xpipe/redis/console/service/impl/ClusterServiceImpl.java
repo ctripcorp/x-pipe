@@ -846,7 +846,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             dcClusterShard.setDcClusterId(dcCluster.getDcClusterId());
             dcClusterShard.setShardId(shard.getId());
 
-            Long sentinelId = this.findDcClusterShardSentinelId(cluster, dcName, shard.getId());
+            Long sentinelId = this.findDcClusterShardSentinelId(cluster, null, dcName, shard.getId());
             if (sentinelId != null) {
                 dcClusterShard.setSetinelId(sentinelId);
             }
@@ -857,11 +857,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
     }
 
-    private Long findDcClusterShardSentinelId(ClusterTbl cluster, String dcName, long shardId) {
+    private Long findDcClusterShardSentinelId(ClusterTbl cluster, ClusterType azGroupType, String dcName, long shardId) {
         SentinelGroupModel sentinelGroupModel = null;
         ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         if (consoleConfig.supportSentinelHealthCheck(clusterType, cluster.getClusterName())) {
-            sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
+			ClusterType type = azGroupType == null ? clusterType : azGroupType;
+			sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, type);
         }
 
         Long sentinelId = sentinelGroupModel == null ? null : sentinelGroupModel.getSentinelGroupId();
@@ -878,6 +879,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
     @Override
 	@Transactional
+	@DalTransaction
     public void bindRegionAz(String clusterName, String regionName, String azName) {
         ClusterTbl cluster = this.checkCluster(clusterName);
         DcTbl dc = this.checkDc(azName);
@@ -906,12 +908,30 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 dcCluster.setDcId(dc.getId());
                 dcCluster.setAzGroupClusterId(azGroupCluster.getId());
                 dcClusterRepository.insert(dcCluster);
+				// 新增dc cluster shard
+				ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+				List<DcClusterShardTbl> dcClusterShards = new ArrayList<>();
+				List<ShardEntity> shards = shardRepository.selectByAzGroupClusterId(azGroupCluster.getId());
+				for (ShardEntity shard : shards) {
+					long shardId = shard.getId();
+					DcClusterShardTbl dcClusterShard = new DcClusterShardTbl();
+					dcClusterShard.setDcClusterId(dcCluster.getDcClusterId());
+					dcClusterShard.setShardId(shardId);
 
-                // TODO:新dc cluster增加分片
+					Long sentinelId = this.findDcClusterShardSentinelId(cluster, azGroupType, azName, shardId);
+					if (sentinelId != null) {
+						dcClusterShard.setSetinelId(sentinelId);
+					}
+					dcClusterShards.add(dcClusterShard);
+				}
+				if (!CollectionUtils.isEmpty(dcClusterShards)) {
+					dcClusterShardService.insertBatch(dcClusterShards);
+				}
+
                 return;
             }
         }
-        // 不存在对应AzGroup，新建
+        // 不存在对应Region，新建
         AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
         azGroupCluster.setClusterId(cluster.getId());
         AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(Collections.singletonList(azName));
@@ -1040,7 +1060,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         long cnt = azGroupClusterRepository.countByClusterId(cluster.getId());
         if (cnt > 0L) {
-            throw new BadRequestException(String.format("Cluster: %s already in AzGroup mode", clusterName));
+			logger.warn("[upgradeAzGroup]cluster: {} already in AzGroup mode", clusterName);
+			return;
         }
         ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         if (clusterType != ClusterType.ONE_WAY && clusterType != ClusterType.BI_DIRECTION) {
