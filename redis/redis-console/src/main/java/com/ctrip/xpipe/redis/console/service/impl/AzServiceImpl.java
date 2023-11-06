@@ -12,7 +12,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -75,12 +74,6 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
             azTbl.setDescription(createInfo.getDescription());
 
         azDao.updateAvailableZone(azTbl);
-    }
-
-    @Override
-    public boolean isDcSupportMultiAz(String dcName) {
-        List<AzCreateInfo> dcAvailableZoneInfos = getDcAvailableZoneInfos(dcName);
-        return !CollectionUtils.isEmpty(dcAvailableZoneInfos) && dcAvailableZoneInfos.size() > 1;
     }
 
     @Override

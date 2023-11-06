@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -31,10 +32,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<String, ClusterHealthCheckInstance> clusterHealthCheckerInstances = Maps.newConcurrentMap();
 
-    private ConcurrentMap<HostPort, KeeperHealthCheckInstance> keeperInstances = Maps.newConcurrentMap();
-
-    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForAssignedAction = Maps.newConcurrentMap();
-
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
 
@@ -45,29 +42,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             return MapUtils.getOrCreate(instances, key, () -> instanceFactory.create(redis));
         } catch (Throwable th) {
             logger.error("getOrCreate health check instance:{}:{}", redis.getIp(), redis.getPort());
-        }
-        return null;
-    }
-
-    @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis) {
-        try {
-            HostPort key = new HostPort(redis.getIp(), redis.getPort());
-            return MapUtils.getOrCreate(redisInstanceForAssignedAction, key,
-                    () -> instanceFactory.createRedisInstanceForAssignedAction(redis));
-        } catch (Throwable th) {
-            logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort());
-        }
-        return null;
-    }
-
-    @Override
-    public KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper) {
-        try {
-            HostPort key = new HostPort(keeper.getIp(), keeper.getPort());
-            return MapUtils.getOrCreate(keeperInstances, key, () -> instanceFactory.create(keeper));
-        } catch (Throwable th) {
-            logger.error("getOrCreate health check keeper instance:{}:{}", keeper.getIp(), keeper.getPort());
         }
         return null;
     }
@@ -89,16 +63,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort) {
-        return redisInstanceForAssignedAction.get(hostPort);
-    }
-
-    @Override
-    public KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort) {
-        return keeperInstances.get(hostPort);
-    }
-
-    @Override
     public ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId) {
         if (StringUtil.isEmpty(clusterId)) return null;
         return clusterHealthCheckerInstances.get(clusterId.toLowerCase());
@@ -112,21 +76,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public KeeperHealthCheckInstance removeKeeper(HostPort hostPort) {
-        KeeperHealthCheckInstance instance = keeperInstances.remove(hostPort);
-        if (null != instance) instanceFactory.remove(instance);
-        return instance;
-    }
-
-    @Override
-    public RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort) {
-        RedisHealthCheckInstance instance = redisInstanceForAssignedAction.remove(hostPort);
-        if (null != instance) instanceFactory.remove(instance);
-        return instance;
-    }
-
-
-    @Override
     public ClusterHealthCheckInstance remove(String cluster) {
         ClusterHealthCheckInstance instance = clusterHealthCheckerInstances.remove(cluster.toLowerCase());
         if (null != instance) instanceFactory.remove(instance);
@@ -136,16 +85,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public List<RedisHealthCheckInstance> getAllRedisInstance() {
         return Lists.newLinkedList(instances.values());
-    }
-
-    @Override
-    public List<KeeperHealthCheckInstance> getAllKeeperInstance() {
-        return Lists.newLinkedList(keeperInstances.values());
-    }
-
-    @Override
-    public List<RedisHealthCheckInstance> getAllRedisInstanceForAssignedAction() {
-        return Lists.newLinkedList(redisInstanceForAssignedAction.values());
     }
 
     @Override

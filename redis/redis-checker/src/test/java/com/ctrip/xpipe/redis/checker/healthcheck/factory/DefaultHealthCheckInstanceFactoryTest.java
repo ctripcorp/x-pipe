@@ -5,7 +5,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstanceFactory;
@@ -68,40 +67,6 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     }
 
     @Test
-    public void testCreateRedisForAssignedAction() {
-        RedisMeta redisMeta = normalRedisMeta();
-        when(metaCache.getDc(new HostPort(redisMeta.getIp(), redisMeta.getPort()))).thenReturn("oy");
-        RedisHealthCheckInstance instance = factory.createRedisInstanceForAssignedAction(redisMeta);
-
-        Assert.assertNotNull(instance.getEndpoint());
-        Assert.assertNotNull(instance.getHealthCheckConfig());
-        Assert.assertNotNull(instance.getCheckInfo());
-        Assert.assertNotNull(instance.getCheckInfo().getRedisCheckRules());
-        Assert.assertNotNull(instance.getRedisSession());
-
-        Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
-        Assert.assertTrue(instance.getLifecycleState().isStarted());
-        factory.remove(instance);
-    }
-
-    @Test
-    public void testCreateKeeper() {
-        KeeperMeta keeperMeta = normalKeeperMeta();
-        when(metaCache.getDc(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()))).thenReturn("oy");
-
-        KeeperHealthCheckInstance instance = factory.create(keeperMeta);
-
-        Assert.assertNotNull(instance.getEndpoint());
-        Assert.assertNotNull(instance.getHealthCheckConfig());
-        Assert.assertNotNull(instance.getCheckInfo());
-        Assert.assertNotNull(instance.getRedisSession());
-
-        Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()));
-        Assert.assertTrue(instance.getLifecycleState().isStarted());
-        factory.remove(instance);
-    }
-
-    @Test
     public void testCreateProxyEnabledInstance() {
         XpipeMeta meta = new XpipeMeta();
         DcMeta local = newDcMeta(FoundationService.DEFAULT.getDataCenter());
@@ -148,13 +113,6 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         return redisMeta;
     }
-
-    protected KeeperMeta normalKeeperMeta() {
-        DcMeta dcMeta = new DcMeta().setId("dc");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString());
-        ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
-        KeeperMeta keeperMeta = new KeeperMeta().setParent(shardMeta).setIp("127.0.0.1").setPort(randomPort());
-        return keeperMeta;
-    }
+    
     
 }

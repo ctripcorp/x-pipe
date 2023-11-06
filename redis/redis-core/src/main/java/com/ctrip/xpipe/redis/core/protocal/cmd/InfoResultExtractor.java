@@ -21,11 +21,6 @@ public class InfoResultExtractor {
     private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
     private static final String KEY_SLAVE_REPL_OFFSET = "slave_repl_offset";
 
-    private static final String KEY_INSTANTANEOUS_INPUT_KBPS = "instantaneous_input_kbps";
-
-    private static final String KEY_SWAP_USED_DB_SIZE = "swap_used_db_size";
-    private static final String KEY_USED_MEMORY ="used_memory";
-
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
     private String result;
@@ -52,10 +47,6 @@ public class InfoResultExtractor {
 
     public Long extractAsLong(String key) {
         return extract(key, (value) -> value == null ? null : Long.parseLong(value));
-    }
-
-    public Float extractAsFloat(String key) {
-        return extract(key, (value) -> value == null ? null : Float.parseFloat(value));
     }
 
     public Map<String, String> extract(String[] keys) {
@@ -109,12 +100,6 @@ public class InfoResultExtractor {
     public long getSyncPartialErr() {
         return extractAsLong(KEY_SYNC_PARTIAL_ERR);
     }
-
-    public float getKeeperInstantaneousInputKbps() { return extractAsFloat(KEY_INSTANTANEOUS_INPUT_KBPS);}
-
-    public long getUsedMemory() { return extractAsLong(KEY_USED_MEMORY);}
-
-    public Long getSwapUsedDbSize() { return extractAsLong(KEY_SWAP_USED_DB_SIZE);}
 
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);
