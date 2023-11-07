@@ -53,6 +53,7 @@ public interface ClusterService {
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
+	void exchangeRegion(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName, String regionName);
 	void upgradeAzGroup(String clusterName);
 	void bindRegionAz(String clusterName, String regionName, String azName);
 

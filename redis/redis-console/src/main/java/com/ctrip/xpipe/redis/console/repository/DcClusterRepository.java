@@ -10,6 +10,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class DcClusterRepository {
@@ -48,6 +49,17 @@ public class DcClusterRepository {
         return dcClusterMapper.selectOne(wrapper);
     }
 
+    public List<Long> selectIdByAzGroupClusterId(Long azGroupClusterId) {
+        if (azGroupClusterId == null) {
+            return Collections.emptyList();
+        }
+        QueryWrapper<DcClusterEntity> wrapper = new QueryWrapper<>();
+        wrapper.select(DcClusterEntity.DC_CLUSTER_ID);
+        wrapper.eq(DcClusterEntity.AZ_GROUP_CLUSTER_ID, azGroupClusterId);
+        List<DcClusterEntity> dcClusters = dcClusterMapper.selectList(wrapper);
+        return dcClusters.stream().map(DcClusterEntity::getDcClusterId).collect(Collectors.toList());
+    }
+
     public List<DcClusterEntity> selectByAzGroupClusterId(Long azGroupClusterId) {
         if (azGroupClusterId == null) {
             return Collections.emptyList();
@@ -55,6 +67,16 @@ public class DcClusterRepository {
         QueryWrapper<DcClusterEntity> wrapper = new QueryWrapper<>();
         wrapper.eq(DcClusterEntity.AZ_GROUP_CLUSTER_ID, azGroupClusterId);
         return dcClusterMapper.selectList(wrapper);
+    }
+
+    public void batchUpdateClusterId(List<Long> dcClusterIds, Long clusterId) {
+        if (CollectionUtils.isEmpty(dcClusterIds) || clusterId == null) {
+            return;
+        }
+        UpdateWrapper<DcClusterEntity> wrapper = new UpdateWrapper<>();
+        wrapper.set(DcClusterEntity.CLUSTER_ID, clusterId);
+        wrapper.in(DcClusterEntity.DC_CLUSTER_ID, dcClusterIds);
+        dcClusterMapper.update(null, wrapper);
     }
 
     public void updateAzGroupClusterId(Long dcClusterId, Long azGroupClusterId) {
