@@ -10,6 +10,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
@@ -41,6 +42,27 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 							ScheduledExecutorService scheduled, int timeoutMilli, int checkIntervalMilli) {
 		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
+	}
+
+	@Override
+	protected void preKeeperContainerOperation() {
+		try {
+			int usePort = keeperTransMeta.getKeeperMeta().getPort();
+			KeeperInstanceMeta keeperInstanceMeta = keeperContainerService.infoPort(usePort);
+			if (null != keeperInstanceMeta.getReplId() && !keeperInstanceMeta.getReplId().equals(keeperTransMeta.getReplId())) {
+				getLogger().info("[preKeeperContainerOperation][{}-{}][remove unknown keeper use the same port] found:{}",
+						keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperInstanceMeta);
+				keeperContainerService.removeKeeper(keeperInstanceMeta);
+			}
+		} catch (Throwable th) {
+			if (getLogger().isDebugEnabled()) {
+				getLogger().info("[preKeeperContainerOperation][{}-{}][fail]",
+						keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), th);
+			} else if (getLogger().isInfoEnabled()) {
+				getLogger().info("[preKeeperContainerOperation][{}-{}][fail] {}",
+						keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), th.getMessage());
+			}
+		}
 	}
 
 	@Override

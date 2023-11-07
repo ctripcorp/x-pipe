@@ -248,6 +248,12 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
             ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
             ShardMeta shard = shardMetaComparator.getCurrent();
+            if (null == shardMetaComparator.getFuture()) {
+                // shard migrate out
+                for (ApplierMeta applier: shard.getAppliers()) {
+                    removeApplier(clusterDbId, shard.getDbId(), applier);
+                }
+            }
             shardMetaComparator.accept(new ShardComparatorVisitor(clusterDbId, shard.getDbId()));
         }
 

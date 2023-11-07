@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplId;
-import com.ctrip.xpipe.redis.core.store.ShardId;
 
 /**
  * @author wenchao.meng

@@ -5,15 +5,14 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerService;
-import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.util.concurrent.SettableFuture;
 import org.junit.Assert;
@@ -21,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.Callable;
@@ -53,7 +53,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(keeperPort);
 		keeperMeta.setIp("127.0.0.1");
 		
-		keeperTransMeta  = new KeeperTransMeta(1L, 1L, keeperMeta);
+		keeperTransMeta  = new KeeperTransMeta(1L, 1L, 1L, keeperMeta);
 		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
 	}
 
@@ -202,6 +202,24 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		
 		SlaveRole keeperRole = addKeeperCommand.execute().get();
 		Assert.assertEquals(MASTER_STATE.REDIS_REPL_CONNECTED, keeperRole.getMasterState());
+	}
+
+	@Test
+	public void testRemoveWildKeeperBeforeAdd() throws Exception {
+		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+		KeeperInstanceMeta instanceMeta = new KeeperInstanceMeta(new ReplId(2L), keeperTransMeta.getKeeperMeta());
+		Mockito.when(keeperContainerService.infoPort(keeperPort)).thenReturn(instanceMeta);
+
+		Server server = null;
+		try {
+			server = startServer(keeperPort, ByteBufUtils.readToString(keeperRole.format()));
+			SlaveRole real = addKeeperCommand.execute().get();
+			Mockito.verify(keeperContainerService, Mockito.times(1)).removeKeeper(instanceMeta);
+			Mockito.verify(keeperContainerService, Mockito.times(1)).addOrStartKeeper(keeperTransMeta);
+			Assert.assertEquals(keeperRole, real);
+		} finally {
+			if (null != server) server.stop();
+		}
 	}
 
 }
