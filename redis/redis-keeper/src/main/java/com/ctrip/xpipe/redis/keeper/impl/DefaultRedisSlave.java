@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -391,18 +390,6 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@VisibleForTesting
 	protected boolean shouldFilter(RedisOp redisOp) {
-	 	if (RedisOpType.PUBLISH.equals(redisOp.getOpType())) {
-			int length = redisOp.buildRawOpArgs().length;
-			if (length < 5) {
-				logger.warn("publish command length={} < 5, filtered", length);
-				return true;
-			}
-			String channel = new String(redisOp.buildRawOpArgs()[4]);
-			if (!channel.startsWith("xpipe-hetero-")) {
-				logger.debug("publish channel: [{}] filtered", channel);
-				return true;
-            }
-        }
 		return false;
     }
 
