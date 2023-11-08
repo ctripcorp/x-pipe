@@ -328,6 +328,32 @@ public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testCreateRegionShards() {
+        createCluster2();
+
+        RegionShardsCreateInfo shardsCreateInfo = new RegionShardsCreateInfo();
+        shardsCreateInfo.setShardNames(Arrays.asList("shard1", "shard2"));
+        RetMessage ret = shardUpdateController.createRegionShards("cluster2", "SHA", shardsCreateInfo);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        List<ShardTbl> shards = shardService.findAllShardNamesByClusterName("cluster2");
+        Assert.assertEquals(2, shards.size());
+        Assert.assertEquals("shard1", shards.get(0).getShardName());
+        Assert.assertEquals("shard2", shards.get(1).getShardName());
+
+    }
+
+    @Test
+    public void testCreateRegionShard() {
+        createCluster2();
+
+        RetMessage ret = shardUpdateController.createRegionShard("cluster2", "SHA", "shard1");
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        ShardTbl shard = shardService.find("cluster2", "shard1");
+        Assert.assertNotNull(shard);
+    }
+
+    private void createCluster2() {
         ClusterCreateInfo createInfo = new ClusterCreateInfo();
         createInfo.setClusterName("cluster2");
         createInfo.setClusterType(ClusterType.ONE_WAY.toString());
@@ -340,10 +366,5 @@ public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
         RegionInfo regionInfo2 = new RegionInfo("FRA", "SINGLE_DC", "fra", Collections.singletonList("fra"));
         createInfo.setRegions(Arrays.asList(regionInfo1, regionInfo2));
         clusterUpdateController.createCluster(createInfo);
-
-        RegionShardsCreateInfo shardsCreateInfo = new RegionShardsCreateInfo();
-        shardsCreateInfo.setShardNames(Arrays.asList("shard1", "shard2"));
-        RetMessage ret = shardUpdateController.createRegionShards("cluster2", "SHA", shardsCreateInfo);
-        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
     }
 }

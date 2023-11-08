@@ -111,7 +111,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildMetaForClusterType() throws Exception {
-        testBuildMetaForClusterType(ClusterType.ONE_WAY, 5);
+        testBuildMetaForClusterType(ClusterType.ONE_WAY, 6);
         testBuildMetaForClusterType(ClusterType.BI_DIRECTION, 1);
     }
 
@@ -154,11 +154,11 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void getOrCreateHeteroClusterMeta() throws Exception {
-        ClusterTbl clusterTbl = clusterService.find("hetero2-local-cluster");
+        ClusterTbl clusterTbl = clusterService.find("asymmetric2-local-cluster");
         Assert.assertNotNull(clusterTbl);
 
         tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
-        ClusterMeta clusterMeta = dcMeta.getClusters().get("hetero2-local-cluster");
+        ClusterMeta clusterMeta = dcMeta.getClusters().get("asymmetric2-local-cluster");
         Assert.assertNotNull(clusterMeta);
 
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
@@ -223,7 +223,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         boolean found = false;
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-            if (clusterMeta.getId().equals("hetero2-local-cluster")) {
+            if (clusterMeta.getId().equals("asymmetric2-local-cluster")) {
                 found = true;
             } else {
                 continue;
@@ -279,7 +279,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         boolean found = false;
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-            if (clusterMeta.getId().equals("hetero2-local-cluster")) {
+            if (clusterMeta.getId().equals("asymmetric2-local-cluster")) {
                 found = true;
             } else {
                 continue;

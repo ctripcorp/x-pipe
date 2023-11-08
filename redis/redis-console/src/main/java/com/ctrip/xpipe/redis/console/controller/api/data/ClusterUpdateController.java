@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterRegionExchangeInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcDetailInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
 import com.ctrip.xpipe.redis.console.dto.AzGroupDTO;
@@ -132,7 +133,7 @@ public class ClusterUpdateController extends AbstractController {
             String ret = clusterService.updateCluster(updateDTO);
             return RetMessage.createSuccessMessage(ret);
         } catch (Exception e) {
-            logger.error("[updateCluster]Failed, Error: {}", e, e);
+            logger.error("[updateCluster]Failed", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
@@ -229,6 +230,45 @@ public class ClusterUpdateController extends AbstractController {
         }
 
         return RetMessage.createSuccessMessage();
+    }
+
+    @PutMapping("/cluster/region/exchange")
+    public RetMessage exchangeClusterRegion(@RequestBody ClusterRegionExchangeInfo exchangeInfo) {
+        try {
+            exchangeInfo.check();
+
+            TransactionMonitor.DEFAULT.logTransaction(AbstractController.META_API_TYPE, "exchangeClusterRegion",
+                new Task() {
+                    @Override
+                    public void go() {
+                        clusterService.exchangeRegion(exchangeInfo.getFormerClusterId(),
+                            exchangeInfo.getFormerClusterName(),
+                            exchangeInfo.getLatterClusterId(),
+                            exchangeInfo.getLatterClusterName(),
+                            exchangeInfo.getRegionName());
+                    }
+
+                    @Override
+                    public Map<String, Object> getData() {
+                        return new HashMap<String, Object>() {{
+                            put("formerClusterDbId", exchangeInfo.getFormerClusterId());
+                            put("formerClusterId", exchangeInfo.getFormerClusterName());
+                            put("latterClusterDbId", exchangeInfo.getLatterClusterId());
+                            put("latterClusterId", exchangeInfo.getLatterClusterName());
+                            put("regionName", exchangeInfo.getRegionName());
+                        }};
+                    }
+                });
+        } catch (CheckFailException cfe) {
+            logger.error("[exchangeClusterRegion][checkFail] {}", exchangeInfo, cfe);
+            return RetMessage.createFailMessage(cfe.getMessage());
+        } catch (Exception e) {
+            logger.error("[exchangeClusterRegion][fail] {}", exchangeInfo, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+        return RetMessage.createSuccessMessage();
+
     }
 
     @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/azGroup")

@@ -19,7 +19,9 @@ import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
 import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.ClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.ShardEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -36,7 +38,9 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
+import com.ctrip.xpipe.redis.console.repository.ClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.ShardRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
@@ -72,6 +76,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private DcService dcService;
 	@Autowired
 	private ClusterDao clusterDao;
+	@Autowired
+	private ClusterRepository clusterRepository;
 	@Autowired
 	private DcClusterDao dcClusterDao;
 	@Autowired
@@ -121,6 +127,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ShardModelService shardModelService;
+
+	@Autowired
+	private ShardRepository shardRepository;
 
 	@Autowired
 	private KeeperAdvancedService keeperAdvancedService;
@@ -846,7 +855,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             dcClusterShard.setDcClusterId(dcCluster.getDcClusterId());
             dcClusterShard.setShardId(shard.getId());
 
-            Long sentinelId = this.findDcClusterShardSentinelId(cluster, dcName, shard.getId());
+            Long sentinelId = this.findDcClusterShardSentinelId(cluster, null, dcName, shard.getId());
             if (sentinelId != null) {
                 dcClusterShard.setSetinelId(sentinelId);
             }
@@ -857,11 +866,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
     }
 
-    private Long findDcClusterShardSentinelId(ClusterTbl cluster, String dcName, long shardId) {
+    private Long findDcClusterShardSentinelId(ClusterTbl cluster, ClusterType azGroupType, String dcName, long shardId) {
         SentinelGroupModel sentinelGroupModel = null;
         ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         if (consoleConfig.supportSentinelHealthCheck(clusterType, cluster.getClusterName())) {
-            sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
+			ClusterType type = azGroupType == null ? clusterType : azGroupType;
+			sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, type);
         }
 
         Long sentinelId = sentinelGroupModel == null ? null : sentinelGroupModel.getSentinelGroupId();
@@ -878,6 +888,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
     @Override
 	@Transactional
+	@DalTransaction
     public void bindRegionAz(String clusterName, String regionName, String azName) {
         ClusterTbl cluster = this.checkCluster(clusterName);
         DcTbl dc = this.checkDc(azName);
@@ -906,12 +917,30 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 dcCluster.setDcId(dc.getId());
                 dcCluster.setAzGroupClusterId(azGroupCluster.getId());
                 dcClusterRepository.insert(dcCluster);
+				// 新增dc cluster shard
+				ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+				List<DcClusterShardTbl> dcClusterShards = new ArrayList<>();
+				List<ShardEntity> shards = shardRepository.selectByAzGroupClusterId(azGroupCluster.getId());
+				for (ShardEntity shard : shards) {
+					long shardId = shard.getId();
+					DcClusterShardTbl dcClusterShard = new DcClusterShardTbl();
+					dcClusterShard.setDcClusterId(dcCluster.getDcClusterId());
+					dcClusterShard.setShardId(shardId);
 
-                // TODO:新dc cluster增加分片
+					Long sentinelId = this.findDcClusterShardSentinelId(cluster, azGroupType, azName, shardId);
+					if (sentinelId != null) {
+						dcClusterShard.setSetinelId(sentinelId);
+					}
+					dcClusterShards.add(dcClusterShard);
+				}
+				if (!CollectionUtils.isEmpty(dcClusterShards)) {
+					dcClusterShardService.insertBatch(dcClusterShards);
+				}
+
                 return;
             }
         }
-        // 不存在对应AzGroup，新建
+        // 不存在对应Region，新建
         AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
         azGroupCluster.setClusterId(cluster.getId());
         AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(Collections.singletonList(azName));
@@ -1033,6 +1062,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
     @Override
+	@Transactional
     public void upgradeAzGroup(String clusterName) {
         ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
         if (cluster == null) {
@@ -1040,19 +1070,22 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         long cnt = azGroupClusterRepository.countByClusterId(cluster.getId());
         if (cnt > 0L) {
-            throw new BadRequestException(String.format("Cluster: %s already in AzGroup mode", clusterName));
+			logger.warn("[upgradeAzGroup]cluster: {} already in AzGroup mode", clusterName);
+			return;
         }
-        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
-        if (clusterType != ClusterType.ONE_WAY && clusterType != ClusterType.BI_DIRECTION) {
-            throw new BadRequestException("Only ONE_WAY/BI_DIRECTION cluster can upgrade to az group");
+        if (!ClusterType.supportUpgradeAzGroup(cluster.getClusterType())) {
+            throw new BadRequestException("Only ONE_WAY/BI_DIRECTION/SINGLE_DC cluster can upgrade to az group now");
         }
+
+		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         Map<Long, String> dcIdNameMap = dcService.dcNameMap();
         List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(cluster.getId());
-        if (clusterType == ClusterType.ONE_WAY) {
+		List<ShardEntity> shards = shardRepository.selectByClusterId(cluster.getId());
+        if (clusterType == ClusterType.ONE_WAY || clusterType == ClusterType.SINGLE_DC) {
             AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
             azGroupCluster.setClusterId(cluster.getId());
             azGroupCluster.setActiveAzId(cluster.getActivedcId());
-            azGroupCluster.setAzGroupClusterType(ClusterType.ONE_WAY.toString());
+            azGroupCluster.setAzGroupClusterType(clusterType.toString());
 
             List<String> dcs = dcClusters.stream()
                 .map(dcCluster -> dcIdNameMap.get(dcCluster.getDcId()))
@@ -1070,7 +1103,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 .map(DcClusterEntity::getDcClusterId)
                 .collect(Collectors.toList());
             dcClusterRepository.batchUpdateAzGroupClusterId(dcClusterIds, azGroupCluster.getId());
-        }
+
+			List<Long> shardIds = shards.stream().map(ShardEntity::getId).collect(Collectors.toList());
+			shardRepository.batchUpdateAzGroupClusterId(shardIds, azGroupCluster.getId());
+		}
         if (clusterType == ClusterType.BI_DIRECTION) {
             for (DcClusterEntity dcCluster : dcClusters) {
                 AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
@@ -1094,48 +1130,101 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@DalTransaction
 	public void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName) {
 		logger.info("[exchangeName]{}:{} <-> {}:{}", formerClusterName, formerClusterId, latterClusterName, latterClusterId);
-		ClusterTbl former = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+
+		ClusterTbl former = this.checkExchangeCluster(formerClusterId, formerClusterName);
+		ClusterTbl latter = this.checkExchangeCluster(latterClusterId, latterClusterName);
+
+		this.updateClusterName(former, UUID.randomUUID().toString());
+		this.updateClusterName(latter, formerClusterName);
+		this.updateClusterName(former, latterClusterName);
+	}
+
+	private ClusterTbl checkExchangeCluster(long clusterId, String clusterName) {
+		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				return dao.findClusterByClusterName(formerClusterName, ClusterTblEntity.READSET_FULL);
-			}
-		});
-		ClusterTbl latter = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
-			@Override
-			public ClusterTbl doQuery() throws DalException {
-				return dao.findClusterByClusterName(latterClusterName, ClusterTblEntity.READSET_FULL);
+				return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 			}
 		});
 
-		if (former == null) throw new BadRequestException("former cluster not found");
-		if (latter == null) throw new BadRequestException("latter cluster not found");
-		if (former.getId() != formerClusterId) throw new BadRequestException("former cluster name Id not match");
-		if (latter.getId() != latterClusterId) throw new BadRequestException("latter cluster name Id not match");
+		if (cluster == null) {
+			throw new BadRequestException(String.format("Cluster: %s not found", clusterName));
+		}
+		if (cluster.getId() != clusterId) {
+			throw new BadRequestException(String.format("Cluster name: %s not match Id: %d", clusterName, clusterId));
+		}
+		return cluster;
+	}
 
-		String tmpClusterName = UUID.randomUUID().toString();
-		former.setClusterName(tmpClusterName);
+	private void updateClusterName(ClusterTbl cluster, String clusterName) {
+		cluster.setClusterName(clusterName);
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
+				return dao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
 			}
 		});
+	}
 
-		latter.setClusterName(formerClusterName);
-		queryHandler.handleQuery(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return dao.updateByPK(latter, ClusterTblEntity.UPDATESET_FULL);
-			}
-		});
 
-		former.setClusterName(latterClusterName);
-		queryHandler.handleQuery(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
+
+	@Override
+	@Transactional
+	public void exchangeRegion(Long formerClusterId, String formerClusterName, Long latterClusterId,
+		String latterClusterName, String regionName) {
+		logger.info("[exchangeRegion]{} - {}:{} <-> {}:{}", regionName, formerClusterName, formerClusterId,
+			latterClusterName, latterClusterId);
+
+		AzGroupClusterEntity formerAzGroupCluster =
+			this.checkExchangeClusterRegion(formerClusterId, formerClusterName, regionName);
+		AzGroupClusterEntity latterAzGroupCluster =
+			this.checkExchangeClusterRegion(latterClusterId, latterClusterName, regionName);
+
+		Long formerAzGroupClusterId = formerAzGroupCluster.getId();
+		Long latterAzGroupClusterId = latterAzGroupCluster.getId();
+
+		this.updateClusterRegion(formerAzGroupClusterId, 0L);
+		this.updateClusterRegion(latterAzGroupClusterId, formerClusterId);
+		this.updateClusterRegion(formerAzGroupClusterId, latterClusterId);
+
+	}
+
+	private AzGroupClusterEntity checkExchangeClusterRegion(Long clusterId, String clusterName, String regionName) {
+		ClusterEntity cluster = clusterRepository.selectByClusterName(clusterName);
+
+		if (cluster == null) {
+			throw new BadRequestException(String.format("Cluster: %s not found", clusterName));
+		}
+		if (!Objects.equals(cluster.getId(), clusterId)) {
+			throw new BadRequestException(String.format("Cluster name: %s not match Id: %d", clusterName, clusterId));
+		}
+
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+		if (CollectionUtils.isEmpty(azGroupClusters)) {
+			throw new BadRequestException(String.format("Cluster: %s not in AzGroup mode", clusterName));
+		}
+		AzGroupClusterEntity azGroupCluster = null;
+		for (AzGroupClusterEntity entity : azGroupClusters) {
+			AzGroupModel azGroup = azGroupCache.getAzGroupById(entity.getAzGroupId());
+			if (Objects.equals(azGroup.getRegion(), regionName)) {
+				azGroupCluster = entity;
+				break;
 			}
-		});
+		}
+		if (azGroupCluster == null) {
+			throw new BadRequestException(
+				String.format("Cluster: %s doesn't have Region: %s", clusterName, regionName));
+		}
+		return azGroupCluster;
+	}
+
+	private void updateClusterRegion(Long azGroupClusterId, Long clusterId) {
+		List<Long> dcClusterIds = dcClusterRepository.selectIdByAzGroupClusterId(azGroupClusterId);
+		List<Long> shardIds = shardRepository.selectIdByAzGroupClusterId(azGroupClusterId);
+
+		azGroupClusterRepository.updateClusterId(azGroupClusterId, clusterId);
+		dcClusterRepository.batchUpdateClusterId(dcClusterIds, clusterId);
+		shardRepository.batchUpdateClusterId(shardIds, clusterId);
 	}
 
     // 检测cluster是否存在，不存在则抛出异常

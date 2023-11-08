@@ -100,10 +100,6 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public ClusterTbl loadCluster(@PathVariable String clusterName) {
         ClusterTbl result = valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
-        //TODO: 管控页面暂时将异构显示为单向同步方便查看redis实例状态，下一版本页面支持异构展示后删除该代码
-        if (ClusterType.isSameClusterType(result.getClusterType(), ClusterType.HETERO)) {
-            result.setClusterType(ClusterType.ONE_WAY.toString());
-        }
         return result;
     }
 

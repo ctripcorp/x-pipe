@@ -99,7 +99,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
         String dcId = null;
         if (clusterType.supportSingleActiveDC() && azGroupType != ClusterType.SINGLE_DC) {
             dcId = metaCache.getActiveDc(hostPort);
-        } else if (clusterType.supportMultiActiveDC() || clusterType == ClusterType.SINGLE_DC) {
+        } else if (clusterType.supportMultiActiveDC() || azGroupType == ClusterType.SINGLE_DC) {
             dcId = metaCache.getDc(hostPort);
         }
 

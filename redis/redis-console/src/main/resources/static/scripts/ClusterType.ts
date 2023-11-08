@@ -14,6 +14,7 @@ function ClusterType() {
                 supportMigration: true,
                 isCrossDc:false,
                 supportApplier:false,
+                useAzGroupType:false,
             },
             'bi_direction': {
                 name: '双向同步',
@@ -24,6 +25,7 @@ function ClusterType() {
                 supportMigration: false,
                 isCrossDc:false,
                 supportApplier:false,
+                useAzGroupType:false,
             },
             'single_dc': {
                 name: '单机房缓存',
@@ -34,6 +36,7 @@ function ClusterType() {
                 supportMigration: false,
                 isCrossDc:false,
                 supportApplier:false,
+                useAzGroupType:false,
             },
             'local_dc': {
                 name: '本机房缓存',
@@ -44,6 +47,7 @@ function ClusterType() {
                 supportMigration: false,
                 isCrossDc:false,
                 supportApplier:false,
+                useAzGroupType:false,
             },
             'cross_dc':{
                 name: '跨机房缓存',
@@ -54,6 +58,18 @@ function ClusterType() {
                 supportMigration: false,
                 isCrossDc:true,
                 supportApplier:false,
+                useAzGroupType:false,
+            },
+            'hetero':{
+                name: '异构',
+                value: 'hetero',
+                multiActiveDcs: false,
+                useKeeper: true,
+                healthCheck: true,
+                supportMigration: true,
+                isCrossDc:true,
+                supportApplier:false,
+                useAzGroupType:true,
             }
         },
         lookup(typeName) {
