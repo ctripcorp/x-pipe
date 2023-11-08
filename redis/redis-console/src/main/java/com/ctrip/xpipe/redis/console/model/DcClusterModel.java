@@ -10,11 +10,22 @@ public class DcClusterModel implements java.io.Serializable {
 
     private DcModel dc;
 
+    private String azGroupClusterType;
+
     private List<ShardModel> shards;
 
     private List<SourceModel> sources;
 
     public DcClusterModel() {
+    }
+
+    public String getAzGroupClusterType() {
+        return azGroupClusterType;
+    }
+
+    public DcClusterModel setAzGroupClusterType(String azGroupClusterType) {
+        this.azGroupClusterType = azGroupClusterType;
+        return this;
     }
 
     public DcClusterTbl getDcCluster() {

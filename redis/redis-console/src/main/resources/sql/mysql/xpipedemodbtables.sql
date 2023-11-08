@@ -13,6 +13,19 @@ create table ZONE_TBL
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
 ) DEFAULT CHARSET=utf8 COMMENT='zone base info';
 
+drop table if exists AZ_GROUP_TBL;
+CREATE TABLE `AZ_GROUP_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `name` varchar(20) NOT NULL DEFAULT '' COMMENT 'az group name',
+  `region` varchar(20) NOT NULL DEFAULT '' COMMENT 'az group region',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+  `DataChange_LastTime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'last modify time',
+  `deleted` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'logic delete',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_name_deleted` (`name`,`deleted`),
+  KEY `ix_datachange_lasttime` (`DataChange_LastTime`)
+) DEFAULT CHARSET=utf8 COMMENT='multi az combine, inside region'
+
 -- DC Table
 drop table if exists DC_TBL;
 CREATE TABLE `DC_TBL` (
@@ -29,7 +42,18 @@ CREATE TABLE `DC_TBL` (
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
 ) DEFAULT CHARSET=utf8 COMMENT='dc base info';
 
-
+drop table if exists AZ_GROUP_MAPPING_TBL;
+CREATE TABLE `AZ_GROUP_MAPPING_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `az_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference dc id now',
+  `az_group_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference az group id',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+  `DataChange_LastTime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'last modify time',
+  `deleted` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'logic delete',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_az_group` (`az_id`,`az_group_id`),
+  KEY `ix_datachange_lasttime` (`DataChange_LastTime`)
+) DEFAULT CHARSET=utf8 COMMENT='az & az group mapping table'
 
 -- Meta Server Table
 drop table if exists METASERVER_TBL;
@@ -92,6 +116,21 @@ CREATE TABLE `CLUSTER_TBL` (
   KEY `Deleted_ClusterType` (`deleted`,`cluster_type`)
 ) DEFAULT CHARSET=utf8 COMMENT='clusters info';
 
+drop table if exists AZ_GROUP_CLUSTER_TBL;
+CREATE TABLE `AZ_GROUP_CLUSTER_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
+  `az_group_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference az_group id',
+  `active_az_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'active ac id in az group',
+  `az_group_cluster_type` varchar(32) NOT NULL DEFAULT '' COMMENT 'cluster type of az group',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+  `DataChange_LastTime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'last modify time',
+  `deleted` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'logic delete',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cluster_az_group` (`cluster_id`,`az_group_id`),
+  KEY `ix_datachange_lasttime` (`DataChange_LastTime`)
+) DEFAULT CHARSET=utf8 COMMENT='cluster&az_group mapping table'
+
 -- DC Cluster Table
 drop table if exists DC_CLUSTER_TBL;
 CREATE TABLE `DC_CLUSTER_TBL` (
@@ -100,19 +139,20 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
   `metaserver_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference metaserver id',
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
-  `active_redis_check_rules` varchar(128) COMMENT 'active redis check rules',
-  `group_name` varchar(20) COMMENT 'reference group name, null means same as dc name',
-  `group_type` varchar(32) DEFAULT NULL COMMENT 'reference group type, 1 means DRMaster and 0 means Master',
+  `active_redis_check_rules` varchar(128) DEFAULT NULL COMMENT 'active redis check rules',
+  `group_name` varchar(20) DEFAULT NULL COMMENT 'reference group name, null means same as dc name',
+  `group_type` varchar(32) DEFAULT NULL COMMENT 'reference group type, DRMaster and Master',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `az_group_cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference az group cluster id',
   PRIMARY KEY (`dc_cluster_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `DcId` (`dc_id`),
   KEY `ClusterId` (`cluster_id`),
   KEY `DcIdPrimary` (`dc_id`,`dc_cluster_id`,`deleted`),
-  KEY `ClusterId_Deleted` (`cluster_id`,`deleted`),
-  KEY `DcId_Deleted` (`dc_id`,`deleted`)
-) DEFAULT CHARSET=utf8 COMMENT='dc cluster base info';
+  KEY `idx_1` (`cluster_id`,`deleted`),
+  KEY `idx_2` (`dc_id`,`deleted`)
+) DEFAULT CHARSET=utf8 COMMENT='dc cluster base info'
 
 
 -- Shard Table

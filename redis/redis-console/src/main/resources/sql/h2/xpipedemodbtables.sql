@@ -90,7 +90,7 @@ create table CLUSTER_TBL (
 	cluster_description varchar(1024) not null default 'nothing',
 	cluster_org_id bigint unsigned not null default 0,
 	cluster_admin_emails varchar(250) default '',
-	status varchar(24) not null default 'normal',
+	status varchar(24) not null default 'Normal',
     migration_event_id bigint unsigned not null default 0 COMMENT 'related migration event on processing',
     is_xpipe_interested tinyint(1) default 1,
     cluster_designated_route_ids varchar(1024) not null default '',
