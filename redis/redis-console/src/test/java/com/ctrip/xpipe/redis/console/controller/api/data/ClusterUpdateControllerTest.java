@@ -7,12 +7,15 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterRegionExchangeInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
+import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
@@ -23,9 +26,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -38,6 +41,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     private ClusterServiceImpl clusterService;
     @Autowired
     private ClusterDao clusterDao;
+    @Autowired
+    private ShardServiceImpl shardService;
 
     @Mock
     private ConsoleConfig config;
@@ -69,7 +74,10 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         this.createInfo = createInfo;
     }
 
-    private void createCluster(String clusterType, List<String> azs, List<RegionInfo> regions) {
+    private void createCluster(String clusterName, String clusterType, List<String> azs, List<RegionInfo> regions) {
+        if (!StringUtil.isEmpty(clusterName)) {
+            createInfo.setClusterName(clusterName);
+        }
         if (!StringUtil.isEmpty(clusterType)) {
             createInfo.setClusterType(clusterType);
         }
@@ -85,7 +93,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testCreateSingleGroupCluster() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
 
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
         assertClusterEquals(cluster, "ONE_WAY");
@@ -94,7 +102,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testCreateMultiGroupCluster() {
-        this.createCluster(null, azs2, regions);
+        this.createCluster(null, null, azs2, regions);
 
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
         assertClusterEquals(cluster, "ONE_WAY");
@@ -328,8 +336,43 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     }
 
     @Test
+    public void testExchangeRegion() {
+        this.createCluster(null, null, null, null);
+        ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard1"), new HashMap<>());
+        clusterController.upgradeAzGroup("cluster-name");
+
+        this.createCluster("hetero-cluster", "HETERO", Arrays.asList("jq", "oy", "fra"), Arrays.asList(region1, region2));
+        shardService.createRegionShard("hetero-cluster", "SHA", "hetero-shard1");
+
+        ClusterRegionExchangeInfo info = new ClusterRegionExchangeInfo(1L, "cluster-name", 2L, "hetero-cluster", "SHA");
+        RetMessage ret = clusterController.exchangeClusterRegion(info);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        ShardTbl heteroShard = shardService.findAllShardNamesByClusterName("hetero-cluster").get(0);
+        Assert.assertEquals(shard.getShardName(), heteroShard.getShardName());
+    }
+
+    @Test
+    public void testExchangeRegion2() {
+        this.createCluster(null, "SINGLE_DC", Arrays.asList("jq", "fra"), null);
+        clusterService.unbindDc("cluster-name", "jq");
+        ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard2"), new HashMap<>());
+        clusterController.upgradeAzGroup("cluster-name");
+
+        this.createCluster("hetero-cluster", "HETERO", Arrays.asList("jq", "oy", "fra"), Arrays.asList(region1, region2));
+        shardService.createRegionShard("hetero-cluster", "FRA", "hetero-shard2");
+
+        ClusterRegionExchangeInfo info = new ClusterRegionExchangeInfo(1L, "cluster-name", 2L, "hetero-cluster", "FRA");
+        RetMessage ret = clusterController.exchangeClusterRegion(info);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        ShardTbl heteroShard = shardService.findAllShardNamesByClusterName("hetero-cluster").get(0);
+        Assert.assertEquals(shard.getShardName(), heteroShard.getShardName());
+    }
+
+    @Test
     public void testUpgradeOneWayClusterToAzGroup() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
 
         clusterController.upgradeAzGroup(clusterName);
         ClusterCreateInfo cluster = clusterController.getCluster(clusterName);
@@ -343,7 +386,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testUpgradeBiClusterToAzGroup() {
-        this.createCluster(ClusterType.BI_DIRECTION.toString(), null, null);
+        this.createCluster(null, ClusterType.BI_DIRECTION.toString(), null, null);
 
         clusterController.upgradeAzGroup("cluster-name");
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
@@ -363,7 +406,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testBindDc() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
 
         RetMessage ret = clusterController.bindDc("cluster-name", "fra", null);
         Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
@@ -374,7 +417,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testBindDuplicatedDc() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
 
         RetMessage ret = clusterController.bindDc("cluster-name", "jq", null);
         Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
@@ -385,7 +428,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testBindRegionAz() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
         clusterController.upgradeAzGroup("cluster-name");
 
         clusterController.bindRegionAz("cluster-name", "FRA", "fra");
@@ -404,8 +447,24 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     }
 
     @Test
+    public void testBindRegionAz2() {
+        this.createCluster(null, null, null, null);
+        clusterController.upgradeAzGroup("cluster-name");
+        clusterController.unbindDc("cluster-name", "oy");
+
+        clusterController.bindRegionAz("cluster-name", "SHA", "oy");
+        ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
+        Assert.assertEquals(1, cluster.getRegions().size());
+
+        RegionInfo region = cluster.getRegions().get(0);
+        Assert.assertEquals("ONE_WAY", region.getClusterType());
+        Assert.assertEquals("jq", region.getActiveAz());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), region.getAzs());
+    }
+
+    @Test
     public void testUnbindActiveDc() {
-        this.createCluster(null, null, null);
+        this.createCluster(null, null, null, null);
 
         RetMessage ret = clusterController.unbindDc("cluster-name", "jq");
         Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
@@ -417,7 +476,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testUnbindDc() {
-        this.createCluster(null, azs2, regions);
+        this.createCluster(null, null, azs2, regions);
 
         clusterController.unbindDc("cluster-name", "oy");
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");

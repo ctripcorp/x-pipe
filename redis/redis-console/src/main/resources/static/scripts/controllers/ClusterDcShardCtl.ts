@@ -26,8 +26,10 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.existsRoute = existsRoute;
     $scope.showCrossMasterHealthStatus = false;
     $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall;
+    $scope._clusterType = ClusterType.default();
     $scope.clusterType = ClusterType.default();
     $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
+    $scope.setClusterType = setClusterType;
 
     if ($scope.clusterName) {
         loadCluster();
@@ -71,10 +73,9 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                             }
                         }
 
-                        var type = ClusterType.lookup(cluster.clusterType);
-                        if (null != type) {
-                            $scope.clusterType = type.value;
-                            $scope.showCrossMasterHealthStatus = type.multiActiveDcs;
+                        $scope._clusterType = ClusterType.lookup(cluster.clusterType);
+                        if (!$scope._clusterType.useAzGroupType) {
+                            setClusterType(cluster.clusterType)
                         }
 
                         existsRoute($scope.currentDcName, $scope.clusterName);
@@ -90,6 +91,14 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
             });
     }
 
+    function setClusterType(clusterType) {
+        var type = ClusterType.lookup(clusterType);
+        if (null != type) {
+            $scope.clusterType = type.value;
+            $scope.showCrossMasterHealthStatus = type.multiActiveDcs;
+        }
+    }
+
 
     function loadDcCluster(clusterName, dcName) {
         $scope.sources = [];
@@ -97,6 +106,9 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         DcClusterService.findDcCluster(clusterName, dcName)
             .then(function (result) {
                 $scope.dcCluster = result;
+                if ($scope._clusterType.useAzGroupType && result.azGroupClusterType != null) {
+                    setClusterType(result.azGroupClusterType)
+                }
 
                 if (result.shards != null) {
                     $scope.shards = result.shards.sort((v1, v2) => {

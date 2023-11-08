@@ -51,17 +51,17 @@ public class ShardUpdateController extends AbstractController {
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
 
-//    @PostMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/regions/" + REGION_NAME_PATH_VARIABLE + "/{shardName}")
-//    public RetMessage createRegionShard(@PathVariable String clusterName, @PathVariable String regionName,
-//        @PathVariable String shardName) {
-//        try {
-//            shardService.createRegionShard(clusterName, regionName, shardName);
-//        } catch (Exception e) {
-//            logger.error("Create");
-//            return RetMessage.createFailMessage(e.getMessage());
-//        }
-//        return RetMessage.createSuccessMessage();
-//    }
+    @PostMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/regions/" + REGION_NAME_PATH_VARIABLE + "/{shardName}")
+    public RetMessage createRegionShard(@PathVariable String clusterName, @PathVariable String regionName,
+        @PathVariable String shardName) {
+        try {
+            shardService.createRegionShard(clusterName, regionName, shardName);
+        } catch (Exception e) {
+            logger.error("[CreateRegionShard]Add Shard {} Failed", shardName, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+        return RetMessage.createSuccessMessage();
+    }
 
     @PostMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/regions/" + REGION_NAME_PATH_VARIABLE)
     public RetMessage createRegionShards(@PathVariable String clusterName, @PathVariable String regionName,
@@ -80,7 +80,7 @@ public class ShardUpdateController extends AbstractController {
                 shardService.createRegionShard(clusterName, regionName, shardName);
                 successShards.add(shardName);
             } catch (Exception e) {
-                logger.error("[CreateRegionShards]Add Shard {} Failed, Error: {}", shardName, e, e);
+                logger.error("[CreateRegionShards]Add Shard {} Failed", shardName, e);
                 failShards.add(shardName);
             }
         }

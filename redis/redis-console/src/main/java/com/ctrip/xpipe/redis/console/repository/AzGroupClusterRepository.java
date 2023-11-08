@@ -117,15 +117,30 @@ public class AzGroupClusterRepository {
         azGroupClusterMapper.insert(azGroupCluster);
     }
 
-    public void updateAzGroupId(Long id, Long newAzGroupId) {
+    public void updateClusterId(Long id, Long clusterId) {
+        if (id == null || clusterId == null) {
+            return;
+        }
         UpdateWrapper<AzGroupClusterEntity> wrapper = new UpdateWrapper<>();
-        wrapper.set(AzGroupClusterEntity.AZ_GROUP_ID, newAzGroupId).eq(AzGroupClusterEntity.ID, id);
+        wrapper.set(AzGroupClusterEntity.CLUSTER_ID, clusterId).eq(AzGroupClusterEntity.ID, id);
         azGroupClusterMapper.update(null, wrapper);
     }
 
-    public void updateActiveAzId(Long id, Long newActiveAzId) {
+    public void updateAzGroupId(Long id, Long azGroupId) {
+        if (id == null || azGroupId == null) {
+            return;
+        }
         UpdateWrapper<AzGroupClusterEntity> wrapper = new UpdateWrapper<>();
-        wrapper.set(AzGroupClusterEntity.ACTIVE_AZ_ID, newActiveAzId).eq(AzGroupClusterEntity.ID, id);
+        wrapper.set(AzGroupClusterEntity.AZ_GROUP_ID, azGroupId).eq(AzGroupClusterEntity.ID, id);
+        azGroupClusterMapper.update(null, wrapper);
+    }
+
+    public void updateActiveAzId(Long id, Long activeAzId) {
+        if (id == null || activeAzId == null) {
+            return;
+        }
+        UpdateWrapper<AzGroupClusterEntity> wrapper = new UpdateWrapper<>();
+        wrapper.set(AzGroupClusterEntity.ACTIVE_AZ_ID, activeAzId).eq(AzGroupClusterEntity.ID, id);
         azGroupClusterMapper.update(null, wrapper);
     }
 
