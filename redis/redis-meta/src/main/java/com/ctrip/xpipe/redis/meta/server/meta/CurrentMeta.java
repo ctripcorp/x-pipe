@@ -406,7 +406,14 @@ public class CurrentMeta implements Releasable {
 
 			@Override
 			public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
-				currentClusterMeta.changeShard((ShardMetaComparator) comparator);
+				ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
+				ShardMeta shard = ((ShardMetaComparator) comparator).getCurrent();
+				if (null != shard && null == shardMetaComparator.getFuture()) {
+					// shard migrate out
+					currentClusterMeta.removeShard(shard);
+				} else {
+					currentClusterMeta.changeShard(shardMetaComparator);
+				}
 			}
 
 			@Override

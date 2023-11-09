@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -117,7 +118,6 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         long originFsyncCnt = keeperStats.getFullSyncCount();
 
         // upstream cmd not continue and refullsync
-        logger.info("[lsl] {}", keeperServer1.getListeningPort());
         keeperServer2.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("127.0.0.1", keeperServer1.getListeningPort()));
         waitKeeperSyncWithRedis(keeperServer2);
 
@@ -135,9 +135,10 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         KeeperConfig keeperConfig = newTestKeeperConfig();
         ((TestKeeperConfig)keeperConfig).setReplKeepSecondsAfterDown(replKeepSecondsAfterDown);
         KeeperMeta keeperMeta = createKeeperMeta(keeperPort, keeperRunId);
+        ReplId replId = getReplId();
         TimeUnit.SECONDS.sleep(waitSecondsAfterDown);
 
-        return startRedisKeeperServer(keeperConfig, keeperMeta);
+        return startRedisKeeperServer(replId.id(), keeperConfig, keeperMeta);
     }
 
     private void waitKeeperSyncWithRedis(RedisKeeperServer keeperServer) throws Exception {

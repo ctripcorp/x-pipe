@@ -30,6 +30,16 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     }
 
     @Override
+    public KeeperInstanceMeta infoPort(int queryPort) {
+        try {
+            return restTemplate.getForObject("http://{ip}:{port}/keepers/port/{queryPort}}", KeeperInstanceMeta.class,
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), queryPort);
+        } catch (HttpStatusCodeException ex) {
+            throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
+        }
+    }
+
+    @Override
     public void addKeeper(KeeperTransMeta keeperTransMeta) {
         try {
             restTemplate.postForObject("http://{ip}:{port}/keepers", keeperTransMeta, Void.class,

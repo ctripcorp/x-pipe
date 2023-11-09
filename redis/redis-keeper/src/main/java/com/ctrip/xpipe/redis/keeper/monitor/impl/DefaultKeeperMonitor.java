@@ -24,7 +24,7 @@ public class DefaultKeeperMonitor extends AbstractStartStoppable implements Keep
 	
 	public DefaultKeeperMonitor(RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
 		this.redisKeeperServer = redisKeeperServer;
-		this.keeperStats = new DefaultKeeperStats(redisKeeperServer.getShardId().toString(), scheduled);
+		this.keeperStats = new DefaultKeeperStats(redisKeeperServer.getReplId().toString(), scheduled);
 	}
 	
 	@Override

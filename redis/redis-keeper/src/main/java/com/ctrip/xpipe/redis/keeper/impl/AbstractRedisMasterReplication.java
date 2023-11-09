@@ -291,7 +291,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					channel.close();
 				}
 			}
-		}, replTimeoutMilli, replTimeoutMilli, TimeUnit.MILLISECONDS);
+		}, replTimeoutMilli, 10000, TimeUnit.MILLISECONDS);
 
 		channel.closeFuture().addListener(new ChannelFutureListener() {
 
@@ -339,7 +339,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		if(canSendPsync()) {
 			executeCommand(psyncCommand());
 		} else {
-			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
+			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getReplId());
 			doWhenCannotPsync();
 		}
 	}

@@ -31,7 +31,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	public void testMakeBackupActive() throws Exception{
 		
 		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
-		Assert.assertEquals(PARTIAL_STATE.FULL, redisKeeperServer.getRedisMaster().partialState());
+		Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
 		
 		logger.info(remarkableMessage("make keeper active{}"), backupKeeper);
 		setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());

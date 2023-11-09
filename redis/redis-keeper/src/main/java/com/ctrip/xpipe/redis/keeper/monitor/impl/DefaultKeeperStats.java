@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class DefaultKeeperStats extends AbstractStartStoppable implements KeeperStats {
 
-	private String shard;
+	private String replId;
 	
 	private AtomicLong fullSyncCount = new AtomicLong();
 	
@@ -51,8 +51,8 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 
 	private AtomicLong peakOutputInstantaneousOutput = new AtomicLong();
 
-	public DefaultKeeperStats(String shard, ScheduledExecutorService scheduled) {
-		this.shard = shard;
+	public DefaultKeeperStats(String replId, ScheduledExecutorService scheduled) {
+		this.replId = replId;
 		this.scheduled = scheduled;
 	}
 
@@ -195,10 +195,10 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	}
 
 	private void logStats() {
-		logger.debug("[{}][input]{}", shard, getInputInstantaneousBPS());
-		logger.debug("[{}][output]{}", shard, getOutputInstantaneousBPS());
-		logger.debug("[{}][peak-in]{}", shard, getPeakInputInstantaneousBPS());
-		logger.debug("[{}][peak-out]{}", shard, getPeakOutputInstantaneousBPS());
+		logger.debug("[{}][input]{}", replId, getInputInstantaneousBPS());
+		logger.debug("[{}][output]{}", replId, getOutputInstantaneousBPS());
+		logger.debug("[{}][peak-in]{}", replId, getPeakInputInstantaneousBPS());
+		logger.debug("[{}][peak-out]{}", replId, getPeakOutputInstantaneousBPS());
 	}
 
 	@Override

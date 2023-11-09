@@ -49,6 +49,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new ClusterId(currentTestName()  + "-", id);
 	}
 
+	protected ReplId getReplId() {
+		return new ReplId(currentTestName() + "-", 0L);
+	}
+
 	protected ShardId getShardId() {
 	    return new ShardId(currentTestName() + "-", 0L);
 	}
@@ -61,14 +65,14 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		
 		String tmpDir = getTestFileDir();
 
-		return createReplicationStoreManager(getClusterId(), getShardId(), keeperRunid, keeperConfig, new File(tmpDir));
+		return createReplicationStoreManager(getReplId(), keeperRunid, keeperConfig, new File(tmpDir));
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig) {
 		
 		String tmpDir = getTestFileDir();
 
-		return createReplicationStoreManager(getClusterId(), getShardId(), keeperConfig, new File(tmpDir));
+		return createReplicationStoreManager(getReplId(), keeperConfig, new File(tmpDir));
 	}
 
 	
@@ -76,31 +80,31 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 		String tmpDir = getTestFileDir();
 
-		return createReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
+		return createReplicationStoreManager(getReplId(), new File(tmpDir));
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, File storeDir) {
 
-		return createReplicationStoreManager(clusterId, shardId, keeperRunid, getKeeperConfig(), storeDir);
+		return createReplicationStoreManager(replId, keeperRunid, getKeeperConfig(), storeDir);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, File storeDir) {
 
-		return createReplicationStoreManager(clusterId, shardId, getKeeperConfig(), storeDir);
+		return createReplicationStoreManager(replId, getKeeperConfig(), storeDir);
 	}
 	
 	protected KeeperConfig getKeeperConfig() {
 		return new TestKeeperConfig();
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, KeeperConfig keeperConfig, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, KeeperConfig keeperConfig, File storeDir) {
 		
-		return createReplicationStoreManager(clusterId, shardId, randomKeeperRunid(), keeperConfig, storeDir);
+		return createReplicationStoreManager(replId, randomKeeperRunid(), keeperConfig, storeDir);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, createkeeperMonitor());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor());
 		
 		replicationStoreManager.addObserver(new Observer() {
 			

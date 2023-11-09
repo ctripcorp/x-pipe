@@ -29,8 +29,6 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 */
 	ReplicationStore getCurrent() throws IOException;
 
+	ReplId getReplId();
 
-	ClusterId getClusterId();
-
-	ShardId getShardId();
 }

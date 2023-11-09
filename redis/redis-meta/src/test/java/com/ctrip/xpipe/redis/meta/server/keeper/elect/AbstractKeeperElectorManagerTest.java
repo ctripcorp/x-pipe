@@ -48,6 +48,12 @@ public class AbstractKeeperElectorManagerTest extends AbstractMetaServerContextT
         return addKeeperZkNode(zkClient, leaderElectionID, leaderElectionZKPath);
     }
 
+    protected LeaderElector addKeeperZkNode(Long shardDbId, ZkClient zkClient, KeeperMeta keeperMeta) throws Exception {
+        String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(shardDbId);
+        String leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(keeperMeta);
+        return addKeeperZkNode(zkClient, leaderElectionID, leaderElectionZKPath);
+    }
+
     protected LeaderElector addKeeperZkNode(ZkClient zkClient, String leaderElectionID, String leaderElectionZKPath) throws Exception {
         ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
         LeaderElector leaderElector = new DefaultLeaderElector(ctx, zkClient.get());

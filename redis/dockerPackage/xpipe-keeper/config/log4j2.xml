@@ -8,12 +8,12 @@
 
     <appenders>
         <console name="console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <PatternLayout pattern="%X{xpipe.cluster.shard}%X{xpipe.keeper.repl}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
         </console>
 
         <RollingFile name="rollingFileInfo" fileName="${baseDir}/${appName}.log"
                      filePattern="${baseDir}/${appName}-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="%X{xpipe.cluster.shard}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <PatternLayout pattern="%X{xpipe.cluster.shard}%X{xpipe.keeper.repl}[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="500 MB"/>

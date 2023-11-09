@@ -4,16 +4,14 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +40,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ClusterId clusterId;
-
-    private final ShardId shardId;
+    private final ReplId replId;
 
     private final String keeperRunid;
 
@@ -70,16 +66,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final RedisOpParser redisOpParser;
 
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
-        this(keeperConfig, clusterId, shardId, keeperRunid, baseDir, keeperMonitor, null);
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, null);
     }
 
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId,
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) {
         super(MoreExecutors.directExecutor());
-        this.clusterId = clusterId;
-        this.shardId = shardId;
+        this.replId = replId;
         this.keeperRunid = keeperRunid;
         this.keeperConfig = keeperConfig;
         this.keeperMonitor = keeperMonitor;
@@ -90,11 +85,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     protected void doInitialize() throws Exception {
 
-        this.baseDir = new File(keeperBaseDir, clusterId + "/" + shardId);
+        this.baseDir = new File(keeperBaseDir, replId.toString());
         this.metaFile = new File(this.baseDir, META_FILE);
 
         scheduled = Executors.newScheduledThreadPool(1,
-                ClusterShardAwareThreadFactory.create(clusterId.toString(), shardId.toString(), "gc-" + String.format("%s-%s", clusterId, shardId)));
+                KeeperReplIdAwareThreadFactory.create(replId.toString(), "gc-" + replId.toString()));
 
         gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
@@ -254,13 +249,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     @Override
-    public ClusterId getClusterId() {
-        return clusterId;
-    }
-
-    @Override
-    public ShardId getShardId() {
-        return shardId;
+    public ReplId getReplId() {
+        return replId;
     }
 
     protected synchronized void gc() throws IOException {
@@ -323,12 +313,67 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     @Override
     public String toString() {
-        return String.format("cluster:%s, shard:%s, keeperRunId:%s, baseDir:%s, currentMeta:%s", clusterId, shardId, keeperRunid, baseDir,
+        return String.format("repl:%s, keeperRunId:%s, baseDir:%s, currentMeta:%s", replId, keeperRunid, baseDir,
                 currentMeta.get() == null ? "" : currentMeta.get().toString());
     }
 
     public File getBaseDir() {
         return baseDir;
+    }
+
+    public static class ClusterAndShardCompatible extends DefaultReplicationStoreManager {
+
+        private final Logger logger = LoggerFactory.getLogger(ClusterAndShardCompatible.class);
+
+        private final File keeperBaseDir;
+
+        private ReplId replId;
+
+        private ClusterId deprecatedClusterId;
+
+        private ShardId deprecatedShardId;
+
+        public ClusterAndShardCompatible(KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
+                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) {
+            super(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, redisOpParser);
+            this.keeperBaseDir = baseDir;
+            this.replId = replId;
+        }
+
+        @Override
+        protected void doInitialize() throws Exception {
+
+            renameDeprecatedStore();
+
+            super.doInitialize();
+        }
+
+        public ClusterAndShardCompatible setDeprecatedClusterAndShard(ClusterId clusterId, ShardId shardId) {
+            this.deprecatedClusterId = clusterId;
+            this.deprecatedShardId = shardId;
+            return this;
+        }
+
+        public void renameDeprecatedStore() {
+            if (null == deprecatedClusterId || null == deprecatedShardId) {
+                return;
+            }
+
+            File deprecated = new File(keeperBaseDir, deprecatedClusterId + "/" + deprecatedShardId);
+            File dest = new File(keeperBaseDir, replId.toString());
+
+            File deprecatedParent = new File(keeperBaseDir, deprecatedClusterId.toString());
+            if (deprecated.exists() && !dest.exists()) {
+                try {
+                    keeperBaseDir.mkdirs();
+                    Files.move(deprecated, dest);
+                    logger.info("[renameDeprecatedStore] {} -> {} success", deprecated.getAbsolutePath(), dest.getAbsolutePath());
+                    FileUtils.recursiveDelete(deprecatedParent);
+                } catch (IOException e) {
+                    logger.error("[renameDeprecatedStore] {} -> {} failure", deprecated.getAbsolutePath(), dest.getAbsolutePath(), e);
+                }
+            }
+        }
     }
 
 }

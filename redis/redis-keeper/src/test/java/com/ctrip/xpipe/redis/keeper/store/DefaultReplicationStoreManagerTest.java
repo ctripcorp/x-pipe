@@ -4,14 +4,9 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.utils.FileUtils;
-import com.google.common.io.Files;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -24,7 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.spy;
 
 /**
  * @author marsqing
@@ -243,10 +237,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		String keeperRunid = randomKeeperRunid();
 		
 		File baseDir = new File(getTestFileDir());
-		ClusterId clusterId = getClusterId();
-		ShardId shardId = getShardId();
-		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,
-				shardId, keeperRunid, baseDir);
+		ReplId replId = getReplId();
+		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(replId, keeperRunid, baseDir);
 
 		LifecycleHelper.initializeIfPossible(mgr);
 
@@ -255,8 +247,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		currentStore = mgr.create();
 
-		assertEquals(clusterId, mgr.getClusterId());
-		assertEquals(shardId, mgr.getShardId());
+		assertEquals(replId, mgr.getReplId());
 		assertEquals(currentStore, mgr.getCurrent());
 
 		DefaultReplicationStore newCurrentStore = (DefaultReplicationStore) mgr.create();
@@ -271,7 +262,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		cmdBuf.writeByte(9);
 		newCurrentStore.cmdStore.appendCommands(cmdBuf);
 
-		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
+		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(replId, keeperRunid, baseDir);
 		LifecycleHelper.initializeIfPossible(mgr2);
 
 		assertEquals(metaStore.getReplId(), mgr2.getCurrent().getMetaStore().getReplId());

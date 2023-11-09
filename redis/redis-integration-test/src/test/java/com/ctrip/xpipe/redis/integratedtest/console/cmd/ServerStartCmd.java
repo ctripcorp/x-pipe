@@ -49,8 +49,7 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
         for (URL url: urls) {
             if(Pattern.matches(".*/redis-proxy-client/target/classes/", url.toString())) {
                 sb.append(url);
-                sb.append("../redis-proxy-client-1.2.8.jar:");
-
+                sb.append("../redis-proxy-client-1.2.9.jar:");
             } else {
                 sb.append(url.getPath());
                 sb.append(":");

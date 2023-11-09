@@ -8,8 +8,11 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
@@ -20,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,7 +34,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * 2022/4/7 11:42
  */
-public class DefaultApplierManagerTest extends AbstractTest {
+public class DefaultApplierManagerTest extends AbstractMetaServerTest {
 
     private DefaultApplierManager manager = new DefaultApplierManager();
 

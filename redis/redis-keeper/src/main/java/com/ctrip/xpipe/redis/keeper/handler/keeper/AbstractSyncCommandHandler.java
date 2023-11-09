@@ -80,7 +80,7 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
             RedisKeeperServer redisKeeperServer = (RedisKeeperServer)redisSlave.getRedisServer();
 
             //alert full sync
-            String alert = String.format("FULL(M)<-%s[%s,%s]", redisSlave.metaInfo(), redisKeeperServer.getClusterId(), redisKeeperServer.getShardId());
+            String alert = String.format("FULL(M)<-%s[%s]", redisSlave.metaInfo(), redisKeeperServer.getReplId());
             EventMonitor.DEFAULT.logAlertEvent(alert);
 
             redisKeeperServer.fullSyncToSlave(redisSlave);

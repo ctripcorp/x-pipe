@@ -94,13 +94,13 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	 @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
         if (writtenBytes > 0) {
-            String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
+            String type = String.format("Keeper.Out.%s", redisKeeperServer.getReplId());
             String name = null;
             if(redisClient instanceof RedisSlave){
             	RedisSlave slave = (RedisSlave)redisClient;
-            	 name = String.format("slave.%s.%s.%s:%s", slave.roleDesc(), redisKeeperServer.getShardId(), remoteIp, slave.getSlaveListeningPort());
+            	 name = String.format("slave.%s.%s.%s:%s", slave.roleDesc(), redisKeeperServer.getReplId(), remoteIp, slave.getSlaveListeningPort());
             }else{
-            	name = String.format("client.%s.%s", redisKeeperServer.getShardId(), remoteIp);
+            	name = String.format("client.%s.%s", redisKeeperServer.getReplId(), remoteIp);
             }
             EventMonitor.DEFAULT.logEvent(type, name, writtenBytes);
         }
