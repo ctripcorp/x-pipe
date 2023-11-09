@@ -67,7 +67,7 @@ function ClusterType() {
                 useKeeper: true,
                 healthCheck: true,
                 supportMigration: true,
-                isCrossDc:true,
+                isCrossDc:false,
                 supportApplier:false,
                 useAzGroupType:true,
             }

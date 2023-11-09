@@ -241,7 +241,9 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 		result.setShards(shardModelService.getAllShardModel(dcName, clusterName));
 		ClusterType azGroupType = azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
-		result.setAzGroupClusterType(azGroupType.name());
+		if (azGroupType != null) {
+			result.setAzGroupClusterType(azGroupType.name());
+		}
 		if (azGroupType == ClusterType.SINGLE_DC) {
 			result.setSources(sourceModelService.getAllSourceModels(dcName, clusterName));
 		}
