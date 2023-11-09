@@ -4,7 +4,9 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentOneWayShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
@@ -18,6 +20,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -267,6 +270,35 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		currentMeta.changeCluster(comparator);
 		Assert.assertFalse(currentMeta.hasShard(clusterDbId, shardDbId));
 		Assert.assertTrue(currentMeta.hasShard(clusterDbId, newShardDbId));
+	}
+
+	@Test
+	public void testShardsMigrateOut() {
+		DcMeta current = getDcMeta("jq");
+		DcMeta future = MetaClone.clone(current);
+		exchangeClusterShards(future.getClusters().get("cluster1"), future.getClusters().get("cluster2"));
+		DcMetaComparator comparator = new DcMetaComparator(current, future);
+		comparator.setShardMigrateSupport();
+		comparator.compare();
+
+		Set<MetaComparator> clusterMetaComparators = comparator.getMofified();
+		Assert.assertEquals(2, clusterMetaComparators.size());
+
+		CurrentMeta currentMeta = new CurrentMeta();
+		comparator.getMofified().forEach(clusterMetaComparator -> {
+			currentMeta.addCluster(((ClusterMetaComparator)clusterMetaComparator).getCurrent());
+		});
+		comparator.getMofified().forEach(clusterMetaComparator -> currentMeta.changeCluster(((ClusterMetaComparator)clusterMetaComparator)));
+
+		AtomicBoolean dismatch = new AtomicBoolean(false);
+		currentMeta.allClusterMetas().forEach(currentClusterMeta -> {
+			ClusterMeta clusterMeta = future.getClusters().get(currentClusterMeta.getClusterId());
+			Set<Long> metaShardIds = clusterMeta.getAllShards().values().stream().map(ShardMeta::getDbId).collect(Collectors.toSet());
+			Set<Long> currentShardIds = currentClusterMeta.getClusterMetas().keySet();
+			if (!metaShardIds.equals(currentShardIds)) dismatch.set(true);
+		});
+
+		Assert.assertFalse(dismatch.get());
 	}
 
 	@Test

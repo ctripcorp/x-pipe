@@ -55,7 +55,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
     public void testPsyncAndXsync() throws Exception {
         KeeperConfig keeperConfig = newTestKeeperConfig();
         KeeperMeta keeperMeta = createKeeperMeta();
-        DefaultRedisKeeperServer keeperServer = new DefaultRedisKeeperServer(keeperMeta, keeperConfig,
+        DefaultRedisKeeperServer keeperServer = new DefaultRedisKeeperServer(getReplId().id(), keeperMeta, keeperConfig,
                 getReplicationStoreManagerBaseDir(keeperMeta), getRegistry().getComponent(LeaderElectorManager.class),
                 createkeepersMonitorManager(), getResourceManager(), parser);
         keeperServer.initialize();

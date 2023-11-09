@@ -160,6 +160,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		}
 
 		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
+		dcMetaComparator.setShardMigrateSupport();
 		dcMetaComparator.compare();
 
 		if (dcMetaComparator.totalChangedCount() - drClusterNums(dcMetaComparator) > META_MODIFY_PROTECT_COUNT) {

@@ -31,6 +31,9 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
 	}
 
+	@Override
+	protected void preKeeperContainerOperation() {
+	}
 
 	@Override
 	protected void doKeeperContainerOperation() {

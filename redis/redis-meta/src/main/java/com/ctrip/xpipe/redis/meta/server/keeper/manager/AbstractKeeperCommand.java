@@ -46,6 +46,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	@SuppressWarnings("unchecked")
 	private void doOpetation() {
 		try{
+			preKeeperContainerOperation();
 			doKeeperContainerOperation();
 			checkUntilStateOk();
 		}catch(KeeperContainerException e){
@@ -87,6 +88,8 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	protected abstract Command<V> createCheckStateCommand();
 
 	protected abstract boolean isSuccess(ErrorMessage<KeeperContainerErrorCode> error);
+
+	protected abstract void preKeeperContainerOperation();
 
 	protected abstract void doKeeperContainerOperation();
 	

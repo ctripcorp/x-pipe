@@ -108,8 +108,8 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
-	protected RedisKeeperServer startRedisKeeperServer(KeeperConfig keeperConfig, KeeperMeta keeperMeta) throws Exception {
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
+	protected RedisKeeperServer startRedisKeeperServer(Long replId, KeeperConfig keeperConfig, KeeperMeta keeperMeta) throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(replId, keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
 		add(redisKeeperServer);

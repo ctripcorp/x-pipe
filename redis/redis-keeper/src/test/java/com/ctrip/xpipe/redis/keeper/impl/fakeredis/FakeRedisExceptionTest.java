@@ -51,10 +51,10 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	}
 	
 	
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
+	protected RedisKeeperServer createRedisKeeperServer(Long replId,  KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		
-		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, leaderElectorManager,
+		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
 				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class)){
 		
 			@Override

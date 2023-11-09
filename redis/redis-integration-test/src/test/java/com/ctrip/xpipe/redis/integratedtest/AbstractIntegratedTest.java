@@ -59,7 +59,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private String clusterId = "cluster1", shardId = "shard1";
 
-	private Long clusterDbId = 1L, shardDbId = 1L;
+	private Long clusterDbId = 1L, shardDbId = 1L, replId = 1L;
 
 	private int defaultTestMessageCount = 5000;
 
@@ -183,14 +183,16 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 																KeepersMonitorManager keeperMonitorManager,
 																RedisOpParser redisOpParser) {
 
-		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
+		Long replId = keeperMeta.parent().getDbId();
+		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
 				leaderElectorManager, keeperMonitorManager, resourceManager, redisOpParser);
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
 			 LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
-		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
+		Long replId = keeperMeta.parent().getDbId();
+		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
 				leaderElectorManager, keeperMonitorManager, resourceManager);
 	}
 
@@ -320,6 +322,10 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	public Long getShardDbId() {
 		return shardDbId;
+	}
+
+	public Long getReplId() {
+		return replId;
 	}
 
 	protected void sendMesssageToMasterAndTest(RedisMeta redisMaster, List<RedisMeta> slaves){

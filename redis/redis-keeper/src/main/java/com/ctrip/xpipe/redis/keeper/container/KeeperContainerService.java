@@ -6,8 +6,7 @@ import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.ShardId;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
@@ -95,7 +94,7 @@ public class KeeperContainerService {
             return add(keeperTransMeta);
         }
 
-        start(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
+        start(ReplId.from(keeperTransMeta.getReplId()));
 
         return keeperServer;
     }
@@ -104,23 +103,21 @@ public class KeeperContainerService {
         return Lists.newArrayList(redisKeeperServers.values());
     }
 
-    public void start(ClusterId clusterId, ShardId shardId) {
-        String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
+    public void start(ReplId replId) {
+        String keeperServerKey = replId.toString();
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
 
         if (keeperServer == null) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_EXIST,
-                            String.format("Start keeper for cluster %s shard %s failed since keeper doesn't exist",
-                                    clusterId, shardId)), null);
+                            String.format("Start keeper for %s failed since keeper doesn't exist", replId)), null);
         }
 
         if (keeperServer.getLifecycleState().isStarted()) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_STARTED,
-                            String.format("Keeper for cluster %s shard %s already started",
-                                    clusterId, shardId)), null);
+                            String.format("Keeper for %s already started", replId)), null);
         }
 
         try {
@@ -128,28 +125,25 @@ public class KeeperContainerService {
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                            String.format("Start keeper failed for cluster %s shard %s",
-                                    clusterId, shardId)), ex);
+                            String.format("Start keeper failed for %s", replId)), ex);
         }
     }
 
-    public void stop(ClusterId clusterId, ShardId shardId) {
-        String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
+    public void stop(ReplId replId) {
+        String keeperServerKey = replId.toString();
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
 
         if (keeperServer == null) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_EXIST,
-                            String.format("Stop keeper for cluster %s shard %s failed since keeper doesn't exist",
-                                    clusterId, shardId)), null);
+                            String.format("Stop keeper for %s failed since keeper doesn't exist", replId)), null);
         }
 
         if (keeperServer.getLifecycleState().isStopped()) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_STOPPED,
-                            String.format("Keeper for cluster %s shard %s already stopped",
-                                    clusterId, shardId)), null);
+                            String.format("Keeper for %s already stopped", replId)), null);
         }
 
         try {
@@ -157,13 +151,12 @@ public class KeeperContainerService {
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                            String.format("Stop keeper failed for cluster %s shard %s",
-                                    clusterId, shardId)), ex);
+                            String.format("Stop keeper failed for %s", replId)), ex);
         }
     }
 
-    public void remove(ClusterId clusterId, ShardId shardId) {
-        String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
+    public void remove(ReplId replId) {
+        String keeperServerKey = replId.toString();
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
 
@@ -183,8 +176,7 @@ public class KeeperContainerService {
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                            String.format("Remove keeper failed for cluster %s shard %s",
-                                    clusterId, shardId)), ex);
+                            String.format("Remove keeper failed for %s", replId)), ex);
         }
     }
 
@@ -198,7 +190,7 @@ public class KeeperContainerService {
     private RedisKeeperServer doAdd(KeeperTransMeta keeperTransMeta, KeeperMeta keeperMeta) throws Exception {
 
         File baseDir = getReplicationStoreDir(keeperMeta);
-        return createRedisKeeperServer(keeperMeta, baseDir);
+        return createRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta, baseDir);
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
@@ -210,10 +202,10 @@ public class KeeperContainerService {
         keeperMeta.setParent(shardMeta);
     }
 
-    private RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper,
+    private RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper,
                                                       File baseDir) throws Exception {
 
-        RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeper, keeperConfig,
+        RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
                 baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, redisOpParser);
 
         register(redisKeeperServer);
@@ -235,10 +227,7 @@ public class KeeperContainerService {
     }
 
     private String assembleKeeperServerKey(KeeperTransMeta keeperTransMeta) {
-        return assembleKeeperServerKey(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
+        return ReplId.from(keeperTransMeta.getReplId()).toString();
     }
 
-    private String assembleKeeperServerKey(ClusterId clusterId, ShardId shardId) {
-        return String.format("%s-%s", clusterId, shardId);
-    }
 }

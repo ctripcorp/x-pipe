@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.manager;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
@@ -8,8 +7,13 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -22,6 +26,7 @@ import com.google.common.collect.Lists;
 import org.junit.*;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
 
-public class DefaultKeeperManagerTest extends AbstractTest {
+public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
     private DefaultKeeperManager manager = new DefaultKeeperManager();
 
@@ -83,7 +88,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Arrays.asList(surviveKeeper));
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
-        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, metaKeeper));
+        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
         verify(keeperStateController, times(0)).removeKeeper(any());
     }
 
@@ -98,7 +103,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(0)).addKeeper(any());
-        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, surviveKeeper));
+        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper));
     }
 
     @Test
@@ -570,4 +575,25 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
         }
     }
+
+    @Test
+    public void testShardMigrate() {
+        DcMeta current = getDcMeta("jq");
+        DcMeta future = MetaClone.clone(current);
+        exchangeClusterShards(future.getClusters().get("cluster1"), future.getClusters().get("cluster2"));
+        DcMetaComparator comparator = new DcMetaComparator(current, future);
+        comparator.setShardMigrateSupport();
+        comparator.compare();
+
+        Set<MetaComparator> clusterMetaComparators = comparator.getMofified();
+        Assert.assertEquals(2, clusterMetaComparators.size());
+
+        clusterMetaComparators.forEach(clusterMetaComparator -> {
+            manager.handleClusterModified((ClusterMetaComparator) clusterMetaComparator);
+        });
+        // allow redundant addAndStart keeper/applier job since the job is idempotent
+        verify(keeperStateController, times(6)).addKeeper(any());
+        verify(keeperStateController, never()).removeKeeper(any());
+    }
+
 }
