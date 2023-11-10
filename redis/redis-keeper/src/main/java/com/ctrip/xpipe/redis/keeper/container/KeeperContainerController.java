@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
+import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
@@ -65,6 +66,11 @@ public class KeeperContainerController extends AbstractController {
         } else {
             return new KeeperInstanceMeta();
         }
+    }
+
+    @GetMapping(value = "/disk")
+    public KeeperDiskInfo infoDisk() {
+        return keeperContainerService.infoDisk();
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
