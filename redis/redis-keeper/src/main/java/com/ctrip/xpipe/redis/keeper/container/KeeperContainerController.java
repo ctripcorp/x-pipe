@@ -73,6 +73,12 @@ public class KeeperContainerController extends AbstractController {
         return keeperContainerService.infoDisk();
     }
 
+    @PostMapping("/election/reset" )
+    public void resetElection(@RequestBody KeeperTransMeta keeperTransMeta) {
+        logger.info("[resetElection]{}", keeperTransMeta);
+        keeperContainerService.resetElection(ReplId.from(keeperTransMeta.getReplId()));
+    }
+
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
     public void remove(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
 

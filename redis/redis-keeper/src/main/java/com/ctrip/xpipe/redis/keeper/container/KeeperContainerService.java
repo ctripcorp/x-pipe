@@ -110,6 +110,26 @@ public class KeeperContainerService {
         return diskHealthChecker.getResult();
     }
 
+    public void resetElection(ReplId replId) {
+        String keeperServerKey = replId.toString();
+
+        RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
+
+        if (keeperServer == null) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_EXIST,
+                            String.format("Reset election for %s failed since keeper doesn't exist", replId)), null);
+        }
+
+        if (!keeperServer.getLifecycleState().isStarted()) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_STARTED,
+                            String.format("Keeper for %s has not started", replId)), null);
+        }
+
+        keeperServer.resetElection();
+    }
+
     public void start(ReplId replId) {
         String keeperServerKey = replId.toString();
 

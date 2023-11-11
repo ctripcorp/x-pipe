@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.when;
  * @author lishanglin
  * date 2023/11/10
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class XsyncRedisSlaveTest extends AbstractRedisKeeperTest {
 
     @Mock
