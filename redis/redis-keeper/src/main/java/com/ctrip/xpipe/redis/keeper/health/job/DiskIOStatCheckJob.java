@@ -28,6 +28,7 @@ public class DiskIOStatCheckJob extends AbstractScriptExecutor<DiskIOStatInfo> {
         for (int i = result.size() - 1; i > 0; i--) {
             if (StringUtil.isEmpty(result.get(i))) continue;
             if (result.get(i).startsWith("Device: ")) continue;
+            getLogger().debug("[format] {}", result.get(i));
             return DiskIOStatInfo.parse(result.get(i));
         }
         return null;

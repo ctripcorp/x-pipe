@@ -46,10 +46,10 @@ public class DiskIOStatInfo {
         info.writeKB = Float.valueOf(strs[6]).longValue();
         info.avgReqSize = Float.valueOf(strs[7]).longValue();
         info.avgQueueSize = Float.valueOf(strs[8]).longValue();
-        info.await = Float.valueOf(strs[9]).longValue();
-        info.readAwait = Float.valueOf(strs[10]).longValue();
-        info.writeAwait = Float.valueOf(strs[11]).longValue();
-        info.util = Float.valueOf(strs[12]).longValue();
+        info.await = Float.parseFloat(strs[9]);
+        info.readAwait = Float.parseFloat(strs[10]);
+        info.writeAwait = Float.parseFloat(strs[11]);
+        info.util = Float.parseFloat(strs[13]);
         return info;
     }
 

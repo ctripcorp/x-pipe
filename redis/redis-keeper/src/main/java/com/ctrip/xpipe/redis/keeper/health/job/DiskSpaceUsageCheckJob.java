@@ -25,6 +25,8 @@ public class DiskSpaceUsageCheckJob extends AbstractScriptExecutor<DiskSpaceUsag
     @Override
     public DiskSpaceUsageInfo format(List<String> result) {
         if (result.size() < 2) return null;
+
+        getLogger().debug("[format] {}", result.get(1));
         String[] strs = result.get(1).split("\\s+");
         if (strs.length < 6) return null;
 
