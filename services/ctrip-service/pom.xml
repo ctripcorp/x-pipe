@@ -97,6 +97,10 @@
             <artifactId>ctrip-datasource</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>com.github.jsqlparser</groupId>
+                    <artifactId>jsqlparser</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.apache.tomcat</groupId>
                     <artifactId>tomcat-juli</artifactId>
                 </exclusion>

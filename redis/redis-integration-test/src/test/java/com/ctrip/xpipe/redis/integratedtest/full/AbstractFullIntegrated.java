@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.apache.commons.exec.ExecuteException;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.junit.After;
 import org.junit.Before;
 
@@ -20,6 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wenchao.meng
