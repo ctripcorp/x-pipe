@@ -76,40 +76,4 @@ public class DefaultKeeperContainerMigrationServiceTest {
 
         Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
     }
-
-    @Test
-    public void testMigrationKeeperContainerMultiThread() throws InterruptedException {
-        List<MigrationKeeperContainerDetailModel> models = new ArrayList<>();
-
-        MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel();
-        KeeperContainerUsedInfoModel src = new KeeperContainerUsedInfoModel()
-                .setKeeperIp("1.1.1.1").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
-                .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
-        Map<DcClusterShard, Pair<Long, Long>> detailInfo = new HashMap<>();
-        detailInfo.put(new DcClusterShard("jq", "cluster1", "shard1"), new Pair<>(200 * 1024 * 1024L, 400 * 1024 * 1024L));
-        detailInfo.put(new DcClusterShard("jq", "cluster1", "shard2"), new Pair<>(20 * 1024 * 1024L, 20 * 1024 * 1024L));
-        detailInfo.put(new DcClusterShard("jq", "cluster2", "shard1"), new Pair<>(30 * 1024 * 1024L, 30 * 1024 * 1024L));
-        detailInfo.put(new DcClusterShard("jq", "cluster2", "shard2"), new Pair<>(40 * 1024 * 1024L, 40 * 1024 * 1024L));
-        src.setDetailInfo(detailInfo);
-
-        KeeperContainerUsedInfoModel target = new KeeperContainerUsedInfoModel()
-                .setKeeperIp("2.2.2.2").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
-                .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
-        Map<DcClusterShard, Pair<Long, Long>> detailInfo2 = new HashMap<>();
-        detailInfo2.put(new DcClusterShard("jq", "cluster1", "shard1"), new Pair<>(200 * 1024 * 1024L, 400 * 1024 * 1024L));
-        target.setDetailInfo(detailInfo2);
-
-        List<DcClusterShard> migrationShards = new ArrayList<>();
-        migrationShards.add(new DcClusterShard("jq", "cluster1", "shard2"));
-        migrationShards.add(new DcClusterShard("jq", "cluster2", "shard1"));
-        migrationShards.add(new DcClusterShard("jq", "cluster2", "shard2"));
-
-        model.setSrcKeeperContainer(src).setTargetKeeperContainer(target).setMigrateKeeperCount(3).setMigrateShards(migrationShards);
-        models.add(model);
-        new Thread(() -> service.beginMigrateKeeperContainers(models)).start();
-        Thread.sleep(1);
-        new Thread(() -> service.stopMigrateKeeperContainers()).start();
-        Thread.sleep(1000);
-        Assert.assertEquals(true, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount() <= 3);
-    }
 }

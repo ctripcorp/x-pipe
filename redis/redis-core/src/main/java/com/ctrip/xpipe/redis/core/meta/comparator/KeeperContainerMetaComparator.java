@@ -80,13 +80,13 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
         return current.getId();
     }
 
-    public static Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta allDcMeta) {
+    public static Map<Long, KeeperContainerDetailInfo> getAllKeeperContainerDetailInfoFromDcMeta(DcMeta dcMeta, DcMeta dcAllMeta) {
         Map<Long, KeeperContainerDetailInfo> map = dcMeta.getKeeperContainers().stream()
                 .collect(Collectors.toMap(KeeperContainerMeta::getId,
                         keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<>(), new ArrayList<>())));
-        if (allDcMeta == null || allDcMeta.getClusters() == null) return map;
+        if (dcAllMeta == null || dcAllMeta.getClusters() == null) return map;
 
-        allDcMeta.getClusters().values().forEach(clusterMeta -> {
+        dcAllMeta.getClusters().values().forEach(clusterMeta -> {
             for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
                 if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
                 RedisMeta monitorRedis = getMonitorRedisMeta(shardMeta.getRedises());

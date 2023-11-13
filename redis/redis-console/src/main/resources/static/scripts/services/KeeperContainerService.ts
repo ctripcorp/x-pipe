@@ -206,17 +206,6 @@ angular
         return d.promise;
     }
 
-    function stopToMigrateOverloadKeeperContainers() {
-        var d = $q.defer();
-        resource.stop_to_migrate_overload_keepercontainer({}, {},
-                function(result) {
-                d.resolve(result);
-            }, function(result) {
-                d.reject(result);
-            });
-        return d.promise;
-    }
-
     function beginToMigrateOverloadKeeperContainers() {
         var d = $q.defer();
         resource.begin_to_migrate_overload_keepercontainer(
@@ -240,7 +229,6 @@ angular
         updateKeepercontainer: updateKeepercontainer,
         getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
-        stopToMigrateOverloadKeeperContainers : stopToMigrateOverloadKeeperContainers,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
     }
 }]);

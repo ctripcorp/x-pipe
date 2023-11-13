@@ -7,7 +7,5 @@ import java.util.List;
 public interface KeeperContainerMigrationService {
     void beginMigrateKeeperContainers(List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels);
 
-    void stopMigrateKeeperContainers();
-
     List<MigrationKeeperContainerDetailModel> getMigrationProcess();
 }

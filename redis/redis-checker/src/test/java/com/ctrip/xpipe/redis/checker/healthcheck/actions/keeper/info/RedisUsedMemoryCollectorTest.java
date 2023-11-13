@@ -42,7 +42,10 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
             "used_memory_lua_human:44.00K\n" +
             "used_memory_scripts:816\n" +
             "used_memory_scripts_human:816B\n" +
-            "number_of_cached_scripts:2";
+            "number_of_cached_scripts:2\n" +
+            "used_memory_scripts_human:0B\n" +
+            "number_of_cached_scripts:0\n" +
+            "maxmemory:2415919104";
 
     private static final String INFO_RESPONSE_OF_ROR = "# Memory\n" +
             "used_memory:109632408\n" +
@@ -61,6 +64,9 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
             "allocator_resident:127303680\n" +
             "total_system_memory:270332620800\n" +
             "total_system_memory_human:251.77G\n" +
+            "used_memory_scripts_human:0B\n" +
+            "number_of_cached_scripts:0\n" +
+            "maxmemory:2415919104\n" +
             "# Swap\n" +
             "swap_used_db_size:2472\n" +
             "swap_max_db_size:32212254720\n" +
@@ -80,6 +86,55 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
             "swap_swapin_not_found_coldfilter_filt_perc:0.00%" ;
 
 
+    private static final String INFO_RESPONSE_OF_ROR2 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959551\n" +
+            "# Keyspace\n" +
+            "db0:keys=2,evicts=1,metas=0,expires=0,avg_ttl=0";
+
+
+    private static final String INFO_RESPONSE_OF_ROR3 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959552\n" +
+            "# Keyspace\n" +
+            "db0:keys=10,evicts=30,metas=0,expires=0,avg_ttl=0";
+
+    private static final String INFO_RESPONSE_OF_ROR4 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959552\n" +
+            "# Keyspace\n";
+
+    private static final String INFO_RESPONSE_OF_ROR5 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959552\n" +
+            "# Keyspace\n" +
+            "db0:evicts=30,metas=0,expires=0,avg_ttl=0";
+
+    private static final String INFO_RESPONSE_OF_ROR6 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959552\n" +
+            "# Keyspace\n" +
+            "db0:keys=10,metas=0,expires=0,avg_ttl=0";
+
+    private static final String INFO_RESPONSE_OF_ROR7 = "# Memory\n" +
+            "used_memory:2415919104\n" +
+            "maxmemory:2415919104\n" +
+            "# Swap\n" +
+            "swap_used_db_size:1207959552\n" +
+            "# Keyspace\n" +
+            "db0:keys=0,evicts=30,metas=0,expires=0,avg_ttl=0";
+
+
     @Before
     public void before() throws Exception {
         listener = new RedisUsedMemoryCollector();
@@ -88,11 +143,80 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testGetUsedMemoryInfoWithRor() {
+        // test used_memory < maxmemory
         context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR);
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));
         Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(109632408 + 2472, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+        Assert.assertEquals(109632408, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor2() {
+        // test dbSize < maxmemory * 0.5
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR2);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor3() {
+        // test dbSize >= maxmemory * 0.5, keyspace normal
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR3);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L * 4, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor4() {
+        // test dbSize >= maxmemory * 0.5, keyspace Exception db0 == null
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR4);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor5() {
+        // test dbSize >= maxmemory * 0.5, keyspace Exception keys==null
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR5);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor6() {
+        // test dbSize >= maxmemory * 0.5, keyspace Exception evict==null
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR6);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor7() {
+        // test dbSize >= maxmemory * 0.5, keyspace Exception keys == 0
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR7);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
 
     }
 

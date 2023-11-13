@@ -19,9 +19,9 @@ public class DefaultKeeperSessionManager extends AbstractInstanceSessionManager 
 
     @Override
     protected Set<HostPort> getInUseInstances() {
-        DcMeta currentDcMeta = metaCache.getXpipeMeta().getDcs().get(currentDcId);
-        if (currentDcMeta != null)
-            return getSessionsForKeeper(currentDcMeta, getCurrentDcAllMeta(currentDcId));
+        DcMeta currentDcAllMeta = metaCache.getXpipeMeta().getDcs().get(currentDcId);
+        if (currentDcAllMeta != null)
+            return getSessionsForKeeper(currentDcAllMeta, this.currentDcAllMeta.getCurrentDcAllMeta());
 
         return null;
     }

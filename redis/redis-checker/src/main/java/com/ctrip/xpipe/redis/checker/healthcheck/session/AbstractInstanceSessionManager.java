@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -43,6 +44,9 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     @Autowired
     protected MetaCache metaCache;
 
+    @Resource
+    protected CurrentDcAllMeta currentDcAllMeta;
+
     @Autowired
     protected CheckerConsoleService checkerConsoleService;
 
@@ -68,6 +72,7 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     @VisibleForTesting
     public static long checkUnusedRedisDelaySeconds = 4;
+
 
     @PostConstruct
     public void postConstruct(){
@@ -152,12 +157,12 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     protected abstract Set<HostPort> getInUseInstances();
 
     @VisibleForTesting
-    protected Set<HostPort> getSessionsForKeeper(DcMeta dcMeta, DcMeta allDcMeta) {
+    protected Set<HostPort> getSessionsForKeeper(DcMeta dcMeta, DcMeta dcAllMeta) {
         Set<HostPort> instanceInUse = new HashSet<>();
         Set<Long> keeperContainerSet = dcMeta.getKeeperContainers().stream().map(KeeperContainerMeta::getId).collect(Collectors.toSet());
-        if (allDcMeta == null || allDcMeta.getClusters() == null) return instanceInUse;
+        if (dcAllMeta == null || dcAllMeta.getClusters() == null) return instanceInUse;
 
-        allDcMeta.getClusters().values().forEach(clusterMeta -> {
+        dcAllMeta.getClusters().values().forEach(clusterMeta -> {
             for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
                 if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
                 shardMeta.getKeepers().forEach(keeperMeta -> {
@@ -172,16 +177,6 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     }
 
     protected abstract HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper);
-
-    protected DcMeta getCurrentDcAllMeta(String dcId) {
-        try {
-            return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
-                    .getDcs().get(dcId);
-        } catch (Throwable th) {
-            logger.error("[getCurrentDcAllMeta] get all dc meta of dc {} fail!", dcId, th);
-        }
-        return null;
-    }
 
     private void closeAllConnections() {
         try {

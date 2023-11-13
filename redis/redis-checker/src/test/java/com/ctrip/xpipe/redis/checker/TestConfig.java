@@ -71,6 +71,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public int getCheckerCurrentDcAllMetaRefreshIntervalMilli() {
+        return 300000;
+    }
+
+    @Override
     public int getClusterHealthCheckInterval() {
         return 300000;
     }

@@ -28,8 +28,6 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
 
     private volatile AtomicBoolean isBegin = new AtomicBoolean(false);
 
-    private volatile AtomicBoolean isStop = new AtomicBoolean(false);
-
     @Override
     public void beginMigrateKeeperContainers(List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) {
         if (!isBegin.compareAndSet(false, true)) {
@@ -46,10 +44,6 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
 
             String srcKeeperContainerIp = keeperContainer.getSrcKeeperContainer().getKeeperIp();
             for (DcClusterShard migrateShard : migrateShards) {
-                if (isStop.get() == true) {
-                    logger.info("[beginMigrateKeeperContainers] stop migrating");
-                    break;
-                }
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
                 if (!alreadyMigrateShards.add(migrateShard)) {
@@ -64,12 +58,6 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
             }
         }
         isBegin.set(false);
-        isStop.set(false);
-    }
-
-    @Override
-    public void stopMigrateKeeperContainers() {
-        isStop.compareAndSet(false, true);
     }
 
     @Override

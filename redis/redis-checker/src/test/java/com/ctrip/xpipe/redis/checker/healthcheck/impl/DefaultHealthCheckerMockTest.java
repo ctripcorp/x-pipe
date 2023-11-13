@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -47,11 +48,12 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     @Mock
     private CheckerConfig checkerConfig;
 
+    @Mock
+    private CurrentDcAllMeta currentDcAllMeta;
+
     @Before
     public void setupDefaultHealthCheckerMockTest() throws IOException, SAXException {
         when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
-        when(checkerConfig.getConsoleAddress()).thenReturn("127.0.0.1");
-        when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(getXpipeMeta());
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
     }
 
@@ -105,7 +107,6 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
         jqDcMeta.addCluster(clusterMeta);
         xpipeMeta.addDc(jqDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-        when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(xpipeMeta);
 
         checker.generateHealthCheckInstances();
         verify(instanceManager, times(1)).getOrCreate(new ClusterMeta().setId("single_dc_cluster"));

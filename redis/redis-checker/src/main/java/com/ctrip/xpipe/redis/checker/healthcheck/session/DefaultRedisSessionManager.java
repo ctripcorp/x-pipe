@@ -16,6 +16,7 @@ import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComp
  *
  *         Dec 1, 2016 6:42:01 PM
  */
+
 @Component
 public class DefaultRedisSessionManager extends AbstractInstanceSessionManager implements RedisSessionManager {
 
@@ -28,8 +29,7 @@ public class DefaultRedisSessionManager extends AbstractInstanceSessionManager i
 			if(dcMeta == null)	break;
 
 			if (dcMeta.getId().equalsIgnoreCase(currentDcId)) {
-				DcMeta currentDcAllMeta = getCurrentDcAllMeta(currentDcId);
-				redisInUse.addAll(getSessionsForKeeper(dcMeta, currentDcAllMeta));
+				redisInUse.addAll(getSessionsForKeeper(dcMeta, currentDcAllMeta.getCurrentDcAllMeta()));
 			}
 
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {

@@ -67,12 +67,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     @Override
-    public void compare(DcMeta future) {
+    public void compare(DcMeta future, DcMeta allFutureDcMeta) {
         // init
         if(current == null) {
             healthCheckEndpointFactory.updateRoutes();
             current = future;
-            currentDcAllMeta = currentDcId.equalsIgnoreCase(dcId) ? getCurrentDcMeta(dcId) : null;
+            currentDcAllMeta = currentDcId.equalsIgnoreCase(dcId) ? allFutureDcMeta : null;
             return;
         }
 
@@ -88,12 +88,11 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         if (currentDcId.equalsIgnoreCase(dcId)) {
-            DcMeta futureDcAllMeta = getCurrentDcMeta(dcId);
             KeeperContainerMetaComparator keeperContainerMetaComparator
-                    = new KeeperContainerMetaComparator(current, future, currentDcAllMeta, futureDcAllMeta);
+                    = new KeeperContainerMetaComparator(current, future, currentDcAllMeta, allFutureDcMeta);
             keeperContainerMetaComparator.compare();
             keeperContainerMetaComparator.accept(new KeeperContainerMetaComparatorVisitor());
-            currentDcAllMeta = futureDcAllMeta;
+            currentDcAllMeta = allFutureDcMeta;
         }
 
         comparator.accept(this);
@@ -101,16 +100,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         clearUp();
 
         this.current = future;
-    }
-
-    private DcMeta getCurrentDcMeta(String dcId) {
-        try {
-            return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
-                    .getDcs().get(dcId);
-        } catch (Throwable th) {
-            logger.error("[getCurrentDcMeta] get dcMeta from dc {} fail", dcId, th);
-        }
-        return null;
     }
 
     private void removeAndAdd() {

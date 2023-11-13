@@ -25,16 +25,14 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
-import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
-import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
-import com.ctrip.xpipe.redis.console.resources.CheckerOuterClientCache;
-import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
+import com.ctrip.xpipe.redis.console.resources.*;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -77,10 +75,16 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    public CurrentDcAllMeta currentDcAllMeta() {
+        return new CheckerCurrentDcAllMeta();
+    }
+
+    @Bean
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public MetaCache testMetaCache() {
         return new TestMetaCache();
     }
+
 
     @Bean
     public ProxyManager proxyManager(GroupCheckerLeaderElector clusterServer, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
@@ -218,5 +222,4 @@ public class CheckerContextConfig {
     public OuterClientCache outerClientCache(CheckerConsoleService service, CheckerConfig config) {
         return new CheckerOuterClientCache(service, config);
     }
-
 }

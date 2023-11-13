@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperContainerDetailInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -53,6 +54,9 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    @Resource
+    private CurrentDcAllMeta currentDcAllMeta;
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -123,7 +127,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
             if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
                 Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
-                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, getCurrentDcMeta(dcMeta.getId()));
+                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, currentDcAllMeta.getCurrentDcAllMeta());
 
                 keeperContainerDetailInfoMap.values().forEach(keeperContainerDetailInfo -> {
                     generateHealthCheckInstances(keeperContainerDetailInfo);
@@ -180,16 +184,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         }
 
         return false;
-    }
-
-    private DcMeta getCurrentDcMeta(String dcId) {
-        try {
-            return checkerConsoleService.getXpipeAllDCMeta(checkerConfig.getConsoleAddress(), dcId)
-                    .getDcs().get(dcId);
-        } catch (Throwable th) {
-            logger.error("[getCurrentDcMeta] get dc meta of dc {} fail", dcId, th);
-        }
-        return null;
     }
 
 

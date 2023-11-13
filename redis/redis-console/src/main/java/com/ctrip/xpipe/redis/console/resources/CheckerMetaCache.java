@@ -81,5 +81,4 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
     public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId) {
         throw new UnsupportedOperationException();
     }
-
 }

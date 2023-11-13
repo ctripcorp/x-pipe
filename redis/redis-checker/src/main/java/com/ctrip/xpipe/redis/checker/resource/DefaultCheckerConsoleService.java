@@ -69,8 +69,8 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
         return DefaultSaxParser.parse(raw);
     }
 
-    public XpipeMeta getXpipeAllDCMeta(String console, String dcName) throws  SAXException, IOException {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_DC_META)
+    public XpipeMeta getXpipeDcAllMeta(String console, String dcName) throws  SAXException, IOException {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_DC_ALL_META)
                 .queryParam("format", "xml").buildAndExpand(dcName);
 
         String raw = restTemplate.getForObject(comp.toString(), String.class);

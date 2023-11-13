@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,6 +43,9 @@ public class DefaultRedisSessionManagerTest {
     @Mock
     private MetaCache metaCache;
 
+    @Mock
+    private CurrentDcAllMeta currentDcAllMeta;
+
 
     private List<String> mockDcs = Arrays.asList("jq");
 
@@ -59,8 +63,7 @@ public class DefaultRedisSessionManagerTest {
     @Before
     public void before() throws IOException, SAXException {
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
-        Mockito.when(checkerConfig.getConsoleAddress()).thenReturn("127.0.0.1:8080");
-        Mockito.when(checkerConsoleService.getXpipeAllDCMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(MockAllCurrentDcMeta());
+        Mockito.when(currentDcAllMeta.getCurrentDcAllMeta()).thenReturn(MockAllCurrentDcMeta().getDcs().get("jq"));
     }
 
 

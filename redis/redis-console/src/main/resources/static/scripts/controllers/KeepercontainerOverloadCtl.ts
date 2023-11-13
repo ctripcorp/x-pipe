@@ -24,7 +24,6 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
     $scope.scheduledWork;
 
     $scope.beginToMigrateOverloadKeeperContainers = beginToMigrateOverloadKeeperContainers;
-    $scope.stopToMigrateOverloadKeeperContainers = stopToMigrateOverloadKeeperContainers;
 
     KeeperContainerService.getAllOverloadKeepercontainer()
         .then(function (result) {
@@ -90,13 +89,6 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
 	}
 
     $scope.scheduledWork = $interval(getOverloadKeeperContainerMigrationProcess, 1000);
-
-	function stopToMigrateOverloadKeeperContainers() {
-	    if ($scope.operateType == OPERATE_TYPE.STOPPED) return;
-	    KeeperContainerService.stopToMigrateOverloadKeeperContainers();
-	    $interval.cancel($scope.scheduledWork);
-	    $scope.operateType = OPERATE_TYPE.STOPPED;
-	}
 
     function toggleAll() {
         $scope.selectAll = !$scope.selectAll;

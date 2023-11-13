@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerCurrentDcAllMeta;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -33,6 +34,7 @@ import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.integratedtest.console.config.SpringEnvConsoleConfig;
 import com.ctrip.xpipe.redis.integratedtest.console.config.TestFoundationService;
@@ -62,6 +64,12 @@ public class TestCheckerContextConfig {
 
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+    public CurrentDcAllMeta currentDcAllMeta() {
+        return new CheckerCurrentDcAllMeta();
+    }
+
+    @Bean
+    @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public MetaCache metaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         return new CheckerMetaCache(checkerConfig, checkerConsoleService);
     }
@@ -75,6 +83,12 @@ public class TestCheckerContextConfig {
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public MetaCache testMetaCache() {
         return new TestMetaCache();
+    }
+
+    @Bean
+    @Profile(AbstractProfile.PROFILE_NAME_TEST)
+    public CurrentDcAllMeta testCurrentDcAllMeta() {
+        return new TestCurrentDcAllMetaCache();
     }
 
     @Bean

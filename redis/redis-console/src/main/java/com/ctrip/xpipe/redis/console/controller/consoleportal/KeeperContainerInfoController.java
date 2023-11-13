@@ -92,11 +92,4 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
         }
         return RetMessage.createSuccessMessage();
     }
-
-    @RequestMapping(value = "/keepercontainer/overload/migration/stop", method = RequestMethod.POST)
-    public RetMessage stopToMigrateOverloadKeeperContainers() {
-        logger.info("stop to migrate over load keeper containers");
-        keeperContainerMigrationService.stopMigrateKeeperContainers();
-        return RetMessage.createSuccessMessage();
-    }
 }

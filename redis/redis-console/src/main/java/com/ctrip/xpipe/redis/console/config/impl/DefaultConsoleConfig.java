@@ -588,6 +588,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getCheckerCurrentDcAllMetaRefreshIntervalMilli() {
+        return getIntProperty(KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL, 600000);
+    }
+
+    @Override
     public int getCheckerMetaRefreshIntervalMilli() {
         return getIntProperty(KEY_CHECKER_META_REFRESH_INTERVAL, 30000);
     }
@@ -772,7 +777,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public long getAutoMigrateOverloadKeeperContainerIntervalMilli() {
-        return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 10 * 60 * 1000L);
+        return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 60 * 60 * 1000L);
     }
 
     @Override

@@ -95,8 +95,8 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
 
-    @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_DC_META)
-    public String getAllDcMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
+    @GetMapping(ConsoleCheckerPath.PATH_GET_DC_ALL_META)
+    public String getDcAllMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
         DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);
         XpipeMeta xpipeMeta = new XpipeMeta().addDc(dcMeta);
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
