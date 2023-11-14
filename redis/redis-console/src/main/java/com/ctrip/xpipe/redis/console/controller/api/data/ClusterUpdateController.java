@@ -277,6 +277,12 @@ public class ClusterUpdateController extends AbstractController {
         return RetMessage.createSuccessMessage();
     }
 
+    @DeleteMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/azGroup")
+    public RetMessage downgradeAzGroup(@PathVariable String clusterName) {
+        clusterService.downgradeAzGroup(clusterName);
+        return RetMessage.createSuccessMessage();
+    }
+
     @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
     public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName,
         @RequestBody(required = false) DcDetailInfo dcDetailInfo) {

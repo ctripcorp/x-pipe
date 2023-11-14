@@ -654,49 +654,47 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return clusterTblList;
 	}
 
-	@Override
-	public String updateCluster(ClusterUpdateDTO clusterUpdateDTO) {
-		String clusterName = clusterUpdateDTO.getClusterName();
-		ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
-		if (clusterTbl == null) {
-			throw new BadRequestException("Not find cluster: " + clusterName);
-		}
+    @Override
+    public String updateCluster(ClusterUpdateDTO clusterUpdateDTO) {
+        String clusterName = clusterUpdateDTO.getClusterName();
+        ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
+        if (clusterTbl == null) {
+            throw new BadRequestException("Not find cluster: " + clusterName);
+        }
 
         boolean needUpdate = false;
-        ClusterType clusterType = StringUtils.isEmpty(clusterUpdateDTO.getClusterType())
-			? null : ClusterType.lookup(clusterUpdateDTO.getClusterType());
-        if (clusterType != null) {
+        String clusterType = clusterUpdateDTO.getClusterType();
+        if (!StringUtil.isEmpty(clusterType)) {
             String oldClusterType = clusterTbl.getClusterType();
-            if (!ClusterType.isSameClusterType(oldClusterType, clusterType)) {
-                if (ClusterType.isSameClusterType(oldClusterType, ClusterType.ONE_WAY)
-                    && clusterType == ClusterType.HETERO) {
+            if (!clusterType.equalsIgnoreCase(oldClusterType)) {
+                if (ClusterType.supportConvert(oldClusterType) && ClusterType.supportConvert(clusterType)) {
                     needUpdate = true;
-                    clusterTbl.setClusterType(clusterType.toString());
+                    clusterTbl.setClusterType(clusterType.toUpperCase());
                 } else {
-                    // 仅允许单向同步集群改为异构集群
-                    throw new BadRequestException("Only ONE_WAY cluster can change type to HETERO");
+                    // 仅允许单向同步、异构集群之间互相转换
+                    throw new BadRequestException("Only ONE_WAY/HETERO cluster can be converted to each other");
                 }
             }
         }
 
         Long orgId = clusterUpdateDTO.getOrgId();
-        if (!Objects.equals(orgId, clusterTbl.getClusterOrgId())) {
+        if (orgId != null && !Objects.equals(orgId, clusterTbl.getClusterOrgId())) {
             needUpdate = true;
             clusterTbl.setClusterOrgId(orgId);
         }
         String adminEmails = clusterUpdateDTO.getAdminEmails();
-        if (!Objects.equals(adminEmails, clusterTbl.getClusterAdminEmails())) {
+        if (adminEmails != null && !Objects.equals(adminEmails, clusterTbl.getClusterAdminEmails())) {
             needUpdate = true;
             clusterTbl.setClusterAdminEmails(adminEmails);
         }
 
-		if (needUpdate) {
-			clusterDao.updateCluster(clusterTbl);
-			return RetMessage.SUCCESS;
-		} else {
-			return String.format("No field changes for cluster: %s", clusterName);
-		}
-	}
+        if (needUpdate) {
+            clusterDao.updateCluster(clusterTbl);
+            return RetMessage.SUCCESS;
+        } else {
+            return String.format("No field changes for cluster: %s", clusterName);
+        }
+    }
 
 	@Override
 	@DalTransaction
@@ -1064,7 +1062,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     @Override
 	@Transactional
     public void upgradeAzGroup(String clusterName) {
-        ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+        ClusterEntity cluster = clusterRepository.selectByClusterName(clusterName);
         if (cluster == null) {
             throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
         }
@@ -1124,6 +1122,34 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 dcClusterRepository.updateAzGroupClusterId(dcCluster.getDcClusterId(), azGroupCluster.getId());
             }
         }
+    }
+
+    @Override
+    @Transactional
+    public void downgradeAzGroup(String clusterName) {
+        ClusterEntity cluster = clusterRepository.selectByClusterName(clusterName);
+        if (cluster == null) {
+            throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
+        }
+        Long clusterId = cluster.getId();
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterId);
+        if (CollectionUtils.isEmpty(azGroupClusters)) {
+            logger.warn("Cluster: {} not in AzGroup mode", clusterName);
+            return;
+        }
+        if (azGroupClusters.size() > 1) {
+            throw new BadRequestException(
+                String.format("Cluster: %s contains multi az group, cannot downgrade", clusterName));
+        }
+        azGroupClusterRepository.deleteByClusterId(clusterId);
+
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(clusterId);
+        List<Long> dcClusterIds = dcClusters.stream().map(DcClusterEntity::getDcClusterId).collect(Collectors.toList());
+        dcClusterRepository.batchUpdateAzGroupClusterId(dcClusterIds, 0L);
+
+        List<ShardEntity> shards = shardRepository.selectByClusterId(clusterId);
+        List<Long> shardIds = shards.stream().map(ShardEntity::getId).collect(Collectors.toList());
+        shardRepository.batchUpdateAzGroupClusterId(shardIds, 0L);
     }
 
     @Override

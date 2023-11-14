@@ -100,6 +100,13 @@ public enum ClusterType {
             || isSameClusterType(type, SINGLE_DC);
     }
 
+    public static boolean supportConvert(String type) {
+        if (StringUtil.isEmpty(type)) {
+            return false;
+        }
+        return isSameClusterType(type, ONE_WAY) || isSameClusterType(type, HETERO);
+    }
+
     public static ClusterType lookup(String name) {
         if (StringUtil.isEmpty(name)) throw new IllegalArgumentException("no ClusterType for name " + name);
         return valueOf(name.toUpperCase());
