@@ -176,6 +176,7 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 
 		SourceMeta sourceMeta2 = differentSourceShard();
 		ShardMeta shardMeta2 = new ShardMeta(shardMeta.getId());
+		shardMeta2.setDbId(shardMeta.getDbId());
 		shardMeta2.addKeeper(differentKeeper(shardMeta2));
 		sourceMeta2.addShard(shardMeta2);
 		future.addSource(sourceMeta2);

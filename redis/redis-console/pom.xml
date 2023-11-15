@@ -4,7 +4,7 @@
    <parent>
       <groupId>com.ctrip.framework.xpipe.redis</groupId>
       <artifactId>redis-parent</artifactId>
-      <version>1.2.9</version>
+      <version>1.2.10</version>
    </parent>
    <artifactId>redis-console</artifactId>
    <dependencies>
@@ -78,28 +78,6 @@
          <groupId>com.baomidou</groupId>
          <artifactId>mybatis-plus-boot-starter</artifactId>
          <version>3.5.3.1</version>
-      </dependency>
-      <dependency>
-         <groupId>com.ctrip.platform</groupId>
-         <artifactId>ctrip-datasource</artifactId>
-         <exclusions>
-            <exclusion>
-               <groupId>com.github.jsqlparser</groupId>
-               <artifactId>jsqlparser</artifactId>
-            </exclusion>
-            <exclusion>
-               <groupId>org.apache.tomcat</groupId>
-               <artifactId>tomcat-juli</artifactId>
-            </exclusion>
-            <exclusion>
-               <groupId>javax.persistence</groupId>
-               <artifactId>persistence-api</artifactId>
-            </exclusion>
-            <exclusion>
-               <groupId>com.ctrip.ops</groupId>
-               <artifactId>hickwall-sdk</artifactId>
-            </exclusion>
-         </exclusions>
       </dependency>
 
       <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->

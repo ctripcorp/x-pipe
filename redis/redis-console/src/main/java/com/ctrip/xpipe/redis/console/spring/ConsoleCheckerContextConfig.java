@@ -40,7 +40,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
  */
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker"})
+@ComponentScan(basePackages = {"com.ctrip.xpipe.service", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker"})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER)
 public class ConsoleCheckerContextConfig extends ConsoleContextConfig {

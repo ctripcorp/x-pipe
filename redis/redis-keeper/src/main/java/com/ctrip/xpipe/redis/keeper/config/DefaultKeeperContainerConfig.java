@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
  */
 public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
     public static final String REPLICATION_STORE_DIR = "replication.store.dir";
+    public static final String DISK_CHECK_INTERVAL_MILL = "disk.check.interval.mill";
     private Config config;
 
     @PostConstruct
@@ -19,6 +20,11 @@ public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
     @Override
     public String getReplicationStoreDir() {
         return config.get(REPLICATION_STORE_DIR, getDefaultRdsDir());
+    }
+
+    @Override
+    public int diskCheckInterval() {
+        return Integer.parseInt(config.get(DISK_CHECK_INTERVAL_MILL, "30000"));
     }
 
     private String getDefaultRdsDir() {

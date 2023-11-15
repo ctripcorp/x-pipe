@@ -6,4 +6,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 public interface KeeperContainerConfig {
 	
     String getReplicationStoreDir();
+
+    int diskCheckInterval();
+
 }

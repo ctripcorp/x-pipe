@@ -95,4 +95,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void resetDefaultReplication();
 
 	PsyncObserver createPsyncObserverForRdbOnlyRepl();
+
+	void resetElection();
+
 }
