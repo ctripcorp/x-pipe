@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.health.DiskHealthChecker;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.google.common.collect.Lists;
@@ -44,6 +45,8 @@ public class KeeperContainerService {
     private ContainerResourceManager containerResourceManager;
     @Autowired
     private GeneralRedisOpParser redisOpParser;
+    @Autowired
+    private DiskHealthChecker diskHealthChecker;
 
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
@@ -101,6 +104,30 @@ public class KeeperContainerService {
 
     public List<RedisKeeperServer> list() {
         return Lists.newArrayList(redisKeeperServers.values());
+    }
+
+    public KeeperDiskInfo infoDisk() {
+        return diskHealthChecker.getResult();
+    }
+
+    public void resetElection(ReplId replId) {
+        String keeperServerKey = replId.toString();
+
+        RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
+
+        if (keeperServer == null) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_NOT_EXIST,
+                            String.format("Reset election for %s failed since keeper doesn't exist", replId)), null);
+        }
+
+        if (!keeperServer.getLifecycleState().isStarted()) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_STARTED,
+                            String.format("Keeper for %s has not started", replId)), null);
+        }
+
+        keeperServer.resetElection();
     }
 
     public void start(ReplId replId) {

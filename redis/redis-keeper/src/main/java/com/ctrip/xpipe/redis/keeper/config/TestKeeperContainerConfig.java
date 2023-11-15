@@ -18,7 +18,12 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	public String getReplicationStoreDir() {
 		return replicationStoreDir;
 	}
-	
+
+	@Override
+	public int diskCheckInterval() {
+		return 30000;
+	}
+
 	public void setMetaServerUrl(String metaServerUrl) {
 		this.metaServerUrl = metaServerUrl;
 	}

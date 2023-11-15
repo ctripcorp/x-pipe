@@ -190,6 +190,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public void resetElection() {
+		try {
+			LifecycleHelper.stopIfPossible(leaderElector);
+			LifecycleHelper.startIfPossible(leaderElector);
+		} catch (Exception e) {
+			logger.info("[resetElection][fail][{}]", replId, e);
+		}
+	}
+
+	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 

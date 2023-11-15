@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core;
 
+import com.ctrip.xpipe.redis.core.entity.DiskIOStatInfoTest;
 import com.ctrip.xpipe.redis.core.meta.*;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
@@ -99,6 +100,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisReplStreamParseTest.class,
         RedisOpMsetTest.class,
         RedisOpDelTest.class,
+
+        DiskIOStatInfoTest.class,
 
         DefaultProxyEndpointHealthCheckerTest.class,
 

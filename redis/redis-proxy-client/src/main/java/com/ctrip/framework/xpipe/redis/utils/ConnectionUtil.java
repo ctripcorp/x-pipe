@@ -101,12 +101,9 @@ public class ConnectionUtil {
             Lock l = socketChannelMap.get(socketChannel);
             if (l != null) {
                 socketChannelMap.remove(socketChannel);
-                ByteBuffer byteBuffer = ByteBuffer.allocate(512);
                 byte[] bytes = ProxyUtil.getInstance().getProxyConnectProtocol(socketChannel);
-                byteBuffer.put(bytes);
-                byteBuffer.flip();
+                ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
                 socketChannel.write(byteBuffer);
-                byteBuffer.clear();
                 logger.info("[Proxy] sends protocol {} to {} -> {}", new String(bytes), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
             }
         } finally {
