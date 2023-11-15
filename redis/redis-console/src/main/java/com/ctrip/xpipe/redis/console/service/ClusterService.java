@@ -55,6 +55,7 @@ public interface ClusterService {
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
 	void exchangeRegion(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName, String regionName);
 	void upgradeAzGroup(String clusterName);
+	void downgradeAzGroup(String clusterName);
 	void bindRegionAz(String clusterName, String regionName, String azName);
 
 	Set<String> findMigratingClusterNames();

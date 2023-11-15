@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -148,17 +149,24 @@ public class AzGroupClusterRepository {
         if (clusterId == null) {
             return;
         }
-        QueryWrapper<AzGroupClusterEntity> wrapper = new QueryWrapper<>();
+        UpdateWrapper<AzGroupClusterEntity> wrapper = new UpdateWrapper<>();
+        wrapper.set(AzGroupClusterEntity.DELETED, 1);
+        wrapper.set(AzGroupClusterEntity.DELETE_TIME, new Date());
+
         wrapper.eq(AzGroupClusterEntity.CLUSTER_ID, clusterId);
-        azGroupClusterMapper.delete(wrapper);
+        azGroupClusterMapper.update(null, wrapper);
     }
 
     public void deleteByClusterIdAndAzGroupId(Long clusterId, Long azGroupId) {
         if (clusterId == null || azGroupId == null) {
             return;
         }
-        QueryWrapper<AzGroupClusterEntity> wrapper = new QueryWrapper<>();
-        wrapper.eq(AzGroupClusterEntity.CLUSTER_ID, clusterId).eq(AzGroupClusterEntity.AZ_GROUP_ID, azGroupId);
-        azGroupClusterMapper.delete(wrapper);
+        UpdateWrapper<AzGroupClusterEntity> wrapper = new UpdateWrapper<>();
+        wrapper.set(AzGroupClusterEntity.DELETED, 1);
+        wrapper.set(AzGroupClusterEntity.DELETE_TIME, new Date());
+
+        wrapper.eq(AzGroupClusterEntity.CLUSTER_ID, clusterId);
+        wrapper.eq(AzGroupClusterEntity.AZ_GROUP_ID, azGroupId);
+        azGroupClusterMapper.update(null, wrapper);
     }
 }

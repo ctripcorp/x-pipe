@@ -14,7 +14,7 @@ import java.util.Date;
  * </p>
  *
  * @author mybatis-generator
- * @since 2023-07-10
+ * @since 2023-11-14
  */
 @TableName("az_group_cluster_tbl")
 public class AzGroupClusterEntity extends BaseEntity {
@@ -56,6 +56,12 @@ public class AzGroupClusterEntity extends BaseEntity {
      */
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private Date createTime;
+
+    /**
+     * 逻辑删除时间
+     */
+    @TableField("delete_time")
+    private Date deleteTime;
 
     public Long getId() {
         return id;
@@ -111,6 +117,15 @@ public class AzGroupClusterEntity extends BaseEntity {
         return this;
     }
 
+    public Date getDeleteTime() {
+        return deleteTime;
+    }
+
+    public AzGroupClusterEntity setDeleteTime(Date deleteTime) {
+        this.deleteTime = deleteTime;
+        return this;
+    }
+
     public static final String ID = "id";
 
     public static final String CLUSTER_ID = "cluster_id";
@@ -123,10 +138,12 @@ public class AzGroupClusterEntity extends BaseEntity {
 
     public static final String CREATE_TIME = "create_time";
 
+    public static final String DELETE_TIME = "delete_time";
+
     @Override
     public String toString() {
         return "AzGroupClusterEntity{" + "id = " + id + ", clusterId = " + clusterId + ", azGroupId = " + azGroupId
             + ", activeAzId = " + activeAzId + ", azGroupClusterType = " + azGroupClusterType + ", createTime = "
-            + createTime + "}";
+            + createTime + ", deleteTime = " + deleteTime + "}";
     }
 }
