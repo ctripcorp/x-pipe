@@ -52,7 +52,7 @@ public class MybatisGeneratorTest {
      */
     protected static StrategyConfig strategyConfig() {
         return new StrategyConfig.Builder()
-            .addInclude("cluster_tbl", "shard_tbl")
+            .addInclude("az_group_cluster_tbl")
             // 删除tbl后缀
             .addTableSuffix("_tbl")
             .entityBuilder()

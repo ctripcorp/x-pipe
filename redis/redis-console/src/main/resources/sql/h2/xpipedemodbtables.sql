@@ -112,6 +112,7 @@ CREATE TABLE `AZ_GROUP_CLUSTER_TBL` (
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
   `DataChange_LastTime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'last modify time',
   `deleted` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'logic delete',
+  `delete_time` timestamp NOT NULL DEFAULT '2003-12-09 09:30:00' COMMENT 'logic delete time',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_cluster_az_group` (`cluster_id`,`az_group_id`)
 );

@@ -203,19 +203,28 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         clusterInfo.setClusterName(clusterName);
         clusterInfo.setClusterType(ClusterType.HETERO.toString());
         clusterInfo.setDesc(desc);
-        clusterInfo.setOrganizationId(orgId);
-        clusterInfo.setClusterAdminEmails(adminEmails);
 
         RetMessage retMessage = clusterController.updateCluster(clusterInfo);
         logger.info("{}", retMessage.getMessage());
         Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
 
         ClusterTbl cluster = clusterDao.findClusterAndOrgByName(clusterName);
-        Assert.assertEquals(orgId, cluster.getOrganizationInfo().getOrgId());
+        Assert.assertEquals(ClusterType.HETERO.toString(), cluster.getClusterType());
         // 目前api接口不更新desc
         Assert.assertEquals("", cluster.getClusterDescription());
+        Assert.assertEquals(0L, cluster.getClusterOrgId());
+        Assert.assertNull(cluster.getClusterAdminEmails());
+
+        clusterInfo.setOrganizationId(orgId);
+        clusterController.updateCluster(clusterInfo);
+        cluster = clusterDao.findClusterAndOrgByName(clusterName);
+        Assert.assertEquals(orgId, cluster.getOrganizationInfo().getOrgId());
+        Assert.assertNull(cluster.getClusterAdminEmails());
+
+        clusterInfo.setClusterAdminEmails(adminEmails);
+        clusterController.updateCluster(clusterInfo);
+        cluster = clusterDao.findClusterAndOrgByName(clusterName);
         Assert.assertEquals(adminEmails, cluster.getClusterAdminEmails());
-        Assert.assertEquals(ClusterType.HETERO.toString(), cluster.getClusterType());
     }
 
     @Test
@@ -402,6 +411,17 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         Assert.assertEquals("", region2.getClusterType());
         Assert.assertEquals("oy", region2.getActiveAz());
         Assert.assertEquals(Collections.singletonList("oy"), region2.getAzs());
+    }
+
+    @Test
+    public void testDowngradeAzGroupToOnewayCluster() {
+        this.createCluster(null, "HETERO", Arrays.asList("jq", "oy", "fra"), Arrays.asList(region1, region2));
+        clusterController.unbindDc("cluster-name", "fra");
+
+        clusterController.downgradeAzGroup("cluster-name");
+        ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
+        Assert.assertEquals(0, cluster.getRegions().size());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), cluster.getDcs());
     }
 
     @Test
