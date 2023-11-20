@@ -56,6 +56,10 @@
                             <groupId>com.ctrip.framework.xpipe</groupId>
                             <artifactId>core</artifactId>
                         </exclusion>
+                        <exclusion>
+                            <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
+                            <artifactId>emailservice</artifactId>
+                        </exclusion>
                     </exclusions>
                 </dependency>
             </dependencies>
