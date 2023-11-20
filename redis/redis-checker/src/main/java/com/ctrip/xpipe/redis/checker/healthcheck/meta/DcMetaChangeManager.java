@@ -11,6 +11,6 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
  */
 public interface DcMetaChangeManager extends Startable, Stoppable {
 
-    void compare(DcMeta future);
+    void compare(DcMeta future, DcMeta allFutureDcMeta);
 
 }

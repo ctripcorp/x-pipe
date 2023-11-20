@@ -2,14 +2,12 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.SourceMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -20,7 +18,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,10 +43,16 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     private MetaChangeManager metaChangeManager;
 
     @Mock
+    private CheckerConsoleService checkerConsoleService;
+
+    @Mock
     private CheckerConfig checkerConfig;
 
+    @Mock
+    private CurrentDcAllMeta currentDcAllMeta;
+
     @Before
-    public void setupDefaultHealthCheckerMockTest() {
+    public void setupDefaultHealthCheckerMockTest() throws IOException, SAXException {
         when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
     }

@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.entity.DiskIOStatInfoTest;
 import com.ctrip.xpipe.redis.core.meta.*;
-import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparatorTest;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
+import com.ctrip.xpipe.redis.core.meta.comparator.*;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceTest;
@@ -28,12 +25,12 @@ import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParserTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParserTest;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocolTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
-import com.ctrip.xpipe.redis.core.redis.rdb.AllRdbTests;
-import com.ctrip.xpipe.redis.core.route.impl.Crc32HashRouteChooseStrategyTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.redis.parser.RedisReplStreamParseTest;
+import com.ctrip.xpipe.redis.core.redis.rdb.AllRdbTests;
+import com.ctrip.xpipe.redis.core.route.impl.Crc32HashRouteChooseStrategyTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 import com.ctrip.xpipe.redis.core.util.SentinelUtilTest;
 import org.junit.runner.RunWith;
@@ -61,6 +58,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ReplicationStoreMetaTest.class,
         DcMetaComparatorTest.class,
         ClusterMetaComparatorTest.class,
+        KeeperContainerMetaComparatorTest.class,
         ShardMetaComparatorTest.class,
         InfoResultExtractorTest.class,
         CrdtInfoResultExtractorTest.class,

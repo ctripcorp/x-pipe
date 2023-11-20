@@ -13,16 +13,19 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
+import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,6 +76,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @Autowired
     private OuterClientCache outerClientCache;
 
+    @Autowired
+    private KeeperContainerUsedInfoAnalyzer keeperContainerUsedInfoAnalyzer;
+
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
@@ -86,6 +92,13 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)
     public String getDividedMeta(@RequestParam(value="format", required = false) String format) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+    }
+
+    @GetMapping(ConsoleCheckerPath.PATH_GET_DC_ALL_META)
+    public String getDcAllMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
+        DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);
+        XpipeMeta xpipeMeta = new XpipeMeta().addDc(dcMeta);
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
 
@@ -112,6 +125,13 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
         if (null != checkResult.getHeteroShardsDelay()) delayService.updateHeteroShardsDelays(checkResult.getHeteroShardsDelay());
     }
+
+    @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
+    public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
+        logger.debug("[updateKeeperContainerUsedInfo][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
+        keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
+    }
+
 
     @Resource
     PersistenceCache persistenceCache;

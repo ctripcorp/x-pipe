@@ -83,6 +83,8 @@ public interface CheckerConfig {
 
     String KEY_CHECKER_META_REFRESH_INTERVAL = "checker.meta.refresh.interval.milli";
 
+    String KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL = "checker.current_dc_all_meta.refresh.interval.milli";
+
     String KEY_CONSOLE_ADDRESS = "console.address";
 
     String KEY_CHECKER_ACK_INTERVAL = "checker.ack.interval.milli";
@@ -101,7 +103,11 @@ public interface CheckerConfig {
 
     String KEY_SUBSCRIBE_TIMEOUT_MILLI = "checker.subscribe.timeout.milli";
 
+    String KEY_KEEPER_CHECKER_INTERVAL = "keeper.checker.interval";
+
     int getRedisReplicationHealthCheckInterval();
+
+    int getCheckerCurrentDcAllMetaRefreshIntervalMilli();
 
     int getClusterHealthCheckInterval();
 
@@ -200,5 +206,7 @@ public interface CheckerConfig {
     int maxRemovedClustersPercent();
 
     Set<String> getMigrationUnsupportedClusters();
+
+    int getKeeperCheckerIntervalMilli();
 
 }

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
+import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -142,7 +143,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getCheckerAckTimeoutMilli();
 
-	long getMigrationTimeoutMilli();
+    long getMigrationTimeoutMilli();
 
 	long getServletMethodTimeoutMilli();
 	
@@ -177,4 +178,10 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
     long getMigrationProcessReportIntervalMill();
 
 	long getMigrationResultReportIntervalMill();
+
+	boolean isAutoMigrateOverloadKeeperContainerOpen();
+
+	long getAutoMigrateOverloadKeeperContainerIntervalMilli();
+
+	Map<String,KeeperContainerOverloadStandardModel> getKeeperContainerOverloadStandards();
 }

@@ -1702,6 +1702,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-by-ip" type="SELECT" multiple="false">
+				<param name="keepercontainer-ip"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-ip'/> = ${keepercontainer-ip}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-active-by-dc-name" type="SELECT" multiple="true">
 				<param name="dc-name"/>
 				<statement>

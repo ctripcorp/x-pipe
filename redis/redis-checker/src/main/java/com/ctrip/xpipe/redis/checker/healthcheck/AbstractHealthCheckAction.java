@@ -51,6 +51,7 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
 
     @Override
     public void doStop() {
+        logger.debug("[stopped][{}][{}], listener:{}, future:{}", getClass().getSimpleName(), instance.getCheckInfo(), listeners, future);
         if(future != null) {
             future.cancel(true);
         }

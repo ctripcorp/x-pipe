@@ -1,0 +1,64 @@
+
+<div class="col-md-12">
+
+    <h3 class="header smaller lighter blue">
+        <a>OverloadKeeperContainer</a>
+        <span ng-if="operateType == 'migrating'"> >> 迁移中  </span>
+    </h3>
+
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">
+                    <td ng-if="operateType == 'detail'">
+                        <input ng-if="operateType == 'detail'" type="checkbox" ng-click="toggleAll()">
+                    </td>
+                    <span ng-if="isChecked() && operateType == 'detail'">取消全选</span> <span ng-if="!isChecked() && operateType == 'detail'">全选</span>
+                </div>
+                <div class="col-md-6 text-right">
+                    <a ng-if="operateType == 'detail'"  class="btn btn-danger" type="button" ng-click="beginToMigrateOverloadKeeperContainers()">
+                        迁移
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div ng-show="operateType == 'detail'" >
+            <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+                <tr ng-repeat="info in $data">
+                    <td data-title="'确认框'"></td>
+                    <td>
+                        <input type="checkbox"  ng-checked="info.selected" ng-click="info.selected = !info.selected">
+                    </td>
+
+                    <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcKeeperContainer.keeperIp}}</td>
+                    <td data-title="'dc'" >{{info.srcKeeperContainer.dcName}}</td>
+                    <td data-title="'上游redis数据量(KB)'" >{{info.srcKeeperContainer.totalRedisUsedMemory / 1024}}</td>
+                    <td data-title="'流量(KB)'">{{info.srcKeeperContainer.totalInputFlow}}</td>
+                    <td data-title="'待迁移的分片数'" >{{info.migrateKeeperCount}}</td>
+                    <td data-title="'tagetKeeperContainer'" >{{info.targetKeeperContainer.keeperIp}}</td>
+                    <td data-title="'上游redis数据量(KB)'" >{{info.targetKeeperContainer.totalRedisUsedMemory / 1024}}</td>
+                    <td data-title="'流量(KB)'">{{info.targetKeeperContainer.totalInputFlow}}</td>
+                </tr>
+            </table>
+        </div>
+
+
+        <div ng-show="operateType !== 'detail'" >
+            <table ng-table="migratingTableParams" show-filter="true" class="table table-striped table-hover">
+                <tr ng-repeat="info in $data">
+                    <td data-title="'srcKeeperContainer'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcKeeperContainer.keeperIp}}</td>
+                    <td data-title="'idc'" >{{info.srcKeeperContainer.dcName}}</td>
+                    <td data-title="'tagetKeeperContainer'" >{{info.targetKeeperContainer.keeperIp}}</td>
+                    <td data-title="'待迁移的分片数'" >{{info.migrateKeeperCount}}</td>
+                    <td data-title="'迁移完成分片数'" >{{info.migrateKeeperCompleteCount}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="icon-double-angle-up icon-only bigger-110"></i>
+</a>

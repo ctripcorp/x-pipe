@@ -1,18 +1,15 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
-import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperModel;
+import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
 /**
  * @author zhangle 16/8/24
@@ -26,10 +23,6 @@ public class RedisController extends AbstractConsoleController {
     private ClusterService clusterService;
     @Autowired
     private ShardModelService shardModelService;
-    @Autowired
-    private KeeperAdvancedService keeperAdvancedService;
-    @Autowired
-    private KeeperContainerService keeperContainerService;
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public void updateRedises(@PathVariable String clusterName, @PathVariable String dcName,
@@ -66,7 +59,10 @@ public class RedisController extends AbstractConsoleController {
                     .getAllShardModel(model.getSrcKeeperContainer().getDcName(), clusterTbl.getClusterName());
 
             for (ShardModel shardModel : allShardModel) {
-                if (!migrateShardKeepers(clusterTbl.getClusterName(), model, shardModel)) {
+                if (!shardModelService.migrateShardKeepers(model.getSrcKeeperContainer().getDcName(),
+                        clusterTbl.getClusterName(), shardModel, model.getSrcKeeperContainer().getAddr().getHost(),
+                        (model.getTargetKeeperContainer() == null || model.getTargetKeeperContainer().getAddr() == null)
+                                ? null : model.getTargetKeeperContainer().getAddr().getHost())) {
                     continue;
                 }
                 if (model.getMaxMigrationKeeperNum() != 0 && (++count) >= model.getMaxMigrationKeeperNum()) {
@@ -74,85 +70,6 @@ public class RedisController extends AbstractConsoleController {
                     return ;
                 }
             }
-        }
-    }
-
-    private boolean migrateShardKeepers(String clusterName, MigrationKeeperModel model, ShardModel shardModel) {
-        List<RedisTbl> newKeepers =
-                getNewKeepers(clusterName, shardModel, model.getSrcKeeperContainer(), model.getTargetKeeperContainer());
-
-        if (newKeepers == null) {
-            logger.debug("[migrateKeepers] no need to replace keepers");
-            return false;
-        }else if (newKeepers.size() == 2) {
-            return doMigrateKeepers(shardModel, newKeepers, clusterName,
-                            model.getSrcKeeperContainer().getDcName(), shardModel.getShardTbl().getShardName());
-        } else {
-            logger.info("[migrateKeepers] fail to migrate keepers with unexpected newKeepers {}", newKeepers);
-            return false;
-        }
-    }
-
-    private List<RedisTbl> getNewKeepers(String clusterName, ShardModel shardModel,
-                         KeeperContainerInfoModel srcKeeperContainer, KeeperContainerInfoModel targetKeeperContainer) {
-        List<RedisTbl> newKeepers = new ArrayList<>();
-        for (RedisTbl keeper : shardModel.getKeepers()) {
-            if (!ObjectUtils.equals(keeper.getKeepercontainerId(), srcKeeperContainer.getId())) {
-                newKeepers.add(keeper);
-            }
-        }
-
-        if (newKeepers.size() == 2) {
-            return null;
-        }
-
-        if (newKeepers.size() < 1) {
-            logger.info("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}",
-                    newKeepers, clusterName, srcKeeperContainer.getDcName(), shardModel.getShardTbl().getShardName());
-            return newKeepers;
-        }
-
-        long alreadyUsedAzId = keeperContainerService.find(newKeepers.get(0).getKeepercontainerId()).getAzId();
-        List<KeeperBasicInfo> bestKeepers = findBestKeepers(clusterName, srcKeeperContainer.getDcName(), targetKeeperContainer);
-        for (KeeperBasicInfo keeperSelected : bestKeepers) {
-            if (keeperSelected.getKeeperContainerId() != srcKeeperContainer.getId()
-                    && keeperSelected.getKeeperContainerId() != newKeepers.get(0).getKeepercontainerId()
-                    && isDifferentAz(keeperSelected, alreadyUsedAzId)) {
-                newKeepers.add(new RedisTbl().setKeepercontainerId(keeperSelected.getKeeperContainerId())
-                        .setRedisIp(keeperSelected.getHost())
-                        .setRedisPort(keeperSelected.getPort())
-                        .setRedisRole(XPipeConsoleConstant.ROLE_KEEPER));
-                break;
-            }
-        }
-        return newKeepers;
-    }
-
-    private boolean isDifferentAz(KeeperBasicInfo keeperSelected, long alreadyUsedAzId) {
-        if (alreadyUsedAzId == 0)  return true;
-        long newAzId = keeperContainerService.find(keeperSelected.getKeeperContainerId()).getAzId();
-        return newAzId != alreadyUsedAzId;
-    }
-
-    private boolean doMigrateKeepers(ShardModel shardModel, List<RedisTbl> newKeepers, String clusterName,
-                                     String dcName, String shardName) {
-        try {
-            shardModel.setKeepers(newKeepers);
-            logger.info("[Update Redises][construct]{},{},{},{}", clusterName, dcName, shardName, shardModel);
-            redisService.updateRedises(dcName, clusterName, shardName, shardModel);
-            logger.info("[Update Redises][success]{},{},{},{}", clusterName, dcName, shardName, shardModel);
-            return true;
-        } catch (Exception e) {
-            logger.error("[Update Redises][failed]{},{},{},{}", clusterName, dcName, shardName, shardModel, e);
-            return false;
-        }
-    }
-
-    private List<KeeperBasicInfo> findBestKeepers(String clusterName, String dcName, KeeperContainerInfoModel targetKeeperContainer) {
-        if (targetKeeperContainer == null || targetKeeperContainer.getId() == 0) {
-            return keeperAdvancedService.findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterName);
-        } else {
-            return keeperAdvancedService.findBestKeepersByKeeperContainer(targetKeeperContainer, KEEPER_PORT_DEFAULT, (ip, port) -> true, 1);
         }
     }
 }
