@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.impl.TestCurrentDcAllMetaCache;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -28,13 +29,13 @@ import com.ctrip.xpipe.redis.console.service.impl.ConsoleRedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.integratedtest.console.config.SpringEnvConsoleConfig;
 import com.ctrip.xpipe.redis.integratedtest.console.config.TestFoundationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -108,6 +109,13 @@ public class TestConsoleContextConfig {
     public MetaCache testMetaCache() {
         return new TestMetaCache();
     }
+
+    @Bean
+    @Profile(AbstractProfile.PROFILE_NAME_TEST)
+    public CurrentDcAllMeta testCurrentDcAllMeta() {
+        return new TestCurrentDcAllMetaCache();
+    }
+
 
     @Bean
     public ConsoleDbConfig consoleDbConfig() {

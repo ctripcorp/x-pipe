@@ -79,7 +79,6 @@ public class ConsoleController extends AbstractConsoleController {
 			}
 		});
 		toRemoveClusters.forEach(clusterName -> dcMeta.getClusters().remove(clusterName));
-
 		return (format != null && format.equals("xml"))? dcMeta.toString() : coder.encode(dcMeta);
 	}
 

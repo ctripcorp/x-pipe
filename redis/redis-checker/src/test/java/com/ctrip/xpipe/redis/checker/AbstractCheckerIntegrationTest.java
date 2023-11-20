@@ -12,10 +12,8 @@ import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
-import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
-import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
-import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
+import com.ctrip.xpipe.redis.checker.impl.*;
+import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -71,6 +69,12 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         public MetaCache metaCache() {
             return new TestMetaCache();
         }
+
+        @Bean
+        public CurrentDcAllMeta testCurrentDcAllMeta() {
+            return new TestCurrentDcAllMetaCache();
+        }
+
 
         @Bean
         public TestPersistenceCache persistence() {
