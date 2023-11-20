@@ -80,7 +80,7 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
 
                 alertForKeeperMigrationSuccess(migrateShard, srcKeeperContainerIp,
                         migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp());
-                migrationKeeperContainerDetailModel.migrateKeeperCountIncrease();
+                migrationKeeperContainerDetailModel.migrateKeeperCompleteCountIncrease();
                 iterator.remove();
             }
         }
