@@ -69,7 +69,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public static final long DEFAULT_CONCURRENCY_THRESHOLD = 10000;
 
-    private static final CloseState closeState = new CloseState();
+    private final CloseState closeState = new CloseState();
 
     public DefaultSequenceController() {
         this(DEFAULT_QPS_THRESHOLD, DEFAULT_BYTES_PER_SECOND_THRESHOLD, DEFAULT_MEMORY_THRESHOLD, DEFAULT_CONCURRENCY_THRESHOLD);

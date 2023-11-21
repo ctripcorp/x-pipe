@@ -293,7 +293,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 logger.warn("publish command {} length={} unexpected, filtered", redisOp, length);
                 return true;
             }
-            if (!channel.startsWith("xpipe-hetero-")) {
+            if (!channel.startsWith("xpipe-asymmetric-")) {
                 logger.warn("publish command {} channel: [{}] filtered", redisOp, channel);
                 return true;
             }

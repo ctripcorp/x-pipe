@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,10 +30,11 @@ import static org.mockito.Mockito.when;
  */
 public class DefaultSequenceControllerTest extends AbstractTest {
 
-    DefaultSequenceController controller = new DefaultSequenceController();
+    DefaultSequenceController controller;
 
     @Before
     public void setUp() throws Exception {
+        controller = new DefaultSequenceController();
         controller.stateThread = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "state-test-thread"));
         controller.workerThreads = Executors.newScheduledThreadPool(8,
@@ -79,8 +81,8 @@ public class DefaultSequenceControllerTest extends AbstractTest {
 
         controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)), 0);
 
-        first.future().get();
-        second.future().get();
+        first.future().get(5, TimeUnit.SECONDS);
+        second.future().get(5, TimeUnit.SECONDS);
 
         waitConditionUntilTimeOut(()->lwmManager.lastSubmitTime >= first.endTime);
         waitConditionUntilTimeOut(()->lwmManager.lastSubmitTime >= second.endTime);
