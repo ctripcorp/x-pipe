@@ -102,7 +102,7 @@ public class DefaultCommandDispatcherTest {
         RedisOp gtidOp1 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op1);
         Assert.assertFalse(dispatcher.shouldFilter(gtidOp1));
 
-        RedisSingleKeyOp op2 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish xpipe-hetero-ppp 222"), null, null);
+        RedisSingleKeyOp op2 = new RedisOpSingleKey(RedisOpType.PUBLISH, string2Bytes("publish xpipe-asymmetric-ppp 222"), null, null);
         RedisOp gtidOp2 = new RedisSingleKeyOpGtidWrapper(string2Bytes("GTID ggg:1 0"), "ggg", op2);
         Assert.assertFalse(dispatcher.shouldFilter(gtidOp2));
 
@@ -113,7 +113,7 @@ public class DefaultCommandDispatcherTest {
 
         //test estimated size by the way
         Assert.assertEquals(15, gtidOp1.estimatedSize());
-        Assert.assertEquals(36, gtidOp2.estimatedSize());
+        Assert.assertEquals(40, gtidOp2.estimatedSize());
         Assert.assertEquals(23, gtidOp3.estimatedSize());
     }
 
