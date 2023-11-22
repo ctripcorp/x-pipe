@@ -44,7 +44,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   @Autowired
   protected ClusterService clusterService;
 
-  @ClusterTypeLimit(value = {ClusterType.ONE_WAY})
+  @ClusterTypeLimit(value = {ClusterType.ONE_WAY, ClusterType.HETERO})
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
@@ -107,7 +107,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     }
   }
 
-  @ClusterTypeLimit(value = {ClusterType.ONE_WAY})
+  @ClusterTypeLimit(value = {ClusterType.ONE_WAY, ClusterType.HETERO})
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.DELETE)
   public RetMessage deleteKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
