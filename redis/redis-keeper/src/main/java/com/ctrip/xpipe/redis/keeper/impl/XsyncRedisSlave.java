@@ -25,7 +25,7 @@ public class XsyncRedisSlave extends DefaultRedisSlave {
     }
 
     protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
-        return StringUtil.join(" ", DefaultXsync.FULL_SYNC, rdbProgress.getProgress().toString());
+        return StringUtil.join(" ", DefaultXsync.FULL_SYNC, rdbProgress.getProgressMark());
     }
 
     protected String buildThreadPrefix(Channel channel) {

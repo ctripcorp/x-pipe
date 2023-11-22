@@ -14,4 +14,6 @@ public interface RdbParseListener {
 
     void onFinish(RdbParser<?> parser);
 
+    void onAuxFinish();
+
 }

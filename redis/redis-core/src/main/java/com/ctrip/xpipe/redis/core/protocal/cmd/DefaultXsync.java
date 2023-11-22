@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.payload.InOutPayload;
@@ -8,10 +9,11 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.*;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.Xsync;
+import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
@@ -20,14 +22,13 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.ctrip.xpipe.redis.core.protocal.Xsync.XSYNC_STATE.READING_COMMANDS;
 
@@ -47,11 +48,17 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
 
     private GtidSet rdbDataGtidSet;
 
+    private long rdbOffset;
+
     private NettyClient nettyClient;
 
     private List<XsyncObserver> observers = new LinkedList<>();
 
     protected Xsync.XSYNC_STATE xsyncState = XSYNC_STATE.XSYNC_COMMAND_WAIT_RESPONSE;
+
+    private int listeningPort;
+
+    private AtomicLong currentCommandOffset;
 
     public DefaultXsync(String host, int port, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled) {
         super(host, port, scheduled);
@@ -59,10 +66,16 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         this.vectorClockExcluded = vectorClockExcluded;
     }
 
-    public DefaultXsync(SimpleObjectPool<NettyClient> clientPool, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled) {
+    public DefaultXsync(SimpleObjectPool<NettyClient> clientPool, GtidSet gtidSetExcluded, Object vectorClockExcluded, ScheduledExecutorService scheduled, int listeningPort) {
         super(clientPool, scheduled);
         this.gitdSetExcluded = gtidSetExcluded;
         this.vectorClockExcluded = vectorClockExcluded;
+        this.listeningPort = listeningPort;
+        this.currentCommandOffset = new AtomicLong(0);
+    }
+
+    public NettyClient getNettyClient() {
+        return nettyClient;
     }
 
     @Override
@@ -118,9 +131,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                     break;
 
                 case READING_COMMANDS:
+                    int prevIndex = byteBuf.readerIndex();
                     Object cmdPayload = super.doReceiveResponse(channel, byteBuf);
+                    currentCommandOffset.addAndGet(byteBuf.readerIndex() - prevIndex);
                     if (cmdPayload instanceof Object[]) {
-                        doOnCommand((Object[]) cmdPayload);
+                        doOnCommand(currentCommandOffset.getAndSet(0), (Object[]) cmdPayload);
                     } else if (null != cmdPayload) {
                         getLogger().info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, cmdPayload);
                         throw new RedisRuntimeException("unknown payload:" + cmdPayload);
@@ -153,17 +168,24 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         }
 
         if (split[0].equalsIgnoreCase(FULL_SYNC)) {
-            if (split.length != 2) {
+            if (split.length < 2) {
                 throw new RedisRuntimeException("unknown reply:" + xsync);
             }
-            this.rdbDataGtidSet = new GtidSet(split[1]);
+            this.rdbDataGtidSet = GtidSet.PLACE_HOLDER.equals(split[1]) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(split[1]);
+            if (split.length > 2) {
+                this.rdbOffset = Long.parseLong(split[2]);
+            }
             getLogger().debug("[readRedisResponse][FULL]{}, {} {}", ChannelUtil.getDesc(channel), this, rdbDataGtidSet);
             xsyncState = XSYNC_STATE.READING_RDB;
             doOnFullSync();
         } else if (split[0].equalsIgnoreCase(PARTIAL_SYNC)) {
             xsyncState = READING_COMMANDS;
             getLogger().debug("[readRedisResponse][PARTIAL]{}, {}", ChannelUtil.getDesc(channel), this);
-            doOnContinue();
+            long continueOffset = 0;
+            if (split.length > 1) {
+                continueOffset = Long.parseLong(split[1]);
+            }
+            doOnContinue(continueOffset);
         } else {
             throw new RedisRuntimeException("unknown reply:" + xsync);
         }
@@ -173,7 +195,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         getLogger().debug("[doOnFullSync] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onFullSync(rdbDataGtidSet);
+                observer.onFullSync(rdbDataGtidSet, rdbOffset);
             } catch (Throwable th) {
                 getLogger().error("[doOnFullSync][fail] {}", observer, th);
             }
@@ -181,11 +203,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         resetClient();
     }
 
-    private void doOnContinue() {
+    private void doOnContinue(long continueOffset) {
         getLogger().debug("[doOnContinue] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onContinue(gitdSetExcluded);
+                observer.onContinue(gitdSetExcluded, continueOffset);
             } catch (Throwable th) {
                 getLogger().error("[doOnContinue][fail] {}", observer, th);
             }
@@ -193,11 +215,11 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         resetClient();
     }
 
-    private void doOnCommand(Object[] rawCmdArgs) {
+    private void doOnCommand(long commandOffset, Object[] rawCmdArgs) {
         getLogger().debug("[doOnCommand] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.onCommand(rawCmdArgs);
+                observer.onCommand(commandOffset, rawCmdArgs);
             } catch (Throwable th) {
                 getLogger().error("[doOnCommand][fail] {}", observer, th);
             }
@@ -209,7 +231,7 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         getLogger().debug("[beginReadRdb] {}", this);
         for (XsyncObserver observer: observers) {
             try {
-                observer.beginReadRdb(eofType, rdbDataGtidSet);
+                observer.beginReadRdb(eofType, rdbDataGtidSet, rdbOffset);
             } catch (Throwable th) {
                 getLogger().error("[beginReadRdb][fail] {}", observer, th);
             }
@@ -223,29 +245,27 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
                 observer.onRdbData(byteBuf.slice());
             } catch (Throwable th) {
                 getLogger().error("[notifyRdbData][fail] {}", observer, th);
+                throw th;
             }
         }
     }
 
     private void endReadRdb() {
         getLogger().debug("[endReadRdb] {}", this);
-        if (eofType.putOnLineOnAck()) {
-            Replconf replconf = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, "1");
-            replconf.execute().addListener(commandFuture -> {
-                if (!commandFuture.isSuccess()) {
-                    getLogger().info("[endReadRdb][ack] fail", commandFuture.cause());
-                    future().setFailure(new XpipeRuntimeException("ack after rdb fail", commandFuture.cause()));
-                }
-            });
-        }
 
         for (XsyncObserver observer: observers) {
             try {
-                observer.endReadRdb(eofType, rdbDataGtidSet);
+                observer.endReadRdb(eofType, rdbDataGtidSet, rdbOffset);
             } catch (Throwable th) {
                 getLogger().error("[notifyRdbData][fail] {}", observer, th);
             }
         }
+    }
+
+    private Command<Object> replConfListeningPort() {
+
+        return new Replconf(getClientPool(), Replconf.ReplConfType.LISTENING_PORT, scheduled,
+                String.valueOf(listeningPort));
     }
 
     @Override
@@ -253,6 +273,16 @@ public class DefaultXsync extends AbstractRedisCommand<Object> implements Xsync,
         // temporary solution, handle channel evicted by channel pool
 
         this.nettyClient = nettyClient;
+
+        replConfListeningPort().execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    close();
+                }
+            }
+        });
+
         nettyClient.channel().closeFuture().addListener(closeFuture -> {
             if (!future().isDone()) {
                 future().setFailure(new XpipeRuntimeException("channel closed"));

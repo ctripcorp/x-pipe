@@ -149,6 +149,11 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
+    public void readAuxEnd(RdbStore rdbStore) {
+
+    }
+
+    @Override
     public void reFullSync() {
     }
 

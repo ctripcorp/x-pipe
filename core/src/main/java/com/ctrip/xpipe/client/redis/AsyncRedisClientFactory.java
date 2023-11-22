@@ -14,9 +14,9 @@ public interface AsyncRedisClientFactory extends Ordered {
 
     AsyncRedisClientFactory DEFAULT = ServicesUtil.getAsyncRedisClientFactory();
 
-    AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) throws Exception;
+    AsyncRedisClient getOrCreateClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) throws Exception;
 
-    AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) throws Exception;
+    AsyncRedisClient createClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) throws Exception;
 
     default int getOrder() {
         return LOWEST_PRECEDENCE;

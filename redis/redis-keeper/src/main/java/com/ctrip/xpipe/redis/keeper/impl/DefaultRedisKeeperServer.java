@@ -392,6 +392,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.dispose();
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
+		if (null != indexingExecutors) indexingExecutors.shutdown();
 		super.doDispose();
 	}
 
@@ -629,6 +630,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		} catch (Throwable t) {
 			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + replId + " - " + gtidSet);
 		}
+	}
+
+	@Override
+	public void readAuxEnd(RdbStore rdbStore) {
+		/*NOOP*/
 	}
 
 	@Override
@@ -1006,6 +1012,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			@Override
 			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
 				redisKeeperServer.readRdbGtidSet(rdbStore, gtidSet);
+			}
+
+			@Override
+			public void readAuxEnd(RdbStore rdbStore) {
+
 			}
 
 			@Override

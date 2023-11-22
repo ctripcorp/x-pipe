@@ -33,4 +33,6 @@ public interface ApplierServer extends Lifecycle, RedisServer {
 
     Endpoint getUpstreamEndpoint();
 
+    long getEndOffset();
+
 }

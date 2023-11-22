@@ -25,6 +25,8 @@ public class ApplierTransMeta {
 
     private Long concurrencyThreshold;
 
+    private String subenv;
+
     //for json conversion
     public ApplierTransMeta() {}
 
@@ -101,6 +103,14 @@ public class ApplierTransMeta {
 
     public void setConcurrencyThreshold(Long concurrencyThreshold) {
         this.concurrencyThreshold = concurrencyThreshold;
+    }
+
+    public String getSubenv() {
+        return subenv;
+    }
+
+    public void setSubenv(String subenv) {
+        this.subenv = subenv;
     }
 
     @Override

@@ -19,4 +19,8 @@ public class ConcurrencyThreshold extends AbstractThreshold {
         super.release(1);
     }
 
+    @Override
+    public void reset() {
+        super.reset();
+    }
 }

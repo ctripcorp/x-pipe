@@ -66,14 +66,16 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
     }
 
     @Override
-    public RedisOp doRead() throws IOException {
+    public RedisOp doRead(long milliSeconds) throws IOException {
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
         }
 
         rollToNextSegmentIfNecessary();
         readNextFileIfNecessary();
-        refillBufIfNecessary();
+
+        refillBufIfNecessary(milliSeconds);
+        if (null == curBuf || curBuf.readableBytes() == 0) return null;
 
         RedisClientProtocol<Object[]> protocol = protocolParser.read(curBuf);
         if (null == protocol) return null;
@@ -85,7 +87,7 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         return redisOp;
     }
 
-    private void refillBufIfNecessary() throws IOException {
+    private void refillBufIfNecessary(long milliSeconds) throws IOException {
         if (null != curBuf && curBuf.readableBytes() > 0) return;
 
         ByteBuffer cmdBuffer;
@@ -93,7 +95,8 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
             long endOffset = currentFileSegment.getEndIdx().getFileOffset();
             cmdBuffer = ByteBuffer.allocateDirect((int)Math.max(Math.min(FILE_BUFFER_SIZE, endOffset - filePosition()), 0));
         } else {
-            tryWaitOffset();
+            tryWaitOffset(milliSeconds);
+            if (!hasAnyThingToRead()) return;
             cmdBuffer = ByteBuffer.allocateDirect(FILE_BUFFER_SIZE);
         }
 
@@ -102,10 +105,15 @@ public class GtidSetCommandReader extends AbstractFlyingThresholdCommandReader<R
         if (cmdBuffer.position() < cmdBuffer.capacity()) curBuf.capacity(cmdBuffer.position());
     }
 
-    private void tryWaitOffset() throws IOException {
+    private boolean hasAnyThingToRead() throws IOException {
+        return controllableFile.size() > filePosition();
+    }
+
+    private void tryWaitOffset(long milliSeconds) throws IOException {
         try {
             long globalOffset = curCmdFile.getStartOffset() + filePosition();
-            offsetNotifier.await(globalOffset);
+            if (milliSeconds < 0) offsetNotifier.await(globalOffset);
+            else offsetNotifier.await(globalOffset, milliSeconds);
         } catch (InterruptedException e) {
             logger.info("[doRead]", e);
             Thread.currentThread().interrupt();

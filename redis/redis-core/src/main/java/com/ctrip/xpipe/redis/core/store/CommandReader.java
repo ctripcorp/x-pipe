@@ -6,6 +6,8 @@ public interface CommandReader<R> {
 
 	R read() throws IOException;
 
+	R read(long milliSeconds) throws IOException;
+
 	CommandFile getCurCmdFile();
 
 	long position() throws IOException;

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.protocal.Xsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,6 +20,9 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author: cchen6
@@ -42,12 +46,13 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
     }
 
     private DefaultXsyncReplication mockXsyncReplication() throws Exception {
-        DefaultXsyncReplication xsyncReplication = new DefaultXsyncReplication();
+        DefaultXsyncReplication xsyncReplication = new DefaultXsyncReplication(mock(ApplierServer.class));
         xsyncReplication.scheduled = scheduled;
         XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool();
         keyedObjectPool.initialize();
         xsyncReplication.pool = keyedObjectPool;
         xsyncReplication.dispatcher = new DefaultCommandDispatcher();
+        xsyncReplication.offsetRecorder = new AtomicLong(0);
         xsyncReplication.initialize();
         xsyncReplication.start();
         return xsyncReplication;
@@ -57,7 +62,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
     public void doDisconnect() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
 
-        Xsync xsync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet(""), null, scheduled);
+        Xsync xsync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet("mockRunid:0"), null, scheduled);
         xsync.execute();
 
         NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);

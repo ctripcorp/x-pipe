@@ -25,4 +25,6 @@ public interface KeeperRepl {
 
 	GtidSet getEndGtidSet() throws IOException;
 
+	boolean supportGtidSet();
+
 }

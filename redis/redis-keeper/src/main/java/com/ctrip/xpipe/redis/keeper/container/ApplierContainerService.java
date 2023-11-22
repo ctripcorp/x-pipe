@@ -183,7 +183,8 @@ public class ApplierContainerService {
                 ClusterId.from(applierTransMeta.getClusterDbId()), ShardId.from(applierTransMeta.getShardDbId()),
                 applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser, keeperConfig,
                 applierTransMeta.getQpsThreshold(), applierTransMeta.getBytesPerSecondThreshold(),
-                applierTransMeta.getMemoryThreshold(), applierTransMeta.getConcurrencyThreshold());
+                applierTransMeta.getMemoryThreshold(), applierTransMeta.getConcurrencyThreshold(),
+                applierTransMeta.getSubenv());
         register(applierServer);
 
         return applierServer;

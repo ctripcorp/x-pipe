@@ -200,6 +200,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public boolean supportGtidSet() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public DumpedRdbStore prepareNewRdb() throws IOException {
 		throw new UnsupportedOperationException();
 	}

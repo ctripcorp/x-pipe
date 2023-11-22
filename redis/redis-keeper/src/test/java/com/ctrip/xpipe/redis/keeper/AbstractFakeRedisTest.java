@@ -222,6 +222,11 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 
 				@Override
+				public void readAuxEnd(RdbStore rdbStore) {
+
+				}
+
+				@Override
 				public void endWriteRdb() {
 					new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(masterRdbOffset)).execute();
 				}

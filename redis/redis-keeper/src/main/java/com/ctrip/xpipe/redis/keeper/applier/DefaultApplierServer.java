@@ -49,6 +49,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -71,6 +72,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
+
+    @InstanceDependency
+    public AtomicLong offsetRecorder;
 
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
@@ -142,16 +146,17 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig) throws Exception {
-        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, null, null, null, null);
+        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, null, null, null, null, null);
     }
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig,
-                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold) throws Exception {
+                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.lwmManager = new DefaultLwmManager();
-        this.replication = new DefaultXsyncReplication();
+        this.replication = new DefaultXsyncReplication(this);
         this.dispatcher = new DefaultCommandDispatcher();
+        this.offsetRecorder = new AtomicLong(0);
 
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
@@ -171,7 +176,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         /* TODO: dispose client when applier closed */
-        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, workerThreads);
+        this.client = AsyncRedisClientFactory.DEFAULT.createClient(clusterName, subenv, workerThreads);
 
         lwmThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(10), ClusterShardAwareThreadFactory.create(clusterId, shardId, "lwm-" + makeApplierThreadName()),
@@ -276,6 +281,11 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @Override
     public Endpoint getUpstreamEndpoint() {
         return replication.endpoint();
+    }
+
+    @Override
+    public long getEndOffset() {
+        return offsetRecorder.get();
     }
 
     @Override

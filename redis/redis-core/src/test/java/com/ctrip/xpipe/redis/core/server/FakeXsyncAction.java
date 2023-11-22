@@ -64,6 +64,9 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
             } catch (InterruptedException e) {
                 logger.warn("[doWrite][xsync] fail", e);
             }
+        } else {
+            ous.write("+OK\r\n".getBytes());
+            ous.flush();
         }
     }
 

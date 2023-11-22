@@ -3,11 +3,10 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
-import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +41,16 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     }
 
     @Override
+    public boolean isGtidSetInit() {
+        return getGtidSet() != null;
+    }
+
+    @Override
+    public boolean supportGtidSet() {
+        return isGtidSetInit() && !GtidSet.EMPTY_GTIDSET.equals(getGtidSet());
+    }
+
+    @Override
     public int writeRdb(ByteBuf byteBuf) throws IOException {
         makeSureOpen();
 
@@ -69,7 +78,7 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
         if (null == gtidSet) {
             throw new IllegalStateException("rdb.gtidset null");
         }
-        rdbFileListener.setRdbFileInfo(eofType, new GtidSetReplicationProgress(new GtidSet(gtidSet.get())));
+        rdbFileListener.setRdbFileInfo(eofType, new GtidSetReplicationProgress(new GtidSet(gtidSet.get()), rdbOffset));
     }
 
     protected void notifyListenersRdbGtidSet(String rdbGtidSet) {

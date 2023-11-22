@@ -108,7 +108,7 @@ public class DefaultLwmManager extends AbstractInstanceComponent implements Appl
                     }
                 });
                 // submit to sequenceController to avoid conflict with transaction command
-                sequenceController.submit(command);
+                sequenceController.submit(command, 0);
             } catch (Throwable t) {
                 EventMonitor.DEFAULT.logAlertEvent("failed to apply: " + redisOp.toString());
                 logger.error("failed to apply: " + redisOp.toString(), t);
