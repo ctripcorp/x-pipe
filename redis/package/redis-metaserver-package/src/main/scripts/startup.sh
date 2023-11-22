@@ -150,11 +150,11 @@ then
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m  -XX:+AlwaysPreTouch -Xmn${XMN}m -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     #MB
-    USED_MEM=600
-    XMN=450
+    USED_MEM=2048
+    XMN=1024
     MAX_DIRECT=100
-    META_SPACE=128
-    MAX_META_SPACE=128
+    META_SPACE=256
+    MAX_META_SPACE=256
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 else
     IDC=`getIdc`
@@ -230,7 +230,7 @@ then
 fi
 
 declare -i counter=0
-declare -i max_counter=16 # 16*5=80s
+declare -i max_counter=20 # 20*5=100s
 declare -i total_time=0
 
 printf "Waiting for server startup" >> $STARTUP_LOG
