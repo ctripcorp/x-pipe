@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.dto;
 
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ClusterDTO {
 
@@ -16,6 +18,7 @@ public class ClusterDTO {
     private String adminEmails;
     private List<String> azs;
     private List<AzGroupDTO> azGroups;
+    private Set<ShardDTO> shards;
 
     public ClusterDTO() {
     }
@@ -106,5 +109,36 @@ public class ClusterDTO {
 
     public void setAzGroups(List<AzGroupDTO> azGroups) {
         this.azGroups = azGroups;
+    }
+
+    public Set<ShardDTO> getShards() {
+        return shards;
+    }
+
+    public ClusterDTO addShard(ShardDTO shard) {
+        if (null == this.shards) this.shards = new HashSet<>();
+        this.shards.add(shard);
+        return this;
+    }
+
+    public void setShards(Set<ShardDTO> shards) {
+        this.shards = shards;
+    }
+
+    @Override
+    public String toString() {
+        return "ClusterDTO{" +
+                "clusterId=" + clusterId +
+                ", clusterName='" + clusterName + '\'' +
+                ", clusterType='" + clusterType + '\'' +
+                ", activeAz='" + activeAz + '\'' +
+                ", description='" + description + '\'' +
+                ", orgName='" + orgName + '\'' +
+                ", cmsOrgId=" + cmsOrgId +
+                ", adminEmails='" + adminEmails + '\'' +
+                ", azs=" + azs +
+                ", azGroups=" + azGroups +
+                ", shards=" + shards +
+                '}';
     }
 }

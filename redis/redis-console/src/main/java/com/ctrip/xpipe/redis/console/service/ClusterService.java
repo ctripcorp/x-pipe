@@ -35,6 +35,7 @@ public interface ClusterService {
     Long getAllCount();
 	ClusterDTO getCluster(String clusterName);
 	List<ClusterDTO> getClusters(String clusterType);
+	List<ClusterDTO> getClusterWithShards(String clusterType);
 
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void createSingleGroupCluster(SingleGroupClusterCreateDTO clusterCreateDTO);
