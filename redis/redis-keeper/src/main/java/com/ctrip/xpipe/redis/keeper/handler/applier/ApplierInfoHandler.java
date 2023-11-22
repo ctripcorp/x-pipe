@@ -29,6 +29,7 @@ public class ApplierInfoHandler extends AbstractCommandHandler {
         if (null != upstreamEndpoint) {
             sb.append("master_host:" + upstreamEndpoint.getHost() + RedisProtocol.CRLF );
             sb.append("master_port:"  + upstreamEndpoint.getPort() +  RedisProtocol.CRLF );
+            sb.append("master_repl_offset:" + applierServer.getEndOffset() + RedisProtocol.CRLF);
         }
 
         redisClient.sendMessage(new CommandBulkStringParser(sb.toString()).format());

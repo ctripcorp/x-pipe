@@ -8,17 +8,18 @@ import com.google.common.util.concurrent.FutureCallback;
 import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
-import credis.java.client.async.qclient.CRedisClusterSessionLocator;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
 import credis.java.client.config.ConfigFrozenAware;
-import credis.java.client.config.route.ConfigFrozenRoute;
+import credis.java.client.lifecycle.LifecycleUtil;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
+import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
+import qunar.tc.qclient.redis.exception.checked.RedisException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Slight
@@ -34,6 +36,10 @@ import java.util.concurrent.TimeUnit;
  * Feb 26, 2022 2:37 PM
  */
 public class CRedisAsyncClient implements AsyncRedisClient {
+
+    final String clusterName;
+
+    final String subenv;
 
     final AsyncCacheProviderImpl asyncProvider;
 
@@ -43,7 +49,9 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final ExecutorService credisNotifyThread;
 
-    final ConfigFrozenRoute configFrozenRoute;
+    final ConfigFrozenAware configFrozenAware;
+
+    final HashStrategyFactory hashStrategyFactory;
 
     boolean isInMulti = false;
 
@@ -52,10 +60,13 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenRoute configFrozenRoute) {
+    public CRedisAsyncClient(String clusterName, String subenv, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware, HashStrategyFactory hashStrategyFactory) {
+        this.clusterName = clusterName;
+        this.subenv = subenv;
         this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
         this.txnProvider = txnProvider;
-        this.configFrozenRoute = configFrozenRoute;
+        this.configFrozenAware = configFrozenAware;
+        this.hashStrategyFactory = hashStrategyFactory;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
     }
@@ -207,23 +218,23 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     @Override
     public void freezeConfig() {
-        configFrozenRoute.startFreeze();
+        configFrozenAware.startFreeze();
     }
 
     @Override
     public void stopFreezeConfig() {
-        configFrozenRoute.stopFreeze();
+        configFrozenAware.stopFreeze();
     }
 
     @Override
     public long getFreezeLastMillis() {
-        return configFrozenRoute.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        return configFrozenAware.getFrozenLastMillis(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void shutdown() {
-        ((CRedisClusterSessionLocator) locator()).destroy();
-        configFrozenRoute.destroy();
+        LifecycleUtil.destroyIfPossible(txnProvider);
+        LifecycleUtil.destroyIfPossible(asyncProvider);
     }
 
     private CRedisSessionLocator locator() {

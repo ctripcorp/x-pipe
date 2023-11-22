@@ -17,6 +17,10 @@ public interface RdbStore extends Destroyable, Closeable{
 
 	String getGtidSet();
 
+	boolean isGtidSetInit();
+
+	boolean supportGtidSet();
+
 	int writeRdb(ByteBuf buf) throws IOException;
 
 	void truncateEndRdb(int reduceLen) throws IOException;

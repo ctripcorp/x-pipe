@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 /**
@@ -41,7 +39,7 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
     public void setupDefaultXsyncTest() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
-                gtidSet, null, scheduled);
+                gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
     }
@@ -96,12 +94,12 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet) {
+    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
     @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
@@ -111,17 +109,17 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet) {
+    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
 
     }
 
     @Override
-    public void onContinue(GtidSet gtidSet) {
+    public void onContinue(GtidSet gtidSet, long continueOffset) {
 
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
         redisOps.add(redisOp);
     }

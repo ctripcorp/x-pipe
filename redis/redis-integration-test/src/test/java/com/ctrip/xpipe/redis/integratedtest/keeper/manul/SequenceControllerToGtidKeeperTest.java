@@ -54,14 +54,14 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
 
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
-                gtidSet, null, scheduled);
+                gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
         xsync.addXsyncObserver(this);
 
         //USE CREDIS
         //client = new CRedisAsyncClientFactory().getOrCreateClient("ApplierTest");
 
-        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", executors);
+        client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", null, executors);
         sequenceController = new DefaultSequenceController();
         sequenceController.initialize();
     }
@@ -72,12 +72,12 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
     }
 
     @Override
-    public void onCommand(Object[] rawCmdArgs) {
+    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(rawCmdArgs);
         if (redisOp.getOpType().equals(RedisOpType.PING) || redisOp.getOpType().equals(RedisOpType.SELECT)) {
             return;
         }
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
-        sequenceController.submit(command);
+        sequenceController.submit(command, commandOffset);
     }
 }

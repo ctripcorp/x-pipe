@@ -375,11 +375,6 @@ public class DefaultRedisSlave implements RedisSlave {
 		Object command = cmd;
 
 		if (cmd instanceof RedisOp) {
-			if (shouldFilter((RedisOp) cmd)) {
-				ChannelPromise result = channel().newPromise();
-			    result.setSuccess();
-			    return result;
-			}
 		    command = ((RedisOp) cmd).buildRESP();
 		}
 
@@ -506,7 +501,8 @@ public class DefaultRedisSlave implements RedisSlave {
 			getLogger().info("[doRealClose]{}", this);
 			closeState.setClosed();
 			redisClient.close();
-			psyncExecutor.shutdownNow();
+			/* shutdown single thread pool after other tasks finished */
+			psyncExecutor.submit(psyncExecutor::shutdown);
 			scheduled.shutdownNow();
 		}
 	}

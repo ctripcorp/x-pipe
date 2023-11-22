@@ -10,12 +10,12 @@ import java.util.concurrent.ExecutorService;
 public class DoNothingRedisClientFactory implements AsyncRedisClientFactory {
 
     @Override
-    public AsyncRedisClient getOrCreateClient(String clusterName, ExecutorService credisNotifyExecutor) {
+    public AsyncRedisClient getOrCreateClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) {
         return new DoNothingRedisClient();
     }
 
     @Override
-    public AsyncRedisClient createClient(String clusterName, ExecutorService credisNotifyExecutor) {
+    public AsyncRedisClient createClient(String clusterName, String subenv, ExecutorService credisNotifyExecutor) {
         return new DoNothingRedisClient();
     }
 }

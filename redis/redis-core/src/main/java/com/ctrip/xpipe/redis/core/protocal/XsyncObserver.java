@@ -10,16 +10,16 @@ import io.netty.buffer.ByteBuf;
  */
 public interface XsyncObserver {
 
-    void onFullSync(GtidSet rdbGtidSet);
+    void onFullSync(GtidSet rdbGtidSet, long rdbOffset);
 
-    void beginReadRdb(EofType eofType, GtidSet rdbGtidSet);
+    void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset);
 
     void onRdbData(ByteBuf rdbData);
 
-    void endReadRdb(EofType eofType, GtidSet rdbGtidSet);
+    void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset);
 
-    void onContinue(GtidSet gtidSetExcluded);
+    void onContinue(GtidSet gtidSetExcluded, long continueOffset);
 
-    void onCommand(Object[] rawCmdArgs);
+    void onCommand(long commandOffset, Object[] rawCmdArgs);
 
 }

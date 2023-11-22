@@ -91,4 +91,66 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		verify(replicationStoreManager).create();
 	}
 
+	@Test
+	public void testKeeperPartialSync() throws Exception {
+		String replId = RunidGenerator.DEFAULT.generateRunid();
+		int offset = 100;
+		Server redisServer = startServer(randomPort(), new Function<String, String>() {
+			@Override
+			public String apply(String s) {
+				logger.info("[testKeeperPartialSync] {}", s);
+				if (s.trim().equals("psync ? -2")) {
+					return String.format("+CONTINUE %s %d\r\n", replId, offset);
+				} else {
+					return "+OK\r\n";
+				}
+			}
+		});
+		Endpoint redisEndpoint = new DefaultEndPoint("localhost", redisServer.getPort());
+		PartialOnlyPsync partialOnlyPsync = new PartialOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled);
+
+		when(replicationStore.isFresh()).thenReturn(true);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		partialOnlyPsync.addPsyncObserver(new PsyncObserver() {
+			@Override
+			public void onFullSync(long masterRdbOffset) {
+			}
+			@Override
+			public void reFullSync() {
+			}
+			@Override
+			public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
+			}
+			@Override
+			public void endWriteRdb() {
+			}
+			@Override
+			public void onContinue(String requestReplId, String responseReplId) {
+			}
+			@Override
+			public void onKeeperContinue(String replId, long beginOffset) {
+				latch.countDown();
+			}
+			@Override
+			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
+			}
+			@Override
+			public void readAuxEnd(RdbStore rdbStore) {
+			}
+		});
+		partialOnlyPsync.execute().addListener(new CommandFutureListener<Object>() {
+
+			@Override
+			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+				if(!commandFuture.isSuccess()){
+					logger.error("[operationComplete]", commandFuture.cause());
+				}
+			}
+		});
+
+		latch.await(1000, TimeUnit.SECONDS);
+		verify(replicationStore, times(1)).continueFromOffset(replId, offset);
+	}
+
 }

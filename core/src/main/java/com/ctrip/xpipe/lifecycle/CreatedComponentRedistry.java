@@ -57,8 +57,6 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 		}
 		
 		logger.info("[doRemove]{}, {}" , name, component);
-		components.remove(name);
-		
 		if(component instanceof Lifecycle){
 			Lifecycle lifecycle = (Lifecycle) component;
 			
@@ -72,6 +70,8 @@ public class CreatedComponentRedistry extends AbstractComponentRegistry implemen
 				}
 			}
 		}
+
+		components.remove(name);
 		return true;
 	}
 

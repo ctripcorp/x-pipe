@@ -76,6 +76,7 @@ public class RdbExpiretimeParser extends AbstractRdbParser<Integer> implements R
         super.reset();
         if (temp != null) {
             temp.release();
+            temp = null;
         }
         this.state = STATE.READ_INIT;
     }

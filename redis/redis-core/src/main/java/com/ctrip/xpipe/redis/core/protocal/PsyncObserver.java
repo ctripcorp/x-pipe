@@ -30,6 +30,8 @@ public interface PsyncObserver {
 
 	void readRdbGtidSet(RdbStore rdbStore, String gtidSet);
 
+	void readAuxEnd(RdbStore rdbStore);
+
 	void endWriteRdb();
 	
 	void onContinue(String requestReplId, String responseReplId);

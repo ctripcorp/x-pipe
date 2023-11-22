@@ -42,15 +42,18 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     }
 
     @Override
-    public ReferenceFileRegion doRead() throws IOException {
+    public ReferenceFileRegion doRead(long milliSeconds) throws IOException {
         try {
-            offsetNotifier.await(curPosition);
+            if (milliSeconds < 0) offsetNotifier.await(curPosition);
+            else offsetNotifier.await(curPosition, milliSeconds);
             readNextFileIfNecessary();
         } catch (InterruptedException e) {
             logger.info("[read]", e);
             Thread.currentThread().interrupt();
+            return null;
         }
 
+        if (!referenceFileChannel.hasAnythingToRead()) return null;
         ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 
         curPosition += referenceFileRegion.count();

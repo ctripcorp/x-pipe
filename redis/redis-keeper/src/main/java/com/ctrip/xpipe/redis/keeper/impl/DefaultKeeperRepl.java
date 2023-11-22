@@ -60,6 +60,11 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
+	public boolean supportGtidSet() {
+		return replicationStore.supportGtidSet();
+	}
+
+	@Override
 	public String toString() {
 		return String.format("beginOffset:%d, endOffset:%d, replId:%s, replId2:%s, secondReplIdOffset:%d",
 				getBeginOffset(), getEndOffset(), replId(), replId2(), secondReplIdOffset());

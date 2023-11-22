@@ -8,4 +8,8 @@ public interface ReplicationProgress<T> {
 
     T getProgress();
 
+    default String getProgressMark() {
+        return getProgress().toString();
+    }
+
 }

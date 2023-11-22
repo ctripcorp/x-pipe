@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.core.protocal.MASTER_STATE.REDIS_REPL_CONNECTED;
+
 /**
  * @author wenchao.meng
  *
@@ -31,10 +33,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 
 		// init
 		initKeepers();
-
-		sleep(2000);
-
-		assertSyncCount(redisKeeperServers, 1);
+		assertSyncCount(redisKeeperServers, totalKeepers - 1);
 
 		for (int i = 0; i < testRound; i++) {
 
@@ -64,19 +63,26 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			sendMessageToMaster(redisMaster, 10);
 			redisKeeperServers = currentKeepers;
 
-			sleep(2000);
-			assertSyncCount(redisKeeperServers, 1);
-			assertCommandsEquals(redisKeeperServers);
+			waitKeepersConnected(redisKeeperServers);
+			assertSyncCount(redisKeeperServers, totalKeepers - 1);
+			waitConditionUntilTimeOut(() -> checkCommandsEquals(redisKeeperServers));
 		}
 	}
 
-	private void assertCommandsEquals(List<RedisKeeperServer> redisKeeperServers) {
+	private void waitKeepersConnected(List<RedisKeeperServer> keeperServers) throws Exception {
+		for (RedisKeeperServer keeperServer: redisKeeperServers) {
+			waitConditionUntilTimeOut(() -> keeperServer.getRedisMaster().getMasterState().equals(REDIS_REPL_CONNECTED));
+		}
+	}
+
+	private boolean checkCommandsEquals(List<RedisKeeperServer> redisKeeperServers) {
 
 		long end = redisKeeperServers.get(0).getReplicationStore().getEndOffset();
 		for (int i = 1; i < redisKeeperServers.size(); i++) {
-			Assert.assertEquals(end, redisKeeperServers.get(i).getReplicationStore().getEndOffset());
+			if (end != redisKeeperServers.get(i).getReplicationStore().getEndOffset()) return false;
 		}
 
+		return true;
 	}
 
 	private void assertSyncCount(List<RedisKeeperServer> redisKeeperServers, int expectedSyncCnt) {
@@ -89,7 +95,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			partialError += redisKeeperServer.getKeeperMonitor().getKeeperStats().getPartialSyncErrorCount();
 		}
 		Assert.assertEquals(0, partialError);
-		Assert.assertEquals(redisKeeperServers.size() - 1, full);
+		Assert.assertEquals(expectedSyncCnt, full);
 	}
 
 	private void initKeepers() throws Exception {
@@ -121,6 +127,8 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			redisKeeperServers.add(redisKeeperServer);
 			lastKeeper = keeperMeta;
 		}
+
+		waitKeepersConnected(redisKeeperServers);
 	}
 
 	@Override

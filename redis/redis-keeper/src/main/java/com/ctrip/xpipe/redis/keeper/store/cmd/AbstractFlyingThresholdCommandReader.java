@@ -21,7 +21,7 @@ public abstract class AbstractFlyingThresholdCommandReader<R> implements Command
     private long flyingThreshold;
 
     protected abstract Logger getLogger();
-    protected abstract R doRead() throws IOException;
+    protected abstract R doRead(long milliSeconds) throws IOException;
 
     public AbstractFlyingThresholdCommandReader(CommandStore commandStore, long flyingThreshold) {
         this.flyingThreshold = flyingThreshold;
@@ -29,13 +29,18 @@ public abstract class AbstractFlyingThresholdCommandReader<R> implements Command
     }
 
     @Override
-    public R read() throws IOException {
+    public R read(long miliSeconds) throws IOException {
         gate.tryPass();
 
-        R cmdContent = doRead();
+        R cmdContent = doRead(miliSeconds);
 
         if (null != cmdContent) checkCloseGate(flying.incrementAndGet());
         return cmdContent;
+    }
+
+    @Override
+    public R read() throws IOException {
+        return read(-1);
     }
 
     private void checkCloseGate(long current) {
