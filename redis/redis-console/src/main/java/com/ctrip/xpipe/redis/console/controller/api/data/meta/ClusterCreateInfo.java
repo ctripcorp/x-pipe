@@ -41,63 +41,6 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<RegionInfo> regions = new LinkedList<>();
 
-//    public static String innerGroupType2OuterGroupType(String groupType) {
-//        if(DcGroupType.isSameGroupType(groupType, DcGroupType.DR_MASTER)){
-//            return "drMaster";
-//        }else if(DcGroupType.isSameGroupType(groupType, DcGroupType.MASTER)) {
-//            return "master";
-//        }
-//        return "drMaster";
-//    }
-
-//    public static DcGroupType outerGroupType2InnerGroupType(String groupType) {
-//         if(null == groupType || "drMaster".equals(groupType)){
-//             return DcGroupType.DR_MASTER;
-//         }else if("master".equals(groupType)){
-//             return DcGroupType.MASTER;
-//         }
-//         throw new IllegalArgumentException("unknown group type:"+groupType);
-//    }
-
-//    public static ClusterCreateInfo fromClusterTbl(ClusterTbl clusterTbl, List<DcTbl> clusterRelatedDc,
-//        Map<Long, List<DcClusterTbl>> clusterId2DcClusterTblsMap) {
-//        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
-//
-//        clusterCreateInfo.setClusterId(clusterTbl.getId());
-//        clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
-//        clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
-//        clusterCreateInfo.setClusterType(clusterTbl.getClusterType());
-//        OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
-//        clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
-//        clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
-//
-//        Map<Long, String> dcId2DcNameMap = new HashMap<>();
-//        clusterRelatedDc.forEach(dcTbl -> {
-//            dcId2DcNameMap.put(dcTbl.getId(), dcTbl.getDcName());
-//            if (dcTbl.getId() == clusterTbl.getActivedcId()) {
-//                clusterCreateInfo.addFirstDc(dcTbl.getDcName());
-//            } else {
-//                clusterCreateInfo.addDc(dcTbl.getDcName());
-//            }
-//        });
-//
-//        List<DcClusterTbl> dcClusterTbls = clusterId2DcClusterTblsMap.get(clusterTbl.getId());
-//        dcClusterTbls.forEach(dcClusterTbl -> {
-//            DcDetailInfo dcDetailInfo = new DcDetailInfo()
-//                .setDcId(dcId2DcNameMap.get(dcClusterTbl.getDcId()))
-//                .setDcGroupName(dcClusterTbl.getGroupName())
-//                .setDcGroupType(innerGroupType2OuterGroupType(dcClusterTbl.getGroupType()));
-//            if (dcClusterTbl.getDcId() == clusterTbl.getActivedcId()) {
-//                clusterCreateInfo.addFirstDcDetail(dcDetailInfo);
-//            } else {
-//                clusterCreateInfo.addDcDetail(dcDetailInfo);
-//            }
-//        });
-//
-//
-//        return clusterCreateInfo;
-//    }
-
     public ClusterCreateInfo(){
     }
 
@@ -135,30 +78,6 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
             }).collect(Collectors.toList());
         }
 
-        // TODO:找DBA确认是否在使用dcDetails字段，若不使用，可不生成dcDetails信息
-//        if (!CollectionUtils.isEmpty(this.regions)) {
-//            for (RegionInfo regionInfo : this.regions) {
-//                String regionClusterType = regionInfo.getClusterType();
-//                if (ClusterType.isSameClusterType(regionClusterType, ClusterType.ONE_WAY)) {
-//                    for (String az : regionInfo.getAzs()) {
-//                        DcDetailInfo detailInfo = new DcDetailInfo();
-//                        detailInfo.setDcId(az);
-//                        detailInfo.setDcGroupType(innerGroupType2OuterGroupType(DcGroupType.DR_MASTER.name()));
-//                        this.dcDetails.add(detailInfo);
-//                    }
-//                } else if (ClusterType.isSameClusterType(regionClusterType, ClusterType.SINGLE_DC)) {
-//
-//                }
-//                if (regionInfo.get)
-//            }
-//            this.dcs.forEach(dc -> {
-//                DcDetailInfo dcDetailInfo = new DcDetailInfo();
-//                dcDetailInfo.setDcId(dc);
-//                dcDetailInfo.setDcGroupName();
-//                dcDetailInfo.setDcGroupType();
-//
-//            });
-//        }
     }
 
     public Long getClusterId() {
