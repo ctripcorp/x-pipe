@@ -7,12 +7,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterRegionExchangeInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcDetailInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.dto.AzGroupDTO;
 import com.ctrip.xpipe.redis.console.dto.ClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
@@ -42,11 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -171,6 +162,18 @@ public class ClusterUpdateController extends AbstractController {
             .collect(Collectors.toList());
 
         return transformFromInner(clusterCreateInfoList);
+    }
+
+    @GetMapping(value = "/clusterWithShards")
+    public List<ClusterInfo> getClusterShards(@RequestParam(required=false, defaultValue = "one_way", name = "type") String clusterType) throws CheckFailException {
+        logger.info("[clusterWithShards]clusterType-{}", clusterType);
+        if (!ClusterType.isTypeValidate(clusterType)) {
+            throw new CheckFailException("unknown cluster type " + clusterType);
+        }
+
+        List<ClusterDTO> clusterDTOList = clusterService.getClusterWithShards(clusterType);
+        List<ClusterInfo> clusterInfos = clusterDTOList.stream().map(ClusterInfo::new).collect(Collectors.toList());
+        return clusterInfos;
     }
 
 

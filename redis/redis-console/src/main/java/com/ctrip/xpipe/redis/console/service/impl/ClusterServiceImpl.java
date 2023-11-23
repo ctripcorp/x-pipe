@@ -12,12 +12,7 @@ import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
-import com.ctrip.xpipe.redis.console.dto.AzGroupDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterCreateDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
-import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
-import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.ClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
@@ -63,6 +58,7 @@ import org.springframework.util.StringUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -364,6 +360,34 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
 
         return clusters;
+	}
+
+	public List<ClusterDTO> getClusterWithShards(String clusterType) {
+		List<ClusterDTO> clusters = getClusters(clusterType);
+		Map<Long, ClusterDTO> clusterMap = clusters.stream()
+				.collect(Collectors.toMap(ClusterDTO::getClusterId, Function.identity()));
+		clusters.forEach(cluster -> cluster.setShards(new HashSet<>()));
+
+		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+		if (null == xpipeMeta) {
+			logger.info("[getClusterWithShards][cache not ready]");
+			return clusters;
+		}
+
+		for (DcMeta dcMeta: xpipeMeta.getDcs().values()) {
+			if (null == dcMeta.getClusters()) continue;
+			for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
+				ClusterDTO clusterDTO = clusterMap.get(clusterMeta.getDbId());
+				if (null == clusterDTO) continue;
+				if (null == clusterMeta.getShards()) continue;
+				for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+					ShardDTO shardDTO = new ShardDTO(shardMeta);
+					clusterDTO.addShard(shardDTO);
+				}
+			}
+		}
+
+		return clusters;
 	}
 
     @Override
