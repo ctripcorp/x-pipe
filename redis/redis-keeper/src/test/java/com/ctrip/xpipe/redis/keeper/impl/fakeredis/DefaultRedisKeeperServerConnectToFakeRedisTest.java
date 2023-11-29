@@ -85,8 +85,8 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		Assert.assertEquals(1, rdbDumpCount2);
 		
 		sleep(sleepBeforeSendRdb);
-		
-		assertPsyncResultEquals(psync);
+
+		waitForPsyncResultEquals(psync);
 	}
 	
 }

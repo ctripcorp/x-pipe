@@ -23,7 +23,6 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -70,12 +69,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private ScheduledFuture<?> future;
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
-
-    @PostConstruct
-    public void setup() {
-        taskTrigger.compareAndSet(false,true);
-        startLoadMeta();
-    }
 
     @Override
     public void isleader() {
