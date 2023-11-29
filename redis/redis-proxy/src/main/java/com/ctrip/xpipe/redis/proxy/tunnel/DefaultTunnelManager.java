@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -82,20 +83,25 @@ public class DefaultTunnelManager implements TunnelManager {
     protected void doClean() {
         Set<Channel> keys = Sets.newHashSet(cache.keySet());
         for(Channel channel : keys) {
-            if (!channel.isActive()) {
-                Tunnel tunnel = cache.remove(channel);
-                try {
-                    tunnel.release();
-                } catch (Exception e) {
-                    logger.error("[cleaner] tunnel release error: ", e);
-                }
-            } else {
+            try {
+                if (!channel.isActive()) {
+                    Tunnel tunnel = cache.remove(channel);
+                    try {
+                        tunnel.release();
+                    } catch (Exception e) {
+                        logger.error("[cleaner] tunnel release tunnel{} error", tunnel, e);
+                    }
+                } else {
 
-                Tunnel tunnel = cache.get(channel);
-                logger.info("[doClean] check tunnel, {}", tunnel.getTunnelMeta());
-                if (tunnel.getState().equals(new TunnelClosed(null))) {
-                    cache.remove(channel);
+                    Tunnel tunnel = cache.get(channel);
+                    if (!tunnel.getLifecycleState().isStarted()) continue;
+                    logger.info("[doClean] check tunnel, {}", tunnel.getTunnelMeta());
+                    if (tunnel.getState().equals(new TunnelClosed(null))) {
+                        cache.remove(channel);
+                    }
                 }
+            } catch (Throwable th){
+                logger.error("[cleaner] tunnel release channel{} error", channel, th);
             }
         }
     }
@@ -190,6 +196,15 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     // Unit Test
+
+    @VisibleForTesting
+    protected void setLifecycleStateStarted() {
+        Set<Channel> keys = Sets.newHashSet(cache.keySet());
+        for(Channel channel : keys) {
+            Tunnel tunnel = cache.get(channel);
+            tunnel.getLifecycleState().setPhaseName(Startable.PHASE_NAME_END);
+        }
+    }
 
     @VisibleForTesting
     public DefaultTunnelManager setConfig(ProxyConfig config) {
