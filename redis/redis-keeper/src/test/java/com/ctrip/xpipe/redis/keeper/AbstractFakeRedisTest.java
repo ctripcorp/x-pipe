@@ -142,6 +142,11 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		
 	}
 
+	protected void waitForPsyncResultEquals(InMemoryPsync psync) throws Exception {
+		waitConditionUntilTimeOut(() -> new String(psync.getRdb()).equals(fakeRedisServer.getRdbContent())
+						&& new String(psync.getCommands()).equals(fakeRedisServer.currentCommands()));
+	}
+
 	protected void assertPsyncResultEquals(InMemoryPsync psync) {
 
 		try{
