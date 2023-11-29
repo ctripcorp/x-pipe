@@ -42,6 +42,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
     @Mock
     private FoundationService service;
 
+    public static final int expireTime = 1000;
+
 
     @Before
     public void before() {
@@ -49,12 +51,14 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
         Map<String, KeeperContainerOverloadStandardModel> standards = Maps.newHashMap();
         standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10));
         Mockito.when(config.getKeeperContainerOverloadStandards()).thenReturn(standards);
-        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(10 * 1000);
+        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.doNothing().when(executor).execute(Mockito.any());
     }
 
     @Test
     public void testUpdateKeeperContainerUsedInfo() {
+        //To prevent a second updateKeeperContainerUsedInfo() data when expired
+        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(1000000);
         List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
         KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
         Map<DcClusterShard, Pair<Long, Long>> detailInfo1 = Maps.newHashMap();
@@ -96,7 +100,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
         analyzer.updateKeeperContainerUsedInfo(0, models1);
         Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
 
-        TimeUnit.MILLISECONDS.sleep(11 * 1000);
+        TimeUnit.MILLISECONDS.sleep(expireTime+100);
 
         List<KeeperContainerUsedInfoModel> models2 = new ArrayList<>();
         KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
