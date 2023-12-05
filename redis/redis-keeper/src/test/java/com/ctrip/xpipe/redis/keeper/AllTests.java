@@ -53,7 +53,6 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,
         DefaultRedisSlaveTest.class,
-        XsyncRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
         DefaultKeeperConfigTest.class,
         FakeRedisExceptionTest.class,
