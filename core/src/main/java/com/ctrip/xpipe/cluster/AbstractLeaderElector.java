@@ -33,7 +33,8 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     @Autowired
     private ZkClient zkClient;
 
-    private ExecutorService executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getClass().getSimpleName()));
+    // single thread make zk events handled sequentially
+    private ExecutorService executors = Executors.newSingleThreadExecutor(XpipeThreadFactory.create(getClass().getSimpleName()));
 
     private ApplicationContext applicationContext;
 
@@ -63,8 +64,8 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
                     try{
                         logger.info("[isLeader][notify]{}", entry.getKey());
                         entry.getValue().isleader();
-                    }catch (Exception e){
-                        logger.error("[isLeader]" + entry, e);
+                    }catch (Throwable th){
+                        logger.error("[isLeader]" + entry, th);
                     }
                 }
             }
@@ -79,8 +80,8 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
                     try{
                         logger.info("[notLeader][notify]{}", entry.getKey());
                         entry.getValue().notLeader();
-                    }catch (Exception e){
-                        logger.error("[notLeader]" + entry, e);
+                    }catch (Throwable th){
+                        logger.error("[notLeader]" + entry, th);
                     }
                 }
             }
