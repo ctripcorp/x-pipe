@@ -30,14 +30,12 @@ public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 
 	protected void failPsync(Throwable throwable) {
 		super.failPsync(throwable);
-		if (psyncState == PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE) {
-			try {
-				getLogger().debug("[failPsync] psync fail before beginReadRdb");
-				currentReplicationStore.close();
-				currentReplicationStore.destroy();
-			} catch (Throwable th) {
-				getLogger().warn("[failPsync] release rdb file fail", th);
-			}
+		try {
+			getLogger().info("[failPsync][release rdb]");
+			currentReplicationStore.close();
+			currentReplicationStore.destroy();
+		} catch (Throwable th) {
+			getLogger().warn("[failPsync][release rdb] fail", th);
 		}
 	}
 

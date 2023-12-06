@@ -78,6 +78,11 @@ public enum RedisOpSingleKeyEnum {
     // Bit
     SETBIT(RedisOpType.SETBIT, 1, 3),
 
+    // ctrip
+    GTID_LWM(RedisOpType.GTID_LWM, 1, 2),
+    CTRIP_MERGE_START(RedisOpType.CTRIP_MERGE_START, null, null),
+    CTRIP_MERGE_END(RedisOpType.CTRIP_MERGE_END, 1, null),
+
     // others
     PUBLISH(RedisOpType.PUBLISH, 1, 2),
     MOVE(RedisOpType.MOVE, 1, null);

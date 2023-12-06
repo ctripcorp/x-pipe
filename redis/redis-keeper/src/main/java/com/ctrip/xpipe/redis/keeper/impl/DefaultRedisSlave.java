@@ -383,11 +383,6 @@ public class DefaultRedisSlave implements RedisSlave {
 		return future;
 	}
 
-	@VisibleForTesting
-	protected boolean shouldFilter(RedisOp redisOp) {
-		return false;
-    }
-
 	@Override
 	public String info() {
 		

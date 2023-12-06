@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -114,16 +115,16 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
 
     @Override
     protected void doStart() throws Exception {
-        scheduled.scheduleWithFixedDelay(() -> {
+        future = scheduled.scheduleWithFixedDelay(() -> {
             if (!taskTrigger.get()) {
                 return;
             }
             logger.debug("proxy chain collector started");
-            getAllDcProxyChains();
+            fetchAllDcProxyChains();
         }, getStartTime(), getPeriodic(), TimeUnit.MILLISECONDS);
     }
 
-    private void getAllDcProxyChains() {
+    protected void fetchAllDcProxyChains() {
         ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
         consoleConfig.getConsoleDomains().forEach((dc, domain)->{
             logger.debug("begin to get proxy chain from dc {} {}", dc, domain);
@@ -152,24 +153,33 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         dcProxyChainMap.forEach((dc, proxyChainMap) -> {
             proxyChainMap.forEach((clusterShard, proxyChain) -> {
                 DefaultTunnelInfo tunnel = proxyChain.getTunnelInfos().get(0);
-                if (tempShardProxyChain.containsKey(clusterShard)) {
-                    tempShardProxyChain.get(clusterShard).getTunnelInfos().add(tunnel);
-                } else {
-                    tempShardProxyChain.put(clusterShard, proxyChain);
+                if (!tempShardProxyChain.containsKey(clusterShard)) {
+                    tempShardProxyChain.put(clusterShard, new DefaultProxyChain(proxyChain.getBackupDcId(),
+                            proxyChain.getClusterId(), proxyChain.getShardId(), proxyChain.getPeerDcId(), new ArrayList<>()));
                 }
-
+                tempShardProxyChain.get(clusterShard).getTunnelInfos().add(tunnel);
                 tempTunnelClusterShardMap.put(tunnel.getTunnelId(), clusterShard);
             });
         });
         synchronized (DefaultProxyChainCollector.this) {
-            tunnelClusterShardMap = tempTunnelClusterShardMap;
-            shardProxyChainMap = tempShardProxyChain;
+            if (taskTrigger.get()) {
+                tunnelClusterShardMap = tempTunnelClusterShardMap;
+                shardProxyChainMap = tempShardProxyChain;
+            } else {
+                clear();
+            }
         }
     }
 
     @VisibleForTesting
     DefaultProxyChainCollector setDcProxyChainMap(Map<String, Map<DcClusterShardPeer, ProxyChain>> dcProxyChainMap) {
         this.dcProxyChainMap = dcProxyChainMap;
+        return this;
+    }
+
+    @VisibleForTesting
+    DefaultProxyChainCollector setHttpService(DefaultHttpService httpService) {
+        this.httpService = httpService;
         return this;
     }
 
@@ -186,15 +196,19 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
         return 1000;
     }
 
+    protected void clear() {
+        shardProxyChainMap.clear();
+        tunnelClusterShardMap.clear();
+        dcProxyChainMap.clear();
+    }
+
     @Override
     protected void doStop() throws Exception {
         if(future != null) {
             future.cancel(true);
             future = null;
         }
-        shardProxyChainMap.clear();
-        tunnelClusterShardMap.clear();
-        dcProxyChainMap.clear();
+        clear();
     }
 
     @Override
