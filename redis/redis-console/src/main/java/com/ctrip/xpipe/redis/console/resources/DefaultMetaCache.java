@@ -85,6 +85,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     }
 
     private synchronized void stopLoadMeta(){
+        logger.info("[loadMeta][stop]{}", this);
         if (future != null)
             future.cancel(true);
         future = null;
@@ -98,7 +99,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     }
 
     public void startLoadMeta() {
-        logger.info("[loadMeta]{}", this);
+        logger.info("[loadMeta][start]{}", this);
 
         refreshIntervalMilli = consoleConfig.getCacheRefreshInterval();
 

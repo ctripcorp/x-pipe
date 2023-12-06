@@ -82,6 +82,11 @@ public enum RedisOpType {
     MSET(true, -3),
     MSETNX(true, -3),
 
+    // ctrip
+    GTID_LWM(false, 3, true),
+    CTRIP_MERGE_START(false, -1, true),
+    CTRIP_MERGE_END(false, -2, true),
+
     // other
     SELECT(false, 2),
     PUBLISH(false, 3),
@@ -101,9 +106,16 @@ public enum RedisOpType {
     // Number of arguments, it is possible to use -N to say >= N
     private int arity;
 
+    private boolean swallow;
+
     RedisOpType(boolean multiKey, int arity) {
+        this(multiKey, arity, false);
+    }
+
+    RedisOpType(boolean multiKey, int arity, boolean swallow) {
         this.supportMultiKey = multiKey;
         this.arity = arity;
+        this.swallow = swallow;
     }
 
     public boolean supportMultiKey() {
@@ -114,6 +126,10 @@ public enum RedisOpType {
         return arity;
     }
 
+    public boolean isSwallow() {
+        return swallow;
+    }
+
     public boolean checkArgcNotStrictly(Object[] args) {
         return args.length >= Math.abs(arity);
     }
@@ -122,7 +138,7 @@ public enum RedisOpType {
         if (StringUtil.isEmpty(name)) return UNKNOWN;
 
         try {
-            return valueOf(name.toUpperCase());
+            return valueOf(name.replace('.', '_').toUpperCase());
         } catch (IllegalArgumentException illegalArgumentException) {
             return UNKNOWN;
         }

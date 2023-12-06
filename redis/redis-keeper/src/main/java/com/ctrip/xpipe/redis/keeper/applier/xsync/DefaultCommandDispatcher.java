@@ -298,7 +298,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 return true;
             }
         }
-        return false;
+        return redisOp.getOpType().isSwallow();
     }
 
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
