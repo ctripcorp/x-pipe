@@ -202,6 +202,7 @@
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="keepercontainer-org-id" field="keepercontainer_org_id" value-type="long" length="20" nullable="false" />
+    <member name="keepercontainer_disk_type" field="keepercontainer_disk_type" value-type="String" length="40" nullable="false" />
     <var name="key-keepercontainer-id" value-type="long" key-member="keepercontainer-id" />
     <primary-key name="PRIMARY" members="keepercontainer_id" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
