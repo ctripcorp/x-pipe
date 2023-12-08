@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.model;
 
-import com.ctrip.xpipe.tuple.Pair;
-
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -11,20 +10,28 @@ public class KeeperContainerUsedInfoModel {
 
     private String dcName;
 
+    private long activeInputFlow;
+
     private long totalInputFlow;
 
-    private long totalRedisUsedMemory;
+    private long redisUsedMemory;
 
-    private Map<DcClusterShard, Pair<Long, Long>> detailInfo;
+    private Map<DcClusterShardActive, KeeperContainerUsedInfo> detailInfo;
+
+    private boolean diskAvailable;
+
+    private long diskSize;
+
+    private long diskUsed;
 
     public KeeperContainerUsedInfoModel() {
     }
 
-    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long totalInputFlow, long totalRedisUsedMemory) {
+    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long activeInputFlow, long redisUsedMemory) {
         this.keeperIp = keeperIp;
         this.dcName = dcName;
-        this.totalInputFlow = totalInputFlow;
-        this.totalRedisUsedMemory = totalRedisUsedMemory;
+        this.activeInputFlow = activeInputFlow;
+        this.redisUsedMemory = redisUsedMemory;
     }
 
     public String getDcName() {
@@ -45,6 +52,15 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
+    public long getActiveInputFlow() {
+        return activeInputFlow;
+    }
+
+    public KeeperContainerUsedInfoModel setActiveInputFlow(long activeInputFlow) {
+        this.activeInputFlow = activeInputFlow;
+        return this;
+    }
+
     public long getTotalInputFlow() {
         return totalInputFlow;
     }
@@ -54,21 +70,48 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public long getTotalRedisUsedMemory() {
-        return totalRedisUsedMemory;
+    public long getRedisUsedMemory() {
+        return redisUsedMemory;
     }
 
-    public KeeperContainerUsedInfoModel setTotalRedisUsedMemory(long totalRedisUsedMemory) {
-        this.totalRedisUsedMemory = totalRedisUsedMemory;
+    public KeeperContainerUsedInfoModel setRedisUsedMemory(long redisUsedMemory) {
+        this.redisUsedMemory = redisUsedMemory;
         return this;
     }
 
-    public Map<DcClusterShard, Pair<Long, Long>> getDetailInfo() {
+    public Map<DcClusterShardActive, KeeperContainerUsedInfo> getDetailInfo() {
         return detailInfo;
     }
 
-    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShard, Pair<Long, Long>> detailInfo) {
+    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShardActive, KeeperContainerUsedInfo> detailInfo) {
         this.detailInfo = detailInfo;
+        return this;
+    }
+
+    public boolean isDiskAvailable() {
+        return diskAvailable;
+    }
+
+    public KeeperContainerUsedInfoModel setDiskAvailable(boolean diskAvailable) {
+        this.diskAvailable = diskAvailable;
+        return this;
+    }
+
+    public long getDiskSize() {
+        return diskSize;
+    }
+
+    public KeeperContainerUsedInfoModel setDiskSize(long diskSize) {
+        this.diskSize = diskSize;
+        return this;
+    }
+
+    public long getDiskUsed() {
+        return diskUsed;
+    }
+
+    public KeeperContainerUsedInfoModel setDiskUsed(long diskUsed) {
+        this.diskUsed = diskUsed;
         return this;
     }
 
@@ -90,9 +133,75 @@ public class KeeperContainerUsedInfoModel {
         return "KeeperContainerUsedInfoModel{" +
                 "keeperIp='" + keeperIp + '\'' +
                 ", dcName='" + dcName + '\'' +
+                ", activeInputFlow=" + activeInputFlow +
                 ", totalInputFlow=" + totalInputFlow +
-                ", totalRedisUsedMemory=" + totalRedisUsedMemory +
+                ", redisUsedMemory=" + redisUsedMemory +
                 ", detailInfo=" + detailInfo +
+                ", diskAvailable=" + diskAvailable +
+                ", diskSize=" + diskSize +
+                ", diskUsed=" + diskUsed +
                 '}';
     }
+
+    public static class KeeperContainerUsedInfo {
+
+        private long peerData;
+
+        private long inputFlow;
+
+        private String keeperContainerIP;
+
+        public KeeperContainerUsedInfo(long peerData, long inputFlow, String keeperContainerIP) {
+            this.peerData = peerData;
+            this.inputFlow = inputFlow;
+            this.keeperContainerIP = keeperContainerIP;
+        }
+
+        public long getPeerData() {
+            return peerData;
+        }
+
+        public void setPeerData(long peerData) {
+            this.peerData = peerData;
+        }
+
+        public long getInputFlow() {
+            return inputFlow;
+        }
+
+        public void setInputFlow(long inputFlow) {
+            this.inputFlow = inputFlow;
+        }
+
+        public String getKeeperContainerIP() {
+            return keeperContainerIP;
+        }
+
+        public void setKeeperContainerIP(String keeperContainerIP) {
+            this.keeperContainerIP = keeperContainerIP;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof KeeperContainerUsedInfo)) return false;
+            KeeperContainerUsedInfo that = (KeeperContainerUsedInfo) o;
+            return getPeerData() == that.getPeerData() && getInputFlow() == that.getInputFlow() && Objects.equals(getKeeperContainerIP(), that.getKeeperContainerIP());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getPeerData(), getInputFlow(), getKeeperContainerIP());
+        }
+
+        @Override
+        public String toString() {
+            return "KeeperContainerInfo{" +
+                    "peerData=" + peerData +
+                    ", inputFlow=" + inputFlow +
+                    ", keeperContainerIP='" + keeperContainerIP + '\'' +
+                    '}';
+        }
+    }
+
 }
