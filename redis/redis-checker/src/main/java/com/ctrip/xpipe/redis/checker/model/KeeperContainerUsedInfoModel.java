@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.model;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -16,13 +17,17 @@ public class KeeperContainerUsedInfoModel {
 
     private long redisUsedMemory;
 
-    private Map<DcClusterShardActive, KeeperContainerUsedInfo> detailInfo;
+    private Map<DcClusterShardActive, KeeperUsedInfo> detailInfo;
 
     private boolean diskAvailable;
 
     private long diskSize;
 
     private long diskUsed;
+
+    private String diskType = "default";
+
+    private List<String> overLoadCause = new ArrayList<>();
 
     public KeeperContainerUsedInfoModel() {
     }
@@ -79,11 +84,11 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public Map<DcClusterShardActive, KeeperContainerUsedInfo> getDetailInfo() {
+    public Map<DcClusterShardActive, KeeperUsedInfo> getDetailInfo() {
         return detailInfo;
     }
 
-    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShardActive, KeeperContainerUsedInfo> detailInfo) {
+    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShardActive, KeeperUsedInfo> detailInfo) {
         this.detailInfo = detailInfo;
         return this;
     }
@@ -115,17 +120,20 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        KeeperContainerUsedInfoModel that = (KeeperContainerUsedInfoModel) o;
-        return Objects.equals(keeperIp, that.keeperIp) && Objects.equals(dcName, that.dcName);
+    public String getDiskType() {
+        return diskType;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(keeperIp, dcName);
+    public void setDiskType(String diskType) {
+        this.diskType = diskType;
+    }
+
+    public List<String> getOverLoadCause() {
+        return overLoadCause;
+    }
+
+    public void setOverLoadCause(List<String> overLoadCause) {
+        this.overLoadCause = overLoadCause;
     }
 
     @Override
@@ -140,21 +148,37 @@ public class KeeperContainerUsedInfoModel {
                 ", diskAvailable=" + diskAvailable +
                 ", diskSize=" + diskSize +
                 ", diskUsed=" + diskUsed +
+                ", diskType='" + diskType + '\'' +
+                ", overLoadCause=" + overLoadCause +
                 '}';
     }
 
-    public static class KeeperContainerUsedInfo {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        KeeperContainerUsedInfoModel that = (KeeperContainerUsedInfoModel) o;
+        return Objects.equals(keeperIp, that.keeperIp) && Objects.equals(dcName, that.dcName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(keeperIp, dcName);
+    }
+
+    public static class KeeperUsedInfo {
 
         private long peerData;
 
         private long inputFlow;
 
-        private String keeperContainerIP;
+        private String keeperIP;
 
-        public KeeperContainerUsedInfo(long peerData, long inputFlow, String keeperContainerIP) {
+
+        public KeeperUsedInfo(long peerData, long inputFlow, String keeperIP) {
             this.peerData = peerData;
             this.inputFlow = inputFlow;
-            this.keeperContainerIP = keeperContainerIP;
+            this.keeperIP = keeperIP;
         }
 
         public long getPeerData() {
@@ -173,25 +197,25 @@ public class KeeperContainerUsedInfoModel {
             this.inputFlow = inputFlow;
         }
 
-        public String getKeeperContainerIP() {
-            return keeperContainerIP;
+        public String getKeeperIP() {
+            return keeperIP;
         }
 
-        public void setKeeperContainerIP(String keeperContainerIP) {
-            this.keeperContainerIP = keeperContainerIP;
+        public void setKeeperIP(String keeperIP) {
+            this.keeperIP = keeperIP;
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof KeeperContainerUsedInfo)) return false;
-            KeeperContainerUsedInfo that = (KeeperContainerUsedInfo) o;
-            return getPeerData() == that.getPeerData() && getInputFlow() == that.getInputFlow() && Objects.equals(getKeeperContainerIP(), that.getKeeperContainerIP());
+            if (!(o instanceof KeeperUsedInfo)) return false;
+            KeeperUsedInfo that = (KeeperUsedInfo) o;
+            return getPeerData() == that.getPeerData() && getInputFlow() == that.getInputFlow() && Objects.equals(getKeeperIP(), that.getKeeperIP());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getPeerData(), getInputFlow(), getKeeperContainerIP());
+            return Objects.hash(getPeerData(), getInputFlow(), getKeeperIP());
         }
 
         @Override
@@ -199,7 +223,7 @@ public class KeeperContainerUsedInfoModel {
             return "KeeperContainerInfo{" +
                     "peerData=" + peerData +
                     ", inputFlow=" + inputFlow +
-                    ", keeperContainerIP='" + keeperContainerIP + '\'' +
+                    ", keeperContainerIP='" + keeperIP + '\'' +
                     '}';
         }
     }

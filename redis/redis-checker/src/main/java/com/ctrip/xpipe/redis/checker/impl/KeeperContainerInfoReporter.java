@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
@@ -110,7 +109,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                 long activeInputFlow = 0;
                 long totalInputFlow = 0;
                 long totalRedisUsedMemory = 0;
-                Map<DcClusterShardActive, KeeperContainerUsedInfo> detailInfo = new HashMap<>();
+                Map<DcClusterShardActive, KeeperUsedInfo> detailInfo = new HashMap<>();
                 for (Map.Entry<DcClusterShardActive, Long> entry : inputFlowMap.entrySet()) {
                     totalInputFlow += entry.getValue();
                     DcClusterShardActive dcClusterShardActive = entry.getKey();
@@ -122,7 +121,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                     }
                     totalRedisUsedMemory += redisUsedMemory;
                     if (dcClusterShardActive.isActive()) activeInputFlow += inputFlow;
-                    detailInfo.put(dcClusterShardActive, new KeeperContainerUsedInfo(inputFlow, redisUsedMemory, keeperIp));
+                    detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(inputFlow, redisUsedMemory, keeperIp));
 
                 }
                 KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
