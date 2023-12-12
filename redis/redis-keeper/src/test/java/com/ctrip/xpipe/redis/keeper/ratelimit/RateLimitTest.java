@@ -15,6 +15,7 @@ import com.ctrip.xpipe.utils.OsUtils;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.TimeoutException;
@@ -99,9 +100,7 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
         waitRedisKeeperServerConnected(redisKeeperServer2);
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(leakyBucket, times(0)).tryAcquire();
-        }));
+        verify(leakyBucket, never()).tryAcquire();
         logger.info(remarkableMessage("stop keeper2 {}"), redisKeeperServer2.getListeningPort());
         redisKeeperServer2.stop();
         sleep((int) (redisKeeperServer1.getKeeperConfig().getReplDownSafeIntervalMilli() * 3 / 2));
@@ -109,10 +108,8 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         logger.info(remarkableMessage("start keeper2 {}"), redisKeeperServer2.getListeningPort());
         redisKeeperServer2.start();
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(leakyBucket, times(1)).tryAcquire();
-            verify(leakyBucket, times(1)).release();
-        }));
+        verify(leakyBucket, timeout(3000).times(1)).tryAcquire();
+        verify(leakyBucket, timeout(3000).times(1)).release();
     }
 
     @Test

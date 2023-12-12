@@ -55,6 +55,7 @@ import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
@@ -138,6 +139,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private LeaderElectorManager leaderElectorManager;
 
+	private volatile long lastResetElectionTime = 0;
+
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
 	private long lastDumpTime = -1;
 	//for test
@@ -194,9 +197,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		try {
 			LifecycleHelper.stopIfPossible(leaderElector);
 			LifecycleHelper.startIfPossible(leaderElector);
+			this.lastResetElectionTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 		} catch (Exception e) {
 			logger.info("[resetElection][fail][{}]", replId, e);
 		}
+	}
+
+	@Override
+	public boolean isLeader() {
+		return getLifecycleState().isStarted() && leaderElector.hasLeaderShip();
+	}
+
+	@Override
+	public long getLastElectionResetTime() {
+		return this.lastResetElectionTime;
 	}
 
 	@Override

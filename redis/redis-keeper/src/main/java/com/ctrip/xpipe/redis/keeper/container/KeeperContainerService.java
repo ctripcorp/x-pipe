@@ -2,7 +2,11 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.exception.ErrorMessage;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
@@ -14,8 +18,10 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.health.DiskHealthChecker;
+import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -27,12 +33,13 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
 @Service
-public class KeeperContainerService {
+public class KeeperContainerService extends AbstractLifecycle implements TopElement, Observer {
 	
 	@Autowired
 	KeeperConfig keeperConfig;
@@ -54,6 +61,32 @@ public class KeeperContainerService {
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
     private Logger logger = LoggerFactory.getLogger(KeeperContainerService.class);
+
+    @Override
+    protected void doInitialize() throws Exception {
+        this.diskHealthChecker.addObserver(this);
+    }
+
+    @Override
+    public void update(Object args, Observable observable) {
+        if (args instanceof HealthState && !((HealthState) args).isUp()) {
+            long currentTime = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+            // reset leader
+            for (RedisKeeperServer keeper: redisKeeperServers.values()) {
+                if (keeper.isLeader()) {
+                    long lastResetTime = keeper.getLastElectionResetTime();
+                    if (lastResetTime <= currentTime
+                            && currentTime - lastResetTime < keeperContainerConfig.keeperLeaderResetMinInterval()) {
+                        logger.debug("[container_unhealthy][{}] last reset at: {}, skip", keeper.getReplId(), lastResetTime);
+                        continue;
+                    }
+
+                    logger.info("[container_unhealthy][{}] reset leader", keeper.getReplId());
+                    keeper.resetElection();
+                }
+            }
+        }
+    }
 
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {
         KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
@@ -278,6 +311,11 @@ public class KeeperContainerService {
 
     private String assembleKeeperServerKey(KeeperTransMeta keeperTransMeta) {
         return ReplId.from(keeperTransMeta.getReplId()).toString();
+    }
+
+    @VisibleForTesting
+    protected void setRedisKeeperServers(Map<String, RedisKeeperServer> servers) {
+        this.redisKeeperServers = servers;
     }
 
 }
