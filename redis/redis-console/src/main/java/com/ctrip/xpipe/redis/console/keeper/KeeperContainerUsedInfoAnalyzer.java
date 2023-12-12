@@ -16,5 +16,5 @@ public interface KeeperContainerUsedInfoAnalyzer {
 
     Map<Integer, List<KeeperContainerUsedInfoModel>> getAllKeeperContainerUsedInfoModels();
 
-    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsForShow();
+    List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsList();
 }
