@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.anyString;
  * 2023/10/18
  */
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
-public class KeeperContainerUsedInfoReporterTest {
+public class KeeperUsedInfoReporterTest {
 
     @InjectMocks
     KeeperContainerInfoReporter keeperContainerInfoReporter;

@@ -9,7 +9,15 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
 
     private boolean active;
 
+    private int port;
+
     public DcClusterShardActive(){}
+
+    public DcClusterShardActive(String dcId, String clusterId, String shardId, Boolean active, int port) {
+        super(dcId, clusterId, shardId);
+        this.active = active;
+        this.port = port;
+    }
 
     public DcClusterShardActive(String dcId, String clusterId, String shardId, Boolean active) {
         super(dcId, clusterId, shardId);
@@ -24,13 +32,21 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
         this.active = active;
     }
 
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof DcClusterShardActive)) return false;
         if (!super.equals(o)) return false;
         DcClusterShardActive that = (DcClusterShardActive) o;
-        return Objects.equals(isActive(), that.isActive());
+        return isActive() == that.isActive();
     }
 
     @Override
@@ -42,9 +58,11 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
     public String toString() {
         return "DcClusterShardActive{" +
                 "active=" + active +
+                ", port=" + port +
                 ", dcId='" + dcId + '\'' +
                 ", clusterId='" + clusterId + '\'' +
                 ", shardId='" + shardId + '\'' +
                 '}';
     }
+
 }
