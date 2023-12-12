@@ -24,6 +24,16 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 		return 30000;
 	}
 
+	@Override
+	public int checkRoundBeforeMarkDown() {
+		return 3;
+	}
+
+	@Override
+	public int keeperLeaderResetMinInterval() {
+		return 10;
+	}
+
 	public void setMetaServerUrl(String metaServerUrl) {
 		this.metaServerUrl = metaServerUrl;
 	}

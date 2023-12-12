@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
@@ -14,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -43,6 +45,8 @@ public class KeeperContainerServiceTest extends AbstractTest {
     private KeepersMonitorManager keepersMonitorManager;
     @Mock
     private ContainerResourceManager containerResourceManager;
+    @Mock
+    private RedisKeeperServer redisKeeperServer;
     
     private KeeperContainerService keeperContainerService;
     private ClusterId someClusterId;
@@ -75,6 +79,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
+        when(keeperContainerConfig.keeperLeaderResetMinInterval()).thenReturn(10);
         when(containerResourceManager.isPortFree(anyInt())).thenReturn(true);
         when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
 
@@ -122,6 +127,30 @@ public class KeeperContainerServiceTest extends AbstractTest {
         }
 
         assertEquals(someException, cause);
+    }
+
+    @Test
+    public void testContainerUnhealthy_ResetKeeperLeader() {
+        keeperContainerService.setRedisKeeperServers(Collections.singletonMap("test", redisKeeperServer));
+        when(redisKeeperServer.isLeader()).thenReturn(false);
+        keeperContainerService.update(HealthState.DOWN, null);
+        verify(redisKeeperServer, never()).resetElection();
+
+        when(redisKeeperServer.isLeader()).thenReturn(true);
+        when(redisKeeperServer.getLastElectionResetTime()).thenReturn(System.currentTimeMillis()/1000);
+        keeperContainerService.update(HealthState.DOWN, null);
+        verify(redisKeeperServer, never()).resetElection();
+
+
+        when(redisKeeperServer.isLeader()).thenReturn(true);
+        when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
+        keeperContainerService.update(HealthState.HEALTHY, null);
+        verify(redisKeeperServer, never()).resetElection();
+
+        when(redisKeeperServer.isLeader()).thenReturn(true);
+        when(redisKeeperServer.getLastElectionResetTime()).thenReturn(0L);
+        keeperContainerService.update(HealthState.DOWN, null);
+        verify(redisKeeperServer, times(1)).resetElection();
     }
 
 }

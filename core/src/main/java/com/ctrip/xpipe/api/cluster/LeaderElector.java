@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.ctrip.xpipe.api.cluster;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
@@ -13,5 +10,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 public interface LeaderElector extends Lifecycle {
 
 	void elect() throws Exception;
+
+	boolean hasLeaderShip();
 
 }
