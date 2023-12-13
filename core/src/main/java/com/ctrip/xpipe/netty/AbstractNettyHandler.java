@@ -6,6 +6,8 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * @author wenchao.meng
  *
@@ -17,6 +19,7 @@ public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 	
 	protected ByteBufReadPolicy byteBufReadPolicy = new RetryByteBufReadPolicy();
 
+	private AtomicInteger redundantLogCnt = new AtomicInteger(0);
 	
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -29,8 +32,17 @@ public abstract class AbstractNettyHandler extends ChannelDuplexHandler{
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		
-		logger.error("[exceptionCaught][close channel]" + ChannelUtil.getDesc(ctx.channel()), cause);
+
+		if (ctx.channel().isOpen()) {
+			logger.error("[exceptionCaught][close channel]" + ChannelUtil.getDesc(ctx.channel()), cause);
+		} else {
+			int cnt = redundantLogCnt.incrementAndGet();
+			if ((cnt&(cnt-1)) == 0) {
+				logger.error("[exceptionCaught][channel already closed][{}]{}", cnt, ChannelUtil.getDesc(ctx.channel()), cause);
+			} else {
+				logger.debug("[exceptionCaught][channel already closed][{}]{}", cnt, ChannelUtil.getDesc(ctx.channel()), cause);
+			}
+		}
 		ctx.channel().close();
 		
 		super.exceptionCaught(ctx, cause);
