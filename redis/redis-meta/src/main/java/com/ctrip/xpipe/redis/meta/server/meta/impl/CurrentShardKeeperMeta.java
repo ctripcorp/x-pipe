@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,7 +48,7 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
 
     @SuppressWarnings("unchecked")
     public List<KeeperMeta> getSurviveKeepers() {
-        return (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
+        return MetaCloneFacade.INSTANCE.cloneList(surviveKeepers);
     }
 
     @SuppressWarnings("unchecked")
@@ -60,7 +59,7 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
                 throw new IllegalArgumentException(
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
             }
-            this.surviveKeepers = (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
+            this.surviveKeepers = MetaCloneFacade.INSTANCE.cloneList(surviveKeepers);
             logger.info("[setSurviveKeepers]cluster_{},shard_{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
             doSetActive(activeKeeper);
         } else {

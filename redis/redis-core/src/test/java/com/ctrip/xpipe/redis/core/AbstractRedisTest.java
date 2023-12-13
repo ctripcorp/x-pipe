@@ -11,7 +11,7 @@ import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
@@ -509,7 +509,7 @@ public abstract class AbstractRedisTest extends AbstractTest {
     protected ClusterMeta differentCluster(String dc, int index) {
 
         DcMeta dcMeta = getDcMeta(dc);
-        ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[index]);
+        ClusterMeta clusterMeta = MetaCloneFacade.INSTANCE.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[index]);
         clusterMeta.setId(randomString(10));
         clusterMeta.setDbId(randomLong());
 

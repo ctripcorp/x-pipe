@@ -14,7 +14,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -86,7 +86,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     private DcMeta cloneDcMeta(DcMeta source){
-        DcMeta dcMeta = MetaClone.clone(source);
+        DcMeta dcMeta = MetaCloneFacade.INSTANCE.clone(source);
         for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
             clusterMeta.setParent(dcMeta);
             for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
@@ -106,7 +106,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Test
     public void visitModified() {
         ClusterMeta clusterMeta = getDcMeta("oy").findCluster("cluster2");
-        ClusterMeta clone = MetaClone.clone(clusterMeta);
+        ClusterMeta clone = MetaCloneFacade.INSTANCE.clone(clusterMeta);
         clone.getShards().get("shard2").addRedis(new RedisMeta());
         manager.visitModified(new ClusterMetaComparator(clusterMeta, clone));
         verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
@@ -140,7 +140,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void testActiveDcInterestedNotChange() {
         // active dc is always not current dc jq
         ClusterMeta cluster = getDcMeta("oy").findCluster("cluster2");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
+        ClusterMeta newCluster = MetaCloneFacade.INSTANCE.clone(cluster);
         newCluster.setActiveDc("rb");
         manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
 
@@ -149,7 +149,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         // active dc is always current dc jq
         cluster = getDcMeta("oy").findCluster("cluster1");
-        newCluster = MetaClone.clone(cluster);
+        newCluster = MetaCloneFacade.INSTANCE.clone(cluster);
         manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, never()).remove(any(HostPort.class));
@@ -184,7 +184,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void testDcsInterestedNotChange() {
         // current dc is always not in dcs
         ClusterMeta cluster = getDcMeta("oy").findCluster("cluster4");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
+        ClusterMeta newCluster = MetaCloneFacade.INSTANCE.clone(cluster);
         newCluster.setDcs("rb");
         manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
 
@@ -193,7 +193,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         // current dc is always in dcs
         cluster = getDcMeta("oy").findCluster("cluster3");
-        newCluster = MetaClone.clone(cluster);
+        newCluster = MetaCloneFacade.INSTANCE.clone(cluster);
         newCluster.setDcs("jq,oy,rb");
         manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
 
@@ -244,7 +244,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(manager, never()).visitAdded(any());
         verify(manager, never()).visitRemoved(any());
 
-        DcMeta dcMeta = MetaClone.clone(getDcMeta("oy"));
+        DcMeta dcMeta = MetaCloneFacade.INSTANCE.clone(getDcMeta("oy"));
 
         ClusterMeta clusterMeta = dcMeta.getClusters().remove("cluster1");
         clusterMeta.setId("cluster5").setDbId(Math.abs(randomLong())).getShards().values().forEach(shardMeta -> {
@@ -266,7 +266,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig));
         manager.compare(getDcMeta("jq"), null);
 
-        DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));
+        DcMeta dcMeta = MetaCloneFacade.INSTANCE.clone(getDcMeta("jq"));
         dcMeta.getClusters().remove("cluster1");
 
         manager.compare(dcMeta, null);
@@ -482,7 +482,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Test
     public void visitModified1() {
         ClusterMeta clusterMeta = getDcMeta("oy").findCluster("cluster2");
-        ClusterMeta clone = MetaClone.clone(clusterMeta);
+        ClusterMeta clone = MetaCloneFacade.INSTANCE.clone(clusterMeta);
         clone.getShards().get("shard2").addRedis(new RedisMeta());
         manager.visitModified(new ClusterMetaComparator(clusterMeta, clone));
         verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));

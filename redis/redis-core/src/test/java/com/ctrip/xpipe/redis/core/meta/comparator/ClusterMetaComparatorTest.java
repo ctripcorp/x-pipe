@@ -4,7 +4,7 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.SourceMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,7 +25,7 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 	@Before
 	public void beforeClusterMetaComparatorTest(){
 		current = getCluster();
-		future = MetaClone.clone(current);
+		future = MetaCloneFacade.INSTANCE.clone(current);
 		
 	}
 

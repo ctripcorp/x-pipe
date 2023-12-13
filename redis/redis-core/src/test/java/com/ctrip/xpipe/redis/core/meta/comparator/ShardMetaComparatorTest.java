@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +21,7 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 	@Before
 	public void beforeShardMetaComparatorTest(){
 		current = getShard();
-		future = MetaClone.clone(current);
+		future = MetaCloneFacade.INSTANCE.clone(current);
 		
 	}
 	

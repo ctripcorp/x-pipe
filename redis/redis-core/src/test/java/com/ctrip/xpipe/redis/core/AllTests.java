@@ -53,6 +53,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ArrayParserTest.class,
         RedisErrorParserTest.class,
         MetaCloneTest.class,
+        MetaCloneFacadeTest.class,
         ClusterShardCounterTest.class,
         DefaultXpipeMetaManagerTest.class,
         ReplicationStoreMetaTest.class,

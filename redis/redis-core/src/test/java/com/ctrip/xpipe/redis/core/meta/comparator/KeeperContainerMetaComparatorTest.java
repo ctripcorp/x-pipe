@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,9 +16,9 @@ public class KeeperContainerMetaComparatorTest extends AbstractComparatorTest {
     @Before
     public void init() {
         current = getDc();
-        future = MetaClone.clone(current);
-        currentAllDcMeta = MetaClone.clone(current);
-        futureAllDcMeta = MetaClone.clone(current);
+        future = MetaCloneFacade.INSTANCE.clone(current);
+        currentAllDcMeta = MetaCloneFacade.INSTANCE.clone(current);
+        futureAllDcMeta = MetaCloneFacade.INSTANCE.clone(current);
 
     }
 
@@ -57,7 +57,7 @@ public class KeeperContainerMetaComparatorTest extends AbstractComparatorTest {
     @Test
     public void testWhenKeeperChange() {
        ClusterMeta cluster1 = current.getClusters().get("cluster1");
-       ClusterMeta newCluster1 = MetaClone.clone(cluster1);
+       ClusterMeta newCluster1 = MetaCloneFacade.INSTANCE.clone(cluster1);
        newCluster1.getShards().get("shard1").addKeeper(new KeeperMeta().setKeeperContainerId(3L).setIp("127.0.0.3").setPort(randomPort()));
        futureAllDcMeta.addCluster(newCluster1);
 

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +22,7 @@ public class DcMetaComparatorTest extends AbstractComparatorTest{
 	public void beforeDcMetaComparatorTest(){
 		
 		current = getDc();
-		future = MetaClone.clone(current);
+		future = MetaCloneFacade.INSTANCE.clone(current);
 	}
 	
 	@Test
