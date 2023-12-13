@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,6 +41,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
 
+	private AtomicBoolean connecting = new AtomicBoolean(false);
+
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
 										 KeeperResourceManager resourceManager) {
@@ -49,19 +52,30 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected void doConnect(Bootstrap b) {
 
-		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
+		// avoid doConnect twice and receive data-stream from two upstream
+		// that has happened before while netty recall connectFuture and channelInactive at the same time
+		if (connecting.compareAndSet(false, true)) {
+			try {
+				redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
 
-		tryConnect(b).addListener(new ChannelFutureListener() {
-			
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				
-				if(!future.isSuccess()){
-					logger.error("[operationComplete][fail connect with master]" + redisMaster, future.cause());
-					scheduleReconnect(masterConnectRetryDelaySeconds*1000);
-				}
+				tryConnect(b).addListener(new ChannelFutureListener() {
+
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception {
+						connecting.set(false);
+
+						if(!future.isSuccess()){
+							logger.error("[operationComplete][fail connect with master]" + redisMaster, future.cause());
+							// handle concurrent
+							scheduleReconnect(masterConnectRetryDelaySeconds*1000);
+						}
+					}
+				});
+			} catch (Throwable th) {
+				connecting.set(false);
+				throw th;
 			}
-		});
+		}
 	}
 	
 	
