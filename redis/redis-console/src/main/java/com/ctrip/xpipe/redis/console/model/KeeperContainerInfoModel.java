@@ -17,6 +17,7 @@ public class KeeperContainerInfoModel implements Serializable {
     private long keeperCount;
     private long shardCount;
     private long clusterCount;
+    private String diskType;
 
     public static long getSerialVersionUID() {
         return serialVersionUID;
@@ -93,6 +94,14 @@ public class KeeperContainerInfoModel implements Serializable {
     public KeeperContainerInfoModel setActive(boolean active) {
         this.active = active;
         return this;
+    }
+
+    public String getDiskType() {
+        return diskType;
+    }
+
+    public void setDiskType(String diskType) {
+        this.diskType = diskType;
     }
 
     @Override

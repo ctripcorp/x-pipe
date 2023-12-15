@@ -45,6 +45,11 @@ angular
             url: '/console/keepercontainers/overload/all',
             isArray: true
         },
+        get_all_overload_lasted_used_info: {
+            method: 'GET',
+            url: '/console/keepercontainer/overload/info/lasted',
+            isArray: true
+        },
         get_overload_keepercontainer_migration_process: {
             method: 'GET',
             url: '/console/keepercontainer/overload/migration/process',
@@ -195,6 +200,17 @@ angular
         return d.promise;
     }
 
+    function getAllKeepercontainerUsedInfo() {
+        var d = $q.defer();
+        resource.get_all_overload_lasted_used_info({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function getOverloadKeeperContainerMigrationProcess() {
         var d = $q.defer();
         resource.get_overload_keepercontainer_migration_process({},
@@ -228,6 +244,7 @@ angular
         addKeepercontainer: addKeepercontainer,
         updateKeepercontainer: updateKeepercontainer,
         getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
+        getAllKeepercontainerUsedInfo : getAllKeepercontainerUsedInfo,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
     }

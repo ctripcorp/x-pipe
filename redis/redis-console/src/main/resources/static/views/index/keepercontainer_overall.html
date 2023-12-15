@@ -1,0 +1,31 @@
+<div class="col-md-12">
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="col-sm-2" style="width: 50%">KeeperContainerOverall:{{getIp()}}   {{getDc()}}</span>
+                </div>
+
+                <div class="col-md-6 text-right">
+                    <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_overload?type=detail">OverloadKeeperContainer</a>
+                </div>
+            </div>
+        </header>
+
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+            <tr ng-repeat="info in $data">
+                <td data-title="'port'">{{info.key.port}}</td>
+                <td data-title="'cluster'" filter="{ 'key.clusterId' : 'text' }">{{info.key.clusterId}}</td>
+                <td data-title="'shard'" filter="{ 'key.shardId' : 'text' }">{{info.key.shardId}}</td>
+                <td data-title="'上游流量'" sortable="'value.inputFlow'">{{info.value.inputFlow}}</td>
+                <td data-title="'上游数据量'" sortable="'value.peerData'">{{info.value.peerData}}</td>
+                <td data-title="'isActive'" filter="{ 'key.active' : 'text' }">{{info.key.active}}</td>
+            </tr>
+        </table>
+
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="icon-double-angle-up icon-only bigger-110"></i>
+</a>
