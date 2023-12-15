@@ -6,7 +6,10 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import com.ctrip.xpipe.redis.console.service.impl.KeeperContainerServiceImpl;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,6 +43,9 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     private ThreadPoolExecutor executor;
 
     @Mock
+    private KeeperContainerService keeperContainerService;
+
+    @Mock
     private FoundationService service;
 
     public static final int expireTime = 1000;
@@ -47,12 +53,40 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Before
     public void before() {
+        analyzer.setExecutors(executor);
+        analyzer.setKeeperContainerService(new KeeperContainerServiceImpl());
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Map<String, KeeperContainerOverloadStandardModel> standards = Maps.newHashMap();
-        standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10));
+        List<KeeperContainerOverloadStandardModel.DiskTypesEnum> diskTypeEnums = new ArrayList<>();
+        diskTypeEnums.add(new KeeperContainerOverloadStandardModel.DiskTypesEnum(KeeperContainerOverloadStandardModel.DiskType.RAID0, 20, 20));
+        standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10).setDiskTypes(diskTypeEnums));
         Mockito.when(config.getKeeperContainerOverloadStandards()).thenReturn(standards);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
+        Mockito.when(config.getKeeperContainerOverloadFactor()).thenReturn(0.8);
+        Mockito.when(keeperContainerService.find(Mockito.any())).thenReturn(new KeepercontainerTbl());
         Mockito.doNothing().when(executor).execute(Mockito.any());
+    }
+
+    @Test
+    public void testAnalyzeOverloadStandardModel() {
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
+        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, "1.1.1.1"));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", false), new KeeperUsedInfo(3L, 3L, "1.1.1.1"));
+        model1.setDetailInfo(detailInfo1);
+        models.add(model1);
+        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
+        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard1", false), new KeeperUsedInfo(3L, 3L, "2.2.2.2"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(2L, 2L, "2.2.2.2"));
+        model2.setDetailInfo(detailInfo2);
+        models.add(model2);
+
+        analyzer.updateKeeperContainerUsedInfo(0, models);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
+        Map<String, KeeperContainerOverloadStandardModel> overloadStandardModelMap = analyzer.analyzeKeeperContainerStandard();
+
     }
 
     @Test
@@ -120,34 +154,39 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
         KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
         Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(5L, 5L, ""));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, "1.1.1.1"));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", false), new KeeperUsedInfo(3L, 3L, "1.1.1.1"));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", false), new KeeperUsedInfo(4L, 4L, "1.1.1.1"));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(5L, 5L, "1.1.1.1"));
+        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", false), new KeeperUsedInfo(2L, 2L, "1.1.1.1"));
         model1.setDetailInfo(detailInfo1);
         models1.add(model1);
 
         KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
         Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(5L, 5L, ""));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 3L, "2.2.2.2"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", false), new KeeperUsedInfo(2L, 2L, "2.2.2.2"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 3L, "2.2.2.2"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(4L, 4L, "2.2.2.2"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", false), new KeeperUsedInfo(5L, 5L, "2.2.2.2"));
         model2.setDetailInfo(detailInfo2);
         models1.add(model2);
 
         KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
         Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
+        detailInfo3.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(4L, 4L, "3.3.3.3"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", false), new KeeperUsedInfo(3L, 3L, "3.3.3.3"));
+        detailInfo3.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, "3.3.3.3"));
+        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", false), new KeeperUsedInfo(4L, 4L, "3.3.3.3"));
+        detailInfo3.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 3L, "3.3.3.3"));
         model3.setDetailInfo(detailInfo3);
         models1.add(model3);
 
 
         KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
         Map<DcClusterShardActive, KeeperUsedInfo> detailInfo4 = Maps.newHashMap();
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
+        detailInfo3.put(new DcClusterShardActive("jq", "cluster1", "shard1", false), new KeeperUsedInfo(3L, 3L, "4.4.4.4"));
+        detailInfo3.put(new DcClusterShardActive("jq", "cluster2", "shard2", false), new KeeperUsedInfo(3L, 3L, "4.4.4.4"));
         model4.setDetailInfo(detailInfo4);
         models1.add(model4);
 

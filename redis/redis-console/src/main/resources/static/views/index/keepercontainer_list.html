@@ -8,7 +8,7 @@
                 </div>
 
                 <div class="col-md-6 text-right">
-                    <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_overload?type=detail">OverloadKeeperContainer</a>
+                    <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_usedinfo">KeeperContainerUsedInfo</a>
                     <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_form?id=&type=create">AddKeeperContainer</a>
                 </div>
             </div>
@@ -21,6 +21,7 @@
                 <td data-title="'dc'" filter="{ dcName: 'text'}" sortable="'dcName'">{{info.dcName}}</td>
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'active'" filter="{ active: 'text'}">{{info.active}}</td>
+                <td data-title="'diskType'" filter="{ diskType: 'text'}">{{info.diskType}}</td>
                 <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
                 <td data-title="'keeper'" sortable="'keeperCount'">{{info.keeperCount}}</td>
                 <td data-title="'cluster'" sortable="'clusterCount'">

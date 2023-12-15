@@ -204,6 +204,11 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/keepercontainer_overload.html',
             controller: 'KeepercontainerOverloadCtl'
         })
+        .state('keeper_usedinfo',{
+            url: '/keepercontainer_usedinfo',
+            templateUrl: 'views/index/keepercontainer_usedinfo.html',
+            controller: 'KeepercontainerUsedInfoCtl'
+        })
         .state('appliercontainer_list', {
             url: '/appliercontainers',
             templateUrl: 'views/index/appliercontainer_list.html',
@@ -213,6 +218,11 @@ function router($stateProvider, $urlRouterProvider) {
             url: '/appliercontainer_form?id&type',
             templateUrl: 'views/index/appliercontainer_form.html',
             controller: 'AppliercontainerFormCtl'
+        })
+        .state('keepercontainer_overall',{
+            url: '/keepercontainer_overall?keepercontainerIp',
+            templateUrl: 'views/index/keepercontainer_overall.html',
+            controller: 'KeepercontainerOverallCtl'
         });
 
 }

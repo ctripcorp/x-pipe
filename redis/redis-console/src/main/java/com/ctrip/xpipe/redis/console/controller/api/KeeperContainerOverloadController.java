@@ -32,9 +32,4 @@ public class KeeperContainerOverloadController extends AbstractConsoleController
         return result;
     }
 
-    @RequestMapping(value = "/keepercontainer/overload/info/lasted", method = RequestMethod.GET)
-    public List<KeeperContainerUsedInfoModel>  getLastedAllReadyMigrateKeeperContainers() {
-        return analyzer.getAllKeeperContainerUsedInfoModelsList();
-    }
-
 }

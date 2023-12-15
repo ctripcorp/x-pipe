@@ -50,7 +50,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
         MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel();
         KeeperContainerUsedInfoModel src = new KeeperContainerUsedInfoModel()
                         .setKeeperIp("1.1.1.1").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
-                        .setRedisUsedMemory(500 * 1024 * 1024 * 1024L);
+                        .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
         Map<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo = Maps.newHashMap();
         detailInfo.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
         detailInfo.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(20 * 1024 * 1024L, 20 * 1024 * 1024L, ""));
@@ -60,7 +60,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
 
         KeeperContainerUsedInfoModel target = new KeeperContainerUsedInfoModel()
                         .setKeeperIp("2.2.2.2").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
-                        .setRedisUsedMemory(500 * 1024 * 1024 * 1024L);
+                        .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
         Map<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
         detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
         target.setDetailInfo(detailInfo2);
