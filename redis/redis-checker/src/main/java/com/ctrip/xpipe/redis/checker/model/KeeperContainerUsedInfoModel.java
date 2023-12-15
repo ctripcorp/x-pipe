@@ -15,7 +15,17 @@ public class KeeperContainerUsedInfoModel {
 
     private long totalInputFlow;
 
-    private long redisUsedMemory;
+    private long inputFlowStandard;
+
+    private long activeRedisUsedMemory;
+
+    private long totalRedisUsedMemory;
+
+    private long redisUsedMemoryStandard;
+
+    private int activeKeeperCount;
+
+    private int totalKeeperCount;
 
     private Map<DcClusterShardActive, KeeperUsedInfo> detailInfo;
 
@@ -32,11 +42,11 @@ public class KeeperContainerUsedInfoModel {
     public KeeperContainerUsedInfoModel() {
     }
 
-    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long activeInputFlow, long redisUsedMemory) {
+    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long activeInputFlow, long totalRedisUsedMemory) {
         this.keeperIp = keeperIp;
         this.dcName = dcName;
         this.activeInputFlow = activeInputFlow;
-        this.redisUsedMemory = redisUsedMemory;
+        this.totalRedisUsedMemory = totalRedisUsedMemory;
     }
 
     public String getDcName() {
@@ -75,12 +85,22 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public long getRedisUsedMemory() {
-        return redisUsedMemory;
+    public long getActiveRedisUsedMemory() {
+        return activeRedisUsedMemory;
     }
 
-    public KeeperContainerUsedInfoModel setRedisUsedMemory(long redisUsedMemory) {
-        this.redisUsedMemory = redisUsedMemory;
+    public KeeperContainerUsedInfoModel setActiveRedisUsedMemory(long activeRedisUsedMemory) {
+        this.activeRedisUsedMemory = activeRedisUsedMemory;
+        return this;
+    }
+
+
+    public long getTotalRedisUsedMemory() {
+        return totalRedisUsedMemory;
+    }
+
+    public KeeperContainerUsedInfoModel setTotalRedisUsedMemory(long totalRedisUsedMemory) {
+        this.totalRedisUsedMemory = totalRedisUsedMemory;
         return this;
     }
 
@@ -136,6 +156,40 @@ public class KeeperContainerUsedInfoModel {
         this.overLoadCause = overLoadCause;
     }
 
+    public int getActiveKeeperCount() {
+        return activeKeeperCount;
+    }
+
+    public KeeperContainerUsedInfoModel setActiveKeeperCount(int activeKeeperCount) {
+        this.activeKeeperCount = activeKeeperCount;
+        return this;
+    }
+
+    public int getTotalKeeperCount() {
+        return totalKeeperCount;
+    }
+
+    public KeeperContainerUsedInfoModel setTotalKeeperCount(int totalKeeperCount) {
+        this.totalKeeperCount = totalKeeperCount;
+        return this;
+    }
+
+    public long getInputFlowStandard() {
+        return inputFlowStandard;
+    }
+
+    public void setInputFlowStandard(long inputFlowStandard) {
+        this.inputFlowStandard = inputFlowStandard;
+    }
+
+    public long getRedisUsedMemoryStandard() {
+        return redisUsedMemoryStandard;
+    }
+
+    public void setRedisUsedMemoryStandard(long redisUsedMemoryStandard) {
+        this.redisUsedMemoryStandard = redisUsedMemoryStandard;
+    }
+
     @Override
     public String toString() {
         return "KeeperContainerUsedInfoModel{" +
@@ -143,7 +197,12 @@ public class KeeperContainerUsedInfoModel {
                 ", dcName='" + dcName + '\'' +
                 ", activeInputFlow=" + activeInputFlow +
                 ", totalInputFlow=" + totalInputFlow +
-                ", redisUsedMemory=" + redisUsedMemory +
+                ", inputFlowStandard=" + inputFlowStandard +
+                ", activeRedisUsedMemory=" + activeRedisUsedMemory +
+                ", totalRedisUsedMemory=" + totalRedisUsedMemory +
+                ", redisUsedMemoryStandard=" + redisUsedMemoryStandard +
+                ", activeKeeperCount=" + activeKeeperCount +
+                ", totalKeeperCount=" + totalKeeperCount +
                 ", detailInfo=" + detailInfo +
                 ", diskAvailable=" + diskAvailable +
                 ", diskSize=" + diskSize +

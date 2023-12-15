@@ -108,9 +108,13 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                 model.setKeeperIp(keeperIp).setDcName(CURRENT_IDC);
                 long activeInputFlow = 0;
                 long totalInputFlow = 0;
+                long activeRedisUsedMemory = 0;
                 long totalRedisUsedMemory = 0;
+                int activeKeeperCount = 0;
+                int totalKeeperCount = 0;
                 Map<DcClusterShardActive, KeeperUsedInfo> detailInfo = new HashMap<>();
                 for (Map.Entry<DcClusterShardActive, Long> entry : inputFlowMap.entrySet()) {
+                    totalKeeperCount++;
                     totalInputFlow += entry.getValue();
                     DcClusterShardActive dcClusterShardActive = entry.getKey();
                     long inputFlow = entry.getValue();
@@ -120,15 +124,22 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                         redisUsedMemory = 0L;
                     }
                     totalRedisUsedMemory += redisUsedMemory;
-                    if (dcClusterShardActive.isActive()) activeInputFlow += inputFlow;
+                    if (dcClusterShardActive.isActive()) {
+                        activeRedisUsedMemory += redisUsedMemory;
+                        activeInputFlow += inputFlow;
+                        activeKeeperCount++;
+                    }
                     detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(inputFlow, redisUsedMemory, keeperIp));
 
                 }
                 KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
                 model.setDetailInfo(detailInfo)
+                        .setActiveKeeperCount(activeKeeperCount)
+                        .setTotalKeeperCount(totalKeeperCount)
                         .setActiveInputFlow(activeInputFlow)
+                        .setActiveRedisUsedMemory(activeRedisUsedMemory)
                         .setTotalInputFlow(totalInputFlow)
-                        .setRedisUsedMemory(totalRedisUsedMemory)
+                        .setTotalRedisUsedMemory(totalRedisUsedMemory)
                         .setDiskAvailable(keeperDiskInfo.available)
                         .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
                         .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
