@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.meta.impl;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +38,7 @@ public class BigMetaTest extends AbstractRedisTest {
                 @Override
                 public void run() {
                     try{
-                        XpipeMeta clone = MetaClone.clone(meta);
+                        XpipeMeta clone = MetaCloneFacade.INSTANCE.clone(meta);
                     }finally {
                         latch.countDown();
                     }

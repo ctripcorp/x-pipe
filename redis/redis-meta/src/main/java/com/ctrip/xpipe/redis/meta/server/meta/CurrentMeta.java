@@ -6,7 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -475,7 +474,7 @@ public class CurrentMeta implements Releasable {
 							return new CurrentOneWayShardMeta(
 									clusterDbId, shardMeta.getDbId(),
 									currentShardKeeperMeta, currentShardApplierMeta,
-									(List<RedisMeta>) MetaClone.clone((Serializable) shardMeta.getRedises()));
+									MetaCloneFacade.INSTANCE.cloneList(shardMeta.getRedises()));
 						default:
 							throw new IllegalArgumentException("unknow type:" + clusterType);
 					}

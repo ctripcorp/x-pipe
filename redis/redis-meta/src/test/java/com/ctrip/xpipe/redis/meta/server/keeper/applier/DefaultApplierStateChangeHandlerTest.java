@@ -3,9 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.keeper.applier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -121,7 +120,7 @@ public class DefaultApplierStateChangeHandlerTest extends AbstractMetaServerTest
         Long clusterDbId1 = clusterDbId + 1;
         Long shardDbId1 = shardDbId + 1;
 
-        List<ApplierMeta> newAppliers = Lists.newArrayList(MetaClone.clone(appliers.get(1)).setActive(true));
+        List<ApplierMeta> newAppliers = Lists.newArrayList(MetaCloneFacade.INSTANCE.clone(appliers.get(1)).setActive(true));
         when(currentMetaManager.getSurviveAppliers(clusterDbId1, shardDbId1)).thenReturn(newAppliers);
         when(currentMetaManager.getApplierMaster(clusterDbId1, shardDbId1)).thenReturn(applierMaster);
         when(currentMetaManager.getGtidSet(clusterDbId1, sid)).thenReturn(new GtidSet(""));

@@ -7,7 +7,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
@@ -579,7 +579,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
     @Test
     public void testShardMigrate() {
         DcMeta current = getDcMeta("jq");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
         exchangeClusterShards(future.getClusters().get("cluster1"), future.getClusters().get("cluster2"));
         DcMetaComparator comparator = new DcMetaComparator(current, future);
         comparator.setShardMigrateSupport();
