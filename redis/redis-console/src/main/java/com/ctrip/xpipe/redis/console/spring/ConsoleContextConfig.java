@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
+import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
@@ -124,8 +125,10 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public KeeperContainerUsedInfoAnalyzer KeeperContainerUsedInfoAnalyzer(ConsoleConfig config, KeeperContainerService keeperContainerService) {
-		return new DefaultKeeperContainerUsedInfoAnalyzer(config, keeperContainerService);
+	public KeeperContainerUsedInfoAnalyzer KeeperContainerUsedInfoAnalyzer(ConsoleConfig config,
+																		   KeeperContainerService keeperContainerService,
+																		   KeeperContainerFilterChain keeperContainerFilterChain) {
+		return new DefaultKeeperContainerUsedInfoAnalyzer(config, keeperContainerService, keeperContainerFilterChain);
 	}
 
 	@Bean

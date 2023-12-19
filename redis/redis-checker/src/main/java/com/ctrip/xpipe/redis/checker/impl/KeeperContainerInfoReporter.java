@@ -17,6 +17,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -132,17 +133,21 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                     detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(inputFlow, redisUsedMemory, keeperIp));
 
                 }
-                KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
+                try {
+                    KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
+                    model.setDiskAvailable(keeperDiskInfo.available)
+                            .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
+                            .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
+                } catch (RestClientException e){
+                    logger.error("[reportKeeperContainerInfo] getKeeperDiskInfo error, keeperIp: {}", keeperIp);
+                }
                 model.setDetailInfo(detailInfo)
                         .setActiveKeeperCount(activeKeeperCount)
                         .setTotalKeeperCount(totalKeeperCount)
                         .setActiveInputFlow(activeInputFlow)
                         .setActiveRedisUsedMemory(activeRedisUsedMemory)
                         .setTotalInputFlow(totalInputFlow)
-                        .setTotalRedisUsedMemory(totalRedisUsedMemory)
-                        .setDiskAvailable(keeperDiskInfo.available)
-                        .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
-                        .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
+                        .setTotalRedisUsedMemory(totalRedisUsedMemory);
                 result.add(model);
             });
             logger.debug("[reportKeeperContainerInfo] result: {}", result);
