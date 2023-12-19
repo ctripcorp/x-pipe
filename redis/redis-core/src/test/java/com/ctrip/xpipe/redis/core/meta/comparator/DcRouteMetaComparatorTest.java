@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +19,7 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
     @Before
     public void beforeDcRouteMetaComparatorTest() {
         current = getDcMeta("fra");
-        future = MetaClone.clone(current);
+        future = MetaCloneFacade.INSTANCE.clone(current);
         Assert.assertFalse(current.getClusters().isEmpty());
     }
 

@@ -1,16 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.applier.manager;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
-import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
@@ -23,7 +20,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -183,7 +179,7 @@ public class DefaultApplierManagerTest extends AbstractMetaServerTest {
     public void testHandleClusterModified() {
 
         ClusterMeta current = buildClusterMeta();
-        ClusterMeta future = MetaClone.clone(current);
+        ClusterMeta future = MetaCloneFacade.INSTANCE.clone(current);
         ApplierMeta applierMeta2 = new ApplierMeta();
         applierMeta2.setIp("applier2");
         future.getSources().get(0).getShards().get(shardId).getAppliers().remove(0);

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import org.junit.Assert;
 import org.junit.Before;
@@ -82,7 +82,7 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
             verify(currentMetaManager, times(2)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
 
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
+        Assert.assertEquals(Arrays.asList(MetaCloneFacade.INSTANCE.clone(keeper1).setActive(true), MetaCloneFacade.INSTANCE.clone(keeper2).setActive(false)), surviveKeepers.get());
         Assert.assertEquals("1", activeKeeper.get().getId());
     }
 
@@ -101,14 +101,14 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
         waitConditionUntilTimeOut(()->assertSuccess(()->{
             verify(currentMetaManager, times(3)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true)), surviveKeepers.get());
+        Assert.assertEquals(Arrays.asList(MetaCloneFacade.INSTANCE.clone(keeper2).setActive(true)), surviveKeepers.get());
         Assert.assertEquals("2", activeKeeper.get().getId());
 
         active = addKeeperZkNode(shardDbId, getZkClient(), keeper1);
         waitConditionUntilTimeOut(()->assertSuccess(()->{
             verify(currentMetaManager, times(4)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true), MetaClone.clone(keeper1).setActive(false)), surviveKeepers.get());
+        Assert.assertEquals(Arrays.asList(MetaCloneFacade.INSTANCE.clone(keeper2).setActive(true), MetaCloneFacade.INSTANCE.clone(keeper1).setActive(false)), surviveKeepers.get());
         Assert.assertEquals("2", activeKeeper.get().getId());
 
         // backup switch to path for ids
@@ -117,7 +117,7 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
         waitConditionUntilTimeOut(()->assertSuccess(()->{
             verify(currentMetaManager, times(6)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
+        Assert.assertEquals(Arrays.asList(MetaCloneFacade.INSTANCE.clone(keeper1).setActive(true), MetaCloneFacade.INSTANCE.clone(keeper2).setActive(false)), surviveKeepers.get());
         Assert.assertEquals("1", activeKeeper.get().getId());
     }
 

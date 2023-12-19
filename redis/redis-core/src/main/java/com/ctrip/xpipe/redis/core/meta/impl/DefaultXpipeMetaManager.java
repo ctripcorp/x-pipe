@@ -4,10 +4,8 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
-import com.ctrip.xpipe.redis.core.meta.MetaException;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.meta.*;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
@@ -21,7 +19,6 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -266,7 +263,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public List<KeeperMeta> doGetKeepers(String dc, String clusterId, String shardId) {
 		
-		return (List<KeeperMeta>) clone((Serializable)getDirectKeepers(dc, clusterId, shardId));
+		return cloneList(getDirectKeepers(dc, clusterId, shardId));
 	}
 
 	protected List<KeeperMeta> getDirectKeepers(String dc, String clusterId, String shardId) {
@@ -282,7 +279,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public List<ApplierMeta> doGetAppliers(String dc, String clusterId, String shardId) {
 
-		return (List<ApplierMeta>) clone((Serializable) getDirectAppliers(dc, clusterId, shardId));
+		return cloneList(getDirectAppliers(dc, clusterId, shardId));
 	}
 
 	protected List<ApplierMeta> getDirectAppliers(String dc, String clusterId, String shardId) {
@@ -302,7 +299,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(shardMeta == null){
 			return null;
 		}
-		return (List<RedisMeta>) clone((Serializable)shardMeta.getRedises());
+		return cloneList(shardMeta.getRedises());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -319,7 +316,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			if (shardMeta == null) {
 				continue;
 			}
-		    result.addAll((List<RedisMeta>) clone((Serializable)shardMeta.getRedises()));
+		    result.addAll(cloneList(shardMeta.getRedises()));
 		}
 
 		return result;
@@ -369,7 +366,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 				result.add(keeperMeta);
 			}
 		}
-		return clone(result);
+		return cloneList(result);
 	}
 
 	@Override
@@ -532,7 +529,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if( dcMeta == null ){
 			return null;
 		}
-		return clone(new LinkedList<>(dcMeta.getMetaServers()));
+		return cloneList(dcMeta.getMetaServers());
 	}
 
 	@Override
@@ -699,7 +696,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		
 		for(KeeperMeta keeper : keepers){
 			if(keeper.isSurvive()){
-				result.add(MetaClone.clone(keeper));
+				result.add(MetaCloneFacade.INSTANCE.clone(keeper));
 			}
 		}
 		return result;
@@ -739,7 +736,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(sentinelMeta == null){
 			return new SentinelMeta().setAddress("");
 		}
-		return MetaClone.clone(sentinelMeta);
+		return MetaCloneFacade.INSTANCE.clone(sentinelMeta);
 	}
 
 	@Override
@@ -770,7 +767,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(routes != null){
 			routes.forEach(routeMeta -> {
 				if(routeMeta.tagEquals(tag) && currentDc.equalsIgnoreCase(routeMeta.getSrcDc())) {
-					result.add(MetaClone.clone(routeMeta));
+					result.add(MetaCloneFacade.INSTANCE.clone(routeMeta));
 				}
 			});
 		}

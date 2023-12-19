@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -165,7 +165,7 @@ public class DefaultRedisGtidCollectorManager extends AbstractCurrentMetaObserve
                     }
                 }
                 if (!found) {
-                    result.add(MetaClone.clone(newRedisMeta));
+                    result.add(MetaCloneFacade.INSTANCE.clone(newRedisMeta));
                 }
             }
             return result;

@@ -2,14 +2,13 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
 import com.ctrip.xpipe.redis.core.BaseEntity;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -38,7 +37,7 @@ public abstract class AbstractMetaComparator<T> implements MetaComparator<T>{
 		return configChanged;
 	}
 
-	protected <Type extends Serializable> boolean checkShallowChange(Type current, Type future) {
+	protected <Type extends BaseEntity> boolean checkShallowChange(Type current, Type future) {
 
 	    if (current == null && future == null) {
 			return false;
@@ -49,8 +48,8 @@ public abstract class AbstractMetaComparator<T> implements MetaComparator<T>{
 		}
 
 	    try {
-			Type currentClone = MetaClone.clone(current);
-			Type futureClone = MetaClone.clone(future);
+			Type currentClone = MetaCloneFacade.INSTANCE.clone(current);
+			Type futureClone = MetaCloneFacade.INSTANCE.clone(future);
 			for (Field field : currentClone.getClass().getDeclaredFields()) {
 				if (!needCheck(field.getType())) {
 					resetField(field, currentClone);
