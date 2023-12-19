@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.checker.model;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+
+import java.util.*;
 
 public class KeeperContainerUsedInfoModel {
 
@@ -29,6 +28,8 @@ public class KeeperContainerUsedInfoModel {
 
     private Map<DcClusterShardActive, KeeperUsedInfo> detailInfo;
 
+    private boolean keeperContainerActive;
+
     private boolean diskAvailable;
 
     private long diskSize;
@@ -42,11 +43,32 @@ public class KeeperContainerUsedInfoModel {
     public KeeperContainerUsedInfoModel() {
     }
 
-    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long activeInputFlow, long totalRedisUsedMemory) {
+    public KeeperContainerUsedInfoModel(String keeperIp, String dcName, long activeInputFlow, long activeRedisUsedMemory) {
         this.keeperIp = keeperIp;
         this.dcName = dcName;
         this.activeInputFlow = activeInputFlow;
-        this.totalRedisUsedMemory = totalRedisUsedMemory;
+        this.activeRedisUsedMemory = activeRedisUsedMemory;
+    }
+
+    public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardActive, KeeperUsedInfo> dcClusterShard) {
+        this.keeperIp = model.getKeeperIp();
+        this.dcName = model.getDcName();
+        this.activeInputFlow = model.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow();
+        this.totalInputFlow = model.getTotalInputFlow() + dcClusterShard.getValue().getInputFlow();
+        this.inputFlowStandard = model.getInputFlowStandard();
+        this.activeRedisUsedMemory = model.activeRedisUsedMemory + dcClusterShard.getValue().getPeerData();
+        this.totalRedisUsedMemory = model.getTotalRedisUsedMemory() + dcClusterShard.getValue().getPeerData();
+        this.redisUsedMemoryStandard = model.getRedisUsedMemoryStandard();
+        this.activeKeeperCount = model.getActiveKeeperCount() + 1;
+        this.totalKeeperCount = model.getTotalKeeperCount() + 1;
+        this.detailInfo = model.detailInfo;
+        this.detailInfo.put(dcClusterShard.getKey(), dcClusterShard.getValue());
+        this.keeperContainerActive = model.isKeeperContainerActive();
+        this.diskAvailable = model.isDiskAvailable();
+        this.diskSize = model.getDiskSize();
+        this.diskUsed = model.getDiskUsed();
+        this.diskType = model.getDiskType();
+        this.overLoadCause = model.getOverLoadCause();
     }
 
     public String getDcName() {
@@ -190,6 +212,15 @@ public class KeeperContainerUsedInfoModel {
         this.redisUsedMemoryStandard = redisUsedMemoryStandard;
     }
 
+    public boolean isKeeperContainerActive() {
+        return keeperContainerActive;
+    }
+
+    public KeeperContainerUsedInfoModel setKeeperContainerActive(boolean keeperContainerActive) {
+        this.keeperContainerActive = keeperContainerActive;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "KeeperContainerUsedInfoModel{" +
@@ -204,6 +235,7 @@ public class KeeperContainerUsedInfoModel {
                 ", activeKeeperCount=" + activeKeeperCount +
                 ", totalKeeperCount=" + totalKeeperCount +
                 ", detailInfo=" + detailInfo +
+                ", keeperContainerActive=" + keeperContainerActive +
                 ", diskAvailable=" + diskAvailable +
                 ", diskSize=" + diskSize +
                 ", diskUsed=" + diskUsed +
@@ -285,6 +317,14 @@ public class KeeperContainerUsedInfoModel {
                     ", keeperContainerIP='" + keeperIP + '\'' +
                     '}';
         }
+    }
+
+    @VisibleForTesting
+    public KeeperContainerUsedInfoModel createKeeper(String clusterId, String shardId, boolean active, long inputFlow, long redisUsedMemory){
+        if (this.detailInfo == null) this.detailInfo = new HashMap<>();
+        detailInfo.put(new DcClusterShardActive(this.dcName, clusterId, shardId, active), new KeeperUsedInfo(redisUsedMemory, inputFlow, this.keeperIp));
+        this.setDetailInfo(detailInfo);
+        return this;
     }
 
 }
