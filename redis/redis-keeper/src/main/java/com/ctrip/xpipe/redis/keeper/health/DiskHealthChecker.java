@@ -97,22 +97,25 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
 
     protected void setResult(KeeperDiskInfo diskInfo) {
         this.result.set(diskInfo);
-        if (state.get().isUp() == diskInfo.available) {
+        if (diskInfo.available) {
             state.set(HealthState.HEALTHY);
-        } else if (state.get() == HealthState.HEALTHY) {
-            rounds.set(1);
-            if (rounds.get() >= keeperContainerConfig.checkRoundBeforeMarkDown()) {
-                state.set(HealthState.DOWN);
-            } else {
-                state.set(HealthState.SICK);
-            }
-        } else if (state.get() == HealthState.SICK) {
-            if (rounds.incrementAndGet() >= keeperContainerConfig.checkRoundBeforeMarkDown()) {
-                state.set(HealthState.DOWN);
-            }
         } else {
-            state.set(HealthState.HEALTHY);
+            if (state.get() == HealthState.HEALTHY) {
+                rounds.set(1);
+                if (rounds.get() >= keeperContainerConfig.checkRoundBeforeMarkDown()) {
+                    state.set(HealthState.DOWN);
+                } else {
+                    state.set(HealthState.SICK);
+                }
+            } else if (state.get() == HealthState.SICK) {
+                if (rounds.incrementAndGet() >= keeperContainerConfig.checkRoundBeforeMarkDown()) {
+                    state.set(HealthState.DOWN);
+                }
+            } else {
+                // do nothing
+            }
         }
+
         notifyObservers(this.state.get());
     }
 

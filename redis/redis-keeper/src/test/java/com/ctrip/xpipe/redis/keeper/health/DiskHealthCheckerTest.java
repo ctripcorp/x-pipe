@@ -61,6 +61,9 @@ public class DiskHealthCheckerTest extends AbstractRedisKeeperTest {
         checker.setResult(diskInfo);
         expect.add(HealthState.DOWN);
 
+        checker.setResult(diskInfo);
+        expect.add(HealthState.DOWN);
+
         Assert.assertEquals(expect, checkResult);
     }
 
