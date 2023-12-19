@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -145,7 +145,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		Long clusterDbId1 = clusterDbId + 1;
 		Long shardDbId1 = shardDbId + 1;
 
-		List<KeeperMeta> newKeepers = Lists.newArrayList(MetaClone.clone(keepers.get(1)).setActive(true));
+		List<KeeperMeta> newKeepers = Lists.newArrayList(MetaCloneFacade.INSTANCE.clone(keepers.get(1)).setActive(true));
 		when(currentMetaManager.getSurviveKeepers(clusterDbId1, shardDbId1)).thenReturn(newKeepers);
 		when(currentMetaManager.getKeeperMaster(clusterDbId1, shardDbId1)).thenReturn(keeperMaster);
 		when(currentMetaManager.getClusterMeta(clusterDbId1)).thenReturn(new ClusterMeta().setActiveDc(getDc()));

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
-		<redisCheckRule id = "1234567890123456789" checkType = "config" param = "{configName:'repl_backlog_size', expectedValue:256MB, whetherFix:true}"></redisCheckRule>
-		<redisCheckRule id = "1234567890123456788" checkType = "config" param = "{configName:'repl_backlog_ttl', expectedValue:124, whetherFix:false}"></redisCheckRule>
+	<redisCheckRule id = "1234567890123456789" checkType = "config" param = "{configName:'repl_backlog_size', expectedValue:256MB, whetherFix:true}"></redisCheckRule>
+	<redisCheckRule id = "1234567890123456788" checkType = "config" param = "{configName:'repl_backlog_ttl', expectedValue:124, whetherFix:false}"></redisCheckRule>
 
 	<dc id="jq" lastModifiedTime="1234567abc" zone="SHA">
 		<metaServer ip="1.1.1.1" port="9747" master="true"/>

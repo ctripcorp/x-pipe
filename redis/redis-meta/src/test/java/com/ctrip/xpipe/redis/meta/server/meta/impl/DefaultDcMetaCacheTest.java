@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -46,13 +46,13 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         dcMetaCache.setMetaServerConfig(new UnitTestServerConfig());
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
 
-        DcMeta future = MetaClone.clone(dcMeta);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         ClusterMeta futureCluster = (ClusterMeta) future.getClusters().values().toArray()[0];
         futureCluster.addShard(new ShardMeta().setId(randomString(5)));
 
         future.addCluster(new ClusterMeta().setId(randomString(10)));
 
-        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 1);
 
         Long clusterDbId = randomLong();
         dcMetaCache.clusterAdded(new ClusterMeta().setId("add_" + randomString(5)).setDbId(clusterDbId));
@@ -67,14 +67,14 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         // check change success
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
-        DcMeta future = MetaClone.clone(dcMeta);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         future.getClusters().put("mockTestClusterForChangeSuccess", new ClusterMeta());
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
         Assert.assertEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
 
         // check change skip
         dcMeta = future;
-        future = MetaClone.clone(future);
+        future = MetaCloneFacade.INSTANCE.clone(future);
         future.getClusters().put("mockTestClusterForChangeSkip", new ClusterMeta());
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() - 10000);
         Assert.assertNotEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
@@ -88,15 +88,15 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         // check change success
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
-        DcMeta future = MetaClone.clone(dcMeta);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         future.getClusters().put("mockTestClusterForChangeSuccess", new ClusterMeta());
-        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 1);
         Assert.assertEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
         long lastMetaModifyTime = dcMetaCache.getMetaModifyTime().get();
 
         sleep(1000);
         ClusterMeta cluster = dcMeta.getClusters().get("cluster1");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
+        ClusterMeta newCluster = MetaCloneFacade.INSTANCE.clone(cluster);
         newCluster.getShards().put("shard3", new ShardMeta().setId("shard3"));
         dcMetaCache.clusterModified(newCluster);
         Assert.assertEquals(true, dcMetaCache.getMetaModifyTime().get() > lastMetaModifyTime);
@@ -111,7 +111,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         // init DcMetaManager
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
-        DcMeta future = MetaClone.clone(dcMeta);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 10000);
 
         // primary dc change
@@ -123,7 +123,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId()));
 
         // pull old dc meta for MGR node delay
-        DcMeta oldMeta = MetaClone.clone(dcMeta);
+        DcMeta oldMeta = MetaCloneFacade.INSTANCE.clone(dcMeta);
         dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
         dcMetaCache.changeDcMeta(dcMeta, oldMeta, System.currentTimeMillis());
         Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId()));
@@ -132,7 +132,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     @Test
     public void testRouteChangeNonChange() {
         DcMeta current = getDcMeta("fra");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
 
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
@@ -143,7 +143,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     @Test
     public void testRouteChangeNonMetaChange() {
         DcMeta current = getDcMeta("fra");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
         future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_CONSOLE).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
@@ -154,7 +154,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     @Test
     public void testRouteChangeWithMetaAdd() {
         DcMeta current = getDcMeta("fra");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
         future.addRoute(new RouteMeta(1000L).setTag(Route.TAG_META).setSrcDc("fra").setDstDc("jq").setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443"));
         Observer observer = mock(Observer.class);
         dcMetaCache.addObserver(observer);
@@ -165,7 +165,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     @Test
     public void testRouteChangeWithMetaRemove() {
         DcMeta current = getDcMeta("fra");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
         future.getRoutes().remove(0);
 
         Observer observer = mock(Observer.class);
@@ -177,7 +177,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     @Test
     public void testRouteChangeWithMetaModified() {
         DcMeta current = getDcMeta("fra");
-        DcMeta future = MetaClone.clone(current);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
         future.getRoutes().get(0).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443");
 
         Observer observer = mock(Observer.class);
@@ -213,7 +213,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         // init DcMetaManager
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[2];
-        DcMeta future = MetaClone.clone(dcMeta);
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(dcMeta);
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 10000);
 
         RouteMeta jqRoute, oyRoute;

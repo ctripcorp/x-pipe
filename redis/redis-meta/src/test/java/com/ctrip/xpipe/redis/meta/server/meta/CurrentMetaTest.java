@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
@@ -258,7 +258,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	@Test
 	public void testChange() {
 
-		ClusterMeta future = MetaClone.clone(clusterMeta);
+		ClusterMeta future = MetaCloneFacade.INSTANCE.clone(clusterMeta);
 		String newShardId = randomString(100);
 		Long newShardDbId = Math.abs(randomLong());
 		ShardMeta shardMeta = future.getShards().remove(shardId);
@@ -275,7 +275,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	@Test
 	public void testShardsMigrateOut() {
 		DcMeta current = getDcMeta("jq");
-		DcMeta future = MetaClone.clone(current);
+		DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
 		exchangeClusterShards(future.getClusters().get("cluster1"), future.getClusters().get("cluster2"));
 		DcMetaComparator comparator = new DcMetaComparator(current, future);
 		comparator.setShardMigrateSupport();
