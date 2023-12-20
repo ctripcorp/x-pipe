@@ -100,49 +100,6 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/keepercontainer/overload/info/lasted", method = RequestMethod.GET)
     public List<KeeperContainerUsedInfoModel>  getLastedAllReadyMigrateKeeperContainers() {
-//        return analyzer.getAllKeeperContainerUsedInfoModelsList();
-        List<KeeperContainerUsedInfoModel> allKeeperContainerUsedInfoModelsList = new ArrayList<>();
-        KeeperContainerUsedInfoModel infoModel = new KeeperContainerUsedInfoModel();
-        infoModel.setKeeperIp("127.0.1.4");
-        infoModel.setDiskType("read10");
-        infoModel.setDiskSize(1024*1024*1024*12L);
-        infoModel.setDiskUsed(1024*1024*1024*6L);
-        infoModel.setDcName("jq");
-        infoModel.setActiveInputFlow(123456L);
-        infoModel.setTotalInputFlow(234567L);
-        infoModel.setActiveRedisUsedMemory(111111L);
-        infoModel.setTotalRedisUsedMemory(222222L);
-        infoModel.setActiveKeeperCount(5);
-        infoModel.setTotalKeeperCount(12);
-        infoModel.setDiskAvailable(true);
-        infoModel.setRedisUsedMemoryStandard(121111L);
-        infoModel.setInputFlowStandard(133456L);
-        Map<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> map = new HashMap<>();
-        DcClusterShardActive dcClusterShardActive1 = new DcClusterShardActive("jq","cluster1","shard11",true,6666);
-        KeeperContainerUsedInfoModel.KeeperUsedInfo keeperUsedInfo1 = new KeeperContainerUsedInfoModel.KeeperUsedInfo(11,11,"127.0.1.4");
-        DcClusterShardActive dcClusterShardActive2 = new DcClusterShardActive("jq","cluster2","shard21",false,6667);
-        KeeperContainerUsedInfoModel.KeeperUsedInfo keeperUsedInfo2 = new KeeperContainerUsedInfoModel.KeeperUsedInfo(22,22,"127.0.1.4");
-        map.put(dcClusterShardActive1, keeperUsedInfo1);
-        map.put(dcClusterShardActive2, keeperUsedInfo2);
-        infoModel.setDetailInfo(map);
-        KeeperContainerUsedInfoModel infoModel1 = new KeeperContainerUsedInfoModel();
-        infoModel1.setKeeperIp("127.0.1.5");
-        infoModel1.setDiskType("read1");
-        infoModel1.setDiskSize(1024*1024*1024*6L);
-        infoModel1.setDiskUsed(1024*1024*1024*3L);
-        infoModel1.setDcName("jq");
-        infoModel1.setActiveInputFlow(223456L);
-        infoModel1.setTotalInputFlow(334567L);
-        infoModel1.setActiveRedisUsedMemory(211111L);
-        infoModel1.setTotalRedisUsedMemory(322222L);
-        infoModel1.setActiveKeeperCount(11);
-        infoModel1.setTotalKeeperCount(12);
-        infoModel1.setDiskAvailable(true);
-        infoModel1.setRedisUsedMemoryStandard(411111L);
-        infoModel1.setInputFlowStandard(423456L);
-        //detailInfo
-        allKeeperContainerUsedInfoModelsList.add(infoModel);
-        allKeeperContainerUsedInfoModelsList.add(infoModel1);
-        return allKeeperContainerUsedInfoModelsList;
+        return analyzer.getAllKeeperContainerUsedInfoModelsList();
     }
 }
