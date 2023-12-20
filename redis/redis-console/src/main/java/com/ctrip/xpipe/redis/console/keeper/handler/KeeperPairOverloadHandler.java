@@ -37,7 +37,7 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
         if (longLongPair == null) return true;
         double keeperPairOverLoadFactor = config.getKeeperPairOverLoadFactor();
         double flowStandard = Math.min(srcStandard.getFlowOverload(), targetStandard.getFlowOverload()) * keeperPairOverLoadFactor;
-        double peerDataStandard = Math.min(srcStandard.getPeerDataOverload(), targetStandard.getPeerDataOverload());
+        double peerDataStandard = Math.min(srcStandard.getPeerDataOverload(), targetStandard.getPeerDataOverload()) * keeperPairOverLoadFactor;
         return longLongPair.getInputFlow() + keeperUsedInfoEntry.getValue().getInputFlow() < flowStandard &&
                 longLongPair.getPeerData() + keeperUsedInfoEntry.getValue().getPeerData() < peerDataStandard;
     }

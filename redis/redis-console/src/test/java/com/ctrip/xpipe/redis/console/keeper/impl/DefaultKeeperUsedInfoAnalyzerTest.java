@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author yu
@@ -48,25 +49,26 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     private final KeeperContainerFilterChain filterChain = new KeeperContainerFilterChain();
     public static final int expireTime = 1000;
     public static final String DC = "jq";
-    public static final String IP1 = "1.1.1.1", IP2 = "2.2.2.2", IP3 = "3.3.3.3", IP4 = "4.4.4.4";
-    public static final String Cluster1 = "cluster1", Cluster2 = "cluster2", Cluster3 = "cluster3", Cluster4 = "cluster4";
-    public static final String Shard1 = "shard1", Shard2 = "shard2", Shard3 = "shard3", Shard4 = "shard4";
+    public static final String IP1 = "1.1.1.1", IP2 = "2.2.2.2", IP3 = "3.3.3.3", IP4 = "4.4.4.4", IP5 = "5.5.5.5";
+    public static final String Cluster1 = "cluster1", Cluster2 = "cluster2", Cluster3 = "cluster3", Cluster4 = "cluster4", Cluster5 = "cluster5";
+    public static final String Shard1 = "shard1", Shard2 = "shard2";
 
     @Before
     public void before() {
         analyzer.setExecutors(executor);
         analyzer.setKeeperContainerService(keeperContainerService);
+        //Disabling activeKeeper/backupKeeper Switch
         filterChain.setConfig(new DefaultConsoleConfig());
         analyzer.setKeeperContainerFilterChain(filterChain);
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Map<String, KeeperContainerOverloadStandardModel> standards = Maps.newHashMap();
         List<KeeperContainerOverloadStandardModel.DiskTypesEnum> diskTypeEnums = new ArrayList<>();
         diskTypeEnums.add(new KeeperContainerOverloadStandardModel.DiskTypesEnum(KeeperContainerOverloadStandardModel.DiskType.RAID0, 30, 20));
-        standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(10).setPeerDataOverload(10).setDiskTypes(diskTypeEnums));
+        standards.put(FoundationService.DEFAULT.getDataCenter(), new KeeperContainerOverloadStandardModel().setFlowOverload(20).setPeerDataOverload(20).setDiskTypes(diskTypeEnums));
         Mockito.when(config.getKeeperContainerOverloadStandards()).thenReturn(standards);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperContainerOverloadFactor()).thenReturn(0.8);
-        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();
         keepercontainerTbl.setKeepercontainerActive(true);
         Mockito.when(keeperContainerService.find(Mockito.any())).thenReturn(keepercontainerTbl);
@@ -146,140 +148,137 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     @Test
     public void testGetAllDcReadyToMigrationKeeperContainersWithBoth() {
         List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
-        createKeeperContainer(models, IP1, 5, 5)
-                .createKeeper(Cluster1, Shard1, true, 2, 2)
-                .createKeeper(Cluster1, Shard2, false, 3, 3)
-                .createKeeper(Cluster2, Shard1, false, 4, 4)
-                .createKeeper(Cluster2, Shard2, true, 3, 3)
-                .createKeeper(Cluster3, Shard1, false, 2, 2);
+        createKeeperContainer(models, IP1, 10, 10)
+                .createKeeper(Cluster1, Shard1, true, 4, 4)
+                .createKeeper(Cluster1, Shard2, false, 6, 6)
+                .createKeeper(Cluster2, Shard1, false, 6, 6)
+                .createKeeper(Cluster2, Shard2, true, 6, 6)
+                .createKeeper(Cluster3, Shard1, false, 4, 4);
 
-        createKeeperContainer(models, IP2, 10, 10)
-                .createKeeper(Cluster1, Shard2, true, 3, 3)
-                .createKeeper(Cluster3, Shard1, false, 2, 2)
-                .createKeeper(Cluster3, Shard2, true, 3, 3)
-                .createKeeper(Cluster4, Shard1, true, 4, 4)
-                .createKeeper(Cluster4, Shard2, false, 3, 3);
+        createKeeperContainer(models, IP2, 20, 20)
+                .createKeeper(Cluster1, Shard2, true, 6, 6)
+                .createKeeper(Cluster3, Shard1, false, 4, 4)
+                .createKeeper(Cluster3, Shard2, true, 6, 6)
+                .createKeeper(Cluster4, Shard1, true, 8, 8)
+                .createKeeper(Cluster4, Shard2, false, 6, 6);
 
-        createKeeperContainer(models, IP3, 10, 10)
-                .createKeeper(Cluster2, Shard1, true, 4, 4)
-                .createKeeper(Cluster3, Shard2, false, 3, 3)
-                .createKeeper(Cluster3, Shard1, true, 3, 3)
-                .createKeeper(Cluster4, Shard1, false, 4, 4)
-                .createKeeper(Cluster4, Shard2, true, 3, 3);
+        createKeeperContainer(models, IP3, 20, 20)
+                .createKeeper(Cluster2, Shard1, true, 6, 6)
+                .createKeeper(Cluster3, Shard2, false, 6, 6)
+                .createKeeper(Cluster3, Shard1, true, 6, 6)
+                .createKeeper(Cluster4, Shard1, false, 8, 8)
+                .createKeeper(Cluster4, Shard2, true, 6, 6);
 
         createKeeperContainer(models, IP4, 0, 0)
-                .createKeeper(Cluster1, Shard1, false, 2, 2)
-                .createKeeper(Cluster2, Shard2, false, 3, 3);
+                .createKeeper(Cluster1, Shard1, false, 4, 4)
+                .createKeeper(Cluster2, Shard2, false, 6, 6);
 
-        analyzer.updateKeeperContainerUsedInfo(0, models);
         analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(IP2, allDcReadyToMigrationKeeperContainers.get(0).getSrcKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP4, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP3, allDcReadyToMigrationKeeperContainers.get(1).getSrcKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP4, allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
     }
 
     @Test
     public void testMultiSrcKeeperSingleTargetWithBoth() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(5L, 5L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 22, 22)
+                .createKeeper(Cluster1, Shard1, true, 4, 4)
+                .createKeeper(Cluster1, Shard2, true, 5, 5)
+                .createKeeper(Cluster2, Shard1, true, 6, 6)
+                .createKeeper(Cluster2, Shard2, true, 7, 7);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(5L, 5L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 0, 0)
+                .createKeeper(Cluster1, Shard1, false, 4, 4)
+                .createKeeper(Cluster1, Shard2, false, 5, 5)
+                .createKeeper(Cluster2, Shard1, false, 6, 6)
+                .createKeeper(Cluster2, Shard2, false, 7, 7);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 1, 1);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        createKeeperContainer(models, IP3, 22, 22)
+                .createKeeper(Cluster3, Shard1, true, 4, 4)
+                .createKeeper(Cluster3, Shard2, true, 5, 5)
+                .createKeeper(Cluster4, Shard1, true, 6, 6)
+                .createKeeper(Cluster4, Shard2, true, 7, 7);
+
+        createKeeperContainer(models, IP4, 0, 0)
+                .createKeeper(Cluster3, Shard1, false, 4, 4)
+                .createKeeper(Cluster3, Shard2, false, 5, 5)
+                .createKeeper(Cluster4, Shard1, false, 6, 6)
+                .createKeeper(Cluster4, Shard2, false, 7, 7);
+
+        createKeeperContainer(models, IP5, 0, 0);
+
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP5, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP5, allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
 
     }
 
     @Test
     public void testSingleSrcKeeperMultiTargetWithBoth() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 17, 17);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 27, 27)
+                .createKeeper(Cluster1, Shard1, true, 5, 5)
+                .createKeeper(Cluster1, Shard2, true, 5, 5)
+                .createKeeper(Cluster2, Shard1, true, 3, 3)
+                .createKeeper(Cluster2, Shard2, true, 4, 4)
+                .createKeeper(Cluster3, Shard1, true, 5, 5)
+                .createKeeper(Cluster3, Shard2, true, 5, 5);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 5, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(5L, 5L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 0, 0)
+                .createKeeper(Cluster1, Shard1, false, 5, 5)
+                .createKeeper(Cluster1, Shard2, false, 5, 5)
+                .createKeeper(Cluster2, Shard1, false, 3, 3)
+                .createKeeper(Cluster2, Shard2, false, 4, 4)
+                .createKeeper(Cluster3, Shard1, false, 5, 5)
+                .createKeeper(Cluster3, Shard2, false, 5, 5);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 4, 4);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        createKeeperContainer(models, IP3, 5, 5)
+                .createKeeper(Cluster4, Shard1, true, 5, 5)
+                .createKeeper(Cluster4, Shard2, false, 10, 10);
+
+        createKeeperContainer(models, IP4, 10, 10)
+                .createKeeper(Cluster4, Shard1, false, 5, 5)
+                .createKeeper(Cluster4, Shard2, true, 10, 10);
+
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP3, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
-        Assert.assertEquals("2.2.2.2", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertEquals(IP4, allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
         Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
     }
 
     @Test
     public void testKeeperResourceLackWithBoth() {
         List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(5L, 5L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        createKeeperContainer(models1, IP1, 20, 20)
+                .createKeeper(Cluster1, Shard1, true, 10, 10)
+                .createKeeper(Cluster1, Shard2, true, 10, 10)
+                .createKeeper(Cluster2, Shard1, false, 10, 10)
+                .createKeeper(Cluster2, Shard2, false, 10, 10);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(4L, 4L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models1, IP2, 20, 20)
+                .createKeeper(Cluster2, Shard1, true, 10, 10)
+                .createKeeper(Cluster2, Shard2, true, 10, 10)
+                .createKeeper(Cluster1, Shard1, false, 10, 10)
+                .createKeeper(Cluster1, Shard2, false, 10, 10);;
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo3.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models1, IP3, 0, 0);
 
-
-        analyzer.updateKeeperContainerUsedInfo(0, models1);
         analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
@@ -288,152 +287,132 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testGetAllDcReadyToMigrationKeeperContainersWithPeerDataOverLoad() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 4, 14);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 5L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 4, 23)
+                .createKeeper(Cluster1, Shard1, true, 1, 6)
+                .createKeeper(Cluster1, Shard2, true, 1, 5)
+                .createKeeper(Cluster2, Shard1, true, 1, 6)
+                .createKeeper(Cluster2, Shard2, true, 1, 6)
+                .createKeeper(Cluster3, Shard1, false, 1, 6)
+                .createKeeper(Cluster3, Shard2, false, 1, 5)
+                .createKeeper(Cluster4, Shard1, false, 1, 6)
+                .createKeeper(Cluster4, Shard2, false, 1, 6);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 4, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 4, 23)
+                .createKeeper(Cluster3, Shard1, true, 1, 6)
+                .createKeeper(Cluster3, Shard2, true, 1, 5)
+                .createKeeper(Cluster4, Shard1, true, 1, 6)
+                .createKeeper(Cluster4, Shard2, true, 1, 6)
+                .createKeeper(Cluster1, Shard1, false, 1, 6)
+                .createKeeper(Cluster1, Shard2, false, 1, 5)
+                .createKeeper(Cluster2, Shard1, false, 1, 6)
+                .createKeeper(Cluster2, Shard2, false, 1, 6);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 2, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3, 1, 2)
+                .createKeeper(Cluster5, Shard1, true, 1, 2)
+                .createKeeper(Cluster5, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 2, 6);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo4 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model4.setDetailInfo(detailInfo4);
-        models1.add(model4);
+        createKeeperContainer(models, IP4, 1, 2)
+                .createKeeper(Cluster5, Shard2, true, 1, 2)
+                .createKeeper(Cluster5, Shard1, false, 1, 2);
 
-        analyzer.updateKeeperContainerUsedInfo(0, models1);
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
     public void testMultiSrcKeeperSingleTargetWithPeerDataOverLoad() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 4, 14);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 5L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 4, 17)
+                .createKeeper(Cluster1, Shard1, true, 1, 5)
+                .createKeeper(Cluster1, Shard2, true, 1, 5)
+                .createKeeper(Cluster2, Shard1, true, 1, 5)
+                .createKeeper(Cluster2, Shard2, true, 1, 2)
+                .createKeeper(Cluster3, Shard1, false, 1, 5)
+                .createKeeper(Cluster3, Shard2, false, 1, 5)
+                .createKeeper(Cluster4, Shard1, false, 1, 5)
+                .createKeeper(Cluster4, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 4, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 4, 17)
+                .createKeeper(Cluster3, Shard1, true, 1, 5)
+                .createKeeper(Cluster3, Shard2, true, 1, 5)
+                .createKeeper(Cluster4, Shard1, true, 1, 5)
+                .createKeeper(Cluster4, Shard2, true, 1, 2)
+                .createKeeper(Cluster1, Shard1, false, 1, 5)
+                .createKeeper(Cluster1, Shard2, false, 1, 5)
+                .createKeeper(Cluster2, Shard1, false, 1, 5)
+                .createKeeper(Cluster2, Shard2, false, 1, 2);
 
-        List<KeeperContainerUsedInfoModel> models2 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 1, 1);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 1L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3, 0, 0);
 
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
-
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
     public void testSingleSrcKeeperMultiTargetWithPeerDataOverLoad() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 6, 17);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 6, 32)
+                .createKeeper(Cluster1, Shard1, true, 1, 5)
+                .createKeeper(Cluster1, Shard2, true, 1, 5)
+                .createKeeper(Cluster2, Shard1, true, 1, 5)
+                .createKeeper(Cluster2, Shard2, true, 1, 5)
+                .createKeeper(Cluster3, Shard1, true, 1, 6)
+                .createKeeper(Cluster3, Shard2, true, 1, 6);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 1, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 5L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 0, 0)
+                .createKeeper(Cluster1, Shard1, false, 1, 5)
+                .createKeeper(Cluster1, Shard2, false, 1, 5)
+                .createKeeper(Cluster2, Shard1, false, 1, 5)
+                .createKeeper(Cluster2, Shard2, false, 1, 5)
+                .createKeeper(Cluster3, Shard1, false, 1, 6)
+                .createKeeper(Cluster3, Shard2, false, 1, 6);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 1, 4);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3,0,0);
+        createKeeperContainer(models, IP4,0,0);
 
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
-        Assert.assertEquals("2.2.2.2", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
         Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
     }
 
     @Test
     public void testKeeperResourceLackWithPeerDataOverLoad() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 4, 14);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 5L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 6, 32)
+                .createKeeper(Cluster1, Shard1, true, 1, 5)
+                .createKeeper(Cluster1, Shard2, true, 1, 5)
+                .createKeeper(Cluster2, Shard1, true, 1, 5)
+                .createKeeper(Cluster2, Shard2, true, 1, 5)
+                .createKeeper(Cluster3, Shard1, true, 1, 6)
+                .createKeeper(Cluster3, Shard2, true, 1, 6);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 4, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(1L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(1L, 5L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 0, 0)
+                .createKeeper(Cluster1, Shard1, false, 1, 5)
+                .createKeeper(Cluster1, Shard2, false, 1, 5)
+                .createKeeper(Cluster2, Shard1, false, 1, 5)
+                .createKeeper(Cluster2, Shard2, false, 1, 5)
+                .createKeeper(Cluster3, Shard1, false, 1, 6)
+                .createKeeper(Cluster3, Shard2, false, 1, 6);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 2, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(1L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3,0,0);
 
-
-        analyzer.updateKeeperContainerUsedInfo(0, models1);
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
         Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.size());
@@ -441,129 +420,116 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testGetAllDcReadyToMigrationKeeperContainersWithMixed() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
         // inputOverLoad
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 8);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(3L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(4L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(5L, 2L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        createKeeperContainer(models, IP1, 20, 4)
+                .createKeeper(Cluster1, Shard1, true, 4, 1)
+                .createKeeper(Cluster1, Shard2, true, 4, 1)
+                .createKeeper(Cluster2, Shard1, true, 6, 1)
+                .createKeeper(Cluster2, Shard2, true, 6, 1)
+                .createKeeper(Cluster3, Shard1, false, 1, 4)
+                .createKeeper(Cluster3, Shard2, false, 1, 4)
+                .createKeeper(Cluster4, Shard1, false, 1, 6)
+                .createKeeper(Cluster4, Shard2, false, 1, 6);
 
         //PeerDataOverLoad
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 8, 13);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(2L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(2L, 4L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(2L, 3L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 4, 20)
+                .createKeeper(Cluster3, Shard1, true, 1, 4)
+                .createKeeper(Cluster3, Shard2, true, 1, 4)
+                .createKeeper(Cluster4, Shard1, true, 1, 6)
+                .createKeeper(Cluster4, Shard2, true, 1, 6)
+                .createKeeper(Cluster1, Shard1, false, 4, 1)
+                .createKeeper(Cluster1, Shard2, false, 4, 1)
+                .createKeeper(Cluster2, Shard1, false, 6, 1)
+                .createKeeper(Cluster2, Shard2, false, 6, 1);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(2L, 2L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3, 9, 9)
+                .createKeeper(Cluster5, Shard1, true, 9, 9)
+                .createKeeper(Cluster5, Shard2, false, 9, 9);
 
+        createKeeperContainer(models, IP3, 9, 9)
+                .createKeeper(Cluster5, Shard2, true, 9, 9)
+                .createKeeper(Cluster5, Shard1, false, 9, 9);
 
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo4 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(3L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(3L, 3L, ""));
-        model4.setDetailInfo(detailInfo4);
-        models1.add(model4);
-
-        analyzer.updateKeeperContainerUsedInfo(0, models1);
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
     public void testMultiSrcKeeperSingleTargetWithMixed() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 5, 15);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard3", true), new KeeperUsedInfo(1L, 3L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 4, 19)
+                .createKeeper(Cluster1, Shard1, true, 1, 8)
+                .createKeeper(Cluster1, Shard2, true, 1, 7)
+                .createKeeper(Cluster2, Shard1, true, 1, 2)
+                .createKeeper(Cluster2, Shard2, true, 1, 2)
+                .createKeeper(Cluster3, Shard1, false, 1, 8)
+                .createKeeper(Cluster3, Shard2, false, 1, 7)
+                .createKeeper(Cluster4, Shard1, false, 1, 2)
+                .createKeeper(Cluster4, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 15, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster5", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 4, 19)
+                .createKeeper(Cluster3, Shard1, true, 1, 8)
+                .createKeeper(Cluster3, Shard2, true, 1, 7)
+                .createKeeper(Cluster4, Shard1, true, 1, 2)
+                .createKeeper(Cluster4, Shard2, true, 1, 2)
+                .createKeeper(Cluster1, Shard1, false, 1, 8)
+                .createKeeper(Cluster1, Shard2, false, 1, 7)
+                .createKeeper(Cluster2, Shard1, false, 1, 2)
+                .createKeeper(Cluster2, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 0, 0);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3, 0, 0);
 
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
     public void testMultiSrcMultiTargetWithFixed() {
-        List<KeeperContainerUsedInfoModel> models1 = new ArrayList<>();
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 5, 15);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo1 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperUsedInfo(1L, 3L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster2", "shard3", true), new KeeperUsedInfo(1L, 3L, ""));
-        model1.setDetailInfo(detailInfo1);
-        models1.add(model1);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        List<KeeperContainerUsedInfoModel> models = new ArrayList<>();
+        createKeeperContainer(models, IP1, 4, 19)
+                .createKeeper(Cluster1, Shard1, true, 1, 8)
+                .createKeeper(Cluster1, Shard2, true, 1, 7)
+                .createKeeper(Cluster2, Shard1, true, 1, 2)
+                .createKeeper(Cluster2, Shard2, true, 1, 2)
+                .createKeeper(Cluster3, Shard1, false, 1, 8)
+                .createKeeper(Cluster3, Shard2, false, 1, 7)
+                .createKeeper(Cluster4, Shard1, false, 1, 2)
+                .createKeeper(Cluster4, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 15, 5);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard1", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster3", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard1", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster4", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        detailInfo1.put(new DcClusterShardActive("jq", "cluster5", "shard2", true), new KeeperUsedInfo(3L, 1L, ""));
-        model2.setDetailInfo(detailInfo2);
-        models1.add(model2);
+        createKeeperContainer(models, IP2, 4, 19)
+                .createKeeper(Cluster3, Shard1, true, 1, 8)
+                .createKeeper(Cluster3, Shard2, true, 1, 7)
+                .createKeeper(Cluster4, Shard1, true, 1, 2)
+                .createKeeper(Cluster4, Shard2, true, 1, 2)
+                .createKeeper(Cluster1, Shard1, false, 1, 8)
+                .createKeeper(Cluster1, Shard2, false, 1, 7)
+                .createKeeper(Cluster2, Shard1, false, 1, 2)
+                .createKeeper(Cluster2, Shard2, false, 1, 2);
 
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 6, 4);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo3 = Maps.newHashMap();
-        model3.setDetailInfo(detailInfo3);
-        models1.add(model3);
+        createKeeperContainer(models, IP3, 8, 1)
+                .createKeeper(Cluster5, Shard1, true, 8, 1)
+                .createKeeper(Cluster5, Shard2, false, 8, 1);
 
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 4, 6);
-        Map<DcClusterShardActive, KeeperUsedInfo> detailInfo4 = Maps.newHashMap();
-        model4.setDetailInfo(detailInfo4);
-        models1.add(model4);
+        createKeeperContainer(models, IP4, 1, 8)
+                .createKeeper(Cluster5, Shard2, true, 1, 8)
+                .createKeeper(Cluster5, Shard1, false, 8, 1);
 
-        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models1);
+        analyzer.getAllKeeperContainerUsedInfoModelsList().addAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals("3.3.3.3", allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
-        Assert.assertEquals("4.4.4.4", allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 }
