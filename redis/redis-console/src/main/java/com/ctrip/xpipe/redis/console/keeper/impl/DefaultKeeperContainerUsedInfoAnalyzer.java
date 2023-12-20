@@ -199,7 +199,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         ipPairMap.clear();
         Map<DcClusterShardActive, KeeperUsedInfo> allDetailInfo = new HashMap<>();
         for (KeeperContainerUsedInfoModel infoModel : allKeeperContainerUsedInfoModelsList) {
-            allDetailInfo.putAll(infoModel.getDetailInfo());
+            if (infoModel.getDetailInfo() != null) {
+                allDetailInfo.putAll(infoModel.getDetailInfo());
+            }
         }
         for (Map.Entry<DcClusterShardActive, KeeperUsedInfo> entry : allDetailInfo.entrySet()) {
             if (!entry.getKey().isActive()) continue;
@@ -305,7 +307,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                                                                                         PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers) {
 
         long overloadInputFlow = src.getActiveInputFlow() - srcStandard.getFlowOverload();
-        long overloadPeerData = src.getTotalRedisUsedMemory() - srcStandard.getPeerDataOverload();
+        long overloadPeerData = src.getActiveRedisUsedMemory() - srcStandard.getPeerDataOverload();
         KeeperContainerOverloadCause overloadCause = getKeeperContainerOverloadCause(overloadInputFlow, overloadPeerData);
         if (overloadCause == null) return null;
         src.getOverLoadCause().add(overloadCause.name());
@@ -383,33 +385,40 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                     logger.warn("[analyzeKeeperContainerUsedInfo] no available keeper containers {} for overload keeper container {}",
                             availableKeeperContainers, src);
                     CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, currentDc);
+                    if (switchActiveDetail != null) result.add(switchActiveDetail);
                     return result;
                 }
                 keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(src, target, 0, false, false, new ArrayList<>());
             }
             if (!keeperContainerFilterChain.doKeeperFilter(dcClusterShard, target, srcStandard, standardMap.get(target.getKeeperIp()), keeperPairUsedInfoMap)) {
                 target = null;
+                if (keeperContainerDetailModel.getMigrateKeeperCount() != 0) result.add(keeperContainerDetailModel);
                 continue;
             }
             keeperContainerDetailModel.addReadyToMigrateShard(dcClusterShard.getKey());
             target.setActiveInputFlow(target.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow()).setTotalRedisUsedMemory(target.getTotalRedisUsedMemory() + dcClusterShard.getValue().getPeerData());
-            IPPairData ipPairData = keeperPairUsedInfoMap.get(new IPPair(src.getKeeperIp(), backUpKeeperContainerIp));
+            IPPair ipPair = new IPPair(src.getKeeperIp(), backUpKeeperContainerIp);
+            IPPairData ipPairData = keeperPairUsedInfoMap.get(ipPair);
             if (ipPairData.getNumber() == 1) {
-                keeperPairUsedInfoMap.remove(new IPPair(src.getKeeperIp(), backUpKeeperContainerIp));
+                keeperPairUsedInfoMap.remove(ipPair);
                 ipPairMap.get(src.getKeeperIp()).remove(backUpKeeperContainerIp);
                 ipPairMap.get(backUpKeeperContainerIp).remove(src.getKeeperIp());
             } else {
-                keeperPairUsedInfoMap.put(new IPPair(src.getKeeperIp(), backUpKeeperContainerIp), ipPairData.subData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData()));
+                keeperPairUsedInfoMap.put(ipPair, ipPairData.subData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData()));
             }
-            if (keeperPairUsedInfoMap.containsKey(new IPPair(src.getKeeperIp(), target.getKeeperIp()))) {
-                IPPairData newIpPairData = keeperPairUsedInfoMap.get(new IPPair(src.getKeeperIp(), target.getKeeperIp()));
-                keeperPairUsedInfoMap.put(new IPPair(src.getKeeperIp(), target.getKeeperIp()), newIpPairData.addData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData()));
+            IPPair newIPpair = new IPPair(src.getKeeperIp(), target.getKeeperIp());
+            if (keeperPairUsedInfoMap.containsKey(newIPpair)) {
+                IPPairData newIpPairData = keeperPairUsedInfoMap.get(newIPpair);
+                keeperPairUsedInfoMap.put(newIPpair, newIpPairData.addData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData()));
             } else {
+                if (!ipPairMap.containsKey(target.getKeeperIp())) {
+                    ipPairMap.put(target.getKeeperIp(), new HashMap<>());
+                }
                 ipPairMap.get(src.getKeeperIp()).put(target.getKeeperIp(), new HashMap<>());
                 ipPairMap.get(target.getKeeperIp()).put(src.getKeeperIp(), new HashMap<>());
                 ipPairMap.get(src.getKeeperIp()).get(target.getKeeperIp()).put(dcClusterShard.getKey(), dcClusterShard.getValue());
                 ipPairMap.get(target.getKeeperIp()).get(src.getKeeperIp()).put(dcClusterShard.getKey(), dcClusterShard.getValue());
-                keeperPairUsedInfoMap.put(new IPPair(src.getKeeperIp(), target.getKeeperIp()), new IPPairData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData(), 1));
+                keeperPairUsedInfoMap.put(newIPpair, new IPPairData(dcClusterShard.getValue().getInputFlow(), dcClusterShard.getValue().getPeerData(), 1));
             }
             long currentOverLoadData = isPeerDataOverload ? dcClusterShard.getValue().getPeerData() : dcClusterShard.getValue().getInputFlow();
             if ((overloadData -= currentOverLoadData) <= 0) break;
@@ -422,6 +431,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         if (switchActiveDetail != null && switchActiveDetail.getMigrateKeeperCount() != 0) {
             result.add(switchActiveDetail);
         }
+
 
         if (target != null && target.getActiveInputFlow() < srcStandard.getPeerDataOverload()
                 && target.getTotalRedisUsedMemory() < srcStandard.getPeerDataOverload()) {
@@ -518,6 +528,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             if (!keeperContainerFilterChain.doKeeperPairFilter(dcClusterShard, target, standardMap.get(srcKeeperIp), standardMap.get(target.getKeeperIp()), keeperPairUsedInfoMap)) {
                 usedTarget.add(target);
                 target = null;
+                if (keeperContainerDetailModel.getMigrateKeeperCount() != 0) result.add(keeperContainerDetailModel);
                 continue;
             }
             keeperContainerDetailModel.addReadyToMigrateShard(dcClusterShard.getKey());
