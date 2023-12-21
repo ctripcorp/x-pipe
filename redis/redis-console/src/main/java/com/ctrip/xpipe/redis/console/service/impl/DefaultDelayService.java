@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -231,20 +232,23 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
         UnhealthyInfoModel infoAggregation = new UnhealthyInfoModel();
         ParallelCommandChain commandChain = new ParallelCommandChain(executors);
+        Map<String, CommandFuture<UnhealthyInfoModel>> results = new HashMap<>();
         for (String dcId : xpipeMeta.getDcs().keySet()) {
             FetchDcUnhealthyInstanceCmd cmd = new FetchDcUnhealthyInstanceCmd(dcId);
             commandChain.add(cmd);
-            cmd.future().addListener(commandFuture -> {
-                if (commandFuture.isSuccess() && null != commandFuture.get()) {
-                    infoAggregation.merge(commandFuture.get());
-                } else {
-                    infoAggregation.getAttachFailDc().add(dcId);
-                }
-            });
+            results.put(dcId, cmd.future());
         }
 
         try {
-            commandChain.execute().get();
+            commandChain.execute().sync();
+            for (Map.Entry<String, CommandFuture<UnhealthyInfoModel>> result: results.entrySet()) {
+                CommandFuture<UnhealthyInfoModel> commandFuture = result.getValue();
+                if (commandFuture.isSuccess() && null != commandFuture.get()) {
+                    infoAggregation.merge(commandFuture.get());
+                } else {
+                    infoAggregation.getAttachFailDc().add(result.getKey());
+                }
+            }
         } catch (Throwable th) {
             logger.info("[getAllUnhealthyInstance][fail] {}", th.getMessage());
         }

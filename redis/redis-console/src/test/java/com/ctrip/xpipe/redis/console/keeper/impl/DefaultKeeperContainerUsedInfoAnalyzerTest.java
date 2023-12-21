@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * 2023/9/20
  */
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
-public class DefaultKeeperContainerUsedInfoAnalyzerTest {
+public class DefaultKeeperContainerUsedInfoAnalyzerTest extends AbstractTest {
 
     @InjectMocks
     private DefaultKeeperContainerUsedInfoAnalyzer analyzer;
@@ -80,6 +81,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzerTest {
         model3.setDetailInfo(detailInfo3);
         models2.add(model3);
 
+        // avoid calling updateKeeperContainerUsedInfo in the same milliSecond and fail case
+        sleep(1);
         analyzer.updateKeeperContainerUsedInfo(1, models2);
         Assert.assertEquals(0, analyzer.getCheckerIndexes().size());
         Assert.assertEquals(0, analyzer.getAllKeeperContainerUsedInfoModels().size());
