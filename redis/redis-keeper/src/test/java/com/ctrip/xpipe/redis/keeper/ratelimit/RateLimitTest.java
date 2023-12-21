@@ -84,10 +84,8 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
 
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(leakyBucket, times(1)).tryAcquire();
-            verify(leakyBucket, times(1)).release();
-        }));
+        verify(leakyBucket, timeout(5000).times(1)).tryAcquire();
+        verify(leakyBucket, timeout(5000).times(1)).release();
     }
 
 

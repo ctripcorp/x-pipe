@@ -15,6 +15,6 @@ import org.junit.runners.Suite.SuiteClasses;
         FakeRedisRdbDumpLong.class,
         RateLimitTest.class,
 })
-public class AllTests {
+public class AllRateLimitTests {
 
 }

@@ -115,12 +115,11 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         Iterator<Map.Entry<Date, Integer>> iterator = checkerIndexes.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Date, Integer> entry = iterator.next();
-            logger.warn("[removeExpireData] remove expire index:{} time:{}, expire time:{}", entry.getValue(), entry.getKey(), config.getKeeperCheckerIntervalMilli());
             if (currentTime.getTime() - entry.getKey().getTime() > config.getKeeperCheckerIntervalMilli()) {
+                logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", entry.getValue(), entry.getKey(), config.getKeeperCheckerIntervalMilli());
                 allKeeperContainerUsedInfoModels.remove(entry.getValue());
                 iterator.remove();
-            }
-            break;
+            } else break;
         }
     }
 
