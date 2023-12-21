@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.LinkedList;
@@ -82,8 +83,8 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
         partialSuccessState.getStateActionState().tryAction();
 
         waitConditionUntilTimeOut(() -> retryCnt.get() >= failCnt);
-        verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
-        verify(migrationCluster).process();
+        verify(migrationCluster, Mockito.timeout(3000).times(1)).updateStat(isA(MigrationPublishState.class));
+        verify(migrationCluster, Mockito.timeout(3000).times(1)).process();
     }
 
     @Test
