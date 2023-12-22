@@ -113,6 +113,7 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         fakeRedisServer.setCommandsLength(allCommandsSize * 2);
         fakeRedisServer.reGenerateRdb();
         waitCmdNotContinueWithRdb(keeperServer1);
+        waitConditionUntilTimeOut(() -> keeperServer1.getKeeperRepl().getBeginOffset() > keeperServer2.getKeeperRepl().getEndOffset() + 1);
 
         KeeperStats keeperStats = keeperServer1.getKeeperMonitor().getKeeperStats();
         long originFsyncCnt = keeperStats.getFullSyncCount();
