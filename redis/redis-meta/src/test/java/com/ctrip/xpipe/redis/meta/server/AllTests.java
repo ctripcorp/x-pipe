@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServe
 import com.ctrip.xpipe.redis.meta.server.crdt.PeerMasterMetaServerStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.RedundantMasterClearCommandTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.*;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.DefaultPeerMasterStateAdjusterTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.DefaultPeerMasterStateManagerTest;
@@ -105,6 +106,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	MasterChooserTest.class,
 	CurrentMasterChooseCommandTest.class,
 	PeerMasterChooseCommandTest.class,
+	RedundantMasterClearCommandTest.class,
 	DefaultPeerMasterChooseActionTest.class,
 	MasterChooseCommandFactoryTest.class,
 	PeerMasterAdjustJobTest.class,
