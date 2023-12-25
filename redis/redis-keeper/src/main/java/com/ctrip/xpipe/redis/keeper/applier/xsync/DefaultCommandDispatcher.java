@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.xsync;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
@@ -8,6 +9,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeEnd;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeStart;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -143,7 +145,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        //ctrip.merge_start [gtid_set]
+        //ctrip.merge_end [gtid_set]
         sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())), 0);
     }
 
@@ -297,6 +299,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 logger.warn("publish command {} channel: [{}] filtered", redisOp, channel);
                 return true;
             }
+        }
+        if (redisOp.getOpType().isSwallow()) {
+            logger.debug("[onRedisOp] filter unknown redisOp: {}", redisOp);
         }
         return redisOp.getOpType().isSwallow();
     }

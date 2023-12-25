@@ -13,7 +13,9 @@ public enum RedisOpNoneKeyEnum {
     PING(RedisOpType.PING),
     MULT(RedisOpType.MULTI),
     EXEC(RedisOpType.EXEC),
-    SCRIPT(RedisOpType.SCRIPT);
+    SCRIPT(RedisOpType.SCRIPT),
+
+    UNKNOW(RedisOpType.UNKNOWN);
 
     private RedisOpType redisOpType;
 
