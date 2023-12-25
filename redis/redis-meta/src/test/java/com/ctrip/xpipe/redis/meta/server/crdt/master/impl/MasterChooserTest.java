@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommandFactory;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.RedundantMasterClearCommand;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -44,6 +45,9 @@ public class MasterChooserTest extends AbstractMetaServerTest {
     private MasterChooseCommand command;
 
     @Mock
+    private RedundantMasterClearCommand redundantMasterClearCommand;
+
+    @Mock
     private KeyedOneThreadTaskExecutor<Pair<Long, Long> > keyedOneThreadTaskExecutor;
 
     private CurrentMasterChooser currentMasterChooser;
@@ -64,6 +68,7 @@ public class MasterChooserTest extends AbstractMetaServerTest {
     @Test
     public void testPeerMasterChooseWork() {
         Mockito.when(factory.buildPeerMasterChooserCommand(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong())).thenReturn(command);
+        Mockito.when(factory.buildRedundantMasterClearCommand(Mockito.anyLong(), Mockito.anyLong(), Mockito.anySet())).thenReturn(redundantMasterClearCommand);
         Mockito.doAnswer(invocation -> {
             Pair<String, String> key = invocation.getArgument(0, Pair.class);
             ParallelCommandChain commandChain = invocation.getArgument(1, ParallelCommandChain.class);
