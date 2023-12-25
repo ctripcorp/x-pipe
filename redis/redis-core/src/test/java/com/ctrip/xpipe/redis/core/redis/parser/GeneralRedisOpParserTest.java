@@ -59,6 +59,19 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
         RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
         Assert.assertArrayEquals("24d9e2513182d156cbd999df5ebedf24e7634140".getBytes(), redisSingleKeyOp.getKey().get());
         Assert.assertArrayEquals("1494763841".getBytes(), redisSingleKeyOp.getValue());
+        Assert.assertFalse(redisOp.getOpType().isSwallow());
+    }
+    @Test
+    public void testUnknowParse() {
+        byte[][] rawOpArgs = {"unknow".getBytes(), "unknow_key".getBytes(), "unknow_value".getBytes()};
+        RedisOp redisOp = parser.parse(rawOpArgs);
+        Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
+        Assert.assertNull(redisOp.getOpGtid());
+        Assert.assertArrayEquals(rawOpArgs, redisOp.buildRawOpArgs());
+
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
+        Assert.assertNull(redisSingleKeyOp.getKey());
+        Assert.assertNull(redisSingleKeyOp.getValue());
         Assert.assertTrue(redisOp.getOpType().isSwallow());
     }
 
@@ -138,10 +151,11 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
         Assert.assertFalse(redisOp.getOpType().isSwallow());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testNoneExistsCmdParse() {
         RedisOp redisOp = parser.parse(Arrays.asList("EMPTY", "0").toArray());
         Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
+        Assert.assertTrue(redisOp.getOpType().isSwallow());
     }
 
     @Test(expected = IllegalArgumentException.class)

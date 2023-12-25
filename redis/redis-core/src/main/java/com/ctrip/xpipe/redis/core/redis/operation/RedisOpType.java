@@ -83,7 +83,7 @@ public enum RedisOpType {
     MSETNX(true, -3),
 
     // ctrip
-    GTID_LWM(false, 3, true),
+    GTID_LWM(false, 3, false),
     CTRIP_MERGE_START(false, -1, true),
     CTRIP_MERGE_END(false, -2, true),
 
@@ -98,7 +98,7 @@ public enum RedisOpType {
     EXEC(false, 1),
     SCRIPT(false, -2),
     MOVE(false, 3),
-    UNKNOWN(false, -1);
+    UNKNOWN(false, -1, true);
 
     // Support multi key or not
     private boolean supportMultiKey;
