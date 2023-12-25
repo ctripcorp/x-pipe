@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommandFactory;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommand;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.RedundantMasterClearCommand;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -50,6 +52,11 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
         this.multiDcService = multiDcService;
 
         scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("PeerMasterChooseCommandSchedule"));
+    }
+
+    @Override
+    public RedundantMasterClearCommand buildRedundantMasterClearCommand(Long clusterDbId, Long shardDbId, Set<String> dcs) {
+        return new RedundantMasterClearCommand(clusterDbId, shardDbId, dcs, currentMetaManager);
     }
 
     @Override

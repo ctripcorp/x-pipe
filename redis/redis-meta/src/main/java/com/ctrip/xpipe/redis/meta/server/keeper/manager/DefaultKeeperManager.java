@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.Hints;
@@ -80,6 +81,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	private ScheduledFuture<?> keeperSetIndexFuture;
 
 	private ExecutorService executors;
+
+	private static final String KEEPER_MISMATCH_EVENT = "keeperMismatch";
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -193,11 +196,13 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 			if (deadKeepers.size() > 0) {
 				logger.info("[doCheck][dead keepers]{}", deadKeepers);
+				EventMonitor.DEFAULT.logEvent(KEEPER_MISMATCH_EVENT, String.format("[dead]cluster_%d,shard_%d", clusterDbId, shardDbId));
 				addDeadKeepers(deadKeepers, clusterDbId, shardDbId);
 			}
 
 			if (deadKeepers.size() == 0 && removedKeepers.size() > 0) {
 				logger.info("[doCheck][removed keepers]{}", removedKeepers);
+				EventMonitor.DEFAULT.logEvent(KEEPER_MISMATCH_EVENT, String.format("[redundant]cluster_%d,shard_%d", clusterDbId, shardDbId));
 				removeRemovedKeepers(removedKeepers, clusterDbId, shardDbId);
 			}
 

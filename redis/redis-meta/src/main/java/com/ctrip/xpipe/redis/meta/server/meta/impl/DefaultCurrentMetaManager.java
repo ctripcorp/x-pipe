@@ -194,11 +194,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			refreshApplierMaster(clusterMeta);
 		}
 	}
-
-	private boolean isReCreateCluster(ClusterMeta current, ClusterMeta future) {
-		//cluster type changed should recreate CurrentClusterMeta
-		return !ObjectUtils.equals(current.getType(), future.getType());
-	}
 	
 	private boolean needUpdateClusterRoutesWhenClusterChange(ClusterMeta current, ClusterMeta future) {
 		ClusterType clusterType = ClusterType.lookup(future.getType());
@@ -230,16 +225,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(currentMeta.hasCluster(clusterDbId)){
 			ClusterMeta current = clusterMetaComparator.getCurrent();
 			ClusterMeta future = clusterMetaComparator.getFuture();
-			if(isReCreateCluster(current, future)) {
-				destroyCluster(current);
-				addCluster(clusterDbId);
-			} else {
-				currentMeta.changeCluster(clusterMetaComparator);
-				if(needUpdateClusterRoutesWhenClusterChange(current, future)) {
-					clusterRoutesChange(clusterDbId);
-				}
-				notifyObservers(clusterMetaComparator);
+			currentMeta.changeCluster(clusterMetaComparator);
+			if(needUpdateClusterRoutesWhenClusterChange(current, future)) {
+				clusterRoutesChange(clusterDbId);
 			}
+			notifyObservers(clusterMetaComparator);
 
 		}else{
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
