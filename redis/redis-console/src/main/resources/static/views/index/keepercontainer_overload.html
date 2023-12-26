@@ -33,12 +33,14 @@
 
                     <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcKeeperContainer.keeperIp}}</td>
                     <td data-title="'dc'" filter="{ 'srcKeeperContainer.dcName': 'text'}">{{info.srcKeeperContainer.dcName}}</td>
-                    <td data-title="'上游redis数据量(KB)'" sortable="'srcKeeperContainer.totalRedisUsedMemory'">{{info.srcKeeperContainer.totalRedisUsedMemory / 1024}}</td>
-                    <td data-title="'流量(KB)'" sortable="'srcKeeperContainer.totalInputFlow'">{{info.srcKeeperContainer.totalInputFlow}}</td>
+                    <td data-title="'上游redis数据量(KB)'" sortable="'srcKeeperContainer.activeRedisUsedMemory'">{{info.srcKeeperContainer.activeRedisUsedMemory / 1024 | number:2}}</td>
+                    <td data-title="'流量(KB)'" sortable="'srcKeeperContainer.activeInputFlow'">{{info.srcKeeperContainer.activeInputFlow}}</td>
                     <td data-title="'待迁移的分片数'" sortable="'migrateKeeperCount'">{{info.migrateKeeperCount}}</td>
                     <td data-title="'tagetKeeperContainer'" >{{info.targetKeeperContainer.keeperIp}}</td>
-                    <td data-title="'上游redis数据量(KB)'" sortable="'targetKeeperContainer.totalRedisUsedMemory'">{{info.targetKeeperContainer.totalRedisUsedMemory / 1024}}</td>
-                    <td data-title="'流量(KB)'" sortable="'srcKeeperContainer.totalInputFlow'">{{info.targetKeeperContainer.totalInputFlow}}</td>
+                    <td data-title="'上游redis数据量(KB)'" sortable="'targetKeeperContainer.activeRedisUsedMemory'">{{info.targetKeeperContainer.activeRedisUsedMemory / 1024 | number:2}}</td>
+                    <td data-title="'流量(KB)'" sortable="'srcKeeperContainer.activeInputFlow'">{{info.targetKeeperContainer.activeInputFlow}}</td>
+                    <td data-title="'超载原因'" filter="{ 'cause': 'text'}">{{info.cause}}</td>
+                    <td data-title="'迁移方案'" filter="{ 'result': 'text'}">{{info.result}}</td>
                 </tr>
             </table>
         </div>

@@ -8,6 +8,7 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
 
     $scope.tableParams = new NgTableParams({}, {});
     KeeperContainerService.getAllKeepercontainerUsedInfo().then(function (response) {
+        console.log(response);
         if (Array.isArray(response))  {
             $scope.originData = response;
 
@@ -28,7 +29,6 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
                     });
                 }
             });
-            console.log($scope.originData);
             $scope.tableParams = new NgTableParams({
                 page : 1,
                 count : 10,
@@ -38,5 +38,13 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
                 dataset: $scope.originData
             });
         }
+        KeeperContainerService.getKeepercontainerFullSynchronizationTime().then(function(response) {
+            $scope.fullSynchronizationTime = response.message;
+        })
     })
+
+    $scope.getKeepercontainerFullSynchronizationTime = function () {
+        return $scope.fullSynchronizationTime;
+    }
+
 }

@@ -40,6 +40,10 @@ angular
             method:'PUT',
             url:'/console/keepercontainer'
         },
+        keepercontainer_fullSynchronizationTime:{
+            method:'GET',
+            url:'/console/keepercontainer/max/fullSynchronizationTime'
+        },
         get_all_overload_keepercontainer: {
             method: 'GET',
             url: '/console/keepercontainers/overload/all',
@@ -172,6 +176,17 @@ angular
         return d.promise;
     }
 
+    function getKeepercontainerFullSynchronizationTime() {
+        var d = $q.defer();
+        resource.keepercontainer_fullSynchronizationTime({},
+            function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function updateKeepercontainer(addr, dcName, orgName, azName, active) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
@@ -247,5 +262,6 @@ angular
         getAllKeepercontainerUsedInfo : getAllKeepercontainerUsedInfo,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
+        getKeepercontainerFullSynchronizationTime : getKeepercontainerFullSynchronizationTime
     }
 }]);

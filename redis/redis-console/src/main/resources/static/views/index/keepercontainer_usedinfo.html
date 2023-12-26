@@ -3,7 +3,7 @@
         <header class="panel-heading">
             <div class="row">
                 <div class="col-md-6">
-                    <span class="col-sm-2"> KeeperContainerUsedInfo </span>
+                    <span class="col-sm-2" style="width: 100%"> KeeperContainerUsedInfo 预计全量同步时间：{{getKeepercontainerFullSynchronizationTime()}} 分钟</span>
                 </div>
 
                 <div class="col-md-6 text-right">
@@ -19,14 +19,14 @@
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'diskType'" filter="{ diskType: 'text'}" sortable="'diskType'">{{info.diskType}}</td>
                 <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
-                <td data-title="'active数据量'" sortable="'activeRedisUsedMemory'">{{info.activeRedisUsedMemory | number:2}}</td>
-                <td data-title="'backUp数据量'" sortable="'totalRedisUsedMemory-activeRedisUsedMemory'">{{info.totalRedisUsedMemory-info.activeRedisUsedMemory | number:2}}</td>
-                <td data-title="'active数据量使用占比(%)'" sortable="'info.activeRedisUsedMemory/info.totalRedisUsedMemory'">{{info.activeRedisUsedMemory/info.totalRedisUsedMemory*100 | number:2}}</td>
-                <td data-title="'active数据量标准占比(%)'" sortable="'info.activeRedisUsedMemory/info.redisUsedMemoryStandard'">{{info.activeRedisUsedMemory/info.redisUsedMemoryStandard*100 | number:2}}</td>
-                <td data-title="'active流量'" sortable="'activeInputFlow'">{{info.activeInputFlow | number:2}}</td>
-                <td data-title="'backUp流量'" sortable="'totalInputFlow-activeInputFlow'">{{info.totalInputFlow-info.activeInputFlow | number:2}}</td>
-                <td data-title="'active流量使用占比(%)'" sortable="'activeInputFlow/totalInputFlow'">{{info.activeInputFlow/info.totalInputFlow*100 | number:2}}</td>
-                <td data-title="'active流量标准占比(%)'" sortable="'activeInputFlow/inputFlowStandard'">{{info.activeInputFlow/info.inputFlowStandard*100 | number:2}}</td>
+                <td data-title="'active数据量(MB)'" sortable="'activeRedisUsedMemory'">{{info.activeRedisUsedMemory/1024/1024 | number:2}}</td>
+                <td data-title="'backUp数据量(MB)'" sortable="'totalRedisUsedMemory-activeRedisUsedMemory'">{{(info.totalRedisUsedMemory-info.activeRedisUsedMemory)/1024/1024 | number:2}}</td>
+                <td data-title="'active数据量使用占比(%)'" sortable="'info.activeRedisUsedMemory/info.totalRedisUsedMemory'">{{info.activeRedisUsedMemory/info.totalRedisUsedMemory*100 | number:2}}%</td>
+                <td data-title="'active数据量标准占比(%)'" sortable="'info.activeRedisUsedMemory/info.redisUsedMemoryStandard'">{{info.activeRedisUsedMemory/info.redisUsedMemoryStandard*100 | number:2}}%</td>
+                <td data-title="'active流量(MB/S)'" sortable="'activeInputFlow'">{{info.activeInputFlow/1024/8 | number:2}}</td>
+                <td data-title="'backUp流量(MB/S)'" sortable="'totalInputFlow-activeInputFlow'">{{(info.totalInputFlow-info.activeInputFlow)/1024/8 | number:2}}</td>
+                <td data-title="'active流量使用占比(%)'" sortable="'activeInputFlow/totalInputFlow'">{{info.activeInputFlow/info.totalInputFlow*100 | number:2}}%</td>
+                <td data-title="'active流量标准占比(%)'" sortable="'activeInputFlow/inputFlowStandard'">{{info.activeInputFlow/info.inputFlowStandard*100 | number:2}}%</td>
                 <td data-title="'active实例数'" sortable="'activeKeeperCount'">{{info.activeKeeperCount}}</td>
                 <td data-title="'backUp实例数'" sortable="'totalKeeperCount-activeKeeperCount'">{{info.totalKeeperCount-info.activeKeeperCount}}</td>
                 <td data-title="'操作'" >

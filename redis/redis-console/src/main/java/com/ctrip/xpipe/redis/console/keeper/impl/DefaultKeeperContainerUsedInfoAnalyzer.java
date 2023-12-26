@@ -31,6 +31,7 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
@@ -38,7 +39,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzer.class);
 
-    private static final long DEFAULT_PEER_DATA_OVERLOAD = 474 * 1024 * 1024 * 1024;
+    private static final long DEFAULT_PEER_DATA_OVERLOAD = 474L * 1024 * 1024 * 1024;
 
     private static final long DEFAULT_KEEPER_FLOW_OVERLOAD = 270 * 1024;
 
@@ -51,13 +52,15 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Map<Date, Integer> checkerIndexes = new TreeMap<>();
+    private Map<Integer, Date> checkerIndexes = new HashMap<>();
 
     private Map<Integer, List<KeeperContainerUsedInfoModel>> allKeeperContainerUsedInfoModels = new HashMap<>();
 
     private List<KeeperContainerUsedInfoModel> allKeeperContainerUsedInfoModelsList = new ArrayList<>();
 
     private List<MigrationKeeperContainerDetailModel> allDcKeeperContainerDetailModel = new ArrayList<>();
+
+    private long maxKeeperContainerActiveRedisUsedMemory;
 
     Map<IPPair, IPPairData> keeperPairUsedInfoMap = new HashMap<>();
 
@@ -109,7 +112,63 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsList() {
+        List<KeeperContainerUsedInfoModel> result = Collections.synchronizedList(new ArrayList<>());
+        ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        config.getConsoleDomains().forEach((dc, domains) -> {
+            if (currentDc.equalsIgnoreCase(dc)) {
+                result.addAll(getAllDcKeeperContainerUsedInfoModelsList());
+            } else {
+                KeeperContainerInfoGetCommand command = new KeeperContainerInfoGetCommand(domains, restTemplate);
+                command.future().addListener(commandFuture -> {
+                    if (commandFuture.isSuccess() && commandFuture.get() != null) result.addAll(commandFuture.get());
+                });
+                commandChain.add(command);
+            }
+        });
+
+        try {
+            commandChain.execute().get(10, TimeUnit.SECONDS);
+        } catch (Throwable th) {
+            logger.warn("[getAllKeeperContainerUsedInfoModelsList] error:", th);
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<KeeperContainerUsedInfoModel> getAllDcKeeperContainerUsedInfoModelsList() {
         return allKeeperContainerUsedInfoModelsList;
+    }
+
+    @Override
+    public int getMaxKeeperContainerFullSynchronizationTime() {
+        AtomicInteger result = new AtomicInteger();
+        ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        config.getConsoleDomains().forEach((dc, domains) -> {
+            if (currentDc.equalsIgnoreCase(dc)) {
+                result.set(Math.max(result.get(), getAllDcMaxKeeperContainerFullSynchronizationTime()));
+            } else {
+                KeeperContainerFullSynchronizationTimeGetCommand command = new KeeperContainerFullSynchronizationTimeGetCommand(domains, restTemplate);
+                command.future().addListener(commandFuture -> {
+                    if (commandFuture.isSuccess() && commandFuture.get() != null) result.set(Math.max(result.get(), commandFuture.get()));
+                });
+                commandChain.add(command);
+            }
+        });
+
+        try {
+            commandChain.execute().get(10, TimeUnit.SECONDS);
+        } catch (Throwable th) {
+            logger.warn("[getMaxKeeperContainerFullSynchronizationTime] error:", th);
+        }
+
+        return result.get();
+    }
+
+    @Override
+    public int getAllDcMaxKeeperContainerFullSynchronizationTime() {
+        double keeperContainerIoRate = config.getKeeperContainerIoRate();
+        return (int) (maxKeeperContainerActiveRedisUsedMemory/1024/1024/keeperContainerIoRate/60);
     }
 
     @Override
@@ -119,7 +178,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         }
 
         Date currentTime = new Date();
-        checkerIndexes.put(currentTime, index);
+        checkerIndexes.put(index, currentTime);
         removeExpireData(currentTime);
         if (!checkDataIntegrity()) return;
 
@@ -128,7 +187,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
         allKeeperContainerUsedInfoModels.clear();
         checkerIndexes.clear();
-
+        logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList {}", allKeeperContainerUsedInfoModelsList);
         executors.execute(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
@@ -138,18 +197,21 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     private void removeExpireData(Date currentTime) {
-        Iterator<Map.Entry<Date, Integer>> iterator = checkerIndexes.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<Date, Integer> entry = iterator.next();
-            if (currentTime.getTime() - entry.getKey().getTime() > config.getKeeperCheckerIntervalMilli()) {
-                logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", entry.getValue(), entry.getKey(), config.getKeeperCheckerIntervalMilli());
-                allKeeperContainerUsedInfoModels.remove(entry.getValue());
-                iterator.remove();
-            } else break;
+        List<Integer> expireIndex = new ArrayList<>();
+        for (Map.Entry<Integer, Date> entry : checkerIndexes.entrySet()) {
+            if (currentTime.getTime() - entry.getValue().getTime() > config.getKeeperCheckerIntervalMilli()) {
+                expireIndex.add(entry.getKey());
+            }
+        }
+        for (int index : expireIndex) {
+            logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, checkerIndexes.get(index), config.getKeeperCheckerIntervalMilli());
+            allKeeperContainerUsedInfoModels.remove(index);
+            checkerIndexes.remove(index);
         }
     }
 
     private boolean checkDataIntegrity() {
+        logger.info("[analyzeKeeperContainerUsedInfo] current index {}", checkerIndexes);
         return checkerIndexes.size() == config.getClusterDividedParts();
     }
 
@@ -158,7 +220,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         Map<DcClusterShardActive, KeeperUsedInfo> allDetailInfo = analyzeKeeperPair();
         Map<String, KeeperContainerOverloadStandardModel> standardMap = analyzeKeeperContainerStandard();
         Map<String, KeeperContainerUsedInfoModel> keeperUsedInfoMap = getKeeperUsedInfoMap();
-        logger.debug("[analyzeKeeperContainerUsedInfo] newKeeperContainerUsedInfoModels: {}", allKeeperContainerUsedInfoModelsList);
+        logger.info("[analyzeKeeperContainerUsedInfo] standardMap {}", standardMap);
+        logger.info("[analyzeKeeperContainerUsedInfo] keeperPairUsedInfoMap {}", keeperPairUsedInfoMap);
+        logger.info("[analyzeKeeperContainerUsedInfo] ipPairMap {}", ipPairMap);
         PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers = new PriorityQueue<>(allKeeperContainerUsedInfoModelsList.size(),
                 (keeper1, keeper2) -> (int)(keeper1.getActiveInputFlow() - keeper2.getActiveInputFlow()));
         PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers = new PriorityQueue<>(allKeeperContainerUsedInfoModelsList.size(),
@@ -171,6 +235,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         });
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         double keeperPairOverLoadFactor = config.getKeeperPairOverLoadFactor();
+        logger.info("[analyzeKeeperContainerUsedInfo] config keeperPairOverLoadFactor:{}", keeperPairOverLoadFactor);
         for (KeeperContainerUsedInfoModel infoModel : allKeeperContainerUsedInfoModelsList) {
             KeeperContainerOverloadStandardModel standardModel = standardMap.get(infoModel.getKeeperIp());
             List<MigrationKeeperContainerDetailModel> migrationKeeperDetails = getOverloadKeeperMigrationDetails(infoModel,
@@ -197,8 +262,12 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     private Map<DcClusterShardActive, KeeperUsedInfo> analyzeKeeperPair(){
         keeperPairUsedInfoMap.clear();
         ipPairMap.clear();
+        maxKeeperContainerActiveRedisUsedMemory = 0;
         Map<DcClusterShardActive, KeeperUsedInfo> allDetailInfo = new HashMap<>();
         for (KeeperContainerUsedInfoModel infoModel : allKeeperContainerUsedInfoModelsList) {
+            if (infoModel.getActiveRedisUsedMemory() > maxKeeperContainerActiveRedisUsedMemory) {
+                maxKeeperContainerActiveRedisUsedMemory = infoModel.getActiveRedisUsedMemory();
+            }
             if (infoModel.getDetailInfo() != null) {
                 allDetailInfo.putAll(infoModel.getDetailInfo());
             }
@@ -310,14 +379,13 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         long overloadPeerData = src.getActiveRedisUsedMemory() - srcStandard.getPeerDataOverload();
         KeeperContainerOverloadCause overloadCause = getKeeperContainerOverloadCause(overloadInputFlow, overloadPeerData);
         if (overloadCause == null) return null;
-        src.getOverLoadCause().add(overloadCause.name());
 
         switch (overloadCause) {
             case PEER_DATA_OVERLOAD:
-                return getOverloadKeeperMigrationDetails(src, true, overloadPeerData, srcStandard, standardMap, keeperUsedInfoMap, allDetailInfo, minPeerDataKeeperContainers);
+                return getOverloadKeeperMigrationDetails(src, true, overloadPeerData, srcStandard, standardMap, keeperUsedInfoMap, allDetailInfo, minPeerDataKeeperContainers, overloadCause);
             case INPUT_FLOW_OVERLOAD:
             case BOTH:
-                return getOverloadKeeperMigrationDetails(src, false, overloadInputFlow, srcStandard, standardMap, keeperUsedInfoMap, allDetailInfo, minInputFlowKeeperContainers);
+                return getOverloadKeeperMigrationDetails(src, false, overloadInputFlow, srcStandard, standardMap, keeperUsedInfoMap, allDetailInfo, minInputFlowKeeperContainers, overloadCause);
             default:
                 logger.warn("invalid keeper container overload cause {}", overloadCause);
                 return null;
@@ -330,7 +398,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                                                                                         Map<String, KeeperContainerOverloadStandardModel> standardMap,
                                                                                         Map<String, KeeperContainerUsedInfoModel> keeperUsedInfoMap,
                                                                                         Map<DcClusterShardActive, KeeperUsedInfo> allDetailInfo,
-                                                                                        PriorityQueue<KeeperContainerUsedInfoModel> availableKeeperContainers) {
+                                                                                        PriorityQueue<KeeperContainerUsedInfoModel> availableKeeperContainers,
+                                                                                        KeeperContainerOverloadCause overloadCause) {
         List<Map.Entry<DcClusterShardActive, KeeperUsedInfo>> allDcClusterShards;
         if (isPeerDataOverload) {
             allDcClusterShards = src.getDetailInfo().entrySet().stream()
@@ -356,7 +425,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             if (keeperContainerFilterChain.doKeeperContainerFilter(backUpKeeperUsedInfoModel, backUpKeeperStandard) &&
                     keeperContainerFilterChain.doKeeperFilter(dcClusterShard, backUpKeeperUsedInfoModel, srcStandard, backUpKeeperStandard, keeperPairUsedInfoMap)) {
                 if (switchActiveDetail == null) {
-                    switchActiveDetail = new MigrationKeeperContainerDetailModel(src, null, 0, true, false, new ArrayList<>());
+                    switchActiveDetail = new MigrationKeeperContainerDetailModel(src, null, 0, true, false, overloadCause.name(), new ArrayList<>());
                 }
                 switchActiveDetail.addReadyToMigrateShard(dcClusterShard.getKey());
                 if (target == null || !backUpKeeperUsedInfoModel.getKeeperIp().equals(target.getKeeperIp())) {
@@ -388,7 +457,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                     if (switchActiveDetail != null) result.add(switchActiveDetail);
                     return result;
                 }
-                keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(src, target, 0, false, false, new ArrayList<>());
+                keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(src, target, 0, false, false, overloadCause.name(), new ArrayList<>());
             }
             if (!keeperContainerFilterChain.doKeeperFilter(dcClusterShard, target, srcStandard, standardMap.get(target.getKeeperIp()), keeperPairUsedInfoMap)) {
                 target = null;
@@ -465,15 +534,13 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         long overloadPeerData = longLongPair.getPeerData() - minStandardModel.getPeerDataOverload();
         KeeperContainerOverloadCause overloadCause = getKeeperPairOverloadCause(overloadInputFlow, overloadPeerData);
         if (overloadCause == null) return null;
-        pairA.getOverLoadCause().add(overloadCause.name());
-        pairB.getOverLoadCause().add(overloadCause.name());
 
         switch (overloadCause) {
             case KEEPER_PAIR_PEER_DATA_OVERLOAD:
-                return getKeeperPairMigrationDetails(pairA, pairB, true, overloadPeerData, standardMap, minPeerDataKeeperContainers);
+                return getKeeperPairMigrationDetails(pairA, pairB, true, overloadPeerData, standardMap, minPeerDataKeeperContainers, overloadCause);
             case KEEPER_PAIR_INPUT_FLOW_OVERLOAD:
             case KEEPER_PAIR_BOTH:
-                return getKeeperPairMigrationDetails(pairA, pairB, false, overloadInputFlow, standardMap, minInputFlowKeeperContainers);
+                return getKeeperPairMigrationDetails(pairA, pairB, false, overloadInputFlow, standardMap, minInputFlowKeeperContainers, overloadCause);
             default:
                 logger.warn("invalid keeper container overload cause {}", overloadCause);
                 return null;
@@ -486,7 +553,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                                                                                     boolean isPeerDataOverload,
                                                                                     long overloadData,
                                                                                     Map<String, KeeperContainerOverloadStandardModel> standardMap,
-                                                                                    PriorityQueue<KeeperContainerUsedInfoModel> availableKeeperContainers){
+                                                                                    PriorityQueue<KeeperContainerUsedInfoModel> availableKeeperContainers,
+                                                                                    KeeperContainerOverloadCause overloadCause){
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         if (keeperPairUsedInfoMap.get(new IPPair(pairA.getKeeperIp(), pairB.getKeeperIp())).getNumber() == 1) return result;
         List<Map.Entry<DcClusterShardActive, KeeperUsedInfo>> allDcClusterShards;
@@ -523,7 +591,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                     usedTarget.add(target);
                     target = availableKeeperContainers.poll();
                 }
-                keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(srcKeeperContainer, target, 0, false, true, new ArrayList<>());
+                keeperContainerDetailModel = new MigrationKeeperContainerDetailModel(srcKeeperContainer, target, 0, false, true, overloadCause.name(), new ArrayList<>());
             }
             if (!keeperContainerFilterChain.doKeeperPairFilter(dcClusterShard, target, standardMap.get(srcKeeperIp), standardMap.get(target.getKeeperIp()), keeperPairUsedInfoMap)) {
                 usedTarget.add(target);
@@ -573,7 +641,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @VisibleForTesting
-    Map<Date, Integer> getCheckerIndexes() {
+    Map<Integer, Date> getCheckerIndexes() {
         return checkerIndexes;
     }
 
@@ -630,6 +698,76 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
         }
     }
+
+    class KeeperContainerInfoGetCommand extends AbstractCommand<List<KeeperContainerUsedInfoModel>> {
+
+        private String domain;
+        private RestOperations restTemplate;
+
+        public KeeperContainerInfoGetCommand(String domain, RestOperations restTemplate) {
+            this.domain = domain;
+            this.restTemplate = restTemplate;
+        }
+
+        @Override
+        public String getName() {
+            return "getKeeperContainerInfo";
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                ResponseEntity<List<KeeperContainerUsedInfoModel>> result =
+                        restTemplate.exchange(domain + "/api/keepercontainer/info/all", HttpMethod.GET, null,
+                                new ParameterizedTypeReference<List<KeeperContainerUsedInfoModel>>() {});
+                future().setSuccess(result.getBody());
+            } catch (Throwable th) {
+                getLogger().error("get keeper container info:{} fail", domain, th);
+                future().setFailure(th);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+    }
+
+    class KeeperContainerFullSynchronizationTimeGetCommand extends AbstractCommand<Integer> {
+
+        private String domain;
+        private RestOperations restTemplate;
+
+        public KeeperContainerFullSynchronizationTimeGetCommand(String domain, RestOperations restTemplate) {
+            this.domain = domain;
+            this.restTemplate = restTemplate;
+        }
+
+        @Override
+        public String getName() {
+            return "getKeeperContainerFullSynchronizationTime";
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                ResponseEntity<Integer> result =
+                        restTemplate.exchange(domain + "/api/keepercontainer/full/synchronization/time", HttpMethod.GET, null,
+                                new ParameterizedTypeReference<Integer>() {});
+                future().setSuccess(result.getBody());
+            } catch (Throwable th) {
+                getLogger().error("get keeper container info:{} fail", domain, th);
+                future().setFailure(th);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+    }
+
+
 
     public static class IPPair {
         private String ip1;

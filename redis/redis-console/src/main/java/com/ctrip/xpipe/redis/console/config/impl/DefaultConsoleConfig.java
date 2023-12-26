@@ -126,6 +126,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD_FACTOR = "console.keeper.container.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_PAIR_OVERLOAD_FACTOR = "console.keeper.container.pair.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_DISK_OVERLOAD_FACTOR = "console.keeper.container.disk.overload.factor";
+    private static final String KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE = "console.keeper.container.io.rate";
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_OPEN = "console.auto.migrate.overload.keeper.container.open";
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI = "console.auto.migrate.overload.keeper.container.interval.milli";
 
@@ -800,6 +801,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public double getKeeperContainerDiskOverLoadFactor() {
         return getFloatProperty(KEY_CONSOLE_KEEPER_CONTAINER_DISK_OVERLOAD_FACTOR, 0.8F);
+    }
+
+    @Override
+    public double getKeeperContainerIoRate() {
+        return getFloatProperty(KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE, 500F);
     }
 
 }

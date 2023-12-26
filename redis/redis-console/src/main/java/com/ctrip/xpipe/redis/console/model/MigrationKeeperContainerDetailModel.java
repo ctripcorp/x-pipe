@@ -21,6 +21,8 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     private boolean keeperPairOverload;
 
+    private String cause;
+
     List<DcClusterShard> migrateShards;
 
     public MigrationKeeperContainerDetailModel() {
@@ -32,12 +34,14 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
                                                int migrateKeeperCount,
                                                boolean switchActive,
                                                boolean keeperPairOverload,
+                                               String cause,
                                                List<DcClusterShard> migrateShards) {
         this.srcKeeperContainer = srcKeeperContainer;
         this.targetKeeperContainer = targetKeeperContainer;
         this.migrateKeeperCount = migrateKeeperCount;
         this.switchActive = switchActive;
         this.keeperPairOverload = keeperPairOverload;
+        this.cause = cause;
         this.migrateShards = migrateShards;
     }
 
@@ -101,6 +105,14 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     public void setKeeperPairOverload(boolean keeperPairOverload) {
         this.keeperPairOverload = keeperPairOverload;
+    }
+
+    public String getCause() {
+        return cause;
+    }
+
+    public void setCause(String cause) {
+        this.cause = cause;
     }
 
     public void migrateKeeperCountIncrease() {

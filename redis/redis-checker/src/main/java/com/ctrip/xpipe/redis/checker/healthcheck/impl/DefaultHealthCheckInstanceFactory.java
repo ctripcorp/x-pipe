@@ -194,14 +194,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         KeeperInstanceInfo keeper = createKeeperInstanceInfo(keeperMeta);
         HealthCheckConfig config = new CompositeHealthCheckConfig(keeper, checkerConfig, dcRelationsService);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(keeperMeta);
-
         instance.setEndpoint(endpoint)
                 .setSession(keeperSessionManager.findOrCreateSession(endpoint))
                 .setInstanceInfo(keeper)
                 .setHealthCheckConfig(config);
         initKeeperActions(instance);
         startCheck(instance);
-
         return instance;
     }
 
