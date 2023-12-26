@@ -85,7 +85,6 @@ public class KeeperContainerMetaComparator extends AbstractInstanceNodeComparato
                 .collect(Collectors.toMap(KeeperContainerMeta::getId,
                         keeperContainerMeta -> new KeeperContainerDetailInfo(keeperContainerMeta, new ArrayList<>(), new ArrayList<>())));
         if (dcAllMeta == null || dcAllMeta.getClusters() == null) return map;
-
         dcAllMeta.getClusters().values().forEach(clusterMeta -> {
             for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
                 if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;

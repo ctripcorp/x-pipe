@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ public class InfoResultExtractor {
     private static final String KEY_SWAP_USED_DB_SIZE = "swap_used_db_size";
     private static final String KEY_USED_MEMORY ="used_memory";
     private static final String KEY_MAX_MEMORY ="maxmemory";
+    private static final String KEY_KEEPER_ROLE = "state";
 
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
@@ -111,13 +113,15 @@ public class InfoResultExtractor {
         return extractAsLong(KEY_SYNC_PARTIAL_ERR);
     }
 
-    public float getKeeperInstantaneousInputKbps() { return extractAsFloat(KEY_INSTANTANEOUS_INPUT_KBPS);}
+    public Float getKeeperInstantaneousInputKbps() { return extractAsFloat(KEY_INSTANTANEOUS_INPUT_KBPS);}
 
     public long getUsedMemory() { return extractAsLong(KEY_USED_MEMORY);}
 
     public long getMaxMemory() { return extractAsLong(KEY_MAX_MEMORY);}
 
     public Long getSwapUsedDbSize() { return extractAsLong(KEY_SWAP_USED_DB_SIZE);}
+
+    public boolean getKeeperRole() { return "ACTIVE".equals(extract(KEY_KEEPER_ROLE)); }
 
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);

@@ -17,4 +17,10 @@ public interface KeeperContainerUsedInfoAnalyzer {
     Map<Integer, List<KeeperContainerUsedInfoModel>> getAllKeeperContainerUsedInfoModels();
 
     List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsList();
+
+    List<KeeperContainerUsedInfoModel> getAllDcKeeperContainerUsedInfoModelsList();
+    
+    int getMaxKeeperContainerFullSynchronizationTime();
+
+    int getAllDcMaxKeeperContainerFullSynchronizationTime();
 }

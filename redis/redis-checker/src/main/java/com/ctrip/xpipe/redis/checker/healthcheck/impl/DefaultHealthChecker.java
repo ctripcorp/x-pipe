@@ -24,6 +24,7 @@ import javax.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getAllKeeperContainerDetailInfoFromDcMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -128,10 +129,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
                 Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
                         = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, currentDcAllMeta.getCurrentDcAllMeta());
-
-                keeperContainerDetailInfoMap.values().forEach(keeperContainerDetailInfo -> {
-                    generateHealthCheckInstances(keeperContainerDetailInfo);
-                });
+                keeperContainerDetailInfoMap.values().forEach(this::generateHealthCheckInstances);
             }
 
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {

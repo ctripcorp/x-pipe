@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMe
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
+import com.ctrip.xpipe.redis.checker.impl.KeeperContainerInfoReporter;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.google.common.collect.Lists;
@@ -50,6 +51,14 @@ public class CheckerHealthController {
 
     @Autowired
     private StabilityHolder siteStability;
+
+    @Autowired
+    private KeeperContainerInfoReporter keeperContainerInfoReporter;
+
+    @RequestMapping(value = "/reportKeeperContainerInfo", method = RequestMethod.GET)
+    public void reportKeeperContainerInfo() {
+        keeperContainerInfoReporter.reportKeeperContainerInfo();
+    }
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {

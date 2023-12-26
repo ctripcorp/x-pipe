@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX)
-public class KeeperContainerOverloadController extends AbstractConsoleController{
+public class KeeperContainerController extends AbstractConsoleController{
 
     @Autowired
     KeeperContainerUsedInfoAnalyzer analyzer;
@@ -23,6 +23,16 @@ public class KeeperContainerOverloadController extends AbstractConsoleController
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
         return analyzer.getAllDcReadyToMigrationKeeperContainers();
+    }
+
+    @RequestMapping(value = "/keepercontainer/info/all", method = RequestMethod.GET)
+    public List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsList() {
+        return analyzer.getAllDcKeeperContainerUsedInfoModelsList();
+    }
+
+    @RequestMapping(value = "/keepercontainer/full/synchronization/time", method = RequestMethod.GET)
+    public Integer getMaxKeeperContainerFullSynchronizationTime() {
+        return analyzer.getAllDcMaxKeeperContainerFullSynchronizationTime();
     }
 
     @RequestMapping(value = "/keepercontainer/overload/info/current", method = RequestMethod.GET)

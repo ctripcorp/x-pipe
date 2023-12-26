@@ -190,4 +190,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	double getKeeperPairOverLoadFactor();
 
 	double getKeeperContainerDiskOverLoadFactor();
+
+	double getKeeperContainerIoRate();
 }

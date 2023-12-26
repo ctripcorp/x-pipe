@@ -97,7 +97,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
     }
 
     @VisibleForTesting
-    void reportKeeperContainerInfo() {
+    public void reportKeeperContainerInfo() {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
             Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
@@ -130,11 +130,13 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                         activeInputFlow += inputFlow;
                         activeKeeperCount++;
                     }
-                    detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(inputFlow, redisUsedMemory, keeperIp));
+                    detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(redisUsedMemory, inputFlow, keeperIp));
 
                 }
                 try {
+                    logger.debug("[get KeeperContainer disk Info] keeperIp: {}", keeperIp);
                     KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
+                    logger.debug("[KeeperContainer disk Info] keeperIp: {} keeperDiskInfo: {}", keeperIp, keeperDiskInfo);
                     model.setDiskAvailable(keeperDiskInfo.available)
                             .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
                             .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);

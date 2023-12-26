@@ -38,8 +38,6 @@ public class KeeperContainerUsedInfoModel {
 
     private String diskType = "default";
 
-    private List<String> overLoadCause = new ArrayList<>();
-
     public KeeperContainerUsedInfoModel() {
     }
 
@@ -68,7 +66,6 @@ public class KeeperContainerUsedInfoModel {
         this.diskSize = model.getDiskSize();
         this.diskUsed = model.getDiskUsed();
         this.diskType = model.getDiskType();
-        this.overLoadCause = model.getOverLoadCause();
     }
 
     public String getDcName() {
@@ -170,14 +167,6 @@ public class KeeperContainerUsedInfoModel {
         this.diskType = diskType;
     }
 
-    public List<String> getOverLoadCause() {
-        return overLoadCause;
-    }
-
-    public void setOverLoadCause(List<String> overLoadCause) {
-        this.overLoadCause = overLoadCause;
-    }
-
     public int getActiveKeeperCount() {
         return activeKeeperCount;
     }
@@ -240,7 +229,6 @@ public class KeeperContainerUsedInfoModel {
                 ", diskSize=" + diskSize +
                 ", diskUsed=" + diskUsed +
                 ", diskType='" + diskType + '\'' +
-                ", overLoadCause=" + overLoadCause +
                 '}';
     }
 
@@ -265,6 +253,8 @@ public class KeeperContainerUsedInfoModel {
 
         private String keeperIP;
 
+        public KeeperUsedInfo() {
+        }
 
         public KeeperUsedInfo(long peerData, long inputFlow, String keeperIP) {
             this.peerData = peerData;
