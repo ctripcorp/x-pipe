@@ -27,9 +27,9 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
         try {
             InfoResultExtractor extractor = context.getResult();
             KeeperInstanceInfo info = context.instance().getCheckInfo();
-            long keeperFlow = (long) extractor.getKeeperInstantaneousInputKbps();
+            long keeperFlow = extractor.getKeeperInstantaneousInputKbps().longValue();
             Map<DcClusterShardActive, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ConcurrentHashMap::new);
-            keeperContainerResult.put(new DcClusterShardActive(info.getDcId(), info.getClusterId(), info.getShardId(), info.isActive(), info.getHostPort().getPort()), keeperFlow);
+            keeperContainerResult.put(new DcClusterShardActive(info.getDcId(), info.getClusterId(), info.getShardId(), extractor.getKeeperRole(), info.getHostPort().getPort()), keeperFlow);
         } catch (Throwable throwable) {
             logger.error("get instantaneous input kbps of keeper:{} error: ", context.instance().getCheckInfo().getHostPort(), throwable);
         }

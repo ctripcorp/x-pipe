@@ -102,4 +102,10 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     public List<KeeperContainerUsedInfoModel>  getLastedAllReadyMigrateKeeperContainers() {
         return analyzer.getAllKeeperContainerUsedInfoModelsList();
     }
+
+    @RequestMapping(value = "/keepercontainer/max/fullSynchronizationTime", method = RequestMethod.GET)
+    public RetMessage getMaxKeeperContainerFullSynchronizationTime() {
+        return RetMessage.createSuccessMessage(String.valueOf(analyzer.getMaxKeeperContainerFullSynchronizationTime() + 1));
+    }
+
 }

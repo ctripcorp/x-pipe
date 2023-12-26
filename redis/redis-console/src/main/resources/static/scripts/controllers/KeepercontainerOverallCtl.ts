@@ -12,13 +12,15 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
             response.forEach(function (keeperContainerInfo) {
                 if (keeperContainerInfo.keeperIp === $stateParams.keepercontainerIp) {
                     $scope.originData = Object.entries(keeperContainerInfo.detailInfo).map(function(item) {
-                        var key = JSON.parse(item[0]
-                            .replace(/'/g, '\"')
-                            .replace(/(\w+)\s*=/g, '\"$1\":')
-                            .replace(/\w+\{/g, '{')
-                        );
+                        var key = item[0].split(':');
                         return {
-                            key: key,
+                            key: {
+                                dcName: key[0],
+                                clusterName: key[1],
+                                shardName: key[2],
+                                active: key[3],
+                                port: key[4]
+                            },
                             value: item[1]
                         };
                     });
@@ -41,6 +43,6 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
     }
 
     $scope.getDc = function () {
-        return $scope.originData[0].key.dcId;
+        return $scope.originData[0].key.dcName;
     }
 }

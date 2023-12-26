@@ -24,6 +24,17 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
         this.active = active;
     }
 
+    public DcClusterShardActive(String info) {
+        String[] split = info.split(SPLITTER);
+        if (split.length >= 5) {
+            this.dcId = split[0];
+            this.clusterId = split[1];
+            this.shardId = split[2];
+            this.active = Boolean.parseBoolean(split[3]);
+            this.port = Integer.parseInt(split[4]);
+        }
+    }
+
     public boolean isActive() {
         return active;
     }
@@ -56,13 +67,7 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
 
     @Override
     public String toString() {
-        return "DcClusterShardActive{" +
-                "active=" + active +
-                ", port=" + port +
-                ", dcId='" + dcId + '\'' +
-                ", clusterId='" + clusterId + '\'' +
-                ", shardId='" + shardId + '\'' +
-                '}';
+        return getDcId() + SPLITTER + getClusterId() + SPLITTER + getShardId() + SPLITTER + isActive() + SPLITTER + getPort();
     }
 
 }
