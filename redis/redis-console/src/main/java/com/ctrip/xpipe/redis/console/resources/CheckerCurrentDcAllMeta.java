@@ -63,7 +63,7 @@ public class CheckerCurrentDcAllMeta implements CurrentDcAllMeta {
         }
     }
 
-    private void loadMeta() {
+    private synchronized void loadMeta() {
         logger.debug("[loadMeta] start to load current dc all meta");
         DcMeta dcMeta = getCurrentDcAllMeta(currentDcId);
         if (dcMeta == null) {
@@ -85,6 +85,12 @@ public class CheckerCurrentDcAllMeta implements CurrentDcAllMeta {
 
     @Override
     public DcMeta getCurrentDcAllMeta() {
+        if (this.currentDcAllMeta == null) {
+            loadMeta();
+            if (this.currentDcAllMeta == null) {
+                logger.error("[loadMeta] getCurrentDcAllMeta fail, generateHealthCheckInstances will be fail!");
+            }
+        }
         return this.currentDcAllMeta;
     }
 

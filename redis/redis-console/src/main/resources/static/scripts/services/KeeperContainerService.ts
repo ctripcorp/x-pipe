@@ -40,9 +40,18 @@ angular
             method:'PUT',
             url:'/console/keepercontainer'
         },
+        keepercontainer_fullSynchronizationTime:{
+            method:'GET',
+            url:'/console/keepercontainer/max/fullSynchronizationTime'
+        },
         get_all_overload_keepercontainer: {
             method: 'GET',
             url: '/console/keepercontainers/overload/all',
+            isArray: true
+        },
+        get_all_overload_lasted_used_info: {
+            method: 'GET',
+            url: '/console/keepercontainer/overload/info/lasted',
             isArray: true
         },
         get_overload_keepercontainer_migration_process: {
@@ -167,6 +176,17 @@ angular
         return d.promise;
     }
 
+    function getKeepercontainerFullSynchronizationTime() {
+        var d = $q.defer();
+        resource.keepercontainer_fullSynchronizationTime({},
+            function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function updateKeepercontainer(addr, dcName, orgName, azName, active) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
@@ -187,6 +207,17 @@ angular
     function getAllOverloadKeepercontainer() {
         var d = $q.defer();
         resource.get_all_overload_keepercontainer({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getAllKeepercontainerUsedInfo() {
+        var d = $q.defer();
+        resource.get_all_overload_lasted_used_info({},
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -228,7 +259,9 @@ angular
         addKeepercontainer: addKeepercontainer,
         updateKeepercontainer: updateKeepercontainer,
         getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
+        getAllKeepercontainerUsedInfo : getAllKeepercontainerUsedInfo,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
+        getKeepercontainerFullSynchronizationTime : getKeepercontainerFullSynchronizationTime
     }
 }]);

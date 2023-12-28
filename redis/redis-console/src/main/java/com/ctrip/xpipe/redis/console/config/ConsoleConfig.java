@@ -184,4 +184,12 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	long getAutoMigrateOverloadKeeperContainerIntervalMilli();
 
 	Map<String,KeeperContainerOverloadStandardModel> getKeeperContainerOverloadStandards();
+
+	double getKeeperContainerOverloadFactor();
+
+	double getKeeperPairOverLoadFactor();
+
+	double getKeeperContainerDiskOverLoadFactor();
+
+	double getKeeperContainerIoRate();
 }

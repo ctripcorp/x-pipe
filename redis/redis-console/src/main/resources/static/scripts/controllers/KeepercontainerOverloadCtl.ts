@@ -28,7 +28,31 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
     KeeperContainerService.getAllOverloadKeepercontainer()
         .then(function (result) {
             if (Array.isArray(result)) $scope.overloadKeeperContainer = result;
-
+            $scope.overloadKeeperContainer.forEach(function(container) {
+                switch(container.cause) {
+                    case 'BOTH':
+                        container.cause = '数据量和流量超载';
+                        break;
+                    case 'PEER_DATA_OVERLOAD':
+                        container.cause = '数据量超载';
+                        break;
+                    case 'INPUT_FLOW_OVERLOAD':
+                        container.cause = '流量超载';
+                        break;
+                    case 'KEEPER_PAIR_BOTH':
+                    case 'KEEPER_PAIR_PEER_DATA_OVERLOAD':
+                    case 'KEEPER_PAIR_INPUT_FLOW_OVERLOAD':
+                        container.cause = 'keeper对超载';
+                        break;
+                }
+                if (!container.switchActive && !container.keeperPairOverload) {
+                    container.result = '迁移主keeper'
+                } else if (container.switchActive && !container.keeperPairOverload) {
+                    container.result = '主备切换'
+                } else if (!container.switchActive && container.keeperPairOverload) {
+                    container.result = '迁移备keeper'
+                }
+            });
             $scope.tableParams = new NgTableParams({
                 page : 1,
                 count : 10,

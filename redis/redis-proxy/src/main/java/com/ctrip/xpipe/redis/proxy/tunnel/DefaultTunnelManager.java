@@ -87,7 +87,9 @@ public class DefaultTunnelManager implements TunnelManager {
                 if (!channel.isActive()) {
                     Tunnel tunnel = cache.remove(channel);
                     try {
-                        tunnel.release();
+                        if (tunnel != null) {
+                            tunnel.release();
+                        }
                     } catch (Exception e) {
                         logger.error("[cleaner] tunnel release tunnel{} error", tunnel, e);
                     }

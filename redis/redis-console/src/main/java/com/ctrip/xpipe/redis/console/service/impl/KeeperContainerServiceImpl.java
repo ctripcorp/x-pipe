@@ -466,6 +466,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
       model.setDcName(baseInfo.getDcInfo().getDcName());
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
+      model.setDiskType(baseInfo.getKeepercontainerDiskType());
 
       if (baseInfo.getAzId() != 0) {
         AzTbl aztbl = azService.getAvailableZoneTblById(baseInfo.getAzId());

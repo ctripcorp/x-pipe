@@ -195,7 +195,8 @@ create table KEEPERCONTAINER_TBL
 	keepercontainer_active tinyint(1) not null default 1,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
-	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0
+	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0,
+    keepercontainer_disk_type varchar(64) not null default 'default'
 );
 
 -- Migration Event Table

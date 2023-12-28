@@ -2,18 +2,22 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -36,6 +40,8 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
     private CheckerConsoleService checkerConsoleService;
 
+    private KeeperContainerService keeperContainerService;
+
     private CheckerConfig config;
 
     private static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
@@ -44,11 +50,12 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
 
     public KeeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector, CheckerConsoleService
-            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config) {
+            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService) {
         this.redisUsedMemoryCollector = redisUsedMemoryCollector;
         this.keeperFlowCollector = keeperFlowCollector;
         this.checkerConsoleService = checkerConsoleService;
         this.config = config;
+        this.keeperContainerService = keeperContainerService;
     }
 
     @PostConstruct
@@ -90,32 +97,59 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
     }
 
     @VisibleForTesting
-    void reportKeeperContainerInfo() {
+    public void reportKeeperContainerInfo() {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
-            Map<String, Map<DcClusterShard, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
+            Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
             Map<DcClusterShard, Long> dcClusterShardUsedMemory = redisUsedMemoryCollector.getDcClusterShardUsedMemory();
             List<KeeperContainerUsedInfoModel> result = new ArrayList<>(hostPort2InputFlow.keySet().size());
 
             hostPort2InputFlow.forEach((keeperIp, inputFlowMap) -> {
                 KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel();
                 model.setKeeperIp(keeperIp).setDcName(CURRENT_IDC);
+                long activeInputFlow = 0;
                 long totalInputFlow = 0;
+                long activeRedisUsedMemory = 0;
                 long totalRedisUsedMemory = 0;
-                Map<DcClusterShard, Pair<Long, Long>> detailInfo = new HashMap<>();
-                for (Map.Entry<DcClusterShard, Long> entry : inputFlowMap.entrySet()) {
+                int activeKeeperCount = 0;
+                int totalKeeperCount = 0;
+                Map<DcClusterShardActive, KeeperUsedInfo> detailInfo = new HashMap<>();
+                for (Map.Entry<DcClusterShardActive, Long> entry : inputFlowMap.entrySet()) {
+                    totalKeeperCount++;
                     totalInputFlow += entry.getValue();
-                    Long redisUsedMemory = dcClusterShardUsedMemory.get(entry.getKey());
+                    DcClusterShardActive dcClusterShardActive = entry.getKey();
+                    long inputFlow = entry.getValue();
+                    Long redisUsedMemory = dcClusterShardUsedMemory.get(new DcClusterShard().setDcId(dcClusterShardActive.getDcId()).setClusterId(dcClusterShardActive.getClusterId()).setShardId(dcClusterShardActive.getShardId()));
                     if (redisUsedMemory == null) {
                         logger.warn("[reportKeeperContainerInfo] redisUsedMemory is null, dcClusterShard: {}", entry.getKey());
                         redisUsedMemory = 0L;
                     }
                     totalRedisUsedMemory += redisUsedMemory;
+                    if (dcClusterShardActive.isActive()) {
+                        activeRedisUsedMemory += redisUsedMemory;
+                        activeInputFlow += inputFlow;
+                        activeKeeperCount++;
+                    }
+                    detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(redisUsedMemory, inputFlow, keeperIp));
 
-                    detailInfo.put(entry.getKey(), new Pair<>(entry.getValue(), redisUsedMemory));
                 }
-
-                model.setDetailInfo(detailInfo).setTotalInputFlow(totalInputFlow).setTotalRedisUsedMemory(totalRedisUsedMemory);
+                try {
+                    logger.debug("[get KeeperContainer disk Info] keeperIp: {}", keeperIp);
+                    KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
+                    logger.debug("[KeeperContainer disk Info] keeperIp: {} keeperDiskInfo: {}", keeperIp, keeperDiskInfo);
+                    model.setDiskAvailable(keeperDiskInfo.available)
+                            .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
+                            .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
+                } catch (Throwable e){
+                    logger.error("[reportKeeperContainerInfo] getKeeperDiskInfo error, keeperIp: {}", keeperIp, e);
+                }
+                model.setDetailInfo(detailInfo)
+                        .setActiveKeeperCount(activeKeeperCount)
+                        .setTotalKeeperCount(totalKeeperCount)
+                        .setActiveInputFlow(activeInputFlow)
+                        .setActiveRedisUsedMemory(activeRedisUsedMemory)
+                        .setTotalInputFlow(totalInputFlow)
+                        .setTotalRedisUsedMemory(totalRedisUsedMemory);
                 result.add(model);
             });
             logger.debug("[reportKeeperContainerInfo] result: {}", result);
@@ -124,4 +158,6 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
             logger.error("[reportKeeperContainerInfo] fail", th);
         }
     }
+
+
 }
