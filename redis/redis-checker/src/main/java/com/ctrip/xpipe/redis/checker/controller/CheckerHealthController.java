@@ -52,14 +52,6 @@ public class CheckerHealthController {
     @Autowired
     private StabilityHolder siteStability;
 
-    @Autowired
-    private KeeperContainerInfoReporter keeperContainerInfoReporter;
-
-    @RequestMapping(value = "/reportKeeperContainerInfo", method = RequestMethod.GET)
-    public void reportKeeperContainerInfo() {
-        keeperContainerInfoReporter.reportKeeperContainerInfo();
-    }
-
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
         if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getState(new HostPort(ip, port));

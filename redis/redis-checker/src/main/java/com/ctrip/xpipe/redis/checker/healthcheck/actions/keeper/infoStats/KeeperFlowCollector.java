@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -29,7 +28,7 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
             KeeperInstanceInfo info = context.instance().getCheckInfo();
             long keeperFlow = extractor.getKeeperInstantaneousInputKbps().longValue();
             Map<DcClusterShardActive, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ConcurrentHashMap::new);
-            keeperContainerResult.put(new DcClusterShardActive(info.getDcId(), info.getClusterId(), info.getShardId(), extractor.getKeeperRole(), info.getHostPort().getPort()), keeperFlow);
+            keeperContainerResult.put(new DcClusterShardActive(info.getDcId(), info.getClusterId(), info.getShardId(), extractor.getKeeperActive(), info.getHostPort().getPort()), keeperFlow);
         } catch (Throwable throwable) {
             logger.error("get instantaneous input kbps of keeper:{} error: ", context.instance().getCheckInfo().getHostPort(), throwable);
         }

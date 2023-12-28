@@ -17,29 +17,27 @@ public class KeeperContainerFilterChain {
     @Autowired
     private ConsoleConfig config;
 
-    public boolean doKeeperContainerFilter(KeeperContainerUsedInfoModel targetContainer, KeeperContainerOverloadStandardModel targetStandard){
+    public boolean doKeeperContainerFilter(KeeperContainerUsedInfoModel targetContainer){
         return new HostActiveHandler()
                 .setNextHandler(new HostDiskOverloadHandler(config))
-                .setNextHandler(new KeeperContainerOverloadHandler(targetStandard))
+                .setNextHandler(new KeeperContainerOverloadHandler())
                 .handle(targetContainer);
     }
 
     public boolean doKeeperFilter(Map.Entry<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
+                                  KeeperContainerUsedInfoModel srcKeeperContainer,
                             KeeperContainerUsedInfoModel targetKeeperContainer,
-                            KeeperContainerOverloadStandardModel srcStandard,
-                            KeeperContainerOverloadStandardModel targetStandard,
                             Map<DefaultKeeperContainerUsedInfoAnalyzer.IPPair, DefaultKeeperContainerUsedInfoAnalyzer.IPPairData> keeperPairUsedInfoMap){
-        return new KeeperDataOverloadHandler(targetKeeperContainer, targetStandard)
-                .setNextHandler(new KeeperPairOverloadHandler(keeperPairUsedInfoMap, targetKeeperContainer, srcStandard, targetStandard, config))
+        return new KeeperDataOverloadHandler(targetKeeperContainer)
+                .setNextHandler(new KeeperPairOverloadHandler(keeperPairUsedInfoMap, srcKeeperContainer, targetKeeperContainer, config))
                 .handle(keeperUsedInfoEntry);
     }
 
     public boolean doKeeperPairFilter(Map.Entry<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
-                                      KeeperContainerUsedInfoModel targetKeeperContainer,
-                                      KeeperContainerOverloadStandardModel srcStandard,
-                                      KeeperContainerOverloadStandardModel targetStandard,
+                                      KeeperContainerUsedInfoModel keeperContainer1,
+                                      KeeperContainerUsedInfoModel keeperContainer2,
                                       Map<DefaultKeeperContainerUsedInfoAnalyzer.IPPair, DefaultKeeperContainerUsedInfoAnalyzer.IPPairData> keeperPairUsedInfoMap) {
-        return new KeeperPairOverloadHandler(keeperPairUsedInfoMap, targetKeeperContainer, srcStandard, targetStandard, config)
+        return new KeeperPairOverloadHandler(keeperPairUsedInfoMap, keeperContainer1, keeperContainer2, config)
                 .handle(keeperUsedInfoEntry);
     }
 

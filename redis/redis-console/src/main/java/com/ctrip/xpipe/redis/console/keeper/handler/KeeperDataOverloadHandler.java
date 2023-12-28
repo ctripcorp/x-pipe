@@ -11,16 +11,14 @@ public class KeeperDataOverloadHandler extends AbstractHandler<Map.Entry<DcClust
 
     private KeeperContainerUsedInfoModel targetKeeperContainer;
 
-    private KeeperContainerOverloadStandardModel targetStandard;
 
-    public KeeperDataOverloadHandler(KeeperContainerUsedInfoModel targetKeeperContainer, KeeperContainerOverloadStandardModel targetStandard) {
+    public KeeperDataOverloadHandler(KeeperContainerUsedInfoModel targetKeeperContainer) {
         this.targetKeeperContainer = targetKeeperContainer;
-        this.targetStandard = targetStandard;
     }
 
     @Override
     protected boolean doNextHandler(Map.Entry<DcClusterShardActive, KeeperUsedInfo> keeperUsedInfoEntry) {
-        return keeperUsedInfoEntry.getValue().getInputFlow() + targetKeeperContainer.getActiveInputFlow() < targetStandard.getFlowOverload() &&
-                keeperUsedInfoEntry.getValue().getPeerData() + targetKeeperContainer.getActiveRedisUsedMemory() < targetStandard.getPeerDataOverload();
+        return keeperUsedInfoEntry.getValue().getInputFlow() + targetKeeperContainer.getActiveInputFlow() < targetKeeperContainer.getInputFlowStandard() &&
+                keeperUsedInfoEntry.getValue().getPeerData() + targetKeeperContainer.getActiveRedisUsedMemory() < targetKeeperContainer.getRedisUsedMemoryStandard();
     }
 }
