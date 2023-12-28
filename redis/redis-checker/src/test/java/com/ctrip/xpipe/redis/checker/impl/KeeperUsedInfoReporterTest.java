@@ -126,4 +126,20 @@ public class KeeperUsedInfoReporterTest {
             }
         }
     }
+
+    @Test
+    public void DcClusterShardActive(){
+        DcClusterShardActive active = new DcClusterShardActive();
+        active.setActive(true);
+        active.setDcId("dc");
+        active.setClusterId("cluster");
+        active.setShardId("shard");
+        active.setPort(123);
+        Assert.assertEquals(active.toString(), "dc:cluster:shard:true:123");
+        DcClusterShardActive active1 = new DcClusterShardActive(active.toString());
+        Assert.assertEquals(active.toString(), active1.toString());
+        Assert.assertEquals(active, active1);
+        DcClusterShardActive active2 = new DcClusterShardActive("dc","cluster","shard", true, 123);
+        Assert.assertEquals(active2.hashCode(), active1.hashCode());
+    }
 }

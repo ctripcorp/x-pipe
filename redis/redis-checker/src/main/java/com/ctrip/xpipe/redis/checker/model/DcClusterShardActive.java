@@ -13,14 +13,19 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
 
     public DcClusterShardActive(){}
 
-    public DcClusterShardActive(String dcId, String clusterId, String shardId, Boolean active, int port) {
+    public DcClusterShardActive(String dcId, String clusterId, String shardId, boolean active, int port) {
         super(dcId, clusterId, shardId);
         this.active = active;
         this.port = port;
     }
 
-    public DcClusterShardActive(String dcId, String clusterId, String shardId, Boolean active) {
+    public DcClusterShardActive(String dcId, String clusterId, String shardId, boolean active) {
         super(dcId, clusterId, shardId);
+        this.active = active;
+    }
+
+    public DcClusterShardActive(DcClusterShard dcClusterShard, boolean active) {
+        super(dcClusterShard.getDcId(), dcClusterShard.getClusterId(), dcClusterShard.getShardId());
         this.active = active;
     }
 
@@ -67,7 +72,7 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
 
     @Override
     public String toString() {
-        return getDcId() + SPLITTER + getClusterId() + SPLITTER + getShardId() + SPLITTER + isActive() + SPLITTER + getPort();
+        return new StringBuilder().append(getDcId()).append(SPLITTER).append(getClusterId()).append(SPLITTER).append(getShardId()).append(SPLITTER).append(isActive()).append(SPLITTER).append(getPort()).toString();
     }
 
 }

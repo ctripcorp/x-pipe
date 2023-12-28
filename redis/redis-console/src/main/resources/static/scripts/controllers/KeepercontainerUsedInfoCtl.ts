@@ -25,6 +25,10 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
                             if (matchingData) {
                                 Object.assign(row, matchingData);
                             }
+                            row.activeRedisUsedMemoryPercentage = $scope.getActivePercentage(row.activeRedisUsedMemory, row.totalRedisUsedMemory)*100;
+                            row.activeRedisUsedMemoryStandardPercentage = $scope.getActivePercentage(row.activeRedisUsedMemory, row.redisUsedMemoryStandard)*100;
+                            row.activeInputFlowPercentage = $scope.getActivePercentage(row.activeInputFlow, row.totalInputFlow)*100;
+                            row.activeInputFlowStandardPercentage = $scope.getActivePercentage(row.activeInputFlow, row.inputFlowStandard)*100;
                         });
                     });
                 }
@@ -45,6 +49,13 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
 
     $scope.getKeepercontainerFullSynchronizationTime = function () {
         return $scope.fullSynchronizationTime;
+    }
+
+    $scope.getActivePercentage = function (active, total) {
+        if (total === 0) {
+            return 0;
+        }
+        return active/total;
     }
 
 }
