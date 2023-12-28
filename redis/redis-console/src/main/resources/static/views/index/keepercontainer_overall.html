@@ -15,10 +15,10 @@
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
             <tr ng-repeat="info in $data">
                 <td data-title="'port'">{{info.key.port}}</td>
-                <td data-title="'cluster'" filter="{ 'key.clusterId' : 'text' }">
+                <td data-title="'cluster'" filter="{ 'key.clusterName' : 'text' }">
                     <a href="/#/cluster_dc_shards/{{info.key.clusterName}}/">{{ info.key.clusterName }}</a>
                 </td>
-                <td data-title="'shard'" filter="{ 'key.shardId' : 'text' }">{{info.key.shardName}}</td>
+                <td data-title="'shard'" filter="{ 'key.shardName' : 'text' }">{{info.key.shardName}}</td>
                 <td data-title="'上游流量(MB/S)'" sortable="'value.inputFlow'">{{info.value.inputFlow/1024/8 | number:2}}</td>
                 <td data-title="'上游数据量(MB)'" sortable="'value.peerData'">{{info.value.peerData/1024/1024 | number:2}}</td>
                 <td data-title="'isActive'" filter="{ 'key.active' : 'text' }">{{info.key.active}}</td>

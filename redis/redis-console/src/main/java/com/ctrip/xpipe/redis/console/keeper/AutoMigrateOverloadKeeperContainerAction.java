@@ -45,7 +45,7 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
 
     @Override
     protected void doAction() {
-        List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = analyzer.getAllDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
         if (CollectionUtils.isEmpty(readyToMigrationKeeperContainers)) return;
 
         migrateAllKeepers(readyToMigrationKeeperContainers);

@@ -140,8 +140,8 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                     model.setDiskAvailable(keeperDiskInfo.available)
                             .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
                             .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
-                } catch (RestClientException e){
-                    logger.error("[reportKeeperContainerInfo] getKeeperDiskInfo error, keeperIp: {}", keeperIp);
+                } catch (Throwable e){
+                    logger.error("[reportKeeperContainerInfo] getKeeperDiskInfo error, keeperIp: {}", keeperIp, e);
                 }
                 model.setDetailInfo(detailInfo)
                         .setActiveKeeperCount(activeKeeperCount)
