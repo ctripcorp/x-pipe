@@ -1670,11 +1670,15 @@
 			<readset name="CONTAINER_ACTIVE">
 				<member name="keepercontainer-active"/>
 			</readset>
+			<readset name="DISK_TYPE">
+				<member name="keepercontainer_disk_type" />
+			</readset>
 
 			<readset name="BASE_INFO">
 				<readset-ref name="CONTAINER_ADDRESS" />
 				<readset-ref name="CONTAINER_ACTIVE"/>
 				<readset-ref name="AZ_INFO"/>
+				<readset-ref name="DISK_TYPE"/>
 				<readset-ref name="NAME" relation-name="org-info" />
 				<readset-ref name="NAME" relation-name="dc-info" />
 			</readset>

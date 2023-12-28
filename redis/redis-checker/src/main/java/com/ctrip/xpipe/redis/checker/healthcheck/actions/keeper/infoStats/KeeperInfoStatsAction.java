@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.AbstractKeeperInfoCommand;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -21,11 +22,12 @@ public class KeeperInfoStatsAction extends AbstractKeeperInfoCommand<KeeperInfoS
 
     @Override
     protected CommandFuture<String> executeRedisCommandForStats(Callbackable<String> callback) {
-        return getActionInstance().getRedisSession().infoStats(callback);
+        return getActionInstance().getRedisSession().info("", callback);
     }
 
     @Override
     protected int getBaseCheckInterval() {
         return getActionInstance().getHealthCheckConfig().getKeeperCheckerIntervalMilli();
     }
+
 }

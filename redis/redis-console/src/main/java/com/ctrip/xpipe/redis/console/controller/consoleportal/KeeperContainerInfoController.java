@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
@@ -72,7 +73,7 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/keepercontainers/overload/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllOverloadKeeperContainers() {
-        return analyzer.getAllReadyToMigrationKeeperContainers();
+        return analyzer.getAllDcReadyToMigrationKeeperContainers();
     }
 
 
@@ -92,4 +93,15 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
         }
         return RetMessage.createSuccessMessage();
     }
+
+    @RequestMapping(value = "/keepercontainer/overload/info/lasted", method = RequestMethod.GET)
+    public List<KeeperContainerUsedInfoModel>  getLastedAllReadyMigrateKeeperContainers() {
+        return analyzer.getAllDcKeeperContainerUsedInfoModelsList();
+    }
+
+    @RequestMapping(value = "/keepercontainer/max/fullSynchronizationTime", method = RequestMethod.GET)
+    public RetMessage getMaxKeeperContainerFullSynchronizationTime() {
+        return RetMessage.createSuccessMessage(String.valueOf(analyzer.getAllDcMaxKeeperContainerFullSynchronizationTime() + 1));
+    }
+
 }

@@ -207,6 +207,7 @@ import org.junit.runners.Suite;
         KeeperFlowCollectorTest.class,
         KeeperInfoStatsActionTest.class,
         KeeperInfoStatsActionFactoryTest.class,
+        KeeperUsedInfoReporterTest.class,
 
         RedisInfoActionFactoryTest.class,
         RedisInfoActionTest.class,

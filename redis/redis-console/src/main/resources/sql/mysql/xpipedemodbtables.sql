@@ -231,6 +231,7 @@ CREATE TABLE `KEEPERCONTAINER_TBL` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `keepercontainer_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of keeper container',
+  `keepercontainer_disk_type` varchar(64) not null default 'default'
   PRIMARY KEY (`keepercontainer_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `keepercontainer_dc` (`keepercontainer_dc`)
