@@ -591,7 +591,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getCheckerCurrentDcAllMetaRefreshIntervalMilli() {
-        return getIntProperty(KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL, 600000);
+        return getIntProperty(KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL, 60 * 1000);
     }
 
     @Override
@@ -721,7 +721,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getKeeperCheckerIntervalMilli() {
-        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 1800 * 1000);
+        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 5 * 60 * 1000);
     }
 
     @Override

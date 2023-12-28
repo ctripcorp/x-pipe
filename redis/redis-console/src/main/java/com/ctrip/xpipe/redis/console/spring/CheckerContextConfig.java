@@ -187,8 +187,8 @@ public class CheckerContextConfig {
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public KeeperContainerInfoReporter keeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector,
-           CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService) {
-        return new KeeperContainerInfoReporter(redisUsedMemoryCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService);
+           CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService, MetaCache metaCache) {
+        return new KeeperContainerInfoReporter(redisUsedMemoryCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService, metaCache);
     }
     
     @Bean(name = "ALLCHECKER")
