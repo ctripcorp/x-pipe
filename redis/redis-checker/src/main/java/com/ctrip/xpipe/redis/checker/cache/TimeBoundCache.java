@@ -29,6 +29,10 @@ public class TimeBoundCache<T> {
         return this.data;
     }
 
+    public T getData() {
+        return getData(false);
+    }
+
     public T getData(boolean disableCache) {
         if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) {
             return data;
