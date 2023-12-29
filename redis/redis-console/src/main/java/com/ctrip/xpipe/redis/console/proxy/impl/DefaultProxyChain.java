@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.model.TunnelStatsInfo;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +106,25 @@ public class DefaultProxyChain implements ProxyChain {
         proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId)
                 .setShardId(shardId).setTunnelStatsInfos(tunnelStatsInfos);
         return proxyTunnelInfo;
+    }
+
+    @Override
+    public DefaultProxyChain clone() {
+        DefaultProxyChain clone = new DefaultProxyChain();
+        clone.peerDcId = this.peerDcId;
+        clone.backupDcId = this.backupDcId;
+        clone.clusterId = this.clusterId;
+        clone.shardId = this.shardId;
+
+        if (null != this.tunnelInfos) {
+            List<DefaultTunnelInfo> cloneTunnelInfos = Lists.newArrayList();
+            for (DefaultTunnelInfo tunnelInfo: this.tunnelInfos) {
+                cloneTunnelInfos.add(tunnelInfo.clone());
+            }
+            clone.tunnelInfos = cloneTunnelInfos;
+        }
+
+        return clone;
     }
 
     @Override

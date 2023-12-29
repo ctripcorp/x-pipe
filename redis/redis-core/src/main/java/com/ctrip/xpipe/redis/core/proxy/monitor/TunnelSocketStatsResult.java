@@ -93,6 +93,15 @@ public class TunnelSocketStatsResult implements Serializable {
     }
 
     @Override
+    public TunnelSocketStatsResult clone() {
+        TunnelSocketStatsResult clone = new TunnelSocketStatsResult();
+        clone.tunnelId = this.tunnelId;
+        if (null != this.frontendSocketStats) clone.frontendSocketStats = this.frontendSocketStats.clone();
+        if (null != this.backendSocketStats) clone.backendSocketStats = this.backendSocketStats.clone();
+        return clone;
+    }
+
+    @Override
     public String toString() {
         return "TunnelSocketStatsResult{" +
                 "tunnelId='" + tunnelId + '\'' +

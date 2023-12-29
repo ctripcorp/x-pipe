@@ -107,6 +107,18 @@ public class ProxyModel implements Serializable {
     }
 
     @Override
+    public ProxyModel clone() {
+        ProxyModel clone = new ProxyModel();
+        clone.uri = this.uri;
+        clone.dcName = this.dcName;
+        clone.id = this.id;
+        clone.active = this.active;
+        clone.monitorActive = this.monitorActive;
+        if (null != this.hostPort) clone.hostPort = new HostPort(this.hostPort.getHost(), this.hostPort.getPort());
+        return clone;
+    }
+
+    @Override
     public String toString() {
         return String.format("ProxyModel[uri: %s, active: %b, dc-name: %s, id: %d]", uri, active, dcName, id);
     }

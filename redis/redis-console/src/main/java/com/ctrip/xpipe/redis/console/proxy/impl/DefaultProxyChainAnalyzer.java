@@ -20,7 +20,6 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +74,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
     @Override
     public Map<DcClusterShardPeer, ProxyChain> getClusterShardChainMap() {
-        return chains.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> SerializationUtils.clone(e.getValue())));
+        return chains.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> ((DefaultProxyChain)e.getValue()).clone()));
     }
 
     @Override

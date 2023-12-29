@@ -89,4 +89,13 @@ public class TunnelTrafficResult implements Serializable {
     public int hashCode() {
         return Objects.hash(tunnelId, frontend, backend);
     }
+
+    @Override
+    public TunnelTrafficResult clone() {
+        TunnelTrafficResult clone = new TunnelTrafficResult();
+        clone.tunnelId = this.tunnelId;
+        if (null != this.frontend) clone.frontend = this.frontend.clone();
+        if (null != this.backend) clone.backend = this.backend.clone();
+        return clone;
+    }
 }

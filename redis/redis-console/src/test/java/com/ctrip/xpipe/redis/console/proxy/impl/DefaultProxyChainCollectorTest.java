@@ -1,39 +1,30 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
-import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.redis.console.reporter.DefaultHttpService;
 import org.apache.http.HttpException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.IntStream;
 
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
@@ -54,7 +45,6 @@ public class DefaultProxyChainCollectorTest extends AbstractConsoleTest {
     @Mock
     private RestOperations restTemplate;
 
-    @InjectMocks
     DefaultProxyChainCollector collector;
 
     private Map<String,String> consoles = new HashMap<String, String>() {{
@@ -64,6 +54,7 @@ public class DefaultProxyChainCollectorTest extends AbstractConsoleTest {
 
     @Before
     public void setupDefaultProxyChainCollectorTest() {
+        this.collector = new DefaultProxyChainCollector(proxyChainAnalyzer, consoleConfig);
         when(httpService.getRestTemplate()).thenReturn(restTemplate);
         this.collector.setHttpService(httpService);
         when(consoleConfig.getConsoleDomains()).thenReturn(consoles);
@@ -85,15 +76,14 @@ public class DefaultProxyChainCollectorTest extends AbstractConsoleTest {
     @Test
     public void remoteDcDown_noMemLeak() {
         ResponseEntity<Map<DcClusterShardPeer, DefaultProxyChain>> resp = new ResponseEntity(generateProxyChains(100), HttpStatus.OK);
+        collector.setTaskTrigger(true);
         when(restTemplate.exchange(anyString(), any(), any(), any(ParameterizedTypeReference.class), anyString()))
                 .thenReturn(resp);
         IntStream.range(0, 10).forEach(i -> collector.fetchAllDcProxyChains());
 
-        Map<String, Map<DcClusterShardPeer, ProxyChain>> dcProxyChainMap = collector.getDcProxyChainMap();
-        for (Map<DcClusterShardPeer, ProxyChain> proxyChainMap: dcProxyChainMap.values()) {
-            for (ProxyChain proxyChain: proxyChainMap.values()) {
-                Assert.assertEquals(2, proxyChain.getTunnelInfos().size());
-            }
+        List<ProxyChain> proxyChains = collector.getProxyChains();
+        for (ProxyChain proxyChain: proxyChains) {
+            Assert.assertEquals(2, proxyChain.getTunnelInfos().size());
         }
 
         doAnswer(inov -> {
@@ -101,14 +91,12 @@ public class DefaultProxyChainCollectorTest extends AbstractConsoleTest {
             String host = consoles.values().iterator().next();
             if (uri.startsWith(host)) throw new HttpException("mock");
             else return resp;
-        }).when(restTemplate).exchange(anyString(), any(), any(), any(ParameterizedTypeReference.class));
+        }).when(restTemplate).exchange(anyString(), any(), any(), any(ParameterizedTypeReference.class), anyString());
 
         IntStream.range(0, 10).forEach(i -> collector.fetchAllDcProxyChains());
-        dcProxyChainMap = collector.getDcProxyChainMap();
-        for (Map<DcClusterShardPeer, ProxyChain> proxyChainMap: dcProxyChainMap.values()) {
-            for (ProxyChain proxyChain: proxyChainMap.values()) {
-                Assert.assertEquals(2, proxyChain.getTunnelInfos().size());
-            }
+        proxyChains = collector.getProxyChains();
+        for (ProxyChain proxyChain: proxyChains) {
+            Assert.assertEquals(2, proxyChain.getTunnelInfos().size());
         }
     }
 
