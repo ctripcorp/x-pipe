@@ -84,9 +84,8 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
     public String getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
         if (index < 0) throw new IllegalArgumentException("illegal index " + index);
-        XpipeMeta xpipeMeta = metaCache.getDividedXpipeMeta(index);
-
-        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+        if (format != null && format.equals("xml")) return metaCache.getXmlFormatDividedXpipeMeta(index);
+        return coder.encode(metaCache.getDividedXpipeMeta(index));
     }
     
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)

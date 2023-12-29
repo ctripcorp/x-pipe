@@ -37,6 +37,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getXmlFormatDividedXpipeMeta(int partIndex) {
+        return xpipeMeta.toString();
+    }
+
+    @Override
     public boolean inBackupDc(HostPort hostPort) {
         return true;
     }

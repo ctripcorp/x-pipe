@@ -29,6 +29,10 @@ public class TimeBoundCache<T> {
         return this.data;
     }
 
+    public T getData() {
+        return getData(false);
+    }
+
     public T getData(boolean disableCache) {
         if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) {
             return data;
@@ -37,7 +41,10 @@ public class TimeBoundCache<T> {
         synchronized (this) {
             if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) return data;
             this.data = dataSupplier.get();
-            this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
+            long timeout = timeoutMillSupplier.getAsLong();
+            this.expiredAt = System.currentTimeMillis() + timeout;
+            // expiredAt exceeds max long
+            if (this.expiredAt < timeout) this.expiredAt = Long.MAX_VALUE;
             return this.data;
         }
     }

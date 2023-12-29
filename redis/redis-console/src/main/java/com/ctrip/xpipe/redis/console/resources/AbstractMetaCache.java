@@ -68,6 +68,11 @@ public abstract class AbstractMetaCache implements MetaCache {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String getXmlFormatDividedXpipeMeta(int partIndex) {
+        throw new UnsupportedOperationException();
+    }
+
     protected void refreshMeta(XpipeMeta xpipeMeta) {
         Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
         AbstractMetaCache.this.meta = meta;

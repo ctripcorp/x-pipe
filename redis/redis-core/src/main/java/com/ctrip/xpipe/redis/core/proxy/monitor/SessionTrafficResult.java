@@ -111,4 +111,15 @@ public class SessionTrafficResult implements Serializable {
     public int hashCode() {
         return Objects.hash(timestamp, inputBytes, outputBytes);
     }
+
+    @Override
+    protected SessionTrafficResult clone() {
+        SessionTrafficResult clone = new SessionTrafficResult();
+        clone.timestamp = this.timestamp;
+        clone.inputBytes = this.inputBytes;
+        clone.outputBytes = this.outputBytes;
+        clone.inputRates = this.inputRates;
+        clone.outputRates = this.outputRates;
+        return clone;
+    }
 }

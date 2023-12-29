@@ -163,6 +163,20 @@ public class TunnelStatsResult implements Serializable {
     }
 
     @Override
+    public TunnelStatsResult clone() {
+        TunnelStatsResult clone = new TunnelStatsResult();
+        clone.tunnelId = this.tunnelId;
+        clone.tunnelState = this.tunnelState;
+        clone.protocolRecvTime = this.protocolRecvTime;
+        clone.protocolSndTime = this.protocolSndTime;
+        clone.closeFrom = this.closeFrom;
+        clone.closeTime = this.closeTime;
+        if (null != this.frontend) clone.frontend = new HostPort(this.frontend.getHost(), this.frontend.getPort());
+        if (null != this.backend) clone.backend = new HostPort(this.backend.getHost(), this.backend.getPort());
+        return clone;
+    }
+
+    @Override
     public String toString() {
         return "TunnelStatsResult{" +
                 "tunnelId='" + tunnelId + '\'' +
