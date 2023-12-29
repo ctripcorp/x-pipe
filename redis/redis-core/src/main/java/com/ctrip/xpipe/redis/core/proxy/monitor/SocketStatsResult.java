@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -98,6 +99,14 @@ public class SocketStatsResult implements Serializable {
     public int hashCode() {
 
         return Objects.hash(result, timestamp);
+    }
+
+    @Override
+    public SocketStatsResult clone() {
+        SocketStatsResult clone = new SocketStatsResult();
+        clone.timestamp = this.timestamp;
+        if (null != this.result) clone.result = new ArrayList<>(this.result);
+        return clone;
     }
 
     @Override

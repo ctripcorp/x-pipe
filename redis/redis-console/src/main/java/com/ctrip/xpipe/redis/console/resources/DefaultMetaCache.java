@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
@@ -30,6 +31,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 /**
  * @author wenchao.meng
@@ -63,6 +65,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private List<Set<String>> clusterParts;
 
     private List<Set<Long>> keeperContainerParts;
+
+    private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
@@ -144,8 +148,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                 }
 
                 synchronized (this) {
-                    refreshClusterParts();
-                    refreshKeeperContainerParts();
+                    refreshMetaParts();
                     XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
                     refreshMeta(xpipeMeta);
                 }
@@ -158,7 +161,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         });
     }
 
-    private void refreshClusterParts() {
+    private void refreshMetaParts() {
         try {
             int parts = Math.max(1, consoleConfig.getClusterDividedParts());
             logger.debug("[refreshClusterParts] start parts {}", parts);
@@ -168,18 +171,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                 logger.info("[refreshClusterParts] skip for parts miss, expect {}, actual {}", parts, newClusterParts.size());
                 return;
             }
-
-            this.clusterParts = newClusterParts;
-        } catch (Throwable th) {
-            logger.warn("[refreshClusterParts] fail", th);
-        }
-    }
-
-    private void refreshKeeperContainerParts() {
-        try {
-            int parts = Math.max(1, consoleConfig.getClusterDividedParts());
-            logger.debug("[refreshKeeperContainerParts] start parts {}", parts);
-
             List<Set<Long>> newKeeperContainerParts = keeperContainerService.divideKeeperContainers(parts);
             if (newKeeperContainerParts.size() < parts) {
                 logger.info("[refreshKeeperContainerParts] skip for parts miss, expect {}, actual {}",
@@ -187,9 +178,17 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                 return;
             }
 
+            this.clusterParts = newClusterParts;
             this.keeperContainerParts = newKeeperContainerParts;
+
+            List<TimeBoundCache<String>> localXPipeMetaParts = new ArrayList<>();
+            IntStream.range(0, consoleConfig.getClusterDividedParts()).forEach(i -> {
+                // using as lazy-load cache
+                localXPipeMetaParts.add(new TimeBoundCache<>(() -> Long.MAX_VALUE, () -> getDividedXpipeMeta(i).toString()));
+            });
+            this.xmlFormatXPipeMetaParts = localXPipeMetaParts;
         } catch (Throwable th) {
-            logger.warn("[refreshKeeperContainerParts] fail", th);
+            logger.warn("[refreshClusterParts] fail", th);
         }
     }
 
@@ -233,6 +232,17 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
 
         return createDividedMeta(xpipeMeta, requestClusters, requestKeeperContainers);
+    }
+
+    @Override
+    public String getXmlFormatDividedXpipeMeta(int partIndex) {
+        List<TimeBoundCache<String>> localParts = this.xmlFormatXPipeMetaParts;
+        if (null == localParts) throw new DataNotFoundException("data not ready");
+        if (partIndex >= localParts.size()) {
+            throw new DataNotFoundException("no part " + partIndex);
+        }
+
+        return localParts.get(partIndex).getData();
     }
 
     @VisibleForTesting

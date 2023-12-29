@@ -107,6 +107,31 @@ public class DefaultTunnelInfo implements TunnelInfo, Serializable {
     }
 
     @Override
+    protected DefaultTunnelInfo clone() {
+        DefaultTunnelInfo clone = new DefaultTunnelInfo();
+        clone.tunnelId = this.tunnelId;
+        clone.tunnelDcId = this.tunnelDcId;
+
+        if (null != this.proxyModel) {
+            clone.proxyModel = this.proxyModel.clone();
+        }
+
+        if (null != this.tunnelSocketStatsResult) {
+            clone.tunnelSocketStatsResult = this.tunnelSocketStatsResult.clone();
+        }
+
+        if (null != this.tunnelStatsResult) {
+            clone.tunnelStatsResult = this.tunnelStatsResult.clone();
+        }
+
+        if (null != this.tunnelTrafficResult) {
+            clone.tunnelTrafficResult = this.tunnelTrafficResult.clone();
+        }
+
+        return clone;
+    }
+
+    @Override
     public String toString() {
         return "DefaultTunnelInfo{" +
                 "dcId='" + tunnelDcId + '\'' +
