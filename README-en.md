@@ -90,6 +90,7 @@ As of the time of writing, Redis 4.0 has not been released, and the internal ver
 ### Delay Test
 #### Test Plan
 The testing method is illustrated in the following diagram. Data is sent from the client to the master, and the slave notifies the client through keyspace notification. The total test latency is the sum of t1, t2, and t3.
+
 ![test](https://raw.github.com/ctripcorp/x-pipe/master/doc/image/delay.jpg)
 
 #### Test Data
