@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX)
@@ -28,11 +27,11 @@ public class KeeperContainerController extends AbstractConsoleController{
 
     @RequestMapping(value = "/keepercontainer/info/all", method = RequestMethod.GET)
     public List<KeeperContainerUsedInfoModel> getAllKeeperContainerUsedInfoModelsList() {
-        return new ArrayList<>(analyzer.getCurrentDcKeeperContainerUsedInfoModelsList().values());
+        return analyzer.getCurrentDcKeeperContainerUsedInfoModelsList();
     }
 
     @RequestMapping(value = "/keepercontainer/full/synchronization/time", method = RequestMethod.GET)
-    public Integer getMaxKeeperContainerFullSynchronizationTime() {
+    public List<Integer> getMaxKeeperContainerFullSynchronizationTime() {
         return analyzer.getCurrentDcMaxKeeperContainerFullSynchronizationTime();
     }
 

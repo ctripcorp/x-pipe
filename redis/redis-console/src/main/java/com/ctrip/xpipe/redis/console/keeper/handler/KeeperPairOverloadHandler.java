@@ -4,13 +4,15 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer.*;
+import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
+import com.ctrip.xpipe.redis.console.keeper.util.DefaultKeeperContainerUsedInfoAnalyzerUtil;
+import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerUtil;
 
 import java.util.Map;
 
 public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo>>{
 
-    private Map<IPPair, IPPairData> keeperPairUsedInfoMap;
+    private KeeperContainerUsedInfoAnalyzerUtil analyzerUtil;
 
     private KeeperContainerUsedInfoModel keeperContainer1;
 
@@ -18,8 +20,8 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
 
     private ConsoleConfig config;
 
-    public KeeperPairOverloadHandler(Map<IPPair, IPPairData> keeperPairUsedInfoMap, KeeperContainerUsedInfoModel keeperContainer1, KeeperContainerUsedInfoModel keeperContainer2, ConsoleConfig config) {
-        this.keeperPairUsedInfoMap = keeperPairUsedInfoMap;
+    public KeeperPairOverloadHandler(KeeperContainerUsedInfoAnalyzerUtil analyzerUtil, KeeperContainerUsedInfoModel keeperContainer1, KeeperContainerUsedInfoModel keeperContainer2, ConsoleConfig config) {
+        this.analyzerUtil = analyzerUtil;
         this.keeperContainer1 = keeperContainer1;
         this.keeperContainer2 = keeperContainer2;
         this.config = config;
@@ -27,8 +29,7 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
 
     @Override
     protected boolean doNextHandler(Map.Entry<DcClusterShardActive, KeeperUsedInfo> keeperUsedInfoEntry) {
-        IPPair pair = new IPPair(keeperUsedInfoEntry.getValue().getKeeperIP(), keeperContainer2.getKeeperIp());
-        IPPairData longLongPair = keeperPairUsedInfoMap.get(pair);
+        IPPairData longLongPair = analyzerUtil.getIPPairData(keeperContainer1.getKeeperIp(), keeperContainer2.getKeeperIp());
         if (longLongPair == null) return true;
         double keeperPairOverLoadFactor = config.getKeeperPairOverLoadFactor();
         double flowStandard = Math.min(keeperContainer1.getInputFlowStandard(), keeperContainer2.getInputFlowStandard()) * keeperPairOverLoadFactor;

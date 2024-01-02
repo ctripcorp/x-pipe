@@ -124,7 +124,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                     for (String ip : hostPort2InputFlow.keySet()) {
                         if (!ipList.contains(ip)) {
                             logger.warn("[reportKeeperContainerInfo] keeperContainer:{} is not exit in console meta", ip);
-                            return;
+                            hostPort2InputFlow.remove(ip);
                         }
                     }
                 }
