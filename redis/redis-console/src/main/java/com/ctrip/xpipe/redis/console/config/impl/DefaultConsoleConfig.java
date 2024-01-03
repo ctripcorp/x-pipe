@@ -721,7 +721,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getKeeperCheckerIntervalMilli() {
-        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 5 * 60 * 1000);
+        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 60 * 1000);
     }
 
     @Override

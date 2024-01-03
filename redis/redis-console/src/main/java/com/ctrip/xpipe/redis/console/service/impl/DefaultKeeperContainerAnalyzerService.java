@@ -5,8 +5,10 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerStandardService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
+import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class DefaultKeeperContainerStandardService implements KeeperContainerStandardService {
+public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAnalyzerService {
 
     @Autowired
     private ConsoleConfig config;
@@ -23,16 +25,19 @@ public class DefaultKeeperContainerStandardService implements KeeperContainerSta
     @Autowired
     private KeeperContainerService keeperContainerService;
 
+    @Autowired
+    private OrganizationService organizationService;
+
     private static final long DEFAULT_PEER_DATA_OVERLOAD = 474L * 1024 * 1024 * 1024;
 
     private static final long DEFAULT_KEEPER_FLOW_OVERLOAD = 270 * 1024;
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerStandardService.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerAnalyzerService.class);
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Override
-    public void getAndFlushStandard(Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap) {
+    public void initStandard(Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap) {
         KeeperContainerOverloadStandardModel keeperContainerOverloadStandard = config.getKeeperContainerOverloadStandards().get(currentDc);
         double loadFactor = config.getKeeperContainerOverloadFactor();
         KeeperContainerOverloadStandardModel defaultOverloadStandard = getDefaultStandard(keeperContainerOverloadStandard, loadFactor);
@@ -63,6 +68,7 @@ public class DefaultKeeperContainerStandardService implements KeeperContainerSta
         KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
+        infoModel.setOrg(organizationService.getOrganizationTblByCMSOrganiztionId(keepercontainerTbl.getOrgId()).getOrgName());
         if (keeperContainerOverloadStandard != null && keeperContainerOverloadStandard.getDiskTypes() != null && !keeperContainerOverloadStandard.getDiskTypes().isEmpty()) {
             for (KeeperContainerOverloadStandardModel.DiskTypesEnum diskType : keeperContainerOverloadStandard.getDiskTypes()) {
                 if (diskType.getDiskType().getDesc().equals(keepercontainerTbl.getKeepercontainerDiskType())) {

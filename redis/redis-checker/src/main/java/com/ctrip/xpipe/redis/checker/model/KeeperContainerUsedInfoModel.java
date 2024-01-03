@@ -10,6 +10,8 @@ public class KeeperContainerUsedInfoModel {
 
     private String dcName;
 
+    private String org;
+
     private long activeInputFlow;
 
     private long totalInputFlow;
@@ -51,6 +53,7 @@ public class KeeperContainerUsedInfoModel {
     public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardActive, KeeperUsedInfo> dcClusterShard) {
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
+        this.org = model.getOrg();
         this.activeInputFlow = model.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow();
         this.totalInputFlow = model.getTotalInputFlow() + dcClusterShard.getValue().getInputFlow();
         this.inputFlowStandard = model.getInputFlowStandard();
@@ -84,6 +87,14 @@ public class KeeperContainerUsedInfoModel {
     public KeeperContainerUsedInfoModel setKeeperIp(String keeperIp) {
         this.keeperIp = keeperIp;
         return this;
+    }
+
+    public String getOrg() {
+        return org;
+    }
+
+    public void setOrg(String org) {
+        this.org = org;
     }
 
     public long getActiveInputFlow() {
@@ -215,6 +226,7 @@ public class KeeperContainerUsedInfoModel {
         return "KeeperContainerUsedInfoModel{" +
                 "keeperIp='" + keeperIp + '\'' +
                 ", dcName='" + dcName + '\'' +
+                ", org='" + org + '\'' +
                 ", activeInputFlow=" + activeInputFlow +
                 ", totalInputFlow=" + totalInputFlow +
                 ", inputFlowStandard=" + inputFlowStandard +

@@ -1,55 +1,42 @@
 package com.ctrip.xpipe.redis.console.keeper.entity;
 
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class IPPairData {
     private long inputFlow;
     private long peerData;
-    private int number;
+    private final Map<DcClusterShardActive, KeeperUsedInfo> keeperUsedInfoMap = new HashMap<>();
 
     public IPPairData() {
     }
 
-    public IPPairData(long inputFlow, long peerData, int number) {
-        this.inputFlow = inputFlow;
-        this.peerData = peerData;
-        this.number = number;
+    public void removeDcClusterShard(Map.Entry<DcClusterShardActive, KeeperUsedInfo> migrateDcClusterShard) {
+        this.inputFlow -= migrateDcClusterShard.getValue().getInputFlow();
+        this.peerData -= migrateDcClusterShard.getValue().getPeerData();
+        keeperUsedInfoMap.remove(migrateDcClusterShard.getKey());
     }
 
-    public IPPairData addData(long inputFlow, long peerData) {
-        this.inputFlow += inputFlow;
-        this.peerData += peerData;
-        this.number++;
-        return this;
+    public void addDcClusterShard(Map.Entry<DcClusterShardActive, KeeperUsedInfo> migrateDcClusterShard) {
+        this.inputFlow += migrateDcClusterShard.getValue().getInputFlow();
+        this.peerData += migrateDcClusterShard.getValue().getPeerData();
+        keeperUsedInfoMap.put(migrateDcClusterShard.getKey(), migrateDcClusterShard.getValue());
     }
-
-    public IPPairData subData(long inputFlow, long peerData) {
-        this.inputFlow -= inputFlow;
-        this.peerData -= peerData;
-        this.number--;
-        return this;
-    }
-
 
     public long getInputFlow() {
         return inputFlow;
-    }
-
-    public void setInputFlow(long inputFlow) {
-        this.inputFlow = inputFlow;
     }
 
     public long getPeerData() {
         return peerData;
     }
 
-    public void setPeerData(long peerData) {
-        this.peerData = peerData;
+    public Map<DcClusterShardActive, KeeperUsedInfo> getKeeperUsedInfoMap() {
+        return keeperUsedInfoMap;
     }
 
-    public int getNumber() {
-        return number;
-    }
-
-    public void setNumber(int number) {
-        this.number = number;
-    }
 }

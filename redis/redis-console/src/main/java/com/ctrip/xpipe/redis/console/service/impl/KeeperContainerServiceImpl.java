@@ -5,6 +5,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
+import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel.*;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -317,6 +318,17 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
+
+    if (!createInfo.getDiskType().isEmpty()) {
+      boolean isContained = Arrays.stream(DiskType.values())
+              .map(DiskType::getDesc)
+              .anyMatch(createInfo.getDiskType()::equalsIgnoreCase);
+      if (isContained) {
+        keepercontainerTbl.setKeepercontainerDiskType(createInfo.getDiskType());
+      } else {
+        keepercontainerTbl.setKeepercontainerDiskType(DiskType.DEFAULT.getDesc());
+      }
+    }
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
       public Integer doQuery() throws DalException {
@@ -420,6 +432,17 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
+
+    if (!keeperContainerInfoModel.getDiskType().isEmpty()) {
+      boolean isContained = Arrays.stream(DiskType.values())
+              .map(DiskType::getDesc)
+              .anyMatch(keeperContainerInfoModel.getDiskType()::equalsIgnoreCase);
+      if (isContained) {
+        proto.setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType());
+      } else {
+        proto.setKeepercontainerDiskType(DiskType.DEFAULT.getDesc());
+      }
+    }
 
     queryHandler.handleQuery(new DalQuery<Integer>() {
       @Override

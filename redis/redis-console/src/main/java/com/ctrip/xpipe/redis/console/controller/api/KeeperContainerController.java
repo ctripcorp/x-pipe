@@ -35,11 +35,4 @@ public class KeeperContainerController extends AbstractConsoleController{
         return analyzer.getCurrentDcMaxKeeperContainerFullSynchronizationTime();
     }
 
-    @RequestMapping(value = "/keepercontainer/overload/info/current", method = RequestMethod.GET)
-    public List<KeeperContainerUsedInfoModel>  getCurrentReadyToMigrateKeeperContainers() {
-        List<KeeperContainerUsedInfoModel> result = new ArrayList<>();
-        analyzer.getKeeperContainerUsedInfoModelIndexMap().values().forEach(result::addAll);
-        return result;
-    }
-
 }

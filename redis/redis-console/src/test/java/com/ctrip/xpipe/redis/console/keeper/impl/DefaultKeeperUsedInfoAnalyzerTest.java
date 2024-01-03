@@ -5,11 +5,10 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
-import com.ctrip.xpipe.redis.console.keeper.entity.IPPair;
-import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,6 +41,8 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     private ThreadPoolExecutor executor;
     @Mock
     private FoundationService service;
+    @Mock
+    private KeeperContainerAnalyzerService keeperContainerAnalyzerService;
     private final KeeperContainerFilterChain filterChain = new KeeperContainerFilterChain();
     public static final int expireTime = 1000;
     public static final String DC = "jq";
@@ -95,16 +96,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 //    }
 
     @Test
-    public void testIpPair() {
-        IPPair ipPairA = new IPPair(IP1, IP2);
-        IPPairData ipPairData = new IPPairData(1,1,1);
-        IPPair ipPairB = new IPPair(IP2, IP1);
-        Map<IPPair, IPPairData> keeperPairUsedInfoMap = new HashMap<>();
-        keeperPairUsedInfoMap.put(ipPairA, ipPairData);
-        Assert.assertEquals(keeperPairUsedInfoMap.get(ipPairA), keeperPairUsedInfoMap.get(ipPairB));
-    }
-
-    @Test
     public void testUpdateKeeperContainerUsedInfo() {
         //To prevent a second updateKeeperContainerUsedInfo() data when expired
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(1000000);
@@ -115,15 +106,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster2, Shard1, true, 4, 4)
                 .createKeeper(Cluster2, Shard1, true, 5, 5);
         analyzer.updateKeeperContainerUsedInfo(0, new ArrayList<>(models1.values()));
-        Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
+        Assert.assertEquals(1, analyzer.getCheckerIndexesSize());
 
         Map<String, KeeperContainerUsedInfoModel> models2 = new HashMap<>();
         createKeeperContainer(models2, IP3, 5, 5)
                 .createKeeper(Cluster3, Shard1, true, 2, 2)
                 .createKeeper(Cluster4, Shard2, true, 3, 3);
         analyzer.updateKeeperContainerUsedInfo(1, new ArrayList<>(models2.values()));
-        Assert.assertEquals(0, analyzer.getCheckerIndexes().size());
-        Assert.assertEquals(0, analyzer.getKeeperContainerUsedInfoModelIndexMap().size());
+        Assert.assertEquals(0, analyzer.getCheckerIndexesSize());
     }
 
     @Test
@@ -135,7 +125,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster2, Shard1, true, 4, 4)
                 .createKeeper(Cluster2, Shard1, true, 5, 5);
         analyzer.updateKeeperContainerUsedInfo(0, new ArrayList<>(models1.values()));
-        Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
+        Assert.assertEquals(1, analyzer.getCheckerIndexesSize());
 
         TimeUnit.MILLISECONDS.sleep(expireTime+100);
 
@@ -144,8 +134,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster3, Shard1, true, 2, 2)
                 .createKeeper(Cluster4, Shard2, true, 3, 3);
         analyzer.updateKeeperContainerUsedInfo(0, new ArrayList<>(models2.values()));
-        Assert.assertEquals(1, analyzer.getCheckerIndexes().size());
-        Assert.assertEquals(1, analyzer.getKeeperContainerUsedInfoModelIndexMap().size());
+        Assert.assertEquals(1, analyzer.getCheckerIndexesSize());
     }
 
     @Test

@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
@@ -21,9 +22,10 @@ import com.ctrip.xpipe.redis.console.keeper.util.DefaultKeeperContainerUsedInfoA
 import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerUtil;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerStandardService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -33,7 +35,6 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -44,20 +45,18 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     private ConsoleConfig config;
 
-    private KeeperContainerStandardService keeperContainerStandardService;
+    private KeeperContainerAnalyzerService keeperContainerAnalyzerService;
 
     private KeeperContainerFilterChain keeperContainerFilterChain;
 
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Map<Integer, Date> checkerIndexes = new HashMap<>();
-
-    private Map<Integer, List<KeeperContainerUsedInfoModel>> keeperContainerUsedInfoModelIndexMap = new HashMap<>();
+    private Map<Integer, Pair<List<KeeperContainerUsedInfoModel>, Date>> keeperContainerUsedInfoModelIndexMap = new HashMap<>();
 
     private Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap = new HashMap<>();
 
-    private List<MigrationKeeperContainerDetailModel> currentDcKeeperContainerMigrationDetail = new ArrayList<>();
+    private List<MigrationKeeperContainerDetailModel> currentDcKeeperContainerMigrationResult = new ArrayList<>();
 
     private long currentDcMaxKeeperContainerActiveRedisUsedMemory;
 
@@ -74,16 +73,15 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     public DefaultKeeperContainerUsedInfoAnalyzer() {}
 
     public DefaultKeeperContainerUsedInfoAnalyzer(ConsoleConfig config,
-                                                  KeeperContainerStandardService keeperContainerStandardService,
+                                                  KeeperContainerAnalyzerService keeperContainerAnalyzerService,
                                                   KeeperContainerFilterChain keeperContainerFilterChain) {
         this.config = config;
-        this.keeperContainerStandardService = keeperContainerStandardService;
+        this.keeperContainerAnalyzerService = keeperContainerAnalyzerService;
         this.keeperContainerFilterChain = keeperContainerFilterChain;
     }
 
     @Override
     public List<MigrationKeeperContainerDetailModel> getAllDcReadyToMigrationKeeperContainers() {
-        logger.info("[getAllDcReadyToMigrationKeeperContainers] start");
         return getAllDcResult(this::getCurrentDcReadyToMigrationKeeperContainers,
                 new MigrationKeeperContainerDetailInfoGetCommand(restTemplate),
                 Collections.synchronizedList(new ArrayList<>()));
@@ -91,7 +89,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<KeeperContainerUsedInfoModel> getAllDcKeeperContainerUsedInfoModelsList() {
-        logger.info("[getAllDcKeeperContainerUsedInfoModelsList] start getCurrentDcKeeperContainerUsedInfoModelsList{}", this.getCurrentDcKeeperContainerUsedInfoModelsList());
         return getAllDcResult(this::getCurrentDcKeeperContainerUsedInfoModelsList,
                 new KeeperContainerInfoGetCommand(restTemplate),
                 Collections.synchronizedList(new ArrayList<>()));
@@ -99,7 +96,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<Integer> getAllDcMaxKeeperContainerFullSynchronizationTime() {
-        logger.info("[getAllDcMaxKeeperContainerFullSynchronizationTime] start");
         return getAllDcResult(this::getCurrentDcMaxKeeperContainerFullSynchronizationTime,
                 new KeeperContainerFullSynchronizationTimeGetCommand(restTemplate),
                 Collections.synchronizedList(new ArrayList<>()));
@@ -107,7 +103,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<MigrationKeeperContainerDetailModel> getCurrentDcReadyToMigrationKeeperContainers() {
-        return currentDcKeeperContainerMigrationDetail;
+        return currentDcKeeperContainerMigrationResult;
     }
 
     @Override
@@ -127,17 +123,17 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     public <T> List<T> getAllDcResult(Supplier<List<T>> localDcResultSupplier, AbstractGetAllDcCommand<List<T>> command, List<T> result) {
+        logger.info("[getAllDcResult] {} start", command.getName());
         ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
         config.getConsoleDomains().forEach((dc, domains) -> {
             if (currentDc.equalsIgnoreCase(dc)) {
-                logger.info("[getCurrentDcResult] {}", localDcResultSupplier.get());
                 result.addAll(localDcResultSupplier.get());
             } else {
                 AbstractGetAllDcCommand<List<T>> newCommand = command.clone();
                 newCommand.setDomain(domains);
                 newCommand.future().addListener(commandFuture -> {
                     if (commandFuture.isSuccess() && commandFuture.get() != null) {
-                        logger.info("[getDc:{} Result] {}", dc, localDcResultSupplier.get());
+                        logger.info("[getAllDcResult] getDc:{} Result success", dc);
                         result.addAll(commandFuture.get());
                     }
                 });
@@ -146,9 +142,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         });
 
         try {
-            logger.info("[commandChain] start");
             commandChain.execute().get(10, TimeUnit.SECONDS);
-            logger.info("[commandChain] end");
         } catch (Throwable th) {
             logger.warn("[getAllDcResult][{}] error:", command.getName(), th);
         }
@@ -159,53 +153,57 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Override
     public synchronized void updateKeeperContainerUsedInfo(int index, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
         if (keeperContainerUsedInfoModels != null && !keeperContainerUsedInfoModels.isEmpty()){
-            keeperContainerUsedInfoModelIndexMap.put(index, keeperContainerUsedInfoModels);
+            keeperContainerUsedInfoModelIndexMap.put(index, new Pair<>(keeperContainerUsedInfoModels, new Date()));
         }
-
-        Date currentTime = new Date();
-        checkerIndexes.put(index, currentTime);
-        removeExpireData(currentTime);
-        if (!checkDataIntegrity()) return;
+        removeExpireData();
+        logger.info("[analyzeKeeperContainerUsedInfo] current index {}", keeperContainerUsedInfoModelIndexMap.keySet());
+        if (keeperContainerUsedInfoModelIndexMap.size() != config.getClusterDividedParts()) return;
 
         currentDcAllKeeperContainerUsedInfoModelMap.clear();
-        keeperContainerUsedInfoModelIndexMap.values().forEach(list -> list.forEach(infoModel -> currentDcAllKeeperContainerUsedInfoModelMap.put(infoModel.getKeeperIp(), infoModel)));
+        keeperContainerUsedInfoModelIndexMap.values().forEach(list -> list.getKey().forEach(infoModel -> currentDcAllKeeperContainerUsedInfoModelMap.put(infoModel.getKeeperIp(), infoModel)));
 
         keeperContainerUsedInfoModelIndexMap.clear();
-        checkerIndexes.clear();
-        logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList {}", currentDcAllKeeperContainerUsedInfoModelMap);
+        logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");
         if (currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) return;
         executors.execute(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                analyzeKeeperContainerUsedInfo();
+                TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+                transaction.logTransactionSwallowException("keeperContainer.analyze", currentDc, new Task() {
+                    @Override
+                    public void go() throws Exception {
+                        analyzeKeeperContainerUsedInfo();
+                    }
+
+                    @Override
+                    public Map<String, Object> getData() {
+                        Map<String, Object> transactionData = new HashMap<>();
+                        transactionData.put("keeperContainerSize", currentDcAllKeeperContainerUsedInfoModelMap.size());
+                        return transactionData;
+                    }
+                });
             }
         });
     }
 
-    private void removeExpireData(Date currentTime) {
+    private void removeExpireData() {
         List<Integer> expireIndex = new ArrayList<>();
-        for (Map.Entry<Integer, Date> entry : checkerIndexes.entrySet()) {
-            if (currentTime.getTime() - entry.getValue().getTime() > config.getKeeperCheckerIntervalMilli()) {
+        for (Map.Entry<Integer, Pair<List<KeeperContainerUsedInfoModel>, Date>> entry : keeperContainerUsedInfoModelIndexMap.entrySet()) {
+            if (new Date().getTime() - entry.getValue().getValue().getTime() > config.getKeeperCheckerIntervalMilli() * 2L) {
                 expireIndex.add(entry.getKey());
             }
         }
         for (int index : expireIndex) {
-            logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, checkerIndexes.get(index), config.getKeeperCheckerIntervalMilli());
+            logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, keeperContainerUsedInfoModelIndexMap.get(index).getValue(), config.getKeeperCheckerIntervalMilli() * 2L);
             keeperContainerUsedInfoModelIndexMap.remove(index);
-            checkerIndexes.remove(index);
         }
-    }
-
-    private boolean checkDataIntegrity() {
-        logger.info("[analyzeKeeperContainerUsedInfo] current index {}", checkerIndexes);
-        return checkerIndexes.size() == config.getClusterDividedParts();
     }
 
     @VisibleForTesting
     void analyzeKeeperContainerUsedInfo() {
         logger.info("[analyzeKeeperContainerUsedInfo] start, keeperContainer number {}", currentDcAllKeeperContainerUsedInfoModelMap.size());
         analyzerUtil.initKeeperPairData(currentDcAllKeeperContainerUsedInfoModelMap);
-        keeperContainerStandardService.getAndFlushStandard(currentDcAllKeeperContainerUsedInfoModelMap);
+        keeperContainerAnalyzerService.initStandard(currentDcAllKeeperContainerUsedInfoModelMap);
         generateAllSortedDescKeeperContainerUsedInfoModelQueue();
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         for (KeeperContainerUsedInfoModel infoModel : currentDcAllKeeperContainerUsedInfoModelMap.values()) {
@@ -218,7 +216,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                     result.addAll(keeperPairMigrationKeeperDetails);
             }
         }
-        currentDcKeeperContainerMigrationDetail = result;
+        currentDcKeeperContainerMigrationResult = result;
     }
 
     private void generateAllSortedDescKeeperContainerUsedInfoModelQueue() {
@@ -456,14 +454,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         }
     }
 
-    @Override
-    public Map<Integer, List<KeeperContainerUsedInfoModel>> getKeeperContainerUsedInfoModelIndexMap() {
-        return keeperContainerUsedInfoModelIndexMap;
-    }
-
     @VisibleForTesting
-    Map<Integer, Date> getCheckerIndexes() {
-        return checkerIndexes;
+    int getCheckerIndexesSize() {
+        return keeperContainerUsedInfoModelIndexMap.size();
     }
 
     @VisibleForTesting
