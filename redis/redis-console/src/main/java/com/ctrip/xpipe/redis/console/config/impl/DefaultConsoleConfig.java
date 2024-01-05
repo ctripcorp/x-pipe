@@ -122,8 +122,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MIGRATION_RESULT_REPORT_TOKEN = "migration.result.report.token";
     private static final String KEY_MIGRATION_RESULT_REPORT_OPEN = "migration.result.report.open";
     private static final String KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI = "migration.result.report.interval.milli";
-    private static final String KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD = "console.keeper.container.overload.standard";
-    private static final String KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD_FACTOR = "console.keeper.container.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_PAIR_OVERLOAD_FACTOR = "console.keeper.container.pair.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_DISK_OVERLOAD_FACTOR = "console.keeper.container.disk.overload.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE = "console.keeper.container.io.rate";
@@ -591,7 +589,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getCheckerCurrentDcAllMetaRefreshIntervalMilli() {
-        return getIntProperty(KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL, 600000);
+        return getIntProperty(KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL, 60 * 1000);
     }
 
     @Override
@@ -721,7 +719,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getKeeperCheckerIntervalMilli() {
-        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 1800 * 1000);
+        return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 60 * 1000);
     }
 
     @Override
@@ -780,17 +778,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long getAutoMigrateOverloadKeeperContainerIntervalMilli() {
         return getLongProperty(KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI, 60 * 60 * 1000L);
-    }
-
-    @Override
-    public Map<String,KeeperContainerOverloadStandardModel>  getKeeperContainerOverloadStandards() {
-        String property = getProperty(KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD, "{}");
-        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<String,KeeperContainerOverloadStandardModel>>() {});
-    }
-
-    @Override
-    public double getKeeperContainerOverloadFactor() {
-        return getFloatProperty(KEY_CONSOLE_KEEPER_CONTAINER_OVERLOAD_STANDARD_FACTOR, 0.8F);
     }
 
     @Override

@@ -25,6 +25,10 @@ public interface ConfigService {
 
     String KEY_CLUSTER_ALERT_EXCLUDE = "alert.cluster.exclude";
 
+    String KEY_KEEPER_CONTAINER_STANDARD = "keeper.container.standard";
+
+    void setKeyKeeperContainerStandard(ConfigModel config) throws Exception;
+
     void startAlertSystem(ConfigModel config) throws DalException;
 
     void stopAlertSystem(ConfigModel config, int hours) throws DalException;

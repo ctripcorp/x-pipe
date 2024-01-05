@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
+import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -22,10 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
 
 /**
@@ -57,6 +56,30 @@ public class ConfigServiceImpl implements ConfigService {
     @Autowired
     public ConfigServiceImpl(ConsoleConfig consoleConfig) {
         this.crossDcLeaderLeaseName = consoleConfig.getCrossDcLeaderLeaseName();
+    }
+
+    @Override
+    public void setKeyKeeperContainerStandard(ConfigModel config) throws Exception {
+        if (!KEY_KEEPER_CONTAINER_STANDARD.equals(config.getKey())) {
+            throw new RuntimeException(String.format("key should be %s !", KEY_KEEPER_CONTAINER_STANDARD));
+        }
+        boolean isPeerDataContained = Arrays.stream(KeeperContainerDiskType.values())
+                .map(KeeperContainerDiskType::getPeerData)
+                .anyMatch(config.getSubKey()::equalsIgnoreCase);
+        boolean isInputFlowContained = Arrays.stream(KeeperContainerDiskType.values())
+                .map(KeeperContainerDiskType::getInputFlow)
+                .anyMatch(config.getSubKey()::equalsIgnoreCase);
+        if (!isPeerDataContained && !isInputFlowContained) {
+            throw new RuntimeException(String.format("sub key should in %s", Arrays.toString(Arrays.stream(KeeperContainerDiskType.values())
+                    .map(KeeperContainerDiskType::getInputFlow).toArray())) + "," + Arrays.toString(Arrays.stream(KeeperContainerDiskType.values())
+                    .map(KeeperContainerDiskType::getPeerData).toArray()));
+        }
+        try {
+            Long.parseLong(config.getVal());
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(String.format("value %s should be number ", config.getVal()));
+        }
+        configDao.setConfig(config);
     }
 
     @Override

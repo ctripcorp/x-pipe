@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -8,8 +9,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.Keeper
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.core.entity.DiskSpaceUsageInfo;
-import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +52,24 @@ public class KeeperUsedInfoReporterTest {
     @Mock
     KeeperContainerService keeperContainerService;
 
+    @Mock
+    private MetaCache metaCache;
+
     @Captor
     ArgumentCaptor<List<KeeperContainerUsedInfoModel>> resultCaptor;
 
     @Before
     public void befor() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta();
+        xpipeMeta.getDcs().put("dc",dcMeta);
+        dcMeta.setId(FoundationService.DEFAULT.getDataCenter());
+        List<KeeperContainerMeta> keeperContainerMetas = new ArrayList<>();
+        keeperContainerMetas.add(new KeeperContainerMeta().setIp("127.0.0.1"));
+        keeperContainerMetas.add(new KeeperContainerMeta().setIp("127.0.0.2"));
+        keeperContainerMetas.add(new KeeperContainerMeta().setIp("127.0.0.3"));
+        dcMeta.getKeeperContainers().addAll(keeperContainerMetas);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         DcClusterShardActive dcClusterShard1 = new DcClusterShardActive("jq", "cluster1", "shard1", false);
         DcClusterShardActive dcClusterShard2 = new DcClusterShardActive("jq", "cluster1", "shard2", true);
         DcClusterShardActive dcClusterShard3 = new DcClusterShardActive("jq", "cluster2", "shard1", true);
