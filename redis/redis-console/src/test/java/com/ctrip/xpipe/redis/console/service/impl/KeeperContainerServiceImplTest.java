@@ -235,6 +235,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         if(sample != null) {
             logger.info("[sample] {}", sample);
             sample.setKeepercontainerOrgId(0L);
+            sample.setDiskType("DEFAULT");
             keeperContainerService.updateKeeperContainer(sample);
             KeepercontainerTbl ktl = keeperContainerService.findByIpPort(sample.getKeepercontainerIp(),
                     sample.getKeepercontainerPort());
@@ -273,6 +274,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         keeper.setOrgName("org-1");
         keeper.setActive(false);
         keeper.setDcName("jq");
+        keeper.setDiskType("DEFAULT");
 
         keeperContainerService.updateKeeperContainerByInfoModel(keeper);
 

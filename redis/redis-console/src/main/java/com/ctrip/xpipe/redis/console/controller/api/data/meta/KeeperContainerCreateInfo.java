@@ -25,6 +25,9 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     private String azName;
 
+    private String diskType;
+
+
     public boolean isActive() {
         return active;
     }
@@ -99,6 +102,7 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
                 ", orgName='" + orgName + '\'' +
                 ", active=" + active +
                 ", azName='" + azName + '\'' +
+                ", diskType='" + diskType + '\'' +
                 '}';
     }
 
@@ -109,5 +113,13 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
     public KeeperContainerCreateInfo setOrgName(String orgName) {
         this.orgName = orgName;
         return this;
+    }
+
+    public String getDiskType() {
+        return diskType;
+    }
+
+    public void setDiskType(String diskType) {
+        this.diskType = diskType;
     }
 }

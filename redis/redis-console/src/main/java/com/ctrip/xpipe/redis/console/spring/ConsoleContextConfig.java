@@ -26,7 +26,7 @@ import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoA
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
@@ -126,9 +126,9 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public KeeperContainerUsedInfoAnalyzer KeeperContainerUsedInfoAnalyzer(ConsoleConfig config,
-																		   KeeperContainerService keeperContainerService,
+																		   KeeperContainerAnalyzerService keeperContainerAnalyzerService,
 																		   KeeperContainerFilterChain keeperContainerFilterChain) {
-		return new DefaultKeeperContainerUsedInfoAnalyzer(config, keeperContainerService, keeperContainerFilterChain);
+		return new DefaultKeeperContainerUsedInfoAnalyzer(config, keeperContainerAnalyzerService, keeperContainerFilterChain);
 	}
 
 	@Bean

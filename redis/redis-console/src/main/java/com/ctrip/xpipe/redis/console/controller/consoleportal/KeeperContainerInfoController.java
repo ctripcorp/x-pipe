@@ -101,7 +101,11 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/keepercontainer/max/fullSynchronizationTime", method = RequestMethod.GET)
     public RetMessage getMaxKeeperContainerFullSynchronizationTime() {
-        return RetMessage.createSuccessMessage(String.valueOf(analyzer.getAllDcMaxKeeperContainerFullSynchronizationTime() + 1));
+        int max = analyzer.getAllDcMaxKeeperContainerFullSynchronizationTime().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        return RetMessage.createSuccessMessage(String.valueOf(max));
     }
 
 }

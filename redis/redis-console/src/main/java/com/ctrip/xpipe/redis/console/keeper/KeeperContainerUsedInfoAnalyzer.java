@@ -14,13 +14,11 @@ public interface KeeperContainerUsedInfoAnalyzer {
 
     List<MigrationKeeperContainerDetailModel> getCurrentDcReadyToMigrationKeeperContainers();
 
-    Map<Integer, List<KeeperContainerUsedInfoModel>> getKeeperContainerUsedInfoModelIndexMap();
-
     List<KeeperContainerUsedInfoModel> getAllDcKeeperContainerUsedInfoModelsList();
 
-    Map<String, KeeperContainerUsedInfoModel> getCurrentDcKeeperContainerUsedInfoModelsList();
-    
-    int getAllDcMaxKeeperContainerFullSynchronizationTime();
+    List<KeeperContainerUsedInfoModel> getCurrentDcKeeperContainerUsedInfoModelsList();
 
-    int getCurrentDcMaxKeeperContainerFullSynchronizationTime();
+    List<Integer> getAllDcMaxKeeperContainerFullSynchronizationTime();
+
+    List<Integer> getCurrentDcMaxKeeperContainerFullSynchronizationTime();
 }

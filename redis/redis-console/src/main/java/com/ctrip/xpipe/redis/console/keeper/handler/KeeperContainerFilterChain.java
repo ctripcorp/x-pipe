@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.console.keeper.handler;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
+import com.ctrip.xpipe.redis.console.keeper.util.DefaultKeeperContainerUsedInfoAnalyzerUtil;
+import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,17 +27,17 @@ public class KeeperContainerFilterChain {
     public boolean doKeeperFilter(Map.Entry<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
                                   KeeperContainerUsedInfoModel srcKeeperContainer,
                             KeeperContainerUsedInfoModel targetKeeperContainer,
-                            Map<DefaultKeeperContainerUsedInfoAnalyzer.IPPair, DefaultKeeperContainerUsedInfoAnalyzer.IPPairData> keeperPairUsedInfoMap){
+                                  KeeperContainerUsedInfoAnalyzerUtil analyzerUtil){
         return new KeeperDataOverloadHandler(targetKeeperContainer)
-                .setNextHandler(new KeeperPairOverloadHandler(keeperPairUsedInfoMap, srcKeeperContainer, targetKeeperContainer, config))
+                .setNextHandler(new KeeperPairOverloadHandler(analyzerUtil, srcKeeperContainer, targetKeeperContainer, config))
                 .handle(keeperUsedInfoEntry);
     }
 
     public boolean doKeeperPairFilter(Map.Entry<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
                                       KeeperContainerUsedInfoModel keeperContainer1,
                                       KeeperContainerUsedInfoModel keeperContainer2,
-                                      Map<DefaultKeeperContainerUsedInfoAnalyzer.IPPair, DefaultKeeperContainerUsedInfoAnalyzer.IPPairData> keeperPairUsedInfoMap) {
-        return new KeeperPairOverloadHandler(keeperPairUsedInfoMap, keeperContainer1, keeperContainer2, config)
+                                      KeeperContainerUsedInfoAnalyzerUtil analyzerUtil) {
+        return new KeeperPairOverloadHandler(analyzerUtil, keeperContainer1, keeperContainer2, config)
                 .handle(keeperUsedInfoEntry);
     }
 

@@ -11,13 +11,15 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestClientException;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -25,8 +27,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
@@ -44,18 +48,21 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
     private CheckerConfig config;
 
+    private MetaCache metaCache;
+
     private static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
 
     public KeeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector, CheckerConsoleService
-            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService) {
+            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService, MetaCache metaCache) {
         this.redisUsedMemoryCollector = redisUsedMemoryCollector;
         this.keeperFlowCollector = keeperFlowCollector;
         this.checkerConsoleService = checkerConsoleService;
         this.config = config;
         this.keeperContainerService = keeperContainerService;
+        this.metaCache = metaCache;
     }
 
     @PostConstruct
@@ -63,7 +70,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
         logger.debug("[postConstruct] start");
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("KeeperContainerInfoReporter"));
         this.keeperContainerInfoReportTask = new DynamicDelayPeriodTask("KeeperContainerInfoReporter",
-                this::reportKeeperContainerInfo, () -> 2 * config.getKeeperCheckerIntervalMilli(), scheduled);
+                this::reportKeeperContainerInfo, () -> config.getKeeperCheckerIntervalMilli(), scheduled);
     }
 
     @PreDestroy
@@ -101,9 +108,27 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
             Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
+            for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
+                if (CURRENT_IDC.equalsIgnoreCase(dcMeta.getId())) {
+                    List<String> ipList = dcMeta.getKeeperContainers().stream()
+                            .map(KeeperContainerMeta::getIp)
+                            .collect(Collectors.toList());
+                    logger.info("[reportKeeperContainerInfo] current monitor keeperContainer:{}", ipList);
+                    dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
+                        if(!hostPort2InputFlow.containsKey(keeperContainerMeta.getIp())) {
+                            hostPort2InputFlow.put(keeperContainerMeta.getIp(), new ConcurrentHashMap<>());
+                        }
+                    });
+                    for (String ip : hostPort2InputFlow.keySet()) {
+                        if (!ipList.contains(ip)) {
+                            logger.warn("[reportKeeperContainerInfo] keeperContainer:{} is not exit in console meta", ip);
+                            hostPort2InputFlow.remove(ip);
+                        }
+                    }
+                }
+            }
             Map<DcClusterShard, Long> dcClusterShardUsedMemory = redisUsedMemoryCollector.getDcClusterShardUsedMemory();
             List<KeeperContainerUsedInfoModel> result = new ArrayList<>(hostPort2InputFlow.keySet().size());
-
             hostPort2InputFlow.forEach((keeperIp, inputFlowMap) -> {
                 KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel();
                 model.setKeeperIp(keeperIp).setDcName(CURRENT_IDC);
