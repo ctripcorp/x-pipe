@@ -54,8 +54,6 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
-    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-
 
     public KeeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector, CheckerConsoleService
             checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService, MetaCache metaCache) {
@@ -111,7 +109,7 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
             logger.debug("[reportKeeperContainerInfo] start");
             Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
             for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
-                if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
+                if (CURRENT_IDC.equalsIgnoreCase(dcMeta.getId())) {
                     List<String> ipList = dcMeta.getKeeperContainers().stream()
                             .map(KeeperContainerMeta::getIp)
                             .collect(Collectors.toList());

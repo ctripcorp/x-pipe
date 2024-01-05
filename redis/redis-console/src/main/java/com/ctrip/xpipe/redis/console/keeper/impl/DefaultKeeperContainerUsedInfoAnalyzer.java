@@ -460,6 +460,11 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @VisibleForTesting
+    void setKeeperContainerAnalyzerService(KeeperContainerAnalyzerService keeperContainerAnalyzerService) {
+        this.keeperContainerAnalyzerService = keeperContainerAnalyzerService;
+    }
+
+    @VisibleForTesting
     void setExecutors(Executor executors){
         this.executors = executors;
     }
