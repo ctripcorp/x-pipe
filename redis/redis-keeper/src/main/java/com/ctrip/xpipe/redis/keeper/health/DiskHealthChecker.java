@@ -5,10 +5,8 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
-import com.ctrip.xpipe.redis.keeper.health.job.DiskIOStatCheckJob;
 import com.ctrip.xpipe.redis.keeper.health.job.DiskReadWriteCheckJob;
 import com.ctrip.xpipe.redis.keeper.health.job.DiskSpaceUsageCheckJob;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.springframework.stereotype.Component;
@@ -83,11 +81,6 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
 
             diskInfo.available = diskReadWriteCheckJob.execute().get(checkTimeoutSeconds, TimeUnit.SECONDS);
             diskInfo.spaceUsageInfo = diskSpaceUsageCheckJob.execute().get(checkTimeoutSeconds, TimeUnit.SECONDS);
-            if (null != diskInfo.spaceUsageInfo && !StringUtil.isEmpty(diskInfo.spaceUsageInfo.source)) {
-                DiskIOStatCheckJob diskIOStatCheckJob = new DiskIOStatCheckJob(diskInfo.spaceUsageInfo.getDevice());
-                diskInfo.ioStatInfo = diskIOStatCheckJob.execute().get(checkTimeoutSeconds, TimeUnit.SECONDS);
-            }
-
             logger.debug("[check][end] {}", diskInfo);
             setResult(diskInfo);
         } catch (Throwable th) {
