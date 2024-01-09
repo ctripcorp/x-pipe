@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.keeper.entity;
 
+import com.ctrip.xpipe.utils.StringUtil;
+
 public enum KeeperContainerDiskType {
 
     DEFAULT("DEFAULT"),
@@ -39,6 +41,20 @@ public enum KeeperContainerDiskType {
         public String getDesc() {
             return desc;
         }
+    }
+
+    public static KeeperContainerDiskType lookup(String name) {
+        return lookup(name, DEFAULT);
+    }
+
+    public static KeeperContainerDiskType lookup(String name, KeeperContainerDiskType defaultVal) {
+        if (StringUtil.isEmpty(name)) return defaultVal;
+        String upper = name.toUpperCase();
+        for (KeeperContainerDiskType type: values()) {
+            if (type.name().equals(upper)) return type;
+        }
+
+        return defaultVal;
     }
 
 }

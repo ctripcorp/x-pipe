@@ -252,7 +252,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
             .setKeepercontainerOrgId(org.getId())
-            .setKeepercontainerActive(createInfo.isActive());
+            .setKeepercontainerActive(createInfo.isActive())
+            .setKeepercontainerDiskType(KeeperContainerDiskType.lookup(createInfo.getDiskType()).name());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override
@@ -276,7 +277,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         KeeperContainerCreateInfo info = new KeeperContainerCreateInfo()
                 .setDcName(dc).setActive(input.isKeepercontainerActive())
                 .setKeepercontainerIp(input.getKeepercontainerIp())
-                .setKeepercontainerPort(input.getKeepercontainerPort());
+                .setKeepercontainerPort(input.getKeepercontainerPort())
+                .setDiskType(input.getKeepercontainerDiskType());
         if (org != null) {
           info.setKeepercontainerOrgId(org.getOrgId()).setOrgName(org.getOrgName());
         } else {
@@ -319,15 +321,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
 
-    if (!createInfo.getDiskType().isEmpty()) {
-      boolean isContained = Arrays.stream(KeeperContainerDiskType.values())
-              .map(KeeperContainerDiskType::getDesc)
-              .anyMatch(createInfo.getDiskType()::equalsIgnoreCase);
-      if (isContained) {
-        keepercontainerTbl.setKeepercontainerDiskType(createInfo.getDiskType());
-      } else {
-        keepercontainerTbl.setKeepercontainerDiskType(KeeperContainerDiskType.DEFAULT.getDesc());
-      }
+    KeeperContainerDiskType type = KeeperContainerDiskType.lookup(createInfo.getDiskType(), null);
+    if (null != type) {
+      keepercontainerTbl.setKeepercontainerDiskType(type.name());
     }
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
@@ -433,15 +429,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
 
-    if (!keeperContainerInfoModel.getDiskType().isEmpty()) {
-      boolean isContained = Arrays.stream(KeeperContainerDiskType.values())
-              .map(KeeperContainerDiskType::getDesc)
-              .anyMatch(keeperContainerInfoModel.getDiskType()::equalsIgnoreCase);
-      if (isContained) {
-        proto.setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType());
-      } else {
-        proto.setKeepercontainerDiskType(KeeperContainerDiskType.DEFAULT.getDesc());
-      }
+    KeeperContainerDiskType type = KeeperContainerDiskType.lookup(keeperContainerInfoModel.getDiskType(), null);
+    if (null != type) {
+      proto.setKeepercontainerDiskType(type.name());
     }
 
     queryHandler.handleQuery(new DalQuery<Integer>() {
