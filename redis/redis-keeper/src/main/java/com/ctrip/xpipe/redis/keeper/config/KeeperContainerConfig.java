@@ -9,4 +9,8 @@ public interface KeeperContainerConfig {
 
     int diskCheckInterval();
 
+    int checkRoundBeforeMarkDown();
+
+    int keeperLeaderResetMinInterval();
+
 }

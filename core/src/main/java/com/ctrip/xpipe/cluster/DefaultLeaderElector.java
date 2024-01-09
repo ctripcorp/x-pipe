@@ -51,6 +51,11 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	}
 
 	@Override
+	public boolean hasLeaderShip() {
+		return null != latch && latch.hasLeadership();
+	}
+
+	@Override
 	public void doStop() throws Exception {
 		if (latch != null) {
 			latch.close();
