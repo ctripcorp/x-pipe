@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.lang.Nullable;
 
 /**
@@ -119,7 +120,8 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
         return diskType;
     }
 
-    public void setDiskType(String diskType) {
+    public KeeperContainerCreateInfo setDiskType(String diskType) {
         this.diskType = diskType;
+        return this;
     }
 }
