@@ -110,13 +110,15 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
             Map<String, Map<DcClusterShardActive, Long>> collectedInfos = keeperFlowCollector.getHostPort2InputFlow();
             Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = new HashMap<>();
             for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
-                dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                    if (collectedInfos.containsKey(keeperContainerMeta.getIp())) {
-                        hostPort2InputFlow.put(keeperContainerMeta.getIp(), collectedInfos.get(keeperContainerMeta.getIp()));
-                    } else {
-                        hostPort2InputFlow.put(keeperContainerMeta.getIp(), new ConcurrentHashMap<>());
-                    }
-                });
+                if (CURRENT_IDC.equalsIgnoreCase(dcMeta.getId())) {
+                    dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
+                        if (collectedInfos.containsKey(keeperContainerMeta.getIp())) {
+                            hostPort2InputFlow.put(keeperContainerMeta.getIp(), collectedInfos.get(keeperContainerMeta.getIp()));
+                        } else {
+                            hostPort2InputFlow.put(keeperContainerMeta.getIp(), new ConcurrentHashMap<>());
+                        }
+                    });
+                }
             }
             Map<DcClusterShard, Long> dcClusterShardUsedMemory = redisUsedMemoryCollector.getDcClusterShardUsedMemory();
             List<KeeperContainerUsedInfoModel> result = new ArrayList<>(hostPort2InputFlow.keySet().size());
