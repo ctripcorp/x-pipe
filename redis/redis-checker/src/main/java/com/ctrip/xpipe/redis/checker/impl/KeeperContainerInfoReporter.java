@@ -107,25 +107,16 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
     public void reportKeeperContainerInfo() {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
-            Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = keeperFlowCollector.getHostPort2InputFlow();
+            Map<String, Map<DcClusterShardActive, Long>> collectedInfos = keeperFlowCollector.getHostPort2InputFlow();
+            Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = new HashMap<>();
             for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
-                if (CURRENT_IDC.equalsIgnoreCase(dcMeta.getId())) {
-                    List<String> ipList = dcMeta.getKeeperContainers().stream()
-                            .map(KeeperContainerMeta::getIp)
-                            .collect(Collectors.toList());
-                    logger.info("[reportKeeperContainerInfo] current monitor keeperContainer:{}", ipList);
-                    dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                        if(!hostPort2InputFlow.containsKey(keeperContainerMeta.getIp())) {
-                            hostPort2InputFlow.put(keeperContainerMeta.getIp(), new ConcurrentHashMap<>());
-                        }
-                    });
-                    for (String ip : hostPort2InputFlow.keySet()) {
-                        if (!ipList.contains(ip)) {
-                            logger.warn("[reportKeeperContainerInfo] keeperContainer:{} is not exit in console meta", ip);
-                            hostPort2InputFlow.remove(ip);
-                        }
+                dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
+                    if (collectedInfos.containsKey(keeperContainerMeta.getIp())) {
+                        hostPort2InputFlow.put(keeperContainerMeta.getIp(), collectedInfos.get(keeperContainerMeta.getIp()));
+                    } else {
+                        hostPort2InputFlow.put(keeperContainerMeta.getIp(), new ConcurrentHashMap<>());
                     }
-                }
+                });
             }
             Map<DcClusterShard, Long> dcClusterShardUsedMemory = redisUsedMemoryCollector.getDcClusterShardUsedMemory();
             List<KeeperContainerUsedInfoModel> result = new ArrayList<>(hostPort2InputFlow.keySet().size());
