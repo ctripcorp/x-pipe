@@ -301,7 +301,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             }
         }
         if (redisOp.getOpType().isSwallow()) {
-            logger.debug("[onRedisOp] filter unknown redisOp: {}", redisOp);
+            logger.info("[onRedisOp] filter unknown redisOp: {}", redisOp);
         }
         return redisOp.getOpType().isSwallow();
     }
