@@ -68,6 +68,11 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
         Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
         Assert.assertNull(redisOp.getOpGtid());
         Assert.assertArrayEquals(rawOpArgs, redisOp.buildRawOpArgs());
+        byte[][] rawOpArgs1 = {"credis_flushall".getBytes()};
+        redisOp = parser.parse(rawOpArgs1);
+        Assert.assertEquals(RedisOpType.UNKNOWN, redisOp.getOpType());
+        Assert.assertNull(redisOp.getOpGtid());
+        Assert.assertArrayEquals(rawOpArgs1, redisOp.buildRawOpArgs());
 
         RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
         Assert.assertNull(redisSingleKeyOp.getKey());

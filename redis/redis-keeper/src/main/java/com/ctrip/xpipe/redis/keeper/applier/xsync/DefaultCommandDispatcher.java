@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
+import org.apache.zookeeper.common.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -289,7 +290,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             String channel;
             if (length == 3) {
                 channel = new String(redisOp.buildRawOpArgs()[1]);
-            } else if(length >= 5) {
+            } else if (length >= 5) {
                 channel = new String(redisOp.buildRawOpArgs()[4]);
             } else {
                 logger.warn("publish command {} length={} unexpected, filtered", redisOp, length);
@@ -301,9 +302,21 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             }
         }
         if (redisOp.getOpType().isSwallow()) {
-            logger.debug("[onRedisOp] filter unknown redisOp: {}", redisOp);
+            logger.info("[onRedisOp] swallow redisOp: {}", redisOp.toString());
+            EventMonitor.DEFAULT.logEvent("APPLIER.SWALLOW.OP", getCmd(redisOp));
         }
         return redisOp.getOpType().isSwallow();
+    }
+
+    private String getCmd(RedisOp redisOp) {
+        byte[][] rawOpArgs = redisOp.buildRawOpArgs();
+        if (Objects.isNull(redisOp.getOpGtid()) && rawOpArgs.length > 0) {
+            return new String(redisOp.buildRawOpArgs()[0]);
+        }
+        if (!Objects.isNull(redisOp.getOpGtid()) && rawOpArgs.length > 3) {
+            return new String(redisOp.buildRawOpArgs()[3]);
+        }
+        return redisOp.getOpType().name();
     }
 
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
@@ -332,6 +345,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         if (shouldFilter(redisOp)) {
+            addLwm(redisOp);
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
@@ -345,6 +359,21 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else {
             addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp), commandOffsetToAccumulate);
         }
+    }
+
+    private void addLwm(RedisOp redisOp) {
+        String gtid = redisOp.getOpGtid();
+        if (StringUtils.isBlank(gtid)) {
+            return;
+        }
+        stateThread.execute(() -> {
+            try {
+                logger.debug("[addLwm][start] gtid:{}", gtid);
+                gtid_executed.get().add(redisOp.getOpGtid());
+            } catch (Throwable t) {
+                logger.error("[addLwm][fail] gtid:{}", gtid, t);
+            }
+        });
     }
 
     @Override
