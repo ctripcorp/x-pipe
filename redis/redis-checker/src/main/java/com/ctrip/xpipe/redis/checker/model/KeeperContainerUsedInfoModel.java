@@ -71,6 +71,41 @@ public class KeeperContainerUsedInfoModel {
         this.diskType = model.getDiskType();
     }
 
+    public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
+        KeeperContainerUsedInfoModel newModel = new KeeperContainerUsedInfoModel();
+        newModel.setKeeperIp(model.getKeeperIp());
+        newModel.setDcName(model.getDcName());
+        newModel.setOrg(model.getOrg());
+        newModel.setActiveInputFlow(model.getActiveInputFlow());
+        newModel.setTotalInputFlow(model.getTotalInputFlow());
+        newModel.setInputFlowStandard(model.getInputFlowStandard());
+        newModel.setActiveRedisUsedMemory(model.getActiveRedisUsedMemory());
+        newModel.setTotalRedisUsedMemory(model.getTotalRedisUsedMemory());
+        newModel.setRedisUsedMemoryStandard(model.getRedisUsedMemoryStandard());
+        newModel.setActiveKeeperCount(model.getActiveKeeperCount());
+        newModel.setTotalKeeperCount(model.getTotalKeeperCount());
+        if (model.getDetailInfo() != null) {
+            newModel.setDetailInfo(getKeeperUsedInfoMap(model));
+        }
+        newModel.setKeeperContainerActive(model.isKeeperContainerActive());
+        newModel.setDiskAvailable(model.isDiskAvailable());
+        newModel.setDiskSize(model.getDiskSize());
+        newModel.setDiskUsed(model.getDiskUsed());
+        newModel.setDiskType(model.getDiskType());
+        return newModel;
+    }
+
+    private static Map<DcClusterShardActive, KeeperUsedInfo> getKeeperUsedInfoMap(KeeperContainerUsedInfoModel model) {
+        Map<DcClusterShardActive, KeeperUsedInfo> clonedDetailInfo = new HashMap<>();
+        for (Map.Entry<DcClusterShardActive, KeeperUsedInfo> entry : model.getDetailInfo().entrySet()) {
+            DcClusterShardActive key = new DcClusterShardActive(entry.getKey().getDcId(), entry.getKey().getClusterId(), entry.getKey().getShardId(), entry.getKey().isActive(), entry.getKey().getPort());
+            KeeperUsedInfo value = new KeeperUsedInfo(entry.getValue().getPeerData(), entry.getValue().getInputFlow(), entry.getValue().keeperIP);
+            clonedDetailInfo.put(key, value);
+        }
+        return clonedDetailInfo;
+    }
+
+
     public String getDcName() {
         return dcName;
     }

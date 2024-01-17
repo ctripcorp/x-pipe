@@ -11,7 +11,7 @@ import java.util.Map;
 
 public interface KeeperContainerUsedInfoAnalyzerUtil {
 
-    void initKeeperPairData(Map<String, KeeperContainerUsedInfoModel> usedInfoMap);
+    boolean initKeeperPairData(Map<String, KeeperContainerUsedInfoModel> usedInfoMap);
 
     String getBackUpKeeperIp(DcClusterShard activeKeeper);
 

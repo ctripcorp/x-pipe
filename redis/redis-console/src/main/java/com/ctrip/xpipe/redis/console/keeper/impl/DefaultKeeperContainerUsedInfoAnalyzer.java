@@ -66,9 +66,13 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     private KeeperContainerUsedInfoAnalyzerUtil analyzerUtil = new DefaultKeeperContainerUsedInfoAnalyzerUtil();
 
+    private boolean breakFlag;
+
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
     private static final String KEEPER_RESOURCE_LACK = "keeper_resource_lack";
+
+    private static final String KEEPER_ANALYZE_BREAK = "keeper_analyze_break";
 
     public DefaultKeeperContainerUsedInfoAnalyzer() {}
 
@@ -202,11 +206,16 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @VisibleForTesting
     void analyzeKeeperContainerUsedInfo() {
         logger.info("[analyzeKeeperContainerUsedInfo] start, keeperContainer number {}", currentDcAllKeeperContainerUsedInfoModelMap.size());
-        analyzerUtil.initKeeperPairData(currentDcAllKeeperContainerUsedInfoModelMap);
+        breakFlag = !analyzerUtil.initKeeperPairData(currentDcAllKeeperContainerUsedInfoModelMap);
         keeperContainerAnalyzerService.initStandard(currentDcAllKeeperContainerUsedInfoModelMap);
         generateAllSortedDescKeeperContainerUsedInfoModelQueue();
         List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
         for (KeeperContainerUsedInfoModel infoModel : currentDcAllKeeperContainerUsedInfoModelMap.values()) {
+            if (breakFlag) {
+                CatEventMonitor.DEFAULT.logEvent(KEEPER_ANALYZE_BREAK, currentDc);
+                currentDcKeeperContainerMigrationResult = new ArrayList<>();
+                return;
+            }
             List<MigrationKeeperContainerDetailModel> migrationKeeperDetails = getOverloadKeeperMigrationDetails(infoModel);
             if (migrationKeeperDetails != null)
                 result.addAll(migrationKeeperDetails);
@@ -226,8 +235,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 (keeper1, keeper2) -> (int)(keeper1.getTotalRedisUsedMemory() - keeper2.getTotalRedisUsedMemory()));
         currentDcAllKeeperContainerUsedInfoModelMap.values().forEach(keeperContainerInfoModel -> {
             if (keeperContainerFilterChain.doKeeperContainerFilter(keeperContainerInfoModel)) {
-                minPeerDataKeeperContainers.add(keeperContainerInfoModel);
-                minInputFlowKeeperContainers.add(keeperContainerInfoModel);
+                minPeerDataKeeperContainers.add(KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(keeperContainerInfoModel));
+                minInputFlowKeeperContainers.add(KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(keeperContainerInfoModel));
             }
         });
     }
@@ -267,6 +276,10 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             if (overloadData <= 0) break;
             if (!dcClusterShard.getKey().isActive()) continue;
             String backUpKeeperIP = analyzerUtil.getBackUpKeeperIp(dcClusterShard.getKey());
+            if (backUpKeeperIP == null) {
+                breakFlag = true;
+                return null;
+            }
             KeeperContainerUsedInfoModel backUpKeeper = currentDcAllKeeperContainerUsedInfoModelMap.get(backUpKeeperIP);
             if (keeperContainerFilterChain.doKeeperContainerFilter(backUpKeeper) && keeperContainerFilterChain.doKeeperFilter(dcClusterShard, src, backUpKeeper, analyzerUtil)) {
                 switchActiveMigrationDetail.addReadyToMigrateShard(dcClusterShard.getKey());

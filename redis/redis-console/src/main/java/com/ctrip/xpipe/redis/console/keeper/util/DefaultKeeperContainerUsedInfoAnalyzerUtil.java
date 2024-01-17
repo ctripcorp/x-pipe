@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.keeper.util;
 
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
@@ -14,6 +15,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerUtil implements KeeperContain
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzerUtil.class);
     private Map<String, Map<String , IPPairData>> ipPairMap = new HashMap<>();
     private Map<DcClusterShardActive, KeeperUsedInfo> allDetailInfo = new HashMap<>();
+    private static final String KEEPER_NO_BACKUP = "keeper_no_backup";
 
     public DefaultKeeperContainerUsedInfoAnalyzerUtil() {}
 
@@ -27,7 +29,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerUtil implements KeeperContain
     }
 
     @Override
-    public void initKeeperPairData(Map<String, KeeperContainerUsedInfoModel> usedInfoMap) {
+    public boolean initKeeperPairData(Map<String, KeeperContainerUsedInfoModel> usedInfoMap) {
         ipPairMap.clear();
         allDetailInfo.clear();
         for (KeeperContainerUsedInfoModel infoModel : usedInfoMap.values()) {
@@ -39,16 +41,17 @@ public class DefaultKeeperContainerUsedInfoAnalyzerUtil implements KeeperContain
             if (!entry.getKey().isActive()) continue;
             KeeperUsedInfo activeKeeperUsedInfo = entry.getValue();
             String backUpKeeperIp = getBackUpKeeperIp(entry.getKey());
-            if (backUpKeeperIp == null) continue;
-
+            if (backUpKeeperIp == null) return false;
             addIpPair(activeKeeperUsedInfo.getKeeperIP(), backUpKeeperIp, entry);
         }
+        return true;
     }
 
     @Override
     public String getBackUpKeeperIp(DcClusterShard activeKeeper) {
         KeeperUsedInfo backUpKeeperUsedInfo = allDetailInfo.get(new DcClusterShardActive(activeKeeper, false));
         if (backUpKeeperUsedInfo == null) {
+            CatEventMonitor.DEFAULT.logEvent(KEEPER_NO_BACKUP, activeKeeper.toString());
             logger.warn("[analyzeKeeperPair] active keeper {} has no backup keeper", activeKeeper);
             return null;
         }
