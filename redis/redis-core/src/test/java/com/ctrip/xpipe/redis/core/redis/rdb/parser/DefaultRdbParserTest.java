@@ -146,6 +146,20 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("SADD set 13927438904093012", redisOps.get(3).toString());
         Assert.assertEquals("SADD set v1", redisOps.get(4).toString());
     }
+    @Test
+    public void testParseList() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listRdbBytes);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("RPUSH test_0_7743 aaa0_0_530", redisOps.get(1).toString());
+        Assert.assertEquals("RPUSH test_0_7743 aaa0_0_454", redisOps.get(2).toString());
+        Assert.assertEquals("RPUSH test_0_7743 aaa1_1_39", redisOps.get(3).toString());
+        Assert.assertEquals("RPUSH test_0_7743 aaa1_1_244", redisOps.get(4).toString());
+
+    }
 
     @Test
     public void testParseZiplistZSet() {
