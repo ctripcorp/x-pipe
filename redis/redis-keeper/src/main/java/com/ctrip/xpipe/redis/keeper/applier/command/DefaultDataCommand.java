@@ -42,7 +42,6 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
-
         if (getLogger().isDebugEnabled()) {
             getLogger().debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
         }

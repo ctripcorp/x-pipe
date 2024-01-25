@@ -60,7 +60,7 @@ public interface RdbParseContext {
     enum RdbType {
 
         STRING(RdbConstant.REDIS_RDB_TYPE_STRING, false, RdbStringParser::new),
-//        LIST(RdbConstant.REDIS_RDB_TYPE_LIST),
+        LIST(RdbConstant.REDIS_RDB_TYPE_LIST,false,RdbListParser::new),
         SET(RdbConstant.REDIS_RDB_TYPE_SET, false, RdbSetParser::new),
 //        ZSET(RdbConstant.REDIS_RDB_TYPE_ZSET),
         HASH(RdbConstant.REDIS_RDB_TYPE_HASH, false, RdbHashParser::new),
