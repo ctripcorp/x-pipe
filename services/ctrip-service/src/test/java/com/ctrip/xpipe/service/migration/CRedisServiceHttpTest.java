@@ -92,6 +92,34 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     }
 
     @Test
+    public void testMarkInstanceDownWithActiveDc() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\n" +
+                "    \"success\": true,\n" +
+                "    \"message\": \"success\"" +
+                "}")
+                .setHeader("Content-Type", "application/json"));
+
+        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort("test-cluster", "shard1",
+                "jq", new HostPort("10.0.0.1", 6379));
+        credisService.markInstanceDown(clusterShardHostPort);
+
+        Assert.assertEquals(1, webServer.getRequestCount());
+
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=test-cluster&ip=10.0.0.1&port=6379&canRead=false&activeDc=jq",
+                request.getPath());
+        Assert.assertEquals("POST", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("markInstanceDown", metricData.getTags().get("api"));
+        Assert.assertEquals("test-cluster", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
     public void testMigrationPreCheck() throws Exception {
         webServer.enqueue(new MockResponse().setBody("true").setHeader("Content-Type", "application/json"));
 

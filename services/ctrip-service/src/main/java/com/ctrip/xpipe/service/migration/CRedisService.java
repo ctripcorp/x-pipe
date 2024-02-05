@@ -18,7 +18,9 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -139,9 +141,17 @@ public class CRedisService extends AbstractOuterClientService {
                     HostPort hostPort = clusterShardHostPort.getHostPort();
                     String reqType = state ? "markInstanceUp" : "markInstanceDown";
 
-                    MarkInstanceResponse response = doRequest(reqType, cluster, () ->
-							restOperations.postForObject(address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}",
-							null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state)
+                    MarkInstanceResponse response = doRequest(reqType, cluster, () -> {
+								UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(address);
+								uriBuilder.queryParam("clusterName", cluster)
+										.queryParam("ip", hostPort.getHost())
+										.queryParam("port", hostPort.getPort())
+										.queryParam("canRead", state);
+								if (null != clusterShardHostPort.getActiveDc()) {
+									uriBuilder.queryParam("activeDc", clusterShardHostPort.getActiveDc());
+								}
+								return restOperations.postForObject(uriBuilder.toUriString(), null, MarkInstanceResponse.class);
+							}
 					);
                     logger.info("[doMarkInstance][end]{},{},{}", clusterShardHostPort, state, response);
                     if(!response.isSuccess()){

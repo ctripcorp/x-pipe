@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.endpoint;
 
-import com.ctrip.xpipe.utils.ObjectUtils;
+import org.springframework.lang.Nullable;
+
+import java.util.Objects;
 
 /**
  * @author wenchao.meng
@@ -15,20 +17,26 @@ public class ClusterShardHostPort {
 
     private HostPort hostPort;
 
+    @Nullable
+    private String activeDc;
 
-    public ClusterShardHostPort(String clusterName, String shardName, HostPort hostPort){
+    public ClusterShardHostPort(String clusterName, String shardName, String activeDc, HostPort hostPort){
         this.clusterName = clusterName;
         this.shardName = shardName;
         this.hostPort = hostPort;
+        this.activeDc = activeDc;
+    }
+
+    public ClusterShardHostPort(String clusterName, String shardName, HostPort hostPort){
+        this(clusterName, shardName, null, hostPort);
     }
 
     public ClusterShardHostPort(String clusterName, String shardName){
-        this.clusterName = clusterName;
-        this.shardName = shardName;
+        this(clusterName, shardName, null, null);
     }
 
     public ClusterShardHostPort(HostPort hostPort){
-        this.hostPort = hostPort;
+        this(null, null, null, hostPort);
     }
 
     public HostPort getHostPort() {
@@ -55,38 +63,33 @@ public class ClusterShardHostPort {
         this.shardName = shardName;
     }
 
+    @Nullable
+    public String getActiveDc() {
+        return activeDc;
+    }
+
+    public void setActiveDc(@Nullable String activeDc) {
+        this.activeDc = activeDc;
+    }
+
     @Override
-    public boolean equals(Object obj) {
-
-        if(this == obj){
-            return true;
-        }
-
-        if(!(obj instanceof ClusterShardHostPort)){
-            return false;
-        }
-
-        ClusterShardHostPort other = (ClusterShardHostPort) obj;
-        if(!(ObjectUtils.equals(this.clusterName, other.clusterName))){
-            return false;
-        }
-        if(!(ObjectUtils.equals(this.shardName, other.shardName))){
-            return false;
-        }
-        if(!(ObjectUtils.equals(this.hostPort, other.hostPort))){
-            return false;
-        }
-
-        return true;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ClusterShardHostPort that = (ClusterShardHostPort) o;
+        return Objects.equals(clusterName, that.clusterName) &&
+                Objects.equals(shardName, that.shardName) &&
+                Objects.equals(hostPort, that.hostPort) &&
+                Objects.equals(activeDc, that.activeDc);
     }
 
     @Override
     public int hashCode() {
-        return ObjectUtils.hashCode(clusterName, shardName, hostPort);
+        return Objects.hash(clusterName, shardName, hostPort, activeDc);
     }
 
     @Override
     public String toString() {
-        return String.format("%s,%s[%s]", clusterName, shardName, hostPort);
+        return String.format("%s,%s[%s][%s]", clusterName, shardName, activeDc, hostPort);
     }
 }
