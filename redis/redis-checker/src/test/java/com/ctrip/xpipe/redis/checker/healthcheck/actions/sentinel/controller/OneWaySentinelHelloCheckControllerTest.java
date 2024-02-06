@@ -131,6 +131,15 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     }
 
     @Test
+    public void skipInstanceCrossRegion() throws Exception {
+        when(metaCache.isCrossRegion(anyString(), anyString())).thenReturn(false);
+        Assert.assertTrue(checkActionController.shouldCheck(newRandomRedisHealthCheckInstance("dc1", 1111)));
+
+        when(metaCache.isCrossRegion(anyString(), anyString())).thenReturn(true);
+        Assert.assertFalse(checkActionController.shouldCheck(newRandomRedisHealthCheckInstance("dc1", 1111)));
+    }
+
+    @Test
     public void allUpTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());

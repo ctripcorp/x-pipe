@@ -3,10 +3,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.NoRedisToSubContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
@@ -47,15 +45,28 @@ public class OneWaySentinelHelloCheckController implements OneWaySupport, Sentin
         if (!StringUtil.isEmpty(azGroupType) && ClusterType.lookup(azGroupType) == ClusterType.SINGLE_DC) {
             return false;
         }
+        if (metaCache.isCrossRegion(instance.getCheckInfo().getActiveDc(), instance.getCheckInfo().getDcId())) {
+            return false;
+        }
 
         return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheckFromRedis(instance);
     }
 
     @Override
+    public boolean worksfor(ActionContext t) {
+        return t instanceof SentinelActionContext;
+    }
+
+    @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getCheckInfo();
-        getCheckCollectorController(info.getClusterId(), info.getShardId())
-                .onAction(context);
+        if (context instanceof NoRedisToSubContext) {
+            getCheckCollectorController(((NoRedisToSubContext) context).getCluster(),
+                    ((NoRedisToSubContext) context).getShard()).onAction(context);
+        } else {
+            RedisInstanceInfo info = context.instance().getCheckInfo();
+            getCheckCollectorController(info.getClusterId(), info.getShardId())
+                    .onAction(context);
+        }
     }
 
     @Override

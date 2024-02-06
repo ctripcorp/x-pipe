@@ -134,6 +134,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelMasterInfo.put("ip", master.getHost());
         sentinelMasterInfo.put("port", String.valueOf(master.getPort()));
         sentinelMasterInfo.put("flags", "master");
+        when(metaCache.isCrossRegion(any(), any())).thenReturn(false);
     }
 
     @After

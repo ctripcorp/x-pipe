@@ -11,6 +11,9 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
 public class OneWaySentinelCheckAggregationCollector extends AbstractAggregationCollector<DefaultSentinelHelloCollector> implements OneWaySupport, SentinelHelloCollector {
@@ -24,12 +27,12 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
 
     @Override
     protected boolean allInstancesCollectedInDowngradeStatus(int collectedInstanceCount) {
-        return collectedInstanceCount >= countAllSlaves();
+        return collectedInstanceCount >= countActiveDcRegionSlaves();
     }
 
     @Override
     protected boolean allInstancesCollectedInNormalStatus(int collectedInstanceCount) {
-        return collectedInstanceCount >= countAllDRSlaves();
+        return collectedInstanceCount >= countActiveDcRegionDRSlaves();
     }
 
     public boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
@@ -54,13 +57,26 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
         return shouldCheck;
     }
 
-    private int countAllDRSlaves() {
+    private Set<DcMeta> getActiveDcRegionDcs() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta || StringUtil.isEmpty(clusterId)) return 0;
+        if (null == xpipeMeta || StringUtil.isEmpty(clusterId)) return null;
 
-        int redisCnt = 0;
+        Set<DcMeta> dcs = new HashSet<>();
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             if (!dcMeta.getClusters().containsKey(clusterId)) continue;
+            if (metaCache.isCrossRegion(dcMeta.getClusters().get(clusterId).getActiveDc(), dcMeta.getId())) continue;
+            dcs.add(dcMeta);
+        }
+
+        return dcs;
+    }
+
+    private int countActiveDcRegionDRSlaves() {
+        Set<DcMeta> activeDcRegionDcs = getActiveDcRegionDcs();
+        if (null == activeDcRegionDcs) return 0;
+
+        int redisCnt = 0;
+        for (DcMeta dcMeta : activeDcRegionDcs) {
             if (dcMeta.getClusters().get(clusterId).getActiveDc().equalsIgnoreCase(dcMeta.getId())) continue;
             ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
             if (null == shardMeta) continue; // cluster missing shard when no instances in it
@@ -69,13 +85,12 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
         return redisCnt;
     }
 
-    private int countAllSlaves() {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta || StringUtil.isEmpty(clusterId)) return 0;
+    private int countActiveDcRegionSlaves() {
+        Set<DcMeta> activeDcRegionDcs = getActiveDcRegionDcs();
+        if (null == activeDcRegionDcs) return 0;
 
         int redisCnt = 0;
-        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (!dcMeta.getClusters().containsKey(clusterId)) continue;
+        for (DcMeta dcMeta : activeDcRegionDcs) {
             ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
             if (null == shardMeta) continue; // cluster missing shard when no instances in it
             redisCnt += shardMeta.getRedises().stream().filter(redisMeta -> !redisMeta.isMaster()).count();
