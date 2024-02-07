@@ -110,6 +110,12 @@ function tryRemoveHeapTrace() {
     find "$logdir" -type f -name "heap_trace_$suffix*.txt" -delete
 }
 
+function tryRemoveJarLog() {
+    logdir=$1
+    appname=$2
+    find "$logdir" -type f -name "$appname_*.log" -delete
+}
+
 #VARS
 FULL_DIR=`getCurrentRealPath`
 SERVICE_NAME=redis-proxy
@@ -119,6 +125,7 @@ IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
 LOG_DIR=/opt/logs/100013684
 `trySaveHeapTrace ${LOG_DIR}`
 `tryRemoveHeapTrace ${LOG_DIR}`
+`tryRemoveJarLog ${LOG_DIR} ${SERVICE_NAME}`
 
 if [ ! $SERVER_PORT -eq 8080 ];then
     LOG_DIR=${LOG_DIR}_$SERVER_PORT
