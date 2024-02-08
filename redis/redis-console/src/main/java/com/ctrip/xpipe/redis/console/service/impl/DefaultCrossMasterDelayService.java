@@ -87,11 +87,13 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
         for (DcClusterShard dcClusterShard : crossMasterDelays.keySet()) {
             if (!checkDcClusterShard(xpipeMeta, dcClusterShard)) continue;
 
-            for (Pair<HostPort, Long> targetDcDelay : crossMasterDelays.get(dcClusterShard).values()) {
-                Long delay = targetDcDelay.getValue();
-                if (null == delay || delay < 0 || delay == DelayAction.SAMPLE_LOST_BUT_PONG) {
-                    unhealthyInfo.addUnhealthyInstance(dcClusterShard.getClusterId(), dcClusterShard.getDcId(),
-                            dcClusterShard.getShardId(), findMasterOf(dcClusterShard, xpipeMeta), true);
+            for (Map.Entry<String, Pair<HostPort, Long>> crossDcDelay: crossMasterDelays.get(dcClusterShard).entrySet()) {
+                String targetDc = crossDcDelay.getKey();
+                HostPort targetMaster = crossDcDelay.getValue().getKey();
+                Long delay = crossDcDelay.getValue().getValue();
+                if (null == delay || delay < 0 || delay >= DelayAction.SAMPLE_LOST_BUT_PONG) {
+                    unhealthyInfo.addUnhealthyInstance(dcClusterShard.getClusterId(), targetDc,
+                            dcClusterShard.getShardId(), targetMaster, true);
                     break;
                 }
             }
