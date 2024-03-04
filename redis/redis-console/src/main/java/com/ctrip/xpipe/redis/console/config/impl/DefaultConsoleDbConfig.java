@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.checker.alert.AlertDbConfig;
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;

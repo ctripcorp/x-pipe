@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;

@@ -41,6 +41,7 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		putHandler(new ClientCommandHandler());
 		putHandler(new RoleCommandHandler());
 		putHandler(new ProxyCommandHandler());
+		putHandler(new ConfigHandler());
 	}
 
 	protected void putHandler(CommandHandler handler) {
@@ -81,9 +82,9 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 						return;
 					}
 					innerDoHandle(args, redisClient, handler);
-				} catch (Exception e) {
-					logger.error("Error process command {} for client {}", Arrays.asList(args), redisClient, e);
-					redisClient.sendMessage(new RedisErrorParser(e.getMessage()).format());
+				} catch (Throwable th) {
+					logger.error("Error process command {} for client {}", Arrays.asList(args), redisClient, th);
+					redisClient.sendMessage(new RedisErrorParser(th.getMessage()).format());
 				}
 			}
 

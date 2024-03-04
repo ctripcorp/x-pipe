@@ -126,6 +126,10 @@ public class DefaultRdbParseContext implements RdbParseContext {
         return auxMap.get(key);
     }
 
+    public Map<String, String> getAllAux() {
+        return Collections.unmodifiableMap(auxMap);
+    }
+
     @Override
     public RdbParseContext setKey(RedisKey key) {
         this.redisKey.set(key);

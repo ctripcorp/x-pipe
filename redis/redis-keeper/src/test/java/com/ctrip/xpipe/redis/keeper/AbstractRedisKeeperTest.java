@@ -146,14 +146,14 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	
-	protected String readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
+	protected byte[] readRdbFileTilEnd(ReplicationStore replicationStore) throws IOException, InterruptedException {
 
 		RdbStore rdbStore = ((DefaultReplicationStore)replicationStore).getRdbStore();
 		
 		return readRdbFileTilEnd(rdbStore);
 	}
 
-	protected String readRdbFileTilEnd(RdbStore rdbStore) throws IOException, InterruptedException {
+	protected byte[] readRdbFileTilEnd(RdbStore rdbStore) throws IOException, InterruptedException {
 
 		final ByteArrayWritableByteChannel bachannel = new ByteArrayWritableByteChannel();
 		final CountDownLatch latch = new CountDownLatch(1);
@@ -195,7 +195,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 		});
 		latch.await(5, TimeUnit.SECONDS);
-		return new String(bachannel.getResult());
+		return bachannel.getResult();
 	}
 
 	public String readCommandFileTilEnd(final ReplicationStore replicationStore, int expectedLen) throws IOException {

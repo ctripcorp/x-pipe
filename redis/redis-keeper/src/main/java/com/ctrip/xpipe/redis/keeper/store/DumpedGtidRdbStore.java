@@ -13,7 +13,7 @@ import java.io.IOException;
 public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
 
     public DumpedGtidRdbStore(File file) throws IOException {
-        super(file, -1, null, null);
+        super(file, null, -1, null, null);
     }
 
     @Override
@@ -21,15 +21,15 @@ public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
         return this.eofType;
     }
 
+    @Override
+    public void setReplId(String replId) {
+        this.replId = replId;
+    }
+
 
     @Override
     public void setEofType(EofType eofType) {
         this.eofType = eofType;
-    }
-
-    @Override
-    public File getRdbFile() {
-        return file;
     }
 
     @Override

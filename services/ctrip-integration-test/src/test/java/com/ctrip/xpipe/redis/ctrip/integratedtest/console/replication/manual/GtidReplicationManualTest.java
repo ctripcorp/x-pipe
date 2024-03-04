@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -142,7 +143,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
     }
 
     @Override
-    public void onAuxFinish() {
+    public void onAuxFinish(Map<String, String> auxMap) {
         logger.info("[onAuxFinish]");
     }
 }

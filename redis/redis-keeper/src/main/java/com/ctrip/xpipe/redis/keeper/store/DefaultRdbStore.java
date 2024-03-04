@@ -44,6 +44,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
 
+	protected String replId;
+
 	protected long rdbOffset;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
@@ -51,12 +53,16 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	protected List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
 	
 	private Object truncateLock = new Object();
-	
-	public DefaultRdbStore(File file, long rdbOffset, EofType eofType) throws IOException {
 
+	private AtomicReference<Type> typeRef;
+	
+	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
+
+		this.replId = replId;
 		this.file = file;
 		this.eofType = eofType;
 		this.rdbOffset = rdbOffset;
+		this.typeRef = new AtomicReference<>(Type.UNKNOWN);
 		
 		if(file.length() > 0){
 			checkAndSetRdbState();
@@ -65,7 +71,37 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			channel = writeFile.getChannel();
 		}
 	}
-	
+
+	@Override
+	public String getReplId() {
+		return replId;
+	}
+
+	@Override
+	public long getRdbOffset() {
+		return rdbOffset;
+	}
+
+	@Override
+	public EofType getEofType() {
+		return this.eofType;
+	}
+
+	@Override
+	public File getRdbFile() {
+		return file;
+	}
+
+	@Override
+	public void updateRdbType(Type type) {
+		this.typeRef.compareAndSet(Type.UNKNOWN, type);
+	}
+
+	@Override
+	public Type getRdbType() {
+		return typeRef.get();
+	}
+
 	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
 		makeSureOpen();
@@ -337,7 +373,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	@Override
 	public String toString() {
-		return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
+		return String.format("type:%s, eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s",
+				typeRef.get().name(), eofType, rdbOffset, file, file.exists(), status.get());
 	}
 
 	@Override

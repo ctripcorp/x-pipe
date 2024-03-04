@@ -102,6 +102,7 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
         //when fullSync or when keeperSync, rdbGtidSet come up later;
         //but when keeperRestart, rdbGtidSet come up immediately from meta.json
 
+        logger.info("[setBaseIndex]{}-{}",localOffset, baseGtidSet);
         this.baseGtidSet = new GtidSet(baseGtidSet);
         this.baseStartOffset = localOffset;
     }

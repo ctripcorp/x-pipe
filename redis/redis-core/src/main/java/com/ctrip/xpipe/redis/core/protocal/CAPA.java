@@ -8,7 +8,8 @@ package com.ctrip.xpipe.redis.core.protocal;
 public enum CAPA {
 	
 	EOF,
-	PSYNC2;
+	PSYNC2,
+	RORDB;
 	
 	public static CAPA of(String capaString) {
 		

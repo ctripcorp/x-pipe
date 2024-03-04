@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
@@ -256,7 +257,10 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		MetaStore metaStore = newCurrentStore.getMetaStore();
 		metaStore.setMasterAddress(new DefaultEndPoint("redis://127.0.0.1:6379"));
-		newCurrentStore.beginRdb("masterRunid", 0, new LenEofType(100));
+		RdbStore rdbStore = newCurrentStore.prepareRdb("masterRunid", 0, new LenEofType(100));
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		newCurrentStore.confirmRdb(rdbStore);
 
 		ByteBuf cmdBuf = Unpooled.buffer();
 		cmdBuf.writeByte(9);

@@ -39,14 +39,22 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
     private final KeeperResourceManager resourceManager;
 
-    public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
+    private final boolean tryRordb;
+
+    public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, boolean tryRordb,
                                    NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                    KeeperResourceManager resourceManager) {
         super(redisKeeperServer);
         this.redisMaster = redisMaster;
+        this.tryRordb = tryRordb;
         this.nioEventLoopGroup = nioEventLoopGroup;
         this.scheduled = scheduled;
         this.resourceManager = resourceManager;
+    }
+
+    @Override
+    public boolean tryRordb() {
+        return tryRordb;
     }
 
     @Override
@@ -79,7 +87,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     protected void startRdbOnlyReplication() throws Exception {
-        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, this, resourceManager);
+        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, nioEventLoopGroup, scheduled, this, resourceManager);
 
         rdbonlyRedisMasterReplication.initialize();
         rdbonlyRedisMasterReplication.start();
@@ -106,18 +114,18 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
         try {
             logger.info("[beginReceiveRdbData][update rdb]{}", dumpedRdbStore);
-            redisMaster.getCurrentReplicationStore().checkReplIdAndUpdateRdb(dumpedRdbStore, replId);
+            redisMaster.getCurrentReplicationStore().checkReplId(replId);
             super.beginReceiveRdbData(replId, masterOffset);
         } catch (UnexpectedReplIdException e) {
             dumpFail(new RdbOnlyPsyncReplIdNotSameException("[beginReceiveRdbData]", e));
-        } catch (IOException e) {
-            logger.error("[beginReceiveRdbData]", e);
+        } catch (Throwable th) {
+            logger.error("[beginReceiveRdbData]", th);
         }
     }
 
     @Override
     public String toString() {
-        return String.format("%s(%s)", getClass().getSimpleName(), rdbonlyRedisMasterReplication);
+        return String.format("%s(%s)[%s]", getClass().getSimpleName(), rdbonlyRedisMasterReplication, tryRordb);
     }
 
     @Override

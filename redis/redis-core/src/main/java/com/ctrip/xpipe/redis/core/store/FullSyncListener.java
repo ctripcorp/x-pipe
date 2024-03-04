@@ -7,4 +7,6 @@ package com.ctrip.xpipe.redis.core.store;
  */
 public interface FullSyncListener extends RdbFileListener, CommandsListener {
 
+    boolean supportRdb(RdbStore.Type rdbType);
+
 }

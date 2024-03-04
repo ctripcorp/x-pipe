@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbDataBytes.*;
 
@@ -247,7 +248,7 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
     }
 
     @Override
-    public void onAuxFinish() {
+    public void onAuxFinish(Map<String, String> auxMap) {
         logger.info("[onAuxFinish]");
     }
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbDumpState;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -50,7 +51,7 @@ public class AbstractRdbDumperTest extends AbstractFakeRedisTest {
             CountDownLatch latch = new CountDownLatch(2);
             runTogether(() -> {
                 redisSlave1.waitForRdbDumping();
-                dumper.setRdbDumpState(RdbDumpState.DUMPING);
+                dumper.auxParseFinished(RdbStore.Type.NORMAL);
             }, latch);
             runTogether(() -> {
                 try {
@@ -81,7 +82,7 @@ public class AbstractRdbDumperTest extends AbstractFakeRedisTest {
                 sleep(1000);
             }
         });
-        dumper.setRdbDumpState(RdbDumpState.DUMPING);
+        dumper.auxParseFinished(RdbStore.Type.NORMAL);
 
         executor.execute(()->{
             try {
@@ -114,6 +115,11 @@ public class AbstractRdbDumperTest extends AbstractFakeRedisTest {
 
         public TestDumper(RedisKeeperServer redisKeeperServer) {
             super(redisKeeperServer);
+        }
+
+        @Override
+        public boolean tryRordb() {
+            return false;
         }
 
         @Override

@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_GTID;
@@ -67,7 +68,7 @@ public class AuxOnlyRdbParserTest extends AbstractTest implements RdbParseListen
     }
 
     @Override
-    public void onAuxFinish() {
+    public void onAuxFinish(Map<String, String> auxMap) {
         logger.info("[onAuxFinish] {}", parser);
     }
 }

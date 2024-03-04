@@ -18,10 +18,13 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -58,7 +61,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	protected RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(int replicationStoreCommandFileNumToKeep,
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
 
-		RedisKeeperServer redisKeeperServer = startRedisKeeperServer(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, 1000);
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServer(replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
 		connectToFakeRedis(redisKeeperServer);
 		return redisKeeperServer;
 	}
@@ -143,20 +146,20 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	}
 
 	protected void waitForPsyncResultEquals(InMemoryPsync psync) throws Exception {
-		waitConditionUntilTimeOut(() -> new String(psync.getRdb()).equals(fakeRedisServer.getRdbContent())
+		waitConditionUntilTimeOut(() -> Arrays.equals(psync.getRdb(), fakeRedisServer.getRdbContent())
 						&& new String(psync.getCommands()).equals(fakeRedisServer.currentCommands()));
 	}
 
 	protected void assertPsyncResultEquals(InMemoryPsync psync) {
 
 		try{
-			Assert.assertEquals(fakeRedisServer.getRdbContent(), new String(psync.getRdb()));
+			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), psync.getRdb());
 			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(psync.getCommands()));
 		}catch(Exception e){
 			logger.error("[assertPsyncResultEquals]", e);
 		}
 
-		Assert.assertEquals(fakeRedisServer.getRdbContent(), new String(psync.getRdb()));
+		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), psync.getRdb());
 		Assert.assertEquals(fakeRedisServer.currentCommands(), new String(psync.getCommands()));
 	}
 
@@ -222,12 +225,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 
 				@Override
-				public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-
-				}
-
-				@Override
-				public void readAuxEnd(RdbStore rdbStore) {
+				public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 
 				}
 

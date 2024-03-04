@@ -99,6 +99,7 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         waitRedisKeeperServerConnected(redisKeeperServer2);
         waitRedisKeeperServerConnected(redisKeeperServer1);
         verify(leakyBucket, never()).tryAcquire();
+        waitConditionUntilTimeOut(() -> redisKeeperServer1.getKeeperRepl().getEndOffset() == redisKeeperServer2.getKeeperRepl().getEndOffset());
         logger.info(remarkableMessage("stop keeper2 {}"), redisKeeperServer2.getListeningPort());
         redisKeeperServer2.stop();
         sleep((int) (redisKeeperServer1.getKeeperConfig().getReplDownSafeIntervalMilli() * 3 / 2));

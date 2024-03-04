@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.LifecycleStateAware;
@@ -28,7 +29,7 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 
 	void reconnect();
 
-	RdbDumper createRdbDumper() throws CreateRdbDumperException;
+	RdbDumper createRdbDumper(boolean tryRrodb) throws CreateRdbDumperException;
 
 	MASTER_STATE getMasterState();
 	
@@ -37,5 +38,7 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 	String metaInfo();
 
 	boolean usingProxy();
+
+	CommandFuture<Boolean> checkMasterSupportRordb();
 
 }

@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpLwm;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeEnd;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeStart;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -24,10 +23,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import org.apache.zookeeper.common.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -392,7 +388,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void onAuxFinish() {
+    public void onAuxFinish(Map<String, String> auxMap) {
 
     }
 }

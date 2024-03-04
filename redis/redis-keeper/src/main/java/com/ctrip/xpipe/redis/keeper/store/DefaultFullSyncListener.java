@@ -4,6 +4,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import io.netty.channel.ChannelFuture;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,6 +30,11 @@ public class DefaultFullSyncListener implements FullSyncListener {
 
 	public DefaultFullSyncListener(RedisSlave redisSlave) {
 		this.redisSlave = redisSlave;
+	}
+
+	@Override
+	public boolean supportRdb(RdbStore.Type rdbType) {
+		return redisSlave.supportRdb(rdbType);
 	}
 
 	@Override

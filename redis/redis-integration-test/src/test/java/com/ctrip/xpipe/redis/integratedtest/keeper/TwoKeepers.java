@@ -32,6 +32,7 @@ public class TwoKeepers extends AbstractKeeperIntegratedMultiDc {
 
         setKeeperActive();
         startKeepers();
+        startRedis(getRedisMaster());
 
         sleep(3000);
     }

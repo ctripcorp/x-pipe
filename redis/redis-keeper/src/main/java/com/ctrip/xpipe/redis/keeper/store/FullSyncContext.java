@@ -16,6 +16,8 @@ public class FullSyncContext {
 
 	private FULLSYNC_FAIL_CAUSE cause;
 
+	private boolean tryRordb = false;
+
 	public FullSyncContext(boolean fullSyncPossible, FULLSYNC_FAIL_CAUSE cause) {
 		this.fullSyncPossible = fullSyncPossible;
 		this.cause = cause;
@@ -24,6 +26,14 @@ public class FullSyncContext {
 	public FullSyncContext(boolean fullSyncPossible, RdbStore rdbStore) {
 		this.fullSyncPossible = fullSyncPossible;
 		this.rdbStore = rdbStore;
+	}
+
+	public boolean isTryRordb() {
+		return tryRordb;
+	}
+
+	public void setTryRordb(boolean tryRordb) {
+		this.tryRordb = tryRordb;
 	}
 
 	public boolean isFullSyncPossible() {

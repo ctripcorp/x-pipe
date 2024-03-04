@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.server.PartialAware;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import io.netty.channel.ChannelFuture;
 
@@ -16,8 +17,6 @@ import io.netty.channel.ChannelFuture;
 public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware, CommandsListener{
 	
 	void waitForRdbDumping();
-
-	void waitForGtidParse();
 
 	void waitForSeqFsync();
 	
@@ -56,5 +55,7 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	String metaInfo();
 
 	boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz);
+
+	boolean supportRdb(RdbStore.Type rdbType);
 
 }
