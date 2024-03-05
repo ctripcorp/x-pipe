@@ -5,6 +5,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
@@ -45,27 +47,35 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
 
     @Override
     public void initStandard(Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap) {
-        Map<String, Long> standardMap = new HashMap<>();
-        for (KeeperContainerDiskType value : KeeperContainerDiskType.values()) {
-            try {
-                standardMap.put(value.getPeerData(), Long.parseLong(configService.getConfig(KEY_KEEPER_CONTAINER_STANDARD, value.getPeerData()).getVal()));
-                standardMap.put(value.getInputFlow(), Long.parseLong(configService.getConfig(KEY_KEEPER_CONTAINER_STANDARD, value.getInputFlow()).getVal()));
-            } catch (Exception e) {
-                logger.error("[analyzeKeeperContainerUsedInfo] get standardMap:{} error: {}", standardMap, e);
+        Map<String, Long> inputFlowStandardMap = new HashMap<>();
+        Map<String, Long> peerDataStandardMap = new HashMap<>();
+        List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+        if (configs != null && !configs.isEmpty()) {
+            for (ConfigModel config : configs) {
+                try {
+                    String[] split = config.getSubKey().split(KeeperContainerDiskType.DEFAULT.interval);
+                    if (split[1].equalsIgnoreCase(KeeperContainerDiskType.Standard.INPUT_FLOW.getDesc())) {
+                        inputFlowStandardMap.put(split[0], Long.parseLong(config.getVal()));
+                    } else if (split[1].equalsIgnoreCase(KeeperContainerDiskType.Standard.PEER_DATA.getDesc())) {
+                        peerDataStandardMap.put(split[0], Long.parseLong(config.getVal()));
+                    }
+                } catch (Exception e) {
+                    logger.error("[analyzeKeeperContainerUsedInfo] get inputFlowStandardMap:{} peerDataStandardMap:{} error: {}", inputFlowStandardMap, peerDataStandardMap, e);
+                }
             }
         }
-        CatEventMonitor.DEFAULT.logEvent(KEEPER_STANDARD, standardMap.toString());
-        KeeperContainerOverloadStandardModel defaultOverloadStandard = getDefaultStandard(standardMap);
+        CatEventMonitor.DEFAULT.logEvent(KEEPER_STANDARD, inputFlowStandardMap.toString() + inputFlowStandardMap.toString());
+        KeeperContainerOverloadStandardModel defaultOverloadStandard = getDefaultStandard(inputFlowStandardMap, peerDataStandardMap);
         for (KeeperContainerUsedInfoModel infoModel : currentDcAllKeeperContainerUsedInfoModelMap.values()) {
-            KeeperContainerOverloadStandardModel realKeeperContainerOverloadStandard = getRealStandard(standardMap, defaultOverloadStandard, infoModel);
+            KeeperContainerOverloadStandardModel realKeeperContainerOverloadStandard = getRealStandard(inputFlowStandardMap, peerDataStandardMap, defaultOverloadStandard, infoModel);
             infoModel.setInputFlowStandard(realKeeperContainerOverloadStandard.getFlowOverload());
             infoModel.setRedisUsedMemoryStandard(realKeeperContainerOverloadStandard.getPeerDataOverload());
         }
     }
 
-    private KeeperContainerOverloadStandardModel getDefaultStandard(Map<String, Long> standardMap){
-        Long defaultPeerDataStandard = standardMap.get(KeeperContainerDiskType.DEFAULT.getPeerData());
-        Long defaultInputFlowStandard = standardMap.get(KeeperContainerDiskType.DEFAULT.getInputFlow());
+    private KeeperContainerOverloadStandardModel getDefaultStandard(Map<String, Long> inputFlowStandardMap, Map<String, Long> peerDataStandardMap){
+        Long defaultPeerDataStandard = peerDataStandardMap.get(KeeperContainerDiskType.DEFAULT.getDesc());
+        Long defaultInputFlowStandard = inputFlowStandardMap.get(KeeperContainerDiskType.DEFAULT.getDesc());
         KeeperContainerOverloadStandardModel defaultOverloadStandard;
         if (defaultInputFlowStandard != null && defaultPeerDataStandard != null) {
             defaultOverloadStandard = new KeeperContainerOverloadStandardModel(defaultPeerDataStandard, defaultInputFlowStandard);
@@ -76,7 +86,8 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         return defaultOverloadStandard;
     }
 
-    private KeeperContainerOverloadStandardModel getRealStandard( Map<String, Long> standardMap,
+    private KeeperContainerOverloadStandardModel getRealStandard( Map<String, Long> inputFlowStandardMap,
+                                                                  Map<String, Long> peerDataStandardMap,
                                                                  KeeperContainerOverloadStandardModel defaultOverloadStandard,
                                                                  KeeperContainerUsedInfoModel infoModel){
         KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
@@ -86,14 +97,21 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         if (organizationTbl != null) {
             infoModel.setOrg(organizationTbl.getOrgName());
         }
-        for (KeeperContainerDiskType value : KeeperContainerDiskType.values()) {
-            if (value.getDesc().equalsIgnoreCase(infoModel.getDiskType())) {
-                Long peerDataStandard = standardMap.get(value.getPeerData());
-                Long inputFlowStandard = standardMap.get(value.getInputFlow());
-                if (peerDataStandard != null && inputFlowStandard != null) {
-                    return new KeeperContainerOverloadStandardModel(peerDataStandard, inputFlowStandard);
-                }
+        Long inputFlowStandard = null;
+        Long peerDataStandard = null;
+        for (Map.Entry<String, Long> entry : inputFlowStandardMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(infoModel.getDiskType())) {
+                inputFlowStandard = entry.getValue();
             }
+        }
+        for (Map.Entry<String, Long> entry : peerDataStandardMap.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(infoModel.getDiskType())) {
+                peerDataStandard = entry.getValue();
+            }
+        }
+
+        if (peerDataStandard != null && inputFlowStandard != null) {
+            return new KeeperContainerOverloadStandardModel(peerDataStandard, inputFlowStandard);
         }
         return defaultOverloadStandard;
     }

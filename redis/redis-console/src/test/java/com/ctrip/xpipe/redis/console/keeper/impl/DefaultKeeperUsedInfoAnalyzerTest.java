@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
+
 /**
  * @author yu
  * <p>
@@ -66,9 +68,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         keeperContainerAnalyzerService.setConfigService(configService);
         keeperContainerAnalyzerService.setKeeperContainerService(keeperContainerService);
         keeperContainerAnalyzerService.setOrganizationService(organizationService);
+        List<ConfigModel> configModels = new ArrayList<>();
         ConfigModel configModel = new ConfigModel();
-        configModel.setVal("16");
-        Mockito.when(configService.getConfig(Mockito.any(), Mockito.any())).thenReturn(configModel);
+        ConfigModel configModel1 = new ConfigModel();
+        configModel.setKey(KEY_KEEPER_CONTAINER_STANDARD).setSubKey("DEFAULT-inputFlow").setVal("16");
+        configModel1.setKey(KEY_KEEPER_CONTAINER_STANDARD).setSubKey("DEFAULT-peerData").setVal("16");
+        configModels.add(configModel);
+        configModels.add(configModel1);
+        Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
         Mockito.when(organizationService.getOrganizationTblByCMSOrganiztionId(Mockito.anyLong())).thenReturn(new OrganizationTbl().setOrgName("org"));
         analyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);

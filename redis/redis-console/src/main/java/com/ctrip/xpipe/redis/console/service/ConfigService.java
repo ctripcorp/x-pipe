@@ -76,4 +76,6 @@ public interface ConfigService {
     ConfigModel getConfig(String key);
 
     ConfigModel getConfig(String key, String subId);
+
+    List<ConfigModel> getConfigs(String key);
 }

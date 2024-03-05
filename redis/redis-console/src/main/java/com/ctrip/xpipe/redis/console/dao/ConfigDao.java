@@ -99,6 +99,10 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return getByKeyAndSubId(key, "");
     }
 
+    public List<ConfigTbl> getAllByKey(String key)  throws DalException {
+        return configTblDao.findByKey(key, ConfigTblEntity.READSET_FULL);
+    }
+
     public ConfigTbl getByKeyAndSubId(String key, String subId) throws DalException {
         return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
     }

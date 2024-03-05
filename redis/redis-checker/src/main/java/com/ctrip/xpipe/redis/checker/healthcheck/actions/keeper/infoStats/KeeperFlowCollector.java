@@ -38,9 +38,19 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
     @Override
     public void stopWatch(HealthCheckAction action) {
         KeeperInstanceInfo instanceInfo = (KeeperInstanceInfo) action.getActionInstance().getCheckInfo();
-        logger.debug("stopWatch: {}", new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
+        logger.info("stopWatch: {}", new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
+        logger.info("stop before: {}", hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .get(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), true, instanceInfo.getHostPort().getPort())));
+        logger.info("stop before: {}", hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .get(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), false, instanceInfo.getHostPort().getPort())));
         hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
-                .remove(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
+                .remove(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), true, instanceInfo.getHostPort().getPort()));
+        hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .remove(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), false, instanceInfo.getHostPort().getPort()));
+        logger.info("stop after: {}", hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .get(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), true, instanceInfo.getHostPort().getPort())));
+        logger.info("stop after: {}", hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .get(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), false, instanceInfo.getHostPort().getPort())));
     }
 
     public ConcurrentMap<String, Map<DcClusterShardActive, Long>> getHostPort2InputFlow() {

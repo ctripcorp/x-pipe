@@ -41,6 +41,8 @@ public class DefaultKeeperContainerMigrationServiceTest {
                 .thenReturn(shardModel);
         Mockito.when(shardModelService.migrateShardKeepers(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
+        Mockito.when(shardModelService.switchMaster(Mockito.anyString(), Mockito.anyString(),  Mockito.any()))
+                .thenReturn(true);
     }
 
     @Test
@@ -73,7 +75,19 @@ public class DefaultKeeperContainerMigrationServiceTest {
         model.setSrcKeeperContainer(src).setTargetKeeperContainer(target).setMigrateKeeperCount(3).setMigrateShards(migrationShards);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-
         Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+
+        models.clear();
+        model.setSwitchActive(true);
+        models.add(model);
+        service.beginMigrateKeeperContainers(models);
+        Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+
+        models.clear();
+        model.setSwitchActive(false);
+        model.setKeeperPairOverload(true);
+        models.add(model);
+        service.beginMigrateKeeperContainers(models);
+        Assert.assertEquals(9, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
     }
 }

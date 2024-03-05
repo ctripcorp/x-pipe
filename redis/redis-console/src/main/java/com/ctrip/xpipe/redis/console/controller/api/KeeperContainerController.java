@@ -5,21 +5,15 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +60,9 @@ public class KeeperContainerController extends AbstractConsoleController{
     public RetMessage getDiskType() {
         try {
             Map<String, String> map = new HashMap<>();
-            for (KeeperContainerDiskType value : KeeperContainerDiskType.values()) {
-                map.put(value.getPeerData(), configService.getConfig(KEY_KEEPER_CONTAINER_STANDARD, value.getPeerData()).getVal());
-                map.put(value.getInputFlow(), configService.getConfig(KEY_KEEPER_CONTAINER_STANDARD, value.getInputFlow()).getVal());
+            List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+            for (ConfigModel configModel : configs) {
+                map.put(configModel.getSubKey(), configModel.getVal());
             }
             return RetMessage.createSuccessMessage(map.toString());
         } catch (Exception e) {

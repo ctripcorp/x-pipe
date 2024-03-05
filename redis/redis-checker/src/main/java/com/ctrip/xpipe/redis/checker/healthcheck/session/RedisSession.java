@@ -62,6 +62,9 @@ public class RedisSession {
         logger.info("session command timeout {}:{} {}", endpoint.getHost(), endpoint.getPort(), commandTimeOut);
     }
 
+    public RedisSession() {
+    }
+
     public void check() {
 
         for (Map.Entry<Set<String>, PubSubConnectionWrapper> entry : subscribConns.entrySet()) {
@@ -350,7 +353,10 @@ public class RedisSession {
 
     @Override
     public String toString() {
-        return String.format("%s", endpoint.toString());
+        if (endpoint != null) {
+            return String.format("%s", endpoint);
+        }
+        return "";
     }
 
     public interface RollCallback {
