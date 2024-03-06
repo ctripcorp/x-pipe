@@ -438,14 +438,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster5, Shard1, true, 9, 9)
                 .createKeeper(Cluster5, Shard2, false, 9, 9);
 
-        createKeeperContainer(models, IP3, 9, 9)
+        createKeeperContainer(models, IP4, 9, 9)
                 .createKeeper(Cluster5, Shard2, true, 9, 9)
                 .createKeeper(Cluster5, Shard1, false, 9, 9);
 
         analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
+        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.size());
     }
 
     @Test

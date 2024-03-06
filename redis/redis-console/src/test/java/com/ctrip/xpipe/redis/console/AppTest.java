@@ -53,7 +53,7 @@ public class AppTest extends AbstratAppTest {
 	public void startConsole8080() throws IOException, SQLException {
 
 		System.setProperty("server.port", "8080");
-		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE.name());
+		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER.name());
 		start();
 
 	}
