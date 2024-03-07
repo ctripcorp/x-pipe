@@ -10,9 +10,10 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.ctrip.xpipe.redis.core.store.RdbDumpState.WAIT_DUMPPING;
+import static com.ctrip.xpipe.redis.core.store.RdbDumpState.*;
 
 /**
  * @author wenchao.meng
@@ -26,6 +27,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	protected RedisKeeperServer redisKeeperServer;
 
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+	private AtomicReference<RdbStore.Type> rdbType = new AtomicReference<>();
 
 	public AbstractRdbDumper(RedisKeeperServer redisKeeperServer) {
 		this.redisKeeperServer = redisKeeperServer;
@@ -42,7 +45,9 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 			this.rdbDumpState = rdbDumpState;
 			switch (rdbDumpState) {
 				case DUMPING:
-					doWhenDumping();
+					break;
+				case AUX_PARSED:
+					doWhenAuxParsed();
 					break;
 				case FAIL:
 					doWhenDumpFailed();
@@ -51,7 +56,6 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 				case NORMAL:
 					// clear dumper
 					redisKeeperServer.clearRdbDumper(this);
-					;
 					break;
 				case WAIT_DUMPPING:
 					break;
@@ -65,7 +69,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
 			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING) {
-				getLogger().info("[doWhenDumping][slave waiting for rdb, close]{}", redisSlave);
+				getLogger().info("[doWhenDumpFailed][slave waiting for rdb, close]{}", redisSlave);
 				try {
 					redisSlave.close();
 				} catch (IOException e) {
@@ -75,21 +79,11 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		}
 	}
 
-	private void doWhenDumping() {
+	private void doWhenAuxParsed() {
 
 		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
 			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING) {
-				getLogger().info("[doWhenDumping][slave waiting for rdb, resume]{}", redisSlave);
-				continueSlaveFsync(redisSlave);
-			}
-		}
-	}
-
-	@Override
-	public void rdbGtidSetParsed() {
-		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
-			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_GTIDSET) {
-				getLogger().info("[doWhenDumping][slave waiting for rdb, resume]{}", redisSlave);
+				getLogger().info("[doWhenAuxParsed][slave waiting for rdb, resume]{}", redisSlave);
 				continueSlaveFsync(redisSlave);
 			}
 		}
@@ -125,8 +119,12 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		lock.readLock().lock();
 		try {
 			state = rdbDumpState;
-			if (state == WAIT_DUMPPING) {
-				getLogger().info("[tryFullSync][make slave waiting]{}", redisSlave);
+			if (state == WAIT_DUMPPING || state == DUMPING) {
+				getLogger().info("[tryFullSync][make slave waiting][status {}]{}", state, redisSlave);
+				redisSlave.waitForRdbDumping();
+				return;
+			} else if (state == AUX_PARSED && !redisSlave.supportRdb(rdbType.get())) {
+				getLogger().info("[tryFullSync][make slave waiting][rdbType not support {}]{}", rdbType.get().name(), redisSlave);
 				redisSlave.waitForRdbDumping();
 				return;
 			}
@@ -134,7 +132,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 			lock.readLock().unlock();
 		}
 		switch (state) {
-			case DUMPING:
+			case AUX_PARSED:
 				doFullSyncOrGiveUp(redisSlave);
 				break;
 			case FAIL:
@@ -156,10 +154,16 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	}
 
 	@Override
+	public void auxParseFinished(RdbStore.Type type) {
+		getLogger().info("[auxParseFinished][{}]{}", type.name(), this);
+		this.rdbType.set(type);
+		setRdbDumpState(RdbDumpState.AUX_PARSED);
+	}
+
+	@Override
 	public void beginReceiveRdbData(String replId, long masterOffset) {
 		getLogger().info("[beginReceiveRdbData]{}", this);
 		setRdbDumpState(RdbDumpState.DUMPING);
-
 	}
 
 	@Override

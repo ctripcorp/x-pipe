@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -144,12 +145,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
-    public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-
-    }
-
-    @Override
-    public void readAuxEnd(RdbStore rdbStore) {
+    public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 
     }
 

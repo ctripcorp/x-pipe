@@ -28,7 +28,7 @@ public class DefaultRdbStoreEofMarkTest extends AbstractRedisKeeperTest {
 	public void beforeDefaultRdbStoreEofMarkTest() throws IOException{
 		
 		rdbFile = new File(String.format("%s/%s.rdb", getTestFileDir(), getTestName()));
-		rdbStore = new DefaultRdbStore(rdbFile, 0, new EofMarkType(eofMark));
+		rdbStore = new DefaultRdbStore(rdbFile, "replid", 0, new EofMarkType(eofMark));
 	}
 
 	
@@ -50,7 +50,7 @@ public class DefaultRdbStoreEofMarkTest extends AbstractRedisKeeperTest {
 			}
 		});
 		
-		String rdbFileData = readRdbFileTilEnd(rdbStore);
+		String rdbFileData = new String(readRdbFileTilEnd(rdbStore));
 		Assert.assertEquals(data, rdbFileData);
 		
 	}

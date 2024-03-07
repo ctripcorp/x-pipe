@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -122,8 +123,9 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
         logger.info("[onFinish] {}", parser);
     }
 
+
     @Override
-    public void onAuxFinish() {
+    public void onAuxFinish(Map<String, String> auxMap) {
         logger.info("[onAuxFinish]");
     }
 }

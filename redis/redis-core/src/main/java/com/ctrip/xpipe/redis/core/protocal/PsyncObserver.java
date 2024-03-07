@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -28,9 +29,7 @@ public interface PsyncObserver {
 	 */
 	void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException;
 
-	void readRdbGtidSet(RdbStore rdbStore, String gtidSet);
-
-	void readAuxEnd(RdbStore rdbStore);
+	void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap);
 
 	void endWriteRdb();
 	

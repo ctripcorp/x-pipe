@@ -30,6 +30,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author lishanglin
  * date 2021/12/14
+ * [MAC] update fd limit to 8192 before test
+ * sudo sysctl -w kern.maxfiles=1048600
+ * sudo sysctl -w kern.maxfilesperproc=1048600
+ * ulimit -n 8124
  */
 public class KeeperFastStateChangeTest extends AbstractKeeperIntegratedSingleDc {
 

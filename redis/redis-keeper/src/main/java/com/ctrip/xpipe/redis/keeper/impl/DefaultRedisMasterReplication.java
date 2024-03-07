@@ -47,6 +47,13 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
+	public boolean tryRordb() {
+		// capa rordb as default
+		// if the master support rordb, the slaves will most likely support it too
+		return true;
+	}
+
+	@Override
 	protected void doConnect(Bootstrap b) {
 
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);

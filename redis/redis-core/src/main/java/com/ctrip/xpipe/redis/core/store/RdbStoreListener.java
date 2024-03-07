@@ -7,8 +7,6 @@ package com.ctrip.xpipe.redis.core.store;
  */
 public interface RdbStoreListener {
 
-	void onRdbGtidSet(String gtidSet);
-	
 	void onEndRdb();
 
 }

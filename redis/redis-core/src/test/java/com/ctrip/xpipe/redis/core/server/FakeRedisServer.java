@@ -7,6 +7,8 @@ import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,11 +27,13 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private int sendBatchIntervalMilli = 10;
 	
 	private int port;
-	private String rdbContent = "";
+	private byte[] rdbContent = new byte[0];
 	private String commands = "";
 	private int    rdbOffset = 1;
 	private Server server; 
 	private String runId = RunidGenerator.DEFAULT.generateRunid();
+
+	private boolean supportRordb = false;
 	
 	private boolean eof = Boolean.parseBoolean(System.getProperty("EOF", "true"));  
 	
@@ -86,7 +90,7 @@ public class FakeRedisServer extends AbstractLifecycle{
 		return port;
 	}
 
-	public String getRdbContent() {
+	public byte[] getRdbContent() {
 		return rdbContent;
 	}
 
@@ -102,17 +106,34 @@ public class FakeRedisServer extends AbstractLifecycle{
 		return sleepBeforeSendRdb;
 	}
 
-	public synchronized void reGenerateRdb() {
-
+	public synchronized void reGenerateRdb(boolean capaRordb) throws IOException {
 		rdbOffset += commands.length();
 		
 		String prefix = String.format("rdb_rdboffset:%d--", rdbOffset);
-		rdbContent = "REDIS0009" + '\0' + prefix + AbstractTest.randomString(rdbSize - prefix.length());
+		// "REDIS0009" + AUX(redis-ver:6.2.6) + SELECTDB 0
+		byte[] magic = new byte[] {0x52, 0x45, 0x44, 0x49, 0x53, 0x30, 0x30, 0x30, 0x39};
+		byte[] aux = new byte[] {(byte)0xfa, 0x09, 0x72, 0x65, 0x64, 0x69, 0x73, 0x2d,
+				0x76, 0x65, 0x72, 0x05, 0x36, 0x2e, 0x32, 0x2e, 0x36};
+		byte[] selectDb0 = new byte[] {(byte)0xfe, 0x00};
+
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		os.write(magic);
+		os.write(aux);
+		// AUX(rordb:00001)
+		if (capaRordb && this.supportRordb) os.write(new byte[] {(byte)0xfa, 0x05, 0x72, 0x6f, 0x72, 0x64, 0x62, 0x05, 0x30, 0x30, 0x30, 0x30, 0x31});
+		os.write(selectDb0);
+		os.write(prefix.getBytes());
+		os.write(AbstractTest.randomString(rdbSize - prefix.length()).getBytes());
+		rdbContent = os.toByteArray();
 
 		if (commandsLength < 0) return;
 		prefix = String.format("cmd_rdboffset:%d--", rdbOffset);
 		commands = prefix + AbstractTest.randomString(commandsLength - prefix.length());
 		addCommands(commands);
+	}
+
+	public synchronized void reGenerateRdb() throws IOException {
+		reGenerateRdb(false);
 	}
 
 	public void propagate(String cmd) {
@@ -207,6 +228,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 	
 	public void setEof(boolean eof) {
 		this.eof = eof;
+	}
+
+	public boolean isSupportRordb() {
+		return supportRordb;
+	}
+
+	public void setSupportRordb(boolean supportRordb) {
+		this.supportRordb = supportRordb;
 	}
 
 	public void increasePsyncCount() {

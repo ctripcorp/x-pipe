@@ -26,6 +26,18 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		metaStore = new MetaStore() {
 
 			@Override
+			public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
+												   RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, RdbStore.Type type, EofType eofType,
+																	long rdbOffset, String gtidSet, String expectedReplId) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void setMasterAddress(DefaultEndPoint endpoint) {
 				throw new UnsupportedOperationException();
 			}
@@ -131,6 +143,26 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public void checkReplId(String expectReplId) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void confirmRdb(RdbStore rdbStore) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void checkReplIdAndUpdateRdb(RdbStore rdbStore) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean masterSupportRordb) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public void close() throws IOException {
 		dumpedRdbStore.close();
 	}
@@ -141,9 +173,10 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public RdbStore beginRdb(String replId, long rdbOffset, EofType eofType) throws IOException {
+	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException {
 		this.replId = replId;
 		this.rdbOffset = rdbOffset;
+		dumpedRdbStore.setReplId(replId);
 		dumpedRdbStore.setRdbOffset(this.rdbOffset);
 		dumpedRdbStore.setEofType(eofType);
 		return dumpedRdbStore;
@@ -206,16 +239,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public DumpedRdbStore prepareNewRdb() throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

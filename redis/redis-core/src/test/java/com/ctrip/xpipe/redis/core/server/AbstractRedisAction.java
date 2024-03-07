@@ -24,6 +24,8 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	private boolean slaveof = false;
 	private List<String> slaveOfCommands = new ArrayList<String>();
 
+	protected boolean capaRordb = false;
+
 	public AbstractRedisAction(Socket socket) {
 		super(socket);
 	}
@@ -61,6 +63,9 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 
 		if(line.startsWith("replconf")){
 			towrite = handleReplconf(line);
+		}
+		if (line.startsWith("config get")) {
+			towrite = handleConfigGet(line);
 		}
 		
 		if(line.equalsIgnoreCase("PING")){
@@ -127,6 +132,10 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 		}
 	}
 
+	protected byte[] handleConfigGet(String line) throws NumberFormatException, IOException {
+		return "*0\r\n".getBytes();
+	}
+
 	protected byte[] handleReplconf(String line) throws NumberFormatException, IOException{
 		
 		String []sp = line.split("\\s+");
@@ -148,6 +157,13 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 			}
 
 		}
+
+		if (option.equals("capa")) {
+			for (int i = 2; i < sp.length; i++) {
+				if (sp[i].equalsIgnoreCase("rordb")) this.capaRordb = true;
+			}
+		}
+
 		return OK;
 	}
 

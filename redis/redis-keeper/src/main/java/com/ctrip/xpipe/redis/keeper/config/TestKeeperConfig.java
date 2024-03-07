@@ -16,7 +16,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private long replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private long replicationStoreMaxLWMDistanceToTransferBeforeCreateRdb = 10000;
 	private int minTimeMilliToGcAfterCreate = 2000;
-	private int rdbDumpMinIntervalMilli = 1000;
+	public int rdbDumpMinIntervalMilli = 1000;
 	private int maxPartialSyncKeepTokenRounds = 3;
 	private int partialSyncTrafficMonitorIntervalTimes = 10;
 	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;

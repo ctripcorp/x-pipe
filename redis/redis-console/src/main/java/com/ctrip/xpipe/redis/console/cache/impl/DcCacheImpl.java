@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.cache.impl;
 
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;

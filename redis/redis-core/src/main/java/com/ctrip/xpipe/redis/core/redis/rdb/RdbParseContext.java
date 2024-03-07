@@ -37,6 +37,8 @@ public interface RdbParseContext {
 
     String getAux(String key);
 
+    Map<String, String> getAllAux();
+
     RdbParseContext setKey(RedisKey key);
 
     RedisKey getKey();
@@ -82,7 +84,19 @@ public interface RdbParseContext {
         EXPIRETIME_MS(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME_MS, true, RdbExpiretimeMsParser::new),
         EXPIRETIME(RdbConstant.REDIS_RDB_OP_CODE_EXPIRETIME, true, RdbExpiretimeParser::new),
         SELECTDB(RdbConstant.REDIS_RDB_OP_CODE_SELECTDB, true, RdbSelectDbParser::new),
-        EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, true, null);
+        EOF(RdbConstant.REDIS_RDB_OP_CODE_EOF, true, null),
+
+        // extend for rordb
+        RORDB_SWAP_VERSION(RdbConstant.REDIS_RORDB_OP_CODE_SWAP_VERSION, true, null),
+        RORDB_SST(RdbConstant.REDIS_RORDB_OP_CODE_SST, true, null),
+        RORDB_KEY_NUM(RdbConstant.REDIS_RORDB_OP_CODE_KEY_NUM, true, null),
+        RORDB_CUCKOO_FILTER(RdbConstant.REDIS_RORDB_OP_CODE_CUCKOO_FILTER, true, null),
+        RORDB_HASH(RdbConstant.REDIS_RORDB_OP_CODE_HASH, true, null),
+        RORDB_SET(RdbConstant.REDIS_RORDB_OP_CODE_SET, true, null),
+        RORDB_ZSET(RdbConstant.REDIS_RORDB_OP_CODE_ZSET, true, null),
+        RORDB_LIST(RdbConstant.REDIS_RORDB_OP_CODE_LIST, true, null),
+        RORDB_BITMAP(RdbConstant.REDIS_RORDB_OP_CODE_BITMAP, true, null),
+        RORDB_LIMIT(RdbConstant.REDIS_RORDB_OP_CODE_LIMIT, true, null);
 
         private short code;
 

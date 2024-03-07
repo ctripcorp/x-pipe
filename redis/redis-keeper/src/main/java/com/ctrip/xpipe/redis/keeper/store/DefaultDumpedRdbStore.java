@@ -15,23 +15,18 @@ import java.io.IOException;
 public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbStore{
 	
 	public DefaultDumpedRdbStore(File file) throws IOException {
-		super(file, -1, null);
+		super(file, null, -1, null);
 	}
 
 	@Override
-	public EofType getEofType() {
-		return this.eofType;
+	public void setReplId(String replId) {
+		this.replId = replId;
 	}
 
 	
 	@Override
 	public void setEofType(EofType eofType) {
 		this.eofType = eofType;
-	}
-
-	@Override
-	public File getRdbFile() {
-		return file;
 	}
 
 	@Override

@@ -18,16 +18,18 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
-	// rdb related
-	RdbStore beginRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
+	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
+
+	// use in dumped, broken if replId dismatch with default repl
+	void checkReplId(String expectReplId);
+
+	void confirmRdb(RdbStore rdbStore) throws IOException;
 
 	void continueFromOffset(String replId, long continueOffset) throws IOException;
 	
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
-	void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException;
-
-	void checkAndUpdateRdbGtidSet(RdbStore rdbStore, String rdbGtidSet) throws IOException;
+	void checkReplIdAndUpdateRdb(RdbStore rdbStore) throws IOException;
 
 	// command related
 	int appendCommands(ByteBuf byteBuf) throws IOException;
@@ -36,6 +38,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	// full sync
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
+
+	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean masterSupportRordb) throws IOException;
 
 	//create index
 	FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors);

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.google.common.util.concurrent.SettableFuture;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -31,12 +32,7 @@ public class SimplePsyncObserver implements PsyncObserver {
     }
 
     @Override
-    public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-
-    }
-
-    @Override
-    public void readAuxEnd(RdbStore rdbStore) {
+    public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 
     }
 

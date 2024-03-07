@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.meta;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
@@ -47,6 +48,39 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	@Override
 	public DefaultEndPoint getMasterAddress() {
 		return getMeta().getMasterAddress();
+	}
+
+	@Override
+	public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type,
+										 EofType eofType, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			if (RdbStore.Type.NORMAL.equals(type)) {
+				metaDup.setRdbFile(rdbFile);
+				metaDup.setRdbGtidSet(null);
+				setRdbFileInfo(metaDup, eofType);
+				metaDup.setRdbLastOffset(beginOffset - 1);
+				metaDup.setRdbGtidSet(gtidSet);
+			} else if (RdbStore.Type.RORDB.equals(type)) {
+				metaDup.setRordbFile(rdbFile);
+				metaDup.setRordbGtidSet(null);
+				setRordbFileInfo(metaDup, eofType);
+				metaDup.setRordbLastOffset(beginOffset - 1);
+				metaDup.setRordbGtidSet(gtidSet);
+			} else {
+				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
+			}
+
+			metaDup.setReplId(replId);
+			metaDup.setBeginOffset(beginOffset);
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+			clearReplicationId2(metaDup);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+
 	}
 
 	@Override
@@ -138,15 +172,18 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		synchronized (metaRef) {
 			ReplicationStoreMeta currentMeta = metaRef.get();
 			String currentRdbFile = currentMeta.getRdbFile();
+			String currentRordbFile = currentMeta.getRordbFile();
 
-			if (null == currentRdbFile) {
-				logger.info("[releaseRdbFile][{}][already no rdb]", rdbFile);
-			} else if (!currentRdbFile.equals(rdbFile)) {
-				logger.warn("[releaseRdbFile][{}] current {}, skip", rdbFile, currentRdbFile);
-			} else {
+			if (currentRdbFile != null && currentRdbFile.equals(rdbFile)) {
 				ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 				clearRdb(metaDup);
 				saveMeta(metaDup);
+			} else if (currentRordbFile != null && currentRordbFile.equals(rdbFile)) {
+				ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+				clearRordb(metaDup);
+				saveMeta(metaDup);
+			} else {
+				logger.info("[releaseRdbFile][{}] currentRdb:{} currentRordb:{}, skip", rdbFile, currentRdbFile, currentRordbFile);
 			}
 		}
 	}
@@ -157,6 +194,14 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRdbFileSize(0);
 		metaDup.setRdbLastOffset(null);
 		metaDup.setRdbGtidSet(null);
+	}
+
+	private void clearRordb(ReplicationStoreMeta metaDup) {
+		metaDup.setRordbFile(null);
+		metaDup.setRordbEofMark(null);
+		metaDup.setRordbFileSize(0);
+		metaDup.setRordbLastOffset(null);
+		metaDup.setRordbGtidSet(null);
 	}
 
 }

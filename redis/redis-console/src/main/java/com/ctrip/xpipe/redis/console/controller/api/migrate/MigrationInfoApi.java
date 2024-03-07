@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;

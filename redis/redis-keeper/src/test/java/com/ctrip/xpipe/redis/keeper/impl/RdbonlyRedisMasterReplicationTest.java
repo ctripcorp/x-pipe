@@ -36,6 +36,8 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
     private NioEventLoopGroup rdbEventLoopGroup = new NioEventLoopGroup(1);
 
+    private NioEventLoopGroup masterConfigEventLoopGroup = new NioEventLoopGroup(1);
+
     private ReplicationStoreManager replicationStoreManager = createReplicationStoreManager();
 
     private DefaultEndPoint target;
@@ -52,11 +54,12 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
     @Test
     public void testTimeoutMilli() throws CreateRdbDumperException {
         target = new DefaultEndPoint("localhost", randomPort());
-        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, masterEventLoopGroup, rdbEventLoopGroup, replicationStoreManager, scheduled, getRegistry().getComponent(KeeperResourceManager.class));
+        this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, masterEventLoopGroup, rdbEventLoopGroup, masterConfigEventLoopGroup,
+                replicationStoreManager, scheduled, getRegistry().getComponent(KeeperResourceManager.class));
         keeperRedisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
-        RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper();
+        RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper(false);
         RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, masterEventLoopGroup, scheduled, dumper, getRegistry().getComponent(KeeperResourceManager.class));
+                keeperRedisMaster, false, masterEventLoopGroup, scheduled, dumper, getRegistry().getComponent(KeeperResourceManager.class));
 
         int time = rdbonlyRedisMasterReplication.commandTimeoutMilli();
         Assert.assertEquals(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, time);
@@ -69,6 +72,7 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
         RdbonlyRedisMasterReplication replication = spy(new RdbonlyRedisMasterReplication(
                 mock(DefaultRedisKeeperServer.class),
                 mock(RedisMaster.class),
+                false,
                 mock(NioEventLoopGroup.class),
                 mock(ScheduledExecutorService.class),
                 mock(RedisMasterNewRdbDumper.class),

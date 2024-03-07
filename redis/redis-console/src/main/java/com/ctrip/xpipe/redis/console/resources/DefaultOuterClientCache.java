@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;

@@ -63,6 +63,7 @@ import org.junit.runners.Suite.SuiteClasses;
         SlaveOfCommandHandlerTest.class,
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
+        ConfigHandlerTest.class,
         ApplierCommandHandlerTest.class,
 
         DefaultKeeperStatsTest.class,
@@ -82,6 +83,8 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidSetCommandReaderTest.class,
 
         DiskHealthCheckerTest.class,
+
+        RordbReplicationSupportTest.class,
 
         AllApplierTests.class,
 })

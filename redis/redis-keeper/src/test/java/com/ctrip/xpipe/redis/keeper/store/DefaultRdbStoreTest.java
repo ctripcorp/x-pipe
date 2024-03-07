@@ -37,7 +37,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		
 		String fileName = String.format("%s/%s.rdb", getTestFileDir(), getTestName());
 		rdbFile = new File(fileName);
-		rdbStore = new DefaultRdbStore(rdbFile, 1L, new LenEofType(rdbFileSize));
+		rdbStore = new DefaultRdbStore(rdbFile, "replId",1L, new LenEofType(rdbFileSize));
 	}
 	
 	@Test

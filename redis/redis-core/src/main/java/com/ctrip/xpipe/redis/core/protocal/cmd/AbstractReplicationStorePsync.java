@@ -15,9 +15,8 @@ import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_GTID;
 
 /**
  * @author marsqing
@@ -98,7 +97,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 	@Override
 	protected void beginReadRdb(EofType eofType) {
 		try {
-			rdbStore = currentReplicationStore.beginRdb(replId, masterRdbOffset, eofType);
+			rdbStore = currentReplicationStore.prepareRdb(replId, masterRdbOffset, eofType);
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 			super.beginReadRdb(eofType);
 		} catch (IOException e) {
@@ -129,34 +128,17 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync implem
 
 	@Override
 	public void onAux(String key, String value) {
-		//this part should be in AbstractPsync
-		if (REDIS_RDB_AUX_KEY_GTID.equalsIgnoreCase(key)) {
-			readRdbGtidSet(value);
-		}
 	}
 
 	@Override
-	public void onAuxFinish() {
+	public void onAuxFinish(Map<String, String> auxMap) {
 		getLogger().info("[onAuxFinish] aux is finish");
 
 		for (PsyncObserver observer : observers) {
 			try {
-				observer.readAuxEnd(rdbStore);
+				observer.readAuxEnd(rdbStore, auxMap);
 			} catch (Throwable th) {
 				getLogger().error("[onAuxFinish]" + this, th);
-			}
-		}
-	}
-
-	protected void readRdbGtidSet(String gtidSet) {
-
-		getLogger().info("[readRdbGtidSet]{}, gtidset:{}", this, gtidSet);
-
-		for (PsyncObserver observer : observers) {
-			try {
-				observer.readRdbGtidSet(rdbStore, gtidSet);
-			} catch (Throwable th) {
-				getLogger().error("[readRdbGtidSet]" + this, th);
 			}
 		}
 	}

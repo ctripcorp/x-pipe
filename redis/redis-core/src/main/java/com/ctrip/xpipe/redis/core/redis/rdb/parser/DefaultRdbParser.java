@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author lishanglin
@@ -29,6 +30,8 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
     private RdbParseContext.RdbType currentType;
 
     private short rdbVersion;
+
+    private AtomicBoolean auxFinished = new AtomicBoolean(false);
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRdbParser.class);
 
@@ -86,8 +89,9 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
                 case READ_TYPE:
                     short type = byteBuf.readUnsignedByte();
                     RdbParseContext.RdbType newType = RdbParseContext.RdbType.findByCode(type);
-                    if (isAuxFinish(newType)) {
-                       notifyAuxEnd();
+                    if (currentType == RdbParseContext.RdbType.AUX && newType != RdbParseContext.RdbType.AUX) {
+                        auxFinished.set(true);
+                        notifyAuxEnd(rdbParseContext.getAllAux());
                     }
 
                     currentType = newType;
@@ -157,8 +161,8 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         return null;
     }
 
-    private boolean isAuxFinish(RdbParseContext.RdbType newType) {
-        return currentType == RdbParseContext.RdbType.AUX && newType != RdbParseContext.RdbType.AUX;
+    protected boolean isAuxFinish() {
+        return auxFinished.get();
     }
 
     private int checkMagic(ByteBuf byteBuf, int checkIdx) {
