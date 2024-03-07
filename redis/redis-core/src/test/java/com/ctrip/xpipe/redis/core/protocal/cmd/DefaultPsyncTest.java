@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -133,10 +134,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 				latch.countDown();
 			}
 			@Override
-			public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-			}
-			@Override
-			public void readAuxEnd(RdbStore rdbStore) {
+			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 			}
 		});
 		partialOnlyPsync.execute().addListener(new CommandFutureListener<Object>() {

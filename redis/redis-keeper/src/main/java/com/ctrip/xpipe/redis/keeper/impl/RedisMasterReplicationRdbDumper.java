@@ -22,6 +22,11 @@ public class RedisMasterReplicationRdbDumper extends AbstractRdbDumper{
 	}
 
 	@Override
+	public boolean tryRordb() {
+		return redisMasterReplication.tryRordb();
+	}
+
+	@Override
 	protected void doExecute() throws Exception {
 		//nothing to do
 	}

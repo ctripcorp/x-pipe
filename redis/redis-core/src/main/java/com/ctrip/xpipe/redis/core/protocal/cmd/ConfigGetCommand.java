@@ -37,7 +37,7 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 
 	@Override
 	public ByteBuf getRequest() {
-		return new RequestStringParser(CONFIG, " get " + getConfigName()).format();
+		return new RequestStringParser(CONFIG, "get", getConfigName()).format();
 	}
 	
 	protected abstract String getConfigName();
@@ -65,21 +65,26 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 		}
 	}
 
-	public static class ConfigGetDisklessSync extends ConfigGetCommand<Boolean>{
+	public static abstract class ConfigGetBool extends ConfigGetCommand<Boolean> {
 
-		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+		public ConfigGetBool(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 			super(clientPool, scheduled);
 		}
 
-		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
-									 int commandTimeoutMilli) {
+		public ConfigGetBool(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+								  int commandTimeoutMilli) {
 			super(clientPool, scheduled, commandTimeoutMilli);
+		}
+
+		protected Boolean defaultValue() {
+			return null;
 		}
 
 		@Override
 		protected Boolean doFormat(Object[] payload) {
-			
+
 			if(payload.length < 2){
+				if (null != defaultValue()) return defaultValue();
 				throw new IllegalStateException(getName() + " result length not right:" + payload.length);
 			}
 			String result = payloadToString(payload[1]);
@@ -89,9 +94,45 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 			if(result.equalsIgnoreCase("no")){
 				return false;
 			}
+			if (null != defaultValue()) return defaultValue();
 			throw new IllegalStateException("expected yes or no, but:" + result);
 		}
 
+	}
+
+	public static class ConfigGetRordbSync extends ConfigGetBool {
+
+		public ConfigGetRordbSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		public ConfigGetRordbSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+									 int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+		}
+
+		@Override
+		protected Boolean defaultValue() {
+			return false;
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.RORDB_SYNC.getConfigName();
+		}
+
+	}
+
+	public static class ConfigGetDisklessSync extends ConfigGetBool {
+
+		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		public ConfigGetDisklessSync(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+									 int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+		}
 
 		@Override
 		protected String getConfigName() {

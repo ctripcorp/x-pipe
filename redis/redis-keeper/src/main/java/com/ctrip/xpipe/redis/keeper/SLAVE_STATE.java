@@ -8,7 +8,6 @@ package com.ctrip.xpipe.redis.keeper;
 public enum SLAVE_STATE {
 
 	REDIS_REPL_WAIT_RDB_DUMPING("wait_rdb_dumping"),
-	REDIS_REPL_WAIT_RDB_GTIDSET("wait_rdb_gtidset"),
 	REDIS_REPL_WAIT_SEQ_FSYNC("wait_seq_fsync"),
 	REDIS_REPL_SEND_BULK("send_bulk"),
 	REDIS_REPL_ONLINE("online");

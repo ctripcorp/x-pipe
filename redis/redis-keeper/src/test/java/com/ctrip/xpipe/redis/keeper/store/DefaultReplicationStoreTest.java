@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.store.CommandFile;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -39,13 +37,21 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		baseDir = new File(getTestFileDir());
 	}
 
+	private RdbStore beginRdb(ReplicationStore replicationStore, int dataLen) throws IOException {
+		RdbStore rdbStore = replicationStore.prepareRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		replicationStore.confirmRdb(rdbStore);
+		return rdbStore;
+	}
+
 	@Test
 	public void testInterruptedException() throws IOException {
 
 		String keeperRunid = randomKeeperRunid();
 		int dataLen = 100;
 		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
-		RdbStore rdbStore = store.beginRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+		RdbStore rdbStore = beginRdb(store, dataLen);
 
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
@@ -69,7 +75,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
-		RdbStore rdbStore = store.beginRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+		RdbStore rdbStore = beginRdb(store, dataLen);
 		
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
@@ -100,7 +106,12 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 				
 				try{
 					store.fullSyncIfPossible(new FullSyncListener() {
-						
+
+						@Override
+						public boolean supportRdb(RdbStore.Type rdbType) {
+							return true;
+						}
+
 						@Override
 						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 							
@@ -175,7 +186,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		int cmdCount = 4;
 		int cmdLen = 10;
 
-		store.beginRdb("master", -1, new LenEofType(-1));
+		beginRdb(store, -1);
 
 		for (int j = 0; j < cmdCount; j++) {
 			ByteBuf buf = Unpooled.buffer();
@@ -196,7 +207,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 100;
-		RdbStore rdbStore = store.beginRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+		RdbStore rdbStore = beginRdb(store, dataLen);
 
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();

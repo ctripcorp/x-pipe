@@ -25,8 +25,8 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		logger.info(remarkableMessage("[testReplicationData][read replication store]"));	
 		
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-		String rdbContent = readRdbFileTilEnd(replicationStore);
-		Assert.assertEquals(fakeRedisServer.getRdbContent(), rdbContent);
+		byte[] rdbContent = readRdbFileTilEnd(replicationStore);
+		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), rdbContent);
 
 		String commands = readCommandFileTilEnd(replicationStore, fakeRedisServer.currentCommands().length());
 		Assert.assertEquals(fakeRedisServer.currentCommands(), commands);
@@ -48,7 +48,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
 		int keeperPort = redisKeeperServer.getListeningPort();
-		sleep(2000);
+		sleep(3000);
 		logger.info(remarkableMessage("send psync to redump rdb"));
 		
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();

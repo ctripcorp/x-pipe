@@ -6,15 +6,12 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -27,12 +24,9 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
 
     private AtomicReference<String> gtidSet = new AtomicReference<>();
 
-    private final List<RdbFileListener> waitAuxListener;
-
-    public GtidRdbStore(File file, long rdbOffset, EofType eofType, String gtidSet) throws IOException {
-        super(file, rdbOffset, eofType);
+    public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, String gtidSet) throws IOException {
+        super(file, replId, rdbOffset, eofType);
         this.gtidSet.set(gtidSet);
-        this.waitAuxListener = new ArrayList<>();
     }
 
     @Override
@@ -60,12 +54,7 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
 
     @Override
     public boolean updateRdbGtidSet(String gtidSet) {
-        if (this.gtidSet.compareAndSet(null, gtidSet)) {
-            notifyListenersRdbGtidSet(gtidSet);
-            return true;
-        }
-
-        return false;
+        return this.gtidSet.compareAndSet(null, gtidSet);
     }
 
     @Override
@@ -79,17 +68,6 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
             throw new IllegalStateException("rdb.gtidset null");
         }
         rdbFileListener.setRdbFileInfo(eofType, new GtidSetReplicationProgress(new GtidSet(gtidSet.get()), rdbOffset));
-    }
-
-    protected void notifyListenersRdbGtidSet(String rdbGtidSet) {
-
-        for(RdbStoreListener listener : rdbStoreListeners){
-            try{
-                listener.onRdbGtidSet(rdbGtidSet);
-            }catch(Throwable th){
-                getLogger().error("[notifyListenersEndRdb]" + this, th);
-            }
-        }
     }
 
     @Override

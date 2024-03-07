@@ -14,6 +14,8 @@ import io.netty.channel.Channel;
  */
 public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
 
+	boolean tryRordb();
+
 	void handleResponse(Channel channel, ByteBuf msg) throws XpipeException;
 
 	void masterDisconnected(Channel channel);

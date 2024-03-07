@@ -22,7 +22,7 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -47,6 +47,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -81,8 +82,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	public static final int REPLCONF_INTERVAL_MILLI = 1000;
 
-	public static final int PSYNC_RETRY_INTERVAL_MILLI = 2000;
-
 	protected RedisMaster redisMaster;
 
 	protected long connectedTime;
@@ -94,8 +93,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected RedisKeeperServer redisKeeperServer;
 
 	protected AtomicReference<Command<?>> currentCommand = new AtomicReference<Command<?>>(null);
-
-	private ProxyEndpointSelector selector;
 
 	private int commandTimeoutMilli;
 
@@ -242,8 +239,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		chain.add(listeningPortCommand());
 
 		// for proxy connect init time
-		Replconf capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, commandTimeoutMilli,
-				CAPA.EOF.toString(), CAPA.PSYNC2.toString());
+		Replconf capa;
+		if (tryRordb()) {
+			capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, commandTimeoutMilli,
+					CAPA.EOF.toString(), CAPA.PSYNC2.toString(), CAPA.RORDB.toString());
+		} else {
+			capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, commandTimeoutMilli,
+					CAPA.EOF.toString(), CAPA.PSYNC2.toString());
+		}
 		chain.add(new FailSafeCommandWrapper<>(capa));
 
 		try {
@@ -432,24 +435,27 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	@Override
-	public void readRdbGtidSet(RdbStore rdbStore, String gtidSet) {
-		// maybe this part should be in AbstractReplicationStorePsync
-		try {
-			logger.info("[readRdbGtidSet] {}", gtidSet);
-			//use rdbStore kept in RdbOnlyReplication if possible
-			redisMaster.getCurrentReplicationStore().checkAndUpdateRdbGtidSet(rdbStore, gtidSet);
-		} catch (IOException e) {
-			logger.error("[readRdbGtidSet][fail]", e);
-		}
+	public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
+		String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
+		logger.info("[readAuxEnd][gtid] {}", gtidSet);
+		rdbStore.updateRdbGtidSet(gtidSet);
 
-		getRdbDumper().rdbGtidSetParsed();
+		RdbStore.Type rdbType = auxMap.containsKey(RdbConstant.REDIS_RDB_AUX_KEY_RORDB) ? RdbStore.Type.RORDB : RdbStore.Type.NORMAL;
+		logger.info("[readAuxEnd][rdb] {}", rdbType);
+		rdbStore.updateRdbType(rdbType);
+		doRdbTypeConfirm(rdbStore);
+
+		if (null != rdbDumper.get()) {
+			// rdbDumper may be reset by dumpFail
+			rdbDumper.get().auxParseFinished(rdbType);
+		}
 	}
 
-	@Override
-	public void readAuxEnd(RdbStore rdbStore) {
-		// no gtidset read when read aux end, may need refactor by capa gtid ?
-		if (!rdbStore.isGtidSetInit()) {
-			this.readRdbGtidSet(rdbStore, GtidSet.EMPTY_GTIDSET);
+	protected void doRdbTypeConfirm(RdbStore rdbStore) {
+		try {
+			redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
+		} catch (Throwable th) {
+			dumpFail(th);
 		}
 	}
 

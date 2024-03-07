@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
@@ -19,10 +18,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.mock;
 
 /**
  * @author wenchao.meng
@@ -58,9 +57,8 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class)){
 		
 			@Override
-			public void beginWriteRdb(EofType eofType, String replId, long offset) {
-				
-				super.beginWriteRdb(eofType, replId, offset);
+			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
+				super.readAuxEnd(rdbStore, auxMap);
 				try {
 					writeToRdb(getCurrentReplicationStore());
 				} catch (IOException e) {

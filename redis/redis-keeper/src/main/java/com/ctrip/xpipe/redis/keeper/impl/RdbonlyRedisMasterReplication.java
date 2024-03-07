@@ -5,12 +5,15 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.RdbOnlyPsyncReplIdNotSameException;
+import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
@@ -32,11 +35,19 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@VisibleForTesting DumpedRdbStore dumpedRdbStore;
 
-	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
+	private final boolean tryRordb;
+
+	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, boolean tryRordb,
                                          NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                          RdbDumper rdbDumper, KeeperResourceManager resourceManager) {
 		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, resourceManager);
 		setRdbDumper(rdbDumper);
+		this.tryRordb = tryRordb;
+	}
+
+	@Override
+	public boolean tryRordb() {
+		return tryRordb;
 	}
 	
 	@Override
@@ -91,6 +102,17 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public PARTIAL_STATE partialState() {
 		return PARTIAL_STATE.FULL;
+	}
+
+	@Override
+	protected void doRdbTypeConfirm(RdbStore rdbStore) {
+		try {
+			redisMaster.getCurrentReplicationStore().checkReplIdAndUpdateRdb(rdbStore);
+		} catch (UnexpectedReplIdException|IllegalStateException e) {
+			dumpFail(e);
+		} catch (Throwable th) {
+			logger.info("[doRdbTypeConfirm][checkReplIdAndUpdateRdb] fail", th);
+		}
 	}
 
 	@Override

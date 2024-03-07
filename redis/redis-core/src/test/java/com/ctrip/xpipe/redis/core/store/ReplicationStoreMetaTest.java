@@ -19,31 +19,6 @@ import org.junit.Test;
 public class ReplicationStoreMetaTest extends AbstractRedisTest{
 	
 	@Test
-	public void testPsync1Version(){
-		
-		Long keeperBegin = 4089698428721L;
-		Long rdbLastKeeperOffset = 4089698428720L;
-		Long beginOffset = 1L;
-		
-		String realData = "{\"beginOffset\":" + beginOffset + ",\"cmdFilePrefix\":\"cmd_aaf0bac6-2323-4fd9-9ff1-3de907b2a59f_\","
-				+ "\"keeperBeginOffset\": " + keeperBegin + ",\"keeperRunid\":\"defda76dafa715ea7dc3ccbc9c6406892c203469\",\"keeperState\":\"BACKUP\","
-				+ "\"masterAddress\":{\"rawUrl\":\"redis://10.2.24.216:6379\",\"socketAddress\":{\"address\":\"10.2.24.216\",\"port\":6379}},"
-				+ "\"masterRunid\":\"aa27eb88752a94c82e66d109c3279b9e3bcd97b3\",\"rdbEofMark\":\"19c9a31ab9aeb916429198e51e7abada9d9ecb62\","
-				+ "\"rdbFile\":\"rdb_1487043213489_e0d7641a-da1b-450d-9a28-9d0f5cbd0888\",\"rdbFileSize\":18,\"rdbLastKeeperOffset\":" + rdbLastKeeperOffset + "}";
-		ReplicationStoreMeta meta = fromString(realData);
-		
-		Assert.assertEquals((Long)(beginOffset + (rdbLastKeeperOffset - keeperBegin)), meta.getRdbLastOffset());
-		Assert.assertEquals("aa27eb88752a94c82e66d109c3279b9e3bcd97b3", meta.getReplId());
-		Assert.assertEquals(null, meta.getReplId2());
-
-		String dese = metaString(meta);
-		logger.info("{}", dese);
-		ReplicationStoreMeta metaDese = fromString(dese);
-		
-		Assert.assertEquals(meta, metaDese);
-	}
-	
-	@Test
 	public void testEofmark(){
 
 		String realDataBefore = 
