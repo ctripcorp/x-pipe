@@ -21,17 +21,17 @@ public class Production extends AbstractProfile {
 
     @Bean
     public ZkClient getZkClient(ConsoleConfig consoleConfig) {
-        return getZkClient(consoleConfig.getZkNameSpace(), consoleConfig.getZkConnectionString());
+        ZkClient zkClient = getZkClient(consoleConfig.getZkNameSpace(), consoleConfig.getZkConnectionString());
+        consoleConfig.addListener(zkClient);
+        return zkClient;
     }
 
     @Override
     protected ZkClient getZkClient(String zkNameSpace, String zkAddress) {
 
-        DefaultZkConfig zkConfig = new DefaultZkConfig();
+        DefaultZkConfig zkConfig = new DefaultZkConfig(zkAddress);
         zkConfig.setZkNameSpace(zkNameSpace);
-
-        SpringZkClient springZkClient = new SpringZkClient(zkConfig, zkAddress);
-        return springZkClient;
+        return new SpringZkClient(zkConfig);
     }
 
     @Bean

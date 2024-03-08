@@ -24,8 +24,8 @@ public class DefaultLeaderElectorTest extends AbstractTest{
 	public void beforeDefaultLeaderElectorTest() throws InterruptedException{
 		zkTestServer = startRandomZk();
 		
-		ZkConfig config = new DefaultZkConfig();
-		client = config.create(String.format("localhost:%d", zkTestServer.getZkPort()));
+		ZkConfig config = new DefaultZkConfig(String.format("localhost:%d", zkTestServer.getZkPort()));
+		client = config.create();
 		
 	}
 	

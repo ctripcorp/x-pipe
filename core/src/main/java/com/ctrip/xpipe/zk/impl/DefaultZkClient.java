@@ -16,11 +16,13 @@ import org.apache.curator.framework.CuratorFramework;
  */
 public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopElement, Lifecycle {
 
-	private ZkConfig zkConfig = new DefaultZkConfig();
+	private ZkConfig zkConfig;
 
 	private CuratorFramework client;
-	
-	private String address;
+
+	public DefaultZkClient(ZkConfig zkConfig) {
+		this.zkConfig = zkConfig;
+	}
 	
 	protected void doInitialize() throws Exception {
 		
@@ -29,14 +31,21 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopE
 	@Override
 	protected void doStart() throws Exception {
 		
-		logger.info("[doStart]{}", address);
-		client= zkConfig.create(address);
+		logger.info("[doStart]{}", this.zkConfig.getZkAddress());
+		client= zkConfig.create();
 	}
 
 	
 	@Override
 	protected void doStop() throws Exception {
 		client.close();
+	}
+
+	@Override
+	public void onChange(String key, String val) {
+		if (key.equalsIgnoreCase(com.ctrip.xpipe.config.ZkConfig.KEY_ZK_ADDRESS)) {
+			this.zkConfig.updateZkAddress(val);
+		}
 	}
 	
 	@Override
@@ -46,16 +55,12 @@ public class DefaultZkClient extends AbstractLifecycle implements ZkClient, TopE
 	
 	@Override
 	public void setZkAddress(String address) {
-		this.address = address;
+		this.zkConfig.updateZkAddress(address);
 	}
 	
 	@Override
 	public String getZkAddress(){
-		return this.address;
-	}
-	
-	public void setZkConfig(ZkConfig zkConfig) {
-		this.zkConfig = zkConfig;
+		return this.zkConfig.getZkAddress();
 	}
 
 	@Override

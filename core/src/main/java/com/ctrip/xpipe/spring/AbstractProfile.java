@@ -22,16 +22,10 @@ public abstract class AbstractProfile {
 
 	
 	protected ZkClient getZkClient(String zkNameSpace, String zkAddress){
-
-		DefaultZkClient zkClient = new DefaultZkClient();
 		
-		DefaultZkConfig zkConfig = new DefaultZkConfig();
+		DefaultZkConfig zkConfig = new DefaultZkConfig(zkAddress);
 		zkConfig.setZkNameSpace(zkNameSpace);
-		
-		zkClient.setZkConfig(zkConfig);
-		zkClient.setZkAddress(zkAddress);
-		return zkClient;
-
+		return new DefaultZkClient(zkConfig);
 	}
 
 }

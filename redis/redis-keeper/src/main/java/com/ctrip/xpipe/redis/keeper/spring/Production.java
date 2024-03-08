@@ -26,7 +26,9 @@ public class Production extends AbstractProfile{
 
 	@Bean
 	public ZkClient getZkClient(KeeperConfig keeperConfig) {
-		return getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
+		ZkClient client = getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
+		keeperConfig.addListener(client);
+		return client;
 	}
 	
 	@Bean

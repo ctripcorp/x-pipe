@@ -32,12 +32,12 @@ public class TestPathChildren extends AbstractMetaServerTest {
     @Before
     public void beforeTestPathChildren() throws Exception {
 
-        DefaultZkConfig zkConfig = new DefaultZkConfig();
+        DefaultZkConfig zkConfig = new DefaultZkConfig("10.2.38.87");
         zkConfig.setZkConnectionTimeoutMillis(1000);
 
         path = "/" + getTestName();
         logger.info("[before create]");
-        client = zkConfig.create("10.2.38.87");
+        client = zkConfig.create();
         logger.info("[after create]");
 
         if (client.checkExists().forPath(path) != null) {
