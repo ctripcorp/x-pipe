@@ -54,7 +54,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     @JsonIgnore
     @Override
     public ClusterShardHostPort getClusterShardHostport() {
-        return new ClusterShardHostPort(clusterId, shardId, hostPort);
+        return new ClusterShardHostPort(clusterId, shardId, activeDc, hostPort);
     }
 
     @Override

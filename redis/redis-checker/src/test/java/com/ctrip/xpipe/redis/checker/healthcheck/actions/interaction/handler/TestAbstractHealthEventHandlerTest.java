@@ -5,6 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -14,10 +15,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
@@ -98,6 +96,25 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
         ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
+    }
+
+    @Test
+    public void testTryMarkDown() {
+        HostPort master = new HostPort("master",1111);
+        when(metaCache.findMasterInSameShard(any())).thenReturn(master);
+        doAnswer(inv -> {
+            HostPort hostPort = inv.getArgument(0);
+            if (hostPort.equals(master)) return HEALTH_STATE.HEALTHY;
+            else return HEALTH_STATE.DOWN;
+        }).when(defaultDelayPingActionCollector).getState(any());
+
+        when(siteStability.isSiteStable()).thenReturn(false);
+        downHandler.tryMarkDown(new InstanceLoading(instance));
+        verify(finalStateSetterManager, never()).set(any(), anyBoolean());
+
+        when(siteStability.isSiteStable()).thenReturn(true);
+        downHandler.tryMarkDown(new InstanceLoading(instance));
+        verify(finalStateSetterManager, times(1)).set(any(), anyBoolean());
     }
 
     @Test

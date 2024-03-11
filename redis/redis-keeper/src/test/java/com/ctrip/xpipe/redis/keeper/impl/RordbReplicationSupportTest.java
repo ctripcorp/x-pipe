@@ -101,6 +101,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
+        sleep(100); // wait last dump clean
         psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
