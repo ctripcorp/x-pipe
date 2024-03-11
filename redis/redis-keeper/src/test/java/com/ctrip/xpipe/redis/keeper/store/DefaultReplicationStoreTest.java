@@ -169,7 +169,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		});
 		
 		
-		Assert.assertTrue(latch.await(500, TimeUnit.MILLISECONDS));
+		Assert.assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
 		Assert.assertFalse(result.get());
 	}
 

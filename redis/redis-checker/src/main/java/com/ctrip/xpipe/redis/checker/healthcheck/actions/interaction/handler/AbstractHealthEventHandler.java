@@ -66,8 +66,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected void tryMarkDown(AbstractInstanceEvent event) {
-        if (siteStability.isSiteStable()) {
+        if (!siteStability.isSiteStable()) {
             logger.warn("[onEvent][site down, skip] {}", event);
+            return;
         }
         if(!masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
