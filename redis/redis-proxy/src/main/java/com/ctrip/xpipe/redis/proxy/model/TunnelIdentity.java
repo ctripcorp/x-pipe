@@ -18,12 +18,13 @@ public class TunnelIdentity {
 
     private String source;
 
-    private String identityString;
+    private volatile String identityString;
 
     public TunnelIdentity(Channel frontend, String destination, String source) {
         this.frontend = frontend;
         this.destination = destination;
         this.source = source;
+        this.identityString = null;
     }
 
     public Channel getFrontend() {
@@ -32,6 +33,7 @@ public class TunnelIdentity {
 
     public TunnelIdentity setFrontend(Channel frontend) {
         this.frontend = frontend;
+        this.identityString = null;
         return this;
     }
 
@@ -41,6 +43,7 @@ public class TunnelIdentity {
 
     public TunnelIdentity setBackend(Channel backend) {
         this.backend = backend;
+        this.identityString = null;
         return this;
     }
 
@@ -50,12 +53,16 @@ public class TunnelIdentity {
 
     public TunnelIdentity setDestination(String destination) {
         this.destination = destination;
+        this.identityString = null;
         return this;
     }
 
     @Override
     public String toString() {
-        return identityString != null ? identityString : String.format("%s-%s-%s-%s",
+        if (null == identityString) {
+            identityString =  String.format("%s-%s-%s-%s",
                     source, ChannelUtil.getRemoteAddr(frontend), ChannelUtil.getDesc(backend), destination);
+        }
+        return identityString;
     }
 }

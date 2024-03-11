@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
@@ -116,8 +117,12 @@ public class DefaultTunnelManager implements TunnelManager {
                 return new DefaultTunnel(frontendChannel, protocol, config, proxyResourceManager, tunnelMonitorManager);
             }
         });
-        initAndStart(tunnel);
         tunnel.addObserver(this);
+        try {
+            initAndStart(tunnel);
+        } catch (Throwable th) {
+            logger.warn("[create][fail] {}", tunnel.identity());
+        }
 
         return tunnel;
     }
@@ -125,13 +130,17 @@ public class DefaultTunnelManager implements TunnelManager {
     private void initAndStart(Tunnel tunnel) {
         try {
             LifecycleHelper.initializeIfPossible(tunnel);
+        } catch (NoResourceException e){
+            logger.error("[initAndStart][start] {}", e.getMessage());
         } catch (Exception e) {
-            logger.error("[initAndStart][init] ", e);
+            logger.error("[initAndStart][init]", e);
         }
         try {
             LifecycleHelper.startIfPossible(tunnel);
+        } catch (NoResourceException e) {
+            logger.error("[initAndStart][start] {}", e.getMessage());
         } catch (Exception e) {
-            logger.error("[initAndStart][start] ", e);
+            logger.error("[initAndStart][start]", e);
         }
     }
 
@@ -191,7 +200,7 @@ public class DefaultTunnelManager implements TunnelManager {
         TunnelStateChangeEvent event = (TunnelStateChangeEvent) args;
 
         if(event.getCurrent() instanceof TunnelClosed) {
-            logger.info("[update] tunnel closed, remove from tunnel manager");
+            logger.info("[update][tunnel closed, remove from tunnel manager] {}", tunnel.identity());
             remove(tunnel.frontendChannel());
 
         }

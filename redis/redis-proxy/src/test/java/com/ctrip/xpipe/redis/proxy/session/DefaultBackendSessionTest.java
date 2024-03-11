@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
+import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
@@ -111,13 +112,18 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     @Test
     public void doStart() throws Exception {
         when(selector.selectCounts()).thenReturn(1);
-        when(selector.getCandidates()).thenReturn(Lists.newArrayList(newProxyEndpoint(true, true), newProxyEndpoint(true, false)));
-        selector.setNextHopAlgorithm(new NaiveNextHopAlgorithm());
+        when(selector.getCandidates()).thenReturn(Lists.newArrayList());
         selector.setSelectStrategy(new SelectOneCycle(selector));
         doCallRealMethod().when(selector).nextHop();
 
-        session.doStart();
-        Assert.assertNull(session.endpoint);
+        Throwable throwable = null;
+        try {
+            session.doStart();
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof NoResourceException);
     }
 
     @Test
@@ -127,8 +133,14 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         selector.setSelectStrategy(new SelectOneCycle(selector));
         doCallRealMethod().when(selector).nextHop();
 
-        session.doStart();
-        Assert.assertNull(session.endpoint);
+        Throwable throwable = null;
+        try {
+            session.doStart();
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof NoResourceException);
     }
 
     @Test
