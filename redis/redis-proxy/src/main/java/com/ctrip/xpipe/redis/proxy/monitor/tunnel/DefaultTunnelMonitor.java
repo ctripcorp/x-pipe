@@ -97,12 +97,10 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     @Override
     protected void doStop() throws Exception {
-        if(resourceManager.getProxyConfig().startMonitor()) {
-            frontendSessionMonitor.stop();
-            backendSessionMonitor.stop();
-            if(future != null) {
-                future.cancel(true);
-            }
+        frontendSessionMonitor.stop();
+        backendSessionMonitor.stop();
+        if(future != null) {
+            future.cancel(true);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
@@ -78,11 +79,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             return;
         }
 
-        endpoint = selector.nextHop();
-        if (endpoint == null) {
+        try {
+            this.endpoint = selector.nextHop();
+        } catch (Exception e) {
             setSessionState(new SessionClosed(this));
-            logger.error("[connect] select nextHop error");
-            return;
+            throw e;
         }
         ChannelFuture connectionFuture = initChannel(endpoint);
         connectionFuture.addListener(new ChannelFutureListener() {
@@ -93,7 +94,12 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                 } else {
                     logger.error("[tryConnect] fail to connect: {}, {}", getSessionMeta(), future.cause());
                     future.channel().eventLoop()
-                            .schedule(()->connect(), selector.selectCounts(), TimeUnit.MILLISECONDS);
+                            .schedule(new AbstractExceptionLogTask() {
+                                @Override
+                                protected void doRun() throws Exception {
+                                    connect();
+                                }
+                            }, selector.selectCounts(), TimeUnit.MILLISECONDS);
                 }
             }
         });
