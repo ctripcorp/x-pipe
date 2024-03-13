@@ -19,8 +19,8 @@ public class AbstractZkUsageTest extends AbstractTest{
 	@Before
 	public void beforeAbstractZkUsageTest() throws InterruptedException{
 		
-		ZkConfig zkConfig = new DefaultZkConfig();
-		client = zkConfig.create(zkAddress);
+		ZkConfig zkConfig = new DefaultZkConfig(zkAddress);
+		client = zkConfig.create();
 	}
 	
 	public CuratorFramework getClient() {

@@ -16,11 +16,11 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 
 	private volatile CuratorFramework client;
 	
-	private ZkConfig zkConfig = new DefaultZkConfig();
-	
 	public static final String ZK_ADDRESS_KEY = "zkAddress";
 	
 	private String address = System.getProperty(ZK_ADDRESS_KEY, "127.0.0.1:2181");
+
+	private ZkConfig zkConfig = new DefaultZkConfig(address);
 	
 	protected void doInitialize() throws Exception {
 		
@@ -38,6 +38,13 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 			client = null;
 		}
 	}
+
+	@Override
+	public void onChange(String key, String val) {
+		if (key.equalsIgnoreCase(com.ctrip.xpipe.config.ZkConfig.KEY_ZK_ADDRESS)) {
+			this.zkConfig.updateZkAddress(val);
+		}
+	}
 	
 	@Override
 	public synchronized CuratorFramework get() {
@@ -52,7 +59,7 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 		}
 
 		try {
-			client = zkConfig.create(address);
+			client = zkConfig.create();
 			return client;
 		} catch (InterruptedException e) {
 			logger.error("[get]", e);
@@ -62,12 +69,12 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	
 	@Override
 	public void setZkAddress(String address) {
-		this.address = address;
+		this.zkConfig.updateZkAddress(address);
 	}
 	
 	@Override
 	public String getZkAddress(){
-		return this.address;
+		return this.zkConfig.getZkAddress();
 	}
 	
 	public void setClient(CuratorFramework client) {

@@ -17,27 +17,27 @@ public class DefaultZkConfigTest {
 
     @Test
     public void testGetZkConnectionTimeoutMillisDefaultValue() {
-        zkConfig = new DefaultZkConfig();
+        zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(3000, zkConfig.getZkConnectionTimeoutMillis());
     }
 
     @Test
     public void testGetZkConnectionTimeoutMillis() {
         System.setProperty("ZK.CONN.TIMEOUT", "1000");
-        zkConfig = new DefaultZkConfig();
+        zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(1000, zkConfig.getZkConnectionTimeoutMillis());
     }
 
     @Test
     public void testGetZkSessionTimeoutMillisDefaultValue() {
-        zkConfig = new DefaultZkConfig();
+        zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(5000, zkConfig.getZkSessionTimeoutMillis());
     }
 
     @Test
     public void testGetZkSessionTimeoutMillis() {
         System.setProperty("ZK.SESSION.TIMEOUT", "1000");
-        zkConfig = new DefaultZkConfig();
+        zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(1000, zkConfig.getZkSessionTimeoutMillis());
     }
 }

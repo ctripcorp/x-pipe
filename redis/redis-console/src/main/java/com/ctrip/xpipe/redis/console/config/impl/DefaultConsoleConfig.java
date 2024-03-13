@@ -7,7 +7,6 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
-import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;

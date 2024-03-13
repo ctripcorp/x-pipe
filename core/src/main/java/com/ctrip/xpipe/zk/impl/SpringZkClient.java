@@ -16,18 +16,22 @@ import javax.annotation.PreDestroy;
 public class SpringZkClient implements ZkClient{
 
     private ZkConfig zkConfig;
-    private String zkAddress;
     private CuratorFramework curatorFramework;
 
-    public SpringZkClient(ZkConfig zkConfig, String zkAddress){
+    public SpringZkClient(ZkConfig zkConfig){
         this.zkConfig = zkConfig;
-        this.zkAddress = zkAddress;
     }
 
+    @Override
+    public void onChange(String key, String val) {
+        if (key.equalsIgnoreCase(com.ctrip.xpipe.config.ZkConfig.KEY_ZK_ADDRESS)) {
+            this.zkConfig.updateZkAddress(val);
+        }
+    }
 
     @PostConstruct
     public void postContruct() throws InterruptedException {
-        curatorFramework = zkConfig.create(zkAddress);
+        curatorFramework = zkConfig.create();
     }
 
     @Override
@@ -37,12 +41,12 @@ public class SpringZkClient implements ZkClient{
 
     @Override
     public void setZkAddress(String zkAddress) {
-        this.zkAddress = zkAddress;
+        this.zkConfig.updateZkAddress(zkAddress);
     }
 
     @Override
     public String getZkAddress() {
-        return zkAddress;
+        return this.zkConfig.getZkAddress();
     }
 
     @PreDestroy
