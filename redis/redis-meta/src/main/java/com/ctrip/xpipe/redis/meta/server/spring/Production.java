@@ -40,7 +40,9 @@ public class Production extends AbstractProfile{
 	@Bean
 	public ZkClient getZkClient(MetaServerConfig metaServerConfig){
 
-		return getZkClient(metaServerConfig.getZkNameSpace(), metaServerConfig.getZkConnectionString());
+		ZkClient client = getZkClient(metaServerConfig.getZkNameSpace(), metaServerConfig.getZkConnectionString());
+		metaServerConfig.addListener(client);
+		return client;
 	}
 	
 	@Bean

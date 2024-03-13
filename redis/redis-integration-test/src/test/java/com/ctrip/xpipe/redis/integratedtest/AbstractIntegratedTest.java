@@ -24,7 +24,9 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
+import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -198,7 +200,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {
 
-		DefaultZkClient zkClient = new DefaultZkClient();
+		ZkConfig zkConfig = new DefaultZkConfig(dcMeta.getZkServer().getAddress());
+		DefaultZkClient zkClient = new DefaultZkClient(zkConfig);
 		zkClient.setZkAddress(dcMeta.getZkServer().getAddress());
 		zkClient.initialize();
 		zkClient.start();

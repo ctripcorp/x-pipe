@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.config;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.google.common.collect.Maps;
@@ -182,5 +183,10 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	@Override
 	public int getKeeperSetIndexInterval() {
 		return 30 * 1000;
+	}
+
+	@Override
+	public void addListener(ConfigKeyListener listener) {
+		// do nothing
 	}
 }

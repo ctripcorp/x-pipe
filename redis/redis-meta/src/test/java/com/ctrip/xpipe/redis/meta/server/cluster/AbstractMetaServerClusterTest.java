@@ -4,7 +4,9 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.zk.ZkClient;
+import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
+import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 
@@ -36,9 +38,9 @@ public class AbstractMetaServerClusterTest extends AbstractMetaServerTest{
 	}
 
 	protected CuratorFramework getCuratorFramework(int zkPort) throws Exception{
-		
-		ZkClient client = new DefaultZkClient();
-		client.setZkAddress(String.format("localhost:%d", zkPort));
+
+		ZkConfig zkConfig = new DefaultZkConfig(String.format("localhost:%d", zkPort));
+		ZkClient client = new DefaultZkClient(zkConfig);
 		LifecycleHelper.initializeIfPossible(client);
 		LifecycleHelper.startIfPossible(client);
 		return client.get();

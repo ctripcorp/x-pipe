@@ -76,7 +76,7 @@ public class TestMetaServer extends AbstractLifecycle{
 		context = application.run(new String[]{});
 		
 		TestZkClient client = context.getBean(TestZkClient.class);
-		DefaultZkConfig zkConfig = new DefaultZkConfig();
+		DefaultZkConfig zkConfig = new DefaultZkConfig(client.getZkAddress());
 		zkConfig.setZkSessionTimeoutMillis(zkSessionTimeoutMillis);
 		client.setZkConfig(zkConfig);
 		client.setZkAddress(zkConnectionStr);

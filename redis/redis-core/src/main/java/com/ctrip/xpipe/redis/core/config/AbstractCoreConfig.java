@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.core.config;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.zk.ZkConfig;
+import io.netty.util.internal.ConcurrentSet;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -11,13 +14,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *         Jun 16, 2016 12:08:01 PM
  */
 public class AbstractCoreConfig extends AbstractConfigBean implements CoreConfig {
-	
-	public static String KEY_ZK_ADDRESS  = "zk.address";
-	public static String KEY_ZK_NAMESPACE  = "zk.namespace";
 
 	private AtomicReference<String> zkConnection = new AtomicReference<>();
 	private AtomicReference<String> zkNameSpace = new AtomicReference<>();
-	
+
+	private Set<ConfigKeyListener> listeners = new ConcurrentSet<>();
 
 	@Override
 	public String getZkConnectionString() {
@@ -36,5 +37,22 @@ public class AbstractCoreConfig extends AbstractConfigBean implements CoreConfig
 	
 	public void setZkNameSpace(String zkNameSpace) {
 		this.zkNameSpace.set(zkNameSpace);
+	}
+
+	@Override
+	public void onChange(String key, String oldValue, String newValue) {
+		super.onChange(key, oldValue, newValue);
+		for (ConfigKeyListener listener: listeners) {
+			try {
+				listener.onChange(key, newValue);
+			} catch (Throwable th) {
+				logger.info("[onChange][{}][{}] fail", key, newValue, th);
+			}
+		}
+	}
+
+	@Override
+	public void addListener(ConfigKeyListener listener) {
+		this.listeners.add(listener);
 	}
 }

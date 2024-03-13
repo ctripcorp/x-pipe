@@ -3,6 +3,8 @@ package com.ctrip.xpipe.zk.impl;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkConfig;
+import org.apache.curator.ensemble.EnsembleProvider;
+import org.apache.curator.ensemble.fixed.FixedEnsembleProvider;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
@@ -27,7 +29,23 @@ public class DefaultZkConfig implements ZkConfig{
 	private int zkConnectionTimeoutMillis = Integer.parseInt(System.getProperty("ZK.CONN.TIMEOUT", "3000"));
 	private int zkRetries = 3;
 	private String zkNameSpace = System.getProperty(KEY_ZK_NAMESPACE, DEFAULT_ZK_NAMESPACE);
-	
+	private EnsembleProvider ensembleProvider;
+
+	public DefaultZkConfig(String address) {
+		this.ensembleProvider = new FixedEnsembleProvider(address, true);
+	}
+
+	@Override
+	public void updateZkAddress(String address) {
+		logger.info("[updateZkAddress] {} -> {}", this.ensembleProvider.getConnectionString(), address);
+		this.ensembleProvider.setConnectionString(address);
+	}
+
+	@Override
+	public String getZkAddress() {
+		return this.ensembleProvider.getConnectionString();
+	}
+
 	@Override
 	public int getZkConnectionTimeoutMillis() {
 		return zkConnectionTimeoutMillis;
@@ -80,18 +98,18 @@ public class DefaultZkConfig implements ZkConfig{
 	}
 
 	@Override
-	public CuratorFramework create(String address) throws InterruptedException {
+	public CuratorFramework create() throws InterruptedException {
 
 		Builder builder = CuratorFrameworkFactory.builder();
 		builder.connectionTimeoutMs(getZkConnectionTimeoutMillis());
-		builder.connectString(address);
+		builder.ensembleProvider(this.ensembleProvider);
 		builder.maxCloseWaitMs(getZkCloseWaitMillis());
 		builder.namespace(getZkNamespace());
 		builder.retryPolicy(new RetryNTimes(getZkRetries(), getSleepMsBetweenRetries()));
 		builder.sessionTimeoutMs(getZkSessionTimeoutMillis());
-		builder.threadFactory(XpipeThreadFactory.create("Xpipe-ZK-" + address, true));
+		builder.threadFactory(XpipeThreadFactory.create("Xpipe-ZK-" + this.ensembleProvider.getConnectionString(), true));
 
-		logger.info("[create]{}, {}", Codec.DEFAULT.encode(this), address);
+		logger.info("[create]{}, {}", Codec.DEFAULT.encode(this), this.ensembleProvider.getConnectionString());
 		CuratorFramework curatorFramework = builder.build();
 		curatorFramework.start();
 		curatorFramework.blockUntilConnected(waitForZkConnectedMillis(), TimeUnit.MILLISECONDS);

@@ -24,7 +24,11 @@ public interface ZkConfig {
 	int getZkSessionTimeoutMillis();
 	
 	int waitForZkConnectedMillis();
-	
-	CuratorFramework create(String address) throws InterruptedException;
+
+	String getZkAddress();
+
+	void updateZkAddress(String address);
+
+	CuratorFramework create() throws InterruptedException;
 
 }
