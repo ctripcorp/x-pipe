@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.utils.StringUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -263,7 +264,13 @@ public class ShardModelServiceImpl implements ShardModelService{
 
     private int commandTimeOut = Integer.parseInt(System.getProperty("KEY_REDISSESSION_COMMAND_TIMEOUT", String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
 
-        private InfoCommand generteInfoCommand(Endpoint key) {
+    @VisibleForTesting
+    public void setKeyedObjectPool(XpipeNettyClientKeyedObjectPool pool) {
+        this.keyedObjectPool = pool;
+    }
+
+    @VisibleForTesting
+    public InfoCommand generteInfoCommand(Endpoint key) {
         if(ProxyRegistry.getProxy(key.getHost(), key.getPort()) != null) {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 
@@ -82,6 +83,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
+        Mockito.when(config.getKeeperContainerDiskOverLoadFactor()).thenReturn(0.8);
         KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();
         keepercontainerTbl.setKeepercontainerActive(true);
         Mockito.doNothing().when(executor).execute(Mockito.any());
@@ -445,7 +447,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.stream().filter(MigrationKeeperContainerDetailModel::isKeeperPairOverload).count());
     }
 
     @Test
@@ -457,13 +459,13 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster1, Shard2, true, 1, 7)
                 .createKeeper(Cluster2, Shard1, true, 1, 2)
                 .createKeeper(Cluster2, Shard2, true, 1, 2)
-                .createKeeper(Cluster3, Shard1, false, 1, 8)
+                .createKeeper(Cluster3, Shard1, false, 1, 7)
                 .createKeeper(Cluster3, Shard2, false, 1, 7)
                 .createKeeper(Cluster4, Shard1, false, 1, 2)
                 .createKeeper(Cluster4, Shard2, false, 1, 2);
 
-        createKeeperContainer(models, IP2, 4, 19)
-                .createKeeper(Cluster3, Shard1, true, 1, 8)
+        createKeeperContainer(models, IP2, 4, 18)
+                .createKeeper(Cluster3, Shard1, true, 1, 7)
                 .createKeeper(Cluster3, Shard2, true, 1, 7)
                 .createKeeper(Cluster4, Shard1, true, 1, 2)
                 .createKeeper(Cluster4, Shard2, true, 1, 2)

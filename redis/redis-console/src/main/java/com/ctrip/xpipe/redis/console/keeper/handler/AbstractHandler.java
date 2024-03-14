@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.console.keeper.handler;
 
 public abstract class AbstractHandler<T> implements Handler<T>{
 
-    private Handler<T> nextHandler;
+    private Handler<T> nextHandle;
 
     public Handler<T> setNextHandler(Handler<T> nextHandler) {
-        this.nextHandler = nextHandler;
-        return this;
+        this.nextHandle = nextHandler;
+        return this.nextHandle;
     }
 
     protected abstract boolean doNextHandler(T t);
@@ -14,8 +14,8 @@ public abstract class AbstractHandler<T> implements Handler<T>{
     @Override
     public boolean handle(T t) {
         if (doNextHandler(t)) {
-            if (nextHandler != null) {
-                return nextHandler.handle(t);
+            if (this.nextHandle != null) {
+                return this.nextHandle.handle(t);
             } else {
                 return true;
             }

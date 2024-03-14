@@ -70,6 +70,7 @@ import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
+import com.ctrip.xpipe.redis.console.service.ShardModelServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
@@ -236,7 +237,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteInfoControllerTest.class,
         RedisControllerTest.class,
         DcRelationsServiceTest.class,
-        DefaultMigrationProcessReporterTest.class
+        DefaultMigrationProcessReporterTest.class,
+        ShardModelServiceTest.class
 })
 public class AllTests {
 

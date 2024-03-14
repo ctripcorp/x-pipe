@@ -57,16 +57,16 @@ public class KeeperContainerController extends AbstractConsoleController{
     }
 
     @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.GET)
-    public RetMessage getDiskType() {
+    public String getDiskType() {
         try {
             Map<String, String> map = new HashMap<>();
             List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
             for (ConfigModel configModel : configs) {
                 map.put(configModel.getSubKey(), configModel.getVal());
             }
-            return RetMessage.createSuccessMessage(map.toString());
+            return map.toString();
         } catch (Exception e) {
-            return RetMessage.createFailMessage(e.getMessage());
+            return e.getMessage();
         }
     }
 

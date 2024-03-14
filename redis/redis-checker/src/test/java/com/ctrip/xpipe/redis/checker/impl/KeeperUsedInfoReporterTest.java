@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -70,27 +70,27 @@ public class KeeperUsedInfoReporterTest {
         keeperContainerMetas.add(new KeeperContainerMeta().setIp("127.0.0.3"));
         dcMeta.getKeeperContainers().addAll(keeperContainerMetas);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-        DcClusterShardActive dcClusterShard1 = new DcClusterShardActive("jq", "cluster1", "shard1", false);
-        DcClusterShardActive dcClusterShard2 = new DcClusterShardActive("jq", "cluster1", "shard2", true);
-        DcClusterShardActive dcClusterShard3 = new DcClusterShardActive("jq", "cluster2", "shard1", true);
-        DcClusterShardActive dcClusterShard4 = new DcClusterShardActive("jq", "cluster2", "shard2", true);
-        DcClusterShardActive dcClusterShard5 = new DcClusterShardActive("jq", "cluster3", "shard1", true);
-        DcClusterShardActive dcClusterShard6 = new DcClusterShardActive("jq", "cluster3", "shard2", true);
-        DcClusterShardActive dcClusterShard7 = new DcClusterShardActive("jq", "cluster3", "shard3", true);
+        DcClusterShardKeeper dcClusterShard1 = new DcClusterShardKeeper("jq", "cluster1", "shard1", false);
+        DcClusterShardKeeper dcClusterShard2 = new DcClusterShardKeeper("jq", "cluster1", "shard2", true);
+        DcClusterShardKeeper dcClusterShard3 = new DcClusterShardKeeper("jq", "cluster2", "shard1", true);
+        DcClusterShardKeeper dcClusterShard4 = new DcClusterShardKeeper("jq", "cluster2", "shard2", true);
+        DcClusterShardKeeper dcClusterShard5 = new DcClusterShardKeeper("jq", "cluster3", "shard1", true);
+        DcClusterShardKeeper dcClusterShard6 = new DcClusterShardKeeper("jq", "cluster3", "shard2", true);
+        DcClusterShardKeeper dcClusterShard7 = new DcClusterShardKeeper("jq", "cluster3", "shard3", true);
 
-        ConcurrentMap<String, Map<DcClusterShardActive, Long>> keeperFlowMap = Maps.newConcurrentMap();
-        Map<DcClusterShardActive, Long> map1 = new HashMap<>();
+        ConcurrentMap<String, Map<DcClusterShardKeeper, Long>> keeperFlowMap = Maps.newConcurrentMap();
+        Map<DcClusterShardKeeper, Long> map1 = new HashMap<>();
         map1.put(dcClusterShard1, 2L);
         map1.put(dcClusterShard4, 2L);
         map1.put(dcClusterShard5, 2L);
         keeperFlowMap.put("127.0.0.1", map1);
 
-        Map<DcClusterShardActive, Long> map2 = new HashMap<>();
+        Map<DcClusterShardKeeper, Long> map2 = new HashMap<>();
         map2.put(dcClusterShard2, 2L);
         map2.put(dcClusterShard6, 2L);
         keeperFlowMap.put("127.0.0.2", map2);
 
-        Map<DcClusterShardActive, Long> map3 = new HashMap<>();
+        Map<DcClusterShardKeeper, Long> map3 = new HashMap<>();
         map3.put(dcClusterShard3, 2L);
         map3.put(dcClusterShard7, 2L);
         keeperFlowMap.put("127.0.0.3", map3);
@@ -144,17 +144,17 @@ public class KeeperUsedInfoReporterTest {
 
     @Test
     public void DcClusterShardActive(){
-        DcClusterShardActive active = new DcClusterShardActive();
+        DcClusterShardKeeper active = new DcClusterShardKeeper();
         active.setActive(true);
         active.setDcId("dc");
         active.setClusterId("cluster");
         active.setShardId("shard");
         active.setPort(123);
         Assert.assertEquals(active.toString(), "dc:cluster:shard:true:123");
-        DcClusterShardActive active1 = new DcClusterShardActive(active.toString());
+        DcClusterShardKeeper active1 = new DcClusterShardKeeper(active.toString());
         Assert.assertEquals(active.toString(), active1.toString());
         Assert.assertEquals(active, active1);
-        DcClusterShardActive active2 = new DcClusterShardActive("dc","cluster","shard", true, 123);
+        DcClusterShardKeeper active2 = new DcClusterShardKeeper("dc","cluster","shard", true, 123);
         Assert.assertEquals(active2.hashCode(), active1.hashCode());
     }
 }

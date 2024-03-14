@@ -1,15 +1,20 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.command.DefaultCommandFuture;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.model.impl.ShardModelServiceImpl.*;
 import com.ctrip.xpipe.redis.console.service.model.impl.ShardModelServiceImpl;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import org.apache.logging.log4j.core.config.CronScheduledFuture;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,6 +25,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -36,9 +44,6 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
 
     @Mock
     private RedisService redisService;
-
-    @Mock
-    private RedisSessionManager redisSessionManager;
 
     @Mock
     private RedisSession redisSession;
@@ -63,10 +68,7 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
         newKeepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
         newKeepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
         when(keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel, srcIp, targetIp, true)).thenReturn(newKeepers);
-        RedisSession active = new RedisSession();
-        RedisSession backUp = new RedisSession();
-        when(redisSessionManager.findOrCreateSession(new HostPort("ip1", 6380))).thenReturn(active);
-        when(redisSessionManager.findOrCreateSession(new HostPort("ip2", 6381))).thenReturn(backUp);
+        shardModelService.setKeyedObjectPool(new XpipeNettyClientKeyedObjectPool());
     }
 
     @Test
@@ -76,10 +78,24 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
 
     @Test
     public void testFullSyncJudgeTask() {
-//        when(redisSession.infoReplication(any())).thenReturn(new DefaultCommandFuture<>());
-//        FullSyncJudgeTask task = new FullSyncJudgeTask(redisSession, redisSession, 1000, 1000, dcName, clusterName, shardModel);
-//        task.setScheduledFuture(new CronScheduledFuture<Object>(null, null));
-//        task.run();
+        InfoCommand infoCommand1 = shardModelService.generteInfoCommand(new DefaultEndPoint("1", 6380));
+        InfoCommand infoCommand2 = shardModelService.generteInfoCommand(new DefaultEndPoint("2", 6380));
+        FullSyncJudgeTask task = new FullSyncJudgeTask(infoCommand1, infoCommand2, 1000, 1000, dcName, clusterName, shardModel);
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+        ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 1000, 1000, TimeUnit.MILLISECONDS);
+        task.setScheduledFuture(scheduledFuture);
+        task.run();
+    }
+
+    @Test
+    public void testGetSwitchMaterNewKeepers() {
+        ShardModel model = new ShardModel();
+        List<RedisTbl> keepers = new ArrayList<>();
+        keepers.add(new RedisTbl().setMaster(true));
+        model.setKeepers(keepers);
+        List<RedisTbl> switchMaterNewKeepers = new DefaultKeeperAdvancedService().getSwitchMaterNewKeepers(model);
+        Assert.assertEquals(switchMaterNewKeepers.size(), 1);
+        Assert.assertFalse(switchMaterNewKeepers.get(0).isMaster());
     }
 
 }

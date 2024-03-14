@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -79,6 +80,14 @@ public class DelayActionTest extends AbstractRedisTest {
         });
 
         Assert.assertFalse(instanceNull.get());
+    }
+
+    @Test
+    public void testToString() {
+        RedisSession session1 = new RedisSession();
+        Assert.assertEquals(session1.toString(), "");
+        session1.setEndpoint(new DefaultEndPoint("10.10.10.10", 6380));
+        Assert.assertEquals(session1.toString(), "redis://10.10.10.10:6380");
     }
 
     @Test

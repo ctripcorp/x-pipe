@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
@@ -53,18 +53,18 @@ public class DefaultKeeperContainerMigrationServiceTest {
         KeeperContainerUsedInfoModel src = new KeeperContainerUsedInfoModel()
                         .setKeeperIp("1.1.1.1").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
                         .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
-        Map<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo = Maps.newHashMap();
-        detailInfo.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
-        detailInfo.put(new DcClusterShardActive("jq", "cluster1", "shard2", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(20 * 1024 * 1024L, 20 * 1024 * 1024L, ""));
-        detailInfo.put(new DcClusterShardActive("jq", "cluster2", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(30 * 1024 * 1024L, 30 * 1024 * 1024L, ""));
-        detailInfo.put(new DcClusterShardActive("jq", "cluster2", "shard2", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(40 * 1024 * 1024L, 40 * 1024 * 1024L, ""));
+        Map<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo = Maps.newHashMap();
+        detailInfo.put(new DcClusterShardKeeper("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
+        detailInfo.put(new DcClusterShardKeeper("jq", "cluster1", "shard2", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(20 * 1024 * 1024L, 20 * 1024 * 1024L, ""));
+        detailInfo.put(new DcClusterShardKeeper("jq", "cluster2", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(30 * 1024 * 1024L, 30 * 1024 * 1024L, ""));
+        detailInfo.put(new DcClusterShardKeeper("jq", "cluster2", "shard2", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(40 * 1024 * 1024L, 40 * 1024 * 1024L, ""));
         src.setDetailInfo(detailInfo);
 
         KeeperContainerUsedInfoModel target = new KeeperContainerUsedInfoModel()
                         .setKeeperIp("2.2.2.2").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
                         .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
-        Map<DcClusterShardActive, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
-        detailInfo2.put(new DcClusterShardActive("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
+        Map<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
+        detailInfo2.put(new DcClusterShardKeeper("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
         target.setDetailInfo(detailInfo2);
 
         List<DcClusterShard> migrationShards = new ArrayList<>();
@@ -89,5 +89,21 @@ public class DefaultKeeperContainerMigrationServiceTest {
         models.add(model);
         service.beginMigrateKeeperContainers(models);
         Assert.assertEquals(9, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+    }
+
+    @Test
+    public void testClone() {
+        KeeperContainerUsedInfoModel target = new KeeperContainerUsedInfoModel()
+                .setKeeperIp("2.2.2.2").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
+                .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
+        Map<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo2 = Maps.newHashMap();
+        detailInfo2.put(new DcClusterShardKeeper("jq", "cluster1", "shard1", true), new KeeperContainerUsedInfoModel.KeeperUsedInfo(200 * 1024 * 1024L, 400 * 1024 * 1024L, ""));
+        target.setDetailInfo(detailInfo2);
+        KeeperContainerUsedInfoModel usedInfoModel = KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(target);
+        for (Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> entry : detailInfo2.entrySet()) {
+            KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(target, entry);
+            Assert.assertEquals(model.getKeeperIp(), usedInfoModel.getKeeperIp());
+        }
+        Assert.assertEquals(target.getDcName(), usedInfoModel.getDcName());
     }
 }

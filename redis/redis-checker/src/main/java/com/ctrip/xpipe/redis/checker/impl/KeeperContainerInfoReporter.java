@@ -8,11 +8,10 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -30,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 
 public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
 
@@ -107,8 +105,8 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
     public void reportKeeperContainerInfo() {
         try {
             logger.debug("[reportKeeperContainerInfo] start");
-            Map<String, Map<DcClusterShardActive, Long>> collectedInfos = keeperFlowCollector.getHostPort2InputFlow();
-            Map<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = new HashMap<>();
+            Map<String, Map<DcClusterShardKeeper, Long>> collectedInfos = keeperFlowCollector.getHostPort2InputFlow();
+            Map<String, Map<DcClusterShardKeeper, Long>> hostPort2InputFlow = new HashMap<>();
             for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
                 if (CURRENT_IDC.equalsIgnoreCase(dcMeta.getId())) {
                     dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
@@ -131,24 +129,24 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                 long totalRedisUsedMemory = 0;
                 int activeKeeperCount = 0;
                 int totalKeeperCount = 0;
-                Map<DcClusterShardActive, KeeperUsedInfo> detailInfo = new HashMap<>();
-                for (Map.Entry<DcClusterShardActive, Long> entry : inputFlowMap.entrySet()) {
+                Map<DcClusterShardKeeper, KeeperUsedInfo> detailInfo = new HashMap<>();
+                for (Map.Entry<DcClusterShardKeeper, Long> entry : inputFlowMap.entrySet()) {
                     totalKeeperCount++;
                     totalInputFlow += entry.getValue();
-                    DcClusterShardActive dcClusterShardActive = entry.getKey();
+                    DcClusterShardKeeper dcClusterShardKeeper = entry.getKey();
                     long inputFlow = entry.getValue();
-                    Long redisUsedMemory = dcClusterShardUsedMemory.get(new DcClusterShard().setDcId(dcClusterShardActive.getDcId()).setClusterId(dcClusterShardActive.getClusterId()).setShardId(dcClusterShardActive.getShardId()));
+                    Long redisUsedMemory = dcClusterShardUsedMemory.get(new DcClusterShard().setDcId(dcClusterShardKeeper.getDcId()).setClusterId(dcClusterShardKeeper.getClusterId()).setShardId(dcClusterShardKeeper.getShardId()));
                     if (redisUsedMemory == null) {
                         logger.warn("[reportKeeperContainerInfo] redisUsedMemory is null, dcClusterShard: {}", entry.getKey());
                         redisUsedMemory = 0L;
                     }
                     totalRedisUsedMemory += redisUsedMemory;
-                    if (dcClusterShardActive.isActive()) {
+                    if (dcClusterShardKeeper.isActive()) {
                         activeRedisUsedMemory += redisUsedMemory;
                         activeInputFlow += inputFlow;
                         activeKeeperCount++;
                     }
-                    detailInfo.put(dcClusterShardActive, new KeeperUsedInfo(redisUsedMemory, inputFlow, keeperIp));
+                    detailInfo.put(dcClusterShardKeeper, new KeeperUsedInfo(redisUsedMemory, inputFlow, keeperIp));
 
                 }
                 try {

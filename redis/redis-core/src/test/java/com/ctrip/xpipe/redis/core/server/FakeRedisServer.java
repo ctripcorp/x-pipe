@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -273,5 +274,10 @@ public class FakeRedisServer extends AbstractLifecycle{
 	public void setPartialSyncFail(boolean partialSyncFail) {
 		this.partialSyncFail = partialSyncFail;
 	}
+
+	@VisibleForTesting
+    public void setRdbSize(int rdbSize) {
+		this.rdbSize = rdbSize;
+    }
 }
 
