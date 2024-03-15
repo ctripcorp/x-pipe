@@ -34,4 +34,5 @@ public interface SentinelGroupService {
 
     void reheal(long id);
 
+    void updateActive(long id, int active);
 }
