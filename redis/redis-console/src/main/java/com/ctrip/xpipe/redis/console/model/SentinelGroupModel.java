@@ -12,12 +12,14 @@ public class SentinelGroupModel {
     private String clusterType;
     private String desc = "";
     private int shardCount;
+    private int active = 1;
 
     public SentinelGroupModel() {}
 
     public SentinelGroupModel(SentinelGroupTbl sentinelGroupTbl) {
         this.sentinelGroupId = sentinelGroupTbl.getSentinelGroupId();
         this.clusterType = sentinelGroupTbl.getClusterType();
+        this.active = sentinelGroupTbl.getActive();
     }
 
     public long getSentinelGroupId() {
@@ -81,6 +83,19 @@ public class SentinelGroupModel {
         return dcInfos;
     }
 
+    public boolean isActive() {
+        return active == 1;
+    }
+
+    public SentinelGroupModel setActive(int active) {
+        this.active = active;
+        return this;
+    }
+
+    public int getActive() {
+        return active;
+    }
+
     public String getDesc() {
         return desc;
     }
@@ -96,6 +111,7 @@ public class SentinelGroupModel {
                 ", sentinels=" + sentinels +
                 ", clusterType='" + clusterType + '\'' +
                 ", shardCount=" + shardCount +
+                ", active=" + active+
                 '}';
     }
 }

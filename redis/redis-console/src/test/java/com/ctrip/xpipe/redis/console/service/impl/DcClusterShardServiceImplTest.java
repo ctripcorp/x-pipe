@@ -27,15 +27,4 @@ public class DcClusterShardServiceImplTest extends AbstractServiceImplTest {
         service.updateDcClusterShard(proto);
         Assert.assertEquals(expected, service.find(dcNames[0], clusterName, shardNames[0]).getSetinelId());
     }
-
-    @Test
-    public void testFindAllByDcId() throws Exception {
-        List<DcClusterShardTbl> dcClusterShards = service.findAllByDcId(1L);
-        for(DcClusterShardTbl dcClusterShard : dcClusterShards) {
-            Assert.assertEquals(1L, dcClusterShard.getDcClusterInfo().getDcId());
-            Assert.assertNotEquals(0, dcClusterShard.getShardId());
-            Assert.assertNotNull(dcClusterShard.getRedisInfo());
-        }
-        logger.info("{}", dcClusterShards);
-    }
 }

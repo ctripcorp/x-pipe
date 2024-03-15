@@ -52,14 +52,19 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         sentinelBalanceService.rebalanceBackupDcSentinel("oy");
         SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone());
+        // active: 2 102; inactive: 104
+        Assert.assertEquals(2, task.getTotalActiveSize());
         Assert.assertEquals(0, task.getShardsWaitBalances());
+        // sentinel2:4,sentinel102:0 -> sentinel2:3,sentinel102:3
         Assert.assertEquals(2, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage(null);
         Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
-        for (Long usage: sentinelUsage.values()) {
-            Assert.assertEquals(2L, usage.longValue());
-        }
+
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(2).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(102).getSentinelsAddressString()).longValue());
+        // inactive 104 not involved
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(104).getSentinelsAddressString()).longValue());
     }
 
     @Test
@@ -67,14 +72,19 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         sentinelBalanceService.rebalanceDcSentinel("jq",ClusterType.ONE_WAY);
         SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone(), 10000000);
+        // active: 1 101; inactive: 103
+        Assert.assertEquals(2, task.getTotalActiveSize());
         Assert.assertEquals(0, task.getShardsWaitBalances());
+        // sentinel1:6,sentinel101:0 -> sentinel1:3,sentinel101:3
         Assert.assertEquals(3, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage("");
         Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
-        for (Long usage: sentinelUsage.values()) {
-            Assert.assertEquals(3L, usage.longValue());
-        }
+
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(1).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(101).getSentinelsAddressString()).longValue());
+        // inactive 104 not involved
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(103).getSentinelsAddressString()).longValue());
     }
 
 }

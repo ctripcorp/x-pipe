@@ -27,6 +27,8 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected int targetUsage;
 
+    protected int totalActiveSize;
+
     protected List<SentinelGroupModel> busySentinels;
 
     public BackupDcOnlySentinelBalanceTask(String dcId, SentinelBalanceService sentinelBalanceService, DcClusterShardService dcClusterShardService) {
@@ -42,17 +44,20 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
         long totalUsages = 0;
         List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, ClusterType.ONE_WAY);
         for (SentinelGroupModel sentinel: sentinels) {
-            totalUsages += sentinel.getShardCount();
+            if (sentinel.isActive()) {
+                totalActiveSize++;
+                totalUsages += sentinel.getShardCount();
+            }
         }
 
-        if (sentinels.isEmpty()) {
+        if (totalActiveSize == 0) {
             this.targetUsage = 0;
         } else {
-            this.targetUsage = (int)Math.ceil(totalUsages*1.0D/sentinels.size());
+            this.targetUsage = (int)Math.ceil(totalUsages*1.0D/totalActiveSize);
         }
 
         for (SentinelGroupModel sentinel: sentinels) {
-            if (sentinel.getShardCount() > targetUsage) {
+            if (sentinel.isActive() && sentinel.getShardCount() > targetUsage) {
                 busySentinels.add(sentinel);
             }
         }
@@ -74,6 +79,11 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
     @Override
     public int getTargetUsages() {
         return targetUsage;
+    }
+
+    @Override
+    public int getTotalActiveSize() {
+        return totalActiveSize;
     }
 
     @Override
@@ -119,8 +129,8 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
             getLogger().info("[rebalanceSentinel][no need, skip] {}", sentinelGroup.getSentinelGroupId());
             return;
         }
-
         List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findBackupDcShardsBySentinel(sentinelGroup.getSentinelGroupId());
+
         doBalanceSentinel(sentinelGroup, dcClusterShardTbls.subList(0, Math.min(needBalanceShards, dcClusterShardTbls.size())));
     }
 

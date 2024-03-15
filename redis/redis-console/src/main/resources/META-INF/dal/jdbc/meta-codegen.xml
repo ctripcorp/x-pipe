@@ -1021,7 +1021,8 @@
   <entity name="sentinel-group-tbl" table="sentinel_group_tbl" alias="sgt">
     <member name="sentinel-group-id" field="sentinel_group_id" value-type="long" length="19" nullable="false" key="true" auto-increment="true" />
     <member name="cluster-type" field="cluster_type" value-type="String" length="40" nullable="false" />
-    <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
+    <member name="deleted" field="deleted" value-type="int" length="4" nullable="false" />
+    <member name="active" field="active" value-type="int" length="4" nullable="false" />
     <member name="datachange-lasttime" field="datachange_lasttime" value-type="Date" nullable="false" />
     <member name="sentinel-description" field="sentinel_description" value-type="String" length="100" nullable="false" />
     <var name="key-sentinel-group-id" value-type="long" key-member="sentinel-group-id" />

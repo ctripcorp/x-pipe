@@ -28,9 +28,13 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(101,1,'127.0.0.1:1101,127.0.0.2:1101,127.0.0.3:1101','setinel 101');
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(102,2,'127.0.0.1:1102,127.0.0.2:1102,127.0.0.3:1102','setinel 102');
+insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(103,1,'127.0.0.1:1103,127.0.0.2:1103,127.0.0.3:1103','setinel 103');
+insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(104,2,'127.0.0.1:1104,127.0.0.2:1104,127.0.0.3:1104','setinel 104');
 
 insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (101,'ONE_WAY');
 insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (102,'ONE_WAY');
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type,active) values (103,'ONE_WAY',0);
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type,active) values (104,'ONE_WAY',0);
 
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,101,'127.0.0.1',1101);
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,101,'127.0.0.2',1101);
@@ -39,3 +43,11 @@ insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) 
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,102,'127.0.0.1',1102);
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,102,'127.0.0.2',1102);
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,102,'127.0.0.3',1102);
+
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,103,'127.0.0.1',1103);
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,103,'127.0.0.2',1103);
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,103,'127.0.0.3',1103);
+
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,104,'127.0.0.1',1104);
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,104,'127.0.0.2',1104);
+insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,104,'127.0.0.3',1104);
