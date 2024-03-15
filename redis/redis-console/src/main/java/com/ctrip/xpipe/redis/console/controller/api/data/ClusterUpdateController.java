@@ -150,13 +150,18 @@ public class ClusterUpdateController extends AbstractController {
     }
 
     @GetMapping(value = "/clusters")
-    public List<ClusterCreateInfo> getClusters(@RequestParam(required=false, defaultValue = "one_way", name = "type") String clusterType) throws CheckFailException {
-        logger.info("[getClusters]clusterType-{}", clusterType);
-        if (!ClusterType.isTypeValidate(clusterType)) {
-            throw new CheckFailException("unknown cluster type " + clusterType);
+    public List<ClusterCreateInfo> getClusters(@RequestParam(value ="types", required = false, defaultValue = "one_way,hetero") Set<String> clusterTypes) throws CheckFailException {
+
+        for (String clusterType: clusterTypes) {
+            if (!ClusterType.isTypeValidate(clusterType)) {
+                throw new CheckFailException("unknown cluster type " + clusterType);
+            }
         }
 
-        List<ClusterDTO> clusterDTOList = clusterService.getClusters(clusterType);
+        List<ClusterDTO> clusterDTOList = new ArrayList<>();
+        for (String clusterType: clusterTypes) {
+            clusterDTOList.addAll(clusterService.getClusters(clusterType));
+        }
         List<ClusterCreateInfo> clusterCreateInfoList = clusterDTOList.stream()
             .map(ClusterCreateInfo::new)
             .collect(Collectors.toList());
