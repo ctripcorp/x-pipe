@@ -166,6 +166,33 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinels/active/{sentinelId}", method = RequestMethod.GET)
+    public RetMessage getSentinelActiveStatus(@PathVariable Long sentinelId) {
+        try {
+            SentinelGroupModel setinelTbl = sentinelGroupService.findById(sentinelId);
+            if (setinelTbl == null) {
+                return RetMessage.createSuccessMessage("Sentinel does not exist or deleted");
+            }
+            return RetMessage.createSuccessMessage("Active status: " + setinelTbl.isActive());
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/sentinels/active/{sentinelId}/{activeStatus}", method = RequestMethod.PUT)
+    public RetMessage updateSentinelActiveStatus(@PathVariable Long sentinelId, @PathVariable Integer activeStatus) {
+        try {
+            SentinelGroupModel setinelTbl = sentinelGroupService.findById(sentinelId);
+            if (setinelTbl == null) {
+                return RetMessage.createSuccessMessage("Sentinel does not exist or deleted");
+            }
+            sentinelGroupService.updateActive(sentinelId, activeStatus);
+            return RetMessage.createSuccessMessage("Successfully update ActiveStatus: " + activeStatus);
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
     public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");

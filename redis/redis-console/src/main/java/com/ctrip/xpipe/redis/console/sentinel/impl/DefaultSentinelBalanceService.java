@@ -130,7 +130,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         long minCnt = Long.MAX_VALUE;
         SentinelGroupModel idealSentinel = null;
         for (SentinelGroupModel sentinel: sentinels) {
-            if (sentinel.getShardCount() < minCnt) {
+            if (sentinel.isActive() && sentinel.getShardCount() < minCnt) {
                 minCnt = sentinel.getShardCount();
                 idealSentinel = sentinel;
             }
