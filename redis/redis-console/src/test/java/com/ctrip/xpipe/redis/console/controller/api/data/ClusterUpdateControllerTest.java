@@ -176,7 +176,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         clusterDao.createCluster(clusterTbl1);
         clusterDao.createCluster(clusterTbl2);
 
-        List<ClusterCreateInfo> clusters = clusterController.getClusters(ClusterType.SINGLE_DC.toString());
+        List<ClusterCreateInfo> clusters = clusterController.getClusters(Collections.singleton(ClusterType.SINGLE_DC.toString()));
         Assert.assertEquals(2, clusters.size());
         Assert.assertEquals("cluster-name1", clusters.get(0).getClusterName());
         Assert.assertEquals("cluster-name2", clusters.get(1).getClusterName());
