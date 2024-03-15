@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 
 /**
  * @author yu
@@ -66,15 +69,21 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         keeperContainerAnalyzerService.setConfigService(configService);
         keeperContainerAnalyzerService.setKeeperContainerService(keeperContainerService);
         keeperContainerAnalyzerService.setOrganizationService(organizationService);
+        List<ConfigModel> configModels = new ArrayList<>();
         ConfigModel configModel = new ConfigModel();
-        configModel.setVal("16");
-        Mockito.when(configService.getConfig(Mockito.any(), Mockito.any())).thenReturn(configModel);
+        ConfigModel configModel1 = new ConfigModel();
+        configModel.setKey(KEY_KEEPER_CONTAINER_STANDARD).setSubKey("DEFAULT-inputFlow").setVal("16");
+        configModel1.setKey(KEY_KEEPER_CONTAINER_STANDARD).setSubKey("DEFAULT-peerData").setVal("16");
+        configModels.add(configModel);
+        configModels.add(configModel1);
+        Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
         Mockito.when(organizationService.getOrganizationTblByCMSOrganiztionId(Mockito.anyLong())).thenReturn(new OrganizationTbl().setOrgName("org"));
         analyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
+        Mockito.when(config.getKeeperContainerDiskOverLoadFactor()).thenReturn(0.8);
         KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();
         keepercontainerTbl.setKeepercontainerActive(true);
         Mockito.doNothing().when(executor).execute(Mockito.any());
@@ -431,14 +440,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster5, Shard1, true, 9, 9)
                 .createKeeper(Cluster5, Shard2, false, 9, 9);
 
-        createKeeperContainer(models, IP3, 9, 9)
+        createKeeperContainer(models, IP4, 9, 9)
                 .createKeeper(Cluster5, Shard2, true, 9, 9)
                 .createKeeper(Cluster5, Shard1, false, 9, 9);
 
         analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
         analyzer.analyzeKeeperContainerUsedInfo();
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
+        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.stream().filter(MigrationKeeperContainerDetailModel::isKeeperPairOverload).count());
     }
 
     @Test
@@ -450,13 +459,13 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster1, Shard2, true, 1, 7)
                 .createKeeper(Cluster2, Shard1, true, 1, 2)
                 .createKeeper(Cluster2, Shard2, true, 1, 2)
-                .createKeeper(Cluster3, Shard1, false, 1, 8)
+                .createKeeper(Cluster3, Shard1, false, 1, 7)
                 .createKeeper(Cluster3, Shard2, false, 1, 7)
                 .createKeeper(Cluster4, Shard1, false, 1, 2)
                 .createKeeper(Cluster4, Shard2, false, 1, 2);
 
-        createKeeperContainer(models, IP2, 4, 19)
-                .createKeeper(Cluster3, Shard1, true, 1, 8)
+        createKeeperContainer(models, IP2, 4, 18)
+                .createKeeper(Cluster3, Shard1, true, 1, 7)
                 .createKeeper(Cluster3, Shard2, true, 1, 7)
                 .createKeeper(Cluster4, Shard1, true, 1, 2)
                 .createKeeper(Cluster4, Shard2, true, 1, 2)

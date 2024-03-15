@@ -2348,6 +2348,18 @@
 				</statement>
 			</query>
 
+			<query name="find-by-key" type="SELECT" multiple="true">
+				<param name="key"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
 			<query name="update-by-key-and-sub-key-and-change-time" type="UPDATE">
 				<param name="key"/>
 				<param name="sub-key"/>

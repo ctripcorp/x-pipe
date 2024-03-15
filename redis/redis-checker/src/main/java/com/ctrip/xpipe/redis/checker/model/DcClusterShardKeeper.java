@@ -1,35 +1,35 @@
 package com.ctrip.xpipe.redis.checker.model;
 
-import com.ctrip.xpipe.endpoint.HostPort;
-
 import java.io.Serializable;
 import java.util.Objects;
 
-public class DcClusterShardActive extends DcClusterShard implements Serializable {
+public class DcClusterShardKeeper extends DcClusterShard implements Serializable {
 
     private boolean active;
 
+    private String ip;
+
     private int port;
 
-    public DcClusterShardActive(){}
+    public DcClusterShardKeeper(){}
 
-    public DcClusterShardActive(String dcId, String clusterId, String shardId, boolean active, int port) {
+    public DcClusterShardKeeper(String dcId, String clusterId, String shardId, boolean active, int port) {
         super(dcId, clusterId, shardId);
         this.active = active;
         this.port = port;
     }
 
-    public DcClusterShardActive(String dcId, String clusterId, String shardId, boolean active) {
+    public DcClusterShardKeeper(String dcId, String clusterId, String shardId, boolean active) {
         super(dcId, clusterId, shardId);
         this.active = active;
     }
 
-    public DcClusterShardActive(DcClusterShard dcClusterShard, boolean active) {
+    public DcClusterShardKeeper(DcClusterShard dcClusterShard, boolean active) {
         super(dcClusterShard.getDcId(), dcClusterShard.getClusterId(), dcClusterShard.getShardId());
         this.active = active;
     }
 
-    public DcClusterShardActive(String info) {
+    public DcClusterShardKeeper(String info) {
         String[] split = info.split(SPLITTER);
         if (split.length >= 5) {
             this.dcId = split[0];
@@ -59,15 +59,15 @@ public class DcClusterShardActive extends DcClusterShard implements Serializable
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof DcClusterShardActive)) return false;
+        if (!(o instanceof DcClusterShardKeeper)) return false;
         if (!super.equals(o)) return false;
-        DcClusterShardActive that = (DcClusterShardActive) o;
+        DcClusterShardKeeper that = (DcClusterShardKeeper) o;
         return isActive() == that.isActive();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), isActive());
+        return Objects.hash(super.hashCode(), port);
     }
 
     @Override

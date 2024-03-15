@@ -28,7 +28,7 @@ public class KeeperContainerUsedInfoModel {
 
     private int totalKeeperCount;
 
-    private Map<DcClusterShardActive, KeeperUsedInfo> detailInfo;
+    private Map<DcClusterShardKeeper, KeeperUsedInfo> detailInfo;
 
     private boolean keeperContainerActive;
 
@@ -50,7 +50,7 @@ public class KeeperContainerUsedInfoModel {
         this.activeRedisUsedMemory = activeRedisUsedMemory;
     }
 
-    public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardActive, KeeperUsedInfo> dcClusterShard) {
+    public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard) {
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
         this.org = model.getOrg();
@@ -70,6 +70,41 @@ public class KeeperContainerUsedInfoModel {
         this.diskUsed = model.getDiskUsed();
         this.diskType = model.getDiskType();
     }
+
+    public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
+        KeeperContainerUsedInfoModel newModel = new KeeperContainerUsedInfoModel();
+        newModel.setKeeperIp(model.getKeeperIp());
+        newModel.setDcName(model.getDcName());
+        newModel.setOrg(model.getOrg());
+        newModel.setActiveInputFlow(model.getActiveInputFlow());
+        newModel.setTotalInputFlow(model.getTotalInputFlow());
+        newModel.setInputFlowStandard(model.getInputFlowStandard());
+        newModel.setActiveRedisUsedMemory(model.getActiveRedisUsedMemory());
+        newModel.setTotalRedisUsedMemory(model.getTotalRedisUsedMemory());
+        newModel.setRedisUsedMemoryStandard(model.getRedisUsedMemoryStandard());
+        newModel.setActiveKeeperCount(model.getActiveKeeperCount());
+        newModel.setTotalKeeperCount(model.getTotalKeeperCount());
+        if (model.getDetailInfo() != null) {
+            newModel.setDetailInfo(getKeeperUsedInfoMap(model));
+        }
+        newModel.setKeeperContainerActive(model.isKeeperContainerActive());
+        newModel.setDiskAvailable(model.isDiskAvailable());
+        newModel.setDiskSize(model.getDiskSize());
+        newModel.setDiskUsed(model.getDiskUsed());
+        newModel.setDiskType(model.getDiskType());
+        return newModel;
+    }
+
+    private static Map<DcClusterShardKeeper, KeeperUsedInfo> getKeeperUsedInfoMap(KeeperContainerUsedInfoModel model) {
+        Map<DcClusterShardKeeper, KeeperUsedInfo> clonedDetailInfo = new HashMap<>();
+        for (Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> entry : model.getDetailInfo().entrySet()) {
+            DcClusterShardKeeper key = new DcClusterShardKeeper(entry.getKey().getDcId(), entry.getKey().getClusterId(), entry.getKey().getShardId(), entry.getKey().isActive(), entry.getKey().getPort());
+            KeeperUsedInfo value = new KeeperUsedInfo(entry.getValue().getPeerData(), entry.getValue().getInputFlow(), entry.getValue().keeperIP);
+            clonedDetailInfo.put(key, value);
+        }
+        return clonedDetailInfo;
+    }
+
 
     public String getDcName() {
         return dcName;
@@ -134,11 +169,11 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public Map<DcClusterShardActive, KeeperUsedInfo> getDetailInfo() {
+    public Map<DcClusterShardKeeper, KeeperUsedInfo> getDetailInfo() {
         return detailInfo;
     }
 
-    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShardActive, KeeperUsedInfo> detailInfo) {
+    public KeeperContainerUsedInfoModel setDetailInfo(Map<DcClusterShardKeeper, KeeperUsedInfo> detailInfo) {
         this.detailInfo = detailInfo;
         return this;
     }
@@ -324,7 +359,7 @@ public class KeeperContainerUsedInfoModel {
     @VisibleForTesting
     public KeeperContainerUsedInfoModel createKeeper(String clusterId, String shardId, boolean active, long inputFlow, long redisUsedMemory){
         if (this.detailInfo == null) this.detailInfo = new HashMap<>();
-        detailInfo.put(new DcClusterShardActive(this.dcName, clusterId, shardId, active), new KeeperUsedInfo(redisUsedMemory, inputFlow, this.keeperIp));
+        detailInfo.put(new DcClusterShardKeeper(this.dcName, clusterId, shardId, active), new KeeperUsedInfo(redisUsedMemory, inputFlow, this.keeperIp));
         this.setDetailInfo(detailInfo);
         return this;
     }

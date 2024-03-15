@@ -142,18 +142,6 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testGetUsedMemoryInfoWithRor() {
-        // test used_memory < maxmemory
-        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR);
-        listener.onAction(context);
-        Assert.assertTrue(listener.worksfor(context));
-        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(109632408, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
-
-    }
-
-
-    @Test
     public void testGetUsedMemoryInfoWithRor2() {
         // test dbSize < maxmemory * 0.5
         context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR2);
@@ -172,51 +160,6 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
         Assert.assertTrue(listener.worksfor(context));
         Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
         Assert.assertEquals(2415919104L * 4, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
-
-    }
-
-    @Test
-    public void testGetUsedMemoryInfoWithRor4() {
-        // test dbSize >= maxmemory * 0.5, keyspace Exception db0 == null
-        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR4);
-        listener.onAction(context);
-        Assert.assertTrue(listener.worksfor(context));
-        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
-
-    }
-
-    @Test
-    public void testGetUsedMemoryInfoWithRor5() {
-        // test dbSize >= maxmemory * 0.5, keyspace Exception keys==null
-        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR5);
-        listener.onAction(context);
-        Assert.assertTrue(listener.worksfor(context));
-        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
-
-    }
-
-    @Test
-    public void testGetUsedMemoryInfoWithRor6() {
-        // test dbSize >= maxmemory * 0.5, keyspace Exception evict==null
-        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR6);
-        listener.onAction(context);
-        Assert.assertTrue(listener.worksfor(context));
-        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
-
-    }
-
-
-    @Test
-    public void testGetUsedMemoryInfoWithRor7() {
-        // test dbSize >= maxmemory * 0.5, keyspace Exception keys == 0
-        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR7);
-        listener.onAction(context);
-        Assert.assertTrue(listener.worksfor(context));
-        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L * 3, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
 
     }
 

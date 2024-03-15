@@ -253,7 +253,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
             .setKeepercontainerOrgId(org.getId())
             .setKeepercontainerActive(createInfo.isActive())
-            .setKeepercontainerDiskType(KeeperContainerDiskType.lookup(createInfo.getDiskType()).name());
+            .setKeepercontainerDiskType(createInfo.getDiskType() == null ? KeeperContainerDiskType.DEFAULT.getDesc() : createInfo.getDiskType().toUpperCase());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override
@@ -298,7 +298,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public void updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
+  public void
+  updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
     KeepercontainerTbl keepercontainerTbl = findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
     if(keepercontainerTbl == null) {
       throw new IllegalArgumentException(String.format("%s:%d keeper container not found",
@@ -321,10 +322,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
 
-    KeeperContainerDiskType type = KeeperContainerDiskType.lookup(createInfo.getDiskType(), null);
-    if (null != type) {
-      keepercontainerTbl.setKeepercontainerDiskType(type.name());
-    }
+    keepercontainerTbl.setKeepercontainerDiskType(createInfo.getDiskType());
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
       public Integer doQuery() throws DalException {
@@ -429,10 +427,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
 
-    KeeperContainerDiskType type = KeeperContainerDiskType.lookup(keeperContainerInfoModel.getDiskType(), null);
-    if (null != type) {
-      proto.setKeepercontainerDiskType(type.name());
-    }
+    proto.setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType());
 
     queryHandler.handleQuery(new DalQuery<Integer>() {
       @Override

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_CHECK_EXCLUDE;
 
 /**
@@ -81,6 +82,12 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
         service.startSentinelCheck(configModel);
         ConfigModel configModel = service.getConfig(KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
         Assert.assertEquals(configModel.getVal(), String.valueOf(false));
+    }
+
+    @Test
+    public void testGetConfigs() throws Exception {
+        List<ConfigModel> configs = service.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+        Assert.assertEquals(configs.size(), 0);
     }
 
     @Test

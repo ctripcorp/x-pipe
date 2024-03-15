@@ -12,9 +12,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMe
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
-import com.ctrip.xpipe.redis.checker.impl.KeeperContainerInfoReporter;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -115,7 +114,7 @@ public class CheckerHealthController {
     }
 
     @GetMapping("/health/keeper/status/all")
-    public ConcurrentMap<String, Map<DcClusterShardActive, Long>> getAllKeeperFlows() {
+    public ConcurrentMap<String, Map<DcClusterShardKeeper, Long>> getAllKeeperFlows() {
         return keeperFlowCollector.getHostPort2InputFlow();
     }
 
