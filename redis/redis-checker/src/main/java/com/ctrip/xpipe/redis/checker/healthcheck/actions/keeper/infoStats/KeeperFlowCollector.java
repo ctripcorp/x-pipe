@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperSupport;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardActive;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.MapUtils;
 import org.slf4j.Logger;
@@ -19,7 +19,7 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected ConcurrentMap<String, Map<DcClusterShardActive, Long>> hostPort2InputFlow = new ConcurrentHashMap<>();
+    protected ConcurrentMap<String, Map<DcClusterShardKeeper, Long>> hostPort2InputFlow = new ConcurrentHashMap<>();
 
     @Override
     public void onAction(KeeperInfoStatsActionContext context) {
@@ -27,8 +27,9 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
             InfoResultExtractor extractor = context.getResult();
             KeeperInstanceInfo info = context.instance().getCheckInfo();
             long keeperFlow = extractor.getKeeperInstantaneousInputKbps().longValue();
-            Map<DcClusterShardActive, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ConcurrentHashMap::new);
-            keeperContainerResult.put(new DcClusterShardActive(info.getDcId(), info.getClusterId(), info.getShardId(), extractor.getKeeperActive(), info.getHostPort().getPort()), keeperFlow);
+            deleteKeeper(info);
+            Map<DcClusterShardKeeper, Long> keeperContainerResult = MapUtils.getOrCreate(hostPort2InputFlow, info.getHostPort().getHost(), ConcurrentHashMap::new);
+            keeperContainerResult.put(new DcClusterShardKeeper(info.getDcId(), info.getClusterId(), info.getShardId(), extractor.getKeeperActive(), info.getHostPort().getPort()), keeperFlow);
         } catch (Throwable throwable) {
             logger.error("get instantaneous input kbps of keeper:{} error: ", context.instance().getCheckInfo().getHostPort(), throwable);
         }
@@ -38,12 +39,19 @@ public class KeeperFlowCollector implements KeeperInfoStatsActionListener, Keepe
     @Override
     public void stopWatch(HealthCheckAction action) {
         KeeperInstanceInfo instanceInfo = (KeeperInstanceInfo) action.getActionInstance().getCheckInfo();
-        logger.debug("stopWatch: {}", new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
-        hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
-                .remove(new DcClusterShardActive(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
+        logger.info("stopWatch: {}", new DcClusterShardKeeper(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.isActive(), instanceInfo.getHostPort().getPort()));
+        deleteKeeper(instanceInfo);
     }
 
-    public ConcurrentMap<String, Map<DcClusterShardActive, Long>> getHostPort2InputFlow() {
+    private void deleteKeeper(KeeperInstanceInfo instanceInfo) {
+        if (hostPort2InputFlow.get(instanceInfo.getHostPort().getHost()) == null) return;
+        hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .remove(new DcClusterShardKeeper(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), true, instanceInfo.getHostPort().getPort()));
+        hostPort2InputFlow.get(instanceInfo.getHostPort().getHost())
+                .remove(new DcClusterShardKeeper(instanceInfo.getDcId(), instanceInfo.getClusterId(), instanceInfo.getShardId(), false, instanceInfo.getHostPort().getPort()));
+    }
+
+    public ConcurrentMap<String, Map<DcClusterShardKeeper, Long>> getHostPort2InputFlow() {
         return hostPort2InputFlow;
     }
 }

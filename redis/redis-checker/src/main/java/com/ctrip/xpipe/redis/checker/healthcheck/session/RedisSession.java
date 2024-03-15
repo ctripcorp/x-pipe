@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.*;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,9 @@ public class RedisSession {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
         logger.info("session command timeout {}:{} {}", endpoint.getHost(), endpoint.getPort(), commandTimeOut);
+    }
+
+    public RedisSession() {
     }
 
     public void check() {
@@ -350,7 +354,15 @@ public class RedisSession {
 
     @Override
     public String toString() {
-        return String.format("%s", endpoint.toString());
+        if (endpoint != null) {
+            return String.format("%s", endpoint);
+        }
+        return "";
+    }
+
+    @VisibleForTesting
+    public void setEndpoint(Endpoint endpoint) {
+        this.endpoint = endpoint;
     }
 
     public interface RollCallback {

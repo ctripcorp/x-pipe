@@ -20,4 +20,9 @@ public interface ShardModelService {
 
 	boolean migrateShardKeepers(String dcName, String clusterName, ShardModel shardModel,
 								String srcKeeperContainerIp, String targetKeeperContainerIp);
+
+	boolean switchMaster(String dcName, String clusterName, ShardModel shardModel);
+
+	void migrateAutoBalanceKeepers(String dcName, String clusterName, ShardModel shardModel,
+								   String srcKeeperContainerIp, String targetKeeperContainerIp);
 }

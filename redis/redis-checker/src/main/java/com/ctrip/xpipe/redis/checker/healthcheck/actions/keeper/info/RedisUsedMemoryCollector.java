@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -38,24 +39,21 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         Long usedMemory = extractor.getUsedMemory();
         Long dbSize = extractor.getSwapUsedDbSize();
 
-        if (dbSize == null || usedMemory < maxMemory) return usedMemory;
-
-        if (dbSize < maxMemory >> 1) return maxMemory;
+        if (dbSize == null) return usedMemory;
 
         String keysSpaceDb0 = extractor.extract("db0");
-        if (keysSpaceDb0 == null) return maxMemory * 3;
-
+        if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
 
         String[] keySpaces = keysSpaceDb0.split(",");
         String[] keys1 = keySpaces[0].split("=");
         String[] keys2 = keySpaces[1].split("=");
         if (!keys1[0].equalsIgnoreCase("keys") || !keys2[0].equalsIgnoreCase("evicts")) {
-            return maxMemory * 3;
+            return usedMemory + dbSize * 3;
         }
 
         long evicts = Long.parseLong(keys2[1]);
         long keys = Long.parseLong(keys1[1]);
-        return keys == 0 ? maxMemory * 3 : (keys + evicts) / keys * maxMemory;
+        return keys == 0 ? dbSize * 3 : (keys + evicts) / keys * maxMemory;
     }
 
     @Override
