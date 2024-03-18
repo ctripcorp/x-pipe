@@ -181,7 +181,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		var dcs = [];
 
 		cluster.dcClusterInfo.forEach(function(dcCluster) {
-			if(dcCluster.dcInfo.dcName !== $scope.sourceDcInfo.dcName && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
+			if(dcCluster.dcInfo.dcName !== $scope.sourceDcInfo.dcName) {
 				dcs.push(dcCluster.dcInfo);
 			}
 		});
