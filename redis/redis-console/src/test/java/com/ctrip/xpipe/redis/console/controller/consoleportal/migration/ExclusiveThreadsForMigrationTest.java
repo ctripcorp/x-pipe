@@ -94,6 +94,7 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
 
     @Before
     public void beforeRestTemplateFactoryTest() throws Exception {
+        this.port = randomPort();
         restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(2, 2, 1200, 60000);
 
         springApplicationStarter = new SpringApplicationStarter(port, 1, SlowController.class, TestDependency.class, MigrationApi4Beacon.class);
