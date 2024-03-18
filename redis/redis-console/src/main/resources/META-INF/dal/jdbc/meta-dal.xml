@@ -1925,6 +1925,9 @@
 		<var name="offset" value-type="long" />
 		<var name="operator" value-type="String" />
 		<var name="event-ids" value-type="java.util.List&lt;Long&gt;" />
+		<var name="from" value-type="Date" />
+		<var name="to" value-type="Date" />
+		<var name="clusters" value-type="java.util.Set&lt;String&gt;" />
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 		<member name="migEventCnt" value-type="long" select-expr=" COUNT(distinct mct.migration_event_id) migEventCnt" all="false" />
@@ -1961,6 +1964,10 @@
 				<readset-ref name="NAME_AND_ORG" relation-name="cluster" />
 				<readset-ref name="FULL" relation-name="migration-event" />
 			</readset>
+			<readset name="MIGRATION_CLUSTER_STATUS">
+				<readset-ref name="FULL"/>
+				<readset-ref name="NAME" relation-name="cluster" />
+			</readset>
 
 		</readsets>
 		
@@ -1973,6 +1980,23 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted' /> = 0
 					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-migration-clusters-by-name-and-time" type="SELECT" multiple="true">
+				<param name="clusters"/>
+				<param name="from"/>
+				<param name="to"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE name='cluster'/>, <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0 AND ct.deleted = 0
+					AND <FIELD name='cluster-id'/> = ct.id
+					AND ct.cluster_name IN <IN>${clusters}</IN>
+					AND <FIELD name='start-time'/> >= ${from}
+					AND <FIELD name='start-time'/> <= ${to}
 					]]>
 				</statement>
 			</query>
