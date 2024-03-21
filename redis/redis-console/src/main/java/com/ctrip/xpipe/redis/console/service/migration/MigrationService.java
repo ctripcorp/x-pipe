@@ -90,4 +90,6 @@ public interface MigrationService {
     Set<String> getLatestMigrationOperators(int hours);
 
     List<MigrationClusterTbl> getLatestMigrationClusters(int seconds);
+
+    List<MigrationClusterTbl> fetchMigrationClusters(Set<String> clusters, long from, long to);
 }

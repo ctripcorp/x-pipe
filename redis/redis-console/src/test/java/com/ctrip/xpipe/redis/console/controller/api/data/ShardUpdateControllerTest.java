@@ -312,7 +312,7 @@ public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void getClusters() throws CheckFailException {
-        List<ClusterCreateInfo> clusters = clusterUpdateController.getClusters(ClusterType.ONE_WAY.toString());
+        List<ClusterCreateInfo> clusters = clusterUpdateController.getClusters(Collections.singleton(ClusterType.ONE_WAY.toString()));
         Assert.assertNotNull(clusters.get(0).getRegions());
         logger.info("{}", clusters);
     }

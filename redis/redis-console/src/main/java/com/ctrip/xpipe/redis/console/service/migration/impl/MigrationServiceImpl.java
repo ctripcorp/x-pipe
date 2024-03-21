@@ -646,6 +646,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         return migrationClusterDao.findLatestMigrationClusterWithClusterName(DateTimeUtils.getSecondBeforeDate(new Date(), seconds));
     }
 
+    @Override
+    public List<MigrationClusterTbl> fetchMigrationClusters(Set<String> clusters, long from, long to) {
+        return migrationClusterDao.findMigrationClustersByNameAndTime(clusters, new Date(from), new Date(to));
+    }
+
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {
         return StringUtil.join(",", (dcTbl) -> dcTbl.getDcName() , clusterRelatedDc);
     }

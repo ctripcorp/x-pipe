@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
@@ -17,9 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -34,6 +35,9 @@ public class MigrationApi extends AbstractConsoleController {
 
     @Autowired
     private MigrationService migrationService;
+
+    @Autowired
+    private DcCache dcCache;
 
     @RequestMapping(value = "/checkandprepare", method = RequestMethod.POST, produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     public CheckPrepareResponse checkAndPrepare(@RequestBody(required = true) CheckPrepareRequest checkMeta) {
@@ -179,6 +183,27 @@ public class MigrationApi extends AbstractConsoleController {
 
         mapResponseIdc(rollbackResponse.getResults());
         return rollbackResponse;
+    }
+
+    @GetMapping(value = "history")
+    public Map<String, List<ClusterMigrationStatus>> getClusterMigrationHistory(@RequestBody MigrationHistoryReq req) {
+        logger.info("[history][{}-{}] {}", req.from, req.to, req.clusters);
+        long current = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        if (req.from < 0 || req.from >= current) return Collections.emptyMap();
+        if (null == req.clusters || req.clusters.isEmpty()) return Collections.emptyMap();
+        if (req.to < req.from) req.to = current;
+
+        List<MigrationClusterTbl> migrationClusterTbls = migrationService.fetchMigrationClusters(req.clusters,
+                TimeUnit.SECONDS.toMillis(req.from), TimeUnit.SECONDS.toMillis(req.to));
+        Map<String, List<ClusterMigrationStatus>> resp = new HashMap<>();
+        migrationClusterTbls.forEach(migrationClusterTbl -> {
+            String clusterName = migrationClusterTbl.getCluster().getClusterName();
+            if (!resp.containsKey(clusterName)) resp.put(clusterName, new ArrayList<>());
+            ClusterMigrationStatus clusterMigrationStatus = ClusterMigrationStatus.from(migrationClusterTbl, dcCache);
+            resp.get(clusterName).add(clusterMigrationStatus);
+        });
+
+        return resp;
     }
 
     @RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
