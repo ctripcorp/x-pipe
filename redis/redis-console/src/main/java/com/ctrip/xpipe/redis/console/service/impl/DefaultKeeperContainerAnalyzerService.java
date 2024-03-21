@@ -5,14 +5,8 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
-import com.ctrip.xpipe.redis.console.model.ConfigModel;
-import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
-import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
-import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +31,9 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
     @Autowired
     private OrganizationService organizationService;
 
+    @Autowired
+    private AzService azService;
+
     private static final long DEFAULT_PEER_DATA_OVERLOAD = 474L * 1024 * 1024 * 1024;
 
     private static final long DEFAULT_KEEPER_FLOW_OVERLOAD = 270 * 1024;
@@ -46,7 +43,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
     private static final String KEEPER_STANDARD = "keeper_standard";
 
     @Override
-    public void initStandard(Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap) {
+    public void initStandard(List<KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap) {
         Map<String, Long> inputFlowStandardMap = new HashMap<>();
         Map<String, Long> peerDataStandardMap = new HashMap<>();
         List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
@@ -66,7 +63,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         }
         CatEventMonitor.DEFAULT.logEvent(KEEPER_STANDARD, inputFlowStandardMap.toString() + inputFlowStandardMap.toString());
         KeeperContainerOverloadStandardModel defaultOverloadStandard = getDefaultStandard(inputFlowStandardMap, peerDataStandardMap);
-        for (KeeperContainerUsedInfoModel infoModel : currentDcAllKeeperContainerUsedInfoModelMap.values()) {
+        for (KeeperContainerUsedInfoModel infoModel : currentDcAllKeeperContainerUsedInfoModelMap) {
             KeeperContainerOverloadStandardModel realKeeperContainerOverloadStandard = getRealStandard(inputFlowStandardMap, peerDataStandardMap, defaultOverloadStandard, infoModel);
             infoModel.setInputFlowStandard(realKeeperContainerOverloadStandard.getFlowOverload());
             infoModel.setRedisUsedMemoryStandard(realKeeperContainerOverloadStandard.getPeerDataOverload());
@@ -93,6 +90,10 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
+        AzTbl availableZoneTblById = azService.getAvailableZoneTblById(keepercontainerTbl.getAzId());
+        if (availableZoneTblById != null) {
+            infoModel.setAz(availableZoneTblById.getAzName());
+        }
         OrganizationTbl organizationTbl = organizationService.getOrganizationTblByCMSOrganiztionId(keepercontainerTbl.getOrgId());
         if (organizationTbl != null) {
             infoModel.setOrg(organizationTbl.getOrgName());
@@ -131,4 +132,8 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         this.organizationService = organizationService;
     }
 
+    @VisibleForTesting
+    public void setAzService(AzService azService) {
+        this.azService = azService;
+    }
 }

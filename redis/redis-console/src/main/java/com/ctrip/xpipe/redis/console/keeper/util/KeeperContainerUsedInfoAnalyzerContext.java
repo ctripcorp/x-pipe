@@ -5,13 +5,20 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 
 import java.util.List;
 import java.util.Map;
 
 public interface KeeperContainerUsedInfoAnalyzerContext {
 
-    boolean initKeeperPairData(Map<String, KeeperContainerUsedInfoModel> usedInfoMap);
+    boolean initKeeperPairData(List<KeeperContainerUsedInfoModel> usedInfoMap);
+
+    void initAvailablePool(List<KeeperContainerUsedInfoModel> usedInfoMap);
+
+    void recycleKeeperContainer(KeeperContainerUsedInfoModel keeperContainer, boolean isPeerDataOverload);
+
+    KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel  usedInfoModel, KeeperContainerUsedInfoModel backUpKeeper, boolean isPeerDataOverload);
 
     String getBackUpKeeperIp(DcClusterShard activeKeeper);
 
@@ -19,10 +26,12 @@ public interface KeeperContainerUsedInfoAnalyzerContext {
 
     IPPairData getIPPairData(String ip1, String ip2);
 
-    Map<DcClusterShardKeeper, KeeperUsedInfo> getAllDetailInfo(String ip1, String ip2);
-
     void updateMigrateIpPair(String srcKeeperIp, String srcKeeperIpPair, String targetKeeperIp, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard);
 
-    long getMaxActiveRedisUsedMemory(Map<String, KeeperContainerUsedInfoModel> usedInfoMap);
+    void addMigrationPlan(KeeperContainerUsedInfoModel src, KeeperContainerUsedInfoModel target, boolean switchActive, boolean keeperPairOverload, String cause, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcPair);
+
+    List<MigrationKeeperContainerDetailModel> getAllMigrationPlans();
+
+    void addResourceLackPlan(KeeperContainerUsedInfoModel src, String cause);
 
 }
