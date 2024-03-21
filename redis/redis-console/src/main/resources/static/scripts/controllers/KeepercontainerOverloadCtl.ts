@@ -52,6 +52,7 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                 } else if (!container.switchActive && container.keeperPairOverload) {
                     container.result = '迁移备keeper'
                 }
+                container.time = container.updateTime.substring(0, 19).replace("T", " ");
             });
             $scope.tableParams = new NgTableParams({
                 page : 1,

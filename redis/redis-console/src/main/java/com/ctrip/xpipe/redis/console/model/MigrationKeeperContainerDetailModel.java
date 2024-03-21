@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,20 +26,20 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     List<DcClusterShard> migrateShards;
 
+    private Date updateTime;
+
     public MigrationKeeperContainerDetailModel() {
 
     }
 
     public MigrationKeeperContainerDetailModel(KeeperContainerUsedInfoModel srcKeeperContainer,
                                                KeeperContainerUsedInfoModel targetKeeperContainer,
-                                               int migrateKeeperCount,
                                                boolean switchActive,
                                                boolean keeperPairOverload,
                                                String cause,
                                                List<DcClusterShard> migrateShards) {
         this.srcKeeperContainer = srcKeeperContainer;
         this.targetKeeperContainer = targetKeeperContainer;
-        this.migrateKeeperCount = migrateKeeperCount;
         this.switchActive = switchActive;
         this.keeperPairOverload = keeperPairOverload;
         this.cause = cause;
@@ -48,6 +49,7 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
     public void addReadyToMigrateShard( DcClusterShard shard) {
         migrateShards.add(shard);
         migrateKeeperCount++;
+        this.updateTime = new Date(System.currentTimeMillis() + 8 * 60 * 60 * 1000);
     }
 
     public void migrateShardCompletion(DcClusterShard dcClusterShard) {
@@ -123,6 +125,15 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
         this.migrateKeeperCompleteCount++;
     }
 
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public MigrationKeeperContainerDetailModel setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -151,7 +162,11 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
                 ", targetKeeperContainer=" + targetKeeperContainer +
                 ", migrateKeeperCount=" + migrateKeeperCount +
                 ", migrateKeeperCompleteCount=" + migrateKeeperCompleteCount +
+                ", switchActive=" + switchActive +
+                ", keeperPairOverload=" + keeperPairOverload +
+                ", cause='" + cause + '\'' +
                 ", migrateShards=" + migrateShards +
+                ", updateTime=" + updateTime +
                 '}';
     }
 }
