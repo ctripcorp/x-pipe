@@ -13,6 +13,7 @@ import org.unidal.lookup.ContainerLoader;
 import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -258,6 +259,16 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
             @Override
             public List<MigrationClusterTbl> doQuery() throws DalException {
                 return migrationClusterTblDao.findLatestMigrationClustersWithClusterName(date, MigrationClusterTblEntity.READSET_FULL_WITH_CLUSTER_NAME);
+            }
+        });
+    }
+
+    public List<MigrationClusterTbl> findMigrationClustersByNameAndTime(Set<String> clusters, Date from, Date to) {
+        return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+            @Override
+            public List<MigrationClusterTbl> doQuery() throws DalException {
+                return migrationClusterTblDao.findMigrationClustersByNameAndTime(clusters, from, to,
+                        MigrationClusterTblEntity.READSET_MIGRATION_CLUSTER_STATUS);
             }
         });
     }
