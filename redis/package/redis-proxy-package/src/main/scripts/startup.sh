@@ -153,8 +153,11 @@ PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
-#set the jdk to 1.8 version
-if [[ -z "$JAVA_HOME" && -d /usr/java/jdk11/ ]]; then
+ARCH=`uname -r`
+#set the jdk to 11/17 version
+if [[ -z "$JAVA_HOME" && "$ARCH" == *"aarch64" && -d /usr/java/jdk17/ ]]; then
+    export JAVA_HOME=/usr/java/jdk17
+elif [[ -z "$JAVA_HOME" && -d /usr/java/jdk11/ ]]; then
     export JAVA_HOME=/usr/java/jdk11
 elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/

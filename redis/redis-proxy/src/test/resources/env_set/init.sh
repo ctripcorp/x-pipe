@@ -33,19 +33,21 @@ echo 'net.ipv4.tcp_congestion_control=bbr' >> /etc/sysctl.conf
 sysctl -p
 
 # enable app bind port at 80 and 443
-if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_121/ ]]; then
-	setcap 'cap_net_bind_service=+ep' /usr/java/jdk1.8.0_121/bin/java
-elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
-	setcap 'cap_net_bind_service=+ep' /usr/java/latest/bin/java
-elif [[ -n "$JAVA_HOME" ]]; then
-	setcap 'cap_net_bind_service=+ep' $JAVA_HOME/bin/java
+ARCH=`uname -r`
+JAVA_PATH=/usr/java/jdk11
+JLI_PATH=/usr/java/jdk11/lib/jli
+if [[ "$ARCH" == *"aarch64" ]]; then
+    JAVA_PATH=/usr/java/jdk17
+    JLI_PATH=/usr/java/jdk17/lib
 fi
- 
+
+setcap 'cap_net_bind_service=+ep' $JAVA_PATH/bin/java
+
 touch /etc/ld.so.conf.d/java.conf
- 
+
 sed -i '1,$d' /etc/ld.so.conf.d/java.conf
  
-echo '/usr/java/latest/jre/lib/amd64/jli' >> /etc/ld.so.conf.d/java.conf
+echo $JLI_PATH >> /etc/ld.so.conf.d/java.conf
  
 ldconfig | grep libjli
 ############################# Check ##################################
