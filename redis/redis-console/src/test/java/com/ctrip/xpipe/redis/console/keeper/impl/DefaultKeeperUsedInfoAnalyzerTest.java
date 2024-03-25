@@ -535,4 +535,37 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     }
 
+    @Test
+    public void testKeeperContainersNoBackupKeeper() {
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
+        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        createKeeperContainer(models, IP1, 42, 42)
+                .createKeeper(Cluster1, Shard1, true, 14, 14)
+                .createKeeper(Cluster1, Shard2, true, 14, 14)
+                .createKeeper(Cluster2, Shard1, true, 14, 14);
+
+        createKeeperContainer(models, IP2, 1, 1)
+                .createKeeper(Cluster1, Shard1, false, 14, 14)
+                .createKeeper(Cluster1, Shard2, false, 14, 14)
+                .createKeeper(Cluster2, Shard1, false, 14, 14)
+                .createKeeper(Cluster2, Shard2, true, 1, 1);
+
+        createKeeperContainer(models, IP3, 1, 1)
+                .createKeeper(Cluster5, Shard1, true, 1, 1);
+
+        createKeeperContainer(models, IP4, 1, 1)
+                .createKeeper(Cluster5, Shard2, true, 1, 1)
+                .createKeeper(Cluster5, Shard3, false, 1, 1);
+
+        createKeeperContainer(models, IP5, 1, 1)
+                .createKeeper(Cluster5, Shard2, false, 1, 1)
+                .createKeeper(Cluster5, Shard3, true, 1, 1);
+
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertNotEquals(IP3, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertNotEquals(IP3, allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
+    }
+
 }
