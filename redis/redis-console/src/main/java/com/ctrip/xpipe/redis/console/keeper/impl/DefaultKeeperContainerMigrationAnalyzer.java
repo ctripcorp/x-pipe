@@ -52,7 +52,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         List<KeeperContainerUsedInfoModel> modelsWithoutResource = new ArrayList<>();
         models.forEach(a -> modelsWithoutResource.add(KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(a)));
         analyzerContext = new DefaultKeeperContainerUsedInfoAnalyzerContext(filterChain);
-        if(!analyzerContext.initKeeperPairData(modelsWithoutResource)) return null;
+        analyzerContext.initKeeperPairData(modelsWithoutResource);
         analyzerContext.initAvailablePool(modelsWithoutResource);
         for (KeeperContainerUsedInfoModel model : modelsWithoutResource) {
             generateDataOverLoadMigrationPlans(model, modelsMap);
@@ -68,7 +68,6 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         if (cause == null) return;
         List<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> descShards = getDescShards(model.getDetailInfo(), (Boolean) cause[1]);
         Iterator<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> iterator = descShards.iterator();
-        List<KeeperContainerUsedInfoModel> temp = new ArrayList<>();
         while (filterChain.isDataOverLoad(model) && iterator.hasNext()) {
             Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard = iterator.next();
             if (!dcClusterShard.getKey().isActive()) continue;
@@ -77,20 +76,15 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
                 analyzerContext.addMigrationPlan(model, backUpKeeper, true, false, (String) cause[0], dcClusterShard, null);
                 continue;
             }
-            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(model, backUpKeeper, (Boolean) cause[1]);
+            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(model, dcClusterShard, (Boolean) cause[1]);
             if (bestKeeperContainer == null) {
                 break;
             }
-            if (!filterChain.isKeeperPairOverload(dcClusterShard, backUpKeeper, bestKeeperContainer, analyzerContext)) {
-                if (filterChain.canMigrate(dcClusterShard, model, bestKeeperContainer, analyzerContext)) {
-                    analyzerContext.addMigrationPlan(model, bestKeeperContainer, false, false, (String) cause[0], dcClusterShard, backUpKeeper);
-                }
-                analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
-            } else {
-                temp.add(bestKeeperContainer);
+            if (filterChain.canMigrate(dcClusterShard, model, bestKeeperContainer, analyzerContext)) {
+                analyzerContext.addMigrationPlan(model, bestKeeperContainer, false, false, (String) cause[0], dcClusterShard, backUpKeeper);
             }
+            analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
         }
-        temp.forEach(keeperContainer -> analyzerContext.recycleKeeperContainer(keeperContainer, (Boolean) cause[1]));
         if (filterChain.isDataOverLoad(model)) {
             logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer to migrate {}", model);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, "Dc:" + currentDc + " Org:" + model.getOrg() + " Az:" + model.getAz());
@@ -103,24 +97,20 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         if (cause == null) return;
         List<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> descShards = getDescShards(getAllDetailInfo(modelA, modelB), (Boolean) cause[1]);
         Iterator<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> iterator = descShards.iterator();
-        List<KeeperContainerUsedInfoModel> temp = new ArrayList<>();
         while (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp())) && iterator.hasNext()) {
             Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard = iterator.next();
             if (dcClusterShard.getKey().isActive()) continue;
             KeeperContainerUsedInfoModel activeKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelB : modelA;
             KeeperContainerUsedInfoModel backUpKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelA : modelB;
-            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, activeKeeperContainer, (Boolean) cause[1]);
+            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, dcClusterShard, (Boolean) cause[1]);
             if (bestKeeperContainer == null) {
                 break;
             }
             if (!filterChain.isKeeperPairOverload(dcClusterShard, backUpKeeperContainer, bestKeeperContainer, analyzerContext)) {
                 analyzerContext.addMigrationPlan(backUpKeeperContainer, bestKeeperContainer, false, true, (String) cause[0], dcClusterShard, activeKeeperContainer);
                 analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
-            } else {
-                temp.add(backUpKeeperContainer);
             }
         }
-        temp.forEach(keeperContainer -> analyzerContext.recycleKeeperContainer(keeperContainer, (Boolean) cause[1]));
         if (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp()))) {
             logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer pair to migrate {} {}", modelA, modelB);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_PAIR_RESOURCE_LACK, "Dc:" + currentDc + " OrgA:" + modelA.getOrg() + " AzA:" + modelA.getAz() + " OrgB:" + modelB.getOrg() + " AzB:" + modelB.getAz());
@@ -137,8 +127,12 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
     }
 
     private boolean canSwitchMaster(KeeperContainerUsedInfoModel src, KeeperContainerUsedInfoModel backUp, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard) {
-        return (src.getOrg() == null || src.getOrg().equals(backUp.getOrg())) && (src.getAz() == null || src.getAz().equals(backUp.getAz())) &&
-                filterChain.isKeeperContainerUseful(backUp) && filterChain.canMigrate(dcClusterShard, src, backUp, analyzerContext);
+        return backUp != null
+                && !analyzerContext.isProblemKeeperContainer(backUp.getKeeperIp())
+                && (src.getOrg() == null || src.getOrg().equals(backUp.getOrg()))
+                && (src.getAz() == null || src.getAz().equals(backUp.getAz()))
+                && filterChain.isKeeperContainerUseful(backUp)
+                && filterChain.canMigrate(dcClusterShard, src, backUp, analyzerContext);
     }
 
     private Map<DcClusterShardKeeper, KeeperUsedInfo> getAllDetailInfo(KeeperContainerUsedInfoModel modelA, KeeperContainerUsedInfoModel modelB) {

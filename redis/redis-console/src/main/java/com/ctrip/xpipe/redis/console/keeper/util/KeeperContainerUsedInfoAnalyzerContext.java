@@ -12,13 +12,13 @@ import java.util.Map;
 
 public interface KeeperContainerUsedInfoAnalyzerContext {
 
-    boolean initKeeperPairData(List<KeeperContainerUsedInfoModel> usedInfoMap);
+    void initKeeperPairData(List<KeeperContainerUsedInfoModel> usedInfoMap);
 
     void initAvailablePool(List<KeeperContainerUsedInfoModel> usedInfoMap);
 
     void recycleKeeperContainer(KeeperContainerUsedInfoModel keeperContainer, boolean isPeerDataOverload);
 
-    KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel  usedInfoModel, KeeperContainerUsedInfoModel backUpKeeper, boolean isPeerDataOverload);
+    KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel  usedInfoModel, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, boolean isPeerDataOverload);
 
     String getBackUpKeeperIp(DcClusterShard activeKeeper);
 
@@ -33,5 +33,7 @@ public interface KeeperContainerUsedInfoAnalyzerContext {
     List<MigrationKeeperContainerDetailModel> getAllMigrationPlans();
 
     void addResourceLackPlan(KeeperContainerUsedInfoModel src, String cause);
+
+    boolean isProblemKeeperContainer(String keeperContainerIp);
 
 }
