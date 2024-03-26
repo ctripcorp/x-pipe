@@ -55,6 +55,9 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
     }
 
     $scope.getLastUpdateTime = function () {
+        if ($scope.lastUpdateTime == null) {
+            return '';
+        }
         return $scope.lastUpdateTime.substring(0, 19).replace("T", " ");
     }
 

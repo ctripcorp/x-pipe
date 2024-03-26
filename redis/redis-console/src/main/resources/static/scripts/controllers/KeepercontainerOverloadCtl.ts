@@ -39,20 +39,30 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                     case 'INPUT_FLOW_OVERLOAD':
                         container.cause = '流量超载';
                         break;
+                    case 'RESOURCE_LACK':
+                        container.cause = '资源不足';
+                        break;
+                    case 'PAIR_RESOURCE_LACK':
+                        container.cause = '资源不足（keeper对）';
+                        break;
                     case 'KEEPER_PAIR_BOTH':
                     case 'KEEPER_PAIR_PEER_DATA_OVERLOAD':
                     case 'KEEPER_PAIR_INPUT_FLOW_OVERLOAD':
                         container.cause = 'keeper对超载';
                         break;
                 }
-                if (!container.switchActive && !container.keeperPairOverload) {
+                if (container.cause == '资源不足' || container.cause == '资源不足（keeper对）') {
+                    container.result = ''
+                }else if (!container.switchActive && !container.keeperPairOverload) {
                     container.result = '迁移主keeper'
                 } else if (container.switchActive && !container.keeperPairOverload) {
                     container.result = '主备切换'
                 } else if (!container.switchActive && container.keeperPairOverload) {
                     container.result = '迁移备keeper'
                 }
-                container.time = container.updateTime.substring(0, 19).replace("T", " ");
+                if (container.updateTime != null) {
+                    container.time = container.updateTime.substring(0, 19).replace("T", " ");
+                }
             });
             $scope.tableParams = new NgTableParams({
                 page : 1,

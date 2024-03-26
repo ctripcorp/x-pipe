@@ -6,8 +6,11 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperContainerAnalyzerService;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,6 +54,8 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     private OrganizationService organizationService;
     @Mock
     private AzService azService;
+    @Mock
+    private MetaCache metaCache;
     private final KeeperContainerFilterChain filterChain = new KeeperContainerFilterChain();
     public static final int expireTime = 1000;
     public static final String DC = "jq";
@@ -60,6 +65,8 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Before
     public void before() {
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta());
+        migrationAnalyzer.setMetaCache(metaCache);
         analyzer.setExecutors(executor);
         //Disabling activeKeeper/backupKeeper Switch
         filterChain.setConfig(config);
@@ -79,7 +86,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         configModels.add(configModel1);
         Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
-        Mockito.when(organizationService.getOrganizationTblByCMSOrganiztionId(Mockito.anyLong())).thenReturn(new OrganizationTbl().setOrgName("org"));
         migrationAnalyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
@@ -510,7 +516,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testKeeperContainerAzAndOrg() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
-        Mockito.when(organizationService.getOrganizationTblByCMSOrganiztionId(Mockito.anyLong())).thenReturn(null);
         Mockito.when(azService.getAvailableZoneTblById(Mockito.anyLong())).thenReturn(null);
         Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 17, 17, "PTJQ-A", "kj")
@@ -537,22 +542,38 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testKeeperContainersNoBackupKeeper() {
+        XpipeMeta meta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta().setId(FoundationService.DEFAULT.getDataCenter().toUpperCase());
+        ClusterMeta clusterMeta1 = new ClusterMeta().setId(Cluster2);
+        ShardMeta shardMeta1 = new ShardMeta().setId(Shard2);
+        shardMeta1.addKeeper(new KeeperMeta().setIp(IP1));
+        shardMeta1.addKeeper(new KeeperMeta().setIp(IP2));
+        clusterMeta1.addShard(shardMeta1);
+        dcMeta.addCluster(clusterMeta1);
+        ClusterMeta clusterMeta2 = new ClusterMeta().setId(Cluster5);
+        ShardMeta shardMeta2 = new ShardMeta().setId(Shard1);
+        shardMeta2.addKeeper(new KeeperMeta().setIp(IP1));
+        shardMeta2.addKeeper(new KeeperMeta().setIp(IP3));
+        clusterMeta2.addShard(shardMeta2);
+        dcMeta.addCluster(clusterMeta2);
+        meta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(meta);
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 42, 42)
                 .createKeeper(Cluster1, Shard1, true, 14, 14)
                 .createKeeper(Cluster1, Shard2, true, 14, 14)
-                .createKeeper(Cluster2, Shard1, true, 14, 14);
+                .createKeeper(Cluster2, Shard1, true, 14, 14)
+                .createKeeper(Cluster2, Shard2, true, 0, 0)
+                .createKeeper(Cluster5, Shard1, true, 0, 0);
 
         createKeeperContainer(models, IP2, 1, 1)
                 .createKeeper(Cluster1, Shard1, false, 14, 14)
                 .createKeeper(Cluster1, Shard2, false, 14, 14)
-                .createKeeper(Cluster2, Shard1, false, 14, 14)
-                .createKeeper(Cluster2, Shard2, true, 1, 1);
+                .createKeeper(Cluster2, Shard1, false, 14, 14);
 
-        createKeeperContainer(models, IP3, 1, 1)
-                .createKeeper(Cluster5, Shard1, true, 1, 1);
+        createKeeperContainer(models, IP3, 1, 1);
 
         createKeeperContainer(models, IP4, 1, 1)
                 .createKeeper(Cluster5, Shard2, true, 1, 1)

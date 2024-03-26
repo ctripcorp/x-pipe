@@ -22,6 +22,8 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     private boolean keeperPairOverload;
 
+    private String srcOverLoadKeeperPairIp;
+
     private String cause;
 
     List<DcClusterShard> migrateShards;
@@ -90,6 +92,15 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     public MigrationKeeperContainerDetailModel setMigrateShards(List<DcClusterShard> migrateShards) {
         this.migrateShards = migrateShards;
+        return this;
+    }
+
+    public String getSrcOverLoadKeeperPairIp() {
+        return srcOverLoadKeeperPairIp;
+    }
+
+    public MigrationKeeperContainerDetailModel setSrcOverLoadKeeperPairIp(String srcOverLoadKeeperPairIp) {
+        this.srcOverLoadKeeperPairIp = srcOverLoadKeeperPairIp;
         return this;
     }
 
