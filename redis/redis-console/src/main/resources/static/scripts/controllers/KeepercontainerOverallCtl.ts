@@ -11,6 +11,7 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
         if (Array.isArray(response))  {
             response.forEach(function (keeperContainerInfo) {
                 if (keeperContainerInfo.keeperIp === $stateParams.keepercontainerIp) {
+                    $scope.updateTime = keeperContainerInfo.updateTime;
                     $scope.originData = Object.entries(keeperContainerInfo.detailInfo).map(function(item) {
                         var key = item[0].split(':');
                         return {
@@ -38,11 +39,18 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
         }
     })
 
-    $scope.getIp = function () {
+    $scope.getIpDC = function () {
         return $stateParams.keepercontainerIp;
     }
 
     $scope.getDc = function () {
         return $scope.originData[0].key.dcName;
+    }
+
+    $scope.getTime = function (){
+        if ($scope.updateTime == null) {
+            return '';
+        }
+        return $scope.updateTime.substring(0, 19).replace("T", " ");
     }
 }

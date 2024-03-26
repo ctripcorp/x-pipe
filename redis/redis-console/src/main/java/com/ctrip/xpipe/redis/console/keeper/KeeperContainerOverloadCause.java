@@ -8,7 +8,9 @@ public enum KeeperContainerOverloadCause {
     BOTH,
     KEEPER_PAIR_PEER_DATA_OVERLOAD,
     KEEPER_PAIR_INPUT_FLOW_OVERLOAD,
-    KEEPER_PAIR_BOTH;
+    KEEPER_PAIR_BOTH,
+    RESOURCE_LACK,
+    PAIR_RESOURCE_LACK,;
 
     public static KeeperContainerOverloadCause findByValue(String value) {
         if(StringUtil.isEmpty(value)) return null;
