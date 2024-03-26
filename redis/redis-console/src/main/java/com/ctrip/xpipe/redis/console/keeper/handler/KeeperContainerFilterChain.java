@@ -25,11 +25,11 @@ public class KeeperContainerFilterChain {
     }
 
     public boolean canMigrate(Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
-                              KeeperContainerUsedInfoModel srcKeeperContainer,
+                              KeeperContainerUsedInfoModel srcKeeperContainerPair,
                               KeeperContainerUsedInfoModel targetKeeperContainer,
                               KeeperContainerUsedInfoAnalyzerContext analyzerUtil){
         Handler<Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo>> handler = new KeeperDataOverloadHandler(targetKeeperContainer);
-        handler.setNextHandler(new KeeperPairOverloadHandler(analyzerUtil, srcKeeperContainer, targetKeeperContainer, config));
+        handler.setNextHandler(new KeeperPairOverloadHandler(analyzerUtil, srcKeeperContainerPair, targetKeeperContainer, config));
         return handler.handle(keeperUsedInfoEntry);
     }
 

@@ -14,6 +14,9 @@ import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzer
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
+import com.ctrip.xpipe.redis.console.service.MetaserverService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,9 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
     @Autowired
     private ConsoleConfig config;
 
+    @Autowired
+    private MetaCache metaCache;
+
     private KeeperContainerUsedInfoAnalyzerContext analyzerContext;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
@@ -51,8 +57,8 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         keeperContainerAnalyzerService.initStandard(models);
         List<KeeperContainerUsedInfoModel> modelsWithoutResource = new ArrayList<>();
         models.forEach(a -> modelsWithoutResource.add(KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(a)));
-        analyzerContext = new DefaultKeeperContainerUsedInfoAnalyzerContext(filterChain);
-        analyzerContext.initKeeperPairData(modelsWithoutResource);
+        analyzerContext = new DefaultKeeperContainerUsedInfoAnalyzerContext(filterChain, metaCache.getXpipeMeta().getDcs().get(currentDc));
+        analyzerContext.initKeeperPairData(modelsWithoutResource, modelsMap);
         analyzerContext.initAvailablePool(modelsWithoutResource);
         for (KeeperContainerUsedInfoModel model : modelsWithoutResource) {
             generateDataOverLoadMigrationPlans(model, modelsMap);
@@ -76,19 +82,17 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
                 analyzerContext.addMigrationPlan(model, backUpKeeper, true, false, (String) cause[0], dcClusterShard, null);
                 continue;
             }
-            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(model, dcClusterShard, (Boolean) cause[1]);
+            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(model, dcClusterShard, backUpKeeper, (Boolean) cause[1]);
             if (bestKeeperContainer == null) {
                 break;
             }
-            if (filterChain.canMigrate(dcClusterShard, model, bestKeeperContainer, analyzerContext)) {
-                analyzerContext.addMigrationPlan(model, bestKeeperContainer, false, false, (String) cause[0], dcClusterShard, backUpKeeper);
-            }
+            analyzerContext.addMigrationPlan(model, bestKeeperContainer, false, false, (String) cause[0], dcClusterShard, backUpKeeper);
             analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
         }
         if (filterChain.isDataOverLoad(model)) {
             logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer to migrate {}", model);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, "Dc:" + currentDc + " Org:" + model.getOrg() + " Az:" + model.getAz());
-            analyzerContext.addResourceLackPlan(model, KeeperContainerOverloadCause.RESOURCE_LACK.name());
+            analyzerContext.addResourceLackPlan(model, null, KeeperContainerOverloadCause.RESOURCE_LACK.name());
         }
     }
 
@@ -102,7 +106,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
             if (dcClusterShard.getKey().isActive()) continue;
             KeeperContainerUsedInfoModel activeKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelB : modelA;
             KeeperContainerUsedInfoModel backUpKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelA : modelB;
-            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, dcClusterShard, (Boolean) cause[1]);
+            KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, dcClusterShard, activeKeeperContainer, (Boolean) cause[1]);
             if (bestKeeperContainer == null) {
                 break;
             }
@@ -114,7 +118,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         if (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp()))) {
             logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer pair to migrate {} {}", modelA, modelB);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_PAIR_RESOURCE_LACK, "Dc:" + currentDc + " OrgA:" + modelA.getOrg() + " AzA:" + modelA.getAz() + " OrgB:" + modelB.getOrg() + " AzB:" + modelB.getAz());
-            analyzerContext.addResourceLackPlan(modelA, KeeperContainerOverloadCause.PAIR_RESOURCE_LACK.name());
+            analyzerContext.addResourceLackPlan(modelA, modelB.getKeeperIp(),KeeperContainerOverloadCause.PAIR_RESOURCE_LACK.name());
         }
     }
 
@@ -132,7 +136,8 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
                 && (src.getOrg() == null || src.getOrg().equals(backUp.getOrg()))
                 && (src.getAz() == null || src.getAz().equals(backUp.getAz()))
                 && filterChain.isKeeperContainerUseful(backUp)
-                && filterChain.canMigrate(dcClusterShard, src, backUp, analyzerContext);
+                && getPariOverloadCause(src, backUp) == null
+                && filterChain.canMigrate(dcClusterShard, backUp, backUp, analyzerContext);
     }
 
     private Map<DcClusterShardKeeper, KeeperUsedInfo> getAllDetailInfo(KeeperContainerUsedInfoModel modelA, KeeperContainerUsedInfoModel modelB) {
@@ -193,5 +198,10 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
     @VisibleForTesting
     public void setFilterChain(KeeperContainerFilterChain filterChain) {
         this.filterChain = filterChain;
+    }
+
+    @VisibleForTesting
+    public void setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
     }
 }

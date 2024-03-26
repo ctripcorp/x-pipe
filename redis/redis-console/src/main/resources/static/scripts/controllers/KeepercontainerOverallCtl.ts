@@ -48,6 +48,9 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
     }
 
     $scope.getTime = function (){
+        if ($scope.updateTime == null) {
+            return '';
+        }
         return $scope.updateTime.substring(0, 19).replace("T", " ");
     }
 }

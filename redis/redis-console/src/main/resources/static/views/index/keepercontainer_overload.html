@@ -31,7 +31,7 @@
                         <input type="checkbox"  ng-checked="info.selected" ng-click="info.selected = !info.selected">
                     </td>
 
-                    <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcKeeperContainer.keeperIp}}</td>
+                    <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcOverLoadKeeperPairIp == null ? info.srcKeeperContainer.keeperIp : info.srcKeeperContainer.keeperIp + " <=> (" + info.srcOverLoadKeeperPairIp + ")"}}</td>
                     <td data-title="'dc'" filter="{ 'srcKeeperContainer.dcName': 'text'}">{{info.srcKeeperContainer.dcName}}</td>
                     <td data-title="'上游redis数据量(KB)'" sortable="'srcKeeperContainer.activeRedisUsedMemory'">{{info.srcKeeperContainer.activeRedisUsedMemory / 1024 | number:2}}</td>
                     <td data-title="'流量(KB/s)'" sortable="'srcKeeperContainer.activeInputFlow'">{{info.srcKeeperContainer.activeInputFlow}}</td>
