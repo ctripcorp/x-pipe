@@ -12,6 +12,10 @@ public class KeeperContainerUsedInfoModel {
 
     private String org;
 
+    private String az;
+
+    private Date updateTime;
+
     private long activeInputFlow;
 
     private long totalInputFlow;
@@ -54,6 +58,7 @@ public class KeeperContainerUsedInfoModel {
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
         this.org = model.getOrg();
+        this.az = model.getAz();
         this.activeInputFlow = model.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow();
         this.totalInputFlow = model.getTotalInputFlow() + dcClusterShard.getValue().getInputFlow();
         this.inputFlowStandard = model.getInputFlowStandard();
@@ -76,6 +81,8 @@ public class KeeperContainerUsedInfoModel {
         newModel.setKeeperIp(model.getKeeperIp());
         newModel.setDcName(model.getDcName());
         newModel.setOrg(model.getOrg());
+        newModel.setAz(model.getAz());
+        newModel.setUpdateTime(model.getUpdateTime());
         newModel.setActiveInputFlow(model.getActiveInputFlow());
         newModel.setTotalInputFlow(model.getTotalInputFlow());
         newModel.setInputFlowStandard(model.getInputFlowStandard());
@@ -128,8 +135,27 @@ public class KeeperContainerUsedInfoModel {
         return org;
     }
 
-    public void setOrg(String org) {
+    public KeeperContainerUsedInfoModel setOrg(String org) {
         this.org = org;
+        return this;
+    }
+
+    public String getAz() {
+        return az;
+    }
+
+    public KeeperContainerUsedInfoModel setAz(String az) {
+        this.az = az;
+        return this;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public KeeperContainerUsedInfoModel setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+        return this;
     }
 
     public long getActiveInputFlow() {
@@ -262,6 +288,8 @@ public class KeeperContainerUsedInfoModel {
                 "keeperIp='" + keeperIp + '\'' +
                 ", dcName='" + dcName + '\'' +
                 ", org='" + org + '\'' +
+                ", az='" + az + '\'' +
+                ", updateTime=" + updateTime +
                 ", activeInputFlow=" + activeInputFlow +
                 ", totalInputFlow=" + totalInputFlow +
                 ", inputFlowStandard=" + inputFlowStandard +

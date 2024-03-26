@@ -6,11 +6,11 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.console.service.OrganizationService;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperContainerAnalyzerService;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,35 +40,43 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @InjectMocks
     private DefaultKeeperContainerUsedInfoAnalyzer analyzer;
+    @InjectMocks
+    private DefaultKeeperContainerMigrationAnalyzer migrationAnalyzer;
     @Mock
     private ConsoleConfig config;
     @Mock
     private ThreadPoolExecutor executor;
-    @Mock
-    private FoundationService service;
     @Mock
     private ConfigService configService;
     @Mock
     private KeeperContainerService keeperContainerService;
     @Mock
     private OrganizationService organizationService;
+    @Mock
+    private AzService azService;
+    @Mock
+    private MetaCache metaCache;
     private final KeeperContainerFilterChain filterChain = new KeeperContainerFilterChain();
     public static final int expireTime = 1000;
     public static final String DC = "jq";
-    public static final String IP1 = "1.1.1.1", IP2 = "2.2.2.2", IP3 = "3.3.3.3", IP4 = "4.4.4.4", IP5 = "5.5.5.5";
+    public static final String IP1 = "1.1.1.1", IP2 = "2.2.2.2", IP3 = "3.3.3.3", IP4 = "4.4.4.4", IP5 = "5.5.5.5", IP6 = "6.6.6.6";
     public static final String Cluster1 = "cluster1", Cluster2 = "cluster2", Cluster3 = "cluster3", Cluster4 = "cluster4", Cluster5 = "cluster5";
     public static final String Shard1 = "shard1", Shard2 = "shard2", Shard3 = "shard3";
 
     @Before
     public void before() {
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta());
+        migrationAnalyzer.setMetaCache(metaCache);
         analyzer.setExecutors(executor);
         //Disabling activeKeeper/backupKeeper Switch
         filterChain.setConfig(config);
-        analyzer.setKeeperContainerFilterChain(filterChain);
+        migrationAnalyzer.setFilterChain(filterChain);
         DefaultKeeperContainerAnalyzerService keeperContainerAnalyzerService = new DefaultKeeperContainerAnalyzerService();
         keeperContainerAnalyzerService.setConfigService(configService);
         keeperContainerAnalyzerService.setKeeperContainerService(keeperContainerService);
         keeperContainerAnalyzerService.setOrganizationService(organizationService);
+        Mockito.when(azService.getAvailableZoneTblById(Mockito.anyLong())).thenReturn(new AzTbl().setAzName(""));
+        keeperContainerAnalyzerService.setAzService(azService);
         List<ConfigModel> configModels = new ArrayList<>();
         ConfigModel configModel = new ConfigModel();
         ConfigModel configModel1 = new ConfigModel();
@@ -78,8 +86,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         configModels.add(configModel1);
         Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
-        Mockito.when(organizationService.getOrganizationTblByCMSOrganiztionId(Mockito.anyLong())).thenReturn(new OrganizationTbl().setOrgName("org"));
-        analyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
+        migrationAnalyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
         Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
@@ -92,6 +99,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public KeeperContainerUsedInfoModel createKeeperContainer(Map<String, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory){
         KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(keeperIp, DC, activeInputFlow, activeRedisUsedMemory);
         model.setDiskAvailable(true).setDiskUsed(70).setDiskSize(100);
+        models.put(keeperIp, model);
+        return model;
+    }
+
+    public KeeperContainerUsedInfoModel createKeeperContainer(Map<String, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory, String az, String org){
+        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(keeperIp, DC, activeInputFlow, activeRedisUsedMemory);
+        model.setDiskAvailable(true).setDiskUsed(70).setDiskSize(100);
+        model.setAz(az).setOrg(org);
         models.put(keeperIp, model);
         return model;
     }
@@ -166,9 +181,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster1, Shard1, false, 4, 4)
                 .createKeeper(Cluster2, Shard2, false, 6, 6);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
         Assert.assertEquals(IP2, allDcReadyToMigrationKeeperContainers.get(0).getSrcKeeperContainer().getKeeperIp());
         Assert.assertEquals(IP4, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
@@ -205,10 +218,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         createKeeperContainer(models, IP5, 0, 0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
 
     }
@@ -242,10 +252,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster4, Shard1, false, 5, 5)
                 .createKeeper(Cluster4, Shard2, true, 10, 10);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
         Assert.assertEquals(IP3, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
@@ -255,31 +262,29 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testKeeperResourceLackWithBoth() {
-        Map<String, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
-        createKeeperContainer(models1, IP1, 20, 20)
+        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        createKeeperContainer(models, IP1, 20, 20)
                 .createKeeper(Cluster1, Shard1, true, 10, 10)
                 .createKeeper(Cluster1, Shard2, true, 10, 10)
                 .createKeeper(Cluster2, Shard1, false, 10, 10)
                 .createKeeper(Cluster2, Shard2, false, 10, 10);
 
-        createKeeperContainer(models1, IP2, 20, 20)
+        createKeeperContainer(models, IP2, 20, 20)
                 .createKeeper(Cluster2, Shard1, true, 10, 10)
                 .createKeeper(Cluster2, Shard2, true, 10, 10)
                 .createKeeper(Cluster1, Shard1, false, 10, 10)
                 .createKeeper(Cluster1, Shard2, false, 10, 10);;
 
-        createKeeperContainer(models1, IP3, 0, 0);
+        createKeeperContainer(models, IP3, 0, 0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models1);
-        analyzer.analyzeKeeperContainerUsedInfo();
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.size());
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
+        Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.stream().filter(m -> !m.getCause().endsWith("RESOURCE_LACK")).count());
     }
 
     @Test
     public void testGetAllDcReadyToMigrationKeeperContainersWithPeerDataOverLoad() {
         filterChain.setConfig(config);
-        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(2.0);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 23)
                 .createKeeper(Cluster1, Shard1, true, 1, 6)
@@ -309,10 +314,8 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster5, Shard2, true, 1, 2)
                 .createKeeper(Cluster5, Shard1, false, 1, 2);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
+        Assert.assertEquals(4, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
@@ -340,10 +343,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         createKeeperContainer(models, IP3, 0, 0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
@@ -371,10 +371,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         createKeeperContainer(models, IP3,0,0);
         createKeeperContainer(models, IP4,0,0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
         Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
@@ -383,7 +380,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     @Test
     public void testKeeperResourceLackWithPeerDataOverLoad() {
         filterChain.setConfig(config);
-        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 6, 32)
                 .createKeeper(Cluster1, Shard1, true, 1, 5)
@@ -403,9 +400,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         createKeeperContainer(models, IP3,0,0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
     }
 
@@ -444,9 +439,9 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster5, Shard2, true, 9, 9)
                 .createKeeper(Cluster5, Shard1, false, 9, 9);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        createKeeperContainer(models, IP5, 0, 0);
+
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.stream().filter(MigrationKeeperContainerDetailModel::isKeeperPairOverload).count());
     }
 
@@ -476,17 +471,14 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         createKeeperContainer(models, IP3, 0, 0);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
     }
 
     @Test
     public void testMultiSrcMultiTargetWithFixed() {
         filterChain.setConfig(config);
-        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 19)
                 .createKeeper(Cluster1, Shard1, true, 1, 8)
@@ -512,15 +504,89 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
                 .createKeeper(Cluster5, Shard1, true, 8, 1)
                 .createKeeper(Cluster5, Shard2, false, 8, 1);
 
-        createKeeperContainer(models, IP4, 1, 8)
-                .createKeeper(Cluster5, Shard2, true, 1, 8)
+        createKeeperContainer(models, IP4, 8, 1)
+                .createKeeper(Cluster5, Shard2, true, 8, 1)
                 .createKeeper(Cluster5, Shard1, false, 8, 1);
 
-        analyzer.getCurrentDcKeeperContainerUsedInfoModelsMap().putAll(models);
-        analyzer.analyzeKeeperContainerUsedInfo();
-
-        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = analyzer.getCurrentDcReadyToMigrationKeeperContainers();
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.stream().filter(container -> !container.isKeeperPairOverload()).count());
+    }
+
+    @Test
+    public void testKeeperContainerAzAndOrg() {
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
+        Mockito.when(azService.getAvailableZoneTblById(Mockito.anyLong())).thenReturn(null);
+        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        createKeeperContainer(models, IP1, 17, 17, "PTJQ-A", "kj")
+                .createKeeper(Cluster1, Shard1, true, 5, 5)
+                .createKeeper(Cluster1, Shard2, true, 5, 5)
+                .createKeeper(Cluster2, Shard1, true, 3, 3)
+                .createKeeper(Cluster2, Shard2, true, 4, 4);
+
+        createKeeperContainer(models, IP2, 0, 0, "PTJQ-B", "kj")
+                .createKeeper(Cluster1, Shard1, false, 5, 5)
+                .createKeeper(Cluster1, Shard2, false, 5, 5);
+
+        createKeeperContainer(models, IP3, 0, 0, "PTJQ-B", "kj")
+                .createKeeper(Cluster2, Shard1, false, 3, 3)
+                .createKeeper(Cluster2, Shard2, false, 4, 4);
+
+        createKeeperContainer(models, IP4, 0, 0, "PTJQ-C", "kj");
+        createKeeperContainer(models, IP5, 0, 0, "PTJQ-A", "kj");
+        createKeeperContainer(models, IP6, 0, 0, "PTJQ-A", "jp");
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
+        Assert.assertEquals(IP5, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+
+    }
+
+    @Test
+    public void testKeeperContainersNoBackupKeeper() {
+        XpipeMeta meta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta().setId(FoundationService.DEFAULT.getDataCenter().toUpperCase());
+        ClusterMeta clusterMeta1 = new ClusterMeta().setId(Cluster2);
+        ShardMeta shardMeta1 = new ShardMeta().setId(Shard2);
+        shardMeta1.addKeeper(new KeeperMeta().setIp(IP1));
+        shardMeta1.addKeeper(new KeeperMeta().setIp(IP2));
+        clusterMeta1.addShard(shardMeta1);
+        dcMeta.addCluster(clusterMeta1);
+        ClusterMeta clusterMeta2 = new ClusterMeta().setId(Cluster5);
+        ShardMeta shardMeta2 = new ShardMeta().setId(Shard1);
+        shardMeta2.addKeeper(new KeeperMeta().setIp(IP1));
+        shardMeta2.addKeeper(new KeeperMeta().setIp(IP3));
+        clusterMeta2.addShard(shardMeta2);
+        dcMeta.addCluster(clusterMeta2);
+        meta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(meta);
+        filterChain.setConfig(config);
+        Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
+        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        createKeeperContainer(models, IP1, 42, 42)
+                .createKeeper(Cluster1, Shard1, true, 14, 14)
+                .createKeeper(Cluster1, Shard2, true, 14, 14)
+                .createKeeper(Cluster2, Shard1, true, 14, 14)
+                .createKeeper(Cluster2, Shard2, true, 0, 0)
+                .createKeeper(Cluster5, Shard1, true, 0, 0);
+
+        createKeeperContainer(models, IP2, 1, 1)
+                .createKeeper(Cluster1, Shard1, false, 14, 14)
+                .createKeeper(Cluster1, Shard2, false, 14, 14)
+                .createKeeper(Cluster2, Shard1, false, 14, 14);
+
+        createKeeperContainer(models, IP3, 1, 1);
+
+        createKeeperContainer(models, IP4, 1, 1)
+                .createKeeper(Cluster5, Shard2, true, 1, 1)
+                .createKeeper(Cluster5, Shard3, false, 1, 1);
+
+        createKeeperContainer(models, IP5, 1, 1)
+                .createKeeper(Cluster5, Shard2, false, 1, 1)
+                .createKeeper(Cluster5, Shard3, true, 1, 1);
+
+        List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertNotEquals(IP3, allDcReadyToMigrationKeeperContainers.get(0).getTargetKeeperContainer().getKeeperIp());
+        Assert.assertNotEquals(IP3, allDcReadyToMigrationKeeperContainers.get(1).getTargetKeeperContainer().getKeeperIp());
     }
 
 }

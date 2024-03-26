@@ -67,7 +67,7 @@ public class DcClusterShardKeeper extends DcClusterShard implements Serializable
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), port);
+        return Objects.hash(super.hashCode(), active);
     }
 
     @Override

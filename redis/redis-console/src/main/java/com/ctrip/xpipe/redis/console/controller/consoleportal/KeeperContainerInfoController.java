@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -86,7 +88,7 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     public RetMessage beginToMigrateOverloadKeeperContainers(@RequestBody List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) {
         logger.info("begin to migrate over load keeper containers {}", keeperContainerDetailModels);
         try {
-            keeperContainerMigrationService.beginMigrateKeeperContainers(keeperContainerDetailModels);
+//            keeperContainerMigrationService.beginMigrateKeeperContainers(keeperContainerDetailModels);
         } catch (Throwable th) {
             logger.warn("migrate over load keeper containers {} fail by {}", keeperContainerDetailModels, th.getMessage());
             return RetMessage.createFailMessage(th.getMessage());

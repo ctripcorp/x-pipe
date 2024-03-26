@@ -6,12 +6,13 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
 import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerContext;
+import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 
 import java.util.Map;
 
 public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo>>{
 
-    private KeeperContainerUsedInfoAnalyzerContext analyzerUtil;
+    private KeeperContainerUsedInfoAnalyzerContext analyzerContext;
 
     private KeeperContainerUsedInfoModel keeperContainer1;
 
@@ -20,7 +21,7 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
     private ConsoleConfig config;
 
     public KeeperPairOverloadHandler(KeeperContainerUsedInfoAnalyzerContext analyzerUtil, KeeperContainerUsedInfoModel keeperContainer1, KeeperContainerUsedInfoModel keeperContainer2, ConsoleConfig config) {
-        this.analyzerUtil = analyzerUtil;
+        this.analyzerContext = analyzerUtil;
         this.keeperContainer1 = keeperContainer1;
         this.keeperContainer2 = keeperContainer2;
         this.config = config;
@@ -28,12 +29,15 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
 
     @Override
     protected boolean doNextHandler(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> keeperUsedInfoEntry) {
-        IPPairData longLongPair = analyzerUtil.getIPPairData(keeperContainer1.getKeeperIp(), keeperContainer2.getKeeperIp());
-        if (longLongPair == null) return true;
         double keeperPairOverLoadFactor = config.getKeeperPairOverLoadFactor();
-        double flowStandard = Math.min(keeperContainer1.getInputFlowStandard(), keeperContainer2.getInputFlowStandard()) * keeperPairOverLoadFactor;
-        double peerDataStandard = Math.min(keeperContainer1.getRedisUsedMemoryStandard(), keeperContainer2.getRedisUsedMemoryStandard()) * keeperPairOverLoadFactor;
-        return longLongPair.getInputFlow() + keeperUsedInfoEntry.getValue().getInputFlow() < flowStandard &&
-                longLongPair.getPeerData() + keeperUsedInfoEntry.getValue().getPeerData() < peerDataStandard;
+        IPPairData longLongPair = analyzerContext.getIPPairData(keeperContainer1.getKeeperIp(), keeperContainer2.getKeeperIp());
+        if (longLongPair == null) return true;
+        KeeperContainerOverloadStandardModel minStandardModel = new KeeperContainerOverloadStandardModel()
+                .setFlowOverload((long) (Math.min(keeperContainer1.getInputFlowStandard(), keeperContainer2.getInputFlowStandard()) * keeperPairOverLoadFactor))
+                .setPeerDataOverload((long) (Math.min(keeperContainer1.getRedisUsedMemoryStandard(), keeperContainer2.getRedisUsedMemoryStandard()) * keeperPairOverLoadFactor));
+
+        long overloadInputFlow = longLongPair.getInputFlow() + keeperUsedInfoEntry.getValue().getInputFlow() - minStandardModel.getFlowOverload();
+        long overloadPeerData = longLongPair.getPeerData() + keeperUsedInfoEntry.getValue().getPeerData() - minStandardModel.getPeerDataOverload();
+        return overloadPeerData < 0 && overloadInputFlow < 0;
     }
 }
