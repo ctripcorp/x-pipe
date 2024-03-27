@@ -19,6 +19,9 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -251,9 +254,35 @@ public class ShardModelServiceImpl implements ShardModelService{
     }
 
     @Override
-    public boolean switchMaster(String dcName, String clusterName, ShardModel shardModel) {
-        List<RedisTbl> newKeepers = keeperAdvancedService.getSwitchMaterNewKeepers(shardModel);
-        return doMigrateKeepers(dcName, clusterName, shardModel, newKeepers);
+    public boolean switchMaster(String srcIp, String targetIp, ShardModel shardModel) {
+        try {
+            List<RedisTbl> keepers = shardModel.getKeepers();
+            int srcKeeperPort = keepers.stream()
+                    .filter(r -> r.getRedisIp().equals(srcIp))
+                    .findFirst()
+                    .map(RedisTbl::getRedisPort)
+                    .orElseThrow(() -> new RuntimeException("No source keeper found"));
+
+            String targetKeeperIp = keepers.stream()
+                    .filter(r -> !r.getRedisIp().equals(srcIp))
+                    .findFirst()
+                    .map(RedisTbl::getRedisIp)
+                    .orElseThrow(() -> new RuntimeException("No target keeper found"));
+
+            if (!targetKeeperIp.equals(targetIp)) {
+                return false;
+            }
+
+            KeeperTransMeta keeperInstanceMeta = keeperContainerService.getAllKeepers(srcIp).stream()
+                    .filter(k -> k.getKeeperMeta().getPort() == srcKeeperPort)
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("No keeper instance found"));
+
+            keeperContainerService.resetKeepers(keeperInstanceMeta);
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
     @Resource(name = REDIS_COMMAND_EXECUTOR)
@@ -295,7 +324,7 @@ public class ShardModelServiceImpl implements ShardModelService{
         long expireTime = 10L * 60 * 1000;
         long intervalTime = 1000;
         try {
-            FullSyncJudgeTask task = new FullSyncJudgeTask(activeInfoCommand, backupInfoCommand, expireTime, intervalTime,
+            FullSyncJudgeTask task = new FullSyncJudgeTask(active.getRedisIp(), backup.getRedisIp(), activeInfoCommand, backupInfoCommand, expireTime, intervalTime,
                     dcName, clusterName, shardModel);
             ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 1000, 1000, TimeUnit.MILLISECONDS);
             task.setScheduledFuture(scheduledFuture);
@@ -332,6 +361,8 @@ public class ShardModelServiceImpl implements ShardModelService{
 
     protected class FullSyncJudgeTask implements Runnable{
 
+        private String activeIp;
+        private String backUpIp;
         private final InfoCommand activeInfoCommand;
         private final InfoCommand backupInfoCommand;
         private long activeMasterReplOffset;
@@ -345,8 +376,10 @@ public class ShardModelServiceImpl implements ShardModelService{
         private long startTime = 0;
         private ScheduledFuture<?> scheduledFuture;
 
-        public FullSyncJudgeTask(InfoCommand activeInfoCommand, InfoCommand backupInfoCommand, long expireTime, long intervalTime,
+        public FullSyncJudgeTask(String activeIp, String backUpIp, InfoCommand activeInfoCommand, InfoCommand backupInfoCommand, long expireTime, long intervalTime,
                                  String dcName, String clusterName, ShardModel shardModel) {
+            this.activeIp = activeIp;
+            this.backUpIp = backUpIp;
             this.activeInfoCommand = activeInfoCommand;
             this.backupInfoCommand = backupInfoCommand;
             this.expireTime = expireTime;
@@ -397,8 +430,7 @@ public class ShardModelServiceImpl implements ShardModelService{
             });
 
             if (isSuccess && backupMasterReplOffset > activeMasterReplOffset) {
-                List<RedisTbl> newKeepers = keeperAdvancedService.getSwitchMaterNewKeepers(shardModel);
-                doMigrateKeepers(dcName, clusterName, shardModel, newKeepers);
+                switchMaster(backUpIp, activeIp, shardModel);
                 CatEventMonitor.DEFAULT.logEvent(KEEPER_MIGRATION_ACTIVE_SUCCESS,
                         String.format("activeKeeper:%s, backupKeeper:%s, dc:%s, cluster:%s, shard:%s",
                                 activeInfoCommand, backupInfoCommand, dcName, clusterName, shardModel.getShardTbl().getShardName()));
