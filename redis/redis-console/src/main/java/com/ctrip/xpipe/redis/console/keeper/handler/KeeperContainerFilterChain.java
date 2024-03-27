@@ -33,10 +33,10 @@ public class KeeperContainerFilterChain {
         return handler.handle(keeperUsedInfoEntry);
     }
 
-    public boolean isKeeperPairOverload(Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
-                                        KeeperContainerUsedInfoModel keeperContainer1,
-                                        KeeperContainerUsedInfoModel keeperContainer2,
-                                        KeeperContainerUsedInfoAnalyzerContext analyzerUtil) {
+    public boolean isMigrateKeeperPairOverload(Map.Entry<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> keeperUsedInfoEntry,
+                                               KeeperContainerUsedInfoModel keeperContainer1,
+                                               KeeperContainerUsedInfoModel keeperContainer2,
+                                               KeeperContainerUsedInfoAnalyzerContext analyzerUtil) {
         if (keeperContainer1.getKeeperIp().equals(keeperContainer2.getKeeperIp())) {
             return true;
         }

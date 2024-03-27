@@ -120,7 +120,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
     }
 
     @Override
-    public KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel srcKeeper, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcKeeperPair, boolean isPeerDataOverload) {
+    public KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel srcKeeper, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcKeeperPair, boolean isPeerDataOverload, boolean isActiveEntry) {
         String org = srcKeeper.getOrg();
         String az = srcKeeper.getAz();
         PriorityQueue<KeeperContainerUsedInfoModel> queue = isPeerDataOverload ? minPeerDataKeeperContainers : minInputFlowKeeperContainers;
@@ -130,7 +130,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
             if ((org == null || org.equals(target.getOrg()))
                     && (az == null || az.equals(target.getAz()))
                     && !Objects.equals(target.getKeeperIp(), srcKeeperPair.getKeeperIp())
-                    && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this) ) {
+                    && ((!isActiveEntry && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this))
+                    || (isActiveEntry && !filterChain.isMigrateKeeperPairOverload(dcClusterShard, srcKeeperPair, target, this)))) {
                 return target;
             }
             temp.add(target);
