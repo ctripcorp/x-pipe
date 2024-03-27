@@ -2,7 +2,6 @@ package com.ctrip.framework.xpipe.redis.utils;
 
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
-import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,6 +10,7 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -32,7 +32,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
 
     final int defaultCheckInterval = 100;
     final int defaultCheckWait = 5000;
-
+    
     @Before
     public void setUp() {
         socket = new Socket();
@@ -98,53 +98,53 @@ public class ProxyUtilTest extends AbstractProxyTest {
     public void testSetChecker() throws InterruptedException, TimeoutException {
         proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
         proxyUtil.setCheckInterval(defaultCheckInterval);
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 1) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
             }
         });
         proxyUtil.startCheck();
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
             Assert.assertNotNull(t);
         }
-
+        
         waitConditionUntilTimeOut(() -> sa.down && sa.sick, defaultCheckInterval * 2, 10);
-
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 1) {
+        
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(true);
             }
         });
-        waitConditionUntilTimeOut(() -> !sa.down && !sa.sick, 100, 10);
+        waitConditionUntilTimeOut(() -> !sa.down && !sa.sick , 100, 10);
         proxyUtil.unregisterProxy(IP, PORT);
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
     }
-
+    
     @Test
     public void testCheckerUp() throws InterruptedException, TimeoutException {
         proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
         proxyUtil.setCheckInterval(100);
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(10, 1) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(10,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
             }
         });
         proxyUtil.startCheck();
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
             Assert.assertNotNull(t);
         }
         waitConditionUntilTimeOut(() -> sa.down && sa.sick, 110, 10);
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(10, 1) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(10,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(true);
@@ -157,19 +157,19 @@ public class ProxyUtilTest extends AbstractProxyTest {
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
     }
-
+    
     @Test
     public void testCheckerDown() throws InterruptedException, TimeoutException {
         proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
         proxyUtil.setCheckInterval(100);
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 10) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,10) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
             }
         });
         proxyUtil.startCheck();
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
@@ -185,8 +185,8 @@ public class ProxyUtilTest extends AbstractProxyTest {
     @Test
     public void testSetCheckInterval() throws InterruptedException, TimeoutException {
         proxyUtil.setCheckInterval(100);
-        final AtomicLong counter = new AtomicLong(0);
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 1) {
+        final AtomicLong counter =new AtomicLong(0);
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 counter.addAndGet(1);
@@ -194,7 +194,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
             }
         });
         proxyUtil.startCheck();
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
@@ -236,18 +236,18 @@ public class ProxyUtilTest extends AbstractProxyTest {
             threads[i].join();
         }
         ProxyInetSocketAddress proxy = proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress);
-        Assert.assertEquals(proxy.reference.get(), threadNum + 1);
-        for (int i = 0; i < threadNum + 1; i++) {
+        Assert.assertEquals(proxy.reference.get() , threadNum + 1);
+        for(int i = 0; i < threadNum +1; i++) {
             proxyUtil.removeProxy(proxy);
         }
 
     }
-
-    @Test
+    
+    @Test 
     public void CreateAndDelProxy() throws InterruptedException {
         ProxyInetSocketAddress proxy = proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress);
         Assert.assertEquals(proxyUtil.removeProxy(proxy), proxy);
-
+        
         int threadNum = 10;
         int runNum = 100;
         CountDownLatch cld = new CountDownLatch(threadNum);
@@ -260,7 +260,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    for (int j = 0; j < runNum; j++) {
+                    for(int j = 0; j < runNum; j++) {
                         proxyUtil.removeProxy(proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress));
                     }
                 }
@@ -273,25 +273,25 @@ public class ProxyUtilTest extends AbstractProxyTest {
             threads[i].join();
         }
         proxy = proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress);
-        Assert.assertEquals(proxy.reference.get(), 1);
+        Assert.assertEquals(proxy.reference.get() ,  1);
         proxyUtil.removeProxy(proxy);
     }
-
-    @Test
+    
+    @Test 
     public void testProxyUpEvent() throws TimeoutException {
-        final AtomicLong counter = new AtomicLong(0);
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        final AtomicLong counter =new AtomicLong(0);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         setAllProxyStatusDown(PROXY_SIZE, defaultCheckInterval);
         waitConditionUntilTimeOut(() -> sa.down, defaultCheckInterval, 10);
         proxyUtil.onProxyUp(proxyInetSocketAddress -> {
             Assert.assertEquals(proxyInetSocketAddress, sa);
             counter.addAndGet(1);
         });
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 1) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
-                if (address.equals(sa)) {
-                    return CompletableFuture.completedFuture(true);
+                if(address.equals(sa)) {
+                    return CompletableFuture.completedFuture(true);    
                 } else {
                     return CompletableFuture.completedFuture(false);
                 }
@@ -303,12 +303,12 @@ public class ProxyUtilTest extends AbstractProxyTest {
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
     }
-
-    @Test
+    
+    @Test 
     public void testProxyDownEvent() throws TimeoutException {
         proxyUtil.setCheckInterval(defaultCheckInterval);
-        final AtomicLong counter = new AtomicLong(0);
-        ProxyInetSocketAddress sa = (ProxyInetSocketAddress) ConnectionUtil.getAddress(socket, socketAddress);
+        final AtomicLong counter =new AtomicLong(0);
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
@@ -318,7 +318,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
             Assert.assertEquals(proxyInetSocketAddress, sa);
             counter.addAndGet(1);
         });
-        proxyUtil.setChecker(new AbstractProxyCheckerTest(1, 1) {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
@@ -330,8 +330,6 @@ public class ProxyUtilTest extends AbstractProxyTest {
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
     }
-
-
     @Test
     public void testProxyGetWhileOtherRegister() throws InterruptedException {
 
@@ -351,7 +349,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
             }
         });
 
-        List<Throwable> exceptions = Lists.newArrayList();
+        List<Throwable> exceptions = new ArrayList<>();
         getInfoThread.setUncaughtExceptionHandler((th, ex) -> {
             exceptions.add(ex);
         });
