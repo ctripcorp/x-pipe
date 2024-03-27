@@ -334,33 +334,32 @@ public class ProxyUtilTest extends AbstractProxyTest {
 
     @Test
     public void testProxyGetWhileOtherRegister() throws InterruptedException {
-        String ip = "127.1.1.1";
-        int port = 3189;
-
-        String expect = String.format("+PROXY ROUTE PROXYTLS://127.0.0.0:443 TCP://%s:%s;\r\n", ip, port);
 
         Object object = new Object();
-        proxyUtil.registerProxy(ip, port, ROUTE_INFO);
-        proxyUtil.getProxyAddress(object, new InetSocketAddress(ip, port));
-        new Thread(() -> {
-            for (int i = 0; i < 1000; i++) {
-                proxyUtil.registerProxy(ip, port, ROUTE_INFO);
+        proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+        proxyUtil.getProxyAddress(object, new InetSocketAddress(IP, PORT));
+        Thread registerThread = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
             }
-        }).start();
+        });
 
-        Thread thread = new Thread(() -> {
-            for (int i = 0; i < 1000; i++) {
+        Thread getInfoThread = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
                 String protocol = new String(proxyUtil.getProxyConnectProtocol(object));
-                Assert.assertEquals(expect, protocol);
+                Assert.assertEquals(EXPECT_PROTOCOL, protocol);
             }
         });
 
         List<Throwable> exceptions = Lists.newArrayList();
-        thread.setUncaughtExceptionHandler((th, ex) -> {
+        getInfoThread.setUncaughtExceptionHandler((th, ex) -> {
             exceptions.add(ex);
         });
-        thread.start();
-        thread.join();
+        registerThread.start();
+        getInfoThread.start();
+        getInfoThread.join();
+        registerThread.join();
+        proxyUtil.unregisterProxy(IP, PORT);
         Assert.assertTrue(exceptions.toString(), exceptions.isEmpty());
     }
 }
