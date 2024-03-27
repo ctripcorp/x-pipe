@@ -39,7 +39,7 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         Long usedMemory = extractor.getUsedMemory();
         Long dbSize = extractor.getSwapUsedDbSize();
 
-        if (dbSize == null) return usedMemory;
+        if (dbSize == null || usedMemory < maxMemory) return usedMemory;
 
         String keysSpaceDb0 = extractor.extract("db0");
         if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
