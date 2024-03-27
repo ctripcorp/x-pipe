@@ -80,7 +80,7 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
     public void testFullSyncJudgeTask() {
         InfoCommand infoCommand1 = shardModelService.generteInfoCommand(new DefaultEndPoint("1", 6380));
         InfoCommand infoCommand2 = shardModelService.generteInfoCommand(new DefaultEndPoint("2", 6380));
-        FullSyncJudgeTask task = new FullSyncJudgeTask(infoCommand1, infoCommand2, 1000, 1000, dcName, clusterName, shardModel);
+        FullSyncJudgeTask task = new FullSyncJudgeTask("1", "2", infoCommand1, infoCommand2, 1000, 1000, dcName, clusterName, shardModel);
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
         ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 1000, 1000, TimeUnit.MILLISECONDS);
         task.setScheduledFuture(scheduledFuture);
