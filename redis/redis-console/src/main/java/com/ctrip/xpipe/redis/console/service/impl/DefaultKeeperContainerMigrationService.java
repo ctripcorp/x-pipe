@@ -45,6 +45,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
             if (CollectionUtils.isEmpty(migrateShards)) continue;
 
             String srcKeeperContainerIp = keeperContainer.getSrcKeeperContainer().getKeeperIp();
+            String targetKeeperContainerIp = keeperContainer.getTargetKeeperContainer().getKeeperIp();
             for (DcClusterShard migrateShard : migrateShards) {
                 ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
@@ -53,10 +54,10 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                     continue;
                 }
                 logger.debug("[beginMigrateKeeperContainers] begin migrate shard {} from srcKeeperContainer:{} to targetKeeperContainer:{}",
-                        migrateShard, srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp());
+                        migrateShard, srcKeeperContainerIp, targetKeeperContainerIp);
                 String event;
                 if (keeperContainer.isSwitchActive()) {
-                    if (shardModelService.switchMaster(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel)) {
+                    if (shardModelService.switchMaster(srcKeeperContainerIp, targetKeeperContainerIp, shardModel)) {
                         keeperContainer.migrateKeeperCompleteCountIncrease();
                         event = KEEPER_SWITCH_MASTER_SUCCESS;
                     } else {
@@ -64,7 +65,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                     }
                 }else if (keeperContainer.isKeeperPairOverload()) {
                     if (shardModelService.migrateShardKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                            srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp())) {
+                            srcKeeperContainerIp, targetKeeperContainerIp)) {
                         keeperContainer.migrateKeeperCompleteCountIncrease();
                         event = KEEPER_MIGRATION_BACKUP_SUCCESS;
                     } else {
@@ -73,7 +74,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                 }else {
                     try {
                         shardModelService.migrateAutoBalanceKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                                srcKeeperContainerIp, keeperContainer.getTargetKeeperContainer().getKeeperIp());
+                                srcKeeperContainerIp, targetKeeperContainerIp);
                         keeperContainer.migrateKeeperCompleteCountIncrease();
                         event = KEEPER_MIGRATION_ACTIVE_START_SUCCESS;
                     } catch (Throwable e) {
@@ -82,7 +83,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                 }
                 CatEventMonitor.DEFAULT.logEvent(event, String.format("dc:%s, cluster:%s, shard:%s, src:%s, target:%s",
                         migrateShard.getDcId(), migrateShard.getClusterId(), migrateShard.getShardId(), srcKeeperContainerIp,
-                        keeperContainer.getTargetKeeperContainer().getKeeperIp()));
+                        targetKeeperContainerIp));
             }
         }
         isBegin.set(false);
