@@ -30,8 +30,8 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
 
     public synchronized void registerProxy(String ip, int port, String routeInfo) {
         InetSocketAddress address = new InetSocketAddress(ip, port);
-        if (get(address) != null) {
-            ProxyResourceManager oldProxyResourceManager = get(address);
+        ProxyResourceManager oldProxyResourceManager = get(address);
+        if (oldProxyResourceManager != null) {
             removeManagerProxy(oldProxyResourceManager);
         }
         put(address, getProxyProtocol(ip, port, routeInfo));
