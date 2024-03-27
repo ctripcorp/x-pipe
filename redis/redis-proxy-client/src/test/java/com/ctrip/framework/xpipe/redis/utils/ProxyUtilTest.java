@@ -328,4 +328,24 @@ public class ProxyUtilTest extends AbstractProxyTest {
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
     }
+
+
+    @Test()
+    public void testProxyGetWhileOtherRegister(){
+        Object object = new Object();
+        proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+        proxyUtil.getProxyAddress(object,  new InetSocketAddress(IP, PORT));;
+        new Thread(() -> {
+            for (int i = 0; i < 1000; i++) {
+                proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+            }
+        }).start();
+
+        new Thread(() -> {
+            for (int i = 0; i < 1000; i++) {
+                String protocol = new String(proxyUtil.getProxyConnectProtocol(object));
+                Assert.assertEquals(EXPECT_PROTOCOL, protocol);
+            }
+        }).start();
+    }
 }

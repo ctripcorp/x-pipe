@@ -30,8 +30,9 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
 
     public synchronized void registerProxy(String ip, int port, String routeInfo) {
         InetSocketAddress address = new InetSocketAddress(ip, port);
-        if(get(address) != null) {
-            unregisterProxy(ip, port);
+        if (get(address) != null) {
+            ProxyResourceManager oldProxyResourceManager = get(address);
+            removeManagerProxy(oldProxyResourceManager);
         }
         put(address, getProxyProtocol(ip, port, routeInfo));
     }
@@ -39,12 +40,16 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
         InetSocketAddress address = new InetSocketAddress(ip, port);
         ProxyResourceManager proxyResourceManager = remove(address);
-        if(proxyResourceManager != null) {
-            proxyResourceManager.nextEndpoints().stream().forEach(endpoint -> {
+        removeManagerProxy(proxyResourceManager);
+        return proxyResourceManager;
+    }
+
+    private void removeManagerProxy(ProxyResourceManager oldProxyResourceManager) {
+        if (oldProxyResourceManager != null) {
+            oldProxyResourceManager.nextEndpoints().stream().forEach(endpoint -> {
                 removeProxy(endpoint);
             });
         }
-        return proxyResourceManager;
     }
 
     public synchronized void registerProxy(String registerKey, String ip, int port, String routeInfo) {
