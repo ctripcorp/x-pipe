@@ -10,6 +10,8 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
@@ -327,5 +329,35 @@ public class ProxyUtilTest extends AbstractProxyTest {
         waitConditionUntilTimeOut(() -> counter.get() == 1, defaultCheckWait, defaultCheckInterval);
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
+    }
+    @Test
+    public void testProxyGetWhileOtherRegister() throws InterruptedException {
+
+        Object object = new Object();
+        proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+        proxyUtil.getProxyAddress(object, new InetSocketAddress(IP, PORT));
+        Thread registerThread = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+            }
+        });
+
+        Thread getInfoThread = new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                String protocol = new String(proxyUtil.getProxyConnectProtocol(object));
+                Assert.assertEquals(EXPECT_PROTOCOL, protocol);
+            }
+        });
+
+        List<Throwable> exceptions = new ArrayList<>();
+        getInfoThread.setUncaughtExceptionHandler((th, ex) -> {
+            exceptions.add(ex);
+        });
+        registerThread.start();
+        getInfoThread.start();
+        getInfoThread.join();
+        registerThread.join();
+        proxyUtil.unregisterProxy(IP, PORT);
+        Assert.assertTrue(exceptions.toString(), exceptions.isEmpty());
     }
 }
