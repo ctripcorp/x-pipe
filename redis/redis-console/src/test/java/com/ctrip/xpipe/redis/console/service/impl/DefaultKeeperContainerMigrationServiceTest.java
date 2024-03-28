@@ -41,7 +41,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
                 .thenReturn(shardModel);
         Mockito.when(shardModelService.migrateShardKeepers(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchMaster(Mockito.anyString(), Mockito.anyString(),  Mockito.any()))
+        Mockito.when(shardModelService.switchMaster(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(true);
     }
 

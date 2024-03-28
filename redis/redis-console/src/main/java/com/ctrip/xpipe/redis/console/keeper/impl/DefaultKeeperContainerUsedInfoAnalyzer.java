@@ -5,24 +5,14 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.monitor.CatEventMonitor;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.Command.AbstractGetAllDcCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerFullSynchronizationTimeGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.MigrationKeeperContainerDetailInfoGetCommand;
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerOverloadCause;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
-import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
-import com.ctrip.xpipe.redis.console.keeper.util.DefaultKeeperContainerUsedInfoAnalyzerContext;
-import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerContext;
-import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -36,7 +26,6 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService implements KeeperContainerUsedInfoAnalyzer {
@@ -192,7 +181,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
             }
         }
         for (int index : expireIndex) {
-            logger.info("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, keeperContainerUsedInfoModelIndexMap.get(index).getValue(), config.getKeeperCheckerIntervalMilli() * 2L);
+            logger.debug("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, keeperContainerUsedInfoModelIndexMap.get(index).getValue(), config.getKeeperCheckerIntervalMilli() * 2L);
             keeperContainerUsedInfoModelIndexMap.remove(index);
         }
     }
