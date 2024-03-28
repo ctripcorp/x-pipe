@@ -72,12 +72,11 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                         event = KEEPER_MIGRATION_BACKUP_FAIL;
                     }
                 }else {
-                    try {
-                        shardModelService.migrateAutoBalanceKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                                srcKeeperContainerIp, targetKeeperContainerIp);
+                    if (shardModelService.migrateAutoBalanceKeepers(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
+                            srcKeeperContainerIp, targetKeeperContainerIp)) {
                         keeperContainer.migrateKeeperCompleteCountIncrease();
                         event = KEEPER_MIGRATION_ACTIVE_START_SUCCESS;
-                    } catch (Throwable e) {
+                    } else {
                         event = KEEPER_MIGRATION_ACTIVE_START_FAIL;
                     }
                 }
