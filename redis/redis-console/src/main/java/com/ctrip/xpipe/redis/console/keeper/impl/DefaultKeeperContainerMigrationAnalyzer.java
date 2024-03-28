@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzer
 import com.ctrip.xpipe.redis.console.model.KeeperContainerOverloadStandardModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -55,7 +56,11 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         keeperContainerAnalyzerService.initStandard(models);
         List<KeeperContainerUsedInfoModel> modelsWithoutResource = new ArrayList<>();
         models.forEach(a -> modelsWithoutResource.add(KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(a)));
-        analyzerContext = new DefaultKeeperContainerUsedInfoAnalyzerContext(filterChain, metaCache.getXpipeMeta().getDcs().get(currentDc));
+        DcMeta dcMeta = null;
+        if (metaCache.getXpipeMeta() != null) {
+            dcMeta = metaCache.getXpipeMeta().getDcs().get(currentDc);
+        }
+        analyzerContext = new DefaultKeeperContainerUsedInfoAnalyzerContext(filterChain, dcMeta);
         analyzerContext.initKeeperPairData(modelsWithoutResource, modelsMap);
         analyzerContext.initAvailablePool(modelsWithoutResource);
         for (KeeperContainerUsedInfoModel model : modelsWithoutResource) {
@@ -82,7 +87,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
             }
             KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(model, dcClusterShard, backUpKeeper, (Boolean) cause[1], false);
             if (bestKeeperContainer == null) {
-                break;
+                continue;
             }
             analyzerContext.addMigrationPlan(model, bestKeeperContainer, false, false, (String) cause[0], dcClusterShard, backUpKeeper);
             analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
@@ -105,7 +110,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
             KeeperContainerUsedInfoModel backUpKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelB : modelA;
             KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, dcClusterShard, activeKeeperContainer, (Boolean) cause[1], true);
             if (bestKeeperContainer == null) {
-                break;
+                continue;
             }
             if (!filterChain.isMigrateKeeperPairOverload(dcClusterShard, backUpKeeperContainer, bestKeeperContainer, analyzerContext)) {
                 analyzerContext.addMigrationPlan(backUpKeeperContainer, bestKeeperContainer, false, true, (String) cause[0], dcClusterShard, activeKeeperContainer);

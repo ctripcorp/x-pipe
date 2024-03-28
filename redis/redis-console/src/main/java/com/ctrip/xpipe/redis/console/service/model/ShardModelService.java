@@ -23,6 +23,6 @@ public interface ShardModelService {
 
 	boolean switchMaster(String srcIp, String targetIp, ShardModel shardModel);
 
-	void migrateAutoBalanceKeepers(String dcName, String clusterName, ShardModel shardModel,
+	boolean migrateAutoBalanceKeepers(String dcName, String clusterName, ShardModel shardModel,
 								   String srcKeeperContainerIp, String targetKeeperContainerIp);
 }
