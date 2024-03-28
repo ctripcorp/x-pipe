@@ -6,6 +6,8 @@ x-pipe
 [![github CI](https://github.com/ctripcorp/x-pipe/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/ctripcorp/x-pipe/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/ctripcorp/x-pipe/branch/master/graph/badge.svg?token=wj3MUNTPcF)](https://codecov.io/gh/ctripcorp/x-pipe)
 
+See the [English](https://github.com/ctripcorp/x-pipe/blob/master/README-en.md) readme here.
+
 <!-- MarkdownTOC -->
 
 - [XPipe 解决什么问题](#xpipe-解决什么问题)
