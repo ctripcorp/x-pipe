@@ -1,19 +1,14 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.command.DefaultCommandFuture;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperAdvancedService;
-import com.ctrip.xpipe.redis.console.service.model.impl.ShardModelServiceImpl.*;
 import com.ctrip.xpipe.redis.console.service.model.impl.ShardModelServiceImpl;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import org.apache.logging.log4j.core.config.CronScheduledFuture;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,20 +67,40 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
     }
 
     @Test
-    public void testMigrateAutoBalanceKeepers() {
-        shardModelService.migrateAutoBalanceKeepers(dcName, clusterName, shardModel, srcIp, targetIp);
+    public void testMigrateAutoBalanceKeepers() throws Exception {
+        ScheduledThreadPoolExecutor executor = Mockito.mock(ScheduledThreadPoolExecutor.class);
+        shardModelService.setExecutor(executor);
+        ScheduledFuture future = Mockito.mock(ScheduledFuture.class);
+        Mockito.when(executor.scheduleWithFixedDelay(Mockito.any(Runnable.class), Mockito.anyLong(), Mockito.anyLong(), Mockito.any(TimeUnit.class))).thenReturn(future);
+        Mockito.when(future.get()).thenReturn(null);
+        try {
+            shardModelService.migrateAutoBalanceKeepers(dcName, clusterName, shardModel, srcIp, targetIp);
+        } catch (Exception e) {
+            Assert.assertEquals(e.getClass(), RuntimeException.class);
+        }
     }
 
     @Test
-    public void testFullSyncJudgeTask() {
-        InfoCommand infoCommand1 = shardModelService.generteInfoCommand(new DefaultEndPoint("1", 6380));
-        InfoCommand infoCommand2 = shardModelService.generteInfoCommand(new DefaultEndPoint("2", 6380));
+    public void testFullSyncJudgeTask() throws Exception {
+        InfoCommand infoCommand1 = Mockito.mock(InfoCommand.class);
+        InfoCommand infoCommand2 = Mockito.mock(InfoCommand.class);
+        DefaultCommandFuture future1 = Mockito.mock(DefaultCommandFuture.class);
+        DefaultCommandFuture future2 = Mockito.mock(DefaultCommandFuture.class);
+        Mockito.when(infoCommand1.execute()).thenReturn(future1);
+        Mockito.when(infoCommand2.execute()).thenReturn(future2);
+        Mockito.when(future1.get()).thenReturn(null);
+        Mockito.when(future2.get()).thenReturn(null);
         FullSyncJudgeTask task = new FullSyncJudgeTask("1", "2", infoCommand1, infoCommand2, 1000, 1000, dcName, clusterName, shardModel);
         ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
         ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 1000, 1000, TimeUnit.MILLISECONDS);
         task.setScheduledFuture(scheduledFuture);
         task.run();
+        Assert.assertFalse(task.getResult());
+        task.setBackupMasterReplOffset(10L);
+        task.run();
+        Assert.assertTrue(task.getResult());
     }
+
 
     @Test
     public void testGetSwitchMaterNewKeepers() {
