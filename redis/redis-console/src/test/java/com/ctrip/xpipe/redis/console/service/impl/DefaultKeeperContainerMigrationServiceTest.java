@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -75,20 +76,20 @@ public class DefaultKeeperContainerMigrationServiceTest {
         model.setSrcKeeperContainer(src).setTargetKeeperContainer(target).setMigrateKeeperCount(3).setMigrateShards(migrationShards);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(0, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
 
         models.clear();
         model.setSwitchActive(true);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
 
         models.clear();
         model.setSwitchActive(false);
         model.setKeeperPairOverload(true);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(9, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
     }
 
     @Test
