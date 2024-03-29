@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -40,8 +39,7 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
-import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_SESSION_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
 import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_FAIL;
 import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_SUCCESS;
 
@@ -77,6 +75,14 @@ public class ShardModelServiceImpl implements ShardModelService{
         .newFixedThreadPool(6, XpipeThreadFactory.create(getClass().getSimpleName()));
 
     private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(20);
+
+    @Resource(name = REDIS_COMMAND_EXECUTOR)
+    private ScheduledExecutorService scheduled;
+
+    @Resource(name = MIGRATE_KEEPER_CLIENT_POOL)
+    private XpipeNettyClientKeyedObjectPool keyedObjectPool;
+
+    private int commandTimeOut = Integer.parseInt(System.getProperty("KEY_REDISSESSION_COMMAND_TIMEOUT", String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
 
     private final long SWITCH_MASTER_CHECK_INTERVAL = 1000;
 
@@ -265,31 +271,45 @@ public class ShardModelServiceImpl implements ShardModelService{
     public boolean switchMaster(String activeIp, String backupIp, ShardModel shardModel) {
         try {
             List<RedisTbl> keepers = shardModel.getKeepers();
-            int srcKeeperPort = keepers.stream()
-                    .filter(r -> r.getRedisIp().equals(activeIp))
-                    .findFirst()
-                    .map(RedisTbl::getRedisPort)
-                    .orElseThrow(() -> new RuntimeException("No source keeper found"));
+            if (keepers.size() != 2) {
+                logger.warn("[switchMaster] keeper size is not 2, can not switch master, activeIp: {}, backupIp: {}, shardModel: {}", activeIp, backupIp, shardModel);
+                return false;
+            }
+            int activeKeeperPort = -1;
+            String backUpKeeperIp = null;
+            for (RedisTbl keeper : keepers) {
+                if (keeper.getRedisIp().equals(activeIp)) {
+                    activeKeeperPort = keeper.getRedisPort();
+                } else {
+                    backUpKeeperIp = keeper.getRedisIp();
+                }
+            }
 
-            String targetKeeperIp = keepers.stream()
-                    .filter(r -> !r.getRedisIp().equals(activeIp))
-                    .findFirst()
-                    .map(RedisTbl::getRedisIp)
-                    .orElseThrow(() -> new RuntimeException("No target keeper found"));
-
-            if (!targetKeeperIp.equals(backupIp)) {
+            if (activeKeeperPort == -1 || backUpKeeperIp == null || !backUpKeeperIp.equals(backupIp)) {
+                logger.warn("[switchMaster]  can not find truly active keeper or backup keeper, activeIp: {}, backupIp: {}, shardModel: {}, activeKeeperPort: {}, backUpKeeperIp: {}"
+                        , activeIp, backupIp, shardModel, activeKeeperPort, backUpKeeperIp);
                 return false;
             }
 
-            KeeperTransMeta keeperInstanceMeta = keeperContainerService.getAllKeepers(activeIp).stream()
-                    .filter(k -> k.getKeeperMeta().getPort() == srcKeeperPort)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No keeper instance found"));
+            KeeperTransMeta keeperInstanceMeta = null;
+            List<KeeperInstanceMeta> allKeepers = keeperContainerService.getAllKeepers(activeIp);
+            for (KeeperInstanceMeta keeper : allKeepers) {
+                if (keeper.getKeeperMeta().getPort() == activeKeeperPort) {
+                    keeperInstanceMeta = keeper;
+                    break;
+                }
+            }
+
+            if (keeperInstanceMeta == null) {
+                logger.warn("[switchMaster]  can not find keeper: {}:{} replId message", activeIp, activeKeeperPort);
+                return false;
+            }
 
             keeperContainerService.resetKeepers(keeperInstanceMeta);
-            return checkKeeperActive(activeIp, srcKeeperPort, false, SWITCH_MASTER_CHECK_INTERVAL, SWITCH_MASTER_CHECK_TIMES);
+            return checkKeeperActive(activeIp, activeKeeperPort, false, SWITCH_MASTER_CHECK_INTERVAL, SWITCH_MASTER_CHECK_TIMES);
 
         } catch (Exception e) {
+            logger.error("[switchMaster]  switch master failed", e);
             return false;
         }
     }
@@ -310,39 +330,25 @@ public class ShardModelServiceImpl implements ShardModelService{
 
                     @Override
                     public void fail(Throwable throwable) {
-                        logger.error("[switchMaster] ", throwable);
+                        logger.error("[switchMaster] keeper: {}:{}", ip, port, throwable);
                     }
                 });
                 if (isMaster[0] == expectActive) break;
                 Thread.sleep(interval);
             }
-            return !expectActive ^ isMaster[0];
+            return isMaster[0] == expectActive;
         } catch (Exception e) {
-            logger.error("[switchMaster] check keeper active error", e);
+            logger.error("[switchMaster] check keeper active error, keeper: {}:{}", ip, port, e);
             return false;
         } finally {
             try {
                 keyedObjectPool.clear(activeKey);
             } catch (ObjectPoolException e) {
-                logger.error("[clear] clear keyed object pool error", e);
+                logger.error("[clear] clear keyed object pool error, keeper: {}:{}", ip, port, e);
             }
         }
     }
 
-    @Resource(name = REDIS_COMMAND_EXECUTOR)
-    private ScheduledExecutorService scheduled;
-
-    @Resource(name = REDIS_SESSION_NETTY_CLIENT_POOL)
-    private XpipeNettyClientKeyedObjectPool keyedObjectPool;
-
-    private int commandTimeOut = Integer.parseInt(System.getProperty("KEY_REDISSESSION_COMMAND_TIMEOUT", String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
-
-    @VisibleForTesting
-    public void setKeyedObjectPool(XpipeNettyClientKeyedObjectPool pool) {
-        this.keyedObjectPool = pool;
-    }
-
-    @VisibleForTesting
     public InfoCommand generteInfoCommand(Endpoint key) {
         if(ProxyRegistry.getProxy(key.getHost(), key.getPort()) != null) {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
@@ -420,6 +426,7 @@ public class ShardModelServiceImpl implements ShardModelService{
     protected class FullSyncJudgeTask implements Runnable{
 
         private String activeIp;
+
         private String backUpIp;
         private final InfoCommand activeInfoCommand;
         private final InfoCommand backupInfoCommand;
@@ -433,7 +440,6 @@ public class ShardModelServiceImpl implements ShardModelService{
         private ShardModel shardModel;
         private long startTime = 0;
         private ScheduledFuture<?> scheduledFuture;
-
         public FullSyncJudgeTask(String activeIp, String backUpIp, InfoCommand activeInfoCommand, InfoCommand backupInfoCommand, long expireTime, long intervalTime,
                                  String dcName, String clusterName, ShardModel shardModel) {
             this.activeIp = activeIp;
@@ -512,6 +518,7 @@ public class ShardModelServiceImpl implements ShardModelService{
             this.backupMasterReplOffset = offset;
         }
 
+
     }
     private <V> void addHookAndExecute(AbstractRedisCommand<V> command, Callbackable<V> callback) {
         silentCommand(command);
@@ -532,7 +539,6 @@ public class ShardModelServiceImpl implements ShardModelService{
             throw new RuntimeException(e);
         }
     }
-
     private void silentCommand(LoggableRedisCommand command) {
         command.logRequest(false);
         command.logResponse(false);
@@ -542,6 +548,11 @@ public class ShardModelServiceImpl implements ShardModelService{
     @VisibleForTesting
     public void setExecutor(ScheduledThreadPoolExecutor executor) {
         this.executor = executor;
+    }
+
+    @VisibleForTesting
+    public void setKeyedObjectPool(XpipeNettyClientKeyedObjectPool pool) {
+        this.keyedObjectPool = pool;
     }
 
 

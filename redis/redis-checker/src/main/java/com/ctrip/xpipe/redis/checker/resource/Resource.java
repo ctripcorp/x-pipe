@@ -12,6 +12,8 @@ public class Resource {
 
     public static final String REDIS_SESSION_NETTY_CLIENT_POOL = "redisSessionClientPool";
 
+    public static final String MIGRATE_KEEPER_CLIENT_POOL = "migrateKeeperClientPool";
+
     public static final String PING_DELAY_INFO_EXECUTORS = "pingDelayInfoExecutors";
 
     public static final String PING_DELAY_INFO_SCHEDULED = "pingDelayInfoScheduled";
