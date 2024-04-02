@@ -1,8 +1,8 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.alibaba.arthas.deps.org.objectweb.asm.ClassWriter;
-import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
-import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
+import com.alibaba.deps.org.objectweb.asm.ClassWriter;
+import com.alibaba.deps.org.objectweb.asm.MethodVisitor;
+import com.alibaba.deps.org.objectweb.asm.Opcodes;
 import org.junit.Assert;
 import org.junit.Test;
 

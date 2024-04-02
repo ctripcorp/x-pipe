@@ -1,7 +1,7 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.alibaba.arthas.deps.org.objectweb.asm.ClassVisitor;
-import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
+import com.alibaba.deps.org.objectweb.asm.ClassVisitor;
+import com.alibaba.deps.org.objectweb.asm.Opcodes;
 
 public abstract class AbstractSocketAdapter extends ClassVisitor {
 

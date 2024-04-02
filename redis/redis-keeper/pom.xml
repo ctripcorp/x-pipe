@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.ctrip.framework.xpipe.redis</groupId>
         <artifactId>redis-parent</artifactId>
-        <version>1.2.12</version>
+        <version>1.2.13</version>
     </parent>
     <artifactId>redis-keeper</artifactId>
 
@@ -19,8 +19,8 @@
             <version>${parent.version}</version>
             <exclusions>
                 <exclusion>
-                    <groupId>com.alibaba.arthas</groupId>
-                    <artifactId>arthas-repackage-asm</artifactId>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>repackage-asm</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>com.alibaba.arthas</groupId>
