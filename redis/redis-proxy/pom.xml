@@ -41,11 +41,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>4.1.52.Final</version>
         </dependency>
 
         <!--netty open ssl -->
