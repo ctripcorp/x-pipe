@@ -1,10 +1,10 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
 
-import com.alibaba.arthas.deps.org.objectweb.asm.ClassVisitor;
-import com.alibaba.arthas.deps.org.objectweb.asm.Label;
-import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
-import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
+import com.alibaba.deps.org.objectweb.asm.ClassVisitor;
+import com.alibaba.deps.org.objectweb.asm.Label;
+import com.alibaba.deps.org.objectweb.asm.MethodVisitor;
+import com.alibaba.deps.org.objectweb.asm.Opcodes;
 
 import static com.ctrip.framework.xpipe.redis.utils.Constants.CONNECT_CLASS;
 

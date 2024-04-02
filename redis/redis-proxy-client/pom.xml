@@ -5,7 +5,7 @@
     <parent>
         <artifactId>redis-parent</artifactId>
         <groupId>com.ctrip.framework.xpipe.redis</groupId>
-        <version>1.2.12</version>
+        <version>1.2.13-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
@@ -15,13 +15,13 @@
     <properties>
         <enforcer.qBanDuplicateClasses.skip>true</enforcer.qBanDuplicateClasses.skip>
         <javax.servlet.version>3.1.0</javax.servlet.version>
-        <arthas-repackage.version>0.0.6</arthas-repackage.version>
+        <arthas-repackage.version>0.0.13</arthas-repackage.version>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>com.alibaba.arthas</groupId>
-            <artifactId>arthas-repackage-asm</artifactId>
+            <groupId>com.alibaba</groupId>
+            <artifactId>repackage-asm</artifactId>
             <version>${arthas-repackage.version}</version>
         </dependency>
         <dependency>
@@ -79,7 +79,7 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>com.alibaba.arthas:arthas-repackage-asm</include>
+                                    <include>com.alibaba:repackage-asm</include>
                                     <include>com.alibaba.arthas:arthas-repackage-logger</include>
                                 </includes>
                                 <excludes>
