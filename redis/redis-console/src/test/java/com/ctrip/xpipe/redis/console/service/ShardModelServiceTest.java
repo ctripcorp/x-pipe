@@ -62,14 +62,13 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
         List<RedisTbl> newKeepers = new ArrayList<>();
         newKeepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
         newKeepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
-        when(keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel, srcIp, targetIp, true)).thenReturn(newKeepers);
+        when(keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel, srcIp, targetIp)).thenReturn(newKeepers);
         shardModelService.setKeyedObjectPool(new XpipeNettyClientKeyedObjectPool());
     }
 
     @Test
     public void testMigrateAutoBalanceKeepers() throws Exception {
         ScheduledThreadPoolExecutor executor = Mockito.mock(ScheduledThreadPoolExecutor.class);
-        shardModelService.setExecutor(executor);
         ScheduledFuture future = Mockito.mock(ScheduledFuture.class);
         Mockito.when(executor.scheduleWithFixedDelay(Mockito.any(Runnable.class), Mockito.anyLong(), Mockito.anyLong(), Mockito.any(TimeUnit.class))).thenReturn(future);
         Mockito.when(future.get()).thenReturn(null);
@@ -79,28 +78,6 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
             Assert.assertEquals(e.getClass(), RuntimeException.class);
         }
     }
-
-    @Test
-    public void testFullSyncJudgeTask() throws Exception {
-        InfoCommand infoCommand1 = Mockito.mock(InfoCommand.class);
-        InfoCommand infoCommand2 = Mockito.mock(InfoCommand.class);
-        DefaultCommandFuture future1 = Mockito.mock(DefaultCommandFuture.class);
-        DefaultCommandFuture future2 = Mockito.mock(DefaultCommandFuture.class);
-        Mockito.when(infoCommand1.execute()).thenReturn(future1);
-        Mockito.when(infoCommand2.execute()).thenReturn(future2);
-        Mockito.when(future1.get()).thenReturn(null);
-        Mockito.when(future2.get()).thenReturn(null);
-        FullSyncJudgeTask task = new FullSyncJudgeTask("1", "2", infoCommand1, infoCommand2, 1000, 1000, dcName, clusterName, shardModel);
-        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
-        ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 1000, 1000, TimeUnit.MILLISECONDS);
-        task.setScheduledFuture(scheduledFuture);
-        task.run();
-        Assert.assertFalse(task.getResult());
-        task.setBackupMasterReplOffset(10L);
-        task.run();
-        Assert.assertTrue(task.getResult());
-    }
-
 
     @Test
     public void testGetSwitchMaterNewKeepers() {

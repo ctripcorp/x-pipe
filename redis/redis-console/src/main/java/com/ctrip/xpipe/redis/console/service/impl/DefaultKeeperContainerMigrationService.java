@@ -57,10 +57,13 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                         migrateShard, srcKeeperContainerIp, targetKeeperContainerIp);
                 String event;
                 if (keeperContainer.isSwitchActive()) {
+                    logger.info("[zyfTest] start switchMaster");
                     if (shardModelService.switchMaster(srcKeeperContainerIp, targetKeeperContainerIp, shardModel)) {
+                        logger.info("[zyfTest] switchMaster success");
                         keeperContainer.migrateKeeperCompleteCountIncrease();
                         event = KEEPER_SWITCH_MASTER_SUCCESS;
                     } else {
+                        logger.info("[zyfTest] switchMaster fail");
                         event = KEEPER_SWITCH_MASTER_FAIL;
                     }
                 }else if (keeperContainer.isKeeperPairOverload()) {
