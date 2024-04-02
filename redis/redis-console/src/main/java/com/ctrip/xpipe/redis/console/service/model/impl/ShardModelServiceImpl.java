@@ -1,20 +1,25 @@
 package com.ctrip.xpipe.redis.console.service.model.impl;
 
 import com.ctrip.framework.xpipe.redis.ProxyRegistry;
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.keeper.Command.FullSyncJudgeCommand;
+import com.ctrip.xpipe.redis.console.keeper.Command.SwitchMasterCommand;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -40,8 +45,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
-import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_FAIL;
-import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_SUCCESS;
 
 @Service
 public class ShardModelServiceImpl implements ShardModelService{
@@ -74,23 +77,15 @@ public class ShardModelServiceImpl implements ShardModelService{
     private final ExecutorService FIXED_THREAD_POOL = Executors
         .newFixedThreadPool(6, XpipeThreadFactory.create(getClass().getSimpleName()));
 
-    private ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(20);
-
     @Resource(name = REDIS_COMMAND_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
     @Resource(name = MIGRATE_KEEPER_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
-    private int commandTimeOut = Integer.parseInt(System.getProperty("KEY_REDISSESSION_COMMAND_TIMEOUT", String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
+    private RetryCommandFactory<?> switchMasterCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 1000);
 
-    private final long SWITCH_MASTER_CHECK_INTERVAL = 1000;
-
-    private final int SWITCH_MASTER_CHECK_TIMES = 10;
-
-    private final long KEEPER_BALANCE_FULL_SYNC_EXPIRE_TIME = 10L * 60 * 1000;
-
-    private final long KEEPER_BALANCE_FULL_SYNC_INTERVAL_TIME = 1000;
+    private RetryCommandFactory<?> fullSyncCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 600, 1000);
 
 	@Override
     public List<ShardModel> getAllShardModel(String dcName, String clusterName) {
@@ -269,99 +264,24 @@ public class ShardModelServiceImpl implements ShardModelService{
 
     @Override
     public boolean switchMaster(String activeIp, String backupIp, ShardModel shardModel) {
+        Command<?> switchMasterCommand = switchMasterCommandFactory.createRetryCommand(new SwitchMasterCommand<>(keyedObjectPool, scheduled, activeIp, backupIp, shardModel.getKeepers(), keeperContainerService));
         try {
-            List<RedisTbl> keepers = shardModel.getKeepers();
-            if (keepers.size() != 2) {
-                logger.warn("[switchMaster] keeper size is not 2, can not switch master, activeIp: {}, backupIp: {}, shardModel: {}", activeIp, backupIp, shardModel);
-                return false;
-            }
-            int activeKeeperPort = -1;
-            String backUpKeeperIp = null;
-            for (RedisTbl keeper : keepers) {
-                if (keeper.getRedisIp().equals(activeIp)) {
-                    activeKeeperPort = keeper.getRedisPort();
-                } else {
-                    backUpKeeperIp = keeper.getRedisIp();
-                }
-            }
-
-            if (activeKeeperPort == -1 || backUpKeeperIp == null || !backUpKeeperIp.equals(backupIp)) {
-                logger.warn("[switchMaster]  can not find truly active keeper or backup keeper, activeIp: {}, backupIp: {}, shardModel: {}, activeKeeperPort: {}, backUpKeeperIp: {}"
-                        , activeIp, backupIp, shardModel, activeKeeperPort, backUpKeeperIp);
-                return false;
-            }
-
-            KeeperTransMeta keeperInstanceMeta = null;
-            List<KeeperInstanceMeta> allKeepers = keeperContainerService.getAllKeepers(activeIp);
-            for (KeeperInstanceMeta keeper : allKeepers) {
-                if (keeper.getKeeperMeta().getPort() == activeKeeperPort) {
-                    keeperInstanceMeta = keeper;
-                    break;
-                }
-            }
-
-            if (keeperInstanceMeta == null) {
-                logger.warn("[switchMaster]  can not find keeper: {}:{} replId message", activeIp, activeKeeperPort);
-                return false;
-            }
-
-            keeperContainerService.resetKeepers(keeperInstanceMeta);
-            return checkKeeperActive(activeIp, activeKeeperPort, false, SWITCH_MASTER_CHECK_INTERVAL, SWITCH_MASTER_CHECK_TIMES);
-
+            logger.info("[zyfTest] start switchMasterCommand execute");
+            switchMasterCommand.execute().get();
+            logger.info("[zyfTest] start switchMasterCommand execute over");
+            logger.info("[zyfTest] start switchMasterCommand execute success?:{}",switchMasterCommand.future().isSuccess());
+            return switchMasterCommand.future().isSuccess();
         } catch (Exception e) {
-            logger.error("[switchMaster]  switch master failed", e);
+            logger.error("[switchMaster]  switch master failed, activeIp: {}, backupIp: {}", activeIp, backupIp, e);
             return false;
         }
-    }
-
-    private boolean checkKeeperActive(String ip, int port, boolean expectActive, long interval, int maxRetryTimes) {
-        DefaultEndPoint activeKey = new DefaultEndPoint(ip, port);
-        InfoCommand infoCommand = generteInfoCommand(activeKey);
-        final boolean[] isMaster = new boolean[1];
-        try {
-            int time = 0;
-            while (time < maxRetryTimes){
-                time ++;
-                addHookAndExecute(infoCommand, new Callbackable<String>() {
-                    @Override
-                    public void success(String message) {
-                        isMaster[0] = new InfoResultExtractor(message).getKeeperActive();
-                    }
-
-                    @Override
-                    public void fail(Throwable throwable) {
-                        logger.error("[switchMaster] keeper: {}:{}", ip, port, throwable);
-                    }
-                });
-                if (isMaster[0] == expectActive) break;
-                Thread.sleep(interval);
-            }
-            return isMaster[0] == expectActive;
-        } catch (Exception e) {
-            logger.error("[switchMaster] check keeper active error, keeper: {}:{}", ip, port, e);
-            return false;
-        } finally {
-            try {
-                keyedObjectPool.clear(activeKey);
-            } catch (ObjectPoolException e) {
-                logger.error("[clear] clear keyed object pool error, keeper: {}:{}", ip, port, e);
-            }
-        }
-    }
-
-    public InfoCommand generteInfoCommand(Endpoint key) {
-        if(ProxyRegistry.getProxy(key.getHost(), key.getPort()) != null) {
-            commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
-        }
-        SimpleObjectPool<NettyClient> keyPool = keyedObjectPool.getKeyPool(key);
-        return new InfoCommand(keyPool, InfoCommand.INFO_TYPE.REPLICATION.cmd(), scheduled, commandTimeOut);
     }
 
     @Override
     public boolean migrateAutoBalanceKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) {
         List<RedisTbl> oldKeepers = shardModel.getKeepers();
         List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel,
-                srcKeeperContainerIp, targetKeeperContainerIp, true);
+                srcKeeperContainerIp, targetKeeperContainerIp);
         if (!doMigrateKeepers(dcName, clusterName, shardModel, newKeepers)) {
             throw new RuntimeException(String.format("migrate auto balance Keepers fail dc:%s, cluster:%s, shard:%S", dcName, clusterName, shardModel));
         }
@@ -369,36 +289,25 @@ public class ShardModelServiceImpl implements ShardModelService{
         RedisTbl backup = newKeepers.get(1);
         DefaultEndPoint activeKey = new DefaultEndPoint(active.getRedisIp(), active.getRedisPort());
         DefaultEndPoint backupKey = new DefaultEndPoint(backup.getRedisIp(), backup.getRedisPort());
-        InfoCommand activeInfoCommand = generteInfoCommand(activeKey);
-        InfoCommand backupInfoCommand = generteInfoCommand(backupKey);
-
-        FullSyncJudgeTask task = new FullSyncJudgeTask(active.getRedisIp(), backup.getRedisIp(), activeInfoCommand, backupInfoCommand, KEEPER_BALANCE_FULL_SYNC_EXPIRE_TIME, KEEPER_BALANCE_FULL_SYNC_INTERVAL_TIME,
-                dcName, clusterName, shardModel);
+        Command<?> fullSyncJudgeRetryCommand = fullSyncCommandFactory.createRetryCommand(new FullSyncJudgeCommand<>(keyedObjectPool, scheduled, activeKey, backupKey, 1000));
+        Command<?> switchmasterCommand = switchMasterCommandFactory.createRetryCommand(new SwitchMasterCommand<>(keyedObjectPool, scheduled, activeKey.getHost(), backupKey.getHost(), newKeepers, keeperContainerService));
+        SequenceCommandChain chain = new SequenceCommandChain(false, false);
+        chain.add(fullSyncJudgeRetryCommand);
+        chain.add(switchmasterCommand);
         try {
-            ScheduledFuture<?> scheduledFuture = executor.scheduleWithFixedDelay(task, 0,1000, TimeUnit.MILLISECONDS);
-            task.setScheduledFuture(scheduledFuture);
-            scheduledFuture.get();
-            return getAutoBalanceResult(task, dcName, clusterName, shardModel, oldKeepers);
-        } catch (Exception e) {
-            logger.error("[clear] clear keyed object pool error", e);
-            return getAutoBalanceResult(task, dcName, clusterName, shardModel, oldKeepers);
-        } finally {
-            try {
-                keyedObjectPool.clear(activeKey);
-                keyedObjectPool.clear(backupKey);
-            } catch (ObjectPoolException e) {
-                logger.error("[clear] clear keyed object pool error", e);
-            }
+            chain.execute().get();
+            return getAutoBalanceResult(chain.future().isSuccess(), dcName, clusterName, shardModel, oldKeepers);
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("[fullSyncJudge] execute fullSyncJudgeRetryCommand fail", e);
+            return getAutoBalanceResult(chain.future().isSuccess(), dcName, clusterName, shardModel, oldKeepers);
         }
     }
 
-    private boolean getAutoBalanceResult(FullSyncJudgeTask task, String dcName, String clusterName, ShardModel shardModel, List<RedisTbl> oldKeepers) {
-        if (task.getResult()) {
+    private boolean getAutoBalanceResult(boolean taskSuccess, String dcName, String clusterName, ShardModel shardModel, List<RedisTbl> oldKeepers) {
+        if (taskSuccess) {
             return true;
         }
-        if (!doMigrateKeepers(dcName, clusterName, shardModel, oldKeepers)) {
-            throw new RuntimeException(String.format("migrate auto balance Keepers fail dc:%s, cluster:%s, shard:%S", dcName, clusterName, shardModel));
-        }
+        doMigrateKeepers(dcName, clusterName, shardModel, oldKeepers);
         return false;
     }
 
@@ -421,133 +330,6 @@ public class ShardModelServiceImpl implements ShardModelService{
             logger.info("[migrateKeepers] fail to migrate keepers with unexpected newKeepers {}", newKeepers);
             return false;
         }
-    }
-
-    protected class FullSyncJudgeTask implements Runnable{
-
-        private String activeIp;
-
-        private String backUpIp;
-        private final InfoCommand activeInfoCommand;
-        private final InfoCommand backupInfoCommand;
-        private long activeMasterReplOffset;
-        private long backupMasterReplOffset;
-        private final long expireTime;
-        private final long intervalTime;
-        private boolean isSuccess;
-        private String dcName;
-        private String clusterName;
-        private ShardModel shardModel;
-        private long startTime = 0;
-        private ScheduledFuture<?> scheduledFuture;
-        public FullSyncJudgeTask(String activeIp, String backUpIp, InfoCommand activeInfoCommand, InfoCommand backupInfoCommand, long expireTime, long intervalTime,
-                                 String dcName, String clusterName, ShardModel shardModel) {
-            this.activeIp = activeIp;
-            this.backUpIp = backUpIp;
-            this.activeInfoCommand = activeInfoCommand;
-            this.backupInfoCommand = backupInfoCommand;
-            this.expireTime = expireTime;
-            this.intervalTime = intervalTime;
-            this.dcName = dcName;
-            this.clusterName = clusterName;
-            this.shardModel = shardModel;
-        }
-
-        public void setScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-            this.scheduledFuture = scheduledFuture;
-        }
-
-        @Override
-        public void run() {
-            if (startTime == 0) {
-                startTime = System.currentTimeMillis();
-            }
-            addHookAndExecute(activeInfoCommand, new Callbackable<String>() {
-                @Override
-                public void success(String message) {
-                    activeMasterReplOffset = new InfoResultExtractor(message).getMasterReplOffset();
-                }
-
-                @Override
-                public void fail(Throwable throwable) {
-                    backupMasterReplOffset = -1;
-                }
-            });
-
-            try {
-                Thread.sleep(intervalTime);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            addHookAndExecute(backupInfoCommand, new Callbackable<String>() {
-                @Override
-                public void success(String message) {
-                    backupMasterReplOffset = new InfoResultExtractor(message).getMasterReplOffset();
-                }
-
-                @Override
-                public void fail(Throwable throwable) {
-                    backupMasterReplOffset = -1;
-                }
-            });
-            if (backupMasterReplOffset > activeMasterReplOffset) {
-                isSuccess = true;
-                switchMaster(activeIp, backUpIp, shardModel);
-                CatEventMonitor.DEFAULT.logEvent(KEEPER_MIGRATION_ACTIVE_SUCCESS,
-                        String.format("activeKeeper:%s, backupKeeper:%s, dc:%s, cluster:%s, shard:%s",
-                                activeInfoCommand, backupInfoCommand, dcName, clusterName, shardModel.getShardTbl().getShardName()));
-                scheduledFuture.cancel(true);
-                Thread.currentThread().interrupt();
-            }
-            if (System.currentTimeMillis() - startTime > expireTime && !isSuccess) {
-                CatEventMonitor.DEFAULT.logEvent(KEEPER_MIGRATION_ACTIVE_FAIL,
-                        String.format("activeKeeper:%s, backupKeeper:%s, dc:%s, cluster:%s, shard:%s",
-                                activeInfoCommand, backupInfoCommand, dcName, clusterName, shardModel.getShardTbl().getShardName()));
-                scheduledFuture.cancel(true);
-            }
-
-        }
-
-        public boolean getResult() {
-            return isSuccess;
-        }
-
-        @VisibleForTesting
-        public void setBackupMasterReplOffset(long offset) {
-            this.backupMasterReplOffset = offset;
-        }
-
-
-    }
-    private <V> void addHookAndExecute(AbstractRedisCommand<V> command, Callbackable<V> callback) {
-        silentCommand(command);
-        CommandFuture<V> future = command.execute();
-        future.addListener(new CommandFutureListener<V>() {
-            @Override
-            public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
-                if(!commandFuture.isSuccess()) {
-                    callback.fail(commandFuture.cause());
-                } else {
-                    callback.success(commandFuture.get());
-                }
-            }
-        });
-        try {
-            future.get();
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
-    }
-    private void silentCommand(LoggableRedisCommand command) {
-        command.logRequest(false);
-        command.logResponse(false);
-
-    }
-
-    @VisibleForTesting
-    public void setExecutor(ScheduledThreadPoolExecutor executor) {
-        this.executor = executor;
     }
 
     @VisibleForTesting

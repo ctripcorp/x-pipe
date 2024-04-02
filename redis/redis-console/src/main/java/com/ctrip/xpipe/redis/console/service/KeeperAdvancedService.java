@@ -20,8 +20,6 @@ public interface KeeperAdvancedService {
 
   List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp);
 
-  List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp, boolean isAutoRebalance);
-
   List<RedisTbl> getSwitchMaterNewKeepers(ShardModel shardModel);
 
   List<KeeperBasicInfo> findBestKeepersByKeeperContainer(String targetKeeperContainerIp, int beginPort,
