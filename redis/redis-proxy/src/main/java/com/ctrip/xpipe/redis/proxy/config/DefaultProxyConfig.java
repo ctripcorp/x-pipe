@@ -65,6 +65,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_PROXY_COMPRESS_ALGORITHM_VERSION = "proxy.compress.algorithm.version";
 
+    private static final String KEY_PROXY_REPORT_TRAFFIC = "proxy.report.traffic";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -166,6 +168,11 @@ public class DefaultProxyConfig implements ProxyConfig {
                 return AlgorithmType.valueOf(getProperty(KEY_PROXY_COMPRESS_ALGORITHM, AlgorithmType.ZSTD.name()));
             }
         };
+    }
+
+    @Override
+    public boolean shouldReportTraffic() {
+        return getBooleanProperty(KEY_PROXY_REPORT_TRAFFIC, false);
     }
 
     @Override

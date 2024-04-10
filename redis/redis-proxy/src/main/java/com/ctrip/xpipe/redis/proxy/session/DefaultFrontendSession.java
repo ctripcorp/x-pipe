@@ -9,6 +9,7 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,8 +44,8 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
             logger.debug("[setSessionState][Frontend] already session state: {}", oldState);
         } else {
             logger.info("[setSessionState][Frontend] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
-            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("%s -> %s(%s)",
-                    oldState.toString(), newState.toString(), ChannelUtil.getDesc(getChannel())));
+            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("[Frontend]%s -> %s",
+                    oldState.toString(), newState.toString()), Collections.singletonMap("channel", ChannelUtil.getDesc(getChannel())));
             notifyObservers(new SessionStateChangeEvent(oldState, newState));
         }
     }

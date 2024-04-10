@@ -88,14 +88,14 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
                 new DefaultTunnelMonitorManager(proxyResourceManager));
 
         frontChannel.pipeline().addLast(new FrontendSessionNettyHandler(tunnel),
-                new SessionTrafficReporter(6000, frontend));
+                new SessionTrafficReporter(6000, ()->true, frontend));
 
 
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
 
         EmbeddedChannel backendChannel = new EmbeddedChannel(new BackendSessionHandler(tunnel),
-                new SessionTrafficReporter(6000, backend));
+                new SessionTrafficReporter(6000, ()->true, backend));
         when(backend.getChannel()).thenReturn(backendChannel);
         when(frontend.getChannel()).thenReturn(frontChannel);
 

@@ -7,6 +7,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
+import java.util.function.BooleanSupplier;
+
 /**
  * @author chen.zhu
  * <p>
@@ -20,8 +22,11 @@ public class SessionTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     private String CAT_NAME_IN, CAT_NAME_OUT;
 
-    public SessionTrafficReporter(long reportIntervalMillis, Session session) {
+    private BooleanSupplier shouldReportTraffic;
+
+    public SessionTrafficReporter(long reportIntervalMillis, BooleanSupplier shouldReportTraffic, Session session) {
         super(reportIntervalMillis);
+        this.shouldReportTraffic = shouldReportTraffic;
         this.session = session;
     }
 
@@ -53,6 +58,8 @@ public class SessionTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+        if (!shouldReportTraffic.getAsBoolean()) return;
+
         initCatRelated();
         if(readBytes > 0) {
             logger.debug("[doReportTraffic][tunnel-{}][{}] read bytes: {}", session.tunnel().identity(),

@@ -43,4 +43,6 @@ public interface ProxyConfig extends TLSConfig {
 
     MessageToByteEncoder<ByteBuf> getCompressEncoder();
 
+    boolean shouldReportTraffic();
+
 }
