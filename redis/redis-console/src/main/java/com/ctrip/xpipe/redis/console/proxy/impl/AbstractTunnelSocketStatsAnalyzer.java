@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +95,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getBackendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
-        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
+        metric.addTag(METRIC_TAG_SRC_DC, StringUtil.isEmpty(backupDc) ? "-" : backupDc);
+        metric.addTag(METRIC_TAG_DST_DC, StringUtil.isEmpty(peerDc) ? "-" : peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
@@ -119,8 +120,8 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
         SocketStatsResult socketStatsResult = tunnelSocketStatsResult.getFrontendSocketStats();
         metric.setTimestampMilli(socketStatsResult.getTimestamp());
         metric.setValue(analyze(socketStatsResult.getResult()));
-        if (backupDc != null) metric.addTag(METRIC_TAG_SRC_DC, backupDc);
-        if (peerDc != null) metric.addTag(METRIC_TAG_DST_DC, peerDc);
+        metric.addTag(METRIC_TAG_SRC_DC, StringUtil.isEmpty(backupDc) ? "-" : backupDc);
+        metric.addTag(METRIC_TAG_DST_DC, StringUtil.isEmpty(peerDc) ? "-" : peerDc);
 
         TunnelStatsResult tunnelStatsResult = info.getTunnelStatsResult();
         if (tunnelStatsResult == null) {
