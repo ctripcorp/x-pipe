@@ -205,7 +205,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             ByteBuf byteBuf = (ByteBuf) msg;
             byteBuf.retain();
-            cumulator.cumulate(ctx.channel().alloc(), cumulation, byteBuf);
+            cumulation = cumulator.cumulate(ctx.channel().alloc(), cumulation, byteBuf);
             buffer.set(cumulation);
             super.channelRead(ctx, msg);
         }
