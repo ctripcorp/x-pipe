@@ -7,6 +7,8 @@ import com.dianping.cat.message.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * @author leoliang
  *
@@ -26,6 +28,11 @@ public class CatEventMonitor implements EventMonitor {
     @Override
     public void logEvent(String type, String name) {
         Cat.logEvent(type, shorten(name));
+    }
+
+    @Override
+    public void logEvent(String type, String name, Map<String, String> nameValuePairs) {
+        Cat.logEvent(type, shorten(name), Event.SUCCESS, nameValuePairs);
     }
 
     @Override

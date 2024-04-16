@@ -97,6 +97,11 @@ public class LocalProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public boolean shouldReportTraffic() {
+        return true;
+    }
+
+    @Override
     public ByteToMessageDecoder getCompressDecoder() {
         return new ZstdDecoder();
     }
