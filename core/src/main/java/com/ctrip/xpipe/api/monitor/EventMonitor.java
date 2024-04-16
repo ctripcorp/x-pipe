@@ -2,6 +2,8 @@ package com.ctrip.xpipe.api.monitor;
 
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 
+import java.util.Map;
+
 /**
  * @author leoliang
  *
@@ -16,6 +18,8 @@ public interface EventMonitor {
     void logEvent(String type, String name, long count);
 
     void logEvent(String type, String name);
+
+    void logEvent(String type, String name, Map<String, String> nameValuePairs);
 
     void logAlertEvent(String simpleAlertMessage);
 }

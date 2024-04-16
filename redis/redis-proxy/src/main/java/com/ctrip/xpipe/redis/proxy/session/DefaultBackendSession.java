@@ -26,6 +26,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -123,7 +124,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(loggingHandler);
-                        p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
+                        p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, config::shouldReportTraffic, DefaultBackendSession.this));
                         p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                     }
                 });
@@ -177,11 +178,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     protected void doSetSessionState(SessionState newState) {
         SessionState oldState = this.sessionState.getAndSet(newState);
         if(oldState.equals(newState)) {
-            logger.debug("[setSessionState] already session state: {}", oldState);
+            logger.debug("[setSessionState][Backend] already session state: {}", oldState);
         } else {
-            logger.info("[setSessionState] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
-            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("%s -> %s(%s)",
-                    oldState.toString(), newState.toString(), ChannelUtil.getDesc(getChannel())));
+            logger.info("[setSessionState][Backend] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
+            EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("[Backend]%s->%s", oldState.toString(), newState.toString()),
+                    Collections.singletonMap("channel", ChannelUtil.getDesc(getChannel())));
             notifyObservers(new SessionStateChangeEvent(oldState, newState));
         }
     }
