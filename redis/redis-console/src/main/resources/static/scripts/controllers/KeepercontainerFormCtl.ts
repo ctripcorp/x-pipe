@@ -56,6 +56,11 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
                 });
             });
 
+        KeeperContainerService.getAllDiskTypes()
+            .then(function(result) {
+                $scope.diskTypes = result;
+            })
+
         if($scope.operateType != OPERATE_TYPE.CREATE) {
             KeeperContainerService.findKeepercontainerById($scope.keepercontainerId)
             .then(function(result) {
@@ -71,7 +76,7 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
     function doAddKeepercontainer() {
         if($scope.operateType == OPERATE_TYPE.CREATE) {
             KeeperContainerService.addKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
-                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active)
+                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active, $scope.keepercontainer.diskType)
                 .then(function(result) {
                     if(result.message == 'success' ) {
                         toastr.success("添加成功");
@@ -84,7 +89,7 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
                 });
         } else {
             KeeperContainerService.updateKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
-                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active)
+                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active, $scope.keepercontainer.diskType)
                 .then(function(result) {
                     if(result.message == 'success' ) {
                         toastr.success("修改成功");

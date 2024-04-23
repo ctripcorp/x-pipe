@@ -270,11 +270,11 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(null, keeper.getOrgName());
         Assert.assertEquals("A", keeper.getAzName());
 
-        keeper.setAzName("B");
+        keeper.setAzName(null);
         keeper.setOrgName("org-1");
         keeper.setActive(false);
         keeper.setDcName("jq");
-        keeper.setDiskType("DEFAULT");
+        keeper.setDiskType("AWS_1T");
 
         keeperContainerService.updateKeeperContainerByInfoModel(keeper);
 
@@ -284,7 +284,8 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(7033, keeper1.getAddr().getPort());
         Assert.assertEquals(false, keeper1.isActive());
         Assert.assertEquals("org-1", keeper1.getOrgName());
-        Assert.assertEquals("B", keeper1.getAzName());
+        Assert.assertEquals(null, keeper1.getAzName());
+        Assert.assertEquals("AWS_1T", keeper1.getDiskType());
 
     }
 

@@ -416,13 +416,15 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       proto.setKeepercontainerOrgId(org.getId());
     }
 
-    if (keeperContainerInfoModel.getAzName() != null) {
+    if (!StringUtil.isEmpty(keeperContainerInfoModel.getAzName())) {
       AzTbl azTbl = azService.getAvailableZoneTblByAzName(keeperContainerInfoModel.getAzName());
       if(azTbl == null) {
         throw new IllegalArgumentException(String.format("available zone %s does not exist",
                                                                                 keeperContainerInfoModel.getAzName()));
       }
       proto.setAzId(azTbl.getId());
+    } else {
+      proto.setAzId(0L);
     }
 
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
@@ -511,6 +513,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     keeperContainerInfoModel.setDcName(dcNameMap.get(keepercontainerTbl.getKeepercontainerDc()));
     keeperContainerInfoModel.setAzName(azNameMap.get(keepercontainerTbl.getAzId()));
     keeperContainerInfoModel.setAddr(new HostPort(keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
+    keeperContainerInfoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
 
     OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
     if (organizationTbl != null) {

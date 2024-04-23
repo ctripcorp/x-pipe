@@ -4,16 +4,19 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
+import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerMigrationService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
@@ -27,6 +30,9 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @Autowired
     KeeperContainerMigrationService keeperContainerMigrationService;
+
+    @Autowired
+    ConfigService configService;
 
     @RequestMapping(value = "/keepercontainer/infos/all", method = RequestMethod.GET)
     public List<KeeperContainerInfoModel> getAllKeeperContainerInfos() {
@@ -108,6 +114,21 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
                 .max()
                 .orElse(0);
         return RetMessage.createSuccessMessage(String.valueOf(max));
+    }
+
+    @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.GET)
+    public Set<String> getAllDiskTypeName() {
+        try {
+            Set<String> diskTypes = new HashSet<>();
+            List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+            for (ConfigModel configModel : configs) {
+                diskTypes.add(configModel.getSubKey().split(KeeperContainerDiskType.DEFAULT.interval)[0]);
+            }
+            return diskTypes;
+        } catch (Exception e) {
+            logger.error("[getAllDiskTypeName]", e);
+            return Collections.emptySet();
+        }
     }
 
 }
