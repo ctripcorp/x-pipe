@@ -91,6 +91,21 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> diskType </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="keepercontainer.diskType"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="diskType for diskType in diskTypes"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"></label>
                     <div class="col-sm-7">
                         <button class="btn btn-info" type="submit">

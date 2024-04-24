@@ -27,6 +27,11 @@ angular
             url: '/console/keepercontainer/infos/all',
             isArray : true
         },
+        get_all_diskTypes: {
+            method: 'GET',
+            url: '/console/keepercontainer/diskType',
+            isArray : true
+        },
         get_all_organizations: {
             method: 'GET',
             url: '/console/organizations',
@@ -159,14 +164,26 @@ angular
         return d.promise;
     }
 
-    function addKeepercontainer(addr, dcName, orgName, azName, active) {
+    function getAllDiskTypes() {
+        var d = $q.defer();
+        resource.get_all_diskTypes({},
+            function(result) {
+                d.resolve(result);
+            }, function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType) {
         var d = $q.defer();
         resource.add_keepercontainer({}, {
                     addr : addr,
                     dcName : dcName,
                     orgName : orgName,
                     azName : azName,
-                    active :active
+                    active :active,
+                    diskType : diskType
                 },
                 function(result) {
                 d.resolve(result);
@@ -187,14 +204,15 @@ angular
         return d.promise;
     }
 
-    function updateKeepercontainer(addr, dcName, orgName, azName, active) {
+    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
                     addr : addr,
                     dcName : dcName,
                     orgName : orgName,
                     azName : azName,
-                    active :active
+                    active :active,
+                    diskType : diskType
                 },
                 function(result) {
                 d.resolve(result);
@@ -256,6 +274,7 @@ angular
         findAvailableKeepersByDcAzAndOrg : findAvailableKeepersByDcAzAndOrg,
         getAllInfos: getAllInfos,
         getAllOrganizations: getAllOrganizations,
+        getAllDiskTypes: getAllDiskTypes,
         addKeepercontainer: addKeepercontainer,
         updateKeepercontainer: updateKeepercontainer,
         getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
