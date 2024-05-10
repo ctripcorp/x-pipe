@@ -102,13 +102,13 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             }
         }
         slaves.removeAll(keepers);
-        if (keepers.size() > 1 && hasInvalidKeepers(keepers))
+        if (keepers.size() > 1 && needReset(keepers))
             return new Pair<>(true, String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers));
         else
             return new Pair<>(false, null);
     }
 
-    private boolean hasInvalidKeepers(Set<HostPort> keepers) {
+    private boolean needReset(Set<HostPort> keepers) {
 
         Map<HostPort, SlaveRole> keeperRoles = new ConcurrentHashMap<>();
 
