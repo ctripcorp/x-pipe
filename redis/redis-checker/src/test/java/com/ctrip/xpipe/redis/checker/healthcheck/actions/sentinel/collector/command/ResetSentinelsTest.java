@@ -57,13 +57,13 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()));
 
 //        sentinelManager.slaves
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
         //        1、command failed
         Pair<Boolean, String> shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
         Assert.assertFalse(shouldResetAndReason.getKey());
 
-        //        2、some keepers unreached
+        //        2、some keepers unreachable
         Server activeKeeper0 = startServer(8000,"*5\r\n"
                 + "$6\r\nkeeper\r\n"
                 + "$9\r\nlocalhost\r\n"
@@ -71,13 +71,12 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
         shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("has 2 keepers"));
+        Assert.assertFalse(shouldResetAndReason.getKey());
 
         //        3、keeper master not unique
         Server activeKeeper1 = startServer(8001,"*5\r\n"
                 + "$6\r\nkeeper\r\n"
-                + "$9\r\nlocalhost2\r\n"
+                + "$10\r\nlocalhost2\r\n"
                 + ":6379\r\n"
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
@@ -87,13 +86,13 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
         //        4、keeper master unique
         activeKeeper1.stop();
-        Server activeKeeper2 = startServer(8001,"*5\r\n"
+        Server activeKeeper2 = startServer(8002,"*5\r\n"
                 + "$6\r\nkeeper\r\n"
                 + "$9\r\nlocalhost\r\n"
                 + ":6379\r\n"
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
+        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8002)), "cluster", "shard");
         Assert.assertFalse(shouldResetAndReason.getKey());
         activeKeeper2.stop();
         activeKeeper0.stop();

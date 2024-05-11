@@ -138,8 +138,8 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         }
 
         if (keeperRoles.size() < keepers.size()) {
-            logger.warn("[{}-{}+{}]get role of keepers:{}, all keepers:{}, some keepers unreachable, need reset", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), keeperRoles, keepers);
-            return true;
+            logger.warn("[{}-{}+{}]get role of keepers:{}, all keepers:{}, some keepers unreachable", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), keeperRoles, keepers);
+            return false;
         }
 
         Set<HostPort> keeperMasters = keeperRoles.values().stream().map(slaveRole -> new HostPort(slaveRole.getMasterHost(), slaveRole.getMasterPort())).collect(Collectors.toSet());
