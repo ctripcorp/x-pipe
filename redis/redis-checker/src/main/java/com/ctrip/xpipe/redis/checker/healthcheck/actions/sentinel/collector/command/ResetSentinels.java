@@ -18,19 +18,15 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
@@ -106,10 +102,53 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             }
         }
         slaves.removeAll(keepers);
-        if (keepers.size() > 1)
+        if (keepers.size() > 1 && needReset(keepers))
             return new Pair<>(true, String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers));
         else
             return new Pair<>(false, null);
+    }
+
+    private boolean needReset(Set<HostPort> keepers) {
+
+        Map<HostPort, SlaveRole> keeperRoles = new ConcurrentHashMap<>();
+
+        ParallelCommandChain keeperRoleChain = new ParallelCommandChain();
+        for (HostPort hostPort : keepers) {
+            RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(hostPort.getHost(), hostPort.getPort())), scheduled);
+            roleCommand.future().addListener(future -> {
+                if (future.isSuccess()) {
+                    Role role = future.get();
+                    if (role instanceof SlaveRole) {
+                        keeperRoles.put(hostPort, (SlaveRole) role);
+                    }
+                }
+            });
+            keeperRoleChain.add(roleCommand);
+        }
+
+        try {
+            keeperRoleChain.execute().get(1500, TimeUnit.MILLISECONDS);
+        } catch (Throwable th) {
+            logger.warn("[{}-{}+{}]parallel role command to keepers error", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), th);
+        }
+
+        if (keeperRoles.isEmpty()) {
+            logger.warn("[{}-{}+{}]get role of all keepers failed, keeper status unknown", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId());
+            return false;
+        }
+
+        if (keeperRoles.size() < keepers.size()) {
+            logger.warn("[{}-{}+{}]get role of keepers:{}, all keepers:{}, some keepers unreachable", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), keeperRoles, keepers);
+            return false;
+        }
+
+        Set<HostPort> keeperMasters = keeperRoles.values().stream().map(slaveRole -> new HostPort(slaveRole.getMasterHost(), slaveRole.getMasterPort())).collect(Collectors.toSet());
+        if (keeperMasters.size() > 1) {
+            logger.warn("[{}-{}+{}]keeper master not unique:{}, need reset", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), keeperRoles);
+            return true;
+        }
+
+        return false;
     }
 
     Pair<Boolean, String> inOtherClusterShard(List<HostPort> slaves, String clusterId, String shardId) {
