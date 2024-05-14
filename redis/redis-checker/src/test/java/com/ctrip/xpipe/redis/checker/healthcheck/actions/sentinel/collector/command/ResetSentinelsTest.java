@@ -5,10 +5,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -20,10 +18,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ResetSentinelsTest extends AbstractCheckerTest {
@@ -35,8 +34,6 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     @Mock
     private MetaCache metaCache;
     @Mock
-    private AlertManager alertManager;
-    @Mock
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
     @Mock
     private ScheduledExecutorService scheduled;
@@ -46,7 +43,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
     @Before
     public void init() throws Exception {
-        resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache, alertManager,
+        resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache,
                 keyedObjectPool, scheduled, resetExecutor,sentinelManager);
         resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
     }
@@ -54,14 +51,14 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     @Test
     public void testTooManyKeepers() throws Exception{
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
-        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()));
+        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort("localhost", 6379), new ArrayList<>())));
 
 //        sentinelManager.slaves
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
         //        1、command failed
-        Pair<Boolean, String> shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
+        boolean shouldReset= resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
         //        2、some keepers unreachable
         Server activeKeeper0 = startServer(8000,"*5\r\n"
@@ -70,21 +67,20 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 + ":6379\r\n"
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
-        //        3、keeper master not unique
+        //        3、invalid keeper not connected to master
         Server activeKeeper1 = startServer(8001,"*5\r\n"
                 + "$6\r\nkeeper\r\n"
                 + "$10\r\nlocalhost2\r\n"
                 + ":6379\r\n"
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("has 2 keepers"));
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
-        //        4、keeper master unique
+        //        4、invalid keeper connected to master
         activeKeeper1.stop();
         Server activeKeeper2 = startServer(8002,"*5\r\n"
                 + "$6\r\nkeeper\r\n"
@@ -92,8 +88,8 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 + ":6379\r\n"
                 + "$9\r\nconnected\r\n"
                 + ":477\r\n");
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8002)), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8002)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertFalse(shouldReset);
         activeKeeper2.stop();
         activeKeeper0.stop();
     }
@@ -101,94 +97,83 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     @Test
     public void testOneWayReset() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
-        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()));
-
+        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort("localhost", 6380), new ArrayList<>())));
 //        sentinelManager.slaves
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
 
         HostPort wrongSlave = new HostPort("otherClusterShardSlave", 6379);
         when(metaCache.findClusterShard(wrongSlave)).thenReturn(new Pair<>("otherCluster", "otherShard"));
-        Pair<Boolean, String> shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), wrongSlave), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("but meta:otherCluster:otherShard"));
+        boolean shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), wrongSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
-        Server unknownKeeperServer = startServer(randomPort(), "*3\r\n"
-                + "$6\r\nkeeper\r\n"
-                + ":0\r\n*0\r\n");
-        HostPort unknownKeeper = new HostPort(LOCAL_HOST, unknownKeeperServer.getPort());
-        when(metaCache.findClusterShard(unknownKeeper)).thenReturn(null);
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
+        Server unknownSlaveServer = startServer(8002,"*5\r\n"
+                + "$5\r\nslave\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":6380\r\n"
+                + "$9\r\nconnected\r\n"
+                + ":477\r\n");
+        HostPort unknownConnectedSlave = new HostPort(LOCAL_HOST, unknownSlaveServer.getPort());
+        when(metaCache.findClusterShard(unknownConnectedSlave)).thenReturn(null);
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownConnectedSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertFalse(shouldReset);
+        unknownSlaveServer.stop();
 
-        unknownKeeperServer.stop();
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
+        HostPort unknownUnreachableSlave = new HostPort(LOCAL_HOST, 8003);
+        when(metaCache.findClusterShard(unknownUnreachableSlave)).thenReturn(null);
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownUnreachableSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
+
+        Server unknownAndConnectedToOtherMasterSlaveServer = startServer(8004,"*5\r\n"
+                + "$5\r\nslave\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":6381\r\n"
+                + "$9\r\nconnected\r\n"
+                + ":477\r\n");
+        HostPort unknownAndConnectedToOtherMasterSlave = new HostPort(LOCAL_HOST, unknownAndConnectedToOtherMasterSlaveServer.getPort());
+        when(metaCache.findClusterShard(unknownAndConnectedToOtherMasterSlave)).thenReturn(null);
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownAndConnectedToOtherMasterSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
         HostPort trueSlave = new HostPort(LOCAL_HOST, 6379);
         when(metaCache.findClusterShard(trueSlave)).thenReturn(new Pair<>("cluster", "shard"));
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), trueSlave), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), trueSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertFalse(shouldReset);
 
     }
 
-    @Test
-    public void testOneWayIsRedundantInstance() throws Exception {
-        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
-        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()));
-        int originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
-        try {
-            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
-            boolean result = resetSentinels.redundantInstance(localHostport(0));
-            logger.info("{}", result);
-            Assert.assertTrue(result);
-        } finally {
-            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
-        }
-    }
 
     @Test
     public void testNotOneWayReset() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort(),ClusterType.CROSS_DC);
-        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()));
+        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort("localhost", 6380), new ArrayList<>())));
 
         HostPort trueSlave = new HostPort(LOCAL_HOST, 6379);
         when(metaCache.findClusterShard(trueSlave)).thenReturn(new Pair<>("cluster", "shard"));
-        Pair<Boolean, String> shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
+        boolean shouldReset = resetSentinels.shouldReset(Lists.newArrayList(trueSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertFalse(shouldReset);
 
         HostPort wrongSlave = new HostPort("otherClusterShardSlave", 6379);
         when(metaCache.findClusterShard(wrongSlave)).thenReturn(new Pair<>("otherCluster", "otherShard"));
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, wrongSlave), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("but meta:otherCluster:otherShard"));
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, wrongSlave), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
-        Server unknownActiveSlaveServer = startServer(randomPort(), "*3\r\n"
-                + "$6\r\nslave\r\n"
-                + ":0\r\n*0\r\n");
+        Server unknownActiveSlaveServer = startServer(randomPort(),"*5\r\n"
+                + "$5\r\nslave\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":6380\r\n"
+                + "$9\r\nconnected\r\n"
+                + ":477\r\n");
         HostPort unknownActive = new HostPort(LOCAL_HOST, unknownActiveSlaveServer.getPort());
         when(metaCache.findClusterShard(unknownActive)).thenReturn(null);
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
-        Assert.assertFalse(shouldResetAndReason.getKey());
-        verify(alertManager, times(1)).alert(anyString(), anyString(), any(), any(), anyString());
-
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertFalse(shouldReset);
 
         Server unknownActiveMasterServer = startServer(randomPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
                 + ":0\r\n*0\r\n");
         unknownActive = new HostPort(LOCAL_HOST, unknownActiveMasterServer.getPort());
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        verify(alertManager, times(1)).alert(anyString(), anyString(), any(), any(), anyString());
-
-        unknownActiveSlaveServer.stop();
-        unknownActiveMasterServer.stop();
-        waitConditionUntilTimeOut(() -> unknownActiveSlaveServer.getConnected() <= 0);
-        shouldResetAndReason = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
-        Assert.assertTrue(shouldResetAndReason.getKey());
-        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or master"));
-        verify(metaCache, never()).getAllKeepers();
+        shouldReset = resetSentinels.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
+        Assert.assertTrue(shouldReset);
 
     }
 
