@@ -91,8 +91,9 @@ public class SentinelHelloCollectContext {
         return trueMasterInfo;
     }
 
-    public void setTrueMasterInfo(Pair<HostPort, List<HostPort>> trueMasterInfo) {
+    public SentinelHelloCollectContext setTrueMasterInfo(Pair<HostPort, List<HostPort>> trueMasterInfo) {
         this.trueMasterInfo = trueMasterInfo;
+        return this;
     }
 
     public Set<SentinelHello> getToDelete() {
