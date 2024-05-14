@@ -43,7 +43,7 @@ public class DeleteSentinels extends AbstractSentinelHelloCollectCommand {
                 ParallelCommandChain deleteChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
 
                 context.getToDelete().forEach((hello -> {
-                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Remove", hello.toString());
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Remove", hello.getMonitorName());
                     HostPort sentinelAddr = hello.getSentinelAddr();
                     deleteChain.add(sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName()));
                 }));
