@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="baseDir" value="/opt/logs/100004374" />
+    <property name="appName" value="xpipe-console" />
+    <property name="delayLogName" value="redis-delay" />
+    <property name="nettyClient" value="netty-client" />
+
+    <appender name="CONSOLE" class="com.alibaba.arthas.deps.ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%d{HH:mm:ss:SSS}][%p][%t][%X{class}]%message%xEx%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ROLLING" class="com.alibaba.arthas.deps.ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${baseDir}/${appName}-proxy-client.log</file>
+
+        <!-- 轮转策略 -->
+        <rollingPolicy class="com.alibaba.arthas.deps.ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${baseDir}/${appName}-proxy-client-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+            <MaxHistory>30</MaxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+            <maxFileSize>100MB</maxFileSize>
+        </rollingPolicy>
+        <!-- 日志输出格式 -->
+        <encoder charset="utf-8">
+            <pattern>[%d{HH:mm:ss:SSS}][%p][%t][%c]%message%xEx%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ROLLING" />
+    </root>
+
+</configuration>

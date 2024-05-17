@@ -60,7 +60,10 @@ function changeAndMakeLogDir(){
     makedir $logdir
     #../xx.conf
     sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$logdir"'#'  $current/../*.conf
+
+   //  <property name="baseDir" value="/opt/logs/100004374" />
     sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$logdir'</Property>#'   $current/../config/log4j2.xml
+    sed -i 's|<property name="baseDir" value="/opt/logs/[^"]*" />|<property name="baseDir" value="'$logdir'" />|'   $current/../config/arthas-logback.xml
 }
 function changePort(){
     conf=$1
