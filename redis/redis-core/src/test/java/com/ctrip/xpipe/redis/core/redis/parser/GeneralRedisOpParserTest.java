@@ -51,6 +51,7 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
     @Test
     public void testCtripGtidLwmParse() {
         RedisOpLwm redisOpLwm = new RedisOpLwm("24d9e2513182d156cbd999df5ebedf24e7634140", 1494763841L);
+        System.out.println(redisOpLwm.buildRawOpArgs());
         RedisOp redisOp = parser.parse(redisOpLwm.buildRawOpArgs());
         Assert.assertEquals(RedisOpType.GTID_LWM, redisOp.getOpType());
         Assert.assertNull(redisOp.getOpGtid());

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author lishanglin
  * date 2022/2/23
  */
-public class DefaultXsyncTest extends AbstractRedisOpParserTest implements XsyncObserver {
+public class DefaultXsyncTest extends AbstractRedisOpParserTest implements SyncObserver {
 
     private DefaultXsync xsync;
 
@@ -41,7 +41,7 @@ public class DefaultXsyncTest extends AbstractRedisOpParserTest implements Xsync
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
                 gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
-        xsync.addXsyncObserver(this);
+        xsync.addSyncObserver(this);
     }
 
     @Test

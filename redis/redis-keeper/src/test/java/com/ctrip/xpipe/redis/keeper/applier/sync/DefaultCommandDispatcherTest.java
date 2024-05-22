@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.xsync;
+package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -88,7 +88,7 @@ public class DefaultCommandDispatcherTest {
     public void toInt() {
         for (int i = 0; i < 257; i++) {
 
-            byte[] bytes = SafeEncoder.encode(i+"");
+            byte[] bytes = SafeEncoder.encode(i + "");
 
             int rt = dispatcher.toInt(bytes);
             assertEquals(i, rt);

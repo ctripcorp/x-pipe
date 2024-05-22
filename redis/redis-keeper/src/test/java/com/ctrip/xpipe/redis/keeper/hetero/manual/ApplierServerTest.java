@@ -55,7 +55,7 @@ public class ApplierServerTest extends AbstractRedisKeeperTest {
 
         //applier.setStateBackup();
 
-        applier.setStateActive(new DefaultEndPoint("127.0.0.1", 6000), new GtidSet("29097dd95625bc57c42bb0d8c887ec7bc847c05a:0"));
+        applier.setStateActive(new DefaultEndPoint("127.0.0.1", 6000), new GtidSet("29097dd95625bc57c42bb0d8c887ec7bc847c05a:0"),true);
 
         //applier.setStateBackup();
 

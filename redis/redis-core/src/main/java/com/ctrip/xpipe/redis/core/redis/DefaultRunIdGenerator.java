@@ -25,7 +25,6 @@ public class DefaultRunIdGenerator implements RunidGenerator{
 			sb.append(hex[index]);
 		}
 		return sb.toString();
-	} 
-	
+	}
 
 }

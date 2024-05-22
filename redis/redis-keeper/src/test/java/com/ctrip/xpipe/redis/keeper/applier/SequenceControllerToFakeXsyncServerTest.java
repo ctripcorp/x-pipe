@@ -4,7 +4,7 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException;
  * <p>
  * Mar 01, 2022 8:11 AM
  */
-public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpParserTest implements XsyncObserver {
+public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpParserTest implements SyncObserver {
 
     private DefaultXsync xsync;
 
@@ -48,7 +48,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
                 gtidSet, null, scheduled, 0);
         redisOps = new ArrayList<>();
-        xsync.addXsyncObserver(this);
+        xsync.addSyncObserver(this);
 
         client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", null, executors);
         sequenceController = new DefaultSequenceController();

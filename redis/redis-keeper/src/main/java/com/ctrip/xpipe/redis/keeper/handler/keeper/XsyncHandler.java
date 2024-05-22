@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.Xsync;
+import com.ctrip.xpipe.redis.core.protocal.Sync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -35,7 +35,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
 
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 
-        Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Xsync.SIDNO_SEPARATOR)));
+        Set<String> interestedSids = new HashSet<>(Arrays.asList(args[0].split(Sync.SIDNO_SEPARATOR)));
         GtidSet reqExcludedGtidSet = new GtidSet(args[1]);
 
         if (reqExcludedGtidSet.isZero()) {
@@ -88,7 +88,7 @@ public class XsyncHandler extends AbstractSyncCommandHandler {
     protected void doPartialSync(RedisSlave redisSlave, Set<String> interestedSid, GtidSet excludedGtidSet, long continueOffset) {
         logger.info("[doPartialSync] {}", redisSlave);
         SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %d",
-                Xsync.PARTIAL_SYNC, continueOffset));
+                Sync.PARTIAL_SYNC, continueOffset));
 
         redisSlave.sendMessage(simpleStringParser.format());
         redisSlave.markPsyncProcessed();
