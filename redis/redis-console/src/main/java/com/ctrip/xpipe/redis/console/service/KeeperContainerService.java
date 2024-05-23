@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,10 @@ public interface KeeperContainerService {
 	void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
 
 	void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
+
+	List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp);
+
+	void resetKeeper(String activeKeeperIp, Long replId);
 
 	Map<Long, Long> keeperContainerIdDcMap();
 }

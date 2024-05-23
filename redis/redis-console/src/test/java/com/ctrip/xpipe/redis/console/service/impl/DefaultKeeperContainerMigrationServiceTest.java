@@ -39,14 +39,14 @@ public class DefaultKeeperContainerMigrationServiceTest {
         ShardModel shardModel = new ShardModel();
         Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateShardKeepers(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchMaster(Mockito.anyString(), Mockito.anyString(),  Mockito.any()))
+        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(true);
     }
 
     @Test
-    public void testMigrationKeeperContainer() {
+    public void testMigrationKeeperContainer() throws Throwable {
         List<MigrationKeeperContainerDetailModel> models = new ArrayList<>();
 
         MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel();
@@ -75,20 +75,20 @@ public class DefaultKeeperContainerMigrationServiceTest {
         model.setSrcKeeperContainer(src).setTargetKeeperContainer(target).setMigrateKeeperCount(3).setMigrateShards(migrationShards);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(0, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
 
         models.clear();
         model.setSwitchActive(true);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
 
         models.clear();
         model.setSwitchActive(false);
         model.setKeeperPairOverload(true);
         models.add(model);
         service.beginMigrateKeeperContainers(models);
-        Assert.assertEquals(9, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
     }
 
     @Test

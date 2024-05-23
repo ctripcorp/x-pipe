@@ -72,18 +72,10 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @Override
   public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) {
-    return getNewKeepers(dcName, clusterName, shardModel, srcKeeperContainerIp, targetKeeperContainerIp, false);
-  }
-
-  @Override
-  public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp, boolean isAutoRebalance) {
     List<RedisTbl> newKeepers = new ArrayList<>();
     logger.debug("[migrateKeepers] origin keepers {} from cluster:{}, dc:{}, shard:{}",shardModel.getKeepers(), clusterName, dcName, shardModel.getShardTbl().getShardName());
     for (RedisTbl keeper : shardModel.getKeepers()) {
       if (!ObjectUtils.equals(keeper.getRedisIp(), srcKeeperContainerIp)) {
-        if (isAutoRebalance) {
-          keeper.setMaster(true);
-        }
         newKeepers.add(keeper);
       }
     }
@@ -110,8 +102,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         newKeepers.add(new RedisTbl().setKeepercontainerId(keeperSelected.getKeeperContainerId())
                 .setRedisIp(keeperSelected.getHost())
                 .setRedisPort(keeperSelected.getPort())
-                .setRedisRole(XPipeConsoleConstant.ROLE_KEEPER)
-                .setMaster(!newKeepers.get(0).isMaster()));
+                .setRedisRole(XPipeConsoleConstant.ROLE_KEEPER));
         break;
       }
     }

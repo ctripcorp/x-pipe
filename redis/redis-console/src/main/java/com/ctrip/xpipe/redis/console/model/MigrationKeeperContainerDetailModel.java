@@ -168,16 +168,7 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     @Override
     public String toString() {
-        return "MigrationKeeperContainerDetailModel{" +
-                "srcKeeperContainer=" + srcKeeperContainer +
-                ", targetKeeperContainer=" + targetKeeperContainer +
-                ", migrateKeeperCount=" + migrateKeeperCount +
-                ", migrateKeeperCompleteCount=" + migrateKeeperCompleteCount +
-                ", switchActive=" + switchActive +
-                ", keeperPairOverload=" + keeperPairOverload +
-                ", cause='" + cause + '\'' +
-                ", migrateShards=" + migrateShards +
-                ", updateTime=" + updateTime +
-                '}';
+        String type = switchActive ? "switchActiveKeeper" : (keeperPairOverload ? "migrateBackupKeeper" : "migrateActiveKeeper");
+        return String.format("[%s]%s->%s:%s", type, srcKeeperContainer.getKeeperIp(), targetKeeperContainer.getKeeperIp(), migrateShards);
     }
 }

@@ -10,17 +10,21 @@ public class IPPairData {
     private long inputFlow;
     private long peerData;
 
+    private Map<DcClusterShardKeeper, KeeperUsedInfo> entryMap = new HashMap<>();
+
     public IPPairData() {
     }
 
     public void removeDcClusterShard(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
         this.inputFlow -= migrateDcClusterShard.getValue().getInputFlow();
         this.peerData -= migrateDcClusterShard.getValue().getPeerData();
+        this.entryMap.remove(migrateDcClusterShard.getKey());
     }
 
     public void addDcClusterShard(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
         this.inputFlow += migrateDcClusterShard.getValue().getInputFlow();
         this.peerData += migrateDcClusterShard.getValue().getPeerData();
+        this.entryMap.put(migrateDcClusterShard.getKey(), migrateDcClusterShard.getValue());
     }
 
     public long getInputFlow() {
@@ -31,4 +35,7 @@ public class IPPairData {
         return peerData;
     }
 
+    public Map<DcClusterShardKeeper, KeeperUsedInfo> getEntryMap() {
+        return entryMap;
+    }
 }

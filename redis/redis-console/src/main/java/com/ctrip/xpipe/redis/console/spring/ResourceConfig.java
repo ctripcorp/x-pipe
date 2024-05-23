@@ -26,6 +26,8 @@ public class ResourceConfig extends AbstractRedisConfigContext {
 
     private final static int KEYED_CLIENT_POOL_SIZE = Integer.parseInt(System.getProperty("KEYED_CLIENT_POOL_SIZE", "8"));
 
+    private final static int MIGRATE_KEEPER_CLIENT_POOL_SIZE = Integer.parseInt(System.getProperty("MIGRATE_KEEPER_CLIENT_POOL_SIZE", "1"));
+
     @Bean(name = REDIS_COMMAND_EXECUTOR)
     public ScheduledExecutorService getRedisCommandExecutor() {
         int corePoolSize = OsUtils.getCpuCount();
@@ -49,6 +51,14 @@ public class ResourceConfig extends AbstractRedisConfigContext {
     @Bean(name = REDIS_SESSION_NETTY_CLIENT_POOL)
     public XpipeNettyClientKeyedObjectPool getRedisSessionNettyClientPool() throws Exception {
         XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(REDIS_SESSION_CLIENT_POOL_SIZE));
+        LifecycleHelper.initializeIfPossible(keyedObjectPool);
+        LifecycleHelper.startIfPossible(keyedObjectPool);
+        return keyedObjectPool;
+    }
+
+    @Bean(name = MIGRATE_KEEPER_CLIENT_POOL)
+    public XpipeNettyClientKeyedObjectPool getMigrateKeeperClientPool() throws Exception {
+        XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(MIGRATE_KEEPER_CLIENT_POOL_SIZE));
         LifecycleHelper.initializeIfPossible(keyedObjectPool);
         LifecycleHelper.startIfPossible(keyedObjectPool);
         return keyedObjectPool;
