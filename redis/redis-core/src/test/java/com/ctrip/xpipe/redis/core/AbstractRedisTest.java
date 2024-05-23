@@ -19,9 +19,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.AuxOnlyRdbParser;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
-import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
-import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
+import com.ctrip.xpipe.redis.core.server.*;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -452,6 +450,13 @@ public abstract class AbstractRedisTest extends AbstractTest {
         fakeXsyncServer.start();
         add(fakeXsyncServer);
         return fakeXsyncServer;
+    }
+    protected FakePsyncServer startFakePsyncServer(int serverPort, FakePsyncHandler psyncHandler) throws Exception {
+        FakePsyncServer fakePsyncServer = new FakePsyncServer(serverPort, psyncHandler);
+        fakePsyncServer.initialize();
+        fakePsyncServer.start();
+        add(fakePsyncServer);
+        return fakePsyncServer;
     }
 
     protected FakeRedisServer startFakeRedisServer() throws Exception {

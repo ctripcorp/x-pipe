@@ -51,7 +51,6 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 	@Override
 	public RedisClientProtocol<InOutPayload> read(ByteBuf byteBuf){
 		switch (bulkStringState) {
-
 			case READING_EOF_MARK:
 				eofJudger = readEOfMark(byteBuf);
 				if (eofJudger == null) {

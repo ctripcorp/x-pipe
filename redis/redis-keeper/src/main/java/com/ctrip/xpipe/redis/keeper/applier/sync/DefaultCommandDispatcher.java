@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.xsync;
+package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
@@ -70,6 +70,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @VisibleForTesting
     GtidSet gtid_received;
 
+    private GtidSet rdbGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
 
@@ -110,16 +112,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
-
         logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-
-        if (rdbGtidSet.isEmpty()) {
-            logger.info("[beginReadRdb] rdbGtidSet is empty, skip merge start");
-            return;
-        }
-
-        //ctrip.merge_start
-        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
     }
 
     @Override
@@ -133,7 +126,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
+    public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
 
         logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
 
@@ -379,7 +372,17 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAux(String key, String value) {
-
+        if (key.equalsIgnoreCase("gtid")) {
+            rdbGtidSet = GtidSet.PLACE_HOLDER.equals(value) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(value);
+            this.gtid_received = rdbGtidSet.clone();
+            this.gtid_executed.set(rdbGtidSet.clone());
+            if (rdbGtidSet.isEmpty()) {
+                logger.info("[beginReadRdb] rdbGtidSet is empty, skip merge start");
+                return;
+            }
+            //ctrip.merge_start
+            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
+        }
     }
 
     @Override

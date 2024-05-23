@@ -1,11 +1,11 @@
-package com.ctrip.xpipe.redis.keeper.applier.xsync;
+package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.protocal.Xsync;
+import com.ctrip.xpipe.redis.core.protocal.Sync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
@@ -33,14 +33,20 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
     FakeXsyncServer server;
 
+    private <T> T getSuperFieldFrom(Object obj, String fieldName) throws Exception {
+        Field declaredField = obj.getClass().getSuperclass().getDeclaredField(fieldName);
+        declaredField.setAccessible(true);
+        return (T) declaredField.get(obj);
+    }
+
     private <T> T getFieldFrom(Object obj, String fieldName) throws Exception {
         Field declaredField = obj.getClass().getDeclaredField(fieldName);
         declaredField.setAccessible(true);
         return (T) declaredField.get(obj);
     }
 
-    private NettyClient waitXsyncNettyClientConnected(Xsync xsync) throws Exception {
-        NettyClient nettyClient = getFieldFrom(xsync, "nettyClient");
+    private NettyClient waitXsyncNettyClientConnected(Sync sync) throws Exception {
+        NettyClient nettyClient = getSuperFieldFrom(sync, "nettyClient");
         waitConditionUntilTimeOut(() -> nettyClient.channel().isActive());
         return nettyClient;
     }
@@ -62,12 +68,12 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
     public void doDisconnect() throws Exception {
         server = startFakeXsyncServer(randomPort(), null);
 
-        Xsync xsync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet("mockRunid:0"), null, scheduled);
-        xsync.execute();
+        Sync sync = new DefaultXsync("127.0.0.1", server.getPort(), new GtidSet("mockRunid:0"), null, scheduled);
+        sync.execute();
 
-        NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
+        NettyClient nettyClient = waitXsyncNettyClientConnected(sync);
 
-        xsync.close();
+        sync.close();
 
         waitConditionUntilTimeOut(() -> !nettyClient.channel().isActive(), 3000);
     }
@@ -105,9 +111,9 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
-        Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+        Sync sync = getSuperFieldFrom(xsyncReplication, "currentSync");
 
-        waitConditionUntilTimeOut(()-> {
+        waitConditionUntilTimeOut(() -> {
             try {
                 GtidSet gtid_received = getFieldFrom(xsyncReplication.dispatcher, "gtid_received");
                 return gtid_received != null;
@@ -118,7 +124,7 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
         GtidSet gtid_received = getFieldFrom(xsyncReplication.dispatcher, "gtid_received");
         gtid_received.rise("mockRunId:10");
 
-        NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
+        NettyClient nettyClient = waitXsyncNettyClientConnected(sync);
 
         nettyClient.channel().close().sync();
 
@@ -127,8 +133,8 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
         // wait reconnect
         waitConditionUntilTimeOut(() -> {
             try {
-                final Xsync currentXsync = getFieldFrom(xsyncReplication, "currentXsync");
-                NettyClient nettyClient1 = getFieldFrom(currentXsync, "nettyClient");
+                final Sync currentSync = getSuperFieldFrom(xsyncReplication, "currentSync");
+                NettyClient nettyClient1 = getSuperFieldFrom(currentSync, "nettyClient");
                 return nettyClient1.channel().isActive();
             } catch (Exception e) {
                 return false;
@@ -148,27 +154,27 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
-        Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+        Sync sync = getSuperFieldFrom(xsyncReplication, "currentSync");
 
-        NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
+        NettyClient nettyClient = waitXsyncNettyClientConnected(sync);
 
         xsyncReplication.connect(null);
 
-        waitConditionUntilTimeOut(()-> !nettyClient.channel().isActive());
+        waitConditionUntilTimeOut(() -> !nettyClient.channel().isActive());
 
         try {
             // will not reconnect when disconnect
             waitConditionUntilTimeOut(() -> {
                 try {
-                    final Xsync currentXsync = getFieldFrom(xsyncReplication, "currentXsync");
-                    NettyClient nettyClient1 = getFieldFrom(currentXsync, "nettyClient");
+                    final Sync currentSync = getSuperFieldFrom(xsyncReplication, "currentSync");
+                    NettyClient nettyClient1 = getSuperFieldFrom(currentSync, "nettyClient");
                     return nettyClient1.channel().isActive();
                 } catch (Exception e) {
                     return false;
                 }
             }, 3000);
             Assert.fail();
-        } catch (TimeoutException t){
+        } catch (TimeoutException t) {
             //expected
         }
     }
@@ -181,23 +187,23 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
-        Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+        Sync sync = getSuperFieldFrom(xsyncReplication, "currentSync");
 
-        NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
+        NettyClient nettyClient = waitXsyncNettyClientConnected(sync);
 
         FakeXsyncServer server1 = startFakeXsyncServer(randomPort(), null);
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server1.getPort()), new GtidSet("mockRunId1:0"));
 
         // old connection will disconnect
-        waitConditionUntilTimeOut(()-> !nettyClient.channel().isActive());
+        waitConditionUntilTimeOut(() -> !nettyClient.channel().isActive());
 
         // wait reconnect with new endpoint
         waitConditionUntilTimeOut(() -> {
             try {
-                final Xsync currentXsync = getFieldFrom(xsyncReplication, "currentXsync");
-                NettyClient nettyClient1 = getFieldFrom(currentXsync, "nettyClient");
-                return nettyClient1.channel().isActive() && ((InetSocketAddress)nettyClient1.channel().remoteAddress()).getPort() == server1.getPort();
+                final Sync currentSync = getSuperFieldFrom(xsyncReplication, "currentSync");
+                NettyClient nettyClient1 = getSuperFieldFrom(currentSync, "nettyClient");
+                return nettyClient1.channel().isActive() && ((InetSocketAddress) nettyClient1.channel().remoteAddress()).getPort() == server1.getPort();
             } catch (Exception e) {
                 return false;
             }
@@ -213,28 +219,28 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
-        Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+        Sync sync = getSuperFieldFrom(xsyncReplication, "currentSync");
 
-        NettyClient nettyClient = waitXsyncNettyClientConnected(xsync);
+        NettyClient nettyClient = waitXsyncNettyClientConnected(sync);
 
         xsyncReplication.connect(null);
 
         // old connection will disconnect
-        waitConditionUntilTimeOut(()-> !nettyClient.channel().isActive());
+        waitConditionUntilTimeOut(() -> !nettyClient.channel().isActive());
 
         try {
             // will not reconnect
             waitConditionUntilTimeOut(() -> {
                 try {
-                    final Xsync currentXsync = getFieldFrom(xsyncReplication, "currentXsync");
-                    NettyClient nettyClient1 = getFieldFrom(currentXsync, "nettyClient");
+                    final Sync currentSync = getSuperFieldFrom(xsyncReplication, "currentSync");
+                    NettyClient nettyClient1 = getSuperFieldFrom(currentSync, "nettyClient");
                     return nettyClient1.channel().isActive();
                 } catch (Exception e) {
                     return false;
                 }
             }, 3000);
             Assert.fail();
-        } catch (TimeoutException t){
+        } catch (TimeoutException t) {
             // expected
         }
 
@@ -243,8 +249,8 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
         // wait reconnect with new endpoint
         waitConditionUntilTimeOut(() -> {
             try {
-                final Xsync currentXsync = getFieldFrom(xsyncReplication, "currentXsync");
-                NettyClient nettyClient1 = getFieldFrom(currentXsync, "nettyClient");
+                final Sync currentSync = getSuperFieldFrom(xsyncReplication, "currentSync");
+                NettyClient nettyClient1 = getSuperFieldFrom(currentSync, "nettyClient");
                 return nettyClient1.channel().isActive();
             } catch (Exception e) {
                 return false;
@@ -261,14 +267,14 @@ public class DefaultXsyncReplicationTest extends AbstractRedisTest {
 
         xsyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
-        Xsync xsync = getFieldFrom(xsyncReplication, "currentXsync");
+        Sync sync = getSuperFieldFrom(xsyncReplication, "currentSync");
 
-        waitXsyncNettyClientConnected(xsync);
+        waitXsyncNettyClientConnected(sync);
 
         try {
-            waitConditionUntilTimeOut(()-> server.slaveCount() > 1, 3000);
+            waitConditionUntilTimeOut(() -> server.slaveCount() > 1, 3000);
             Assert.fail();
-        } catch (TimeoutException e){
+        } catch (TimeoutException e) {
             // expected
         }
 
