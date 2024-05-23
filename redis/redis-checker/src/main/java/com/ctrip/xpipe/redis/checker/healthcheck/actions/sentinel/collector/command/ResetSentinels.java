@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
@@ -37,7 +37,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private ScheduledExecutorService scheduled;
     private ExecutorService resetExecutor;
     private CheckerConfig checkerConfig;
-    private RateLimiter rateLimiter;
+    private AtomicInteger resetSentinelCounts = new AtomicInteger();
 
     public ResetSentinels(SentinelHelloCollectContext context, MetaCache metaCache,
                           XpipeNettyClientKeyedObjectPool keyedObjectPool,
@@ -50,10 +50,6 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         this.resetExecutor = resetExecutor;
         this.sentinelManager = sentinelManager;
         this.checkerConfig = checkerConfig;
-        int sentinelQuorum = checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
-        double checkIntervalInSec = (double) checkerConfig.getSentinelCheckIntervalMilli() / 1000;
-        double rate = (double) (sentinelQuorum - 1) / checkIntervalInSec;
-        this.rateLimiter = RateLimiter.create(rate);
     }
 
     @Override
@@ -105,7 +101,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     }
 
 
-    private Set<HostPort> unknownInstances(List<HostPort> slaves, String clusterId, String shardId) {
+    private Set<HostPort> unknownInstances(List<HostPort> slaves) {
         Set<HostPort> unknownInstances = Sets.newHashSet(slaves);
         unknownInstances.removeAll(context.getShardInstances());
         slaves.removeAll(unknownInstances);
@@ -116,7 +112,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private static final int EXPECTED_MASTER_COUNT = 1;
     boolean shouldReset(List<HostPort> slaves, String clusterId, String shardId, String sentinelMonitorName, HostPort sentinelAddr) {
         Set<HostPort> toManyKeepers = tooManyKeepers(slaves);
-        Set<HostPort> unknownSlaves = unknownInstances(slaves, clusterId, shardId);
+        Set<HostPort> unknownSlaves = unknownInstances(slaves);
 
         if (toManyKeepers.isEmpty() && unknownSlaves.isEmpty())
             return false;
@@ -235,7 +231,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
 
             if (shouldReset(slaves, clusterId, shardId, sentinelMonitorName, sentinelAddr)) {
-                if (rateLimiter.tryAcquire()) {
+                if (resetSentinelCounts.incrementAndGet() < checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()) {
                     CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", sentinelMonitorName);
                     sentinelManager.reset(sentinel, sentinelMonitorName).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
                         logger.error("[{}-{}+{}][reset]{}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, throwable);

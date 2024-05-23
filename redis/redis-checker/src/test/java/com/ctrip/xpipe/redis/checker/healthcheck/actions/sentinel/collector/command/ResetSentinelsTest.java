@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -46,8 +45,6 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
     @Before
     public void init() throws Exception {
-        when(checkerConfig.getSentinelCheckIntervalMilli()).thenReturn(15000);
-        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache,
                 keyedObjectPool, scheduled, resetExecutor,sentinelManager,checkerConfig);
         resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
