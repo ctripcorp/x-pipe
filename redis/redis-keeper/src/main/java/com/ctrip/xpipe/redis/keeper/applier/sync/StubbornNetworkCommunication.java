@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.xsync;
+package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;

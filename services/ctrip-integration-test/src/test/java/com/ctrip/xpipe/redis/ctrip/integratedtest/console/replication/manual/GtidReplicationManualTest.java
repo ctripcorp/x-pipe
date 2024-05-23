@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -37,7 +37,7 @@ import java.util.Map;
  * 2、mkdir -p /opt/config/100004374/credis
  * 3、echo 'group.master=127.0.0.1:6380' > /opt/config/100004374/credis/ApplierTest.properties
  */
-public class GtidReplicationManualTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
+public class GtidReplicationManualTest extends AbstractKeeperIntegrated implements SyncObserver, RdbParseListener {
 
     private RedisKeeperServer gtidKeeperServer;
 
@@ -78,7 +78,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
         waitConditionUntilTimeOut(() -> MASTER_STATE.REDIS_REPL_CONNECTED.equals(gtidKeeperServer.getRedisMaster().getMasterState()));
 
         DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet(reqUuid + ":0"), null, scheduled);
-        xsync.addXsyncObserver(this);
+        xsync.addSyncObserver(this);
         xsync.execute(executors);
 
         ApplierMeta applierMeta = new ApplierMeta();
@@ -90,7 +90,7 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
         applierServer.initialize();
         applierServer.start();
 
-        applierServer.setStateActive(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"));
+        applierServer.setStateActive(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"), true);
 
         waitForAnyKeyToExit();
     }

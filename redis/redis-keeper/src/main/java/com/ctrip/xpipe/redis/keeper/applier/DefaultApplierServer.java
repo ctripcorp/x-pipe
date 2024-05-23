@@ -21,14 +21,12 @@ import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
+import com.ctrip.xpipe.redis.keeper.applier.sync.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
-import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierCommandDispatcher;
-import com.ctrip.xpipe.redis.keeper.applier.xsync.ApplierXsyncReplication;
-import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultCommandDispatcher;
-import com.ctrip.xpipe.redis.keeper.applier.xsync.DefaultXsyncReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.handler.ApplierCommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.impl.ApplierRedisClient;
 import com.ctrip.xpipe.redis.keeper.netty.ApplierChannelHandlerFactory;
@@ -48,6 +46,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -68,7 +67,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public ApplierLwmManager lwmManager;
 
     @InstanceDependency
-    public ApplierXsyncReplication replication;
+    public AtomicReference<ApplierSyncReplication> replication;
 
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
@@ -92,6 +91,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public AtomicReference<GtidSet> gtid_executed;
+
+    @InstanceDependency
+    public AtomicReference<String> replId;
 
     public final int listeningPort;
 
@@ -127,7 +129,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private final Map<Channel, RedisClient> redisClients = new ConcurrentHashMap<Channel, RedisClient>();
 
-    private EventLoopGroup bossGroup ;
+    private EventLoopGroup bossGroup;
 
     private EventLoopGroup workerGroup;
 
@@ -154,9 +156,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.lwmManager = new DefaultLwmManager();
-        this.replication = new DefaultXsyncReplication(this);
         this.dispatcher = new DefaultCommandDispatcher();
-        this.offsetRecorder = new AtomicLong(0);
+        this.replication = new AtomicReference<>();
+        this.offsetRecorder = new AtomicLong(-1);
+        this.replId = new AtomicReference<>("?");
 
         this.parser = parser;
         this.leaderElectorWrapper = new InstanceComponentWrapper<>(createLeaderElector(clusterId, shardId, applierMeta,
@@ -205,7 +208,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         bossGroup = new NioEventLoopGroup(DEFAULT_NTEEY_BOSS_THREADS_SIZE,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss-" + threadPoolName));
         workerGroup = new NioEventLoopGroup(DEFAULT_NTEEY_WORK_THREADS_SIZE,
-                ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-"+ threadPoolName));
+                ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-" + threadPoolName));
         clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId,
                 "RedisClient-" + threadPoolName));
     }
@@ -247,15 +250,45 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     }
 
     @Override
-    public void setStateActive(Endpoint endpoint, GtidSet gtidSet) {
+    public void setStateActive(Endpoint endpoint, GtidSet gtidSet, boolean useXsync) {
+        createReplication(useXsync);
         this.state = STATE.ACTIVE;
-        replication.connect(endpoint, gtidSet);
+        replication.get().connect(endpoint, gtidSet);
     }
+
+    private void createReplication(boolean useXsync) {
+        if (Objects.nonNull(replication.get())) {
+            if ((replication.get() instanceof DefaultXsyncReplication) != useXsync) {
+                throw new IllegalStateException("can't change protocol");
+            }
+            return;
+        }
+        logger.info("[setStateActive] useXsync:{}", useXsync);
+        try {
+            AbstractSyncReplication syncReplication;
+            if (useXsync) {
+                syncReplication = new DefaultXsyncReplication(this);
+            } else {
+                syncReplication = new DefaultPsyncReplication(this);
+            }
+            syncReplication.inject(dependencies);
+            ComponentRegistryHolder.getComponentRegistry().add(syncReplication);
+            this.replication.set(syncReplication);
+        } catch (Exception e) {
+            logger.error("[setStateActive] inject syncReplication error", e);
+            throw new RuntimeException("create replication error");
+        }
+
+    }
+
 
     @Override
     public void setStateBackup() {
+        if (Objects.isNull(replication)) {
+            createReplication(true);
+        }
         this.state = STATE.BACKUP;
-        replication.connect(null);
+        replication.get().connect(null);
     }
 
     @Override
@@ -280,7 +313,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     public Endpoint getUpstreamEndpoint() {
-        return replication.endpoint();
+        return replication.get().endpoint();
     }
 
     @Override
@@ -313,7 +346,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private void stopServer() {
 
-        if(serverSocketChannel != null){
+        if (serverSocketChannel != null) {
             serverSocketChannel.close();
         }
     }
@@ -354,7 +387,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         String info = "os:" + OsUtils.osInfo() + RedisProtocol.CRLF;
         info += "run_id:" + applierMeta.getId() + RedisProtocol.CRLF;
-        info += "uptime_in_seconds:" + (System.currentTimeMillis() - startTime)/1000;
+        info += "uptime_in_seconds:" + (System.currentTimeMillis() - startTime) / 1000;
         return info;
     }
 

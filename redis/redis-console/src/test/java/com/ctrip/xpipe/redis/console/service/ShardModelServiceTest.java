@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.command.DefaultCommandFuture;
+import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.model.impl.ShardModelServiceImpl;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +19,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -38,10 +38,16 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
     private KeeperAdvancedService keeperAdvancedService;
 
     @Mock
+    private KeeperContainerService keeperContainerService;
+
+    @Mock
     private RedisService redisService;
 
     @Mock
     private RedisSession redisSession;
+
+    @Mock
+    private RetryCommandFactory<?> retryCommandFactory;
 
     private final String dcName = "dc1";
 
@@ -67,15 +73,13 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
     }
 
     @Test
-    public void testMigrateAutoBalanceKeepers() throws Exception {
+    public void testMigrateAutoBalanceKeepers() throws ExecutionException, InterruptedException {
         ScheduledThreadPoolExecutor executor = Mockito.mock(ScheduledThreadPoolExecutor.class);
         ScheduledFuture future = Mockito.mock(ScheduledFuture.class);
-        Mockito.when(executor.scheduleWithFixedDelay(Mockito.any(Runnable.class), Mockito.anyLong(), Mockito.anyLong(), Mockito.any(TimeUnit.class))).thenReturn(future);
-        Mockito.when(future.get()).thenReturn(null);
         try {
-            shardModelService.migrateAutoBalanceKeepers(dcName, clusterName, shardModel, srcIp, targetIp);
-        } catch (Exception e) {
-            Assert.assertEquals(e.getClass(), RuntimeException.class);
+            shardModelService.migrateActiveKeeper(dcName, clusterName, shardModel, srcIp, targetIp);
+        } catch (Throwable th) {
+            Assert.assertEquals(th.getMessage(), "keeper_migration_active_rollback_error");
         }
     }
 
@@ -88,6 +92,17 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
         List<RedisTbl> switchMaterNewKeepers = new DefaultKeeperAdvancedService().getSwitchMaterNewKeepers(model);
         Assert.assertEquals(switchMaterNewKeepers.size(), 1);
         Assert.assertFalse(switchMaterNewKeepers.get(0).isMaster());
+    }
+
+    @Test
+    public void testSwitchActiveKeeper() {
+        shardModelService.switchActiveKeeper("ip1","ip2",shardModel);
+        List<RedisTbl> keepers = new ArrayList<>();
+        keepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
+        keepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
+        shardModel.setKeepers(keepers);
+        Assert.assertFalse(shardModelService.switchActiveKeeper("ip1","ip3",shardModel));
+        Assert.assertTrue(shardModelService.switchActiveKeeper("ip1","ip2",shardModel));
     }
 
 }

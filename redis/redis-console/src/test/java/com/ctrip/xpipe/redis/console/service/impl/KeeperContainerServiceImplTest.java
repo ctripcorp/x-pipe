@@ -325,7 +325,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
 
         HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
         Mockito.when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), eq(requestEntity), eq(Void.class))).thenReturn(null);
-        keeperContainerService.resetKeepers(keeperInstanceMeta);
+        keeperContainerService.resetKeeper(keeperInstanceMeta.getKeeperMeta().getIp(), keeperInstanceMeta.getReplId());
     }
 
     @Test

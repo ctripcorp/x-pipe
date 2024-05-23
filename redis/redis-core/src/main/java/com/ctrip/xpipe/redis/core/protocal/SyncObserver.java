@@ -8,7 +8,7 @@ import io.netty.buffer.ByteBuf;
  * @author lishanglin
  * date 2022/2/23
  */
-public interface XsyncObserver {
+public interface SyncObserver {
 
     void onFullSync(GtidSet rdbGtidSet, long rdbOffset);
 

@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.core.server;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.Xsync;
+import com.ctrip.xpipe.redis.core.protocal.Sync;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.SocketAware;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -18,7 +17,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static com.ctrip.xpipe.redis.core.protocal.Xsync.SIDNO_SEPARATOR;
+import static com.ctrip.xpipe.redis.core.protocal.Sync.SIDNO_SEPARATOR;
 
 /**
  * @author lishanglin
@@ -48,7 +47,7 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
         }
 
         String[] args = input.trim().split(" ");
-        if ("xsync".equalsIgnoreCase(args[0])) {
+        if (Sync.XSYNC.equalsIgnoreCase(args[0])) {
             List<String> interestedSidno = Arrays.asList(args[1].split(SIDNO_SEPARATOR));
             GtidSet excludedGtidSet = new GtidSet(args[2]);
             Object excludedVectorClock = null;
@@ -71,7 +70,7 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
     }
 
     private void handlePartialSync(OutputStream ous) throws IOException, InterruptedException {
-        String resp = "+" + Xsync.PARTIAL_SYNC + "\r\n";
+        String resp = "+" + Sync.PARTIAL_SYNC + "\r\n";
         ous.write(resp.getBytes());
         ous.flush();
 
@@ -80,7 +79,7 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
     }
 
     private void handleFullSync(GtidSet rdbDataGtidSet, OutputStream ous) throws IOException, InterruptedException {
-        String resp = String.format("+%s %s\r\n", Xsync.FULL_SYNC, rdbDataGtidSet.toString());
+        String resp = String.format("+%s %s\r\n", Sync.FULL_SYNC, rdbDataGtidSet.toString());
         ous.write(resp.getBytes());
         ous.flush();
 

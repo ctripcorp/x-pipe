@@ -14,7 +14,7 @@
 
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
             <tr ng-repeat="info in $data">
-                <td data-title="'port'">{{info.key.port}}</td>
+                <td data-title="'port'" filter="{ 'key.port' : 'text' }">{{info.key.port}}</td>
                 <td data-title="'cluster'" filter="{ 'key.clusterName' : 'text' }">
                     <a href="/#/cluster_dc_shards/{{info.key.clusterName}}/">{{ info.key.clusterName }}</a>
                 </td>

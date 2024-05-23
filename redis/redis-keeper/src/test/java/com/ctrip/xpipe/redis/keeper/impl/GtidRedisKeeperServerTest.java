@@ -6,7 +6,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -30,7 +30,7 @@ import java.util.List;
  * @author lishanglin
  * date 2022/5/25
  */
-public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements XsyncObserver {
+public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements SyncObserver {
 
     private FakeRedisServer fakeRedisServer;
 
@@ -73,7 +73,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
         waitConditionUntilTimeOut(() -> replicationStore.getEndOffset() > 50);
         logger.info("[testPsyncAndXsync] {}", replicationStore.getEndGtidSet());
         DefaultXsync xsync = new DefaultXsync("127.0.0.1", keeperServer.getListeningPort(), new GtidSet("a1:0"), null, scheduled);
-        xsync.addXsyncObserver(this);
+        xsync.addSyncObserver(this);
         xsync.execute(executors);
 
         waitConditionUntilTimeOut(() -> 5 == redisOps.size());

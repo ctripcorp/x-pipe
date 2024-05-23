@@ -18,11 +18,11 @@ public interface ShardModelService {
 
 	ShardModel getSourceShardModel(String clusterName, String srcDcName, String toDcName, String shardName);
 
-	boolean migrateShardKeepers(String dcName, String clusterName, ShardModel shardModel,
+	boolean migrateBackupKeeper(String dcName, String clusterName, ShardModel shardModel,
 								String srcKeeperContainerIp, String targetKeeperContainerIp);
 
-	boolean switchMaster(String srcIp, String targetIp, ShardModel shardModel);
+	boolean switchActiveKeeper(String srcIp, String targetIp, ShardModel shardModel);
 
-	boolean migrateAutoBalanceKeepers(String dcName, String clusterName, ShardModel shardModel,
-								   String srcKeeperContainerIp, String targetKeeperContainerIp);
+	boolean migrateActiveKeeper(String dcName, String clusterName, ShardModel shardModel,
+								String srcKeeperContainerIp, String targetKeeperContainerIp) throws Throwable;
 }

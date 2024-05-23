@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.XsyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -29,7 +29,7 @@ import java.util.Map;
  * date 2022/5/26
  * start xredis 127.0.0.1:6379 with "gtid-enabled yes" before test
  */
-public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObserver, RdbParseListener {
+public class GtidKeeperTest extends AbstractKeeperIntegrated implements SyncObserver, RdbParseListener {
 
     private RedisKeeperServer gtidKeeperServer;
 
@@ -70,7 +70,7 @@ public class GtidKeeperTest extends AbstractKeeperIntegrated implements XsyncObs
         waitConditionUntilTimeOut(() -> MASTER_STATE.REDIS_REPL_CONNECTED.equals(gtidKeeperServer.getRedisMaster().getMasterState()));
 
         DefaultXsync xsync = new DefaultXsync(keeperMeta.getIp(), keeperMeta.getPort(), new GtidSet(reqUuid + ":0"), null, scheduled);
-        xsync.addXsyncObserver(this);
+        xsync.addSyncObserver(this);
         xsync.execute(executors);
 
         waitForAnyKeyToExit();

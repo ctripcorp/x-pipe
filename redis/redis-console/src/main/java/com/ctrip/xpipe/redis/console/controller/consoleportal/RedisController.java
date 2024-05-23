@@ -59,7 +59,7 @@ public class RedisController extends AbstractConsoleController {
                     .getAllShardModel(model.getSrcKeeperContainer().getDcName(), clusterTbl.getClusterName());
 
             for (ShardModel shardModel : allShardModel) {
-                if (!shardModelService.migrateShardKeepers(model.getSrcKeeperContainer().getDcName(),
+                if (!shardModelService.migrateBackupKeeper(model.getSrcKeeperContainer().getDcName(),
                         clusterTbl.getClusterName(), shardModel, model.getSrcKeeperContainer().getAddr().getHost(),
                         (model.getTargetKeeperContainer() == null || model.getTargetKeeperContainer().getAddr() == null)
                                 ? null : model.getTargetKeeperContainer().getAddr().getHost())) {
