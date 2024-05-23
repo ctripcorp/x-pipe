@@ -5,7 +5,9 @@ import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import java.util.List;
 
 public interface KeeperContainerMigrationService {
-    void beginMigrateKeeperContainers(List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels);
+    boolean beginMigrateKeeperContainers(List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) throws Throwable;
 
     List<MigrationKeeperContainerDetailModel> getMigrationProcess();
+
+    boolean stopMigrate();
 }

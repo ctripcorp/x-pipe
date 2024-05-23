@@ -120,7 +120,7 @@ public class InfoResultExtractor {
 
     public Long getSwapUsedDbSize() { return extractAsLong(KEY_SWAP_USED_DB_SIZE);}
 
-    public boolean getKeeperActive() { return "ACTIVE".equals(extract(KEY_KEEPER_ACTIVE)); }
+    public boolean isKeeperActive() { return "ACTIVE".equals(extract(KEY_KEEPER_ACTIVE)); }
 
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);

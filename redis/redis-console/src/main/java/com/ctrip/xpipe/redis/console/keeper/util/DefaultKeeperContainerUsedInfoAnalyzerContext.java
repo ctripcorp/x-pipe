@@ -43,6 +43,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
     public DefaultKeeperContainerUsedInfoAnalyzerContext(KeeperContainerFilterChain filterChain, DcMeta dcMeta) {
         this.filterChain = filterChain;
         this.dcMeta = dcMeta;
+        if (dcMeta == null) {
+            logger.warn("[DefaultKeeperContainerUsedInfoAnalyzerContext dcMeta is null!");
+        }
     }
 
     @Override
@@ -120,7 +123,10 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
     }
 
     @Override
-    public KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel srcKeeper, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcKeeperPair, boolean isPeerDataOverload) {
+    public KeeperContainerUsedInfoModel getBestKeeperContainer(KeeperContainerUsedInfoModel srcKeeper, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcKeeperPair, boolean isPeerDataOverload, boolean isMigrateShardBackUp) {
+        if (srcKeeper == null || srcKeeperPair == null) {
+            return null;
+        }
         String org = srcKeeper.getOrg();
         String az = srcKeeper.getAz();
         PriorityQueue<KeeperContainerUsedInfoModel> queue = isPeerDataOverload ? minPeerDataKeeperContainers : minInputFlowKeeperContainers;
@@ -130,7 +136,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
             if ((org == null || org.equals(target.getOrg()))
                     && (az == null || az.equals(target.getAz()))
                     && !Objects.equals(target.getKeeperIp(), srcKeeperPair.getKeeperIp())
-                    && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this) ) {
+                    && ((!isMigrateShardBackUp && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this))
+                    || (isMigrateShardBackUp && !filterChain.isMigrateKeeperPairOverload(dcClusterShard, srcKeeperPair, target, this)))) {
                 return target;
             }
             temp.add(target);
@@ -164,6 +171,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
     }
 
     private void getProblemKeeperContainer(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> entry) {
+        if (dcMeta == null) {
+            return;
+        }
         dcMeta.getClusters().values().forEach(clusterMeta -> {
             if (entry.getKey().getClusterId().equals(clusterMeta.getId())) {
                 clusterMeta.getShards().values().forEach(shardMeta -> {

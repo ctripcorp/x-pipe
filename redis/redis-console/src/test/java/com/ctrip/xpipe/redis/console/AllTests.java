@@ -40,6 +40,8 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfi
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
 import com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerActionTest;
+import com.ctrip.xpipe.redis.console.keeper.impl.AbstractKeeperCommandTest;
+import com.ctrip.xpipe.redis.console.keeper.impl.CheckerKeeperActiveCommandTest;
 import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperUsedInfoAnalyzerTest;
 import com.ctrip.xpipe.redis.console.keeper.impl.GetAllDcCommandTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
@@ -235,6 +237,8 @@ import org.junit.runners.Suite.SuiteClasses;
         AutoMigrateOverloadKeeperContainerActionTest.class,
         DefaultKeeperUsedInfoAnalyzerTest.class,
         GetAllDcCommandTest.class,
+        AbstractKeeperCommandTest.class,
+        CheckerKeeperActiveCommandTest.class,
 
         RouteInfoControllerTest.class,
         RedisControllerTest.class,
