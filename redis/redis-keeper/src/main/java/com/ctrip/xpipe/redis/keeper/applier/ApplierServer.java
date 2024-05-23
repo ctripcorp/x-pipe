@@ -19,7 +19,7 @@ public interface ApplierServer extends Lifecycle, RedisServer {
 
     ApplierInstanceMeta getApplierInstanceMeta();
 
-    void setStateActive(Endpoint endpoint, GtidSet gtidSet);
+    void setStateActive(Endpoint endpoint, GtidSet gtidSet,boolean useXsync);
 
     void setStateBackup();
 

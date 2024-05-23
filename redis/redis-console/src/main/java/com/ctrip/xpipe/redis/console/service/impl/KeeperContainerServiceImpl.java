@@ -455,12 +455,14 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public void resetKeepers(KeeperTransMeta keeperInstanceMeta) {
+  public void resetKeeper(String activeKeeperIp, Long replId) {
+    KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
+    keeperInstanceMeta.setReplId(replId);
     getOrCreateRestTemplate();
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
-    restTemplate.exchange(String.format("http://%s:8080/keepers/election/reset", keeperInstanceMeta.getKeeperMeta().getIp()),
+    restTemplate.exchange(String.format("http://%s:8080/keepers/election/reset", activeKeeperIp),
             HttpMethod.POST, requestEntity, Void.class);
   }
 

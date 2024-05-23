@@ -34,7 +34,7 @@ public class AddSentinels extends AbstractSentinelHelloCollectCommand {
 
             ParallelCommandChain addChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
             context.getToAdd().forEach((hello) -> {
-                CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Add", hello.toString());
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Add", hello.getMonitorName());
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
                 addChain.add(sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()));

@@ -68,6 +68,10 @@ angular
             method:'POST',
             url:'/console/keepercontainer/overload/migration/begin'
         },
+        migrate_keeper_task_terminate: {
+            method:'POST',
+            url:'/console/keepercontainer/overload/migration/terminate'
+        },
         stop_to_migrate_overload_keepercontainer:{
             method:'POST',
             url:'/console/keepercontainer/overload/migration/stop'
@@ -267,6 +271,17 @@ angular
         return d.promise;
     }
 
+    function migrateKeeperTaskTerminate() {
+        var d = $q.defer();
+        resource.migrate_keeper_task_terminate({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
@@ -281,6 +296,7 @@ angular
         getAllKeepercontainerUsedInfo : getAllKeepercontainerUsedInfo,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
+        migrateKeeperTaskTerminate : migrateKeeperTaskTerminate,
         getKeepercontainerFullSynchronizationTime : getKeepercontainerFullSynchronizationTime
     }
 }]);

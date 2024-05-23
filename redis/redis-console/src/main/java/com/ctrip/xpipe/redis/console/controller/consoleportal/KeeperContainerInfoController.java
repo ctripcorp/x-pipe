@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
@@ -92,14 +93,23 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/keepercontainer/overload/migration/begin", method = RequestMethod.POST)
     public RetMessage beginToMigrateOverloadKeeperContainers(@RequestBody List<MigrationKeeperContainerDetailModel> keeperContainerDetailModels) {
-        logger.info("begin to migrate over load keeper containers {}", keeperContainerDetailModels);
         try {
-            keeperContainerMigrationService.beginMigrateKeeperContainers(keeperContainerDetailModels);
+            if (!keeperContainerMigrationService.beginMigrateKeeperContainers(keeperContainerDetailModels)) {
+                return RetMessage.createFailMessage("The previous migration tasks are still in progress!");
+            }
         } catch (Throwable th) {
-            logger.warn("migrate over load keeper containers {} fail by {}", keeperContainerDetailModels, th.getMessage());
+            logger.warn("[beginToMigrateOverloadKeeperContainers][fail] {}", keeperContainerDetailModels, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
         return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/keepercontainer/overload/migration/terminate", method = RequestMethod.POST)
+    public RetMessage migrateKeeperTaskTerminate() {
+        if(keeperContainerMigrationService.stopMigrate()){
+            return RetMessage.createSuccessMessage("All migration tasks have been completed");
+        }
+        return RetMessage.createSuccessMessage("No migration tasks in progress");
     }
 
     @RequestMapping(value = "/keepercontainer/overload/info/lasted", method = RequestMethod.GET)

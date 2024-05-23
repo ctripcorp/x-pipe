@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -40,14 +39,14 @@ public class DefaultKeeperContainerMigrationServiceTest {
         ShardModel shardModel = new ShardModel();
         Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateShardKeepers(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchMaster(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
                 .thenReturn(true);
     }
 
     @Test
-    public void testMigrationKeeperContainer() {
+    public void testMigrationKeeperContainer() throws Throwable {
         List<MigrationKeeperContainerDetailModel> models = new ArrayList<>();
 
         MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel();
