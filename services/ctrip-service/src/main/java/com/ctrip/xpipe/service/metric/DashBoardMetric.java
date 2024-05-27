@@ -28,6 +28,8 @@ public class DashBoardMetric implements MetricProxy{
 
     private Map<String, MetricsAggregator> aggregators = Maps.newConcurrentMap();
 
+    public final String EMPTY_TAG = "EMPTY";
+
     public DashBoardMetric(){
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -64,6 +66,8 @@ public class DashBoardMetric implements MetricProxy{
             for (String tag : aggregator.getTags()) {
                 if (metricDataTags.containsKey(tag)) {
                     tagVals.add(metricDataTags.get(tag));
+                } else {
+                    tagVals.add(EMPTY_TAG);
                 }
             }
         }
