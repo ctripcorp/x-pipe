@@ -157,6 +157,11 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         if (toManyKeepers.isEmpty() && unknownSlaves.isEmpty())
             return false;
 
+        if (!sentinelHasAllSlaves(slaves)) {
+            logger.info("[{}-{}+{}][reset]{}, {}, some slaves not found in sentinel, stop reset, sentinel slaves: {}, meta instances: {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, slaves, context.getShardInstances());
+            return false;
+        }
+
         List<HostPort> masterSlaves = masterSlaves();
         if (!masterHasAllSlaves(masterSlaves,clusterId, shardId, sentinelMonitorName, sentinelAddr))
             return false;
