@@ -134,18 +134,35 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
     private void setSrcDstHostPorts(MetricData metric, SocketStatsResult socketStatsResult, boolean isFrontend) {
         metric.addTag(METRIC_TAG_SOCKET_TYPE, isFrontend ? METRIC_TAG_SOCKET_TYPE_FRONTEND : METRIC_TAG_SOCKET_TYPE_BACKEND);
         String[] splits = socketStatsResult.getResult().get(0).split(SOCKET_STATS_SPLITTER);
-        if (splits.length < 5) return;
+        if (splits.length < 5) {
+            setHostPortEmptyTag(metric, PREFIX_DST);
+            setHostPortEmptyTag(metric, PREFIX_SRC);
+            return;
+        }
 
         String[] localSplits = splits[3].split(HOST_SPLITTER);
-        if (localSplits.length >= 5) setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
+        if (localSplits.length >= 5) {
+            setHostPortTag(metric, localSplits[3], Integer.valueOf(localSplits[4]), isFrontend ? PREFIX_DST : PREFIX_SRC);
+        } else {
+            setHostPortEmptyTag(metric, isFrontend ? PREFIX_DST : PREFIX_SRC);
+        }
 
         String[] remoteSplits = splits[4].split(HOST_SPLITTER);
-        if (remoteSplits.length >= 5) setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
+        if (remoteSplits.length >= 5) {
+            setHostPortTag(metric, remoteSplits[3], Integer.valueOf(remoteSplits[4]), isFrontend ? PREFIX_SRC : PREFIX_DST);
+        } else {
+            setHostPortEmptyTag(metric, isFrontend ? PREFIX_SRC : PREFIX_DST);
+        }
     }
 
     private void setHostPortTag(MetricData metric, String host, int port, String prefix) {
         metric.addTag(prefix + "HostPort", new HostPort(host, port / THOUSAND).toString());
         metric.addTag(prefix + "PortReminder", String.valueOf(port % THOUSAND));
+    }
+
+    private void setHostPortEmptyTag(MetricData metric, String prefix) {
+        metric.addTag(prefix + "HostPort", "_");
+        metric.addTag(prefix + "PortReminder", "_");
     }
 
     private MetricData getMetricTemplate(DefaultTunnelInfo info, String clusterId, String shardId) {
