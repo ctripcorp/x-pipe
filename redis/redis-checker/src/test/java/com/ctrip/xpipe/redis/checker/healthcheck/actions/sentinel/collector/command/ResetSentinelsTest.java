@@ -72,11 +72,11 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(3, 2));
 
         //hellos is empty
-        resetSentinels.checkReset("cluster", "shard", "cluster+shard+activeDc", new HashSet<>());
+        resetSentinels.checkSentinels("cluster", "shard", "cluster+shard+activeDc", new HashSet<>());
         verify(checkerConfig, never()).getDefaultSentinelQuorumConfig();
 
         //hellos lost
-        resetSentinels.checkReset("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc")));
+        resetSentinels.checkSentinels("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc")));
         verify(checkerConfig, times(1)).getDefaultSentinelQuorumConfig();
         verify(sentinelManager, never()).slaves(any(), any());
 
@@ -138,18 +138,18 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 return null;
             }
         });
-        resetSentinels.checkReset("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(hello5000, hello5001, hello5002));
+        resetSentinels.checkSentinels("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(hello5000, hello5001, hello5002));
         verify(checkerConfig, times(3)).getDefaultSentinelQuorumConfig();
         verify(sentinelManager, times(3)).slaves(any(), any());
         verify(metaCache, never()).getAllKeepers();
     }
 
     @Test
-    public void rateLimit() throws Exception {
+    public void rateLimit1() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
         resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6379), new ArrayList<>()))
                 .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380))));
-        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(3, 2));
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
@@ -161,10 +161,17 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         SentinelHello hello5002 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5002 = new Sentinel(hello5002.getSentinelAddr().toString(), hello5002.getSentinelAddr().getHost(), hello5002.getSentinelAddr().getPort());
 
+        SentinelHello hello5003 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5003 = new Sentinel(hello5003.getSentinelAddr().toString(), hello5003.getSentinelAddr().getHost(), hello5003.getSentinelAddr().getPort());
+
+        SentinelHello hello5004 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5004 = new Sentinel(hello5004.getSentinelAddr().toString(), hello5004.getSentinelAddr().getHost(), hello5004.getSentinelAddr().getPort());
+
+        //sentinel5000 lost slaves and has too many keepers
         when(sentinelManager.slaves(sentinel5000, hello5000.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
             }
 
             @Override
@@ -177,6 +184,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 return null;
             }
         });
+        //sentinel5001 has too many keepers
         when(sentinelManager.slaves(sentinel5001, hello5001.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -193,7 +201,206 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 return null;
             }
         });
+        //sentinel5002 is ok
         when(sentinelManager.slaves(sentinel5002, hello5002.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5003 is ok
+        when(sentinelManager.slaves(sentinel5003, hello5003.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5004 is ok
+        when(sentinelManager.slaves(sentinel5004, hello5004.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        Server master = startServer(6379, "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + ":43\r\n"
+                + "*3\r\n"
+                + "*3\r\n"
+                + "$9\r\n127.0.0.1\r\n"
+                + "$4\r\n6380\r\n"
+                + "$1\r\n0\r\n"
+                + "*3\r\n"
+                + "$9\r\n127.0.0.1\r\n"
+                + "$4\r\n8000\r\n"
+                + "$1\r\n0\r\n"
+                + "*3\r\n"
+                + "$9\r\n127.0.0.1\r\n"
+                + "$4\r\n6381\r\n"
+                + "$1\r\n0\r\n");
+
+        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+
+        when(sentinelManager.reset(any(), any())).thenReturn(new AbstractCommand<Long>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(1L);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        resetSentinels.checkSentinels("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(hello5000, hello5001, hello5002, hello5003, hello5004));
+        waitConditionUntilTimeOut(new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() {
+                try {
+                    verify(sentinelManager, times(2)).reset(any(), anyString());
+                    verify(sentinelManager, times(1)).reset(sentinel5000, hello5000.getMonitorName());
+                    verify(sentinelManager, times(1)).reset(sentinel5001, hello5001.getMonitorName());
+                    return true;
+                } catch (Throwable th) {
+                    logger.error("test failed", th);
+                    return false;
+                }
+
+            }
+        });
+
+        master.stop();
+    }
+
+    @Test
+    public void rateLimit2() throws Exception {
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
+        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6379), new ArrayList<>()))
+                .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380))));
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
+        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+
+        SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
+
+        SentinelHello hello5001 = new SentinelHello(new HostPort(LOCAL_HOST, 5001), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5001 = new Sentinel(hello5001.getSentinelAddr().toString(), hello5001.getSentinelAddr().getHost(), hello5001.getSentinelAddr().getPort());
+
+        SentinelHello hello5002 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5002 = new Sentinel(hello5002.getSentinelAddr().toString(), hello5002.getSentinelAddr().getHost(), hello5002.getSentinelAddr().getPort());
+
+        SentinelHello hello5003 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5003 = new Sentinel(hello5003.getSentinelAddr().toString(), hello5003.getSentinelAddr().getHost(), hello5003.getSentinelAddr().getPort());
+
+        SentinelHello hello5004 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
+        Sentinel sentinel5004 = new Sentinel(hello5004.getSentinelAddr().toString(), hello5004.getSentinelAddr().getHost(), hello5004.getSentinelAddr().getPort());
+
+        //sentinel5000 lost slaves and has too many keepers
+        when(sentinelManager.slaves(sentinel5000, hello5000.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5001 has too many keepers
+        when(sentinelManager.slaves(sentinel5001, hello5001.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5002 has too many keepers
+        when(sentinelManager.slaves(sentinel5002, hello5002.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5003 has too many keepers
+        when(sentinelManager.slaves(sentinel5003, hello5003.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        //sentinel5004 has too many keepers
+        when(sentinelManager.slaves(sentinel5004, hello5004.getMonitorName())).thenReturn(new AbstractCommand<List<HostPort>>() {
             @Override
             protected void doExecute() throws Throwable {
                 future().setSuccess(Lists.newArrayList(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
@@ -229,17 +436,32 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
-        resetSentinels.checkReset("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(hello5000, hello5001, hello5002));
+        when(sentinelManager.reset(any(), any())).thenReturn(new AbstractCommand<Long>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(1L);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        resetSentinels.checkSentinels("cluster", "shard", "cluster+shard+activeDc", Sets.newHashSet(hello5000, hello5001, hello5002, hello5003, hello5004));
         waitConditionUntilTimeOut(new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
                 try {
-                    verify(checkerConfig, times(5)).getDefaultSentinelQuorumConfig();
-                    verify(sentinelManager, times(3)).slaves(any(), any());
-                    verify(metaCache, times(3)).getAllKeepers();
-                    verify(sentinelManager, times(1)).reset(any(), anyString());
+                    verify(sentinelManager, times(2)).reset(any(), anyString());
+                    verify(sentinelManager, times(1)).reset(sentinel5000, hello5000.getMonitorName());
                     return true;
-                }catch (Throwable th){
+                } catch (Throwable th) {
+                    logger.error("test failed", th);
                     return false;
                 }
 
@@ -258,18 +480,6 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
         boolean shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 6380)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
-        Assert.assertFalse(shouldReset);
-    }
-
-    @Test
-    public void sentinelLostSlaves() throws Exception {
-        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
-        resetSentinels.setContext(new SentinelHelloCollectContext().setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6379), new ArrayList<>()))
-                .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 6381))));
-
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
-
-        boolean shouldReset = resetSentinels.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 6380)), "cluster", "shard", "cluster+shard+activeDc", new HostPort(LOCAL_HOST, 22230));
         Assert.assertFalse(shouldReset);
     }
 
