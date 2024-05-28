@@ -117,12 +117,15 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         if (shouldResetSentinels.isEmpty())
             return sentinelsToReset;
 
+        //reset unavailable sentinels first
         sentinelsToReset.addAll(shouldResetSentinels.stream().filter(sentinel -> !availableSentinels.containsKey(sentinel)).collect(Collectors.toList()));
         shouldResetSentinels.removeAll(sentinelsToReset);
 
+        //all shouldResetSentinels unavailable
         if (shouldResetSentinels.isEmpty())
             return sentinelsToReset;
 
+        //leave quorum availableSentinels
         int canResetAvailableSentinelSize = availableSentinels.size() - checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
         if (canResetAvailableSentinelSize >= shouldResetSentinels.size()) {
             sentinelsToReset.addAll(shouldResetSentinels);
