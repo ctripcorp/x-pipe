@@ -117,8 +117,7 @@ public class SentinelHelloCollectContext {
     }
 
     public SentinelHelloCollectContext setShardInstances(List<HostPort> shardInstances) {
-        this.shardInstances = shardInstances;
-        return this;
+        this.shardInstances = shardInstances;return this;
     }
 
     public Map<ClusterType, String[]> getClusterTypeSentinelConfig() {
