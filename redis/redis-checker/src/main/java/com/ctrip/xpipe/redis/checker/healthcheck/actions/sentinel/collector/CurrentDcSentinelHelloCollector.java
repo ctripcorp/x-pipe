@@ -67,6 +67,6 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
 
     @Override
     protected List<HostPort> getShardInstances(RedisInstanceInfo info) {
-        return metaCache.getRedisOfDcClusterShard(currentDc, info.getClusterId(), info.getShardId()).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
+        return metaCache.getRedisOfDcClusterShard(info.getClusterId(),info.getShardId(),currentDc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
     }
 }
