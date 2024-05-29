@@ -49,7 +49,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     @Override
     protected void doExecute() throws Throwable {
-        checkReset(context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getToCheckReset());
+        resetExecutor.execute(() -> checkReset(context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getToCheckReset()));
         future().setSuccess();
     }
 
