@@ -191,7 +191,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     protected List<HostPort> getShardInstances(RedisInstanceInfo info) {
-        return metaCache.getRedisOfDcClusterShard(info.getClusterId(), info.getShardId(), info.getActiveDc()).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
+        return metaCache.getRedisOfDcClusterShard(info.getActiveDc(), info.getClusterId(), info.getShardId()).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
     }
 
     public class SentinelHelloCollectorCommand extends AbstractCommand<Void> {
