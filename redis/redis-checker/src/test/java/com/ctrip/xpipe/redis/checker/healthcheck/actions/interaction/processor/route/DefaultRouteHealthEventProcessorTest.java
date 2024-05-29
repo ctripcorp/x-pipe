@@ -88,6 +88,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         processor.onEvent(new InstanceLongDelay(instance));
@@ -100,10 +101,11 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1);
         when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
 
-        when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
+        when(processor.getDelaySeconds(anyLong())).thenReturn(0L);
         processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(1)).tryRecover(any(), any());
     }
@@ -114,6 +116,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1).thenReturn(1);
         when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
 
@@ -121,6 +124,17 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
 
         processor.onEvent(new InstanceLongDelay(instance));
         waitConditionUntilTimeOut(()->assertSuccess(()->verify(processor, times(1)).undoDedupe(any())), 5000, 500);
+    }
+
+    @Test
+    public void testNotCloseWhenMasterNotConnected() throws Exception {
+        doNothing().when(processor).tryRecover(any(), any());
+        when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("down");
+        processor.onEvent(new InstanceLongDelay(instance));
+        verify(processor, never()).tryRecover(any(), any());
     }
 
     @Test
@@ -156,6 +170,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         processor.onEvent(new InstanceLongDelay(instance));
@@ -168,6 +183,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         processor.onEvent(new InstanceLongDelay(instance));
@@ -181,6 +197,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extract("master_link_status")).thenReturn("up");
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         RedisHealthCheckInstance instance2 = mock(RedisHealthCheckInstance.class);
