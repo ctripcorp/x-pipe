@@ -99,11 +99,9 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
-        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.ALL)).thenReturn(infoResultExtractor);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1);
-        when(infoResultExtractor.isROR()).thenReturn(true);
-        when(infoResultExtractor.getUsedMemory()).thenReturn(100L);
-        when(infoResultExtractor.getSwapUsedDbSize()).thenReturn(1000L);
+        when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
         processor.onEvent(new InstanceLongDelay(instance));
@@ -115,11 +113,9 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
-        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.ALL)).thenReturn(infoResultExtractor);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1).thenReturn(1);
-        when(infoResultExtractor.isROR()).thenReturn(true);
-        when(infoResultExtractor.getUsedMemory()).thenReturn(100L);
-        when(infoResultExtractor.getSwapUsedDbSize()).thenReturn(1000L);
+        when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 

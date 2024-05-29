@@ -54,25 +54,15 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
             if (!isRedisInFullSync(instance)) return 0;
             String clusterId = instance.getCheckInfo().getClusterId();
             String shardId = instance.getCheckInfo().getShardId();
-            long dataSize = getMasterDataSize(clusterId, shardId);
-            return getDelaySeconds(dataSize);
+            HostPort hostPort = metaCache.findMaster(clusterId, shardId);
+            RedisSession redisSession = redisSessionManager.findOrCreateSession(hostPort);
+            InfoResultExtractor masterInfo = redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE);
+            long rdbSize = masterInfo.extractAsLong("rdb_last_cow_size");
+            return getDelaySeconds(rdbSize);
         } catch (Exception e) {
             logger.error("[isProbablyHealthyInXSeconds]", e);
             return 30;
         }
-    }
-
-    private long getMasterDataSize(String clusterId, String shardId) throws Exception {
-        HostPort hostPort = metaCache.findMaster(clusterId, shardId);
-        RedisSession redisSession = redisSessionManager.findOrCreateSession(hostPort);
-        InfoResultExtractor masterInfo = redisSession.syncInfo(InfoCommand.INFO_TYPE.ALL);
-
-        long dataSize = masterInfo.getUsedMemory();
-        if (masterInfo.isROR()) {
-            dataSize += masterInfo.getSwapUsedDbSize();
-        }
-
-        return dataSize;
     }
 
     @VisibleForTesting
@@ -82,9 +72,9 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
     }
 
     @VisibleForTesting
-    protected long getDelaySeconds(long dataSize) {
+    protected long getDelaySeconds(long rdbSize) {
         long base = 3 * 60; // 3 minutes / per GB size
         long gb = 1024 * 1024 * 1024;
-        return base * (dataSize/gb + 1);
+        return base * (rdbSize/gb + 1);
     }
 }
