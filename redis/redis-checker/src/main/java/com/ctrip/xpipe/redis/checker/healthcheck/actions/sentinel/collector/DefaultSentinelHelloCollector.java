@@ -237,7 +237,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                             chain.add(new AnalyseHellos(context, checkerConfig));
                             chain.add(new AcquireLeakyBucket(context, leakyBucket));
                             chain.add(new DeleteSentinels(context, sentinelManager));
-                            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig));
+                            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager));
                             chain.add(new AddSentinels(context, sentinelManager, checkerConfig));
                             chain.add(new SetSentinels(context, sentinelManager));
                             chain.execute().addListener(commandFuture -> {
