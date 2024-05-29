@@ -72,7 +72,7 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 	}
 
 	public static enum INFO_TYPE{
-
+		ALL(""),
 		REPLICATION,
 		SERVER,
 		SENTINEL,
@@ -80,8 +80,18 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 		PERSISTENCE,
 		GTID;
 
+		private String cmd;
+
+		INFO_TYPE() {
+			this(null);
+		}
+
+		INFO_TYPE(String cmd) {
+			this.cmd = cmd;
+		}
+
 		public String cmd(){
-			return toString().toLowerCase();
+			return null == cmd ? toString().toLowerCase() : cmd;
 		}
 	}
 
