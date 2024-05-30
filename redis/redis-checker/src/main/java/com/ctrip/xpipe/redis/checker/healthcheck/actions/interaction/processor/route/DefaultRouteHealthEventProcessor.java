@@ -51,7 +51,9 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
     protected long isProbablyHealthyInXSeconds(AbstractInstanceEvent instanceSick) {
         try {
             RedisHealthCheckInstance instance = instanceSick.getInstance();
-            if (!isRedisInFullSync(instance)) return 0;
+            InfoResultExtractor info = instance.getRedisSession().syncInfo(InfoCommand.INFO_TYPE.REPLICATION);
+            if (info.extract("master_link_status").equalsIgnoreCase("down")) return -1;
+            else if (info.extractAsInteger("master_sync_in_progress") != 1) return 0;
             String clusterId = instance.getCheckInfo().getClusterId();
             String shardId = instance.getCheckInfo().getShardId();
             HostPort hostPort = metaCache.findMaster(clusterId, shardId);
@@ -63,12 +65,6 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
             logger.error("[isProbablyHealthyInXSeconds]", e);
             return 30;
         }
-    }
-
-    @VisibleForTesting
-    protected boolean isRedisInFullSync(RedisHealthCheckInstance instance) throws InterruptedException, ExecutionException, TimeoutException {
-        InfoResultExtractor info = instance.getRedisSession().syncInfo(InfoCommand.INFO_TYPE.REPLICATION);
-        return info.extractAsInteger("master_sync_in_progress") == 1;
     }
 
     @VisibleForTesting

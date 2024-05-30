@@ -87,15 +87,16 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
         }
         long expected = isProbablyHealthyInXSeconds(instanceSick);
         logger.info("[doOnEvent]instance({}) is probably healthy in {} seconds", instanceSick, expected);
-        if (0 >= expected) {
+        if (0 == expected) {
             tryRecover(instanceSick, proxyTunnelInfo);
-        } else {
+        } else if (expected > 0) {
             scheduled.schedule(()->undoDedupe(instanceSick), expected, TimeUnit.SECONDS);
         }
     }
 
     protected abstract ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent instanceSick);
 
+    // return 0: not in fullsync, -1: master not connected, >0: time for fsync
     protected abstract long isProbablyHealthyInXSeconds(AbstractInstanceEvent instanceSick);
 
     protected void tryRecover(AbstractInstanceEvent instanceSick, ProxyTunnelInfo proxyTunnelInfo) {
