@@ -28,6 +28,8 @@ public class InfoResultExtractor {
     private static final String KEY_MAX_MEMORY ="maxmemory";
     private static final String KEY_KEEPER_ACTIVE = "state";
 
+    private static final String KEY_SWAP_VERSION = "swap_version";
+
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
     private String result;
@@ -35,6 +37,11 @@ public class InfoResultExtractor {
 
     public InfoResultExtractor(String result) {
         this.result = result;
+    }
+
+    public boolean contain(String key) {
+        genKeyValues();
+        return keyValues.containsKey(key);
     }
 
     public String extract(String key) {
@@ -98,6 +105,10 @@ public class InfoResultExtractor {
                 }
             }
         }
+    }
+
+    public boolean isROR() {
+        return contain(KEY_SWAP_VERSION);
     }
 
     public long getSyncFull() {
