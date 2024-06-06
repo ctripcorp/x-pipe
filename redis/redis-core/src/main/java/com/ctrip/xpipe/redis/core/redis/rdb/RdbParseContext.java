@@ -17,6 +17,8 @@ public interface RdbParseContext {
 
     RdbParser<?> getOrCreateParser(RdbType rdbType);
 
+    RdbParser<?> getOrCreateCrdtParser(RdbCrdtType rdbCrdtType);
+
     void registerListener(RdbParseListener listener);
 
     void unregisterListener(RdbParseListener listener);
@@ -59,15 +61,26 @@ public interface RdbParseContext {
 
     void reset();
 
+    void setCrdt(boolean crdt);
+
+    boolean isCrdt();
+
+    RdbParseContext setCrdtType(RdbCrdtType crdtType);
+
+    RdbCrdtType getCrdtType();
+
+    void clearCrdtType();
+
+
     enum RdbType {
 
         STRING(RdbConstant.REDIS_RDB_TYPE_STRING, false, RdbStringParser::new),
-        LIST(RdbConstant.REDIS_RDB_TYPE_LIST,false,RdbListParser::new),
+        LIST(RdbConstant.REDIS_RDB_TYPE_LIST, false, RdbListParser::new),
         SET(RdbConstant.REDIS_RDB_TYPE_SET, false, RdbSetParser::new),
-//        ZSET(RdbConstant.REDIS_RDB_TYPE_ZSET),
+        //        ZSET(RdbConstant.REDIS_RDB_TYPE_ZSET),
         HASH(RdbConstant.REDIS_RDB_TYPE_HASH, false, RdbHashParser::new),
         ZSET2(RdbConstant.REDIS_RDB_TYPE_ZSET2, false, RdbZSet2Parser::new),
-//        MODULE(RdbConstant.REDIS_RDB_TYPE_MODULE),
+        //        MODULE(RdbConstant.REDIS_RDB_TYPE_MODULE),
 //        MODULE2(RdbConstant.REDIS_RDB_TYPE_MODULE2),
 //        HASH_ZIPMAP(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPMAP),
 //        LIST_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_LIST_ZIPLIST),
@@ -76,7 +89,8 @@ public interface RdbParseContext {
         HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST, false, RdbHashZipListParser::new),
         LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST, false, RdbQuickListParser::new),
         STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS, false, RdbStreamListpacksParser::new),
-//        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
+        CRDT(RdbConstant.REDIS_RDB_TYPE_CRDT, false, DefaultRdbCrdtParser::new),
+        //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
         IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),
         FREQ(RdbConstant.REDIS_RDB_OP_CODE_FREQ, true, RdbFreqParser::new),
         AUX(RdbConstant.REDIS_RDB_OP_CODE_AUX, true, RdbAuxParser::new),
@@ -121,12 +135,14 @@ public interface RdbParseContext {
         }
 
         public RdbParser<?> makeParser(RdbParseContext parserManager) {
-            if (null == parserConstructor) throw new UnsupportedOperationException("no parser for " + this.name());
+            if (null == parserConstructor) {
+                throw new UnsupportedOperationException("no parser for " + this.name());
+            }
             return parserConstructor.apply(parserManager);
         }
 
         static {
-            for (RdbType rdbType: values()) {
+            for (RdbType rdbType : values()) {
                 types.put(rdbType.code, rdbType);
             }
         }
@@ -135,6 +151,64 @@ public interface RdbParseContext {
             return types.get(code);
         }
 
+    }
+
+    String cSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+    enum RdbCrdtType {
+        // "crdt_regr", "crdt_setr", "crdt_hash", "crdt_rc_v", "crdt_ss_v"
+        REGISTER(generateTypeId("crdt_regr", 0), false, RdbCrdtRegisterParser::new),
+        REGISTER_TOMBSTONE(generateTypeId("crdt_regt", 0), true, RdbCrdtRegisterParser::new),
+        ;
+        private long typeId;
+
+        private boolean tombstone;
+        private Function<RdbParseContext, RdbParser> parserConstructor;
+
+        private static final Map<Long, RdbCrdtType> types = new HashMap<>();
+
+        RdbCrdtType(long code, boolean tombstone, Function<RdbParseContext, RdbParser> parserConstructor) {
+            this.typeId = code;
+            this.tombstone = tombstone;
+            this.parserConstructor = parserConstructor;
+        }
+
+        public long getTypeId() {
+            return typeId;
+        }
+
+        public boolean isTombstone() {
+            return tombstone;
+        }
+
+
+        public RdbParser<?> makeParser(RdbParseContext parserManager) {
+            if (null == parserConstructor) {
+                throw new UnsupportedOperationException("no parser for " + this.name());
+            }
+            return parserConstructor.apply(parserManager);
+        }
+
+        static {
+            for (RdbCrdtType rdbType : values()) {
+                types.put(rdbType.typeId, rdbType);
+            }
+        }
+
+        public static RdbCrdtType findByTypeId(long typeId) {
+            return types.get(typeId);
+        }
+
+        private static long generateTypeId(String name, int encver) {
+            long id = 0;
+            char[] chars = name.toCharArray();
+            for (int i = 0; i < chars.length; i++) {
+                int p = cSet.indexOf(chars[i]);
+                id = (id << 6) | p;
+            }
+            id = (id << 10) | encver;
+            return id;
+        }
     }
 
 }

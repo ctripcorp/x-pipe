@@ -54,6 +54,9 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
                     Object rawKey = rdbStringParser.read(byteBuf);
                     if (null != rawKey) {
                         key = decodeRawStr(rawKey);
+                        if (key.equalsIgnoreCase("crdt-repl-offset")) {
+                            context.setCrdt(true);
+                        }
                         rdbStringParser.reset();
                         state = STATE.READ_VALUE;
                     }

@@ -35,6 +35,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRdbParser.class);
 
+
     protected enum STATE {
         READ_INIT,
         READ_MAGIC,

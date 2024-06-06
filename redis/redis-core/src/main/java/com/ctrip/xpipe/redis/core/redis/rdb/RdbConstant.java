@@ -11,7 +11,7 @@ public class RdbConstant {
     }
 
     public static final int REDIS_RDB_VERSION = 9;
-    public static final byte[] REDIS_RDB_MAGIC = new byte[] {'R', 'E', 'D', 'I', 'S'};
+    public static final byte[] REDIS_RDB_MAGIC = new byte[]{'R', 'E', 'D', 'I', 'S'};
 
     // java no unsigned byte, use short instead
     public static final short REDIS_RDB_LEN_6BITLEN = 0b00;
@@ -40,6 +40,7 @@ public class RdbConstant {
     public static final short REDIS_RDB_TYPE_HASH_ZIPLIST = 13;
     public static final short REDIS_RDB_TYPE_LIST_QUICKLIST = 14;
     public static final short REDIS_RDB_TYPE_STREAM_LISTPACKS = 15;
+    public static final short REDIS_RDB_TYPE_CRDT = 200;
 
     // extend for rordb
     public static final short REDIS_RORDB_OP_CODE_SWAP_VERSION = 128;

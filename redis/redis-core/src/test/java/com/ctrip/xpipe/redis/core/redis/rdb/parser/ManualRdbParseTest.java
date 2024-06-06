@@ -44,7 +44,8 @@ public class ManualRdbParseTest extends AbstractTest implements RdbParseListener
         controllableFile.getFileChannel().position(0);
 
         while (controllableFile.size() > controllableFile.getFileChannel().position()) {
-            ByteBuffer cmdBuffer = ByteBuffer.allocateDirect(4096);
+
+            ByteBuffer cmdBuffer = ByteBuffer.allocateDirect(512);
             byteBuf = Unpooled.wrappedBuffer(cmdBuffer);
             controllableFile.getFileChannel().read(cmdBuffer);
 
