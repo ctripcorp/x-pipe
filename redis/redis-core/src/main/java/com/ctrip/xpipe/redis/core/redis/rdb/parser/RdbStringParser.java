@@ -142,7 +142,9 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
 
                 case READ_INT_AS_STRING:
                     if (null == intAsStrEncType) intAsStrEncType = INT_AS_STR_ENC_TYPE.parse(length.getLenValue());
-                    if (null == intAsStrEncType) throw new XpipeRuntimeException("unknokwn enc type " + length);
+                    if (null == intAsStrEncType) {
+                        throw new XpipeRuntimeException("unknokwn enc type " + length);
+                    }
                     temp = readUntilBytesEnough(byteBuf, temp, intAsStrEncType.getReadBytes());
                     if (temp.readableBytes() == intAsStrEncType.getReadBytes()) {
                         long val = intAsStrEncType.parse(temp);
@@ -209,7 +211,7 @@ public class RdbStringParser extends AbstractRdbParser<byte[]> implements RdbPar
 
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.SET,
-                new byte[][] {RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
+                new byte[][]{RedisOpType.SET.name().getBytes(), context.getKey().get(), redisString},
                 context.getKey(), redisString));
         propagateExpireAtIfNeed(context.getKey(), context.getExpireMilli());
     }

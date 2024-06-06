@@ -10,101 +10,101 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author wenchao.meng
- *
- *         2016年3月29日 下午2:51:47
+ * <p>
+ * 2016年3月29日 下午2:51:47
  */
 public class Replconf extends AbstractRedisCommand<Object> {
 
-	private ReplConfType replConfType;
-	
-	private String[] args;
+    private ReplConfType replConfType;
 
-	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType,
-			ScheduledExecutorService scheduled, String... args) {
-		super(clientPool, scheduled);
-		this.replConfType = replConfType;
-		this.args = args;
-	}
+    private String[] args;
 
-	public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType,
-					ScheduledExecutorService scheduled, int commandTimeoutMilli, String... args) {
-		super(clientPool, scheduled);
-		this.replConfType = replConfType;
-		this.args = args;
-		setCommandTimeoutMilli(commandTimeoutMilli);
-	}
+    public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType,
+                    ScheduledExecutorService scheduled, String... args) {
+        super(clientPool, scheduled);
+        this.replConfType = replConfType;
+        this.args = args;
+    }
 
-	@Override
-	public String getName() {
-		return "replconf";
-	}
+    public Replconf(SimpleObjectPool<NettyClient> clientPool, ReplConfType replConfType,
+                    ScheduledExecutorService scheduled, int commandTimeoutMilli, String... args) {
+        super(clientPool, scheduled);
+        this.replConfType = replConfType;
+        this.args = args;
+        setCommandTimeoutMilli(commandTimeoutMilli);
+    }
 
-	@Override
-	protected boolean hasResponse() {
+    @Override
+    public String getName() {
+        return "replconf";
+    }
 
-		if (replConfType == ReplConfType.ACK) {
-			return false;
-		}
-		return true;
-	}
+    @Override
+    protected boolean hasResponse() {
 
-	public enum ReplConfType {
+        if (replConfType == ReplConfType.ACK) {
+            return false;
+        }
+        return true;
+    }
 
-		LISTENING_PORT("listening-port"), CAPA("capa"), ACK("ack"), KEEPER("keeper");
+    public enum ReplConfType {
 
-		private String command;
+        LISTENING_PORT("listening-port"), CAPA("capa"), CRDT("crdt"), ACK("ack"), KEEPER("keeper");
 
-		ReplConfType(String command) {
-			this.command = command;
-		}
+        private String command;
 
-		@Override
-		public String toString() {
-			return command;
-		}
-	}
+        ReplConfType(String command) {
+            this.command = command;
+        }
 
-	@Override
-	public ByteBuf getRequest() {
+        @Override
+        public String toString() {
+            return command;
+        }
+    }
 
-		boolean logRead = true, logWrite = true;
+    @Override
+    public ByteBuf getRequest() {
 
-		if (replConfType == ReplConfType.ACK) {
-			logWrite = false;
-		}
+        boolean logRead = true, logWrite = true;
 
-		RequestStringParser request = null;
-		if (replConfType == ReplConfType.CAPA) {
-			String[] tmpArgs = new String[args.length];
-			for (int i = 0; i < args.length; i++) {
-				tmpArgs[i] = replConfType.toString() + " " + args[i];
-			}
-			
-			request = new RequestStringParser(logRead, logWrite, getName(), StringUtil.join(" ", tmpArgs));
-		}else{
-			request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(),
-					StringUtil.join(" ", args));
-		}
+        if (replConfType == ReplConfType.ACK) {
+            logWrite = false;
+        }
 
-		return request.format();
-	}
+        RequestStringParser request = null;
+        if (replConfType == ReplConfType.CAPA) {
+            String[] tmpArgs = new String[args.length];
+            for (int i = 0; i < args.length; i++) {
+                tmpArgs[i] = replConfType.toString() + " " + args[i];
+            }
 
-	@Override
-	protected boolean logRequest() {
-		if (replConfType == ReplConfType.ACK) {
-			return false;
-		}
-		return true;
+            request = new RequestStringParser(logRead, logWrite, getName(), StringUtil.join(" ", tmpArgs));
+        } else {
+            request = new RequestStringParser(logRead, logWrite, getName(), replConfType.toString(),
+                    StringUtil.join(" ", args));
+        }
 
-	}
+        return request.format();
+    }
 
-	@Override
-	protected boolean logResponse() {
-		return logRequest();
-	}
+    @Override
+    protected boolean logRequest() {
+        if (replConfType == ReplConfType.ACK) {
+            return false;
+        }
+        return true;
 
-	@Override
-	protected Object format(Object payload) {
-		return payload;
-	}
+    }
+
+    @Override
+    protected boolean logResponse() {
+        return logRequest();
+    }
+
+    @Override
+    protected Object format(Object payload) {
+        return payload;
+    }
 }

@@ -35,9 +35,10 @@ public class GeneralRedisOpParser extends AbstractRedisOpParser implements Redis
             if (!redisOpType.checkArgcNotStrictly(args)) {
                 throw new IllegalArgumentException("wrong number of args for " + cmd);
             }
-
             RedisOpParser parser = parserManager.findParser(redisOpType);
-            if (null == parser) throw new UnsupportedOperationException("no parser for " + cmd);
+            if (null == parser) {
+                throw new UnsupportedOperationException("no parser for " + cmd);
+            }
             return parser.parse(args);
         }
     }

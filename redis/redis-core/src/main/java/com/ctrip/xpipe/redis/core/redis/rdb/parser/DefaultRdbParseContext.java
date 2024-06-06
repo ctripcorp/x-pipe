@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DefaultRdbParseContext implements RdbParseContext {
 
     private EnumMap<RdbType, RdbParser> parsers = new EnumMap<>(RdbType.class);
+    private EnumMap<RdbCrdtType, RdbParser> crdtParsers = new EnumMap<>(RdbCrdtType.class);
 
     private List<RdbParseContext> otherParsers = new LinkedList<>();
 
@@ -32,6 +33,8 @@ public class DefaultRdbParseContext implements RdbParseContext {
     private Map<String, String> auxMap = Maps.newConcurrentMap();
 
     private AtomicReference<RedisKey> redisKey = new AtomicReference<>();
+    private AtomicReference<RdbCrdtType> crdtType = new AtomicReference<>();
+    private AtomicReference<Boolean> crdt = new AtomicReference<>(false);
 
     private AtomicLong expireMilli = new AtomicLong();
 
@@ -59,12 +62,27 @@ public class DefaultRdbParseContext implements RdbParseContext {
     }
 
     @Override
+    public RdbParser getOrCreateCrdtParser(RdbCrdtType rdbCrdtType) {
+        RdbParser parser = crdtParsers.get(rdbCrdtType);
+        if (null != parser) return parser;
+
+        synchronized (this) {
+            if (crdtParsers.containsKey(rdbCrdtType)) return crdtParsers.get(rdbCrdtType);
+            RdbParser newParser = rdbCrdtType.makeParser(this);
+            listeners.forEach(newParser::registerListener);
+            crdtParsers.put(rdbCrdtType, newParser);
+            return crdtParsers.get(rdbCrdtType);
+        }
+    }
+
+    @Override
     public void registerListener(RdbParseListener listener) {
         if (listeners.contains(listener)) return;
 
         synchronized (this) {
             if (listeners.add(listener)) {
                 parsers.values().forEach(parser -> parser.registerListener(listener));
+                crdtParsers.values().forEach(parser -> parser.registerListener(listener));
                 otherParsers.forEach(parser -> parser.registerListener(listener));
             }
         }
@@ -77,6 +95,7 @@ public class DefaultRdbParseContext implements RdbParseContext {
         synchronized (this) {
             if (listeners.remove(listener)) {
                 parsers.values().forEach(parser -> parser.unregisterListener(listener));
+                crdtParsers.values().forEach(parser -> parser.unregisterListener(listener));
                 otherParsers.forEach(parser -> parser.unregisterListener(listener));
             }
         }
@@ -186,5 +205,31 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public void reset() {
         parsers.values().forEach(RdbParser::reset);
+    }
+
+    @Override
+    public void setCrdt(boolean crdt) {
+        this.crdt.set(crdt);
+    }
+
+    @Override
+    public boolean isCrdt() {
+        return crdt.get();
+    }
+
+    @Override
+    public RdbParseContext setCrdtType(RdbCrdtType crdtType) {
+        this.crdtType.set(crdtType);
+        return this;
+    }
+
+    @Override
+    public RdbCrdtType getCrdtType() {
+        return crdtType.get();
+    }
+
+    @Override
+    public void clearCrdtType() {
+        this.crdtType.set(null);
     }
 }

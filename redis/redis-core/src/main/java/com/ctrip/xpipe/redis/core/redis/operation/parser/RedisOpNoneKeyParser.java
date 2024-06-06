@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpNoneKey;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author ayq
@@ -21,7 +22,9 @@ public class RedisOpNoneKeyParser extends AbstractRedisOpParser implements Redis
 
     @Override
     public RedisOp parse(byte[][] args) {
-        return new RedisOpNoneKey(redisOpType, args);
+        Pair<RedisOpType, byte[][]> pair = redisOpType.transfer(redisOpType, args);
+        args = pair.getValue();
+        return new RedisOpNoneKey(pair.getKey(), args);
     }
 
     @Override

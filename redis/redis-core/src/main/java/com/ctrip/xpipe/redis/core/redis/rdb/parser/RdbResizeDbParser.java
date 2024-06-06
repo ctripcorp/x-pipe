@@ -14,29 +14,34 @@ import org.slf4j.LoggerFactory;
  */
 public class RdbResizeDbParser extends AbstractRdbParser<Pair<Integer, Integer>> implements RdbParser<Pair<Integer, Integer>> {
 
+    private RdbParseContext context;
+
     private STATE state = STATE.READ_INIT;
 
     private RdbLength dbSize;
 
     private RdbLength expireSize;
 
+    private RdbLength crdtDbSize;
+
     private static final Logger logger = LoggerFactory.getLogger(RdbResizeDbParser.class);
 
     public RdbResizeDbParser(RdbParseContext parseContext) {
-
+        this.context = parseContext;
     }
 
     enum STATE {
         READ_INIT,
         READ_DB_SIZE,
         READ_EXPIRE_SIZE,
+        READ_CRDT_DB_SIZE,
         READ_END
     }
 
     @Override
     public Pair<Integer, Integer> read(ByteBuf byteBuf) {
 
-        while(!isFinish() && byteBuf.readableBytes() > 0) {
+        while (!isFinish() && byteBuf.readableBytes() > 0) {
 
             switch (state) {
                 case READ_INIT:
@@ -52,7 +57,19 @@ public class RdbResizeDbParser extends AbstractRdbParser<Pair<Integer, Integer>>
 
                 case READ_EXPIRE_SIZE:
                     expireSize = parseRdbLength(byteBuf);
-                    if (null != expireSize) state = STATE.READ_END;
+                    if (null != expireSize) {
+                        if (context.isCrdt()) {
+                            state = STATE.READ_CRDT_DB_SIZE;
+                        } else {
+                            state = STATE.READ_END;
+                        }
+                    }
+                    break;
+                case READ_CRDT_DB_SIZE:
+                    crdtDbSize = parseRdbLength(byteBuf);
+                    if (null != crdtDbSize) {
+                        state = STATE.READ_END;
+                    }
                     break;
 
                 case READ_END:

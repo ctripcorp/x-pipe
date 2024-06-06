@@ -29,6 +29,8 @@ public class RedisOpMultiKeysParser extends AbstractRedisOpParser implements Red
 
     @Override
     public RedisOp parse(byte[][] args) {
+        Pair<RedisOpType, byte[][]> pair = redisOpType.transfer(redisOpType, args);
+        args = pair.getValue();
         if (0 != (args.length - keyStartIndex) % kvNum) {
             throw new IllegalArgumentException("wrong number of arguments for " + redisOpType.name());
         }
@@ -37,10 +39,10 @@ public class RedisOpMultiKeysParser extends AbstractRedisOpParser implements Red
         int i = keyStartIndex;
         while (i < args.length) {
             RedisKey key = new RedisKey(args[i++]);
-            kvs.add(kvNum == 1? Pair.of(key, null): Pair.of(key, args[i++]));
+            kvs.add(kvNum == 1 ? Pair.of(key, null) : Pair.of(key, args[i++]));
         }
 
-        return new RedisOpMultiKVs(redisOpType, args, kvs);
+        return new RedisOpMultiKVs(pair.getKey(), args, kvs);
     }
 
     @Override

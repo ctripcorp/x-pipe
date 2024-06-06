@@ -9,5 +9,4 @@ public interface RedisOpParserManager {
     void registerParser(RedisOpType opType, RedisOpParser parser);
 
     RedisOpParser findParser(RedisOpType opType);
-
 }
