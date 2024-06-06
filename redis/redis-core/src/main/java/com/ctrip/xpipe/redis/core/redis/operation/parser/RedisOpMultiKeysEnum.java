@@ -12,7 +12,14 @@ public enum RedisOpMultiKeysEnum {
     MSET(RedisOpType.MSET, 1, 2),
     MSETNX(RedisOpType.MSETNX, 1, 2),
     DEL(RedisOpType.DEL, 1, 1),
-    UNLINK(RedisOpType.UNLINK, 1, 1);
+    UNLINK(RedisOpType.UNLINK, 1, 1),
+
+    //crdt,
+    CRDT_DEL_REG(RedisOpType.CRDT_DEL_REG, 1, 1),
+    CRDT_MSET(RedisOpType.CRDT_MSET, 1, 2);
+
+
+
 
     RedisOpMultiKeysEnum(RedisOpType redisOpType, int keyStartIndex, int kvNum) {
         this.redisOpType = redisOpType;

@@ -1,5 +1,10 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
+import com.ctrip.xpipe.redis.core.redis.operation.transfer.RedisOpCrdtDelTransfer;
+import com.ctrip.xpipe.redis.core.redis.operation.transfer.RedisOpCrdtMSetTransfer;
+import com.ctrip.xpipe.redis.core.redis.operation.transfer.RedisOpCrdtSelectTransfer;
+import com.ctrip.xpipe.redis.core.redis.operation.transfer.RedisOpCrdtSetTransfer;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -98,7 +103,15 @@ public enum RedisOpType {
     EXEC(false, 1),
     SCRIPT(false, -2),
     MOVE(false, 3),
-    UNKNOWN(false, -1, true);
+    UNKNOWN(false, -1, true),
+
+    //crdt
+    CRDT_SET(false, 3, RedisOpCrdtSetTransfer.getInstance()),
+    CRDT_MSET(true, 3, RedisOpCrdtMSetTransfer.getInstance()),
+    CRDT_DEL_REG(false, 3, RedisOpCrdtDelTransfer.getInstance()),
+    CRDT_SELECT(false, 2, RedisOpCrdtSelectTransfer.getInstance()),
+    CRDT_OVC(false, 2, true),
+    CRDT_PUBLISH(false, 3, true);
 
     // Support multi key or not
     private boolean supportMultiKey;
@@ -108,14 +121,25 @@ public enum RedisOpType {
 
     private boolean swallow;
 
+    private RedisOpCrdtTransfer transfer;
+
     RedisOpType(boolean multiKey, int arity) {
         this(multiKey, arity, false);
     }
 
     RedisOpType(boolean multiKey, int arity, boolean swallow) {
+        this(multiKey, arity, swallow, null);
+    }
+
+    RedisOpType(boolean multiKey, int arity, RedisOpCrdtTransfer transfer) {
+        this(multiKey, arity, false, transfer);
+    }
+
+    RedisOpType(boolean multiKey, int arity, boolean swallow, RedisOpCrdtTransfer transfer) {
         this.supportMultiKey = multiKey;
         this.arity = arity;
         this.swallow = swallow;
+        this.transfer = transfer;
     }
 
     public boolean supportMultiKey() {
@@ -128,6 +152,13 @@ public enum RedisOpType {
 
     public boolean isSwallow() {
         return swallow;
+    }
+
+    public Pair<RedisOpType, byte[][]> transfer(RedisOpType redisOpType, byte[][] args) {
+        if (null == transfer) {
+            return Pair.of(redisOpType, args);
+        }
+        return this.transfer.transformCrdtRedisOp(redisOpType, args);
     }
 
     public boolean checkArgcNotStrictly(Object[] args) {
@@ -143,5 +174,4 @@ public enum RedisOpType {
             return UNKNOWN;
         }
     }
-
 }

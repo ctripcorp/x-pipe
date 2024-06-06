@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.parser;
 
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author ayq
@@ -22,9 +23,12 @@ public class RedisOpSingleKeyParser extends AbstractRedisOpParser implements Red
 
     @Override
     public RedisOp parse(byte[][] args) {
-        RedisKey redisKey = keyIndex == null? null: new RedisKey(args[keyIndex]);
-        byte[] redisValue = valueIndex == null? null: args[valueIndex];
-        return new RedisOpSingleKey(redisOpType, args, redisKey, redisValue);
+        // conversion to  common redis op
+        Pair<RedisOpType, byte[][]> pair = redisOpType.transfer(redisOpType, args);
+        args = pair.getValue();
+        byte[] redisValue = valueIndex == null ? null : args[valueIndex];
+        RedisKey redisKey = keyIndex == null ? null : new RedisKey(args[keyIndex]);
+        return new RedisOpSingleKey(pair.getKey(), args, redisKey, redisValue);
     }
 
     @Override

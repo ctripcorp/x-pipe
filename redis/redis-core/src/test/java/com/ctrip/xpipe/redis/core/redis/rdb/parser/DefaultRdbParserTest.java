@@ -231,6 +231,21 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("XGROUP CREATECONSUMER stream cgroup2 consumer", redisOps.get(14).toString());
     }
 
+    @Test
+    public void testParseCrdtRegister() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(crdtRegister);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("SET test35 test35", redisOps.get(1).toString());
+        Assert.assertEquals("SET test2 test2", redisOps.get(2).toString());
+        Assert.assertEquals("SET test0 test0", redisOps.get(3).toString());
+        Assert.assertEquals("SET test43 test43", redisOps.get(4).toString());
+        Assert.assertEquals("SET test37 test37", redisOps.get(5).toString());
+        Assert.assertEquals("SET test34 test34", redisOps.get(6).toString());
+    }
+
     @Override
     public void onRedisOp(RedisOp redisOp) {
         logger.info("[onRedisOp] {}", redisOp);

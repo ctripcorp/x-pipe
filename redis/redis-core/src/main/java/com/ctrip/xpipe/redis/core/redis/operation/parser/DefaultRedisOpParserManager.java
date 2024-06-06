@@ -33,5 +33,4 @@ public class DefaultRedisOpParserManager implements RedisOpParserManager {
     public RedisOpParser findParser(RedisOpType opType) {
         return parserMap.get(opType);
     }
-
 }
