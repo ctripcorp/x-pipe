@@ -192,7 +192,11 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             nettyClient.channel().close();
         }
         if(!future().isDone()) {
-            future().setSuccess();
+            try {
+                future().setSuccess();
+            } catch (Throwable th) {
+                getLogger().debug("[doUnsubscribe][future already done]", th);
+            }
         }
     }
 
