@@ -79,7 +79,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public boolean isDcSupportMultiAz(String dcName) {
-        List<AzCreateInfo> dcAvailableZoneInfos = getDcAvailableZoneInfos(dcName);
+        List<AzCreateInfo> dcAvailableZoneInfos = getDcActiveAvailableZoneInfos(dcName);
         return !CollectionUtils.isEmpty(dcAvailableZoneInfos) && dcAvailableZoneInfos.size() > 1;
     }
 
@@ -99,6 +99,22 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
         return azDao.findAvailableZonesByDc(dcTbl.getId());
+    }
+
+    private List<AzCreateInfo> getDcActiveAvailableZoneInfos(String dcName) {
+
+        return Lists.newArrayList(Lists.transform(getDcActiveAvailableZoneTbls(dcName), new Function<AzTbl, AzCreateInfo>() {
+            @Override
+            public AzCreateInfo apply(AzTbl azTbl) {
+                AzCreateInfo azCreateInfo = new AzCreateInfo()
+                        .setDcName(dcName)
+                        .setAzName(azTbl.getAzName())
+                        .setActive(azTbl.isActive())
+                        .setDescription(azTbl.getDescription());
+
+                return azCreateInfo;
+            }
+        }));
     }
 
     @Override
@@ -180,6 +196,11 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
                         .setDescription(azTbl.getDescription());
             }
         }));
+    }
+
+    @Override
+    public List<AzTbl> getAllAvailableZoneByDc(long dcId) {
+        return azDao.findActiveAvailableZonesByDc(dcId);
     }
 
     @Override

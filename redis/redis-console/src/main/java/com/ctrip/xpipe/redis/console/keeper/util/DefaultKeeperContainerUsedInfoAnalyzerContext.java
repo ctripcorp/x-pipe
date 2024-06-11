@@ -10,8 +10,6 @@ import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +73,20 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
 
     @Override
     public List<MigrationKeeperContainerDetailModel> getAllMigrationPlans() {
-        return migrationPlansMap.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        List<MigrationKeeperContainerDetailModel> collect = migrationPlansMap.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
+        for (MigrationKeeperContainerDetailModel model : collect) {
+            if (model.getMigrateShards() == null || model.getMigrateShards().isEmpty()) {
+                result.add(model);
+                continue;
+            }
+            for (DcClusterShard migrateShard : model.getMigrateShards()) {
+                MigrationKeeperContainerDetailModel resultModel = new MigrationKeeperContainerDetailModel(model.getSrcKeeperContainer(), model.getTargetKeeperContainer(), model.isSwitchActive(), model.isKeeperPairOverload(), model.getCause(), new ArrayList<>());
+                resultModel.addReadyToMigrateShard(migrateShard);
+                result.add(resultModel);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -127,14 +138,12 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
         if (srcKeeper == null || srcKeeperPair == null) {
             return null;
         }
-        String org = srcKeeper.getOrg();
-        String az = srcKeeper.getAz();
         PriorityQueue<KeeperContainerUsedInfoModel> queue = isPeerDataOverload ? minPeerDataKeeperContainers : minInputFlowKeeperContainers;
         Queue<KeeperContainerUsedInfoModel> temp = new LinkedList<>();
         while (!queue.isEmpty()) {
             KeeperContainerUsedInfoModel target = queue.poll();
-            if ((org == null || org.equals(target.getOrg()))
-                    && (az == null || az.equals(target.getAz()))
+            if ((Objects.equals(srcKeeper.getOrg(), target.getOrg()))
+                    && (Objects.equals(srcKeeper.getAz(), target.getAz()))
                     && !Objects.equals(target.getKeeperIp(), srcKeeperPair.getKeeperIp())
                     && ((!isMigrateShardBackUp && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this))
                     || (isMigrateShardBackUp && !filterChain.isMigrateKeeperPairOverload(dcClusterShard, srcKeeperPair, target, this)))) {
