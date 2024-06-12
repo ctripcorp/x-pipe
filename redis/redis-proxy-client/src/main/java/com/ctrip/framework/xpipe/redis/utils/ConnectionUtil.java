@@ -48,8 +48,11 @@ public class ConnectionUtil {
     }
 
     public static SocketAddress removeAddress(Object o) {
-        logger.info("[SocketAddress] removed for {}", o);
-        return ProxyUtil.getInstance().removeProxyAddress(o);
+        SocketAddress socketAddress = ProxyUtil.getInstance().removeProxyAddress(o);
+        if(socketAddress != null) {
+            logger.info("[SocketAddress] removed for {}", o);
+        }
+        return socketAddress;
     }
 
     public static void connectToProxy(Socket socket, InetSocketAddress address, int timeout) throws IOException {
