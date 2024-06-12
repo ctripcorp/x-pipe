@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.alert.*;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.checker.alert.manager.DecoratorManager;
@@ -54,6 +56,8 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
 
     @Resource(name = GLOBAL_EXECUTOR)
     protected ExecutorService executors;
+
+    private MetricProxy metricProxy = MetricProxy.DEFAULT;
 
     @Override
     public void register(EventBus eventBus) {
@@ -123,6 +127,45 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
             }
         } finally {
             lock.unlock();
+        }
+    }
+
+    protected void tryMetric(Map<ALERT_TYPE, Set<AlertEntity>> alerts, boolean isAlertMessage) {
+        if(alerts == null) {
+            return;
+        }
+        String mailType = "alert";
+        if(!isAlertMessage) {
+            mailType = "recover";
+        }
+        tryMetricMail(mailType);
+        for(Map.Entry<ALERT_TYPE, Set<AlertEntity>> entry : alerts.entrySet()) {
+            ALERT_TYPE alertType = entry.getKey();
+            tryMetricAlter(alertType, mailType);
+        }
+
+    }
+
+    private void tryMetricMail(String mailType) {
+        tryMetric("mail", null, mailType);
+    }
+
+    private void tryMetricAlter(ALERT_TYPE type, String mailType) {
+        tryMetric("alert", type, mailType);
+    }
+
+    private void tryMetric(String metricType, ALERT_TYPE type, String mailType) {
+        MetricData metricData = new MetricData(metricType);
+        metricData.setValue(1);
+        metricData.setTimestampMilli(System.currentTimeMillis());
+        if(type != null) {
+            metricData.addTag("type", type.name());
+        }
+        metricData.addTag("mailType", mailType);
+        try {
+            metricProxy.writeBinMultiDataPoint(metricData);
+        } catch (Throwable th) {
+            logger.debug("[tryMetric] fail", th);
         }
     }
 

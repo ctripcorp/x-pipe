@@ -88,6 +88,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
                     }
                     AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), true);
                     emailMessage(message);
+                    tryMetric(mailGroup.getValue(), true);
                 }
                 sendTaskBegin.compareAndSet(true, false);
             }
