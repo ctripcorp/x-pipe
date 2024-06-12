@@ -36,6 +36,9 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigDao configDao;
 
     @Autowired
+    private ConsoleConfig consoleConfig;
+
+    @Autowired
     private AlertSystemOffChecker alertSystemOffChecker;
 
     @Autowired
@@ -122,8 +125,12 @@ public class ConfigServiceImpl implements ConfigService {
 
         config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
                 .setVal(String.valueOf(false));
-        logChangeEvent(config, null);
-        configDao.setConfig(config);
+        int interval = (10000 + consoleConfig.getRedisConfCheckIntervalMilli()) / 1000;
+        // To ensure that OuterClientCache is the latest data, the configuration is delayed to take effect
+        // the interval is same to the  timeoutMillSupplier of DefaultOuterClientCache.clustersCache
+        Date laterDate = DateTimeUtils.getSecondsLaterThan(new Date(), interval);
+        logChangeEvent(config, laterDate);
+        configDao.setConfigAndUntil(config, laterDate);
     }
 
     @Override

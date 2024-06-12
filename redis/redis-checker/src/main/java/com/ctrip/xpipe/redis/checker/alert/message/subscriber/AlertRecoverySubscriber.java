@@ -130,6 +130,7 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                 }
                 AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), false);
                 emailMessage(message);
+                tryMetric(mailGroup.getValue(), false);
             }
             future().setSuccess();
         }

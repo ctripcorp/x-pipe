@@ -1,8 +1,13 @@
 package com.ctrip.xpipe.redis.checker.alert.manager;
 
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertChannel;
+import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.alert.sender.Sender;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
