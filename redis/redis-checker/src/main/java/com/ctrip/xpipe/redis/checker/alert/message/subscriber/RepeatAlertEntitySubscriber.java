@@ -113,6 +113,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
                 logger.debug("[ScheduledSendRepeatAlertTask] Mail out: {}", mailGroup.getValue());
                 AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), true);
                 emailMessage(message);
+                tryMetric(mailGroup.getValue(), true);
             }
             future().setSuccess();
         }

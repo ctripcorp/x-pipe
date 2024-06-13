@@ -223,4 +223,18 @@ public class StringUtil {
         return splitRemoveEmpty(COMMA_SPLITTER, str);
     }
 
+    public static boolean contains(String str, String subStr) {
+        if (str == null || subStr == null) {
+            return false;
+        }
+
+        int subStrLen = subStr.length();
+
+        if (subStrLen == 0) {
+            return true;
+        }
+
+        return str.contains(subStr);
+    }
+
 }

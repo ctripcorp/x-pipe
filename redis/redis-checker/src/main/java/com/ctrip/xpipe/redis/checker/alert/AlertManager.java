@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.checker.alert;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -57,6 +59,7 @@ public class AlertManager {
 
     @Autowired
     private MetaCache metaCache;
+
 
     private Set<String> alertClusterWhiteList = Collections.emptySet();
 
@@ -183,4 +186,5 @@ public class AlertManager {
     protected void setAlertClusterWhiteList(Set<String> clusterWhiteList) {
         this.alertClusterWhiteList = clusterWhiteList;
     }
+
 }
