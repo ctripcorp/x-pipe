@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -35,9 +36,13 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
     }
 
     private long getUsedMemory(InfoResultExtractor extractor) {
+        String swapVersion = extractor.getKeySwapVersion();
+        Long dbSize = extractor.getSwapUsedDbSize();
         Long maxMemory = extractor.getMaxMemory();
         Long usedMemory = extractor.getUsedMemory();
-        Long dbSize = extractor.getSwapUsedDbSize();
+        if (!StringUtils.isEmpty(swapVersion) && isVersionGreaterThanOrEqualTo1_3(swapVersion)) {
+            return dbSize + maxMemory;
+        }
 
         if (dbSize == null || usedMemory < maxMemory) return usedMemory;
 
@@ -65,5 +70,13 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
 
     public ConcurrentMap<DcClusterShard, Long> getDcClusterShardUsedMemory() {
         return dcClusterShardUsedMemory;
+    }
+
+    public boolean isVersionGreaterThanOrEqualTo1_3(String swapVersion) {
+        String[] versions = swapVersion.split("\\.");
+        int v1 = Integer.parseInt(versions[0]);
+        int v2 = Integer.parseInt(versions[1]);
+        if (v1 == 1) return v2 >= 3;
+        return v1 > 1;
     }
 }
