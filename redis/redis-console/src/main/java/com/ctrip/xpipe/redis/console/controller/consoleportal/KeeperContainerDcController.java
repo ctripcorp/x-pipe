@@ -37,12 +37,8 @@ public class KeeperContainerDcController extends AbstractConsoleController {
   private ClusterService clusterService;
 
   @RequestMapping(value = "/dcs/{dcName}/cluster/{clusterName}/activekeepercontainers", method = RequestMethod.GET)
-  public List<KeepercontainerTbl> findKeeperContainersByCluster(@PathVariable String dcName,
-      @PathVariable String clusterName) {
-
-    List<KeepercontainerTbl> keepercontainerTbls =
-         keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
-    return keepercontainerTbls;
+  public List<KeepercontainerTbl> findKeeperContainersByCluster(@PathVariable String dcName, @PathVariable String clusterName) {
+      return keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName, true);
   }
 
 
