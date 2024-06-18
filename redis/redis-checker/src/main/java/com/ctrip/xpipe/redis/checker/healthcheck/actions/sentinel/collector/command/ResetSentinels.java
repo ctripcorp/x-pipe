@@ -12,6 +12,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvalidSlaves;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
@@ -35,10 +36,15 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private ScheduledExecutorService scheduled;
     private ExecutorService resetExecutor;
     private CheckerConfig checkerConfig;
+    private Map<HostPort, List<HostPort>> allSentinels = new ConcurrentHashMap<>();
+    private Map<HostPort, List<HostPort>> availableSentinels = new ConcurrentHashMap<>();
+    private Map<HostPort, SentinelInvalidSlaves> problemSentinels = new ConcurrentHashMap<>();
+    private Map<HostPort, SentinelInvalidSlaves> shouldResetSentinels = new ConcurrentHashMap<>();
+    private List<HostPort> masterSlaves = new ArrayList<>();
 
     public ResetSentinels(SentinelHelloCollectContext context, MetaCache metaCache,
                           XpipeNettyClientKeyedObjectPool keyedObjectPool,
-                          ScheduledExecutorService scheduled, ExecutorService resetExecutor,SentinelManager sentinelManager,
+                          ScheduledExecutorService scheduled, ExecutorService resetExecutor, SentinelManager sentinelManager,
                           CheckerConfig checkerConfig) {
         super(context);
         this.metaCache = metaCache;
@@ -51,29 +57,20 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     @Override
     protected void doExecute() throws Throwable {
-        checkReset(context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getToCheckReset());
+        checkReset();
         future().setSuccess();
     }
 
-    protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
-        if (hellos.isEmpty())
+    protected void checkReset() {
+        if (context.getToCheckReset().isEmpty())
             return;
 
-        if (hellos.size() < checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()) {
-            logger.warn("[{}-{}+{}]sentinels less then quorum, ignore reset, hellos:{}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), hellos);
+        if (context.getToCheckReset().size() < checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()) {
+            logger.warn("[{}-{}][reset]collected sentinels less then quorum, ignore reset, hellos: {}", LOG_TITLE, context.getSentinelMonitorName(), context.getToCheckReset());
             return;
         }
 
-        Map<HostPort, List<HostPort>> allSentinels = new ConcurrentHashMap<>();
-        Map<HostPort, List<HostPort>> availableSentinels = new ConcurrentHashMap<>();
-        Map<HostPort, HostPort> shouldResetSentinels = new ConcurrentHashMap<>();
-
-        SequenceCommandChain checkResetCommands = new SequenceCommandChain(false);
-        checkResetCommands.add(sentinelSlaves(sentinelMonitorName, hellos, allSentinels));
-        checkResetCommands.add(checkSentinels(clusterId, shardId, sentinelMonitorName, hellos, allSentinels, shouldResetSentinels, availableSentinels));
-        checkResetCommands.add(resetSentinels(clusterId, shardId, sentinelMonitorName, availableSentinels, shouldResetSentinels));
-
-        CommandFuture resetFuture = checkResetCommands.execute(resetExecutor);
+        CommandFuture resetFuture = checkResetCommands().execute(resetExecutor);
         ScheduledFuture<?> resetTimeoutFuture = scheduled.schedule(() -> {
             resetFuture.cancel(true);
         }, 3000, TimeUnit.MILLISECONDS);
@@ -84,17 +81,126 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     }
 
-    Command<Void> resetSentinels(String clusterId, String shardId, String sentinelMonitorName, Map<HostPort, List<HostPort>> availableSentinels, Map<HostPort, HostPort> shouldResetSentinelsMap) {
+    SequenceCommandChain checkResetCommands() {
+        Set<SentinelHello> hellos = context.getToCheckReset();
+        SequenceCommandChain checkResetCommands = new SequenceCommandChain(false);
+        checkResetCommands.add(getSentinelsSlaves(hellos));
+        checkResetCommands.add(checkSentinelsSlaves(hellos));
+        checkResetCommands.add(checkMaster());
+        checkResetCommands.add(filterSentinelsToReset());
+        checkResetCommands.add(resetSentinels());
+        return checkResetCommands;
+    }
+
+    Command<Void> filterSentinelsToReset() {
         return new AbstractCommand<Void>() {
             @Override
-            protected void doExecute() throws Throwable {
-                List<HostPort> resetSentinels = sentinelsToReset(availableSentinels, Lists.newArrayList(shouldResetSentinelsMap.keySet()));
+            protected void doExecute() {
+                if (problemSentinels.isEmpty())
+                    future().setSuccess();
+                else {
+                    ParallelCommandChain checkCommands = new ParallelCommandChain(resetExecutor, false);
+                    for (HostPort sentinel : problemSentinels.keySet()) {
+                        Command<Boolean> shouldResetSentinel = shouldResetSentinel(sentinel);
+                        shouldResetSentinel.future().addListener(shouldResetSentinelFuture -> {
+                            if (shouldResetSentinelFuture.isSuccess() && shouldResetSentinelFuture.get())
+                                shouldResetSentinels.put(sentinel, problemSentinels.get(sentinel));
+                        });
+                        checkCommands.add(shouldResetSentinel);
+                    }
+                    checkCommands.execute().addListener(future -> future().setSuccess());
+                }
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return "filterSentinelsToReset";
+            }
+        };
+    }
+
+    Command<Boolean> shouldResetSentinel(HostPort sentinel) {
+        return new AbstractCommand<Boolean>() {
+            @Override
+            protected void doExecute() {
+                future().setSuccess(shouldReset(sentinel));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return "shouldResetSentinel";
+            }
+        };
+    }
+
+    Command<Void> checkMaster() {
+        return new AbstractCommand<Void>() {
+            @Override
+            protected void doExecute() {
+                if (problemSentinels.isEmpty())
+                    future().setSuccess();
+                else {
+                    HostPort master = context.getTrueMasterInfo().getKey();
+                    RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
+                    roleCommand.execute().addListener(roleFuture -> {
+                        if (roleFuture.isSuccess()) {
+                            Role role = roleFuture.get();
+                            if (role instanceof MasterRole) {
+                                MasterRole masterRole = (MasterRole) roleFuture.get();
+                                masterSlaves.addAll(masterRole.getSlaveHostPorts());
+
+                                if (masterHasAllSlaves())
+                                    future().setSuccess();
+                                else
+                                    future().setFailure(new SentinelsException(String.format("master: %s of %s lost slaves", master, context.getSentinelMonitorName())));
+
+                            } else {
+                                String errMsg = String.format("unexpected master role:%s, master:%s, shard:%s", role.getServerRole().name(), master, context.getSentinelMonitorName());
+                                logger.warn("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), errMsg);
+                                future().setFailure(new SentinelsException(errMsg));
+                            }
+                        } else {
+                            String errMsg = String.format("role master %s of %s failed", master, context.getSentinelMonitorName());
+                            logger.warn("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), errMsg, roleFuture.cause());
+                            future().setFailure(new SentinelsException(errMsg));
+                        }
+                    });
+                }
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return "checkMaster";
+            }
+        };
+    }
+
+    Command<Void> resetSentinels() {
+        return new AbstractCommand<Void>() {
+            @Override
+            protected void doExecute() {
+                List<HostPort> resetSentinels = sentinelsToReset();
                 if (!resetSentinels.isEmpty()) {
-                    logger.info("[{}-{}+{}]{} to reset sentinels:{}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, resetSentinels);
+                    logger.info("[{}-{}]to reset sentinels: {}", LOG_TITLE, context.getSentinelMonitorName(), resetSentinels);
                     resetSentinels.forEach(sentinel -> {
-                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", sentinelMonitorName);
-                        sentinelManager.reset(new Sentinel(sentinel.toString(), sentinel.getHost(), sentinel.getPort()), sentinelMonitorName).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
-                            logger.error("[{}-{}+{}][reset]{}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinel, throwable);
+                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", context.getSentinelMonitorName());
+                        sentinelManager.reset(new Sentinel(sentinel.toString(), sentinel.getHost(), sentinel.getPort()), context.getSentinelMonitorName()).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                            logger.error("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), sentinel, throwable);
                             return null;
                         });
                     });
@@ -114,23 +220,24 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         };
     }
 
-    Command<Void> checkSentinels(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos, Map<HostPort, List<HostPort>> allSentinels, Map<HostPort, HostPort> shouldResetSentinelsMap, Map<HostPort, List<HostPort>> availableSentinels) {
+    Command<Void> checkSentinelsSlaves(Set<SentinelHello> hellos) {
         return new AbstractCommand<Void>() {
             @Override
-            protected void doExecute() throws Throwable {
-                filterAvailableSentinels(allSentinels, availableSentinels);
-                if (overHalfSentinelsLostSlaves(availableSentinels)) {
-                    logger.warn("[{}-{}+{}]over half sentinels lost slaves: {}, ignore reset", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), allSentinels);
+            protected void doExecute() {
+                filterAvailableSentinels();
+                if (overHalfSentinelsLostSlaves()) {
+                    logger.warn("[{}-{}][reset]over half sentinels lost slaves: {}, ignore reset", LOG_TITLE, context.getSentinelMonitorName(), allSentinels);
                     future().setFailure(new SentinelsException("over half sentinels unavailable"));
                 } else {
                     ParallelCommandChain checkCommands = new ParallelCommandChain(resetExecutor, false);
                     for (SentinelHello hello : hellos) {
                         HostPort sentinelAddr = hello.getSentinelAddr();
                         List<HostPort> slaves = allSentinels.get(sentinelAddr);
-                        CheckSentinel checkSentinel = new CheckSentinel(clusterId, shardId, hello, sentinelMonitorName, slaves);
-                        checkSentinel.future().addListener(resetSentinelFuture -> {
-                            if (resetSentinelFuture.isSuccess() && resetSentinelFuture.get())
-                                shouldResetSentinelsMap.put(sentinelAddr, sentinelAddr);
+                        CheckSentinelSlaves checkSentinel = new CheckSentinelSlaves(slaves);
+                        checkSentinel.future().addListener(checkSentinelFuture -> {
+                            SentinelInvalidSlaves invalidSlaves = checkSentinelFuture.get();
+                            if (invalidSlaves.hasInvalidSlaves())
+                                problemSentinels.put(sentinelAddr, invalidSlaves);
                         });
                         checkCommands.add(checkSentinel);
                     }
@@ -146,25 +253,25 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
             @Override
             public String getName() {
-                return "checkSentinels";
+                return "checkSentinelsSlaves";
             }
         };
     }
 
-    Command<Void> sentinelSlaves(String sentinelMonitorName, Set<SentinelHello> hellos, Map<HostPort, List<HostPort>> allSentinels) {
+    Command<Void> getSentinelsSlaves(Set<SentinelHello> hellos) {
         return new AbstractCommand<Void>() {
             @Override
-            protected void doExecute() throws Throwable {
+            protected void doExecute() {
                 ParallelCommandChain sentinelSlavesCommands = new ParallelCommandChain(resetExecutor, false);
                 for (SentinelHello hello : hellos) {
                     HostPort sentinelAddr = hello.getSentinelAddr();
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-                    Command<List<HostPort>> slavesCommand = sentinelManager.slaves(sentinel, sentinelMonitorName);
+                    Command<List<HostPort>> slavesCommand = sentinelManager.slaves(sentinel, context.getSentinelMonitorName());
                     slavesCommand.future().addListener(future -> {
                         if (future.isSuccess())
                             allSentinels.put(sentinelAddr, future.get());
                         else {
-                            logger.warn("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, future.cause());
+                            logger.warn("[{}-{}][reset]sentinel slaves failed: {}", LOG_TITLE, context.getSentinelMonitorName(), sentinel, future.cause());
                         }
                     });
                     sentinelSlavesCommands.add(slavesCommand);
@@ -179,12 +286,14 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
             @Override
             public String getName() {
-                return "sentinelSlaves";
+                return "getSentinelsSlaves";
             }
         };
     }
 
-    List<HostPort> sentinelsToReset(Map<HostPort, List<HostPort>> availableSentinels, List<HostPort> shouldResetSentinels) {
+    List<HostPort> sentinelsToReset() {
+        List<HostPort> shouldResetSentinels = Lists.newArrayList(this.shouldResetSentinels.keySet());
+
         List<HostPort> sentinelsToReset = new ArrayList<>();
         if (shouldResetSentinels.isEmpty())
             return sentinelsToReset;
@@ -211,15 +320,15 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         return sentinelsToReset;
     }
 
-    void filterAvailableSentinels(Map<HostPort, List<HostPort>> sentinelsSlaves, Map<HostPort, List<HostPort>> availableSentinels) {
-        sentinelsSlaves.forEach((sentinel, slaves) -> {
+    void filterAvailableSentinels() {
+        allSentinels.forEach((sentinel, slaves) -> {
             if (sentinelHasAllSlaves(slaves)) {
                 availableSentinels.put(sentinel, slaves);
             }
         });
     }
 
-    boolean overHalfSentinelsLostSlaves(Map<HostPort, List<HostPort>> availableSentinels) {
+    boolean overHalfSentinelsLostSlaves() {
         return availableSentinels.size() < checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
     }
 
@@ -250,30 +359,17 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private static final int EXPECTED_KEEPER_COUNT = 1;
     private static final int EXPECTED_MASTER_COUNT = 1;
 
-    boolean shouldReset(List<HostPort> slaves, String clusterId, String shardId, String sentinelMonitorName, HostPort sentinelAddr) {
-        if (slaves.isEmpty())
-            return false;
-
-        Set<HostPort> toManyKeepers = tooManyKeepers(slaves);
-        Set<HostPort> unknownSlaves = unknownInstances(slaves);
-
-        if (toManyKeepers.isEmpty() && unknownSlaves.isEmpty())
-            return false;
-
-        List<HostPort> masterSlaves = masterSlaves();
-        if (!masterHasAllSlaves(masterSlaves, clusterId, shardId, sentinelMonitorName, sentinelAddr))
-            return false;
-
-        if (shouldResetTooManyKeepers(masterSlaves, toManyKeepers)) {
-            logger.info("[{}-{}+{}][reset]{}, {}, too many keepers: {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, toManyKeepers);
+    boolean shouldReset(HostPort sentinelAddr) {
+        SentinelInvalidSlaves invalidSlaves = problemSentinels.get(sentinelAddr);
+        if (shouldResetTooManyKeepers(invalidSlaves.getTooManyKeepers())) {
+            logger.info("[{}-{}][reset]{}, too many keepers: {}", LOG_TITLE, context.getSentinelMonitorName(), sentinelAddr, invalidSlaves.getTooManyKeepers());
             return true;
         }
 
-        if (shouldResetUnknownInstances(masterSlaves, unknownSlaves)) {
-            logger.info("[{}-{}+{}][reset]{}, {}, unknown slaves: {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, unknownSlaves);
+        if (shouldResetUnknownInstances(invalidSlaves.getUnknownSlaves())) {
+            logger.info("[{}-{}][reset]{}, unknown slaves: {}", LOG_TITLE, context.getSentinelMonitorName(), sentinelAddr, invalidSlaves.getUnknownSlaves());
             return true;
         }
-
         return false;
     }
 
@@ -286,7 +382,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         return shardInstances.size() == EXPECTED_MASTER_COUNT;
     }
 
-    private boolean shouldResetTooManyKeepers(List<HostPort> masterSlaves, Set<HostPort> toManyKeepers) {
+    private boolean shouldResetTooManyKeepers(Set<HostPort> toManyKeepers) {
         if (toManyKeepers.isEmpty())
             return false;
 
@@ -296,7 +392,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         return slaves.size() <= EXPECTED_KEEPER_COUNT;
     }
 
-    private boolean shouldResetUnknownInstances(List<HostPort> masterSlaves, Set<HostPort> unknownSlaves) {
+    private boolean shouldResetUnknownInstances(Set<HostPort> unknownSlaves) {
         if (unknownSlaves.isEmpty())
             return false;
 
@@ -306,59 +402,40 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         return slaves.isEmpty();
     }
 
-    private List<HostPort> masterSlaves() {
-        HostPort master = context.getTrueMasterInfo().getKey();
-        RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
-
-        try {
-            Role role = roleCommand.execute().get(660, TimeUnit.MILLISECONDS);
-            if (role instanceof MasterRole) {
-                MasterRole masterRole = (MasterRole) role;
-                return masterRole.getSlaveHostPorts();
-            }
-        } catch (Throwable th) {
-            logger.warn("[{}-{}+{}]get slaves from master failed", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), th);
-        }
-
-        return new ArrayList<>();
-    }
-
-    private boolean masterHasAllSlaves(List<HostPort> masterSlaves, String clusterId, String shardId, String sentinelMonitorName, HostPort sentinelAddr) {
+    private boolean masterHasAllSlaves() {
         HostPort master = context.getTrueMasterInfo().getKey();
         Set<HostPort> masterAndSlaves = Sets.newHashSet(masterSlaves);
         masterAndSlaves.add(master);
 
         boolean masterHasAllSlaves = masterAndSlaves.containsAll(context.getShardInstances());
         if (!masterHasAllSlaves) {
-            logger.info("[{}-{}+{}][reset]{}, {}, master:{} lost connection with some slaves, stop reset, current slaves:{}, expected slaves:{}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, master, masterSlaves, context.getShardInstances());
+            logger.warn("[{}-{}][reset]master:{} lost connection with some slaves, stop reset, current slaves:{}, expected slaves:{}", LOG_TITLE, context.getSentinelMonitorName(), master, masterSlaves, context.getShardInstances());
         }
         return masterHasAllSlaves;
     }
 
-    class CheckSentinel extends AbstractCommand<Boolean> {
+    class CheckSentinelSlaves extends AbstractCommand<SentinelInvalidSlaves> {
 
-        private String clusterId;
-        private String shardId;
-        private SentinelHello hello;
-        private String sentinelMonitorName;
         private List<HostPort> slaves;
 
-        public CheckSentinel(String clusterId, String shardId, SentinelHello sentinelHello, String sentinelMonitorName, List<HostPort> slaves) {
-            this.clusterId = clusterId;
-            this.shardId = shardId;
-            this.hello = sentinelHello;
-            this.sentinelMonitorName = sentinelMonitorName;
+        public CheckSentinelSlaves(List<HostPort> slaves) {
             this.slaves = slaves;
         }
 
         @Override
         public String getName() {
-            return "CheckSentinel";
+            return "CheckSentinelSlaves";
         }
 
         @Override
         protected void doExecute() throws Throwable {
-            future().setSuccess(shouldReset(slaves, clusterId, shardId, sentinelMonitorName, hello.getSentinelAddr()));
+            if (slaves.isEmpty())
+                future().setSuccess(new SentinelInvalidSlaves());
+            else {
+                Set<HostPort> toManyKeepers = tooManyKeepers(slaves);
+                Set<HostPort> unknownSlaves = unknownInstances(slaves);
+                future().setSuccess(new SentinelInvalidSlaves(toManyKeepers, unknownSlaves));
+            }
         }
 
         @Override
