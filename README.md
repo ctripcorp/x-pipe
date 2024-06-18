@@ -27,6 +27,7 @@ x-pipe
 
 <!-- /MarkdownTOC -->
 
+See the [English](https://github.com/ctripcorp/x-pipe/blob/master/README-en.md) readme here.
 
 <a name="xpipe-解决什么问题"></a>
 # XPipe 解决什么问题
