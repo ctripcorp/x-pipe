@@ -116,6 +116,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Override
   public List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName) {
+    return findBestKeeperContainersByDcCluster(dcName, clusterName, false);
+  }
+
+  @Override
+  public List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName, boolean skipAzFilter) {
     /*
      * 1. BU has its own keepercontainer(kc), then find all and see if it satisfied the requirement
      * 2. Cluster don't have a BU, find default one
@@ -152,12 +157,15 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         }
 
         setCountAndSortForAllKeeperContainers(allDcOrgKeeperContainers,  dcOrgKeeperContainersInUsed);
-        allDcOrgKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgKeeperContainers, dcName);
+        if (!skipAzFilter) {
+          allDcOrgKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgKeeperContainers, dcName);
+        }
         logger.info("find keeper containers: {}", allDcOrgKeeperContainers);
         return allDcOrgKeeperContainers;
       }
     });
   }
+
 
   void setCountAndSortForAllKeeperContainers(List<KeepercontainerTbl> allKeepers, List<KeepercontainerTbl> keepersInUsed) {
     Map<Long, KeepercontainerTbl> dcKeepersInOrgMap = allKeepers.stream().collect(Collectors.toMap(KeepercontainerTbl::getKeepercontainerId, dcKeeperContainerInOrg -> dcKeeperContainerInOrg));
