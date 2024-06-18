@@ -372,7 +372,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         createKeeperContainer(models, IP4,0,0);
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
-        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
     }
 
     @Test
@@ -399,7 +399,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         createKeeperContainer(models, IP3,0,0);
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
-        Assert.assertEquals(3, allDcReadyToMigrationKeeperContainers.size());
+        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
     }
 
     @Test

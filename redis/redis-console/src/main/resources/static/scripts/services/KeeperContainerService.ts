@@ -64,6 +64,11 @@ angular
             url: '/console/keepercontainer/overload/migration/process',
             isArray: true
         },
+        get_all_available_zone_info_models_by_dc: {
+            method: 'GET',
+            url: '/console/az/dcs/tbl/:dcId',
+            isArray: true
+        },
         begin_to_migrate_overload_keepercontainer:{
             method:'POST',
             url:'/console/keepercontainer/overload/migration/begin'
@@ -127,6 +132,19 @@ angular
                         function (result) {
                             d.resolve(result);
                         }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getAllAvailableZoneInfoModelsByDc(dcId) {
+        var d = $q.defer();
+        resource.get_all_available_zone_info_models_by_dc({
+                dcId: dcId
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -286,6 +304,7 @@ angular
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
         findKeepercontainerById : findKeepercontainerById,
+        getAllAvailableZoneInfoModelsByDc : getAllAvailableZoneInfoModelsByDc,
         findAvailableKeepersByDcAzAndOrg : findAvailableKeepersByDcAzAndOrg,
         getAllInfos: getAllInfos,
         getAllOrganizations: getAllOrganizations,

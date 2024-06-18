@@ -15,6 +15,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     $scope.dcShards = {};
     $scope.dcSourceShards = {};
     $scope.replDirection = {};
+    $scope.azTbls = {};
     $scope.clusterName = $stateParams.clusterName;
     $scope.shardName = $stateParams.shardName;
     $scope.currentDcName = $stateParams.currentDcName;
@@ -65,11 +66,34 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     function findActiveKeeperContainersByCluster(dcName, clusterName) {
         KeeperContainerService.findAvailableKeepersByDcAndCluster(dcName, clusterName)
            .then(function(result) {
-                result.sort(function(keeperA, keeperB) {
-                    return keeperA.count - keeperB.count;
-                });
-                   $scope.keeperContainers = result;
+               result.sort(function(keeperA, keeperB) {
+                   return keeperA.count - keeperB.count;
+               });
+               if (result.length <= 0) return;
+               $scope.azTbls = {};
+               $scope.keeperContainers = result;
+               KeeperContainerService.getAllAvailableZoneInfoModelsByDc(result[0].keepercontainerDc).then(function (aztbls){
+                   $scope.azTbls = aztbls;
+                   $scope.keeperContainers.forEach(function (keeperContainer) {
+                       keeperContainer.azName = findAzNameByAzId(keeperContainer.azId)
+                   })
                })
+           })
+    }
+
+    function findAzNameByAzId(azId): string {
+        if ($scope.azTbls == null || $scope.azTbls.length <= 0) {
+            return '';
+        }
+        let azName = '';
+        $scope.azTbls.forEach(function(azTbl){
+            if (azTbl.id == azId) {
+                azName = azTbl.azName;
+                return false;
+            }
+            return true;
+        })
+        return azName;
     }
 
     function findActiveApplierContainersByCluster(dcName, clusterName) {

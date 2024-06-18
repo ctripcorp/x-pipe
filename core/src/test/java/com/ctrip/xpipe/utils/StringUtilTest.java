@@ -73,4 +73,29 @@ public class StringUtilTest extends AbstractTest{
 		Assert.assertEquals(1, StringUtil.compareVersion(version, targetVersion));
 	}
 
+	@Test
+	public void testCompareVersionSize() {
+		String targetVersion = "1.3";
+		String version = null;
+		try {
+			StringUtil.compareVersionSize(version, targetVersion);
+		} catch (Exception e) {
+			Assert.assertEquals("version cannot be null", e.getMessage());
+		}
+		version = "1.a";
+		try {
+			StringUtil.compareVersionSize(version, targetVersion);
+		} catch (Exception e) {
+			Assert.assertEquals("version contains non-numeric characters", e.getMessage());
+		}
+		version = "1.3";
+		Assert.assertEquals(0, StringUtil.compareVersionSize(version, targetVersion));
+		version = "1.2";
+		Assert.assertEquals(-1, StringUtil.compareVersionSize(version, targetVersion));
+		version = "2.0";
+		Assert.assertEquals(1, StringUtil.compareVersionSize(version, targetVersion));
+		version = "2.a";
+		Assert.assertEquals(1, StringUtil.compareVersionSize(version, targetVersion));
+	}
+
 }
