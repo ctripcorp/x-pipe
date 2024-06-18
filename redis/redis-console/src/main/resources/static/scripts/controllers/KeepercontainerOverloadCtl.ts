@@ -21,6 +21,7 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
     };
     $scope.operateType = $stateParams.type;
     $scope.migratingKeeperContainers = [];
+    $scope.oldMigratingKeeperContainers = [];
     $scope.scheduledWork;
 
     $scope.beginToMigrateOverloadKeeperContainers = beginToMigrateOverloadKeeperContainers;
@@ -98,6 +99,9 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
         });
 
         $scope.operateType = OPERATE_TYPE.MIGRATING;
+        $scope.migratingPage=1;
+        $scope.migratingCount=10;
+        $scope.scheduledWork = $interval(getOverloadKeeperContainerMigrationProcess, 1000);
 
         KeeperContainerService.beginToMigrateOverloadKeeperContainers.apply(KeeperContainerService, $scope.migratingKeeperContainers)
             .then(result => {
@@ -109,7 +113,6 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                     toastr.error(result.message, "迁移失败");
                 }
                 getOverloadKeeperContainerMigrationProcess();
-                $interval.cancel($scope.scheduledWork);
             });
 	}
 
@@ -124,9 +127,6 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                 getOverloadKeeperContainerMigrationProcess();
                 $interval.cancel($scope.scheduledWork);
             });
-
-        $scope.operateType = OPERATE_TYPE.DETAIL;
-
     }
 
 	function getOverloadKeeperContainerMigrationProcess() {
@@ -135,9 +135,11 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                 .then(function (result) {
                     if (result == null) return;
                     $scope.migratingKeeperContainers = result;
+                    syncShowMigrateDetail();
+                    checkMigratingKeeperContainers();
                     $scope.migratingTableParams = new NgTableParams({
-                        page : 1,
-                        count : 10,
+                        page : $scope.migratingPage,
+                        count : $scope.migratingCount,
                     }, {
                         filterDelay: 100,
                         counts: [10, 25, 50],
@@ -147,7 +149,37 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
         }
 	}
 
-    $scope.scheduledWork = $interval(getOverloadKeeperContainerMigrationProcess, 1000);
+    function checkMigratingKeeperContainers() {
+        var allContainersMigrated = true;
+        $scope.migratingKeeperContainers.forEach(function(keeper) {
+            if (keeper.migrateKeeperCount !== keeper.migrateKeeperCompleteCount) {
+                allContainersMigrated = false;
+                return;
+            }
+        });
+
+        if (allContainersMigrated) {
+            $interval.cancel($scope.scheduledWork);
+            if ($scope.operateType !== OPERATE_TYPE.DETAIL) {
+                toastr.success("迁移成功");
+                $scope.operateType = OPERATE_TYPE.DETAIL;
+                getAllOverloadKeepercontainer();
+            }
+        }
+    }
+
+    $scope.$on('$destroy', function() {
+        $interval.cancel($scope.scheduledWork);
+    });
+
+    function syncShowMigrateDetail() {
+        const length = $scope.oldMigratingKeeperContainers.length;
+        for (let i = 0; i < length; i++) {
+            $scope.migratingKeeperContainers.get(i).showDetail =
+                $scope.oldMigratingKeeperContainers.get(i).showDetail;
+        }
+        $scope.oldMigratingKeeperContainers = $scope.migratingKeeperContainers;
+    }
 
     function toggleAll() {
         $scope.selectAll = !$scope.selectAll;

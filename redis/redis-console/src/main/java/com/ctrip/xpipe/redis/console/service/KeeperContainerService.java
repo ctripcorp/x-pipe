@@ -19,6 +19,7 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);
 	List<KeepercontainerTbl> findKeeperCount(String dcName);
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
+	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName, boolean skipAzFilter);
 	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
 
 	List<Set<Long>> divideKeeperContainers(int partsCount);

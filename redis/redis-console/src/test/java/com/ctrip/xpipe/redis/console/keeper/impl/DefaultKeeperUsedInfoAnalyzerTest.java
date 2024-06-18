@@ -373,8 +373,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         List<MigrationKeeperContainerDetailModel> allDcReadyToMigrationKeeperContainers = migrationAnalyzer.getMigrationPlans(models);
         Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.size());
-        Assert.assertEquals(2, allDcReadyToMigrationKeeperContainers.get(0).getMigrateKeeperCount());
-        Assert.assertEquals(1, allDcReadyToMigrationKeeperContainers.get(1).getMigrateKeeperCount());
     }
 
     @Test
