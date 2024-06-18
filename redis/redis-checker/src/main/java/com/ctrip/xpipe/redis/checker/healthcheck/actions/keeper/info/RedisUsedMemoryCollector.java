@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -21,6 +20,8 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected ConcurrentMap<DcClusterShard, Long> dcClusterShardUsedMemory = new ConcurrentHashMap<>();
+
+    public static final String ROR_DB_VERSION = "1.3";
 
     @Override
     public void onAction(RedisInfoActionContext context) {
@@ -40,12 +41,10 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         Long dbSize = extractor.getSwapUsedDbSize();
         Long maxMemory = extractor.getMaxMemory();
         Long usedMemory = extractor.getUsedMemory();
-        if (!StringUtils.isEmpty(swapVersion) && isVersionGreaterThanOrEqualTo1_3(swapVersion)) {
+        if (dbSize == null || usedMemory < maxMemory) return usedMemory;
+        if (!StringUtil.isEmpty(swapVersion) && StringUtil.compareVersionSize(swapVersion, ROR_DB_VERSION) >= 0) {
             return dbSize + maxMemory;
         }
-
-        if (dbSize == null || usedMemory < maxMemory) return usedMemory;
-
         String keysSpaceDb0 = extractor.extract("db0");
         if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
 
@@ -72,11 +71,4 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         return dcClusterShardUsedMemory;
     }
 
-    public boolean isVersionGreaterThanOrEqualTo1_3(String swapVersion) {
-        String[] versions = swapVersion.split("\\.");
-        int v1 = Integer.parseInt(versions[0]);
-        int v2 = Integer.parseInt(versions[1]);
-        if (v1 == 1) return v2 >= 3;
-        return v1 > 1;
-    }
 }
