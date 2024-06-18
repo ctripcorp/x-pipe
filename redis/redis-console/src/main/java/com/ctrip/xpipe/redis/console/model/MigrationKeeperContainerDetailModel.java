@@ -4,9 +4,12 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+
+import static com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel;
 
 public class MigrationKeeperContainerDetailModel implements Serializable {
 
@@ -40,8 +43,16 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
                                                boolean keeperPairOverload,
                                                String cause,
                                                List<DcClusterShard> migrateShards) {
-        this.srcKeeperContainer = srcKeeperContainer;
-        this.targetKeeperContainer = targetKeeperContainer;
+        if (srcKeeperContainer != null) {
+            KeeperContainerUsedInfoModel srcModel = cloneKeeperContainerUsedInfoModel(srcKeeperContainer);
+            if (srcModel.getDetailInfo() != null) srcModel.getDetailInfo().clear();
+            this.srcKeeperContainer = srcModel;
+        }
+        if (targetKeeperContainer != null) {
+            KeeperContainerUsedInfoModel targetModel = cloneKeeperContainerUsedInfoModel(targetKeeperContainer);
+            if (targetModel.getDetailInfo() != null) targetModel.getDetailInfo().clear();
+            this.targetKeeperContainer = targetModel;
+        }
         this.switchActive = switchActive;
         this.keeperPairOverload = keeperPairOverload;
         this.cause = cause;
