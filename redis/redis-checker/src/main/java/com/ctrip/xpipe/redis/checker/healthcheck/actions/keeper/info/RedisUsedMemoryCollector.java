@@ -21,6 +21,8 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
 
     protected ConcurrentMap<DcClusterShard, Long> dcClusterShardUsedMemory = new ConcurrentHashMap<>();
 
+    public static final String ROR_DB_VERSION = "1.3";
+
     @Override
     public void onAction(RedisInfoActionContext context) {
         try {
@@ -35,12 +37,14 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
     }
 
     private long getUsedMemory(InfoResultExtractor extractor) {
+        String swapVersion = extractor.getKeySwapVersion();
+        Long dbSize = extractor.getSwapUsedDbSize();
         Long maxMemory = extractor.getMaxMemory();
         Long usedMemory = extractor.getUsedMemory();
-        Long dbSize = extractor.getSwapUsedDbSize();
-
         if (dbSize == null || usedMemory < maxMemory) return usedMemory;
-
+        if (!StringUtil.isEmpty(swapVersion) && StringUtil.compareVersionSize(swapVersion, ROR_DB_VERSION) >= 0) {
+            return dbSize + maxMemory;
+        }
         String keysSpaceDb0 = extractor.extract("db0");
         if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
 
@@ -66,4 +70,5 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
     public ConcurrentMap<DcClusterShard, Long> getDcClusterShardUsedMemory() {
         return dcClusterShardUsedMemory;
     }
+
 }

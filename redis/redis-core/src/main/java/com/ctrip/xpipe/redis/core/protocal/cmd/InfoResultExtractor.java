@@ -133,6 +133,10 @@ public class InfoResultExtractor {
 
     public boolean isKeeperActive() { return "ACTIVE".equals(extract(KEY_KEEPER_ACTIVE)); }
 
+    public String getKeySwapVersion() {
+        return extract(KEY_SWAP_VERSION);
+    }
+
     public long getMasterReplOffset() {
         Long result = extractAsLong(KEY_MASTER_REPL_OFFSET);
         return result == null ? 0L : result;

@@ -46,6 +46,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                 String targetKeeperContainerIp = keeperContainer.getTargetKeeperContainer().getKeeperIp();
                 for (DcClusterShard migrateShard : migrateShards) {
                     if(!isBegin.get()) break;
+                    keeperContainer.setMigratingShard(migrateShard);
                     ShardModel shardModel = shardModelService.getShardModel(migrateShard.getDcId(),
                             migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
                     logger.info("[migrateKeeperContainers][begin][{}-{}-{}][{}->{}]",
@@ -82,6 +83,7 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                     CatEventMonitor.DEFAULT.logEvent(KEEPER_MIGRATION, event);
                     logger.info("[migrateKeeperContainers][{}-{}-{}][{}->{}] {}",
                             migrateShard.getDcId(), migrateShard.getClusterId(), migrateShard.getShardId(), srcKeeperContainerIp, targetKeeperContainerIp, event);
+                    keeperContainer.addFinishedShard(migrateShard);
                 }
             }
             return true;

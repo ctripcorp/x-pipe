@@ -237,4 +237,35 @@ public class StringUtil {
         return str.contains(subStr);
     }
 
+    public static int compareVersionSize(String version1, String version2) {
+        if (version1 == null || version2 == null) {
+            throw new IllegalArgumentException("version cannot be null");
+        }
+
+        String[] arr1 = version1.split("\\.");
+        String[] arr2 = version2.split("\\.");
+
+        int i = 0;
+        while (i < arr1.length || i < arr2.length) {
+            int v1 = i < arr1.length ? parseVersion(arr1[i]) : 0;
+            int v2 = i < arr2.length ? parseVersion(arr2[i]) : 0;
+
+            if (v1 < v2) {
+                return -1;
+            } else if (v1 > v2) {
+                return 1;
+            }
+            i++;
+        }
+        return 0;
+    }
+
+    private static int parseVersion(String s) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("version contains non-numeric characters");
+        }
+    }
+
 }

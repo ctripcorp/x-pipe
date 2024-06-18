@@ -103,7 +103,13 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
             "# Keyspace\n" +
             "db0:keys=10,evicts=30,metas=0,expires=0,avg_ttl=0";
 
-    private static final String INFO_RESPONSE_OF_ROR4 = "# Memory\n" +
+    private static final String INFO_RESPONSE_OF_ROR4 =
+            "# Server\n" +
+            "redis_version:6.2.6\n" +
+            "xredis_version:2.0.1\n" +
+            "swap_version:1.3.0\n" +
+            "rocksdb_version:7.7.3\n"+
+            "# Memory\n" +
             "used_memory:2415919104\n" +
             "maxmemory:2415919104\n" +
             "# Swap\n" +
@@ -160,6 +166,16 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
         Assert.assertTrue(listener.worksfor(context));
         Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
         Assert.assertEquals(2415919104L * 4, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+
+    }
+
+    @Test
+    public void testGetUsedMemoryInfoWithRor4() {
+        context = new RedisInfoActionContext(instance, INFO_RESPONSE_OF_ROR4);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
+        Assert.assertEquals(1207959552 + 2415919104L, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
 
     }
 
