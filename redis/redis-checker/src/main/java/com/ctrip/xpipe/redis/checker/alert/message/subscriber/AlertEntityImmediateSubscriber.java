@@ -86,9 +86,14 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
                     if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
                         continue;
                     }
-                    AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), true);
+                    Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
+                    transmitAlterToCheckerLeader(true, alerts);
+                    if(alerts.size() == 0) {
+                        continue;
+                    }
+                    AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, true);
                     emailMessage(message);
-                    tryMetric(mailGroup.getValue(), true);
+                    tryMetric(alerts, true);
                 }
                 sendTaskBegin.compareAndSet(true, false);
             }

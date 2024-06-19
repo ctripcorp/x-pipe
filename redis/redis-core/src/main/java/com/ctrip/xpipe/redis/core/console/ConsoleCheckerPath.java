@@ -47,5 +47,7 @@ public class ConsoleCheckerPath {
     public static final String PATH_POST_RECORD_ALERT = PATH_PERSISTENCE + "recordAlert";
 
     public static final String PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS = "/api/outclient/clusters/one_way";
+
+    public static final String PATH_PUT_CHECKER_LEADER_MERGE_ALERT = "/api/mail/{alertType}";
     
 }
