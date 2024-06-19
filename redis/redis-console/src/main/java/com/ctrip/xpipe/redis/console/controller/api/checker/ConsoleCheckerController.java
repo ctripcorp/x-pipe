@@ -36,10 +36,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -178,6 +175,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, method = RequestMethod.GET)
     public boolean isAlertSystemOn() {
         return persistenceCache.isAlertSystemOn();
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON, method = RequestMethod.GET)
+    public boolean isKeeperBalanceInfoCollectOn() {
+        return persistenceCache.isKeeperBalanceInfoCollectOn();
     }
 
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME, method = RequestMethod.GET)

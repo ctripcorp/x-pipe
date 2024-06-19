@@ -24,6 +24,8 @@ public interface PersistenceCache {
 
     boolean isAlertSystemOn();
 
+    boolean isKeeperBalanceInfoCollectOn();
+
     Date getClusterCreateTime(String clusterId);
 
     Map<String, Date> loadAllClusterCreateTime();

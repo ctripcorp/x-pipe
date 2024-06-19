@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.KeeperBalanceInfoCollectOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.sql.Timestamp;
 import java.util.*;
 
 
@@ -46,6 +48,9 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Autowired
     private AutoMigrationOffChecker autoMigrationOffChecker;
+
+    @Autowired
+    private KeeperBalanceInfoCollectOffChecker keeperBalanceInfoCollectOffChecker;
 
     private String crossDcLeaderLeaseName;
 
@@ -117,6 +122,26 @@ public class ConfigServiceImpl implements ConfigService {
             sentinelAutoProcessChecker.startAlert();
         }
 
+    }
+
+    @Override
+    public void startKeeperBalanceInfoCollect(ConfigModel config, int hours) throws DalException {
+        logger.info("[startKeeperBalanceInfoCollect] start keeper balance info collect, config: {}", config);
+        Date date = DateTimeUtils.getHoursLaterDate(hours);
+        boolean previousStateOn = isKeeperBalanceInfoCollectOn();
+
+        config.setKey(KEY_KEEPER_BALANCE_INFO_COLLECT).setVal(String.valueOf(true));
+        configDao.setConfigAndUntil(config, date);
+        if(previousStateOn) {
+            keeperBalanceInfoCollectOffChecker.startAlert();
+        }
+    }
+
+    @Override
+    public void stopKeeperBalanceInfoCollect(ConfigModel config) throws DalException {
+        logger.info("[stopKeeperBalanceInfoCollect] stop keeper balance info collect, config: {}", config);
+        config.setKey(KEY_KEEPER_BALANCE_INFO_COLLECT).setVal(String.valueOf(false));
+        configDao.setConfig(config);
     }
 
     @Override
@@ -247,6 +272,11 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public boolean isKeeperBalanceInfoCollectOn() {
+        return getAndResetFalseIfExpired(KEY_KEEPER_BALANCE_INFO_COLLECT);
+    }
+
+    @Override
     public Date getAlertSystemRecoverTime() {
         try {
             return configDao.getByKey(KEY_ALERT_SYSTEM_ON).getUntil();
@@ -261,7 +291,17 @@ public class ConfigServiceImpl implements ConfigService {
         try {
             return configDao.getByKey(KEY_SENTINEL_AUTO_PROCESS).getUntil();
         } catch (DalException e) {
-            logger.error("[getAlertSystemRecovertIME]", e);
+            logger.error("[getSentinelAutoProcessRecoverTime]", e);
+            return null;
+        }
+    }
+
+    @Override
+    public Date getKeeperBalanceInfoCollectRecoverTime() {
+        try {
+            return configDao.getByKey(KEY_KEEPER_BALANCE_INFO_COLLECT).getUntil();
+        } catch (DalException e) {
+            logger.error("[getKeeperBalanceInfoCollectRecoverTime]", e);
             return null;
         }
     }
@@ -379,18 +419,26 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     private boolean getAndResetTrueIfExpired(String key) {
+        return getAndResetExpectIfExpired(key, true);
+    }
+
+    private boolean getAndResetFalseIfExpired(String key) {
+        return getAndResetExpectIfExpired(key, false);
+    }
+
+    private boolean getAndResetExpectIfExpired(String key, boolean expect) {
         try {
             ConfigTbl config = configDao.getByKey(key);
             boolean result = Boolean.parseBoolean(config.getValue());
-            if(!result) {
+            if(result != expect) {
                 Date expireDate = config.getUntil();
                 Date currentDate = new Date();
                 ConfigModel configModel = new ConfigModel().setKey(key)
-                        .setVal(String.valueOf(true)).setUpdateUser("System");
+                        .setVal(String.valueOf(expect)).setUpdateUser("System");
                 if(currentDate.after(expireDate)) {
-                    logger.info("[getAndResetTrueIfExpired] Off time expired, reset to be true");
+                    logger.info("[getAndResetExpectIfExpired] Off time expired, reset to be {}", expect);
                     configDao.setConfig(configModel);
-                    result = true;
+                    result = expect;
                 }
             }
             return result;

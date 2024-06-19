@@ -330,6 +330,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("哨兵检测关闭", "");
         }
     },
+    KEEPER_BALANCE_INFO_COLLECT_OFF("keeper balance info collect is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return true;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("自动匀keeper信息收集关闭", "");
+        }
+    },
     AUTO_MIGRATION_NOT_ALLOW("auto migration not allow",  EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {

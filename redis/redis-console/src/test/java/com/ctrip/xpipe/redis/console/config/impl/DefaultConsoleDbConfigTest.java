@@ -64,6 +64,19 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
     }
 
     @Test
+    public void testKeeperBalanceInfoCollect() throws DalException {
+        String key = KEY_KEEPER_BALANCE_INFO_COLLECT;
+        configModel.setKey(key).setVal("true");
+        configDao.setConfig(configModel);
+
+        service.startKeeperBalanceInfoCollect(configModel, 1);
+        Assert.assertTrue(consoleDbConfig.isKeeperBalanceInfoCollectOn());
+
+        service.stopKeeperBalanceInfoCollect(configModel);
+        Assert.assertFalse(consoleDbConfig.isKeeperBalanceInfoCollectOn());
+    }
+
+    @Test
     public void testShouldSentinelCheck() throws DalException {
         String key = KEY_SENTINEL_CHECK_EXCLUDE;
         String mockCluster = "test-cluster";

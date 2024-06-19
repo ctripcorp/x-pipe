@@ -49,6 +49,11 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     }
 
     @Override
+    public boolean isKeeperBalanceInfoCollectOn() {
+        return configService.isKeeperBalanceInfoCollectOn();
+    }
+
+    @Override
     public boolean isAlertSystemOn() {
         return configService.isAlertSystemOn();
     }

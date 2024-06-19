@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats;
 
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -29,6 +30,9 @@ public class KeeperInfoStatsActionTest extends AbstractCheckerTest {
 
     private KeeperInfoStatsActionContext context = null;
 
+    @Mock
+    private CheckerDbConfig checkerDbConfig;
+
     Server redis;
 
     @Before
@@ -37,7 +41,7 @@ public class KeeperInfoStatsActionTest extends AbstractCheckerTest {
         String keeperIp = "127.0.0.1";
         MockitoAnnotations.initMocks(this);
         KeeperHealthCheckInstance instance = newRandomKeeperHealthCheckInstance(keeperIp, keeperPort);
-        action = new KeeperInfoStatsAction(scheduled, instance, executors);
+        action = new KeeperInfoStatsAction(scheduled, instance, executors, checkerDbConfig);
         String info = "# Stats\n" +
                 "sync_full:0\n" +
                 "sync_partial_ok:0\n" +
