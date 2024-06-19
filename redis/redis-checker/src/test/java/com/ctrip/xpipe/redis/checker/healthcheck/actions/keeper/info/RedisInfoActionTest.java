@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +33,9 @@ public class RedisInfoActionTest extends AbstractCheckerTest {
     private AtomicInteger listenerCallCnt = new AtomicInteger(0);
 
     AtomicReference<ActionContext> contextRef = new AtomicReference();
+
+    @Mock
+    private CheckerDbConfig checkerDbConfig;
 
     private static final String INFO_RESPONSE = "# Memory\n" +
             "used_memory:550515888\n" +
@@ -71,7 +76,7 @@ public class RedisInfoActionTest extends AbstractCheckerTest {
         });
 
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.ONE_WAY, redis.getPort());
-        action = new RedisInfoAction(scheduled, instance, executors);
+        action = new RedisInfoAction(scheduled, instance, executors, checkerDbConfig);
 
         action.addListener(new HealthCheckActionListener() {
             @Override

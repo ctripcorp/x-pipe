@@ -65,6 +65,18 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void startKeeperBalanceInfoCollect() throws Exception {
+        service.startKeeperBalanceInfoCollect(configModel, 1);
+        Assert.assertTrue(service.isKeeperBalanceInfoCollectOn());
+    }
+
+    @Test
+    public void stopKeeperBalanceInfoCollect() throws Exception {
+        service.stopKeeperBalanceInfoCollect(configModel);
+        Assert.assertTrue(service.isKeeperBalanceInfoCollectOn());
+    }
+
+    @Test
     public void isAlertSystemOn() throws Exception {
         service.stopAlertSystem(configModel, -2);
         Assert.assertTrue(service.isAlertSystemOn());
