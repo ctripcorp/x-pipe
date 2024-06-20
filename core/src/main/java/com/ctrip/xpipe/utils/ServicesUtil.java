@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.utils;
 
 import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
@@ -31,6 +32,10 @@ public class ServicesUtil {
 	private static Logger logger = LoggerFactory.getLogger(ServicesUtil.class);
 	
 	private static Map<Class<?>, Object> allServices = new ConcurrentHashMap<>();
+
+	public static ConfigProvider getConfigProviderService() {
+		return load(ConfigProvider.class);
+	}
 	
 	public static Config getConfigService(){
 		return load(Config.class);
