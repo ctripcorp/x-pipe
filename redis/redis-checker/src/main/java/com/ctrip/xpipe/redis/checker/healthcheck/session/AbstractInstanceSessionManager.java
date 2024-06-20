@@ -178,7 +178,7 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     protected abstract HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper);
 
-    private void closeAllConnections() {
+    protected void closeAllConnections() {
         try {
             executors.execute(new Runnable() {
                 @Override

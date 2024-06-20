@@ -13,11 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.mockito.Mockito.when;
 
-public class KeeperBalanceInfoCollectOffCheckerTest extends AbstractConsoleIntegrationTest {
+public class KeeperBalanceInfoCollectOnCheckerTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     @InjectMocks
-    private KeeperBalanceInfoCollectOffChecker checker;
+    private KeeperBalanceInfoCollectOnChecker checker;
 
     @Mock
     private ConfigService configService;

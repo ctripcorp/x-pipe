@@ -78,7 +78,7 @@ public class DefaultPersistenceCacheTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testKeeperBalanceInfoCollect() throws Exception {
-        Assert.assertTrue(persistenceCache.isKeeperBalanceInfoCollectOn());
+        Assert.assertFalse(persistenceCache.isKeeperBalanceInfoCollectOn()); // no data in db
         configService.stopKeeperBalanceInfoCollect(new ConfigModel());
         Assert.assertFalse(persistenceCache.isKeeperBalanceInfoCollectOn());
         configService.startKeeperBalanceInfoCollect(new ConfigModel(), 1);

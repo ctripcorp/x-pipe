@@ -105,7 +105,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
             logger.warn("[doIsKeeperBalanceInfoCollectOn] fail", th);
         }
 
-        return true;
+        return false;
     }
 
     @Override
