@@ -10,7 +10,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,6 +24,7 @@ import java.util.function.Function;
  * Created by yu
  * 2023/8/29
  */
+@RunWith(MockitoJUnitRunner.class)
 public class RedisInfoActionTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
@@ -76,6 +80,7 @@ public class RedisInfoActionTest extends AbstractCheckerTest {
         });
 
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.ONE_WAY, redis.getPort());
+        Mockito.when(checkerDbConfig.isKeeperBalanceInfoCollectOn()).thenReturn(true);
         action = new RedisInfoAction(scheduled, instance, executors, checkerDbConfig);
 
         action.addListener(new HealthCheckActionListener() {

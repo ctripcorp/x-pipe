@@ -9,9 +9,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.function.Function;
 
@@ -21,6 +23,7 @@ import static org.mockito.Mockito.doNothing;
  * Created by yu
  * 2023/8/28
  */
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class KeeperInfoStatsActionTest extends AbstractCheckerTest {
 
     private KeeperInfoStatsAction action;
@@ -41,6 +44,7 @@ public class KeeperInfoStatsActionTest extends AbstractCheckerTest {
         String keeperIp = "127.0.0.1";
         MockitoAnnotations.initMocks(this);
         KeeperHealthCheckInstance instance = newRandomKeeperHealthCheckInstance(keeperIp, keeperPort);
+        Mockito.when(checkerDbConfig.isKeeperBalanceInfoCollectOn()).thenReturn(true);
         action = new KeeperInfoStatsAction(scheduled, instance, executors, checkerDbConfig);
         String info = "# Stats\n" +
                 "sync_full:0\n" +
