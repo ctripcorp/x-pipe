@@ -15,6 +15,10 @@ function ConfigService($resource, $q) {
             method: 'GET',
             url: '/console/config/sentinel_auto_process'
         },
+        is_keeper_balance_info_collect_on: {
+            method: 'GET',
+            url: '/console/config/keeper_balance_info_collect'
+        },
         change_config: {
             method: 'POST',
             url: '/console/config/change_config'
@@ -43,6 +47,17 @@ function ConfigService($resource, $q) {
         return d.promise;
     }
 
+    function isKeeperBalanceInfoCollectOn() {
+        var d = $q.defer();
+        resource.is_keeper_balance_info_collect_on({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function changeConfig(key, value) {
         var d = $q.defer();
         resource.change_config({}, {
@@ -60,6 +75,7 @@ function ConfigService($resource, $q) {
     return {
         isAlertSystemOn: isAlertSystemOn,
         isSentinelAutoProcessOn: isSentinelAutoProcessOn,
+        isKeeperBalanceInfoCollectOn: isKeeperBalanceInfoCollectOn,
         changeConfig: changeConfig
     }
 }

@@ -148,14 +148,21 @@
 						<div class="ace-settings-item">
 							<label>
 								<input ng-model="isAlertSystemOn" ng-checked="isAlertSystemOn" ng-true-value='true' ng-false-value='false' ng-change="preChangeConfig('alert.system.on', isAlertSystemOn)" name="switch-field-1" class="ace ace-switch btn-rotate custom" type="checkbox">
-								<span class="lbl">alert system</span>
+								<span class="lbl">·	alert system</span>
 							</label>
 						</div>
 
 						<div class="ace-settings-item">
 							<label>
 								<input ng-model="isSentinelAutoProcOn" ng-true-value='true' ng-false-value='false' ng-change="preChangeConfig('sentinel.auto.process', isSentinelAutoProcOn)" name="switch-field-1"  class="ace ace-switch btn-rotate custom" type="checkbox">
-								<span class="lbl"> sentinel auto process</span>
+								<span class="lbl">·	sentinel auto process</span>
+							</label>
+						</div>
+
+						<div class="ace-settings-item">
+							<label>
+								<input ng-model="isKeeperBalanceInfoCollectOn" ng-true-value='true' ng-false-value='false' ng-change="preChangeConfig('keeper.balance.info.collect', isKeeperBalanceInfoCollectOn)" name="switch-field-1"  class="ace ace-switch btn-rotate custom" type="checkbox">
+								<span class="lbl">·	keeper balance info collect</span>
 							</label>
 						</div>
 
