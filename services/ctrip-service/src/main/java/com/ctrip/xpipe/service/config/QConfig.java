@@ -9,11 +9,16 @@ import java.util.Map;
 
 public class QConfig extends AbstractConfig {
 
-    private static final String DEFAULT_XPIPE_CONFIG_NAME = "application.properties";
+    public static final String DEFAULT_XPIPE_CONFIG_NAME = "application.properties";
 
-    private MapConfig config = MapConfig.get(DEFAULT_XPIPE_CONFIG_NAME);
+    private MapConfig config;
 
     public QConfig() {
+        this(DEFAULT_XPIPE_CONFIG_NAME);
+    }
+
+    public QConfig(String name) {
+        config = MapConfig.get(name);
         config.addPropertiesListener(new MapConfig.PropertiesChangeListener() {
             @Override
             public void onChange(PropertiesChange change) {
