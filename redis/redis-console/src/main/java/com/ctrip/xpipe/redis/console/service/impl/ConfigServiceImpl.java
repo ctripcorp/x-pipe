@@ -123,9 +123,8 @@ public class ConfigServiceImpl implements ConfigService {
     public void startClusterAlert(ConfigModel config) throws DalException {
         logger.info("[startClusterAlert][{}]", config.getSubKey());
 
-        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
-                .setVal(String.valueOf(false));
-        int interval = (10000 + consoleConfig.getRedisConfCheckIntervalMilli()) / 1000;
+        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
+        int interval = (10000 + consoleConfig.getRedisConfCheckIntervalMilli() * 2) / 1000;
         // To ensure that OuterClientCache is the latest data, the configuration is delayed to take effect
         // the interval is same to the  timeoutMillSupplier of DefaultOuterClientCache.clustersCache
         Date laterDate = DateTimeUtils.getSecondsLaterThan(new Date(), interval);
