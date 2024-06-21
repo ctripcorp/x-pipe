@@ -20,6 +20,8 @@ public class DefaultRdbParseContext implements RdbParseContext {
     private EnumMap<RdbType, RdbParser> parsers = new EnumMap<>(RdbType.class);
     private EnumMap<RdbCrdtType, RdbParser> crdtParsers = new EnumMap<>(RdbCrdtType.class);
 
+    private List<String> incompatibleKeys = new LinkedList<>();
+
     private List<RdbParseContext> otherParsers = new LinkedList<>();
 
     private Set<RdbParseListener> listeners = new HashSet<>();
@@ -224,6 +226,16 @@ public class DefaultRdbParseContext implements RdbParseContext {
     }
 
     @Override
+    public void setIncompatibleKey(String key) {
+        incompatibleKeys.add(key);
+    }
+
+    @Override
+    public List<String> getIncompatibleKey() {
+        return incompatibleKeys;
+    }
+
+    @Override
     public RdbCrdtType getCrdtType() {
         return crdtType.get();
     }
@@ -231,5 +243,10 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public void clearCrdtType() {
         this.crdtType.set(null);
+    }
+
+    @Override
+    public void clearIncompatibleKey() {
+        incompatibleKeys.clear();
     }
 }

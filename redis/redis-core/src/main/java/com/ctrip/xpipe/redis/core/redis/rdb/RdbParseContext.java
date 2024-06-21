@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -66,10 +67,13 @@ public interface RdbParseContext {
     boolean isCrdt();
 
     RdbParseContext setCrdtType(RdbCrdtType crdtType);
-
+    void setIncompatibleKey(String key);
+    List<String> getIncompatibleKey();
     RdbCrdtType getCrdtType();
 
     void clearCrdtType();
+
+    void clearIncompatibleKey();
 
 
     enum RdbType {
@@ -157,8 +161,18 @@ public interface RdbParseContext {
 
     enum RdbCrdtType {
         // "crdt_regr", "crdt_setr", "crdt_hash", "crdt_rc_v", "crdt_ss_v"
+
+        // "crdt_regr", "crdt_sett", "crdt_htom", "crdt_rc_t", "crdt_ss_t"
         REGISTER(generateTypeId("crdt_regr", 0), false, RdbCrdtRegisterParser::new),
         REGISTER_TOMBSTONE(generateTypeId("crdt_regt", 0), true, RdbCrdtRegisterParser::new),
+        RC(generateTypeId("crdt_rc_v", 0), false, RdbCrdtRcParser::new),
+        RC_TOMBSTONE(generateTypeId("crdt_rc_t", 0), true, RdbCrdtRcParser::new),
+        HASH(generateTypeId("crdt_hash", 0), false, RdbCrdtHashParser::new),
+        HASH_TOMBSTONE(generateTypeId("crdt_htom", 0), true, RdbCrdtHashParser::new),
+        SET(generateTypeId("crdt_setr", 0), false, RdbCrdtSetParser::new),
+        SET_TOMBSTONE(generateTypeId("crdt_sett", 0), true, RdbCrdtSetParser::new),
+        SORTEDSET(generateTypeId("crdt_ss_v", 0), false, RdbCrdtSortedSetParser::new),
+        SORTEDSET_TOMBSTONE(generateTypeId("crdt_ss_t", 0), true, RdbCrdtSortedSetParser::new),
         ;
         private long typeId;
 

@@ -246,6 +246,86 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("SET test34 test34", redisOps.get(6).toString());
     }
 
+    @Test
+    public void testParseCrdtRc() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(crdtRc);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+        Assert.assertEquals("SET test311 44", redisOps.get(0).toString());
+        Assert.assertEquals("SET test78 112", redisOps.get(1).toString());
+        Assert.assertEquals("SET test170 75", redisOps.get(2).toString());
+        Assert.assertEquals("SET test206 140", redisOps.get(3).toString());
+        Assert.assertEquals("SET test230 133", redisOps.get(4).toString());
+        Assert.assertEquals("SET test303 150", redisOps.get(5).toString());
+        Assert.assertEquals("SET test15 99", redisOps.get(6).toString());
+        Assert.assertEquals("SET test34 96", redisOps.get(7).toString());
+    }
+    @Test
+    public void testParseCrdtHash() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(crdtHash);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+        Assert.assertEquals("HSET testHash141 141key141 141value141", redisOps.get(0).toString());
+        Assert.assertEquals("HSET testHash141 0key3 0value4", redisOps.get(1).toString());
+        Assert.assertEquals("HSET testHash141 4key73 4value1", redisOps.get(2).toString());
+        Assert.assertEquals("HSET testHash141 3key52 3value13", redisOps.get(3).toString());
+        Assert.assertEquals("HSET testHash141 1key94 1value11", redisOps.get(4).toString());
+        Assert.assertEquals("HSET testHash141 2key63 2value5", redisOps.get(5).toString());
+        Assert.assertEquals("HSET testHash414 2key56 2value17", redisOps.get(6).toString());
+        Assert.assertEquals("HSET testHash414 414key414 414value414", redisOps.get(7).toString());
+        Assert.assertEquals("HSET testHash414 0key83 0value46", redisOps.get(8).toString());
+        Assert.assertEquals("HSET testHash414 1key74 1value66", redisOps.get(9).toString());
+        Assert.assertEquals("HSET testHash414 3key46 3value4", redisOps.get(10).toString());
+        Assert.assertEquals("HSET testHash414 4key61 4value87", redisOps.get(11).toString());
+    }
+    @Test
+    public void testParseCrdtSet() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(crdtSet);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+        Assert.assertEquals("SADD testSet210 0key71", redisOps.get(0).toString());
+        Assert.assertEquals("SADD testSet210 3key86", redisOps.get(1).toString());
+        Assert.assertEquals("SADD testSet210 2key53", redisOps.get(2).toString());
+        Assert.assertEquals("SADD testSet210 1key24", redisOps.get(3).toString());
+        Assert.assertEquals("SADD testSet210 4key95", redisOps.get(4).toString());
+        Assert.assertEquals("SADD testSet299 2key96", redisOps.get(5).toString());
+        Assert.assertEquals("SADD testSet299 1key0", redisOps.get(6).toString());
+        Assert.assertEquals("SADD testSet299 3key74", redisOps.get(7).toString());
+        Assert.assertEquals("SADD testSet299 0key22", redisOps.get(8).toString());
+        Assert.assertEquals("SADD testSet299 4key14", redisOps.get(9).toString());
+    }
+
+    @Test
+    public void testParseCrdtSortedSet() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(crdtSortedSet);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+        Assert.assertEquals("ZADD testSS400 -1789212410 0key41", redisOps.get(0).toString());
+        Assert.assertEquals("ZADD testSS400 0.30632634869200115 2key83", redisOps.get(1).toString());
+        Assert.assertEquals("ZADD testSS400 430319757 1key55", redisOps.get(2).toString());
+        Assert.assertEquals("ZADD testSS400 1129121678 2key40", redisOps.get(3).toString());
+        Assert.assertEquals("ZADD testSS400 0.9097036375974098 1key62", redisOps.get(4).toString());
+        Assert.assertEquals("ZADD testSS400 0.7535691384206059 3key56", redisOps.get(5).toString());
+        Assert.assertEquals("ZADD testSS400 15090449 4key72", redisOps.get(6).toString());
+        Assert.assertEquals("ZADD testSS400 0.13377163121944524 4key58", redisOps.get(7).toString());
+        Assert.assertEquals("ZADD testSS400 -850281224 3key95", redisOps.get(8).toString());
+        Assert.assertEquals("ZADD testSS400 0.16882870577120113 0key23", redisOps.get(9).toString());
+        Assert.assertEquals("ZADD testSS329 0.2222225990616864 2key34", redisOps.get(10).toString());
+        Assert.assertEquals("ZADD testSS329 0.7775372794341464 0key41", redisOps.get(11).toString());
+        Assert.assertEquals("ZADD testSS329 -855389314 3key58", redisOps.get(12).toString());
+        Assert.assertEquals("ZADD testSS329 0.014929504313835218 1key52", redisOps.get(13).toString());
+        Assert.assertEquals("ZADD testSS329 -616587597 2key25", redisOps.get(14).toString());
+        Assert.assertEquals("ZADD testSS329 0.02372256176843568 3key44", redisOps.get(15).toString());
+        Assert.assertEquals("ZADD testSS329 1664534196 4key86", redisOps.get(16).toString());
+        Assert.assertEquals("ZADD testSS329 -1302475107 0key77", redisOps.get(17).toString());
+        Assert.assertEquals("ZADD testSS329 1156336817 1key24", redisOps.get(18).toString());
+        Assert.assertEquals("ZADD testSS329 0.2700072245105105 4key89", redisOps.get(19).toString());
+    }
+
     @Override
     public void onRedisOp(RedisOp redisOp) {
         logger.info("[onRedisOp] {}", redisOp);

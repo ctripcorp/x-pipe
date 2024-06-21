@@ -18,6 +18,8 @@ public enum RedisOpNoneKeyEnum {
     UNKNOW(RedisOpType.UNKNOWN),
 
     //crdt
+    CRDT_MULTI(RedisOpType.CRDT_MULTI),
+    CRDT_EXEC(RedisOpType.CRDT_EXEC),
     CRDT_SELECT(RedisOpType.CRDT_SELECT);
 
     private RedisOpType redisOpType;
