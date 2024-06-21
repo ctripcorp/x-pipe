@@ -141,16 +141,21 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
                 .collect(Collectors.toSet());
     }
 
-    private boolean isConfigOnOrExpired(String key) {
+    private boolean isConfigOnOrExpired(String key, boolean defaultVal) {
         try {
             ConfigTbl config = configDao.getByKey(key);
             boolean value = Boolean.parseBoolean(config.getValue());
             Date expireDate = config.getUntil();
-            return value || (new Date()).after(expireDate);
+            if ((new Date()).after(expireDate)) return defaultVal;
+            return value;
         } catch (Throwable th) {
             logger.info("[isSentinelAutoProcess] fail", th);
-            return true;
+            return defaultVal;
         }
+    }
+
+    private boolean isConfigOnOrExpired(String key) {
+        return isConfigOnOrExpired(key, true);
     }
     
     @Override
@@ -161,6 +166,11 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     @Override
     boolean doIsAlertSystemOn() {
         return isConfigOnOrExpired(KEY_ALERT_SYSTEM_ON);
+    }
+
+    @Override
+    boolean doIsKeeperBalanceInfoCollectOn() {
+        return isConfigOnOrExpired(KEY_KEEPER_BALANCE_INFO_COLLECT, false);
     }
 
     @Override

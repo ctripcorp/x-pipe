@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoCommandAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
@@ -10,8 +12,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class RedisInfoAction extends AbstractInfoCommandAction<RedisInfoActionContext> {
 
-    public RedisInfoAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
+    private CheckerDbConfig checkerDbConfig;
+
+    public RedisInfoAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, CheckerDbConfig checkerDbConfig) {
         super(scheduled, instance, executors);
+        this.checkerDbConfig = checkerDbConfig;
     }
 
     @Override
@@ -27,5 +32,10 @@ public class RedisInfoAction extends AbstractInfoCommandAction<RedisInfoActionCo
     @Override
     protected int getBaseCheckInterval() {
         return getActionInstance().getHealthCheckConfig().getKeeperCheckerIntervalMilli();
+    }
+
+    @Override
+    protected boolean shouldCheck(HealthCheckInstance instance){
+        return super.shouldCheck(instance) && checkerDbConfig.isKeeperBalanceInfoCollectOn();
     }
 }

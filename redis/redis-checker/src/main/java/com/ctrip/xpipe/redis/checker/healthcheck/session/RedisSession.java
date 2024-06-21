@@ -456,6 +456,11 @@ public class RedisSession {
                 connectionWrapper.closeAndClean();
             } catch (Exception ignore) {}
         }
+        try {
+            clientPool.clear();
+        } catch (Throwable th) {
+            logger.info("[closeConnection][{}] fail", endpoint, th);
+        }
     }
 
     public RedisSession setKeyedNettyClientPool(XpipeNettyClientKeyedObjectPool keyedNettyClientPool) {

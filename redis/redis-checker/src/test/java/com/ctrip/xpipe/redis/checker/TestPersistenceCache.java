@@ -26,6 +26,12 @@ public class TestPersistenceCache implements PersistenceCache {
 
     private boolean alertSystemOn = true;
 
+    private boolean keeperBalanceInfoCollectOn = true;
+
+    public void setKeeperBalanceInfoCollectOn(boolean keeperBalanceInfoCollectOn) {
+        this.keeperBalanceInfoCollectOn = keeperBalanceInfoCollectOn;
+    }
+
     public void setSentinelAutoProcess(boolean val) {
         this.sentinelAutoProcess = val;
     }
@@ -67,6 +73,11 @@ public class TestPersistenceCache implements PersistenceCache {
     @Override
     public boolean isAlertSystemOn() {
         return alertSystemOn;
+    }
+
+    @Override
+    public boolean isKeeperBalanceInfoCollectOn() {
+        return keeperBalanceInfoCollectOn;
     }
 
     @Override

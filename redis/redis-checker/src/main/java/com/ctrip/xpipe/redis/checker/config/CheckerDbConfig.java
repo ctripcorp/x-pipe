@@ -12,6 +12,8 @@ public interface CheckerDbConfig {
 
     boolean isSentinelAutoProcess();
 
+    boolean isKeeperBalanceInfoCollectOn();
+
     boolean shouldSentinelCheck(String cluster);
 
     Set<String> sentinelCheckWhiteList();
