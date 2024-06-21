@@ -95,6 +95,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DynamicDelayPeriodTaskTest.class,
         MdcUtilTest.class,
         GtidSetTest.class,
+        EncryptUtilsTest.class,
 })
 public class AllTests {
 
