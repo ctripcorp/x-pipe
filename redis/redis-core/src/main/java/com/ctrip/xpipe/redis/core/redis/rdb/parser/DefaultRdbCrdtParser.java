@@ -27,6 +27,7 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
     private STATE state = STATE.READ_INIT;
 
     private RdbLength typeId;
+    private RdbLength eof;
 
     private ByteBuf temp;
 
@@ -59,6 +60,7 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
                 case READ_INIT:
                     typeId = null;
                     val = null;
+                    eof = null;
                     state = STATE.READ_TYPE;
                     break;
                 case READ_TYPE:
@@ -71,7 +73,7 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
                 case READ_VAL:
                     RdbParseContext.RdbCrdtType crdtType = RdbParseContext.RdbCrdtType.findByTypeId(typeId.getLenLongValue());
                     context.setCrdtType(crdtType);
-                    RdbParser<byte[]> subParser = (RdbParser<byte[]>)context.getOrCreateCrdtParser(crdtType);
+                    RdbParser<byte[]> subParser = (RdbParser<byte[]>) context.getOrCreateCrdtParser(crdtType);
                     if (subParser == null) {
                         throw new RdbParseFailException("crdt rdb parse error" + typeId.getLenLongValue());
                     }
@@ -80,7 +82,18 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
                         subParser.reset();
                         context.clearKvContext();
                         context.clearCrdtType();
-                        state = STATE.READ_END;
+                        state = STATE.READ_EOF;
+                    }
+                    break;
+                case READ_EOF:
+                    eof = parseRdbLength(byteBuf);
+                    if (eof != null) {
+                        if (eof.getLenLongValue() != 0) {
+                            typeId = eof;
+                            state = STATE.READ_VAL;
+                        }else {
+                            state = STATE.READ_END;
+                        }
                     }
                     break;
                 case READ_END:
@@ -99,6 +112,7 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
     private void propagateCmdIfNeed() {
 
     }
+
     @Override
     public boolean isFinish() {
         return STATE.READ_END.equals(state);
@@ -113,6 +127,7 @@ public class DefaultRdbCrdtParser extends AbstractRdbParser<byte[]> implements R
         }
         this.state = STATE.READ_INIT;
         typeId = null;
+        eof = null;
         val = null;
     }
 

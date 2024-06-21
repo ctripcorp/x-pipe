@@ -11,17 +11,19 @@ import com.ctrip.xpipe.tuple.Pair;
 public class RedisOpCrdtMSetTransfer implements RedisOpCrdtTransfer {
 
     private static RedisOpCrdtMSetTransfer instance = new RedisOpCrdtMSetTransfer();
+
     public static RedisOpCrdtMSetTransfer getInstance() {
         return instance;
     }
+
     @Override
     public Pair<RedisOpType, byte[][]> transformCrdtRedisOp(RedisOpType redisOpType, byte[][] args) {
-        if (args.length < 6 || args.length % 3 != 0) {
+        if (args.length % 3 != 0) {
             return Pair.of(RedisOpType.UNKNOWN, args);
         }
         // "CRDT.MSET" "5" "1706184154287" "hailu2002" "hailu" "2:177847;5:38" "hailu2003" "hailu" "2:177847;5:38" - > "MSET" "hailu2002" "hailu" "hailu2003" "hailu"
         byte[][] commonArgs = new byte[(args.length / 3) * 2 - 1][];
-        commonArgs[0] = "MSET".getBytes();
+        commonArgs[0] = RedisOpType.MSET.name().getBytes();
         for (int i = 3; i < args.length; i++) {
             if (i % 3 == 0) {
                 commonArgs[i / 3 * 2 - 1] = args[i];
@@ -31,15 +33,5 @@ public class RedisOpCrdtMSetTransfer implements RedisOpCrdtTransfer {
             }
         }
         return Pair.of(RedisOpType.MSET, commonArgs);
-    }
-
-    @Override
-    public RedisOpType getRedisOpType() {
-        return RedisOpType.CRDT_MSET;
-    }
-
-    @Override
-    public int getOrder() {
-        return 0;
     }
 }

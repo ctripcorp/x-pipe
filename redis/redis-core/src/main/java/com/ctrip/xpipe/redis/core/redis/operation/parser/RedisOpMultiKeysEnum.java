@@ -16,6 +16,11 @@ public enum RedisOpMultiKeysEnum {
 
     //crdt,
     CRDT_DEL_REG(RedisOpType.CRDT_DEL_REG, 1, 1),
+    CRDT_DEL_RC(RedisOpType.CRDT_DEL_RC, 1, 1),
+    CRDT_DEL_SS(RedisOpType.CRDT_DEL_SS, 1, 1),
+    CRDT_DEL_SET(RedisOpType.CRDT_DEL_SET, 1, 1),
+    CRDT_DEL_HASH(RedisOpType.CRDT_DEL_HASH, 1, 1),
+    CRDT_MSET_RC(RedisOpType.CRDT_MSET_RC, 1, 2),
     CRDT_MSET(RedisOpType.CRDT_MSET, 1, 2);
 
 
