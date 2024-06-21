@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implements RdbParser<Pair<String, String>> {
 
+    public static final String CRDT_REPL_OFFSET = "crdt-repl-offset";
     private RdbParseContext context;
 
     private RdbParser<?> rdbStringParser;
@@ -54,7 +55,7 @@ public class RdbAuxParser extends AbstractRdbParser<Pair<String, String>> implem
                     Object rawKey = rdbStringParser.read(byteBuf);
                     if (null != rawKey) {
                         key = decodeRawStr(rawKey);
-                        if (key.equalsIgnoreCase("crdt-repl-offset")) {
+                        if (key.equalsIgnoreCase(CRDT_REPL_OFFSET)) {
                             context.setCrdt(true);
                         }
                         rdbStringParser.reset();

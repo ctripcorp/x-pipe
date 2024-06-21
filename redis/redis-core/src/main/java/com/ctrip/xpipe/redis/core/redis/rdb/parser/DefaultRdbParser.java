@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * date 2022/5/28
  */
 public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbParser<Void> {
-
     private RdbParseContext rdbParseContext;
 
     protected STATE state = STATE.READ_INIT;
@@ -162,16 +162,24 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         return null;
     }
 
+    protected void notifyFinish() {
+        if (rdbParseContext.isCrdt() && !CollectionUtils.isEmpty(rdbParseContext.getIncompatibleKey())) {
+            throw new XpipeRuntimeException("incompatible key found: " + rdbParseContext.getIncompatibleKey());
+        }
+        super.notifyFinish();
+    }
+
     protected boolean isAuxFinish() {
         return auxFinished.get();
     }
+
 
     private int checkMagic(ByteBuf byteBuf, int checkIdx) {
         int readCnt = 0;
         while (checkIdx + readCnt < RdbConstant.REDIS_RDB_MAGIC.length && byteBuf.readableBytes() > 0) {
             char current = (char)byteBuf.readByte(); // ascii to char
             if (RdbConstant.REDIS_RDB_MAGIC[checkIdx + readCnt] != current) {
-                throw new XpipeRuntimeException("unexpected rdb magic " + current + " at " + checkIdx + readCnt);
+                //throw new XpipeRuntimeException("unexpected rdb magic " + current + " at " + checkIdx + readCnt);
             }
             readCnt++;
         }

@@ -13,10 +13,10 @@ public class RedisOpCrdtSelectTransferTest {
 
     @Test
     public void transformCrdtRedisOpTest() {
-        RedisOpCrdtSelectTransfer redisOpCrdtMSetTransfer = new RedisOpCrdtSelectTransfer();
+        RedisOpCrdtSelectTransfer redisOpCrdtSelectTransfer = new RedisOpCrdtSelectTransfer();
         // // "CRDT.SELECT" "5" "0" - > "SELECT" "0"
         byte[][] args = new byte[][]{"CRDT.SELECT".getBytes(), "5".getBytes(), "0".getBytes()};
-        Pair<RedisOpType, byte[][]> redisOpTypePair = redisOpCrdtMSetTransfer.transformCrdtRedisOp(RedisOpType.CRDT_SELECT, args);
+        Pair<RedisOpType, byte[][]> redisOpTypePair = redisOpCrdtSelectTransfer.transformCrdtRedisOp(RedisOpType.CRDT_SELECT, args);
         Assert.assertEquals(RedisOpType.SELECT, redisOpTypePair.getKey());
         byte[][] result = redisOpTypePair.getValue();
         Assert.assertEquals(result.length, 2);
