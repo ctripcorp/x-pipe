@@ -23,8 +23,8 @@
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'diskType'" filter="{ diskType: 'text'}" sortable="'diskType'">{{info.diskType}}</td>
                 <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
-                <td data-title="'active数据量(MB)'" sortable="'activeRedisUsedMemory'">{{info.activeRedisUsedMemory/1024/1024 | number:2}}</td>
-                <td data-title="'backUp数据量(MB)'" sortable="'totalRedisUsedMemory-activeRedisUsedMemory'">{{(info.totalRedisUsedMemory-info.activeRedisUsedMemory)/1024/1024 | number:2}}</td>
+                <td data-title="'active数据量(GB)'" sortable="'activeRedisUsedMemory'">{{info.activeRedisUsedMemory/1024/1024/1024 | number:2}}</td>
+                <td data-title="'backUp数据量(GB)'" sortable="'totalRedisUsedMemory-activeRedisUsedMemory'">{{(info.totalRedisUsedMemory-info.activeRedisUsedMemory)/1024/1024/1024 | number:2}}</td>
                 <td data-title="'active数据量使用占比(%)'" sortable="'activeRedisUsedMemoryPercentage'">{{info.activeRedisUsedMemoryPercentage | number:2}}%</td>
                 <td data-title="'active数据量标准占比(%)'" sortable="'activeRedisUsedMemoryStandardPercentage'">{{info.activeRedisUsedMemoryStandardPercentage | number:2}}%</td>
                 <td data-title="'active流量(MB/S)'" sortable="'activeInputFlow'">{{info.activeInputFlow/1024 | number:2}}</td>
