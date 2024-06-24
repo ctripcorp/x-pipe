@@ -3,7 +3,6 @@
         <header class="panel-heading">
             <div class="row">
                 <div class="col-md-6">
-                    <span class="col-sm-2" style="width: 100%"> KeeperContainerUsedInfo 预计全量同步时间：{{getKeepercontainerFullSynchronizationTime()}} 分钟</span>
                     <span class="col-sm-2" style="width: 100%"> 最后更新时间：{{getLastUpdateTime()}}</span>
                 </div>
 
@@ -34,6 +33,7 @@
                 <td data-title="'active流量标准占比(%)'" sortable="'activeInputFlowStandardPercentage'">{{info.activeInputFlowStandardPercentage | number:2}}%</td>
                 <td data-title="'active实例数'" sortable="'activeKeeperCount'">{{info.activeKeeperCount}}</td>
                 <td data-title="'backUp实例数'" sortable="'totalKeeperCount-activeKeeperCount'">{{info.totalKeeperCount-info.activeKeeperCount}}</td>
+                <td data-title="'预计全量同步时间(Min)'" sortable="'expectFullSyncTime'">{{info.expectFullSyncTime}}</td>
                 <td data-title="'操作'" >
                     <a href="/#/keepercontainer_overall?keepercontainerIp={{info.keeperIp}}" class="btn btn-warning btn-xs" type="button">详情</a>
                 </td>
