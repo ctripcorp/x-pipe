@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.proxy.monitor;
 
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 
+import java.util.Set;
+
 /**
  * @author chen.zhu
  * <p>
@@ -10,6 +12,8 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 public interface TunnelMonitorManager {
 
     TunnelMonitor getOrCreate(Tunnel tunnel);
+
+    Set<Tunnel> getAllTunnels();
 
     void remove(Tunnel tunnel);
 }

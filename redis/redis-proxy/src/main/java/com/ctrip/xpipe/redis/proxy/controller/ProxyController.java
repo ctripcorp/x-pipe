@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.controller;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelEstablished;
 import com.ctrip.xpipe.spring.AbstractController;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author chen.zhu
@@ -25,6 +27,9 @@ public class ProxyController {
     @Autowired
     private TunnelManager tunnelManager;
 
+    @Autowired
+    private TunnelMonitorManager tunnelMonitorManager;
+
     @RequestMapping(value = "/tunnels", method = RequestMethod.GET)
     public String getTunnelMetas() {
         List<Tunnel> tunnels = tunnelManager.tunnels();
@@ -33,6 +38,28 @@ public class ProxyController {
             if(tunnel.getState() instanceof TunnelEstablished) {
                 result.add(tunnel.getTunnelMeta());
             }
+        }
+        JsonCodec pretty = new JsonCodec(true);
+        return pretty.encode(result);
+    }
+
+    @RequestMapping(value = "/tunnels/all", method = RequestMethod.GET)
+    public String getAllTunnelMetas() {
+        List<Tunnel> tunnels = tunnelManager.tunnels();
+        List<TunnelMeta> result = Lists.newArrayListWithCapacity(tunnels.size());
+        for(Tunnel tunnel : tunnels) {
+            result.add(tunnel.getTunnelMeta());
+        }
+        JsonCodec pretty = new JsonCodec(true);
+        return pretty.encode(result);
+    }
+
+    @RequestMapping(value = "/tunnels/monitor", method = RequestMethod.GET)
+    public String getAllMonitorTunnels() {
+        Set<Tunnel> tunnels = tunnelMonitorManager.getAllTunnels();
+        List<TunnelMeta> result = Lists.newArrayListWithCapacity(tunnels.size());
+        for(Tunnel tunnel : tunnels) {
+            result.add(tunnel.getTunnelMeta());
         }
         JsonCodec pretty = new JsonCodec(true);
         return pretty.encode(result);

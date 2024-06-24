@@ -19,6 +19,7 @@ import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 
 /**
@@ -87,6 +88,11 @@ public class DefaultTunnelMonitorManager implements TunnelMonitorManager {
         } catch (Exception e) {
             logger.error("[stop tunnel-monitor]", e);
         }
+    }
+
+    @Override
+    public Set<Tunnel> getAllTunnels() {
+        return tunnelMonitors.keySet();
     }
 
     private void clean() {
