@@ -128,7 +128,12 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                 if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
                     continue;
                 }
-                AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), false);
+                Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
+                transmitAlterToCheckerLeader(false, alerts);
+                if(alerts.size() == 0) {
+                    continue;
+                }
+                AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, false);
                 emailMessage(message);
                 tryMetric(mailGroup.getValue(), false);
             }

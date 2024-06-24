@@ -38,6 +38,11 @@ public enum ALERT_TYPE {
         }
 
         @Override
+        public boolean sendToCheckerLeader() {
+            return true;
+        }
+
+        @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("Quorum Down Fail 错误", "说明：Console会从多个点判断一个redis节点是否挂掉，如果没有达到大多数一致(一部分监测点认为Redis节点挂，另一部分认为OK，可能是网络抖动引起)，则报此错误");
         }
@@ -166,6 +171,11 @@ public enum ALERT_TYPE {
         }
 
         @Override
+        public boolean sendToCheckerLeader() {
+            return true;
+        }
+
+        @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("Instance Mark UP", "说明：从机房Redis实例恢复之后，会将Redis拉入集群");
         }
@@ -179,6 +189,11 @@ public enum ALERT_TYPE {
         @Override
         public boolean reportRecovery() {
             return false;
+        }
+
+        @Override
+        public boolean sendToCheckerLeader() {
+            return true;
         }
 
         @Override
@@ -246,6 +261,11 @@ public enum ALERT_TYPE {
         }
 
         @Override
+        public boolean sendToCheckerLeader() {
+            return true;
+        }
+
+        @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("crdt instance down", "crdt instance in local dc is unhealthy");
         }
@@ -262,6 +282,11 @@ public enum ALERT_TYPE {
         }
 
         @Override
+        public boolean sendToCheckerLeader() {
+            return true;
+        }
+
+        @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("crdt cross dc replication up", "crdt replication between cross dc master is healthy");
         }
@@ -275,6 +300,11 @@ public enum ALERT_TYPE {
         @Override
         public boolean reportRecovery() {
             return false;
+        }
+
+        @Override
+        public boolean sendToCheckerLeader() {
+            return true;
         }
 
         @Override
@@ -662,5 +692,9 @@ public enum ALERT_TYPE {
         public String getDesc() {
             return desc;
         }
+    }
+
+    public boolean sendToCheckerLeader() {
+        return false;
     }
 }
