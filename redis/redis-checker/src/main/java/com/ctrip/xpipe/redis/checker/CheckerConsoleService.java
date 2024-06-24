@@ -110,4 +110,5 @@ public interface CheckerConsoleService {
     }
     
     void recordAlert(String console, String eventOperator, AlertMessageEntity message, EmailResponse response);
+
 }

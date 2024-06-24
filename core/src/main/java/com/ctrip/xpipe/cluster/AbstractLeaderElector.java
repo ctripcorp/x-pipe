@@ -9,6 +9,7 @@ import com.ctrip.xpipe.zk.ZkClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
+import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.framework.recipes.locks.LockInternals;
 import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
@@ -46,6 +47,18 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     
     public <T extends LeaderAware> void setLeaderAwareClass(Class<T> leaderAwareClass) {
         this.leaderAwareClass = leaderAwareClass;
+    }
+
+    protected String getLeaderId() {
+        try {
+            Participant leader = leaderLatch.getLeader();
+            if(leader != null) {
+                return leader.getId();
+            }
+        } catch (Exception e) {
+            logger.error("[getLeaderId]", e);
+        }
+        return null;
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
@@ -19,6 +20,7 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -59,7 +61,9 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
         if (StringUtil.isEmpty(raw)) return null;
         return DefaultSaxParser.parse(raw);
     }
-    
+
+    private GroupCheckerLeaderElector clusterServer;
+
     public XpipeMeta getXpipeAllMeta(String console) throws  SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_META)
                 .queryParam("format", "xml").build();
