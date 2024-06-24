@@ -175,8 +175,8 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
     function syncShowMigrateDetail() {
         const length = $scope.oldMigratingKeeperContainers.length;
         for (let i = 0; i < length; i++) {
-            $scope.migratingKeeperContainers.get(i).showDetail =
-                $scope.oldMigratingKeeperContainers.get(i).showDetail;
+            $scope.migratingKeeperContainers[i].showDetail =
+                $scope.oldMigratingKeeperContainers[i].showDetail;
         }
         $scope.oldMigratingKeeperContainers = $scope.migratingKeeperContainers;
     }
