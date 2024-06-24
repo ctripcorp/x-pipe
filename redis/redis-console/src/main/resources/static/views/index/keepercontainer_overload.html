@@ -94,6 +94,10 @@
                                 <i class="fa fa-spinner fa-spin blue"></i>
                                 {{info.migratingShard.dcId}}:{{info.migratingShard.clusterId}}:{{info.migratingShard.shardId}}
                             </li>
+                            <li ng-repeat="shard in info.failedShards">
+                                <i class="glyphicon glyphicon-remove-sign red"></i>
+                                {{shard.dcId}}:{{shard.clusterId}}:{{shard.shardId}}
+                            </li>
                             <li ng-repeat="shard in info.finishedShards">
                                 <i class="glyphicon glyphicon-ok-sign green"></i>
                                 {{shard.dcId}}:{{shard.clusterId}}:{{shard.shardId}}

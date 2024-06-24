@@ -33,6 +33,8 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     List<DcClusterShard> finishedShards = new ArrayList<>();
 
+    List<DcClusterShard> failedShards = new ArrayList<>();
+
     DcClusterShard migratingShard;
 
     private Date updateTime;
@@ -166,6 +168,18 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
 
     public void addFinishedShard(DcClusterShard dcClusterShard) {
         finishedShards.add(dcClusterShard);
+    }
+
+    public void addFailedShard(DcClusterShard dcClusterShard) {
+        failedShards.add(dcClusterShard);
+    }
+
+    public List<DcClusterShard> getFailedShards() {
+        return failedShards;
+    }
+
+    public void setFailedShards(List<DcClusterShard> failedShards) {
+        this.failedShards = failedShards;
     }
 
     public List<DcClusterShard> getFinishedShards() {
