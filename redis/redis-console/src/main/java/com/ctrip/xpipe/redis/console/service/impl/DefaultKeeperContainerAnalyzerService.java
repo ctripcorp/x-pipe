@@ -151,6 +151,11 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
     }
 
     @VisibleForTesting
+    public void setConsoleConfig(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
+    }
+
+    @VisibleForTesting
     public void setAzService(AzService azService) {
         this.azService = azService;
     }

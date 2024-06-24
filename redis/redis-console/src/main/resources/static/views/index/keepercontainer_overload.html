@@ -36,11 +36,11 @@
 
                     <td data-title="'ip'" filter="{ 'srcKeeperContainer.keeperIp': 'text'}">{{info.srcOverLoadKeeperPairIp == null ? info.srcKeeperContainer.keeperIp : info.srcKeeperContainer.keeperIp + " <=> (" + info.srcOverLoadKeeperPairIp + ")"}}</td>
                     <td data-title="'dc'" filter="{ 'srcKeeperContainer.dcName': 'text'}">{{info.srcKeeperContainer.dcName}}</td>
-                    <td data-title="'上游redis数据量(KB)'" sortable="'srcKeeperContainer.activeRedisUsedMemory'">{{info.srcKeeperContainer.activeRedisUsedMemory / 1024 | number:2}}</td>
+                    <td data-title="'上游redis数据量(GB)'" sortable="'srcKeeperContainer.activeRedisUsedMemory'">{{info.srcKeeperContainer.activeRedisUsedMemory/1024/1024/1024| number:2}}</td>
                     <td data-title="'流量(KB/s)'" sortable="'srcKeeperContainer.activeInputFlow'">{{info.srcKeeperContainer.activeInputFlow}}</td>
                     <td data-title="'待迁移分片数'" sortable="'migrateKeeperCount'">{{info.migrateKeeperCount}}</td>
                     <td data-title="'tagetKeeperContainer'" >{{info.targetKeeperContainer.keeperIp}}</td>
-                    <td data-title="'上游redis数据量(KB)'" sortable="'targetKeeperContainer.activeRedisUsedMemory'">{{info.targetKeeperContainer.activeRedisUsedMemory / 1024 | number:2}}</td>
+                    <td data-title="'上游redis数据量(GB)'" sortable="'targetKeeperContainer.activeRedisUsedMemory'">{{info.targetKeeperContainer.activeRedisUsedMemory/1024/1024/1024 | number:2}}</td>
                     <td data-title="'流量(KB/s)'" sortable="'srcKeeperContainer.activeInputFlow'">{{info.targetKeeperContainer.activeInputFlow}}</td>
                     <td data-title="'超载原因'" filter="{ 'cause': 'text'}">{{info.cause}}</td>
                     <td data-title="'迁移方案'" filter="{ 'result': 'text'}">{{info.result}}</td>
