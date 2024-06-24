@@ -29,13 +29,7 @@ function getSafeXmx() {
     HIGH_SAFE_PERCENT=70
     LOW_SAFE_PERCENT=55
     MAX_MEM=5120
-
-    if [ "$total" -gt 7168 ]
-    then
-      echo `expr $total \* $HIGH_SAFE_PERCENT / 100`
-    else
-      echo `expr $total \* $LOW_SAFE_PERCENT / 100`
-    fi
+    echo `expr $total \* $LOW_SAFE_PERCENT / 100`
 }
 
 function getSafeXmn() {

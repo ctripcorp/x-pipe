@@ -131,7 +131,7 @@ public class DefaultTunnelManager implements TunnelManager {
         try {
             LifecycleHelper.initializeIfPossible(tunnel);
         } catch (NoResourceException e){
-            logger.error("[initAndStart][start] {}", e.getMessage());
+            logger.error("[initAndStart][init] {}", e.getMessage());
         } catch (Exception e) {
             logger.error("[initAndStart][init]", e);
         }
