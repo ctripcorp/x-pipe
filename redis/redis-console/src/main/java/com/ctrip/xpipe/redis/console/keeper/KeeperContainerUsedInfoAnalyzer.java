@@ -18,7 +18,4 @@ public interface KeeperContainerUsedInfoAnalyzer {
 
     List<KeeperContainerUsedInfoModel> getCurrentDcKeeperContainerUsedInfoModelsList();
 
-    List<Integer> getAllDcMaxKeeperContainerFullSynchronizationTime();
-
-    List<Integer> getCurrentDcMaxKeeperContainerFullSynchronizationTime();
 }

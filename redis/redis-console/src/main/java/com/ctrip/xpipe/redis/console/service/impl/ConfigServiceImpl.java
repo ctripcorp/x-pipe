@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOff
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.KeeperBalanceInfoCollectOnChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
+import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -66,6 +67,27 @@ public class ConfigServiceImpl implements ConfigService {
     public void setKeyKeeperContainerStandard(ConfigModel config) throws Exception {
         if (!KEY_KEEPER_CONTAINER_STANDARD.equals(config.getKey())) {
             throw new RuntimeException(String.format("key should be %s !", KEY_KEEPER_CONTAINER_STANDARD));
+        }
+        try {
+            Long.parseLong(config.getVal());
+        } catch (NumberFormatException e) {
+            throw new RuntimeException(String.format("value %s should be number ", config.getVal()));
+        }
+        configDao.setConfig(config);
+    }
+
+    @Override
+    public void setKeyKeeperContainerIoRate(ConfigModel config) throws Exception {
+        if (!KEY_KEEPER_CONTAINER_IO_RATE.equals(config.getKey())) {
+            throw new RuntimeException(String.format("key should be %s !", KEY_KEEPER_CONTAINER_IO_RATE));
+        }
+        List<ConfigModel> standardConfigs = getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+        List<String> diskTypes = new ArrayList<>();
+        standardConfigs.forEach(configModel -> {
+            diskTypes.add(configModel.getSubKey().split(KeeperContainerDiskType.DEFAULT.interval)[0]);
+        });
+        if (!diskTypes.contains(config.getSubKey())) {
+            throw new RuntimeException(String.format("subkey:%s should be in diskTypes %s !", config.getSubKey(), diskTypes));
         }
         try {
             Long.parseLong(config.getVal());

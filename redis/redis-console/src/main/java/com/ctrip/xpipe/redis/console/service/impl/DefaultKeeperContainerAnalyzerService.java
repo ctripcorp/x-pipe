@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_IO_RATE;
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 
 @Component
@@ -24,6 +26,9 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Autowired
     private KeeperContainerService keeperContainerService;
@@ -90,6 +95,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
+        infoModel.setExpectFullSyncTime(getExpectFullSyncTime(keepercontainerTbl.getKeepercontainerDiskType(), infoModel.getActiveRedisUsedMemory()));
         AzTbl availableZoneTblById = azService.getAvailableZoneTblById(keepercontainerTbl.getAzId());
         if (availableZoneTblById != null) {
             infoModel.setAz(availableZoneTblById.getAzName());
@@ -115,6 +121,18 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
             return new KeeperContainerOverloadStandardModel(peerDataStandard, inputFlowStandard);
         }
         return defaultOverloadStandard;
+    }
+
+    private double getExpectFullSyncTime(String diskType, long activeRedisUsedMemory){
+        double ioRate;
+        if (StringUtil.isEmpty(diskType)) {
+            ioRate = consoleConfig.getKeeperContainerIoRate();
+        } else {
+            ConfigModel config = configService.getConfig(KEY_KEEPER_CONTAINER_IO_RATE, diskType.split(KeeperContainerDiskType.DEFAULT.interval)[0]);
+            ioRate = Double.parseDouble(config.getVal());
+        }
+        double result = (double) activeRedisUsedMemory /1024/1024/ioRate/60;
+        return Double.parseDouble(String.format("%.2f", result));
     }
 
     @VisibleForTesting

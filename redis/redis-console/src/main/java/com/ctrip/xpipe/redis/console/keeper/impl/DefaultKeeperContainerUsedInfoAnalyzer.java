@@ -8,7 +8,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.Command.AbstractGetAllDcCommand;
-import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerFullSynchronizationTimeGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.MigrationKeeperContainerDetailInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
@@ -44,8 +43,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     private Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap = new HashMap<>();
 
     private List<MigrationKeeperContainerDetailModel> currentDcKeeperContainerMigrationResult = new ArrayList<>();
-
-    private long currentDcMaxKeeperContainerActiveRedisUsedMemory;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
@@ -109,13 +106,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @Override
-    public List<Integer> getAllDcMaxKeeperContainerFullSynchronizationTime() {
-        return getAllDcResult(this::getCurrentDcMaxKeeperContainerFullSynchronizationTime,
-                new KeeperContainerFullSynchronizationTimeGetCommand(restTemplate),
-                Collections.synchronizedList(new ArrayList<>()));
-    }
-
-    @Override
     public List<MigrationKeeperContainerDetailModel> getCurrentDcReadyToMigrationKeeperContainers() {
         return currentDcKeeperContainerMigrationResult;
     }
@@ -124,26 +114,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     public List<KeeperContainerUsedInfoModel> getCurrentDcKeeperContainerUsedInfoModelsList() {
         return new ArrayList<>(currentDcAllKeeperContainerUsedInfoModelMap.values());
     }
-
-    @Override
-    public List<Integer> getCurrentDcMaxKeeperContainerFullSynchronizationTime() {
-        List<Integer> result = new ArrayList<>();
-        double keeperContainerIoRate = config.getKeeperContainerIoRate();
-        if (!currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) {
-            currentDcMaxKeeperContainerActiveRedisUsedMemory = getMaxActiveRedisUsedMemory(currentDcAllKeeperContainerUsedInfoModelMap);
-        }
-        result.add((int) (currentDcMaxKeeperContainerActiveRedisUsedMemory /1024/1024/keeperContainerIoRate/60));
-        return result;
-    }
-
-    private long getMaxActiveRedisUsedMemory(Map<String, KeeperContainerUsedInfoModel> usedInfo) {
-        long max = 0;
-        for (KeeperContainerUsedInfoModel usedInfoModel : usedInfo.values()) {
-            max = Math.max(max, usedInfoModel.getActiveRedisUsedMemory());
-        }
-        return max;
-    }
-
 
     public <T> List<T> getAllDcResult(Supplier<List<T>> localDcResultSupplier, AbstractGetAllDcCommand<List<T>> command, List<T> result) {
         logger.info("[getAllDcResult] {} start", command.getName());
