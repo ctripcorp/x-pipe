@@ -16,6 +16,10 @@
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
             <tr ng-repeat="info in $data">
                 <td data-title="'address'" filter="{ 'keeperIp': 'text'}">{{info.keeperIp}}</td>
+                <td data-title="'status'" sortable="'keeperContainerHealth'">
+                    <span style="position: relative" class="{{info.keeperContainerHealth? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
+                    </span>
+                </td>
                 <td data-title="'dc'" filter="{ dcName: 'text'}" sortable="'dcName'">{{info.dcName}}</td>
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'diskType'" filter="{ diskType: 'text'}" sortable="'diskType'">{{info.diskType}}</td>
