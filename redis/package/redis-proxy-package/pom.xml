@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.ctrip.framework.xpipe.redis</groupId>
         <artifactId>package</artifactId>
-        <version>1.2.14</version>
+        <version>1.2.15</version>
     </parent>
     <artifactId>redis-proxy-package</artifactId>
 
