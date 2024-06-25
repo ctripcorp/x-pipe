@@ -154,7 +154,7 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));
         Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+        Assert.assertEquals(6039797757L, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
 
     }
 
@@ -165,7 +165,7 @@ public class RedisUsedMemoryCollectorTest extends AbstractCheckerTest {
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));
         Assert.assertEquals(1, listener.getDcClusterShardUsedMemory().size());
-        Assert.assertEquals(2415919104L * 4, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
+        Assert.assertEquals(6039797760L, (long) listener.getDcClusterShardUsedMemory().get(new DcClusterShard("jq", "cluster", "shard")));
 
     }
 
