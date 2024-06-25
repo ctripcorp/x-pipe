@@ -23,8 +23,6 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
 
     public static final String ROR_DB_VERSION = "1.3";
 
-    public static final long ERROR_THRESHOLD = 100L * 1024 * 1024 * 1024;
-
     @Override
     public void onAction(RedisInfoActionContext context) {
         try {
@@ -48,20 +46,7 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         if (!StringUtil.isEmpty(swapVersion) && StringUtil.compareVersionSize(swapVersion, ROR_DB_VERSION) >= 0) {
             return dbSize + maxMemory;
         }
-        String keysSpaceDb0 = extractor.extract("db0");
-        if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
-
-        String[] keySpaces = keysSpaceDb0.split(",");
-        String[] keys1 = keySpaces[0].split("=");
-        String[] keys2 = keySpaces[1].split("=");
-        if (!keys1[0].equalsIgnoreCase("keys") || !keys2[0].equalsIgnoreCase("evicts")) {
-            return usedMemory + dbSize * 3;
-        }
-
-        long evicts = Long.parseLong(keys2[1]);
-        long keys = Long.parseLong(keys1[1]);
-        long result =  keys == 0 ? dbSize * 3 : (keys + evicts) / keys * maxMemory;
-        return result >= ERROR_THRESHOLD ? dbSize * 3 : result;
+        return usedMemory + dbSize * 3;
     }
 
     @Override
