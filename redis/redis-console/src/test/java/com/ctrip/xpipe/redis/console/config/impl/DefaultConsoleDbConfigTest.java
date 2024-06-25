@@ -14,6 +14,7 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.Collections;
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_REDIS_CONF_CHECK_INTERVAL;
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
 /**
@@ -149,10 +150,12 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
         configModel.setSubKey("Cluster1");
 
-        service.stopClusterAlert(configModel, 1);
+        service.stopClusterAlert(configModel, 10);
 
         configModel.setSubKey("cluster2");
-        service.stopClusterAlert(configModel, 1);
+        String val = System.getProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "300000");
+        System.setProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "-50000");
+        service.stopClusterAlert(configModel, 10);
         service.startClusterAlert(configModel);
 
         configModel.setSubKey("cluster3");
@@ -160,6 +163,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
         consoleDbConfig.refreshAlertWhiteListCache();
         Set<String> whitelist = consoleDbConfig.clusterAlertWhiteList();
+        System.setProperty(KEY_REDIS_CONF_CHECK_INTERVAL, val);
         Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
     }
 
