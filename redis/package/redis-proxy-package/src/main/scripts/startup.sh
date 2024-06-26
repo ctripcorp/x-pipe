@@ -26,10 +26,15 @@ function getTotalMem() {
 }
 function getSafeXmx() {
     total=`getTotalMem`
-    HIGH_SAFE_PERCENT=70
-    LOW_SAFE_PERCENT=55
+    SAFE_PERCENT=55
     MAX_MEM=5120
-    echo `expr $total \* $LOW_SAFE_PERCENT / 100`
+
+    if [ "$total" -gt 10240 ]
+    then
+      echo "$MAX_MEM"
+    else
+      echo `expr $total \* $SAFE_PERCENT / 100`
+    fi
 }
 
 function getSafeXmn() {
@@ -41,7 +46,7 @@ function getSafeXmn() {
 function getSafeMaxDirect() {
     total=`getTotalMem`
     SAFE_PERCENT=10
-    if [ "$total" -gt 7168 ]
+    if [ "$total" -gt 10240 ]
     then
       echo 2048
     else
@@ -139,7 +144,7 @@ echo "current env:"$ENV
   XMN=`getSafeXmn $USED_MEM`
   MAX_DIRECT=`getSafeMaxDirect`
   JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
-export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 -Dio.netty.maxDirectMemory=0 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
+export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.maxDirectMemory=-1 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
 
 echo $JAVA_OPTS
 

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author chen.zhu
@@ -29,11 +30,15 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
 
     protected final static String SESSION_STATE_CHANGE = "Session.State.Change";
 
+    private static AtomicLong sessionIdGen = new AtomicLong(0);
+
     protected ProxyEndpoint endpoint;
 
     protected Channel channel;
 
     private Tunnel tunnel;
+
+    private long sessionId;
 
     protected long trafficReportIntervalMillis;
 
@@ -48,6 +53,7 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     protected AbstractSession(Tunnel tunnel, long trafficReportIntervalMillis) {
         this.tunnel = tunnel;
         this.trafficReportIntervalMillis = trafficReportIntervalMillis;
+        this.sessionId = sessionIdGen.getAndIncrement();
     }
 
     @Override
@@ -141,11 +147,16 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
     }
 
     @Override
+    public long getSessionId() {
+        return sessionId;
+    }
+
+    @Override
     public SessionMeta getSessionMeta() {
         try {
             return new SessionMeta(this, endpoint, getSessionState());
         } catch (Exception e) {
-            return new SessionMeta(getSessionType().name(), "unknown", "unknown", getSessionState().name());
+            return new SessionMeta(getSessionType().name(), sessionId, "unknown", "unknown", getSessionState().name());
         }
     }
 
