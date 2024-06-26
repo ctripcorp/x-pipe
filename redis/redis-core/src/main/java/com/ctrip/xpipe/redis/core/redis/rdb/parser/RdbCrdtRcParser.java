@@ -89,18 +89,11 @@ public class RdbCrdtRcParser extends AbstractRdbCrdtParser<byte[]> implements Rd
 
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.SET,
-                new byte[][]{RedisOpType.SET.name().getBytes(), context.getKey().get(), getValue().getBytes()},
+                new byte[][]{RedisOpType.SET.name().getBytes(), context.getKey().get(), val},
                 context.getKey(), val));
         propagateExpireAtIfNeed(context.getKey(), context.getExpireMilli());
     }
 
-    private String getValue() {
-        double value = ByteBuffer.wrap(val).getDouble();
-        if (value % 1 == 0 && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
-            return Long.toString((long) value);
-        }
-        return Double.toString(ByteBuffer.wrap(val).getDouble());
-    }
 
     @Override
     public boolean isFinish() {

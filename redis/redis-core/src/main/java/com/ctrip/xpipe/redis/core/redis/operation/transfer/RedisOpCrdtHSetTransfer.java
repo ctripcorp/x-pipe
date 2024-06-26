@@ -19,6 +19,9 @@ public class RedisOpCrdtHSetTransfer implements RedisOpCrdtTransfer {
     @Override
     public Pair<RedisOpType, byte[][]> transformCrdtRedisOp(RedisOpType redisOpType, byte[][] args) {
         // "CRDT.HSET" "hailu1937" "5" "1706182703266" "2:177847;5:7" "4" "hailutest1" "hailu" "hailutest2" "hailu" -> "hset" "hailu1937" "hailutest1" "hailu" "hailutest2" "hailu"
+        if (args.length < 8) {
+            return Pair.of(RedisOpType.UNKNOWN, args);
+        }
         byte[][] commonArgs = new byte[args.length - 4][];
         commonArgs[0] = RedisOpType.HSET.name().getBytes();
         commonArgs[1] = args[1];

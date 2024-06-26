@@ -22,7 +22,7 @@ public class RedisOpCrdtDelTransfer implements RedisOpCrdtTransfer {
         // "CRDT.DEL_REG" "hailu2002" "5" "1706184168902" "2:177847;5:39" - > "DEL" "hailu2002"
         // "CRDT.DEL_SS" "hailusortedset" "1" "1718162699792" "1:1524" - > "DEL" "hailusortedset"
         // "CRDT.DEL_Rc" "test311" "1" "1718159815744" "1:1507;2:936" "1:936:1:20,2:936:1:23" - > "DEL" "test311"
-        // "CRDT.DEL_REG" "hailu2002" "5" "1706184168902" "2:177847;5:39" - > "DEL" "hailu2002"
+        // "CRDT.DEL_Set" "hailusadd" "1" "1718162478336" "1:1520" "1:1520" - > "DEL" "hailusadd"
         byte[][] commonArgs = new byte[2][];
         commonArgs[0] = RedisOpType.DEL.name().getBytes();
         commonArgs[1] = args[1];

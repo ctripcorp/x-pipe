@@ -25,8 +25,19 @@ public class RedisOpCrdtZRemTransferTest {
         Assert.assertEquals(new String(result[3]), "world");
 
         redisOpCrdtZRemTransfer = new RedisOpCrdtZRemTransfer();
-        // "CRDT.Zrem" "hailusortedset" "5" "1706183987080" "5:34" "3:5:hello" "3:5:world" -> "ZREM" "hailusortedset" "hello" "world"
+        // "CRDT.Zrem" "hailusortedset" "5" "1706183987080" "5:34" "3:5:hello" -> "ZREM" "hailusortedset" "hello"
         args = new byte[][]{"CRDT.Zrem".getBytes(), "hailusortedset".getBytes(), "5".getBytes(), "1706183987080".getBytes(), "5:34".getBytes(), "3:5:hello".getBytes()};
+        redisOpTypePair = redisOpCrdtZRemTransfer.transformCrdtRedisOp(RedisOpType.CRDT_ZREM, args);
+        Assert.assertEquals(RedisOpType.ZREM, redisOpTypePair.getKey());
+         result = redisOpTypePair.getValue();
+        Assert.assertEquals(result.length, 3);
+        Assert.assertEquals(new String(result[0]), "ZREM");
+        Assert.assertEquals(new String(result[1]), "hailusortedset");
+        Assert.assertEquals(new String(result[2]), "hello");
+
+        redisOpCrdtZRemTransfer = new RedisOpCrdtZRemTransfer();
+        // "CRDT.Zrem" "hailusortedset" "5" "1706183987080" "3:5:hello,2:271271:2:20" -> "ZREM" "hailusortedset" "hello"
+        args = new byte[][]{"CRDT.Zrem".getBytes(), "hailusortedset".getBytes(), "5".getBytes(), "1706183987080".getBytes(), "5:34".getBytes(), "3:5:hello,2:271271:2:20".getBytes()};
         redisOpTypePair = redisOpCrdtZRemTransfer.transformCrdtRedisOp(RedisOpType.CRDT_ZREM, args);
         Assert.assertEquals(RedisOpType.ZREM, redisOpTypePair.getKey());
          result = redisOpTypePair.getValue();

@@ -23,7 +23,7 @@ public class RedisOpCrdtRcTransferTest {
         Assert.assertEquals(new String(result[1]), "hailu1945");
         Assert.assertEquals(new String(result[2]), "1");
 
-        // // "CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:1:1" "-1" -> "PSETEX" "hailu1945" "5000" "1"
+        // "CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:1:1" "-1" -> "PSETEX" "hailu1945" "5000" "1"
         long expire = System.currentTimeMillis() + 3000;
         args = new byte[][]{"CRDT.rc".getBytes(), "hailu1945".getBytes(), "5".getBytes(), "1706183161935".getBytes(), "5:13".getBytes(), "3:1:1".getBytes(), Long.toString(expire).getBytes()};
         redisOpTypePair = opCrdtRcTransfer.transformCrdtRedisOp(RedisOpType.CRDT_RC, args);
@@ -34,10 +34,41 @@ public class RedisOpCrdtRcTransferTest {
         Assert.assertEquals(new String(result[1]), "hailu1945");
         Assert.assertEquals(new String(result[3]), "1");
 
-        // // "CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:1:1" "-1" -> "PSETEX" "hailu1945" "5000" "1"
+        // "CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:1:1" "-1" -> "PSETEX" "hailu1945" "5000" "1"
         expire = System.currentTimeMillis() - 3000;
         args = new byte[][]{"CRDT.rc".getBytes(), "hailu1945".getBytes(), "5".getBytes(), "1706183161935".getBytes(), "5:13".getBytes(), "3:1:1".getBytes(), Long.toString(expire).getBytes()};
         redisOpTypePair = opCrdtRcTransfer.transformCrdtRedisOp(RedisOpType.CRDT_RC, args);
         Assert.assertEquals(RedisOpType.UNKNOWN, redisOpTypePair.getKey());
+
+        //"CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:1:6,2:271277:1:4" "-1" -> "PSETEX" "hailu1945" "5000" "1"
+        expire = System.currentTimeMillis() + 3000;
+        args = new byte[][]{"CRDT.rc".getBytes(), "hailu1945".getBytes(), "5".getBytes(), "1706183161935".getBytes(), "5:13".getBytes(), "3:1:6,2:271277:1:4".getBytes(), Long.toString(expire).getBytes()};
+        redisOpTypePair = opCrdtRcTransfer.transformCrdtRedisOp(RedisOpType.CRDT_RC, args);
+        result = redisOpTypePair.getValue();
+        Assert.assertEquals(result.length, 4);
+        Assert.assertEquals(new String(result[0]), "PSETEX");
+        Assert.assertEquals(new String(result[1]), "hailu1945");
+        Assert.assertEquals(new String(result[3]), "6");
+
+
+        //"CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:0:,2:271277:1:4" "-1" -> "PSETEX" "hailu1945" "5000" "1"
+        expire = System.currentTimeMillis() + 3000;
+        args = new byte[][]{"CRDT.rc".getBytes(), "hailu1945".getBytes(), "5".getBytes(), "1706183161935".getBytes(), "5:13".getBytes(), "3:0:,2:271277:1:4".getBytes(), Long.toString(expire).getBytes()};
+        redisOpTypePair = opCrdtRcTransfer.transformCrdtRedisOp(RedisOpType.CRDT_RC, args);
+        result = redisOpTypePair.getValue();
+        Assert.assertEquals(result.length, 4);
+        Assert.assertEquals(new String(result[0]), "PSETEX");
+        Assert.assertEquals(new String(result[1]), "hailu1945");
+        Assert.assertEquals(new String(result[3]), "");
+
+        //"CRDT.rc" "hailu1945" "5" "1706183161935" "5:13" "3:9:Q#OPWH,?K,2:271277:1:4" "-1" -> "PSETEX" "hailu1945" "5000" "1"
+        expire = System.currentTimeMillis() + 3000;
+        args = new byte[][]{"CRDT.rc".getBytes(), "hailu1945".getBytes(), "5".getBytes(), "1706183161935".getBytes(), "5:13".getBytes(), "3:9:Q#OPWH,?K,2:271277:1:4".getBytes(), Long.toString(expire).getBytes()};
+        redisOpTypePair = opCrdtRcTransfer.transformCrdtRedisOp(RedisOpType.CRDT_RC, args);
+        result = redisOpTypePair.getValue();
+        Assert.assertEquals(result.length, 4);
+        Assert.assertEquals(new String(result[0]), "PSETEX");
+        Assert.assertEquals(new String(result[1]), "hailu1945");
+        Assert.assertEquals(new String(result[3]), "Q#OPWH,?K");
     }
 }

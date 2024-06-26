@@ -37,5 +37,18 @@ public class RedisOpCrdtZAddTransferTest {
         Assert.assertEquals(new String(result[1]), "hailusortedset");
         Assert.assertEquals(new String(result[2]), "70");
         Assert.assertEquals(new String(result[3]), "hi");
+
+
+        redisOpCrdtZAddTransfer = new RedisOpCrdtZAddTransfer();
+        // "CRDT.ZADD" "hailusortedset" "5" "1706183768965" "5:28" "hi" "2:23,1:8:2:28,2:5656:2:-30.886456521970498" -> "ZADD" "hailusortedset" "70" "hi"
+        args = new byte[][]{"CRDT.ZADD".getBytes(), "hailusortedset".getBytes(), "5".getBytes(), "1706183768965".getBytes(), "5:28".getBytes(), "hi".getBytes(), "2:23,1:8:2:28,2:5656:2:-30.886456521970498".getBytes()};
+         redisOpTypePair = redisOpCrdtZAddTransfer.transformCrdtRedisOp(RedisOpType.CRDT_ZADD, args);
+        Assert.assertEquals(RedisOpType.ZADD, redisOpTypePair.getKey());
+         result = redisOpTypePair.getValue();
+        Assert.assertEquals(result.length, 4);
+        Assert.assertEquals(new String(result[0]), "ZADD");
+        Assert.assertEquals(new String(result[1]), "hailusortedset");
+        Assert.assertEquals(new String(result[2]), "23");
+        Assert.assertEquals(new String(result[3]), "hi");
     }
 }
