@@ -26,10 +26,15 @@ function getTotalMem() {
 }
 function getSafeXmx() {
     total=`getTotalMem`
-    HIGH_SAFE_PERCENT=70
-    LOW_SAFE_PERCENT=55
+    SAFE_PERCENT=55
     MAX_MEM=5120
-    echo `expr $total \* $LOW_SAFE_PERCENT / 100`
+
+    if [ "$total" -gt 10240 ]
+    then
+      echo "$MAX_MEM"
+    else
+      echo `expr $total \* $SAFE_PERCENT / 100`
+    fi
 }
 
 function getSafeXmn() {
@@ -41,7 +46,7 @@ function getSafeXmn() {
 function getSafeMaxDirect() {
     total=`getTotalMem`
     SAFE_PERCENT=10
-    if [ "$total" -gt 7168 ]
+    if [ "$total" -gt 10240 ]
     then
       echo 2048
     else
