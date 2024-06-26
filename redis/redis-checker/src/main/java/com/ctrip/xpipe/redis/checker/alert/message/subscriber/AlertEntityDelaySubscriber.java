@@ -3,33 +3,42 @@ package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
+import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author chen.zhu
+ * @author qifanwang
  * <p>
- * Apr 19, 2018
+ * July 1, 2024
  */
 
 @Component
-public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscriber {
+public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
 
     private final static long reportInterval = 3 * 60 * 1000;
 
-    private Set<AlertEntity> existingAlerts = Sets.newConcurrentHashSet();
+    // value is the alert time of first appearance and has been sent
+    private Map<AlertEntity, Pair<Long, Boolean>> existingAlerts = Maps.newConcurrentMap();
 
     private Set<AlertEntity> sendingAlerts = Sets.newConcurrentHashSet();
 
     private AtomicBoolean sendTaskBegin = new AtomicBoolean();
+
+    @Autowired
+    private DelayAlertRecoverySubscriber delayAlertRecoverySubscriber;
 
     @PostConstruct
     public void initCleaner() {
@@ -39,7 +48,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
                 try {
                     lock.lock();
                     logger.debug("[initCleaner][before]sent alerts: {}", existingAlerts);
-                    existingAlerts.removeIf(alert -> alertRecovered(alert));
+                    existingAlerts.entrySet().removeIf(alert -> alertRecovered(alert.getKey()));
                     logger.debug("[initCleaner][after]send alerts: {}", existingAlerts);
                 } finally {
                     lock.unlock();
@@ -51,15 +60,16 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-        if(alert.getAlertType().delayedSendingTime() > 0) {
+        if(alert.getAlertType().delayedSendingTime() <= 0) {
             return;
         }
-        if(hasBeenSentOut(alert)) {
-            logger.debug("[doProcessAlert]Alert has been sent out once: {}", alert);
+        addToExistingSet(alert);
+        if(!needSend(alert)) {
+            logger.debug("[doProcessAlert]Alert should not send: {}", alert);
             return;
         }
-        logger.debug("[sendTaskBegin] {}", sendTaskBegin.get());
-        sendingAlerts.add(alert);
+        logger.debug("[sendTaskBegin] {}, {}", sendTaskBegin.get(), alert);
+        addToSendingSet(alert);
         if(sendTaskBegin.compareAndSet(false, true)) {
             logger.debug("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
             scheduleSendTask();
@@ -85,27 +95,53 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
         }, reportInterval, TimeUnit.MILLISECONDS);
     }
 
-    private boolean hasBeenSentOut(AlertEntity alert) {
+    private boolean needSend(AlertEntity alert) {
+        Pair<Long, Boolean> alertInfo = existingAlerts.get(alert);
+
+        long fistTime = alertInfo.getKey();
+        if(alert.getDate().getTime() - fistTime < alert.getAlertType().delayedSendingTime()) {
+            return false;
+        }
+
+        return !alertInfo.getValue();
+    }
+
+    private void addToExistingSet(AlertEntity alert) {
         try {
             lock.lock();
-            boolean result = existingAlerts.contains(alert);
+            Pair<Long, Boolean> info = existingAlerts.get(alert);
 
-            // replace the old alert (update alert time), add operation wont replace the existing one
-            if (result) {
+            if (info != null) {
                 existingAlerts.remove(alert);
+            } else {
+                // first appear
+                info = new Pair<>(alert.getDate().getTime(), false);
             }
-            existingAlerts.add(alert);
-
-            return result;
+            existingAlerts.put(alert, info);
         } finally {
             lock.unlock();
         }
     }
 
+    private void addToSendingSet(AlertEntity alert) {
+        try {
+            lock.lock();
+            sendingAlerts.add(alert);
+            Pair<Long, Boolean> info = existingAlerts.get(alert);
+            info.setValue(true);
+            existingAlerts.put(alert, info);
+        } finally {
+            lock.unlock();
+        }
+        if(alert.getAlertType().delayedSendingTime() != 0) {
+            //  延迟发布的要推送主动给AlertRecoverySubscriber，这边主动触发
+            delayAlertRecoverySubscriber.addDelayAlerts(alert);
+        }
+    }
 
     @VisibleForTesting
     public Set<AlertEntity> getExistingAlerts() {
-        return existingAlerts;
+        return existingAlerts.keySet();
     }
 
     @VisibleForTesting
