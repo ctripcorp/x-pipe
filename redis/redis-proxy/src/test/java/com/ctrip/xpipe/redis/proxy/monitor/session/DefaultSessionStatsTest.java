@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.proxy.monitor.session;
 
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
+import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.List;
 
@@ -21,7 +24,10 @@ public class DefaultSessionStatsTest extends AbstractRedisProxyServerTest {
 
     @Before
     public void beforeDefaultSessionStatsTest() {
-        sessionStats = new DefaultSessionStats(scheduled);
+        Session session = Mockito.mock(Session.class);
+        SessionEstablished sessionEstablished = Mockito.mock(SessionEstablished.class);
+        Mockito.when(session.getSessionState()).thenReturn(sessionEstablished);
+        sessionStats = new DefaultSessionStats(session, scheduled);
     }
 
     @Test

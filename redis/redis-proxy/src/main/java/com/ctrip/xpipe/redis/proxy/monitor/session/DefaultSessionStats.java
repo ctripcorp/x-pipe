@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.monitor.session;
 
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
@@ -32,8 +33,8 @@ public class DefaultSessionStats extends AbstractStats implements SessionStats {
 
     private List<AutoReadEvent> autoReadEvents = Lists.newLinkedList();
 
-    public DefaultSessionStats(ScheduledExecutorService scheduled) {
-        super(scheduled);
+    public DefaultSessionStats(Session session, ScheduledExecutorService scheduled) {
+        super(session, scheduled);
     }
 
     @Override
@@ -83,7 +84,7 @@ public class DefaultSessionStats extends AbstractStats implements SessionStats {
     }
 
     @Override
-    protected void doStart() {
+    protected void doStart() throws Exception {
         updateLastTime();
         super.doStart();
     }

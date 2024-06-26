@@ -30,7 +30,7 @@ public class DefaultSocketStatsTest extends AbstractRedisProxyServerTest {
         when(channel.isActive()).thenReturn(true);
         when(channel.remoteAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 6379));
         when(channel.localAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 6389));
-        SocketStats socketStats = new DefaultSocketStats(scheduled, session, proxyResourceManager.getSocketStatsManager());
+        SocketStats socketStats = new DefaultSocketStats(session, scheduled, proxyResourceManager.getSocketStatsManager());
         socketStats.start();
         sleep(1000);
         Assert.assertEquals(Lists.newArrayList("Empty"), socketStats.getSocketStatsResult().getResult());
