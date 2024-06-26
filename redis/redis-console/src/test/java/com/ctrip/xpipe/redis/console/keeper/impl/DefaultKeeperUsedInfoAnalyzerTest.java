@@ -75,6 +75,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         keeperContainerAnalyzerService.setConfigService(configService);
         keeperContainerAnalyzerService.setKeeperContainerService(keeperContainerService);
         keeperContainerAnalyzerService.setOrganizationService(organizationService);
+        keeperContainerAnalyzerService.setConsoleConfig(config);
         Mockito.when(azService.getAvailableZoneTblById(Mockito.anyLong())).thenReturn(new AzTbl().setAzName(""));
         keeperContainerAnalyzerService.setAzService(azService);
         List<ConfigModel> configModels = new ArrayList<>();
