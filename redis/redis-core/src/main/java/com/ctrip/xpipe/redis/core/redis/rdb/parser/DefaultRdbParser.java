@@ -162,12 +162,6 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
         return null;
     }
 
-    protected void notifyFinish() {
-        if (rdbParseContext.isCrdt() && !CollectionUtils.isEmpty(rdbParseContext.getIncompatibleKey())) {
-            throw new XpipeRuntimeException("incompatible key found: " + rdbParseContext.getIncompatibleKey());
-        }
-        super.notifyFinish();
-    }
 
     protected boolean isAuxFinish() {
         return auxFinished.get();

@@ -67,13 +67,11 @@ public interface RdbParseContext {
     boolean isCrdt();
 
     RdbParseContext setCrdtType(RdbCrdtType crdtType);
-    void setIncompatibleKey(String key);
-    List<String> getIncompatibleKey();
+
     RdbCrdtType getCrdtType();
 
     void clearCrdtType();
 
-    void clearIncompatibleKey();
 
 
     enum RdbType {

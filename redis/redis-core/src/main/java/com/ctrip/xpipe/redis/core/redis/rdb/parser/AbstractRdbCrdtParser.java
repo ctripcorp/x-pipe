@@ -537,7 +537,6 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                 }
             }
         }
-        context.setIncompatibleKey(new String(context.getKey().get()));
         EventMonitor.DEFAULT.logEvent("APPLIER.INCOMPATIBLE.KEY", new String(context.getKey().get()));
         return 0.0;
     }
