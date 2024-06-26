@@ -4,12 +4,16 @@ import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.mockito.Mockito.*;
 
@@ -27,6 +31,14 @@ public class DefaultTunnelMonitorTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultTunnelMonitorTest() throws Exception {
         tunnel = mock(Tunnel.class);
+        FrontendSession frontendSession = Mockito.mock(FrontendSession.class);
+        BackendSession backendSession = Mockito.mock(BackendSession.class);
+        SessionEstablished sessionEstablished = Mockito.mock(SessionEstablished.class);
+        Mockito.when(frontendSession.getSessionState()).thenReturn(sessionEstablished);
+        Mockito.when(backendSession.getSessionState()).thenReturn(sessionEstablished);
+
+        when(tunnel.frontend()).thenReturn(frontendSession);
+        when(tunnel.backend()).thenReturn(backendSession);
         TestProxyConfig testProxyConfig = (TestProxyConfig) proxyResourceManager.getProxyConfig();
         monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel, new DefaultTunnelRecorder());
     }

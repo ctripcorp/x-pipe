@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -80,20 +81,29 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             return;
         }
 
+        ChannelFuture connectionFuture;
         try {
             this.endpoint = selector.nextHop();
-        } catch (Exception e) {
+            connectionFuture = initChannel(endpoint);
+        } catch (Throwable th) {
             setSessionState(new SessionClosed(this));
-            throw e;
+            throw th;
         }
-        ChannelFuture connectionFuture = initChannel(endpoint);
+
         connectionFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if(future.isSuccess()) {
-                    onChannelEstablished(future.channel());
-                } else {
-                    logger.error("[tryConnect] fail to connect: {}, {}", getSessionMeta(), future.cause());
+                    try {
+                        // may OOM on ZstdEncoder init
+                        onChannelEstablished(future.channel());
+                    } catch (Throwable th) {
+                        logger.info("[tryConnect][connect success, but init fail] {}", getSessionMeta(), th);
+                        future.channel().close();
+                        setSessionState(new SessionClosed(DefaultBackendSession.this));
+                    }
+                } else if (null != future.channel() && future.channel().isRegistered()) {
+                    logger.error("[tryConnect][connect fail, retry] {}", getSessionMeta(), future.cause());
                     future.channel().eventLoop()
                             .schedule(new AbstractExceptionLogTask() {
                                 @Override
@@ -101,6 +111,9 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                                     connect();
                                 }
                             }, selector.selectCounts(), TimeUnit.MILLISECONDS);
+                } else {
+                    logger.error("[tryConnect][channel fail, no retry] {}", getSessionMeta(), future.cause());
+                    setSessionState(new SessionClosed(DefaultBackendSession.this));
                 }
             }
         });
@@ -143,6 +156,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     protected void onChannelEstablished(Channel channel) {
         setChannel(channel);
 
+        logger.debug("[onChannelEstablished] {}", getSessionMeta());
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
@@ -159,7 +173,13 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             sendAfterProtocol = null;
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
-        onSessionEstablished();
+        SessionState currentSessionState = getSessionState();
+        if (currentSessionState instanceof SessionClosing || currentSessionState instanceof SessionClosed) {
+            logger.info("[onChannelEstablished][but session {}] {}", currentSessionState, getSessionMeta());
+            release();
+        } else {
+            onSessionEstablished();
+        }
     }
 
     @Override

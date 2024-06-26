@@ -118,30 +118,29 @@ public class DefaultTunnelManager implements TunnelManager {
             }
         });
         tunnel.addObserver(this);
-        try {
-            initAndStart(tunnel);
-        } catch (Throwable th) {
-            logger.warn("[create][fail] {}", tunnel.identity());
+        if (!initAndStart(tunnel)) {
+            try {
+                logger.info("[create][fail] release: {}", tunnel.identity());
+                tunnel.release();
+            } catch (Throwable th) {
+                logger.warn("[create][release fail]", th);
+            }
         }
 
         return tunnel;
     }
 
-    private void initAndStart(Tunnel tunnel) {
+    private boolean initAndStart(Tunnel tunnel) {
         try {
             LifecycleHelper.initializeIfPossible(tunnel);
-        } catch (NoResourceException e){
-            logger.error("[initAndStart][init] {}", e.getMessage());
-        } catch (Exception e) {
-            logger.error("[initAndStart][init]", e);
-        }
-        try {
             LifecycleHelper.startIfPossible(tunnel);
-        } catch (NoResourceException e) {
-            logger.error("[initAndStart][start] {}", e.getMessage());
-        } catch (Exception e) {
-            logger.error("[initAndStart][start]", e);
+            return true;
+        } catch (NoResourceException e){
+            logger.error("[initAndStart] {}", e.getMessage());
+        } catch (Throwable e) {
+            logger.error("[initAndStart]", e);
         }
+        return false;
     }
 
     @Override

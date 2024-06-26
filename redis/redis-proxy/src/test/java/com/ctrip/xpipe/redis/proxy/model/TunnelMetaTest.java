@@ -17,9 +17,9 @@ public class TunnelMetaTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void testToString() {
-        SessionMeta frontend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), "frontend channel",
+        SessionMeta frontend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), 1L, "frontend channel",
                 newProxyEndpoint(true, false).getUri(), new SessionEstablished(null).name());
-        SessionMeta backend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), "backend channel",
+        SessionMeta backend = new SessionMeta(SESSION_TYPE.FRONTEND.name(), 1L, "backend channel",
                 newProxyEndpoint(true, false).getUri(), new SessionInit(null).name());
         TunnelMeta meta = new TunnelMeta(new TunnelIdentity(new EmbeddedChannel(), "ABC_DEF", "source"), new TunnelHalfEstablished(null).name(), protocol().getContent(), frontend, backend);
 
