@@ -156,6 +156,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     protected void onChannelEstablished(Channel channel) {
         setChannel(channel);
 
+        logger.debug("[onChannelEstablished] {}", getSessionMeta());
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }

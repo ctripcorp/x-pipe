@@ -15,6 +15,8 @@ import java.io.Serializable;
  */
 public class SessionMeta implements Serializable {
 
+    private long id;
+
     private String type;
 
     private String channel;
@@ -24,14 +26,16 @@ public class SessionMeta implements Serializable {
     private String state;
 
     public SessionMeta(Session session, ProxyEndpoint endpoint, SessionState state) {
+        this.id = session.getSessionId();
         this.type = session.getSessionType().name();
         this.channel = ChannelUtil.getDesc(session.getChannel());
         this.endpoint = endpoint.getUri();
         this.state = state.name();
     }
 
-    public SessionMeta(String type, String channel, String endpoint, String state) {
+    public SessionMeta(String type, long sessionId, String channel, String endpoint, String state) {
         this.type = type;
+        this.id = sessionId;
         this.channel = channel;
         this.endpoint = endpoint;
         this.state = state;
@@ -73,6 +77,13 @@ public class SessionMeta implements Serializable {
         return this;
     }
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
 
     @Override
     public String toString() {
