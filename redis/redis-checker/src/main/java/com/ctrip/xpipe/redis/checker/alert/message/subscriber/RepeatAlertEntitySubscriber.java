@@ -7,19 +7,15 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
-import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolder;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
-import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -104,22 +100,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
         @Override
         protected void doExecute() throws Exception {
-            Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(alerts);
-
-            for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {
-                if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
-                    continue;
-                }
-                logger.debug("[ScheduledSendRepeatAlertTask] Mail out: {}", mailGroup.getValue());
-                Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
-                transmitAlterToCheckerLeader(true, alerts);
-                if(alerts.size() == 0) {
-                    continue;
-                }
-                AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, true);
-                emailMessage(message);
-                tryMetric(mailGroup.getValue(), true);
-            }
+            doSend(alerts, true);
             future().setSuccess();
         }
 
