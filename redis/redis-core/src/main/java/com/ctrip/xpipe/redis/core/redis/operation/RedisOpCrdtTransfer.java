@@ -17,11 +17,21 @@ public interface RedisOpCrdtTransfer {
     }
 
     default byte[] extractValue(byte[] arg) {
-        String value = new String(arg);
-        String[] split = value.split(":");
-        if (split.length != 3) {
-            return null;
+        int pre = -1, cur = -1;
+        int count = 0;
+        for (int i = 0; i < arg.length; i++) {
+            if (arg[i] == ':') {
+                count++;
+                pre = cur;
+                cur = i;
+            }
+            if (count == 2) {
+                int length = Integer.valueOf(new String(arg, pre + 1, cur - pre - 1, Codec.defaultCharset));
+                byte[] res = new byte[length];
+                System.arraycopy(arg, cur + 1, res, 0, length);
+                return res;
+            }
         }
-        return split[2].getBytes();
+        throw new IllegalArgumentException("illegal crdt value" + new String(arg));
     }
 }

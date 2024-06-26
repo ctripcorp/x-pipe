@@ -162,7 +162,7 @@ public interface RdbParseContext {
     enum RdbCrdtType {
         // "crdt_regr", "crdt_setr", "crdt_hash", "crdt_rc_v", "crdt_ss_v"
 
-        // "crdt_regr", "crdt_sett", "crdt_htom", "crdt_rc_t", "crdt_ss_t"
+        // "crdt_regt", "crdt_sett", "crdt_htom", "crdt_rc_t", "crdt_ss_t"
         REGISTER(generateTypeId("crdt_regr", 0), false, RdbCrdtRegisterParser::new),
         REGISTER_TOMBSTONE(generateTypeId("crdt_regt", 0), true, RdbCrdtRegisterParser::new),
         RC(generateTypeId("crdt_rc_v", 0), false, RdbCrdtRcParser::new),

@@ -106,7 +106,7 @@ public class RdbCrdtSortedSetParser extends AbstractRdbCrdtParser<byte[]> implem
                 case READ_SCORE:
                     score = parseRc(byteBuf);
                     if (score != null) {
-                        propagateCmdIfNeed(member, ByteBuffer.wrap(score).getDouble());
+                        propagateCmdIfNeed(member, score);
                         readValueCount++;
                         if (readValueCount >= valueLength.getLenValue()) {
                             state = STATE.READ_END;
@@ -129,22 +129,15 @@ public class RdbCrdtSortedSetParser extends AbstractRdbCrdtParser<byte[]> implem
         return null;
     }
 
-    private void propagateCmdIfNeed(byte[] member, double score) {
+    private void propagateCmdIfNeed(byte[] member, byte[] score) {
         if (null == member || null == context.getKey() || context.getCrdtType().isTombstone()) {
             return;
         }
 
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.ZADD,
-                new byte[][]{RedisOpType.ZADD.name().getBytes(), context.getKey().get(), getScore(score).getBytes(), member},
+                new byte[][]{RedisOpType.ZADD.name().getBytes(), context.getKey().get(), score, member},
                 context.getKey(), member));
-    }
-
-    private String getScore(double score) {
-        if (score % 1 == 0 && score <= Long.MAX_VALUE && score >= Long.MIN_VALUE) {
-            return Long.toString((long) score);
-        }
-        return Double.toString(score);
     }
 
     @Override

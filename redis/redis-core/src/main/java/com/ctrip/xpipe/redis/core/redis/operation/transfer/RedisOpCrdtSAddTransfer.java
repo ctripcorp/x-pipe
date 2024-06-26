@@ -19,6 +19,9 @@ public class RedisOpCrdtSAddTransfer implements RedisOpCrdtTransfer {
     @Override
     public Pair<RedisOpType, byte[][]> transformCrdtRedisOp(RedisOpType redisOpType, byte[][] args) {
         // "CRDT.SADD" "hailuset" "5" "1706183385248" "5:27" "hello" "world" -> "SADD" "hailuset" "hello" "world"
+        if (args.length < 6) {
+            return Pair.of(RedisOpType.UNKNOWN, args);
+        }
         byte[][] commonArgs = new byte[args.length - 3][];
         commonArgs[0] = RedisOpType.SADD.name().getBytes();
         commonArgs[1] = args[1];

@@ -92,7 +92,6 @@ public enum RedisOpSingleKeyEnum {
     CRDT_RC(RedisOpType.CRDT_RC, 1, 2),
     CRDT_HSET(RedisOpType.CRDT_HSET, 1, 2),
     CRDT_REM_HASH(RedisOpType.CRDT_REM_HASH, 1, 2),
-    CRDT_HDEL(RedisOpType.CRDT_HDEL, 1, 2),
     CRDT_SADD(RedisOpType.CRDT_SADD, 1, 2),
     CRDT_SREM(RedisOpType.CRDT_SREM, 1, 2),
     CRDT_ZADD(RedisOpType.CRDT_ZADD, 1, 2),

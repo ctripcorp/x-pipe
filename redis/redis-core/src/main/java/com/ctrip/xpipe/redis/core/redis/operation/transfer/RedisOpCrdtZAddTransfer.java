@@ -38,9 +38,10 @@ public class RedisOpCrdtZAddTransfer implements RedisOpCrdtTransfer {
 
     private byte[] extractScore(byte[] arg) {
         String value = new String(arg);
+        value = value.split(",")[0];
         String[] split = value.split(":");
         if (split.length != 2) {
-            return null;
+            return "".getBytes();
         }
         return split[1].getBytes();
     }
