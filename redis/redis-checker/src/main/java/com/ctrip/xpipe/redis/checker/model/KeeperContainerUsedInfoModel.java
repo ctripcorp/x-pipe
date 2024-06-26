@@ -42,6 +42,10 @@ public class KeeperContainerUsedInfoModel {
 
     private long diskUsed;
 
+    private boolean keeperContainerHealth = true;
+
+    private double expectFullSyncTime;
+
     private String diskType = "default";
 
     public KeeperContainerUsedInfoModel() {
@@ -282,6 +286,24 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
+    public boolean isKeeperContainerHealth() {
+        return keeperContainerHealth;
+    }
+
+    public KeeperContainerUsedInfoModel setKeeperContainerHealth(boolean keeperContainerHealth) {
+        this.keeperContainerHealth = keeperContainerHealth;
+        return this;
+    }
+
+    public double getExpectFullSyncTime() {
+        return expectFullSyncTime;
+    }
+
+    public KeeperContainerUsedInfoModel setExpectFullSyncTime(double expectFullSyncTime) {
+        this.expectFullSyncTime = expectFullSyncTime;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "KeeperContainerUsedInfoModel{" +
@@ -303,6 +325,8 @@ public class KeeperContainerUsedInfoModel {
                 ", diskAvailable=" + diskAvailable +
                 ", diskSize=" + diskSize +
                 ", diskUsed=" + diskUsed +
+                ", keeperContainerHealth=" + keeperContainerHealth +
+                ", expectFullSyncTime=" + expectFullSyncTime +
                 ", diskType='" + diskType + '\'' +
                 '}';
     }

@@ -41,23 +41,12 @@ public class RedisUsedMemoryCollector implements RedisInfoActionListener, Keeper
         Long dbSize = extractor.getSwapUsedDbSize();
         Long maxMemory = extractor.getMaxMemory();
         Long usedMemory = extractor.getUsedMemory();
-        if (dbSize == null || usedMemory < maxMemory) return usedMemory;
+        if (dbSize == null) return usedMemory;
+        if (usedMemory < maxMemory) return usedMemory + dbSize;
         if (!StringUtil.isEmpty(swapVersion) && StringUtil.compareVersionSize(swapVersion, ROR_DB_VERSION) >= 0) {
             return dbSize + maxMemory;
         }
-        String keysSpaceDb0 = extractor.extract("db0");
-        if (StringUtil.isEmpty(keysSpaceDb0)) return 0;
-
-        String[] keySpaces = keysSpaceDb0.split(",");
-        String[] keys1 = keySpaces[0].split("=");
-        String[] keys2 = keySpaces[1].split("=");
-        if (!keys1[0].equalsIgnoreCase("keys") || !keys2[0].equalsIgnoreCase("evicts")) {
-            return usedMemory + dbSize * 3;
-        }
-
-        long evicts = Long.parseLong(keys2[1]);
-        long keys = Long.parseLong(keys1[1]);
-        return keys == 0 ? dbSize * 3 : (keys + evicts) / keys * maxMemory;
+        return usedMemory + dbSize * 3;
     }
 
     @Override

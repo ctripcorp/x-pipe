@@ -82,6 +82,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
         models.add(model);
         service.beginMigrateKeeperContainers(models);
         Assert.assertEquals(3, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(3, service.getMigrationProcess().get(0).getFinishedShards().size());
 
         models.clear();
         model.setSwitchActive(false);
@@ -89,6 +90,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
         models.add(model);
         service.beginMigrateKeeperContainers(models);
         Assert.assertEquals(6, service.getMigrationProcess().get(0).getMigrateKeeperCompleteCount());
+        Assert.assertEquals(6, service.getMigrationProcess().get(0).getFinishedShards().size());
     }
 
     @Test

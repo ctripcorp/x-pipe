@@ -45,14 +45,7 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
                 dataset: $scope.originData
             });
         }
-        KeeperContainerService.getKeepercontainerFullSynchronizationTime().then(function(response) {
-            $scope.fullSynchronizationTime = response.message;
-        })
     })
-
-    $scope.getKeepercontainerFullSynchronizationTime = function () {
-        return $scope.fullSynchronizationTime;
-    }
 
     $scope.getLastUpdateTime = function () {
         if ($scope.lastUpdateTime == null) {

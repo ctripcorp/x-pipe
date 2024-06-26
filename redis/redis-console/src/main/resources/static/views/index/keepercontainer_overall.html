@@ -20,7 +20,7 @@
                 </td>
                 <td data-title="'shard'" filter="{ 'key.shardName' : 'text' }">{{info.key.shardName}}</td>
                 <td data-title="'上游流量(KB/S)'" sortable="'value.inputFlow'">{{info.value.inputFlow | number:2}}</td>
-                <td data-title="'上游数据量(KB)'" sortable="'value.peerData'">{{info.value.peerData/1024 | number:2}}</td>
+                <td data-title="'上游数据量(MB)'" sortable="'value.peerData'">{{info.value.peerData/1024/1024 | number:2}}</td>
                 <td data-title="'isActive'" filter="{ 'key.active' : 'text' }">{{info.key.active}}</td>
             </tr>
         </table>

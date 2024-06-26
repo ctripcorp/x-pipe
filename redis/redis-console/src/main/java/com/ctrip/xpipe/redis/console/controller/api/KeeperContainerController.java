@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_IO_RATE;
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 
 @RestController
@@ -41,11 +42,6 @@ public class KeeperContainerController extends AbstractConsoleController{
         return analyzer.getCurrentDcKeeperContainerUsedInfoModelsList();
     }
 
-    @RequestMapping(value = "/keepercontainer/full/synchronization/time", method = RequestMethod.GET)
-    public List<Integer> getMaxKeeperContainerFullSynchronizationTime() {
-        return analyzer.getCurrentDcMaxKeeperContainerFullSynchronizationTime();
-    }
-
     @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.POST)
     public RetMessage setDiskType(@RequestBody ConfigModel configModel) {
         try {
@@ -62,6 +58,31 @@ public class KeeperContainerController extends AbstractConsoleController{
         try {
             Map<String, String> map = new HashMap<>();
             List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD);
+            for (ConfigModel configModel : configs) {
+                map.put(configModel.getSubKey(), configModel.getVal());
+            }
+            return map.toString();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = "/keepercontainer/ioRate", method = RequestMethod.POST)
+    public RetMessage setIORate(@RequestBody ConfigModel configModel) {
+        try {
+            configModel.setKey(KEY_KEEPER_CONTAINER_IO_RATE);
+            configService.setKeyKeeperContainerIoRate(configModel);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/keepercontainer/ioRate", method = RequestMethod.GET)
+    public String getIORate() {
+        try {
+            Map<String, String> map = new HashMap<>();
+            List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_IO_RATE);
             for (ConfigModel configModel : configs) {
                 map.put(configModel.getSubKey(), configModel.getVal());
             }

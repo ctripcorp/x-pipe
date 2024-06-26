@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.keeper.Command.AbstractGetAllDcCommand;
-import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerFullSynchronizationTimeGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.Command.MigrationKeeperContainerDetailInfoGetCommand;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
@@ -30,18 +29,6 @@ public class GetAllDcCommandTest {
     private RestTemplate restTemplate;
 
     private static final String domain = "domain";
-
-    @Test
-    public void keeperContainerFullSynchronizationTimeGetCommandTest() throws ExecutionException, InterruptedException {
-        ResponseEntity<List<Integer>> response = new ResponseEntity<>(new ArrayList<>(), HttpStatus.OK);
-        KeeperContainerFullSynchronizationTimeGetCommand command = new KeeperContainerFullSynchronizationTimeGetCommand(restTemplate);
-        Mockito.when(restTemplate.exchange(domain + "/api/keepercontainer/full/synchronization/time", HttpMethod.GET, null,
-                new ParameterizedTypeReference<List<Integer>>() {})).thenReturn(response);
-        AbstractGetAllDcCommand<List<Integer>> clone = command.clone();
-        clone.setDomain("domain");
-        List<Integer> list = clone.execute().get();
-        Assert.assertNotNull(list);
-    }
 
     @Test
     public void keeperContainerInfoGetCommandTest() throws ExecutionException, InterruptedException {

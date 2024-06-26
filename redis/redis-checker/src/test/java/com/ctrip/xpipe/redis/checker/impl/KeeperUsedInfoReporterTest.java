@@ -143,6 +143,25 @@ public class KeeperUsedInfoReporterTest {
     }
 
     @Test
+    public void testKeeperContainerUnHealthInfo() {
+        Mockito.when(keeperContainerService.getKeeperDiskInfo(anyString())).thenReturn(null);
+        keeperContainerInfoReporter.
+                reportKeeperContainerInfo();
+        Mockito.verify(checkerConsoleService, Mockito.times(1))
+                .reportKeeperContainerInfo(anyString(), resultCaptor.capture(), Mockito.anyInt());
+
+        Assert.assertEquals(3, resultCaptor.getValue().size());
+        for (KeeperContainerUsedInfoModel keeperContainerUsedInfoModel : resultCaptor.getValue()) {
+            if ("127.0.0.1".equals(keeperContainerUsedInfoModel.getKeeperIp())) {
+                long activeInputFlow = keeperContainerUsedInfoModel.getActiveInputFlow();
+                long totalInputFlow = keeperContainerUsedInfoModel.getTotalInputFlow();
+                Assert.assertEquals(4, activeInputFlow);
+                Assert.assertEquals(6 ,totalInputFlow);
+            }
+        }
+    }
+
+    @Test
     public void DcClusterShardActive(){
         DcClusterShardKeeper active = new DcClusterShardKeeper();
         active.setActive(true);

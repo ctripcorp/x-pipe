@@ -56,16 +56,20 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                         if (shardModelService.switchActiveKeeper(srcKeeperContainerIp, targetKeeperContainerIp, shardModel)) {
                             keeperContainer.migrateKeeperCompleteCountIncrease();
                             event = KEEPER_SWITCH_MASTER_SUCCESS;
+                            keeperContainer.addFinishedShard(migrateShard);
                         } else {
                             event = KEEPER_SWITCH_MASTER_FAIL;
+                            keeperContainer.addFailedShard(migrateShard);
                         }
                     }else if (keeperContainer.isKeeperPairOverload()) {
                         if (shardModelService.migrateBackupKeeper(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
                                 srcKeeperContainerIp, targetKeeperContainerIp)) {
                             keeperContainer.migrateKeeperCompleteCountIncrease();
                             event = KEEPER_MIGRATION_BACKUP_SUCCESS;
+                            keeperContainer.addFinishedShard(migrateShard);
                         } else {
                             event = KEEPER_MIGRATION_BACKUP_FAIL;
+                            keeperContainer.addFailedShard(migrateShard);
                         }
                     }else {
                         try {
@@ -73,18 +77,21 @@ public class DefaultKeeperContainerMigrationService implements KeeperContainerMi
                                     srcKeeperContainerIp, targetKeeperContainerIp)) {
                                 keeperContainer.migrateKeeperCompleteCountIncrease();
                                 event = KEEPER_MIGRATION_ACTIVE_SUCCESS;
+                                keeperContainer.addFinishedShard(migrateShard);
                             } else {
                                 event = KEEPER_MIGRATION_ACTIVE_FAIL;
+                                keeperContainer.addFailedShard(migrateShard);
                             }
                         } catch (Throwable th) {
                             event = KEEPER_MIGRATION_ACTIVE_ROLLBACK_ERROR;
+                            keeperContainer.addFailedShard(migrateShard);
                         }
                     }
                     CatEventMonitor.DEFAULT.logEvent(KEEPER_MIGRATION, event);
                     logger.info("[migrateKeeperContainers][{}-{}-{}][{}->{}] {}",
                             migrateShard.getDcId(), migrateShard.getClusterId(), migrateShard.getShardId(), srcKeeperContainerIp, targetKeeperContainerIp, event);
-                    keeperContainer.addFinishedShard(migrateShard);
                 }
+                keeperContainer.setMigratingShard(null);
             }
             return true;
         } finally {
