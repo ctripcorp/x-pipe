@@ -1,14 +1,16 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.Collections;
@@ -33,6 +35,9 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
     private ConfigService service;
 
     private ConfigModel configModel;
+
+    @SpyBean
+    private ConsoleConfig consoleConfig;
 
     @Before
     public void beforeDefaultConsoleDbConfigTest() {
@@ -146,6 +151,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
     @Test
     public void testShouldClusterAlert() throws DalException {
+        Mockito.when(consoleConfig.getRedisConfCheckIntervalMilli()).thenReturn(-50000);
         configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
         configModel.setSubKey("Cluster1");
 
@@ -161,6 +167,32 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         consoleDbConfig.refreshAlertWhiteListCache();
         Set<String> whitelist = consoleDbConfig.clusterAlertWhiteList();
         Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
+    }
+
+    @Test
+    public void testDelay() throws DalException {
+        Mockito.when(consoleConfig.getRedisConfCheckIntervalMilli()).thenReturn(-4500);
+
+        configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
+        configModel.setSubKey("Cluster1");
+
+        service.stopClusterAlert(configModel, 1);
+        configModel.setSubKey("cluster2");
+
+        service.stopClusterAlert(configModel, 1);
+        service.startClusterAlert(configModel);
+
+        configModel.setSubKey("cluster3");
+        service.startClusterAlert(configModel);
+
+        consoleDbConfig.refreshAlertWhiteListCache();
+        Set<String> whitelist = consoleDbConfig.clusterAlertWhiteList();
+        Assert.assertEquals(whitelist.size(), 3);
+
+        sleep(1000);
+        consoleDbConfig.refreshAlertWhiteListCache();
+        whitelist = consoleDbConfig.clusterAlertWhiteList();
+        Assert.assertEquals(whitelist.size(), 1);
     }
 
     @Test
