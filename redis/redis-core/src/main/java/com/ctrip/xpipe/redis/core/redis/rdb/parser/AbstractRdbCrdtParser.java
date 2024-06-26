@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.List;
  * @date 2024/6/7 14:02
  */
 public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> implements RdbParser<T> {
+    private Logger logger = LoggerFactory.getLogger(AbstractRdbCrdtParser.class);
 
     protected static final int LWW_TYPE = 0;
     protected static final int ORSET_TYPE = 1;
@@ -63,6 +66,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
     private int readValueCount;
     private byte[] val;
     private double rcValue;
+    private byte[] rcString;
 
     enum CRDT_READ_STATE {
         READ_INIT,
@@ -235,6 +239,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     gid = null;
                     val = null;
                     rcValue = 0.0;
+                    rcString = null;
                     valueLength = null;
                     currentOperateType = null;
                     currentDataType = null;
@@ -284,7 +289,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     break;
                 case READ_DATA_ADD:
                     if ((currentOperateType.getLenValue() & TAG_A) == TAG_A) {
-                        Number addNumber = parseCounter(byteBuf, counterType.getLenValue());
+                        Number addNumber = (Number) parseCounter(byteBuf, counterType.getLenValue());
                         if (addNumber == null) {
                             break;
                         }
@@ -294,7 +299,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     break;
                 case READ_DATA_DECR:
                     if ((currentOperateType.getLenValue() & TAG_D) == TAG_D) {
-                        Number decrNumber = parseCounter(byteBuf, counterType.getLenValue());
+                        Number decrNumber = (Number) parseCounter(byteBuf, counterType.getLenValue());
                         if (decrNumber == null) {
                             break;
                         }
@@ -304,16 +309,23 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     break;
                 case READ_DATA_BASE:
                     if ((currentOperateType.getLenValue() & TAG_B) == TAG_B) {
-                        Number baseNumber = parseBase(byteBuf);
+                        Object baseNumber = parseBase(byteBuf);
                         if (baseNumber == null) {
                             break;
                         }
-                        rcValue += baseNumber.doubleValue();
+                        if (baseNumber instanceof Number) {
+                            rcValue += ((Number) baseNumber).doubleValue();
+                        } else {
+                            rcString = baseNumber.toString().getBytes();
+                        }
                     }
                     readValueCount++;
                     if (readValueCount == valueLength.getLenValue()) {
-                        val = ByteBuffer.allocate(8).putDouble(rcValue).array();
                         rcState = RC_STATE.READ_INIT;
+                        if (rcString != null) {
+                            return rcString;
+                        }
+                        val = trim(ByteBuffer.allocate(8).putDouble(rcValue).array());
                         return val;
                     } else {
                         rcState = RC_STATE.READ_GID;
@@ -322,6 +334,14 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
         }
 
         return val;
+    }
+
+    private byte[] trim(byte[] val) {
+        double value = ByteBuffer.wrap(val).getDouble();
+        if (value % 1 == 0 && value <= Long.MAX_VALUE && value >= Long.MIN_VALUE) {
+            return Long.toString((long) value).getBytes();
+        }
+        return Double.toString(ByteBuffer.wrap(val).getDouble()).getBytes();
     }
 
     protected byte[] parseVectorClock(ByteBuf byteBuf, int version) {
@@ -404,7 +424,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
 
     private READ_VALUE_STATE readValueState = READ_VALUE_STATE.READ_VALUE_INIT;
 
-    private Number parseBase(ByteBuf byteBuf) {
+    private Object parseBase(ByteBuf byteBuf) {
         while (byteBuf.readableBytes() > 0) {
             switch (readValueState) {
                 case READ_VALUE_INIT:
@@ -418,7 +438,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     }
                     break;
                 case READ_VALUE:
-                    Number value = loadValue(byteBuf, valueType.getLenValue());
+                    Object value = loadValue(byteBuf, valueType.getLenValue());
                     if (value != null) {
                         readValueState = READ_VALUE_STATE.READ_VALUE_INIT;
                         valueType = null;
@@ -429,7 +449,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
         return null;
     }
 
-    private Number parseCounter(ByteBuf byteBuf, int counterType) {
+    private Object parseCounter(ByteBuf byteBuf, int counterType) {
         while (byteBuf.readableBytes() > 0) {
             switch (readValueState) {
                 case READ_VALUE_INIT:
@@ -442,7 +462,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                     }
                     break;
                 case READ_VALUE:
-                    Number value = loadValue(byteBuf, counterType);
+                    Object value = loadValue(byteBuf, counterType);
                     if (value != null) {
                         readValueState = READ_VALUE_STATE.READ_VALUE_INIT;
                         return value;
@@ -460,7 +480,7 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
         return null;
     }
 
-    private Number loadValue(ByteBuf byteBuf, int type) {
+    private Object loadValue(ByteBuf byteBuf, int type) {
         switch (type) {
             case VALUE_TYPE_LONGLONG:
                 return loadLong(byteBuf);
@@ -469,7 +489,11 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
             case VALUE_TYPE_SDS:
                 byte[] byteValue = parseString(byteBuf);
                 if (byteValue != null) {
-                    return Double.parseDouble(new String(byteValue));
+                    try {
+                        return Double.parseDouble(new String(byteValue));
+                    } catch (Exception e) {
+                        return new String(byteValue);
+                    }
                 }
                 return null;
             case VALUE_TYPE_LONGDOUBLE:
@@ -508,11 +532,11 @@ public abstract class AbstractRdbCrdtParser<T> extends AbstractRdbParser<T> impl
                 Double value = in.getSignificand().doubleValue()
                         * Math.pow(2D, in.getExponent().doubleValue());
                 if (!value.isInfinite() && !value.isNaN()) {
+                    logger.debug("decode long double value: {} , key", value, context.getKey());
                     return value;
                 }
             }
         }
-        context.setIncompatibleKey(new String(context.getKey().get()));
         EventMonitor.DEFAULT.logEvent("APPLIER.INCOMPATIBLE.KEY", new String(context.getKey().get()));
         return 0.0;
     }

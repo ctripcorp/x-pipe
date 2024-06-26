@@ -226,16 +226,6 @@ public class DefaultRdbParseContext implements RdbParseContext {
     }
 
     @Override
-    public void setIncompatibleKey(String key) {
-        incompatibleKeys.add(key);
-    }
-
-    @Override
-    public List<String> getIncompatibleKey() {
-        return incompatibleKeys;
-    }
-
-    @Override
     public RdbCrdtType getCrdtType() {
         return crdtType.get();
     }
@@ -243,10 +233,5 @@ public class DefaultRdbParseContext implements RdbParseContext {
     @Override
     public void clearCrdtType() {
         this.crdtType.set(null);
-    }
-
-    @Override
-    public void clearIncompatibleKey() {
-        incompatibleKeys.clear();
     }
 }
