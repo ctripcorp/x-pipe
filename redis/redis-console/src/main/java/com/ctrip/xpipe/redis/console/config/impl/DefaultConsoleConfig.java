@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.EncryptUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -111,16 +112,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
-    private static final String KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI = "migration.process.report.interval.milli";
-    private static final String KEY_MIGRATION_PROCESS_REPORT_OPEN = "migration.process.report.open";
-    private static final String KEY_MIGRATION_PROCESS_REPORT_URL = "migration.process.report.url";
-    private static final String KEY_MIGRATION_BREAK_DOWN_DC= "migration.break.down.dc";
-
-    private static final String KEY_MIGRATION_RESULT_REPORT_URL = "migration.result.report.url";
-    private static final String KEY_MIGRATION_RESULT_REPORT_Retry_TIMES = "migration.result.report.retry.times";
-    private static final String KEY_MIGRATION_RESULT_REPORT_TOKEN = "migration.result.report.token";
-    private static final String KEY_MIGRATION_RESULT_REPORT_OPEN = "migration.result.report.open";
-    private static final String KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI = "migration.result.report.interval.milli";
     private static final String KEY_CONSOLE_KEEPER_PAIR_OVERLOAD_FACTOR = "console.keeper.container.pair.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_DISK_OVERLOAD_FACTOR = "console.keeper.container.disk.overload.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE = "console.keeper.container.io.rate";
@@ -724,49 +715,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int monitorUnregisterProtectCount() {
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
-    }
-
-    @Override
-    public boolean isMigrationProcessReportOpen() {
-        return getBooleanProperty(KEY_MIGRATION_PROCESS_REPORT_OPEN, false);
-    }
-
-    @Override
-    public String getKeyMigrationProcessReportUrl() {
-        return getProperty(KEY_MIGRATION_PROCESS_REPORT_URL, "127.0.0.1:8080");
-    }
-
-    @Override
-    public long getMigrationProcessReportIntervalMill() {
-        return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
-    }
-
-    public String getBreakDownDc() {
-        return getProperty(KEY_MIGRATION_BREAK_DOWN_DC, "jq");
-    }
-
-    @Override
-    public String getKeyMigrationResultReportUrl() {
-        return getProperty(KEY_MIGRATION_RESULT_REPORT_URL, "127.0.0.1:8080");
-    }
-
-    @Override
-    public String getKeyMigrationResultReportToken() {
-        return getProperty(KEY_MIGRATION_RESULT_REPORT_TOKEN, "");
-    }
-
-    @Override
-    public boolean isMigrationResultReportOpen() {
-        return getBooleanProperty(KEY_MIGRATION_RESULT_REPORT_OPEN, false);
-    }
-
-    @Override
-    public int getKeyMigrationResultReportRetryTimes() {
-        return getIntProperty(KEY_MIGRATION_RESULT_REPORT_Retry_TIMES, 3);
-    }
-    @Override
-    public long getMigrationResultReportIntervalMill() {
-        return getLongProperty(KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI, 10000L);
     }
 
     @Override
