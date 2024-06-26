@@ -47,10 +47,13 @@ public class DefaultMigrationProcessReporterTest {
     @Mock
     protected ConsoleConfig consoleConfig;
 
+    @Mock
+    protected MigrationReporterConfig migrationReporterConfig;
+
     @Before
     public void before() {
-        Mockito.when(consoleConfig.getKeyMigrationProcessReportUrl()).thenReturn("127.0.0.1:8080");
-        Mockito.when(consoleConfig.getBreakDownDc()).thenReturn("jq");
+        Mockito.when(migrationReporterConfig.getKeyMigrationProcessReportUrl()).thenReturn("127.0.0.1:8080");
+        Mockito.when(migrationReporterConfig.getBreakDownDc()).thenReturn("jq");
         Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
                 migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class)))
