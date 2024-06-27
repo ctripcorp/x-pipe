@@ -60,6 +60,8 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
 
     private DefaultHttpService httpService =  new DefaultHttpService();
 
+    @Autowired
+    private MigrationReporterConfig migrationReporterConfig;
 
     @PostConstruct
     public void init() {
@@ -91,11 +93,11 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
         });
 
         MigrationResultReportModel migrationResultReportModel = new MigrationResultReportModel().setRequest_body(migrationResult)
-                                                .setAccess_token(consoleConfig.getKeyMigrationResultReportToken());
+                                                .setAccess_token(migrationReporterConfig.getKeyMigrationResultReportToken());
 
         logger.debug("[DefaultMigrationResultReporter] report to noc {}", JsonCodec.DEFAULT.encode(migrationResultReportModel));
         ResponseEntity<NocReportResponseModel> response
-                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationResultReportUrl(), migrationResultReportModel, NocReportResponseModel.class);
+                = httpService.getRestTemplate().postForEntity(migrationReporterConfig.getKeyMigrationResultReportUrl(), migrationResultReportModel, NocReportResponseModel.class);
         if (response != null && response.getBody() != null && response.getBody().getCode() != 200) {
             logger.warn("[reportToNoc] send migration result fail! migration result: {}, result:{}", migrationResult, response.getBody());
         }
@@ -103,18 +105,18 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
 
     @Override
     protected boolean shouldDoAction() {
-        logger.debug("[DefaultMigrationResultReporter]get switch {}", consoleConfig.isMigrationResultReportOpen());
-        return consoleConfig.isMigrationResultReportOpen() && super.shouldDoAction();
+        logger.debug("[DefaultMigrationResultReporter]get switch {}", migrationReporterConfig.isMigrationResultReportOpen());
+        return migrationReporterConfig.isMigrationResultReportOpen() && super.shouldDoAction();
     }
 
     @Override
     protected long getIntervalMilli() {
-        return consoleConfig.getMigrationProcessReportIntervalMill();
+        return migrationReporterConfig.getMigrationProcessReportIntervalMill();
     }
 
     @Override
     protected long getLeastIntervalMilli() {
-        return consoleConfig.getMigrationProcessReportIntervalMill();
+        return migrationReporterConfig.getMigrationProcessReportIntervalMill();
     }
 
     @Override
