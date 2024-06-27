@@ -45,11 +45,15 @@ public class DefaultMigrationResultReporterTest {
     @Mock
     protected ConsoleConfig consoleConfig;
 
+    @Mock
+    protected MigrationReporterConfig migrationReporterConfig;
+
     @Captor
     ArgumentCaptor<MigrationResultReportModel> migrationResultReportModelArgumentCaptor;
 
+
     @Before
-    public void before() {
+    public void before() throws NoSuchFieldException, IllegalAccessException {
         Map<Long, String> dcIdNameMap = new HashMap<>();
         dcIdNameMap.put(1L, "jq");
         dcIdNameMap.put(2L, "oy");
@@ -80,8 +84,8 @@ public class DefaultMigrationResultReporterTest {
         migrationClusterTbls.add(new MigrationClusterTbl().setCluster(new ClusterTbl().setClusterName("cluster13").setClusterOrgId(15L)).setOperator("xpipe").setSourceDcId(1).setDestinationDcId(2).setMigrationEventId(114).setId(13).setStatus("ForceEnd").setStartTime(startTime).setEndTime(endTime).setMigrationEvent(new MigrationEventTbl().setOperator("xpipe")));
         Mockito.when(migrationService.getLatestMigrationClusters(Mockito.anyInt())).thenReturn(migrationClusterTbls);
 
-        Mockito.when(consoleConfig.getKeyMigrationResultReportUrl()).thenReturn("127.0.0.1:8080");
-        Mockito.when(consoleConfig.getKeyMigrationResultReportToken()).thenReturn("bbbb");
+        Mockito.when(migrationReporterConfig.getKeyMigrationResultReportUrl()).thenReturn("127.0.0.1:8080");
+        Mockito.when(migrationReporterConfig.getKeyMigrationResultReportToken()).thenReturn("bbbb");
         Mockito.when(consoleConfig.getConsoleDomain()).thenReturn("127.0.0.1:8080");
 
 

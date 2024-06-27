@@ -160,24 +160,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int monitorUnregisterProtectCount();
 
-	boolean isMigrationProcessReportOpen();
-
-	String getBreakDownDc();
-
-	String getKeyMigrationProcessReportUrl();
-
-    String getKeyMigrationResultReportUrl();
-
-    String getKeyMigrationResultReportToken();
-
-	boolean isMigrationResultReportOpen();
-
-	int getKeyMigrationResultReportRetryTimes();
-
-    long getMigrationProcessReportIntervalMill();
-
-	long getMigrationResultReportIntervalMill();
-
 	boolean isAutoMigrateOverloadKeeperContainerOpen();
 
 	long getAutoMigrateOverloadKeeperContainerIntervalMilli();

@@ -26,6 +26,8 @@ public interface Session extends Lifecycle, Releasable, Observable {
 
     void markUnReadable();
 
+    long getSessionId();
+
     SessionMeta getSessionMeta();
 
     SESSION_TYPE getSessionType();

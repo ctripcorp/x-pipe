@@ -20,8 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
-    private Session session;
-
     private int localPort = -1, remotePort = -1;
 
     private static final SocketStatsResult EMPTY_ONE = new SocketStatsResult(Lists.newArrayList("Empty"));
@@ -30,9 +28,8 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
     private AtomicReference<SocketStatsResult> result = new AtomicReference<>(EMPTY_ONE);
 
-    public DefaultSocketStats(ScheduledExecutorService scheduled, Session session, SocketStatsManager socketStatsManager) {
-        super(scheduled);
-        this.session = session;
+    public DefaultSocketStats(Session session, ScheduledExecutorService scheduled, SocketStatsManager socketStatsManager) {
+        super(session, scheduled);
         this.socketStatsManager = socketStatsManager;
     }
 
@@ -43,7 +40,7 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
     @Override
     protected void doTask() {
-        Channel channel = session.getChannel();
+        Channel channel = getSession().getChannel();
         if(channel == null || !channel.isActive()) {
             logger.debug("[doTask] Channel null");
             return;
