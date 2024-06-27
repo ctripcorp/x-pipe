@@ -45,10 +45,10 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
-        logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
+        logger.debug("[doChannelRead][ProxyProtocol][{}] {}", ChannelUtil.getDesc(ctx.channel()), msg);
         if(msg instanceof ProxyConnectProtocol) {
             ProxyConnectProtocol protocol = (ProxyConnectProtocol) msg;
-            logger.info("[channelRead][ProxyProtocol-Received] {}", protocol.toString());
+            logger.info("[channelRead][ProxyProtocol-Received][{}] {}", ChannelUtil.getDesc(ctx.channel()), protocol.toString());
             if (ctx.channel().remoteAddress() instanceof InetSocketAddress) {
                 protocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
             }

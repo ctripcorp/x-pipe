@@ -24,6 +24,9 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
     private ClusterService clusterService;
 
     @Autowired
+    private MigrationReporterConfig migrationReporterConfig;
+
+    @Autowired
     private DcService dcService;
 
     private static final int DEFAULT_HOURS = 1;
@@ -46,7 +49,7 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         MigrationProcessReportModel model = new MigrationProcessReportModel();
 
         // TODO AzGroup need to be  considered after hetero cluster type online
-        Long nonMigrateClustersNum = clusterService.getCountByActiveDcAndClusterType(dcService.find(consoleConfig.getBreakDownDc()).getId(), ClusterType.ONE_WAY.name());
+        Long nonMigrateClustersNum = clusterService.getCountByActiveDcAndClusterType(dcService.find(migrationReporterConfig.getBreakDownDc()).getId(), ClusterType.ONE_WAY.name());
         if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;
         }
@@ -57,7 +60,7 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         logger.info("[DefaultMigrationReporter] send migration report model: {}，migration clusters:{}", model, totalClusters - nonMigrateClustersNum);
 
         ResponseEntity<NocReportResponseModel> responseEntity
-                = httpService.getRestTemplate().postForEntity(consoleConfig.getKeyMigrationProcessReportUrl(), model, NocReportResponseModel.class);
+                = httpService.getRestTemplate().postForEntity(migrationReporterConfig.getKeyMigrationProcessReportUrl(), model, NocReportResponseModel.class);
         if (responseEntity != null && responseEntity.getBody() != null &&  responseEntity.getBody().getCode() != 200) {
             logger.warn("[DefaultMigrationReporter] send migration report fail! migration model: {}, result:{}", model, responseEntity.getBody());
         }
@@ -65,14 +68,14 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
 
     @Override
     protected boolean shouldDoAction() {
-        logger.debug("[DefaultMigrationReporter]get switch {}", consoleConfig.isMigrationProcessReportOpen());
-        if (!consoleConfig.isMigrationProcessReportOpen()) totalClusters = 0;
-        return consoleConfig.isMigrationProcessReportOpen() && super.shouldDoAction();
+        logger.debug("[DefaultMigrationReporter]get switch {}", migrationReporterConfig.isMigrationProcessReportOpen());
+        if (!migrationReporterConfig.isMigrationProcessReportOpen()) totalClusters = 0;
+        return migrationReporterConfig.isMigrationProcessReportOpen() && super.shouldDoAction();
     }
 
     @Override
     protected long getIntervalMilli() {
-        return consoleConfig.getMigrationProcessReportIntervalMill();
+        return migrationReporterConfig.getMigrationProcessReportIntervalMill();
     }
 
     @Override
@@ -82,6 +85,6 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
 
     @Override
     protected long getLeastIntervalMilli() {
-        return consoleConfig.getMigrationProcessReportIntervalMill();
+        return migrationReporterConfig.getMigrationProcessReportIntervalMill();
     }
 }
