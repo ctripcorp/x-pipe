@@ -2608,6 +2608,7 @@
 				<member name="active"/>
 				<member name="is-public"/>
 				<member name='route_org_id'/>
+				<member name='cluster_type'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
 				<member name="src_proxy_ids"/>
@@ -2621,6 +2622,7 @@
 				<member name="tag"/>
 				<member name="active"/>
 				<member name="is-public"/>
+				<member name='cluster_type'/>
 				<member name='route_org_id'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
