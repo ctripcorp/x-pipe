@@ -104,7 +104,8 @@ public class DefaultProxyChain implements ProxyChain {
         });
 
         proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId)
-                .setShardId(shardId).setTunnelStatsInfos(tunnelStatsInfos);
+                .setShardId(shardId).setTunnelStatsInfos(tunnelStatsInfos)
+                .setPeerDcId(peerDcId);
         return proxyTunnelInfo;
     }
 
