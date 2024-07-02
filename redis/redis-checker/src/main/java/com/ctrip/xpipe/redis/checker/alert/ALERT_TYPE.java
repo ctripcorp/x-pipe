@@ -22,6 +22,11 @@ public enum ALERT_TYPE {
         }
 
         @Override
+        public long delayedSendingTime() {
+            return 5 * 60 * 1000;
+        }
+
+        @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("CRedis中实例故障", "说明：CRedis中实例不可读或不可用");
         }
@@ -88,6 +93,11 @@ public enum ALERT_TYPE {
         @Override
         public boolean reportRecovery() {
             return true;
+        }
+
+        @Override
+        public long delayedSendingTime() {
+            return 5 * 60 * 1000;
         }
 
         @Override
@@ -696,5 +706,10 @@ public enum ALERT_TYPE {
 
     public boolean sendToCheckerLeader() {
         return false;
+    }
+
+    public long delayedSendingTime() {
+        // Maybe it will recover soon. we can wait a little longer
+        return 0L;
     }
 }

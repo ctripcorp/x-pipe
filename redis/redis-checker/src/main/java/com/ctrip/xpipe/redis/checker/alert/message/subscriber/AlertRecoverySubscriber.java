@@ -2,18 +2,15 @@ package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
-import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
+import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
-import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Component
-public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
+public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber implements DelayAlertRecoverySubscriber {
 
     private Set<AlertEntity> unRecoveredAlerts = Sets.newConcurrentHashSet();
 
@@ -65,11 +62,20 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
+
+        if(alert.getAlertType().delayedSendingTime() != 0) {
+            doProcessDelayAlerts(alert);
+        } else {
+            doAddAlert(alert);
+        }
+    }
+
+
+    private void doAddAlert(AlertEntity alert) {
         if(!alert.getAlertType().reportRecovery()) {
             logger.debug("[doProcessAlert]Not interested: {}", alert);
             return;
         }
-
         while(!unRecoveredAlerts.add(alert)) {
             logger.debug("[doProcessAlert]add alert: {}", alert);
             unRecoveredAlerts.remove(alert);
@@ -122,21 +128,7 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
             }
             AlertEntityHolderManager holderManager = new DefaultAlertEntityHolderManager();
             addAlertsToAlertHolders(alerts, holderManager);
-            Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(holderManager);
-
-            for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {
-                if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
-                    continue;
-                }
-                Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
-                transmitAlterToCheckerLeader(false, alerts);
-                if(alerts.size() == 0) {
-                    continue;
-                }
-                AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, false);
-                emailMessage(message);
-                tryMetric(mailGroup.getValue(), false);
-            }
+            doSend(holderManager, false);
             future().setSuccess();
         }
 
@@ -151,6 +143,25 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
         public String getName() {
             return ReportRecoveredAlertTask.class.getSimpleName();
         }
+    }
+
+    // 延迟告警初次加入入口
+    @Override
+    public void addDelayAlerts(AlertEntity alert) {
+        doAddAlert(alert);
+    }
+
+    // 延迟告警处理入口(非初次)
+    @Override
+    public void doProcessDelayAlerts(AlertEntity alert) {
+        if(unRecoveredAlerts.contains(alert)) {
+            doAddAlert(alert);
+        }
+    }
+
+    @VisibleForTesting
+    public Set<AlertEntity> getExistingAlerts() {
+        return unRecoveredAlerts;
     }
 
 }
