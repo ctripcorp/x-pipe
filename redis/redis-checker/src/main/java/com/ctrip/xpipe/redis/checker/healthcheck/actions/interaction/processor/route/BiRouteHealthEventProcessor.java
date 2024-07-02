@@ -42,7 +42,7 @@ public class BiRouteHealthEventProcessor extends AbstractRouteHealthEventProcess
     protected ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent instanceSick) {
         RedisInstanceInfo instanceInfo = instanceSick.getInstance().getCheckInfo();
         return proxyManager.getProxyTunnelInfo(instanceInfo.getDcId(),
-                instanceInfo.getClusterId(), instanceInfo.getShardId(), "UNSET");
+                instanceInfo.getClusterId(), instanceInfo.getShardId(), instanceInfo.getActiveDc());
     }
 
     @Override
