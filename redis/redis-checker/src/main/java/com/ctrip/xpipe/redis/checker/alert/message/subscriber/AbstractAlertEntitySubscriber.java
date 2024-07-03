@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
 import com.ctrip.xpipe.redis.checker.alert.*;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHandler;
+import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntitySubscriber;
 import com.ctrip.xpipe.redis.checker.alert.event.EventBus;
+import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.resource.CheckLeaderService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +95,25 @@ public abstract class AbstractAlertEntitySubscriber extends AlertEntityHandler i
                     iterator.remove();
                 }
             }
+        }
+    }
+
+    protected void doSend(AlertEntityHolderManager holderManager, boolean isAlert) {
+        Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(holderManager);
+
+        for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {
+            if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
+                continue;
+            }
+            logger.debug("[AlertEntitySubscriber] Mail out: {}", mailGroup.getValue());
+            Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
+            transmitAlterToCheckerLeader(isAlert, alerts);
+            if(alerts.size() == 0) {
+                continue;
+            }
+            AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, isAlert);
+            emailMessage(message);
+            tryMetric(alerts, isAlert);
         }
     }
 }
