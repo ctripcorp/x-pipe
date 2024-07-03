@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('RouteFormCtl', RouteFormCtl);
 
-RouteFormCtl.$inject = ['$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'DcService', 'RouteService', 'ProxyService', 'NgTableParams'];
+RouteFormCtl.$inject = ['$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'DcService', 'RouteService', 'ProxyService', 'ClusterType', 'NgTableParams'];
 
-function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService, RouteService, ProxyService, NgTableParams) {
+function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService, RouteService, ProxyService, ClusterType, NgTableParams) {
 
     $scope.routes = {};
     $scope.tableParams = new NgTableParams({}, {});
@@ -28,6 +28,8 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
     $scope.selectSrcProxies = [];
     $scope.selectOptionalProxies = [];
     $scope.selectDstProxies = [];
+
+    $scope.clusterTypes = ClusterType.selectData();
 
     $scope.doAddRoute = doAddRoute;
 
@@ -65,6 +67,10 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
             RouteService.getRouteById($scope.routeId)
             .then(function(result) {
                 $scope.route = result;
+                if ($scope.route.clusterType) {
+                    let type = ClusterType.lookup($scope.route.clusterType);
+                    if (type) $scope.route.clusterType = type.value
+                }
             }, function(result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
@@ -79,7 +85,7 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
 
     function doAddRoute() {
         if($scope.operateType == OPERATE_TYPE.CREATE) {
-            RouteService.addRoute($scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
+            RouteService.addRoute($scope.route.orgName, $scope.route.clusterType, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
                                         $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
                     if(result.message == 'success' ) {
@@ -92,7 +98,7 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
                     toastr.error(AppUtil.errorMsg(result), "添加失败");
                 });
         } else {
-            RouteService.updateRoute($scope.route.id, $scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
+            RouteService.updateRoute($scope.route.id, $scope.route.orgName, $scope.route.clusterType, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
                                         $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
                     if(result.message == 'success' ) {

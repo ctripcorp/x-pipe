@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Collections;
@@ -34,6 +35,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public XpipeMeta getDividedXpipeMeta(int partIndex) {
         return xpipeMeta;
+    }
+
+    @Override
+    public XpipeMetaManager.MetaDesc findMetaDesc(HostPort hostPort) {
+        return null;
     }
 
     @Override
@@ -107,17 +113,17 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public List<RouteMeta> getRoutes() {
+    public List<RouteMeta> getCurrentDcConsoleRoutes() {
         return null;
     }
 
     @Override
-    public Map<String, RouteMeta> chooseDefaultRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId) {
+    public Map<String, RouteMeta> chooseDefaultMetaRoutes(String clusterName, String srcDc, List<String> dstDcs) {
         return null;
     }
 
     @Override
-    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId) {
+    public Map<String, RouteMeta> chooseClusterMetaRoutes(String clusterName, String backUpDcName, List<String> peerDcs) {
         return null;
     }
 

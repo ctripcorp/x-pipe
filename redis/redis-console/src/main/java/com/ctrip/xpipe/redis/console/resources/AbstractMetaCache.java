@@ -69,6 +69,12 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public XpipeMetaManager.MetaDesc findMetaDesc(HostPort hostPort) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        return xpipeMetaManager.findMetaDesc(hostPort);
+    }
+
+    @Override
     public String getXmlFormatDividedXpipeMeta(int partIndex) {
         throw new UnsupportedOperationException();
     }
@@ -297,10 +303,9 @@ public abstract class AbstractMetaCache implements MetaCache {
 
 
     @Override
-    public List<RouteMeta> getRoutes() {
+    public List<RouteMeta> getCurrentDcConsoleRoutes() {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        return xpipeMetaManager
-                .consoleRoutes(CURRENT_IDC);
+        return xpipeMetaManager.consoleRoutes(CURRENT_IDC);
     }
 
     @Override

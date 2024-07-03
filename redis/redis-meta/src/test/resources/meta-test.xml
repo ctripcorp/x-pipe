@@ -90,16 +90,16 @@
 			</shard>
 		</cluster>
 		<routes>
-			<route id="1" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.8:443,PROXYTLS://127.0.0.11:443"/>
-			<route id="2" org-id="0" tag="meta" src-dc="fra" dst-dc="fq" isPublic="true" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.7:443,PROXYTLS://127.0.0.7:443"/>
-			<route id="3" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="false" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
-			<route id="4" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
-			<route id="5" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" isPublic="false" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
-			<route id="6" org-id="0" tag="meta" src-dc="fra"  dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
-			<route id="7" org-id="1" tag="console" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
-			<route id="8" org-id="1" tag="console" src-dc="jq" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
-			<route id="9" org-id="1" tag="meta" src-dc="fra" dst-dc="oy" isPublic="false" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
-			<route id="10" org-id="0" tag="meta" src-dc="fra" dst-dc="oy" isPublic="true" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="1" cluster-type="" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.8:443,PROXYTLS://127.0.0.11:443"/>
+			<route id="2" cluster-type="" org-id="0" tag="meta" src-dc="fra" dst-dc="fq" isPublic="true" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.7:443,PROXYTLS://127.0.0.7:443"/>
+			<route id="3" cluster-type="" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="false" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="4" cluster-type="" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="5" cluster-type="" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" isPublic="false" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="6" cluster-type="" org-id="0" tag="meta" src-dc="fra"  dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="7" cluster-type="" org-id="1" tag="console" src-dc="fra" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
+			<route id="8" cluster-type="" org-id="1" tag="console" src-dc="jq" dst-dc="jq" isPublic="true" routeInfo="PROXY://1.1.1.3:80"/>
+			<route id="9" cluster-type="" org-id="1" tag="meta" src-dc="fra" dst-dc="oy" isPublic="false" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
+			<route id="10" cluster-type="" org-id="0" tag="meta" src-dc="fra" dst-dc="oy" isPublic="true" routeInfo="PROXY://1.1.1.3:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
 		</routes>
 		<cluster id="cluster-hetero1" db-id="7" active-dc="jq" backup-dcs="" type="one_way">
 			<source src-dc="jq" upstream-dc="jq" region="SHANGHAI">

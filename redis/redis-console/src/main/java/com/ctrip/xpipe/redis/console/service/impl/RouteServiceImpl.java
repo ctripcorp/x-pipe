@@ -235,7 +235,11 @@ public class RouteServiceImpl implements RouteService {
         Map<String, Long> proxyUriIdMap = proxyService.proxyUriIdMap();
 
         if(model.getId() != 0)  routeTbl.setId(model.getId());
-        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
+        if (StringUtil.isEmpty(model.getOrgName())) {
+            routeTbl.setRouteOrgId(0);
+        } else {
+            routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
+        }
 
         routeTbl.setSrcProxyIds(model.getSrcProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getSrcProxies()));
         routeTbl.setOptionalProxyIds(model.getOptionalProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getOptionalProxies()));

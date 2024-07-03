@@ -276,8 +276,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		ClusterMeta clusterMeta = getClusterMeta(clusterDbId);
 		RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
 				RouteChooseStrategyFactory.RouteStrategyType.lookup(metaServerConfig.getChooseRouteStrategyType());
-		int orgId = null == clusterMeta.getOrgId() ? 0 : clusterMeta.getOrgId();
-		return dcMetaManager.get().chooseRoute(clusterMeta.getId(), dstDcId, orgId, getRouteChooseStrategy(routeStrategyType));
+		return dcMetaManager.get().chooseRoute(clusterMeta, dstDcId, getRouteChooseStrategy(routeStrategyType));
 	}
 
 	private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
@@ -288,21 +287,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		}
 
 		return localStrategy;
-	}
-
-	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
-		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
-
-		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new HashMap<>();
-		List<RouteMeta> allMetaRoutes = getAllMetaRoutes();
-		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split("\\s*,\\s*"));
-		allMetaRoutes.forEach((routeMeta -> {
-			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {
-				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
-			}
-		}));
-
-		return clusterDesignatedRoutes;
 	}
 
 	@Override

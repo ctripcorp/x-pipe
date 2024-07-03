@@ -34,6 +34,8 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -221,5 +223,10 @@ public class CheckerContextConfig {
     @Bean
     public OuterClientCache outerClientCache(CheckerConsoleService service, CheckerConfig config) {
         return new CheckerOuterClientCache(service, config);
+    }
+
+    @Bean
+    public RouteChooseStrategyFactory getRouteChooseStrategyFactory() {
+        return new DefaultRouteChooseStrategyFactory();
     }
 }

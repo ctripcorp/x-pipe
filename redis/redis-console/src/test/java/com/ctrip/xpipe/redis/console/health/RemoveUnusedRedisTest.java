@@ -1,20 +1,27 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.TestConfig;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.Callable;
 
@@ -25,6 +32,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * Jan 23, 2018
  */
+@RunWith(MockitoJUnitRunner.class)
 public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
 
     private Server server;
@@ -34,6 +42,13 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
 
     @Mock
     private MetaCache metaCache;
+
+    @Mock
+    private ProxyChecker proxyChecker;
+
+    private CheckerConfig checkerConfig = new TestConfig();
+
+    private RouteChooseStrategyFactory routeChooseStrategyFactory = new DefaultRouteChooseStrategyFactory();
 
     private DefaultHealthCheckEndpointFactory endpointFactory;
 
@@ -47,7 +62,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         // mock datas
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         logger.info("[xpipeMeta] {}", getXpipeMeta());
-        when(metaCache.getRoutes()).thenReturn(null);
+        when(metaCache.getCurrentDcConsoleRoutes()).thenReturn(null);
 
         // random port to avoid port conflict
         port = randomPort();
@@ -59,7 +74,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
             }
         });
 
-        endpointFactory = new DefaultHealthCheckEndpointFactory();
+        endpointFactory = new DefaultHealthCheckEndpointFactory(proxyChecker, checkerConfig, metaCache, routeChooseStrategyFactory);
         endpointFactory.setMetaCache(metaCache);
         manager.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool());
         manager.setEndpointFactory(endpointFactory);
