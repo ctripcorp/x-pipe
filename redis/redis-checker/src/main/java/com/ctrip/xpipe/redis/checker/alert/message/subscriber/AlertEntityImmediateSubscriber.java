@@ -51,7 +51,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-        if(alert.getAlertType().delayedSendingTime() > 0) {
+        if(alert.getAlertType().delayedSendingTime() > 0 || alert.getAlertType().onlyTrack()) {
             return;
         }
         if(hasBeenSentOut(alert)) {
