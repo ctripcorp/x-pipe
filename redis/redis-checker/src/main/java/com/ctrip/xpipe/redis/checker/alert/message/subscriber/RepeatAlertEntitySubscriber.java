@@ -72,7 +72,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-        if(ignoreAlert(alert)) {
+        if(ignoreAlert(alert) || alert.getAlertType().onlyTrack()) {
             return;
         }
         synchronized (this) {

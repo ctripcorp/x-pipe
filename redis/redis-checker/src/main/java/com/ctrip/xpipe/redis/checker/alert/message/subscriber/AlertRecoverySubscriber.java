@@ -62,7 +62,9 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber imple
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-
+        if(alert.getAlertType().onlyTrack()) {
+            return;
+        }
         if(alert.getAlertType().delayedSendingTime() != 0) {
             doProcessDelayAlerts(alert);
         } else {

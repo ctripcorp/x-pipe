@@ -119,6 +119,18 @@ public class AlertEntityHandler {
         }
     }
 
+    protected void tryMetric(AlertEntity alert, String metricType) {
+        MetricData metricData = new MetricData(metricType, alert.getDc(), alert.getClusterId(), alert.getShardId());
+        metricData.setValue(1);
+        metricData.setTimestampMilli(alert.getDate().getTime());
+
+        try {
+            metricProxy.writeBinMultiDataPoint(metricData);
+        } catch (Throwable th) {
+            logger.debug("[tryMetric] fail", th);
+        }
+    }
+
     protected void addAlertsToAlertHolders(Set<AlertEntity> alerts, AlertEntityHolderManager holderManager) {
         try {
             lock.lock();

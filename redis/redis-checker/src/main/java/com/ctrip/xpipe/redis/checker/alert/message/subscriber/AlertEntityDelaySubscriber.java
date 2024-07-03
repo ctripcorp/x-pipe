@@ -60,7 +60,7 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-        if(alert.getAlertType().delayedSendingTime() <= 0) {
+        if(alert.getAlertType().delayedSendingTime() <= 0 || alert.getAlertType().onlyTrack()) {
             return;
         }
         addToExistingSet(alert);
