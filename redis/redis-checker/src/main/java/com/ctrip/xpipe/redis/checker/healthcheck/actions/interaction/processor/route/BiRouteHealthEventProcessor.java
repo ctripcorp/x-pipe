@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -42,7 +44,7 @@ public class BiRouteHealthEventProcessor extends AbstractRouteHealthEventProcess
     protected ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent instanceSick) {
         RedisInstanceInfo instanceInfo = instanceSick.getInstance().getCheckInfo();
         return proxyManager.getProxyTunnelInfo(instanceInfo.getDcId(),
-                instanceInfo.getClusterId(), instanceInfo.getShardId(), "UNSET");
+                instanceInfo.getClusterId(), instanceInfo.getShardId(), currentDcId);
     }
 
     @Override

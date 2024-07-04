@@ -18,7 +18,7 @@ public class ProxyTunnelInfo {
 
     private String shardId;
 
-    //TODO ADD peerDcId when dealing with proxy health.
+    private String peerDcId;
 
     private List<TunnelStatsInfo> tunnelStatsInfos;
 
@@ -62,6 +62,15 @@ public class ProxyTunnelInfo {
         return this;
     }
 
+    public String getPeerDcId() {
+        return peerDcId;
+    }
+
+    public ProxyTunnelInfo setPeerDcId(String peerDcId) {
+        this.peerDcId = peerDcId;
+        return this;
+    }
+
     public List<HostPort> getBackends() {
         List<HostPort> backends = Lists.newArrayList();
         for (TunnelStatsInfo tunnelInfo : tunnelStatsInfos) {
@@ -79,6 +88,7 @@ public class ProxyTunnelInfo {
                 "backupDcId='" + backupDcId + '\'' +
                 ", clusterId='" + clusterId + '\'' +
                 ", shardId='" + shardId + '\'' +
+                ", peerDcId='" + peerDcId + '\'' +
                 ", tunnelStatsInfos=" + tunnelStatsInfos +
                 '}';
     }
@@ -91,11 +101,12 @@ public class ProxyTunnelInfo {
         return Objects.equals(backupDcId, that.backupDcId) &&
                 Objects.equals(clusterId, that.clusterId) &&
                 Objects.equals(shardId, that.shardId) &&
+                Objects.equals(peerDcId, that.peerDcId) &&
                 Objects.equals(tunnelStatsInfos, that.tunnelStatsInfos);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(backupDcId, clusterId, shardId, tunnelStatsInfos);
+        return Objects.hash(backupDcId, clusterId, shardId, peerDcId,tunnelStatsInfos);
     }
 }
