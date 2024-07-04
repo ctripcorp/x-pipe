@@ -23,6 +23,9 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
     $scope.migratingKeeperContainers = [];
     $scope.oldMigratingKeeperContainers = [];
     $scope.scheduledWork;
+    $scope.migratingPage=1;
+    $scope.migratingCount=10;
+
 
     $scope.beginToMigrateOverloadKeeperContainers = beginToMigrateOverloadKeeperContainers;
     $scope.migrateKeeperTaskTerminate = migrateKeeperTaskTerminate;
@@ -71,8 +74,8 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                     container.showDetail = false;
                 });
                 $scope.tableParams = new NgTableParams({
-                    page: 1,
-                    count: 10,
+                    page : 1,
+                    count : 10,
                 }, {
                     filterDelay: 100,
                     counts: [10, 25, 50],
@@ -90,8 +93,8 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
         $scope.tableParams = new NgTableParams({}, {});
 
         $scope.migratingTableParams = new NgTableParams({
-            page : 1,
-            count : 10,
+            page : $scope.migratingPage,
+            count : $scope.migratingCount,
         }, {
             filterDelay: 100,
             counts: [10, 25, 50],
@@ -99,8 +102,6 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
         });
 
         $scope.operateType = OPERATE_TYPE.MIGRATING;
-        $scope.migratingPage=1;
-        $scope.migratingCount=10;
         $scope.scheduledWork = $interval(getOverloadKeeperContainerMigrationProcess, 1000);
 
         KeeperContainerService.beginToMigrateOverloadKeeperContainers.apply(KeeperContainerService, $scope.migratingKeeperContainers)
@@ -144,6 +145,16 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                         filterDelay: 100,
                         counts: [10, 25, 50],
                         dataset: $scope.migratingKeeperContainers
+                    });
+                    $scope.$watch('migratingTableParams.page()', function(newVal, oldVal) {
+                        if (newVal !== oldVal) {
+                            $scope.migratingPage = newVal;
+                        }
+                    });
+                    $scope.$watch('migratingTableParams.count()', function(newVal, oldVal) {
+                        if (newVal !== oldVal) {
+                            $scope.migratingCount = newVal;
+                        }
                     });
                 });
         }
