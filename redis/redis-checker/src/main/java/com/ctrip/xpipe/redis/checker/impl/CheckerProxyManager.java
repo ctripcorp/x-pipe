@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -28,7 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class CheckerProxyManager extends AbstractService implements ProxyManager, GroupCheckerLeaderAware {
 
-    private Map<DcClusterShard, ProxyTunnelInfo> proxyTunnelInfos;
+    private Map<DcClusterShardPeer, ProxyTunnelInfo> proxyTunnelInfos;
 
     private CheckerConsoleService checkerConsoleService;
 
@@ -54,9 +55,9 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
         try {
             logger.debug("[refreshProxyTunnels] start");
             List<ProxyTunnelInfo> tunnelInfos = checkerConsoleService.getProxyTunnelInfos(config.getConsoleAddress());
-            Map<DcClusterShard, ProxyTunnelInfo> newInfos = new HashMap<>();
-            tunnelInfos.forEach(proxyTunnelInfo -> newInfos.put(new DcClusterShard(proxyTunnelInfo.getBackupDcId(),
-                    proxyTunnelInfo.getClusterId(), proxyTunnelInfo.getShardId()), proxyTunnelInfo));
+            Map<DcClusterShardPeer, ProxyTunnelInfo> newInfos = new HashMap<>();
+            tunnelInfos.forEach(proxyTunnelInfo -> newInfos.put(new DcClusterShardPeer(proxyTunnelInfo.getBackupDcId(),
+                    proxyTunnelInfo.getClusterId(), proxyTunnelInfo.getShardId(), proxyTunnelInfo.getPeerDcId()), proxyTunnelInfo));
 
             this.proxyTunnelInfos = newInfos;
         } catch (Throwable th) {
@@ -82,7 +83,7 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
     @Override
     public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId) {
         if (!clusterServer.amILeader()) return null;
-        return proxyTunnelInfos.get(new DcClusterShard(backupDcId, clusterId, shardId));
+        return proxyTunnelInfos.get(new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId));
     }
 
     @Override

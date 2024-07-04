@@ -24,7 +24,7 @@ public class HeteroRouteHealthEventProcessor extends AbstractRouteHealthEventPro
     protected ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent event) {
         RedisInstanceInfo instanceInfo = event.getInstance().getCheckInfo();
         return proxyManager.getProxyTunnelInfo(instanceInfo.getDcId(),
-                instanceInfo.getClusterId(), getSrcShardId(event), "UNSET");
+                instanceInfo.getClusterId(), getSrcShardId(event), instanceInfo.getActiveDc());
     }
 
     @Override

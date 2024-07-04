@@ -31,7 +31,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  */
 public abstract class AbstractRouteHealthEventProcessor implements HealthEventProcessor {
 
-    private final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+    protected final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
