@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
@@ -145,6 +147,7 @@ public class RouteServiceImpl implements RouteService {
         if(routeTbl == null) return routeInfoModel;
 
         routeInfoModel.setActive(routeTbl.isActive()).setId(routeTbl.getId()).setTag(routeTbl.getTag())
+                .setClusterType(routeTbl.getClusterType())
                 .setSrcDcName(dcIdNameMapper.getName(routeTbl.getSrcDcId()))
                 .setSrcProxies(getProxyUriByIds(routeTbl.getSrcProxyIds(), proxyIdUriMap))
                 .setOptionalProxies(getProxyUriByIds(routeTbl.getOptionalProxyIds(), proxyIdUriMap))
@@ -232,11 +235,22 @@ public class RouteServiceImpl implements RouteService {
         Map<String, Long> proxyUriIdMap = proxyService.proxyUriIdMap();
 
         if(model.getId() != 0)  routeTbl.setId(model.getId());
-        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
+        if (StringUtil.isEmpty(model.getOrgName())) {
+            routeTbl.setRouteOrgId(0);
+        } else {
+            routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
+        }
 
         routeTbl.setSrcProxyIds(model.getSrcProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getSrcProxies()));
         routeTbl.setOptionalProxyIds(model.getOptionalProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getOptionalProxies()));
         routeTbl.setDstProxyIds(model.getDstProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getDstProxies()));
+
+        if (StringUtil.isEmpty(model.getClusterType())) {
+            routeTbl.setClusterType("");
+        } else {
+            ClusterType clusterType = ClusterType.lookup(model.getClusterType());
+            routeTbl.setClusterType(clusterType.name());
+        }
 
         routeTbl.setActive(model.isActive()).setTag(model.getTag()).setIsPublic(model.isPublic())
                 .setSrcDcId(dcService.findByDcName(model.getSrcDcName()).getId())

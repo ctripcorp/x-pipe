@@ -231,7 +231,7 @@ CREATE TABLE `KEEPERCONTAINER_TBL` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `keepercontainer_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of keeper container',
-  `keepercontainer_disk_type` varchar(64) not null default 'default'
+  `keepercontainer_disk_type` varchar(64) not null default 'default',
   PRIMARY KEY (`keepercontainer_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `keepercontainer_dc` (`keepercontainer_dc`)
@@ -352,6 +352,7 @@ CREATE TABLE `route_tbl` (
   `route_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of route',
   `src_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'source dc id',
   `dst_dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'destination dc id',
+  `cluster_type` varchar(32) NOT NULL DEFAULT '' COMMENT 'cluster type of route',
   `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',

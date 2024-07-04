@@ -145,9 +145,10 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
-    function addRoute(orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
+    function addRoute(orgName, clusterType, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
         var d = $q.defer();
         resource.add_route({}, {
+            clusterType: clusterType,
             orgName: orgName,
             srcProxies : srcProxies,
             optionalProxies : optionalProxies,
@@ -167,10 +168,11 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
-    function updateRoute(id, orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
+    function updateRoute(id, orgName, clusterType, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
         var d = $q.defer();
         resource.update_route({}, {
             id: id,
+            clusterType: clusterType,
             orgName: orgName,
             srcProxies : srcProxies,
             optionalProxies : optionalProxies,

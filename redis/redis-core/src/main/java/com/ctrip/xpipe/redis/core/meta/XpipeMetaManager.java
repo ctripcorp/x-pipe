@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.core.meta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -54,6 +55,10 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 
 		public String getAzGroupType() {
 			return clusterMeta != null ? clusterMeta.getAzGroupType() : null;
+		}
+
+		public ClusterMeta getClusterMeta() {
+			return MetaCloneFacade.INSTANCE.clone(clusterMeta);
 		}
 	}
 	
@@ -161,30 +166,17 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 		return routes(currentDc, Route.TAG_CONSOLE);
 	}
 
-	default RouteMeta chooseMetaRoute(String clusterName, String srcDc, String dstDc, int orgId, RouteChooseStrategy strategy) {
-		return chooseMetaRoute(clusterName, srcDc, dstDc, orgId, strategy, true);
+	default RouteMeta chooseMetaRoute(ClusterMeta cluster, String srcDc, String dstDc, RouteChooseStrategy strategy) {
+		return read(() -> doChooseMetaRoute(cluster, srcDc, dstDc, strategy));
 	}
 
-	default RouteMeta chooseMetaRoute(String clusterName, String srcDc, String dstDc,
-									  int orgId, RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes) {
-		return read(() -> doChooseRoute(clusterName, srcDc, dstDc, orgId, strategy, Route.TAG_META, useClusterPrioritizedRoutes));
+	RouteMeta doChooseMetaRoute(ClusterMeta cluster, String srcDc, String dstDc, RouteChooseStrategy strategy);
+
+	default Map<String, RouteMeta> chooseMetaRoutes(String clusterId, String srcDc, List<String> dstDcs, RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes) {
+		return read(() -> doChooseMetaRoutes(clusterId, srcDc, dstDcs, strategy, useClusterPrioritizedRoutes));
 	}
 
-	RouteMeta doChooseRoute(String clusterId, String srcDc, String dstDc, int orgId,
-							RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes);
-
-	default Map<String, RouteMeta> chooseMetaRoutes(String clusterName, String srcDc, List<String> dstDcs,
-													int orgId, RouteChooseStrategy strategy) {
-		return chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, strategy, true);
-	}
-
-	default Map<String, RouteMeta> chooseMetaRoutes(String clusterName, String srcDc, List<String> dstDcs,
-													int orgId, RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes) {
-		return read(() -> doChooseRoutes(clusterName, srcDc, dstDcs, orgId, strategy, Route.TAG_META, useClusterPrioritizedRoutes));
-	}
-
-	Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
-										  RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes);
+	Map<String, RouteMeta> doChooseMetaRoutes(String clusterId, String srcDc, List<String> dstDcs, RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes);
 
 	default List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc) { return read(()->doGetSpecificActiveDcClusters(currentDc, clusterActiveDc)); }
 	List<ClusterMeta> doGetSpecificActiveDcClusters(String currentDc, String clusterActiveDc);

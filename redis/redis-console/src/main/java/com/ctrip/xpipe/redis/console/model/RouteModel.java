@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.utils.StringUtil;
+
 import java.util.Objects;
 
 /**
@@ -12,6 +15,8 @@ public class RouteModel {
     private long id;
 
     private long orgId;
+
+    private String clusterType = "";
 
     private String srcProxyIds = "";
 
@@ -130,8 +135,18 @@ public class RouteModel {
         return this;
     }
 
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public RouteModel setClusterType(String clusterType) {
+        this.clusterType = clusterType;
+        return this;
+    }
+
     public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcIdNameMapper mapper) {
         RouteModel model = new RouteModel();
+        model.setClusterType(routeTbl.getClusterType());
         model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds()).setPublic(routeTbl.isIsPublic())
                 .setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
 
@@ -148,6 +163,11 @@ public class RouteModel {
         proto.setActive(active).setId(id).setOptionalProxyIds(optionProxyIds).setSrcProxyIds(srcProxyIds)
                 .setIsPublic(isPublic).setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId).setDescription(description);
         proto.setSrcDcId(mapper.getId(srcDcName)).setDstDcId(mapper.getId(dstDcName));
+        if (StringUtil.isEmpty(clusterType)) {
+            proto.setClusterType("");
+        } else {
+            proto.setClusterType(ClusterType.lookup(clusterType).name());
+        }
         return proto;
     }
 

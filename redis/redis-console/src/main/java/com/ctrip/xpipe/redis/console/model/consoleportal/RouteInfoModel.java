@@ -9,6 +9,8 @@ public class RouteInfoModel implements Comparable<RouteInfoModel> {
 
     private String orgName;
 
+    private String clusterType;
+
     private List<String> srcProxies;
 
     private List<String> optionalProxies;
@@ -46,6 +48,15 @@ public class RouteInfoModel implements Comparable<RouteInfoModel> {
 
     public RouteInfoModel setOrgName(String orgName) {
         this.orgName = orgName;
+        return this;
+    }
+
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public RouteInfoModel setClusterType(String clusterType) {
+        this.clusterType = clusterType;
         return this;
     }
 

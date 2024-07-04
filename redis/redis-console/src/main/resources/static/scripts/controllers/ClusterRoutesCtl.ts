@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('ClusterRoutesCtl', ClusterRoutesCtl);
 
-ClusterRoutesCtl.$inject = ['$scope', '$stateParams', 'ClusterService', 'toastr', 'AppUtil'];
+ClusterRoutesCtl.$inject = ['$scope', '$stateParams', 'ClusterService', 'toastr', 'AppUtil', 'ClusterType'];
 
-function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil) {
+function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil, ClusterType) {
 
     $scope.clusterName = $stateParams.clusterName;
     $scope.currentDcName = $stateParams.dcName;
@@ -17,6 +17,9 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
     $scope.switchDc = switchDc;
     $scope.loadDcClusterRoutes = loadDcClusterRoutes;
 
+    $scope.clusterTypes = ClusterType.selectData()
+    $scope.getTypeName = getTypeName;
+
     if ($scope.clusterName) {
         loadClusterRoutes();
     }
@@ -24,6 +27,13 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
     function switchDc(dc) {
         $scope.currentDcName = dc.dcName;
         loadDcClusterRoutes($scope.currentDcName, $scope.clusterName);
+    }
+
+    function getTypeName(type) {
+        if (null == type || "" == type) return ""
+        var clusterType = ClusterType.lookup(type)
+        if (clusterType) return clusterType.name
+        else return '未知类型'
     }
 
     function loadClusterRoutes() {

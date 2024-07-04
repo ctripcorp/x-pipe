@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -90,7 +89,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         XpipeMetaManager xpipeMetaManager = mock(XpipeMetaManager.class);
         when(xpipeMetaManager.findMetaDesc(hostPort)).thenReturn(null);
         metaCache.setMeta(new Pair<>(mock(XpipeMeta.class), xpipeMetaManager));
-        metaCache.getRoutes();
+        metaCache.getCurrentDcConsoleRoutes();
     }
 
     @Test
@@ -233,12 +232,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         metaCache.setActiveDcForCrossDcClusters(xpipeMeta);
         Assert.assertEquals("jq", oyCluster.getActiveDc());
         Assert.assertEquals("jq", jqCluster.getActiveDc());
-    }
-
-    @Test
-    public void testChooseRoute() {
-        when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name());
-        metaCache.chooseRoutes("cluster1", "fra", Lists.newArrayList("jq"), 1);
     }
 
     @Test

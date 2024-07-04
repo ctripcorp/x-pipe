@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
@@ -118,5 +119,38 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
         Assert.assertEquals(1, comparator.getMofified().size());
     }
 
+    @Test
+    public void testClusterTypeModify() {
+        RouteMeta routeMeta1 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443")
+                .setIsPublic(true).setTag(Route.TAG_META).setClusterType("");
+        RouteMeta routeMeta2 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443")
+                .setIsPublic(true).setTag(Route.TAG_META).setClusterType(ClusterType.BI_DIRECTION.name());
+
+        DcMeta currentMeta = new DcMeta().addRoute(routeMeta1);
+        DcMeta futureMeta = new DcMeta().addRoute(routeMeta2);
+        comparator = new DcRouteMetaComparator(currentMeta, futureMeta);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertEquals(1, comparator.getMofified().size());
+    }
+
+    @Test
+    public void testOrgModify() {
+        RouteMeta routeMeta1 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443")
+                .setIsPublic(true).setTag(Route.TAG_META).setClusterType("").setOrgId(1);
+        RouteMeta routeMeta2 = new RouteMeta().setId(4L).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443")
+                .setIsPublic(true).setTag(Route.TAG_META).setClusterType("").setOrgId(2);
+
+        DcMeta currentMeta = new DcMeta().addRoute(routeMeta1);
+        DcMeta futureMeta = new DcMeta().addRoute(routeMeta2);
+        comparator = new DcRouteMetaComparator(currentMeta, futureMeta);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertEquals(1, comparator.getMofified().size());
+    }
 
 }

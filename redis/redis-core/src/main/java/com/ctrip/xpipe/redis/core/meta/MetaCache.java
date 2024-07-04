@@ -23,6 +23,8 @@ public interface MetaCache {
 
     XpipeMeta getDividedXpipeMeta(int partIndex);
 
+    XpipeMetaManager.MetaDesc findMetaDesc(HostPort hostPort);
+
     String getXmlFormatDividedXpipeMeta(int partIndex);
 
     boolean inBackupDc(HostPort hostPort);
@@ -59,11 +61,11 @@ public interface MetaCache {
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 
-    List<RouteMeta> getRoutes();
+    List<RouteMeta> getCurrentDcConsoleRoutes();
 
-    Map<String, RouteMeta> chooseDefaultRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId);
+    Map<String, RouteMeta> chooseDefaultMetaRoutes(String clusterName, String srcDc, List<String> dstDcs);
 
-    Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId);
+    Map<String, RouteMeta> chooseClusterMetaRoutes(String clusterName, String srcDc, List<String> dstDcs);
 
     boolean isCrossRegion(String activeDc, String backupDc);
 

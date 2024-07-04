@@ -37,7 +37,6 @@ function AppliercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil,
                 $scope.allDcs.forEach(function(dc){
                     AzService.getAllActiveAvailableZoneInfosByDc(dc.id)
                     .then(function(result) {
-                        console.log(result);
                         $scope.dcAzs[dc.dcName] =  result.map(function (az) {
                             return az.azName;
                         });;
@@ -58,10 +57,8 @@ function AppliercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil,
             });
 
         if($scope.operateType != OPERATE_TYPE.CREATE) {
-            console.log($scope.appliercontainerId);
             AppliercontainerService.getAppliercontainerById($scope.appliercontainerId)
             .then(function(result) {
-                console.log(result);
                 $scope.appliercontainer = result;
             }, function(result) {
                 toastr.error(AppUtil.errorMsg(result));

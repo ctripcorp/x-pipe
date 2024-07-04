@@ -4,19 +4,18 @@ import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.framework.xpipe.redis.instrument.AgentMain;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.checker.healthcheck.RouteChooser;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
-import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.*;
 
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK_INTERVAL;
@@ -48,50 +46,37 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
 
     private ConcurrentMap<HostPort, Endpoint> map = Maps.newConcurrentMap();
 
-    @Autowired
-    ProxyChecker proxyChecker;
+    private ProxyChecker proxyChecker;
 
-    @Autowired
-    CheckerConfig config;
+    private CheckerConfig config;
 
-    @Autowired
     private MetaCache metaCache;
 
-    Map<String, List<RouteMeta>> routes;
+    private RouteChooser routeChooser;
 
+    @Autowired
+    public DefaultHealthCheckEndpointFactory(ProxyChecker proxyChecker, CheckerConfig config, MetaCache metaCache,
+                                             RouteChooseStrategyFactory routeChooseStrategyFactory) {
+        this.proxyChecker = proxyChecker;
+        this.config = config;
+        this.metaCache = metaCache;
 
-    public synchronized void initRoutes() {
-        if(this.routes != null) {
-            return;
-        }
-        updateRoutes();
-        if(this.routes == null) {
-            this.routes = Maps.newConcurrentMap();
-        }
+        this.routeChooser = new DefaultRouteChooser(routeChooseStrategyFactory.create(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH));
     }
 
     @Override
     public synchronized void updateRoutes() {
         logger.info("[DefaultHealthCheckEndpointFactory][updateRoutes]");
-        List<RouteMeta> allRoutes = metaCache.getRoutes();
-        if(allRoutes == null || allRoutes.size() == 0) return;
+        List<RouteMeta> allRoutes = metaCache.getCurrentDcConsoleRoutes();
+        if(allRoutes == null) return;
 
-        ConcurrentHashMap<String, List<RouteMeta>> newRoutes = new ConcurrentHashMap<>();
-        allRoutes.forEach(routeMeta -> {
-            if(routeMeta.getIsPublic()) {
-                String dst = routeMeta.getDstDc();
-                List<RouteMeta> list = MapUtils.getOrCreate(newRoutes, dst, new ObjectFactory<List<RouteMeta>>() {
-                    @Override
-                    public List<RouteMeta> create() {
-                        return new CopyOnWriteArrayList();
-                    }
-                });
-                list.add(routeMeta);
-            }
-        });
-        routes = newRoutes;
+        this.routeChooser.updateRoutes(allRoutes);
         map.forEach((hostPort, endpoint) -> {
-            registerProxy(hostPort);
+            try {
+                registerProxy(hostPort);
+            } catch (Throwable th) {
+                logger.info("[updateRoutes][{}] fail", hostPort, th);
+            }
         });
     }
 
@@ -104,24 +89,21 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     }
 
     private void registerProxy(HostPort hostPort) {
-        String dst;
-        try {
-            dst = metaCache.getDc(hostPort);
-        } catch (IllegalStateException notFound) {
-            logger.info("[registerProxy] not found {} {}", hostPort, notFound);
+        XpipeMetaManager.MetaDesc metaDesc = metaCache.findMetaDesc(hostPort);
+        if (null == metaDesc) {
+            logger.info("[registerProxy][{}] meta not found", hostPort);
             return;
         }
-        if(routes == null) {
-            initRoutes();
-        }
-        List<RouteMeta> list = routes.get(dst);
 
-        if(list != null && !list.isEmpty()) {
-            RouteMeta route = selectRoute(list, hostPort);
-            logger.info("register proxy: {}:{} {}", hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
-            ProxyRegistry.registerProxy(hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
+        RouteMeta route = routeChooser.chooseRoute(metaDesc.getDcId(), metaDesc.getClusterMeta());
+        if (null != route) {
+            String proxyProtocol = getProxyProtocol(route);
+            logger.info("[registerProxy][{}] {}", hostPort, proxyProtocol);
+            ProxyRegistry.registerProxy(hostPort.getHost(), hostPort.getPort(), proxyProtocol);
+        } else {
+            logger.info("[registerProxy][route not found][{}] unregister", hostPort);
+            ProxyRegistry.unregisterProxy(hostPort.getHost(), hostPort.getPort());
         }
-
     }
 
     @PostConstruct

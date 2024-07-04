@@ -8,7 +8,6 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
 
     $scope.tableParams = new NgTableParams({}, {});
     KeeperContainerService.getAllKeepercontainerUsedInfo().then(function (response) {
-        console.log(response);
         if (Array.isArray(response))  {
             $scope.originData = response;
 

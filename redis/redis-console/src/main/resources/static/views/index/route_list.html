@@ -26,6 +26,7 @@
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat="route in $data">
                 <td data-title="'route_id'" ng-bind="route.id"></td>
+                <td data-title="'cluster_type'" filter="{ clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(route.clusterType)"></td>
                 <td data-title="'org_name'" filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="route.orgName"></td>
                 <td data-title="'public'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>
                 <td data-title="'src_dcName'" filter="{srcDcName: 'text'}" sortable="'srcDcName'" ng-bind="route.srcDcName"></td>

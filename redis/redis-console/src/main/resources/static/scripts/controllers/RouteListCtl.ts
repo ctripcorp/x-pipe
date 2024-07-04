@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('RouteListCtl', RouteListCtl);
 
-RouteListCtl.$inject = ['$scope', 'RouteService', 'NgTableParams', '$stateParams'];
+RouteListCtl.$inject = ['$scope', 'RouteService', 'NgTableParams', '$stateParams', 'ClusterType'];
 
-function RouteListCtl($scope, RouteService, NgTableParams, $stateParams) {
+function RouteListCtl($scope, RouteService, NgTableParams, $stateParams, ClusterType) {
 
     $scope.routes = {};
     $scope.tableParams = new NgTableParams({}, {});
@@ -12,10 +12,19 @@ function RouteListCtl($scope, RouteService, NgTableParams, $stateParams) {
 
     $scope.srcDcName = $stateParams.srcDcName;
     $scope.dstDcName = $stateParams.dstDcName;
+    $scope.clusterTypes = ClusterType.selectData()
+    $scope.getTypeName = getTypeName;
 
     $scope.switchTag = switchTag;
 
     showAllRoutes();
+
+    function getTypeName(type) {
+        if (null == type || "" == type) return ""
+        var clusterType = ClusterType.lookup(type)
+        if (clusterType) return clusterType.name
+        else return '未知类型'
+    }
 
     function showAllRoutes() {
         $scope.currentTag = ['meta'];

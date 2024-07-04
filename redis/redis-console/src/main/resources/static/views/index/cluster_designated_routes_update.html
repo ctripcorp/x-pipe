@@ -32,6 +32,7 @@
                         <thead ng-if="designatedRoutes && designatedRoutes.length">
                             <tr>
                                 <th>Route_id</th>
+                                <th>cluster_type</th>
                                 <th>org_name</th>
                                 <th>public</th>
                                 <th>src_dcName</th>
@@ -46,6 +47,7 @@
                         <tbody>
                             <tr ng-repeat="designatedRoute in designatedRoutes">
                                 <td >{{designatedRoute.id}}</td>
+                                <td ng-bind="getTypeName(designatedRoute.clusterType)"></td>
                                 <td filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="designatedRoute.orgName"></td>
                                 <td style= "margin: 0pt 0cm 0pt 0cm;" class="{{designatedRoute.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>
                                 <td ng-bind="designatedRoute.srcDcName"> </td>
@@ -131,6 +133,12 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label no-padding-right"> clusterType </label>
+                        <div class="col-sm-6">
+                            <input type="text" style="width:250px;" class="form-control" ng-model="getTypeName(allRoutes[toAddDesignatedRoute.id].clusterType)" ng-disabled="true">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="col-sm-4 control-label no-padding-right"> orgName </label>
                         <div class="col-sm-6">

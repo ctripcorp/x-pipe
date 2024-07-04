@@ -12,8 +12,8 @@
 			<keeperContainer id="1" ip="1.1.1.1" port="8080" az_id="1234567890123456789"/>
 			<keeperContainer id="2" ip="1.1.1.1" port="8081" az_id="1234567890123456789"/>
 		</keeperContainers>
-		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171" cluster_type="one_way"/>
-		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171" cluster_type="one_way"/>
+		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171" cluster-type="one_way"/>
+		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171" cluster-type="one_way"/>
 
 		<azs>
 			<az id = 'ali1' active="true"></az>
@@ -58,8 +58,8 @@
 	</dc>
 	<dc id="fra" zone="FRA">
 		<routes>
-			<route id="1234567890123456789" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443" isPublic="true"/>
-			<route id="2" org-id="1" tag="console" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.3:80" isPublic="true"/>
+			<route id="1234567890123456789" cluster-type="one_way" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443" isPublic="true"/>
+			<route id="2" cluster-type="bi_direction" org-id="1" tag="console" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.3:80" isPublic="true"/>
 		</routes>
 		<cluster id="cluster1" active-dc="jq" backup-dcs = "fra,oy" org-id="1" phase="1" lastModifiedTime="1234567abc" activeRedisCheckRules = "1,2,3" clusterDesignatedRouteIds="1,2,3"  ><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->

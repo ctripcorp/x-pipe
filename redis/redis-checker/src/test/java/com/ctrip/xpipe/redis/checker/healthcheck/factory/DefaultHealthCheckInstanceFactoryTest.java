@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpoint
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import org.junit.After;
 import org.junit.Assert;
@@ -112,13 +113,17 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
         String routeInfo = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8009";
         local.addRoute(new RouteMeta().setSrcDc(FoundationService.DEFAULT.getDataCenter())
-                .setDstDc("target").setTag(Route.TAG_CONSOLE).setRouteInfo(routeInfo).setIsPublic(true));
+                .setDstDc("target").setTag(Route.TAG_CONSOLE).setRouteInfo(routeInfo).setIsPublic(true)
+                .setClusterType("").setOrgId(0));
 
-        when(metaCache.getRoutes()).thenReturn(local.getRoutes());
+        ClusterMeta clusterMeta = redisMeta.parent().parent();
+        when(metaCache.getCurrentDcConsoleRoutes()).thenReturn(local.getRoutes());
         when(metaCache.getXpipeMeta()).thenReturn(meta);
+        when(metaCache.findMetaDesc(new HostPort(redisMeta.getIp(), redisMeta.getPort())))
+                .thenReturn(new XpipeMetaManager.MetaDesc(clusterMeta.parent(), clusterMeta, redisMeta.parent(), redisMeta));
 
         logger.info("{}", metaCache.getXpipeMeta().toString());
-        logger.info("{}", metaCache.getRoutes());
+        logger.info("{}", metaCache.getCurrentDcConsoleRoutes());
 
         when(metaCache.getDc(new HostPort(redisMeta.getIp(), redisMeta.getPort()))).thenReturn("target");
         endpointFactory.updateRoutes();

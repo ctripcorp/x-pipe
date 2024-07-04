@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('ClusterDesignatedRoutesUpdateCtl', ClusterDesignatedRoutesUpdateCtl);
 
-ClusterDesignatedRoutesUpdateCtl.$inject = ['$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'RouteService'];
+ClusterDesignatedRoutesUpdateCtl.$inject = ['$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'RouteService', 'ClusterType'];
 
-function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, RouteService) {
+function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, RouteService, ClusterType) {
 
     $scope.clusterName = $stateParams.clusterName;
     $scope.currentDcName = $stateParams.srcDcName;
@@ -26,6 +26,8 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
 
     $scope.preSubmitUpdates = preSubmitUpdates;
     $scope.submitUpdates = submitUpdates;
+
+    $scope.getTypeName = getTypeName;
 
 
     if ($scope.clusterName) {
@@ -52,6 +54,13 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
+    }
+
+    function getTypeName(type) {
+        if (null == type || "" == type) return ""
+        var clusterType = ClusterType.lookup(type)
+        if (clusterType) return clusterType.name
+        else return '未知类型'
     }
 
     function switchDc(dc) {

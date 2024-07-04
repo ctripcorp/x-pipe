@@ -1502,7 +1502,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (!needCheckClusterRouteInfo(clusterTbl.getClusterType())) return defaultRoutes;
 
 		List<String> dstDcNames = parseDstDcs(clusterTbl);
-		Map<String, RouteMeta> chooseRoutes = metaCache.chooseDefaultRoutes(clusterName, srcDcName, dstDcNames, (int) clusterTbl.getClusterOrgId());
+		Map<String, RouteMeta> chooseRoutes = metaCache.chooseDefaultMetaRoutes(clusterName, srcDcName, dstDcNames);
 		if (chooseRoutes == null || chooseRoutes.isEmpty()) return defaultRoutes;
 
 		Map<Long, RouteInfoModel> routeIdInfoModelMap = routeService.getRouteIdInfoModelMap();
@@ -1746,7 +1746,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	private Map<String, RouteMeta> getChooseRoutes(ClusterMeta clusterMeta, String srcDcName) {
 		List<String> dstDcNames = parseDstDcs(clusterMeta);
-		return metaCache.chooseRoutes(clusterMeta.getId(), srcDcName, dstDcNames, clusterMeta.getOrgId());
+		return metaCache.chooseClusterMetaRoutes(clusterMeta.getId(), srcDcName, dstDcNames);
 	}
 
 	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
