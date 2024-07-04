@@ -20,6 +20,6 @@ public class InverseHostPortMapBuilderTest extends AbstractRedisTest {
 
     @Override
     protected String getXpipeMetaConfigFile() {
-        return "com/ctrip/xpipe/redis/core/meta/impl/file-dao-test.xml";
+        return "file-dao-test.xml";
     }
 }

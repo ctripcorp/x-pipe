@@ -140,13 +140,8 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public RouteMeta chooseRoute(String clusterName, String dstDc, int orgId, RouteChooseStrategy strategy) {
-		return metaManager.chooseMetaRoute(clusterName, currentDc, dstDc, orgId, strategy);
-	}
-
-	@Override
-	public Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy) {
-		return metaManager.chooseMetaRoutes(clusterName,currentDc, dstDcs, orgId, strategy);
+	public RouteMeta chooseRoute(ClusterMeta cluster, String dstDc, RouteChooseStrategy strategy) {
+		return metaManager.chooseMetaRoute(cluster, currentDc, dstDc, strategy);
 	}
 
 	@Override

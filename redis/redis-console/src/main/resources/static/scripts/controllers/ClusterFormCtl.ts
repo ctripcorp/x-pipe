@@ -126,7 +126,6 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
            $scope.organizationNames = result.map(function (org) {
                return org.orgName;
            });
-            console.log($scope.organizationNames);
         });
 
     }

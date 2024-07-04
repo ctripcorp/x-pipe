@@ -27,7 +27,6 @@ function KeepercontainerOverallCtl($rootScope, $scope, $window, $stateParams, Ke
                     });
                 }
             })
-            console.log($scope.originData)
             $scope.tableParams = new NgTableParams({
                 page : 1,
                 count : 10,

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
@@ -52,6 +53,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
         proxyService.addProxy(proxy6);
 
         route1 = new RouteModel().setActive(true).setDstDcName(dcNames[0]).setSrcDcName(dcNames[1]).setPublic(true)
+                .setClusterType(ClusterType.ONE_WAY.name())
                 .setId(1).setOrgId(0L).setTag(Route.TAG_META).setSrcProxyIds("1,2, 3").setDstProxyIds("4,5,6");
         route2 = new RouteModel().setActive(false).setDstDcName(dcNames[0]).setSrcDcName(dcNames[1]).setPublic(false)
                 .setId(2).setOrgId(3L).setTag(Route.TAG_META).setSrcProxyIds("1,2, 3").setDstProxyIds("4,5,6");
@@ -129,6 +131,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(Lists.newArrayList(proxy4.getUri(), proxy5.getUri(), proxy6.getUri()), route.getDstProxies());
         Assert.assertEquals(route1.isPublic(), route.isPublic());
         Assert.assertEquals(null, route.getOrgName());
+        Assert.assertEquals(ClusterType.ONE_WAY.name(), route.getClusterType());
     }
 
     @Test

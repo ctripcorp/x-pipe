@@ -974,6 +974,7 @@
   <entity name="route-tbl" table="route_tbl" alias="rt2">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="route-org-id" field="route_org_id" value-type="long" length="20" nullable="false" />
+    <member name="cluster-type" field="cluster_type" value-type="String" length="32" nullable="false" />
     <member name="src-dc-id" field="src_dc_id" value-type="long" length="20" nullable="false" />
     <member name="dst-dc-id" field="dst_dc_id" value-type="long" length="20" nullable="false" />
     <member name="src-proxy-ids" field="src_proxy_ids" value-type="String" length="128" nullable="false" />

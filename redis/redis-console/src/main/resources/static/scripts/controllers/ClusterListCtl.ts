@@ -90,7 +90,6 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                     "title": org.orgName
                 });
             }
-            console.log($scope.organizationNames);
         });
 
     ngTableEventsChannel.onAfterDataFiltered(function (params, filtered) {
@@ -100,7 +99,6 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         const end = Math.min(start + size, filtered.length);
         $scope.filteredClusters = filtered;
         $scope.displayedClusters = filtered.slice(start, end);
-        console.log(index, size, start, end, $scope.filteredClusters, $scope.displayedClusters);
     });
 
     function selectDisplayed() {

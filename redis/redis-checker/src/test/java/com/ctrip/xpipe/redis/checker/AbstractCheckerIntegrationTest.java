@@ -15,6 +15,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -119,6 +121,11 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         @Bean
         public ClusterHealthManager clusterHealthManager(@Qualifier(GLOBAL_EXECUTOR) ExecutorService executorService) {
             return new CheckerClusterHealthManager(executorService);
+        }
+
+        @Bean
+        public RouteChooseStrategyFactory routeChooseStrategyFactory() {
+            return new DefaultRouteChooseStrategyFactory();
         }
 
         @Bean

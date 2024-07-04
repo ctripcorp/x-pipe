@@ -42,7 +42,9 @@ public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
                 continue;
             }
             if(!currentRouteMeta.getRouteInfo().equalsIgnoreCase(futureRouteMeta.getRouteInfo())
-                    || !ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())) {
+                    || !ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())
+                    || !ObjectUtils.equals(currentRouteMeta.getClusterType(), futureRouteMeta.getClusterType())
+                    || !ObjectUtils.equals(currentRouteMeta.getOrgId(), futureRouteMeta.getOrgId())) {
                 modified.add(new RouteMetaComparator(currentRouteMeta, futureRouteMeta));
             }
         }

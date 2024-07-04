@@ -73,12 +73,12 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Map<String, RouteMeta> chooseDefaultRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId) {
+    public Map<String, RouteMeta> chooseDefaultMetaRoutes(String clusterName, String srcDc, List<String> dstDcs) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId) {
+    public Map<String, RouteMeta> chooseClusterMetaRoutes(String clusterName, String backUpDcName, List<String> peerDcs) {
         throw new UnsupportedOperationException();
     }
 }

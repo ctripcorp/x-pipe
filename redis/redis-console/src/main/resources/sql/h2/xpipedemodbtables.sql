@@ -291,6 +291,7 @@ CREATE TABLE `route_tbl` (
   `route_org_id` bigint(20) unsigned not null default 0,
   `src_dc_id` bigint(20) unsigned not null,
   `dst_dc_id` bigint(20) unsigned not null,
+  `cluster_type` varchar(32) not null default '',
   `src_proxy_ids` varchar(128) not null default '',
   `dst_proxy_ids` varchar(128) not null default '',
   `optional_proxy_ids` varchar(128) not null default '',

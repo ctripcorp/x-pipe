@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.MapUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
 import org.xml.sax.SAXException;
@@ -22,6 +21,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -814,92 +814,72 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public RouteMeta doChooseRoute(String clusterId, String srcDc, String dstDc, int orgId,
-												 RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes) {
-		if (StringUtil.isEmpty(dstDc)) throw new IllegalArgumentException("empty dstDc");
-		return doChooseRoutes(clusterId, srcDc, Collections.singletonList(dstDc),
-				orgId, strategy, tag, useClusterPrioritizedRoutes).get(dstDc.toLowerCase());
+	public RouteMeta doChooseMetaRoute(ClusterMeta cluster, String srcDc, String dstDc, RouteChooseStrategy strategy) {
+		return doChooseRoute(cluster, routes(srcDc, Route.TAG_META), dstDc, strategy, true);
 	}
 
 	@Override
-	public Map<String, RouteMeta> doChooseRoutes(String clusterId, String srcDc, List<String> dstDcs, int orgId,
-												  RouteChooseStrategy strategy, String tag, boolean useClusterPrioritizedRoutes) {
-		Map<String, List<RouteMeta>> clusterPrioritizedRoutes = null;
-		if (useClusterPrioritizedRoutes) clusterPrioritizedRoutes = getClusterDesignatedRoutes(clusterId, srcDc);
+	public Map<String, RouteMeta> doChooseMetaRoutes(String clusterId, String srcDc, List<String> dstDcs,
+													 RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes) {
+		ClusterMeta clusterMeta = getDirectClusterMeta(srcDc, clusterId);
+		if (null == clusterMeta) throw new IllegalArgumentException("unknown cluster " + clusterId);
 
-		Map<String, RouteMeta> chooseRoutes = new HashMap<>();
-		if (dstDcs == null || dstDcs.isEmpty()) return chooseRoutes;
-
-		Map<String, List<RouteMeta>> dstDcRouteMap = new HashMap<>();
-		routes(srcDc, tag).forEach((routeMeta -> {
-			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
-		}));
-		logger.debug("[doChooseRoute] begin to choose route for dstDcs:{} with orgId:{} from clusterPrioritizedRoutes:{} and routes:{}",
-				dstDcs, orgId, clusterPrioritizedRoutes, dstDcRouteMap);
-		if (dstDcRouteMap.isEmpty()) return chooseRoutes;
-
-		for (String dstDc : dstDcs) {
-			if (srcDc.equalsIgnoreCase(dstDc)) continue;
-
-			RouteMeta chooseRoute = chooseRoute(clusterId, dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()),
-					strategy, clusterPrioritizedRoutes);
-			logger.debug("[doChooseRoute] choose route {} for dstDc:{}", chooseRoute, dstDc);
-			if (chooseRoute != null) chooseRoutes.put(dstDc.toLowerCase(), chooseRoute);
+		List<RouteMeta> routes = routes(srcDc, Route.TAG_META);
+		Map<String, RouteMeta> choosedRoutes = new HashMap<>();
+		for (String dc: dstDcs) {
+			try {
+				RouteMeta route = doChooseRoute(clusterMeta, routes, dc, strategy, useClusterPrioritizedRoutes);
+				if (null != route) choosedRoutes.put(dc, route);
+			} catch (Throwable th) {
+				logger.info("[doChooseMetaRoutes][{}][{}->{}] fail", clusterId, srcDc, dc, th);
+			}
 		}
-		return chooseRoutes;
+
+		return choosedRoutes;
 	}
 
-	private RouteMeta chooseRoute(String clusterName, String dstDc, int orgId, List<RouteMeta> routes, RouteChooseStrategy strategy,
-								  Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
-		if (routes == null || routes.isEmpty()) return null;
+	private RouteMeta doChooseRoute(ClusterMeta cluster, List<RouteMeta> routes, String dstDc,
+								   RouteChooseStrategy strategy, boolean useClusterPrioritizedRoutes) {
+		if (StringUtil.isEmpty(dstDc)) throw new IllegalArgumentException("empty dstDc");
 
-		List<RouteMeta> routeCandidates = findRouteCandidates(dstDc, orgId, routes, clusterPrioritizedRoutes);
-		return strategy.choose(routeCandidates, clusterName);
-	}
-
-	private List<RouteMeta> findRouteCandidates(String dstDc, int orgId, List<RouteMeta> routes,
-												Map<String, List<RouteMeta>> clusterPrioritizedRoutes){
-		List<RouteMeta> routeCandidates = clusterPrioritizedRoutes == null ?
-				null : findRouteCandidatesFromPrioritizedRoutes(routes, clusterPrioritizedRoutes.get(dstDc.toLowerCase()));
-		if (routeCandidates != null && !routeCandidates.isEmpty() ) return routeCandidates;
-
-		routeCandidates = findRouteCandidatesFromOrgDedicatedRoutes(routes, orgId);
-		if(!routeCandidates.isEmpty()) return routeCandidates;
-
-		return findRouteCandidatesFromCommonRoutes(routes);
-	}
-
-	private List<RouteMeta> findRouteCandidatesFromPrioritizedRoutes(List<RouteMeta> routes, List<RouteMeta> clusterPrioritizedRoutes) {
-		if (clusterPrioritizedRoutes == null || clusterPrioritizedRoutes.isEmpty() ) return null;
-
-		List<RouteMeta> routeCandidates = new ArrayList<>();
-		routes.forEach(route -> {
-			if (clusterPrioritizedRoutes.contains(route)) routeCandidates.add(route);
-		});
-
-		return routeCandidates;
-	}
-
-	private List<RouteMeta> findRouteCandidatesFromOrgDedicatedRoutes(List<RouteMeta> routes, int orgId) {
-		List<RouteMeta> routeCandidates = new ArrayList<>();
+		List<RouteMeta> dstDcRoutes = new LinkedList<>();
 		routes.forEach(routeMeta -> {
-			if (routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
-				routeCandidates.add(routeMeta);
-			}
+			if (dstDc.equalsIgnoreCase(routeMeta.getDstDc())) dstDcRoutes.add(routeMeta);
 		});
+		if (dstDcRoutes.isEmpty()) return null;
 
-		return routeCandidates;
-	}
+		if (useClusterPrioritizedRoutes) {
+			Set<Long> clusterDesignatedRouteIds = expandIds(cluster.getClusterDesignatedRouteIds());
+			List<RouteMeta> clusterDesignatedRoutes = dstDcRoutes.stream()
+					.filter(route -> clusterDesignatedRouteIds.contains(route.getId()))
+					.collect(Collectors.toList());
+			if (!clusterDesignatedRoutes.isEmpty()) return strategy.choose(clusterDesignatedRoutes, cluster.getId());
+		}
 
-	private List<RouteMeta> findRouteCandidatesFromCommonRoutes(List<RouteMeta> routes) {
-		List<RouteMeta> routeCandidates = new ArrayList<>();
-		routes.forEach(routeMeta -> {
-			if (routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
-				routeCandidates.add(routeMeta);
-			}
-		});
+		String clusterType = cluster.getType();
+		List<RouteMeta> routesByClusterType = dstDcRoutes.stream()
+				.filter(route -> route.isIsPublic() && clusterType.equalsIgnoreCase(route.getClusterType()))
+				.collect(Collectors.toList());
+		if (routesByClusterType.isEmpty()) {
+			routesByClusterType = dstDcRoutes.stream()
+					.filter(route -> route.isIsPublic() && route.getClusterType().equals(""))
+					.collect(Collectors.toList());
+		}
+		if (routesByClusterType.isEmpty()) return null;
 
-		return routeCandidates;
+		Integer orgId = cluster.getOrgId();
+		List<RouteMeta> routesByOrg = routesByClusterType.stream()
+				.filter(route -> route.isIsPublic() && orgId.equals(route.getOrgId()))
+				.collect(Collectors.toList());
+		if (routesByOrg.isEmpty()) {
+			routesByOrg = routesByClusterType.stream()
+					.filter(route -> route.isIsPublic() && OrgUtil.isDefaultOrg(route.getOrgId()))
+					.collect(Collectors.toList());
+		}
+		// don't degrade to default clusterType, it's too complex
+		if (routesByOrg.isEmpty()) return null;
+
+		return strategy.choose(routesByOrg, cluster.getId());
 	}
 
 	@Override

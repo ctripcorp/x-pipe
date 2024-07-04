@@ -18,9 +18,7 @@ public interface DcMetaManager{
 
 	List<RouteMeta> getAllMetaRoutes();
 
-	RouteMeta chooseRoute(String clusterName, String dstDc, int orgId, RouteChooseStrategy strategy);
-
-	Map<String, RouteMeta> chooseRoutes(String clusterName, List<String> dstDcs, int orgId, RouteChooseStrategy strategy);
+	RouteMeta chooseRoute(ClusterMeta cluster, String dstDc, RouteChooseStrategy strategy);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc

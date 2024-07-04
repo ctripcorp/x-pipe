@@ -29,7 +29,6 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
     }
 
     $scope.onStatusChange = function(type) {
-        console.log("ActiveDcMigrationEventListCtl: onStatusChange", type);
         $scope.clusterName = undefined;
         $scope.operator = undefined;
         $scope.filterTestCluster = false;
