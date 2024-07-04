@@ -86,7 +86,7 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
         tunnels.add(new TunnelStatsInfo().setBackend(new HostPort("", 2001))
                 .setFrontend(new HostPort("", 80)).setProxyHost(new HostPort("10.0.0.2", 8080)));
 
-        proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId).setShardId(shardId).setTunnelStatsInfos(tunnels);
+        proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId).setShardId(shardId).setPeerDcId(peerDcId).setTunnelStatsInfos(tunnels);
         return proxyTunnelInfo;
     }
 
