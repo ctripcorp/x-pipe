@@ -2,17 +2,19 @@ package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
-import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class AlertEntityOnlyTrackSubscriber extends AbstractAlertEntitySubscriber {
+
+    protected static final Logger logger = LoggerFactory.getLogger(AlertEntityOnlyTrackSubscriber.class);
 
     private final static String METRIC_TYPE = "normal_alert";
 
@@ -49,4 +51,8 @@ public class AlertEntityOnlyTrackSubscriber extends AbstractAlertEntitySubscribe
         }, reportInterval, reportInterval, TimeUnit.MILLISECONDS);
     }
 
+    @Override
+    public Logger getLogger() {
+        return logger;
+    }
 }
