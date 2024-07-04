@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -27,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class ForwardAlertService extends AlertEntityHandler {
+
+    protected static final Logger logger = LoggerFactory.getLogger(ForwardAlertService.class);
 
     private final static int QUEUE_LENGTH = 4096;
 
@@ -76,7 +80,7 @@ public class ForwardAlertService extends AlertEntityHandler {
             mergeAlertMultiples(isAlert);
         } catch (Throwable th) {
             // avoid thread exit
-            logger.error("[tryMergeAlert]" + th.getMessage(), th);
+            getLogger().error("[tryMergeAlert]" + th.getMessage(), th);
         }
     }
 
@@ -158,6 +162,11 @@ public class ForwardAlertService extends AlertEntityHandler {
             queue.offer(alertEntity);
         }
         return true;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
     }
 
     private class LRUCache<K, V> extends LinkedHashMap<K, V> {

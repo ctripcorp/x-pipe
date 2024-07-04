@@ -48,7 +48,7 @@ public abstract class AbstractAlertEntitySubscriber extends AlertEntityHandler i
 
     @Override
     public void processData(AlertEntity alert) {
-        logger.debug("process alert: {}", alert);
+        getLogger().debug("process alert: {}", alert);
         doProcessAlert(alert);
     }
 
@@ -62,7 +62,7 @@ public abstract class AbstractAlertEntitySubscriber extends AlertEntityHandler i
         long recoveryMilli = recoveryMilli(alert);
         long expectedRecoverMilli = recoveryMilli + alert.getDate().getTime();
         if(expectedRecoverMilli <= System.currentTimeMillis()) {
-            logger.debug("[alertRecovered] alert: {}, expected: {}, now: {}", DateTimeUtils.timeAsString(alert.getDate()),
+            getLogger().debug("[alertRecovered] alert: {}, expected: {}, now: {}", DateTimeUtils.timeAsString(alert.getDate()),
                     DateTimeUtils.timeAsString(expectedRecoverMilli), DateTimeUtils.currentTimeAsString());
             return true;
         }
@@ -105,7 +105,7 @@ public abstract class AbstractAlertEntitySubscriber extends AlertEntityHandler i
             if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
                 continue;
             }
-            logger.debug("[AlertEntitySubscriber] Mail out: {}", mailGroup.getValue());
+            getLogger().debug("[AlertEntitySubscriber] Mail out: {}", mailGroup.getValue());
             Map<ALERT_TYPE, Set<AlertEntity>> alerts = mailGroup.getValue();
             transmitAlterToCheckerLeader(isAlert, alerts);
             if(alerts.size() == 0) {

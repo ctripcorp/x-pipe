@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -26,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
+    private static final Logger logger = LoggerFactory.getLogger(RepeatAlertEntitySubscriber.class);
+
     private AlertEntityHolderManager holderManager = new DefaultAlertEntityHolderManager();
 
     private List<ALERT_TYPE> ignoredAlertType = Lists.newArrayList(
@@ -36,7 +40,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() {
-                logger.debug("[scheduledTask]Stored alerts: {}", holderManager);
+                logger.debug("[RepeatAlertEntitySubscriber]Stored alerts: {}", holderManager);
                 scheduledReport();
 
             }
@@ -49,7 +53,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         synchronized (this) {
             prevHolderManager = refresh();
         }
-        logger.debug("[scheduledReport]Keep receiving alerts: {}", holderManager.allAlertsToSend());
+        logger.debug("[RepeatAlertEntitySubscriber]Keep receiving alerts: {}", holderManager.allAlertsToSend());
         if(prevHolderManager == null || !prevHolderManager.hasAlertsToSend()) {
             return;
         }
@@ -62,7 +66,7 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
                 if(commandFuture.isSuccess()) {
                     new ScheduledSendRepeatAlertTask(commandFuture.getNow()).execute(executors);
                 } else {
-                    logger.error("[ScheduledCleanupExpiredAlertTask]", commandFuture.cause());
+                    logger.error("[RepeatAlertEntitySubscriber]ScheduledCleanupExpiredAlertTask", commandFuture.cause());
                 }
             }
         });
@@ -88,6 +92,11 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
 
     private boolean ignoreAlert(AlertEntity alert) {
         return ignoredAlertType.contains(alert.getAlertType());
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
     }
 
     class ScheduledSendRepeatAlertTask extends AbstractCommand<Void> {

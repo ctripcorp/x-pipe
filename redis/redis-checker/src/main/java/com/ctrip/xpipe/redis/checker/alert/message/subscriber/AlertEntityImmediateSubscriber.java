@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHold
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -23,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscriber {
 
+    protected static final Logger logger = LoggerFactory.getLogger(AlertEntityImmediateSubscriber.class);
+
     private final static long reportInterval = 3 * 60 * 1000;
 
     private Set<AlertEntity> existingAlerts = Sets.newConcurrentHashSet();
@@ -38,9 +42,9 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
             protected void doRun() {
                 try {
                     lock.lock();
-                    logger.debug("[initCleaner][before]sent alerts: {}", existingAlerts);
+                    logger.debug("[ImmediateSubscriber][before]sent alerts: {}", existingAlerts);
                     existingAlerts.removeIf(alert -> alertRecovered(alert));
-                    logger.debug("[initCleaner][after]send alerts: {}", existingAlerts);
+                    logger.debug("[ImmediateSubscriber][after]send alerts: {}", existingAlerts);
                 } finally {
                     lock.unlock();
                 }
@@ -55,10 +59,10 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
             return;
         }
         if(hasBeenSentOut(alert)) {
-            logger.debug("[doProcessAlert]Alert has been sent out once: {}", alert);
+            logger.debug("[ImmediateSubscriber]Alert has been sent out once: {}", alert);
             return;
         }
-        logger.debug("[sendTaskBegin] {}", sendTaskBegin.get());
+        logger.debug("[ImmediateSubscriber]sendTaskBegin {}", sendTaskBegin.get());
         sendingAlerts.add(alert);
         if(sendTaskBegin.compareAndSet(false, true)) {
             logger.debug("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
@@ -78,7 +82,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
                 } finally {
                     lock.unlock();
                 }
-                logger.debug("[scheduleSendTask][alerts] {}", holderManager);
+                logger.debug("[ImmediateSubscriber][alerts] {}", holderManager);
                 doSend(holderManager, true);
                 sendTaskBegin.compareAndSet(true, false);
             }
@@ -111,5 +115,10 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
     @VisibleForTesting
     public Set<AlertEntity> getSendingAlerts() {
         return sendingAlerts;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
     }
 }
