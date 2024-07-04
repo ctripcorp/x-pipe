@@ -13,6 +13,9 @@ public class HostDiskOverloadHandler extends AbstractHandler<KeeperContainerUsed
 
     @Override
     public boolean doNextHandler(KeeperContainerUsedInfoModel usedInfoModel) {
+        if (usedInfoModel.getDiskSize() == 0) {
+            return false;
+        }
         return (double) usedInfoModel.getDiskUsed() / usedInfoModel.getDiskSize() < config.getKeeperContainerDiskOverLoadFactor();
     }
 }
