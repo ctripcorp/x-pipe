@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK_INTERVAL;
 
@@ -54,6 +55,8 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
 
     private RouteChooser routeChooser;
 
+    private AtomicBoolean chooserInited = new AtomicBoolean(false);
+
     @Autowired
     public DefaultHealthCheckEndpointFactory(ProxyChecker proxyChecker, CheckerConfig config, MetaCache metaCache,
                                              RouteChooseStrategyFactory routeChooseStrategyFactory) {
@@ -62,6 +65,16 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         this.metaCache = metaCache;
 
         this.routeChooser = new DefaultRouteChooser(routeChooseStrategyFactory.create(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH));
+    }
+
+    private synchronized void initRoutes() {
+        if (chooserInited.get()) return;
+
+        List<RouteMeta> allRoutes = metaCache.getCurrentDcConsoleRoutes();
+        if (null != allRoutes) {
+            this.routeChooser.updateRoutes(metaCache.getCurrentDcConsoleRoutes());
+            chooserInited.set(true);
+        }
     }
 
     @Override
@@ -80,14 +93,6 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         });
     }
 
-    public RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
-        int hash = hostPort.hashCode();
-        if(hash == Integer.MIN_VALUE){
-            return routes.get(0);
-        }
-        return routes.get(Math.abs(hash) % routes.size());
-    }
-
     private void registerProxy(HostPort hostPort) {
         XpipeMetaManager.MetaDesc metaDesc = metaCache.findMetaDesc(hostPort);
         if (null == metaDesc) {
@@ -95,6 +100,9 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
             return;
         }
 
+        if (!chooserInited.get()) {
+            initRoutes();
+        }
         RouteMeta route = routeChooser.chooseRoute(metaDesc.getDcId(), metaDesc.getClusterMeta());
         if (null != route) {
             String proxyProtocol = getProxyProtocol(route);
@@ -163,8 +171,8 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     @Override
     public void remove(HostPort hostPort) {
         logger.info("[ProxyRegistry] unregisterProxy {}:{}", hostPort.getHost(),hostPort.getPort());
-        ProxyRegistry.unregisterProxy(hostPort.getHost(), hostPort.getPort());
         map.remove(hostPort);
+        ProxyRegistry.unregisterProxy(hostPort.getHost(), hostPort.getPort());
     }
 
     @Override
@@ -173,9 +181,10 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         if(endpoint != null) {
             return endpoint;
         }
+
+        registerProxy(hostPort);
         endpoint = new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
         map.put(hostPort, endpoint);
-        registerProxy(hostPort);
         return endpoint;
     }
 
