@@ -162,6 +162,21 @@ public class KeeperUsedInfoReporterTest {
     }
 
     @Test
+    public void testKeeperContainerDiskSick() {
+        KeeperDiskInfo diskInfo = new KeeperDiskInfo();
+        diskInfo.available = false;
+        diskInfo.spaceUsageInfo = null;
+        Mockito.when(keeperContainerService.getKeeperDiskInfo(anyString())).thenReturn(diskInfo);
+        Mockito.when(keeperContainerService.getKeeperDiskInfo(anyString())).thenReturn(null);
+        keeperContainerInfoReporter.
+                reportKeeperContainerInfo();
+        Mockito.verify(checkerConsoleService, Mockito.times(1))
+                .reportKeeperContainerInfo(anyString(), resultCaptor.capture(), Mockito.anyInt());
+
+        Assert.assertEquals(3, resultCaptor.getValue().size());
+    }
+
+    @Test
     public void DcClusterShardActive(){
         DcClusterShardKeeper active = new DcClusterShardKeeper();
         active.setActive(true);

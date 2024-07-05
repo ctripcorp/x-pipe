@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -76,6 +77,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @Autowired
     private KeeperContainerUsedInfoAnalyzer keeperContainerUsedInfoAnalyzer;
 
+    @Autowired
+    private CheckerDbConfig checkerDbConfig;
+
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
@@ -125,7 +129,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
     public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
         logger.debug("[updateKeeperContainerUsedInfo][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
-        keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
+        if (checkerDbConfig.isKeeperBalanceInfoCollectOn()) {
+            keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
+        }
     }
 
 
