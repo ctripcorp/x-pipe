@@ -116,15 +116,12 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
         Set<String> downDcsToUpperCase = downDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
         Set<String> availableDcsToUpperCase = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
-        Map<String, DcsPriority> clusterDcsPriorityMap = clusterLevelDcPriority.get();
-        if (clusterDcsPriorityMap == null || clusterDcsPriorityMap.get(clusterName.toLowerCase()) == null) {
-            return new HashSet<>();
-        }
 
         Set<String> ignoreDcs = new HashSet<>();
         for (String downDc : downDcsToUpperCase) {
             ignoreDcs.addAll(getClusterIgnoreDcs(clusterName, downDc));
         }
+
         availableDcsToUpperCase.removeAll(ignoreDcs);
         if (availableDcsToUpperCase.isEmpty())
             return new HashSet<>();
@@ -143,10 +140,15 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     Set<String> getClusterIgnoreDcs(String clusterName, String downDc) {
         Set<String> ignoreDcs = new HashSet<>();
-        DcPriority downDcPriority = getClusterLevelDcPriority(clusterName, downDc);
+        DcPriority downDcClusterPriority = getClusterLevelDcPriority(clusterName, downDc);
 
-        if (downDcPriority != null) {
-            ignoreDcs.addAll(getIgnoreDcs(downDcPriority));
+        if (downDcClusterPriority != null) {
+            ignoreDcs.addAll(getIgnoreDcs(downDcClusterPriority));
+        } else {
+            DcPriority downDcPriority = getDcLevelPriority(downDc);
+            if (null != downDcPriority) {
+                ignoreDcs.addAll(getIgnoreDcs(downDcPriority));
+            }
         }
 
         return ignoreDcs;
