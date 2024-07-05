@@ -299,7 +299,7 @@ public class DcRelationsServiceTest {
 
         //not initialized
         Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
-        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+        Assert.assertEquals(Sets.newHashSet("SHAXY","SHARB"), excludedDcs);
 
         dcRelationsService.refresh();
 
@@ -307,9 +307,9 @@ public class DcRelationsServiceTest {
         excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet());
         Assert.assertEquals(Sets.newHashSet(), excludedDcs);
 
-        //not existed cluster
+        //not existed cluster, use dc priority
         excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster3", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
-        Assert.assertEquals(Sets.newHashSet(), excludedDcs);
+        Assert.assertEquals(Sets.newHashSet("SHAXY","SHARB"), excludedDcs);
 
         //sharb down, ignore ali
         excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sharB"), Sets.newHashSet("shaXy", "shA-ali"));
@@ -319,7 +319,7 @@ public class DcRelationsServiceTest {
         excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("shaXy"), Sets.newHashSet("shaRB", "shA-ali"));
         Assert.assertEquals(Sets.newHashSet("SHAXY"), excludedDcs);
 
-        //ali down
+        //ali down, no available dc
         excludedDcs = dcRelationsService.getExcludedDcsForBiCluster("clUster1", Sets.newHashSet("sha-ALI"), Sets.newHashSet("shaRB", "shaXY"));
         Assert.assertEquals(Sets.newHashSet(), excludedDcs);
 
