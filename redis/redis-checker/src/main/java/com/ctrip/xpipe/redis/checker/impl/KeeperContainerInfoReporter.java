@@ -153,12 +153,13 @@ public class KeeperContainerInfoReporter implements GroupCheckerLeaderAware {
                     logger.debug("[get KeeperContainer disk Info] keeperIp: {}", keeperIp);
                     KeeperDiskInfo keeperDiskInfo = keeperContainerService.getKeeperDiskInfo(keeperIp);
                     logger.debug("[KeeperContainer disk Info] keeperIp: {} keeperDiskInfo: {}", keeperIp, keeperDiskInfo);
-                    if  (keeperDiskInfo != null) {
-                        model.setDiskAvailable(keeperDiskInfo.available)
+                    if  (keeperDiskInfo != null && keeperDiskInfo.available && keeperDiskInfo.spaceUsageInfo != null) {
+                        model.setDiskAvailable(true)
                                 .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
                                 .setDiskUsed(keeperDiskInfo.spaceUsageInfo.use);
                     } else {
-                        model.setKeeperContainerHealth(false);
+                        model.setDiskAvailable(false)
+                                .setKeeperContainerHealth(false);
                     }
                 } catch (Throwable e){
                     logger.error("[reportKeeperContainerInfo] getKeeperDiskInfo error, keeperIp: {}", keeperIp, e);
