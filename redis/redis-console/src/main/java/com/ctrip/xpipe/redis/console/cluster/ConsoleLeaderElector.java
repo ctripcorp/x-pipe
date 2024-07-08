@@ -7,6 +7,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -14,6 +15,8 @@ import javax.annotation.PreDestroy;
  *         Jun 12, 2017
  */
 public class ConsoleLeaderElector extends AbstractLeaderElector implements ClusterServer{
+
+    private AtomicInteger forceHealthy = new AtomicInteger(0);
 
     public static String KEY_CONSOLE_ID = "CONSOLE_ID";
 
@@ -26,6 +29,49 @@ public class ConsoleLeaderElector extends AbstractLeaderElector implements Clust
         doStart();
     }
 
+    public void forceSetLeader() {
+        logger.info("[forceSetLeader]");
+        getZKEventExecutors().execute(() -> setForceHealthy(1));
+    }
+
+    public void forceSetFollower() {
+        logger.info("[forceSetFollower]");
+        getZKEventExecutors().execute(() -> setForceHealthy(-1));
+    }
+
+    public void forceReset() {
+        logger.info("[forceReset]");
+        getZKEventExecutors().execute(() -> setForceHealthy(0));
+    }
+
+    private void setForceHealthy(int healthy) {
+        getZKEventExecutors().execute(() -> {
+            logger.debug("[setForceHealthy] zk:{} force:{}->{}",amILeader(), forceHealthy.get(), healthy);
+            boolean before = amILeader();
+            this.forceHealthy.set(healthy);
+            boolean after = amILeader();
+
+            if (!before && after) {
+                logger.info("[setForceHealthy][become leader]");
+                this.notifyBecomeLeader();
+            } else if (before && !after) {
+                logger.info("[setForceHealthy][lose leader]");
+                this.notifyLoseLeader();
+            }
+        });
+    }
+
+    @Override
+    public boolean amILeader() {
+        int localForceHealthy = forceHealthy.get();
+        if (localForceHealthy > 0) {
+            return true;
+        } else if (localForceHealthy < 0) {
+            return false;
+        } else {
+            return super.amILeader();
+        }
+    }
 
     @Override
     protected String getServerId() {
