@@ -61,6 +61,30 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
         return null;
     }
 
+    protected void notifyBecomeLeader() {
+        Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
+        for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
+            try{
+                logger.info("[isLeader][notify]{}", entry.getKey());
+                entry.getValue().isleader();
+            }catch (Throwable th){
+                logger.error("[isLeader]" + entry, th);
+            }
+        }
+    }
+
+    protected void notifyLoseLeader() {
+        Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
+        for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
+            try{
+                logger.info("[notLeader][notify]{}", entry.getKey());
+                entry.getValue().notLeader();
+            }catch (Throwable th){
+                logger.error("[notLeader]" + entry, th);
+            }
+        }
+    }
+
     @Override
     protected void doStart() throws Exception {
 
@@ -72,15 +96,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
                 logger.info("[isLeader]({})", getServerId());
                 isLeader = true;
-                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
-                for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-                    try{
-                        logger.info("[isLeader][notify]{}", entry.getKey());
-                        entry.getValue().isleader();
-                    }catch (Throwable th){
-                        logger.error("[isLeader]" + entry, th);
-                    }
-                }
+                notifyBecomeLeader();
             }
 
             @Override
@@ -88,15 +104,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
                 logger.info("[notLeader]{}", getServerId());
                 isLeader = false;
-                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
-                for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
-                    try{
-                        logger.info("[notLeader][notify]{}", entry.getKey());
-                        entry.getValue().notLeader();
-                    }catch (Throwable th){
-                        logger.error("[notLeader]" + entry, th);
-                    }
-                }
+                notifyLoseLeader();
             }
         }, executors);
         leaderLatch.start();
@@ -131,6 +139,10 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     }
 
     protected abstract String getServerId();
+
+    protected ExecutorService getZKEventExecutors() {
+        return executors;
+    }
 
     @Override
     protected void doStop() throws Exception {
