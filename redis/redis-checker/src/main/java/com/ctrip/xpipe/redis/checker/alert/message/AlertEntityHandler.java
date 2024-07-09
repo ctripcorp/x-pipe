@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.alert.sender.AbstractSender;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
@@ -25,9 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
-public class AlertEntityHandler {
-
-    protected static final Logger logger = LoggerFactory.getLogger(AlertEntityHandler.class);
+public abstract class AlertEntityHandler {
 
     protected final Lock lock = new ReentrantLock();
 
@@ -115,7 +112,21 @@ public class AlertEntityHandler {
         try {
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
-            logger.debug("[tryMetric] fail", th);
+            getLogger().debug("[tryMetric] fail", th);
+        }
+    }
+
+    protected void tryMetric(AlertEntity alert, String metricType) {
+        MetricData metricData = new MetricData(metricType, alert.getDc(), alert.getClusterId(), alert.getShardId());
+        metricData.setValue(1);
+        metricData.setTimestampMilli(alert.getDate().getTime());
+
+        metricData.addTag("type", alert.getAlertType().name());
+
+        try {
+            metricProxy.writeBinMultiDataPoint(metricData);
+        } catch (Throwable th) {
+            getLogger().debug("[tryMetric] fail", th);
         }
     }
 
@@ -129,5 +140,7 @@ public class AlertEntityHandler {
             lock.unlock();
         }
     }
+
+    public abstract Logger getLogger();
 
 }

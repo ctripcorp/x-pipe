@@ -4,12 +4,15 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
+import com.ctrip.xpipe.redis.checker.alert.message.forward.ForwardAlertService;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
+
+    protected static final Logger logger = LoggerFactory.getLogger(AlertEntityDelaySubscriber.class);
 
     private final static long reportInterval = 3 * 60 * 1000;
 
@@ -47,9 +52,9 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
             protected void doRun() {
                 try {
                     lock.lock();
-                    logger.debug("[initCleaner][before]sent alerts: {}", existingAlerts);
+                    getLogger().debug("[initCleaner][before]sent alerts: {}", existingAlerts);
                     existingAlerts.entrySet().removeIf(alert -> alertRecovered(alert.getKey()));
-                    logger.debug("[initCleaner][after]send alerts: {}", existingAlerts);
+                    getLogger().debug("[initCleaner][after]send alerts: {}", existingAlerts);
                 } finally {
                     lock.unlock();
                 }
@@ -60,18 +65,18 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-        if(alert.getAlertType().delayedSendingTime() <= 0) {
+        if(alert.getAlertType().delayedSendingTime() <= 0 || alert.getAlertType().onlyTrack()) {
             return;
         }
         addToExistingSet(alert);
         if(!needSend(alert)) {
-            logger.debug("[doProcessAlert]Alert should not send: {}", alert);
+            getLogger().debug("[DelaySubscriber]Alert should not send: {}", alert);
             return;
         }
-        logger.debug("[sendTaskBegin] {}, {}", sendTaskBegin.get(), alert);
+        getLogger().debug("[DelaySubscriber] sendTaskBegin {}, {}", sendTaskBegin.get(), alert);
         addToSendingSet(alert);
         if(sendTaskBegin.compareAndSet(false, true)) {
-            logger.debug("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
+            getLogger().debug("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
             scheduleSendTask();
         }
     }
@@ -88,7 +93,7 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
                 } finally {
                     lock.unlock();
                 }
-                logger.debug("[scheduleSendTask][alerts] {}", holderManager);
+                getLogger().debug("[DelaySubscriber][alerts] {}", holderManager);
                 doSend(holderManager, true);
                 sendTaskBegin.compareAndSet(true, false);
             }
@@ -147,5 +152,10 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
     @VisibleForTesting
     public Set<AlertEntity> getSendingAlerts() {
         return sendingAlerts;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
     }
 }
