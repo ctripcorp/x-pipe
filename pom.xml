@@ -59,7 +59,7 @@
         <credis.version>4.4.1-unstable-SNAPSHOT</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
-        <qconfig.client.version>1.100.46-ctrip</qconfig.client.version>
+        <qconfig.client.version>1.100.59-ctrip</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
         <netty.boringssl.version>2.0.61.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
@@ -70,7 +70,7 @@
         <sso.version>0.1.3</sso.version>
         <vi.version>0.11.49</vi.version>
         <dal.version>2.4.50</dal.version>
-        <ucs.version>0.3.4</ucs.version>
+        <ucs.version>0.7.0</ucs.version>
         <artemis.version>1.9.6</artemis.version>
         <caravan.version>1.17.13</caravan.version>
         <velocity.version>1.7</velocity.version>

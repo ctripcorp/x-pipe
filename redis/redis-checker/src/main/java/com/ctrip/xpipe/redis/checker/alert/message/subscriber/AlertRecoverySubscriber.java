@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -22,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber implements DelayAlertRecoverySubscriber {
+
+    private static final Logger logger = LoggerFactory.getLogger(AlertRecoverySubscriber.class);
 
     private Set<AlertEntity> unRecoveredAlerts = Sets.newConcurrentHashSet();
 
@@ -54,7 +58,7 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber imple
                 Set<AlertEntity> recovered = commandFuture.getNow();
                 new ReportRecoveredAlertTask(recovered).execute(executors);
             } else {
-                logger.warn("[reportRecovered]", commandFuture.cause());
+                logger.warn("[RecoverySubscriber]", commandFuture.cause());
             }
         });
         cleaner.execute(executors);
@@ -62,7 +66,9 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber imple
 
     @Override
     protected void doProcessAlert(AlertEntity alert) {
-
+        if(alert.getAlertType().onlyTrack()) {
+            return;
+        }
         if(alert.getAlertType().delayedSendingTime() != 0) {
             doProcessDelayAlerts(alert);
         } else {
@@ -73,13 +79,18 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber imple
 
     private void doAddAlert(AlertEntity alert) {
         if(!alert.getAlertType().reportRecovery()) {
-            logger.debug("[doProcessAlert]Not interested: {}", alert);
+            logger.debug("[RecoverySubscriber]Not interested: {}", alert);
             return;
         }
         while(!unRecoveredAlerts.add(alert)) {
-            logger.debug("[doProcessAlert]add alert: {}", alert);
+            logger.debug("[RecoverySubscriber]add alert: {}", alert);
             unRecoveredAlerts.remove(alert);
         }
+    }
+
+    @Override
+    public Logger getLogger() {
+        return logger;
     }
 
     class RecoveredAlertCleaner extends AbstractCommand<Set<AlertEntity>> {
