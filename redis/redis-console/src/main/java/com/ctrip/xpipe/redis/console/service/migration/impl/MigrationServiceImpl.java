@@ -273,17 +273,14 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
 
             ClusterType clusterType;
-            String clusterName;
             if (StringUtil.isEmpty(clusterInfo.getClusterName())) {
                 ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterId());
                 clusterType = ClusterType.lookup(clusterTbl.getClusterType());
-                clusterName = clusterTbl.getClusterName();
             } else {
                 clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
-                clusterName = clusterInfo.getClusterName();
             }
 
-            if (null == clusterType || !clusterType.supportMigration() || config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase()))
+            if (null == clusterType || !clusterType.supportMigration())
                 throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
 
         }
@@ -429,9 +426,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMigration()) {
             throw new MigrationNotSupportException(clusterName);
         }
-        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
-            throw new MigrationNotSupportException(clusterName);
-        }
 
         MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());
         if (unfinished != null) {
@@ -507,11 +501,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         progress.setActiveDcs(clusterService.getMigratableClustersCountByActiveDc());
 
         return progress;
-    }
-
-    @Override
-    public Set<String> migrationUnsupportedClusters() {
-        return config.getMigrationUnsupportedClusters();
     }
 
     @Override

@@ -116,8 +116,8 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default ZkServerMeta getZkServerMeta(String dc) { return read(()->doGetZkServerMeta(dc)); }
 	ZkServerMeta doGetZkServerMeta(String dc);
 
-	default String getActiveDc(String clusterId, String shardId) throws MetaException { return read(()->doGetActiveDc(clusterId, shardId)); }
-	String doGetActiveDc(String clusterId, String shardId);
+	default String getActiveDc(String clusterId) throws MetaException { return read(()->doGetActiveDc(clusterId)); }
+	String doGetActiveDc(String clusterId);
 
 	default Set<String> getBackupDcs(String clusterId, String shardId) { return read(()->doGetBackupDcs(clusterId, shardId)); }
 	Set<String> doGetBackupDcs(String clusterId, String shardId);

@@ -1,13 +1,18 @@
 package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +36,9 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     private BeaconMetaService beaconMetaService;
 
-    private ConsoleConfig config;
+    private MetaCache metaCache;
+
+    private ConsoleCommonConfig config;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterMonitorModifiedNotifier.class);
 
@@ -41,11 +48,12 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
     private KeyedOneThreadTaskExecutor<String> keyedExecutor;
 
     @Autowired
-    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, MonitorManager monitorManager, ConsoleConfig config) {
+    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, MonitorManager monitorManager, MetaCache metaCache, ConsoleCommonConfig config) {
         this.monitorManager = monitorManager;
         this.beaconMetaService = beaconMetaService;
         this.executors = Executors.newFixedThreadPool(MONITOR_NOTIFIER_THREAD_CNT, XpipeThreadFactory.create("ClusterMonitorNotifier"));
         this.keyedExecutor = new KeyedOneThreadTaskExecutor<>(executors);
+        this.metaCache = metaCache;
         this.config = config;
     }
 
@@ -59,12 +67,23 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
         }
     }
 
+    private boolean shouldClusterNotify(String clusterName) {
+        ClusterType clusterType = metaCache.getClusterType(clusterName);
+        if (clusterType.supportSingleActiveDC() && !StringUtil.isEmpty(config.getBeaconSupportZone())) {
+            String activeDc = metaCache.getActiveDc(clusterName);
+            String supportZone = config.getBeaconSupportZone();
+            if (!metaCache.isDcInRegion(activeDc, supportZone)) {
+                logger.info("[notifyClusterUpdate][{}] active dc {} not in {}", clusterName, activeDc, supportZone);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public void notifyClusterUpdate(final String clusterName, long orgId) {
-        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
-            logger.info("[notifyClusterUpdate][{}] migration unsupported", clusterName);
-            return;
-        }
+        if (!shouldClusterNotify(clusterName)) return;
 
         MonitorService monitorService = monitorManager.get(orgId, clusterName);
         if (null == monitorService) {
@@ -94,6 +113,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     @Override
     public void notifyClusterDelete(String clusterName, long orgId) {
+        if (!shouldClusterNotify(clusterName)) return;
+
         MonitorService monitorService = monitorManager.get(orgId, clusterName);
         if (null == monitorService) {
             logger.info("[notifyClusterDelete][{}] no beacon for {}, skip", clusterName, orgId);

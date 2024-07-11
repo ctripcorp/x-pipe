@@ -5,12 +5,13 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
     private AlertManager alertManager;
 
     @Autowired
-    private ConsoleConfig config;
+    private ConsoleCommonConfig config;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -79,14 +80,20 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
 
         Map<Long, Set<String>> clustersByOrg = new HashMap<>(orgIds.size());
         orgIds.forEach(orgId -> clustersByOrg.put(orgId, new HashSet<>()));
+        String supportZone = config.getBeaconSupportZone();
 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (!StringUtil.isEmpty(supportZone) && !supportZone.equalsIgnoreCase(dcMeta.getZone())) {
+                logger.debug("[separateClustersByOrg][zoneUnsupported] {} not in {}", dcMeta.getId(), supportZone);
+                continue;
+            }
+
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                if (!ClusterType.lookup(clusterMeta.getType()).supportMigration()) {
+                if (!dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
+                    // only register cluster whose active dc is in supported zone
                     continue;
                 }
-
-                if (config.getMigrationUnsupportedClusters().contains(clusterMeta.getId().toLowerCase())) {
+                if (!ClusterType.lookup(clusterMeta.getType()).supportMigration()) {
                     continue;
                 }
 

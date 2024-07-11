@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -27,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.anyString;
+
 /**
  * @author lishanglin
  * date 2021/1/19
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @InjectMocks
@@ -53,7 +56,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     private MonitorService monitorService1;
 
     @Mock
-    private ConsoleConfig config;
+    private ConsoleCommonConfig config;
 
 
     @Before
@@ -63,50 +66,56 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         orgServicesMap.put(1L, Collections.singletonList(monitorService1));
         Mockito.when(monitorManager.getAllServices()).thenReturn(orgServicesMap);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXPipeMeta());
+        Mockito.when(config.getBeaconSupportZone()).thenReturn("");
+        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(10);
+        Mockito.when(metaCache.isDcInRegion(anyString(), anyString())).thenReturn(true);
     }
 
     @Test
     public void testDoCheck() {
+        Mockito.when(monitorService0.fetchAllClusters(anyString())).thenReturn(Sets.newHashSet("cluster2"));
+        Mockito.when(monitorService1.fetchAllClusters(anyString())).thenReturn(Sets.newHashSet("cluster1"));
         check.doAction();
-        sleep(1000);
-        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
-        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
+
+        Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(anyString(), anyString());
+        Mockito.verify(monitorService1, Mockito.never()).unregisterCluster(anyString(), anyString());
     }
 
     @Test
     public void testTooManyClusterNeedExcluded() {
         Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
-        Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(Sets.newHashSet("cluster1","cluster2","cluster3","clusterx"));
 
         Set<String> needExcludeClusters = Sets.newHashSet("clusterx", "clustery");
-        Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
+        Mockito.when(monitorService0.fetchAllClusters(anyString())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
 
         check.doAction();
-        sleep(1000);
-        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
-        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
-        Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(anyString(), anyString());
         Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, needExcludeClusters.toString());
     }
 
     @Test
-    public void testUnsupportedMigrationClusters(){
-        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(10);
-        Mockito.when(config.getMigrationUnsupportedClusters()).thenReturn(Sets.newHashSet("cluster1","cluster3"));
-        Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("cluster1", "cluster2"));
-
+    public void testClusterActiveDcZoneNotSupport() {
+        Mockito.when(config.getBeaconSupportZone()).thenReturn("SHA");
+        Mockito.when(metaCache.isDcInRegion(anyString(), anyString())).thenReturn(false);
+        Mockito.when(monitorService0.fetchAllClusters(anyString())).thenReturn(Sets.newHashSet("cluster2"));
+        Mockito.when(monitorService1.fetchAllClusters(anyString())).thenReturn(Sets.newHashSet("cluster1"));
         check.doAction();
-        sleep(1000);
-        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
-        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
-        Mockito.verify(monitorService0, Mockito.times(1)).unregisterCluster(BeaconSystem.getDefault().getSystemName(), "cluster1");
+
+        Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(anyString());
+        Mockito.verify(monitorService0, Mockito.timeout(1000)).unregisterCluster(BeaconSystem.XPIPE_ONE_WAY.getSystemName(), "cluster2");
+        Mockito.verify(monitorService1, Mockito.timeout(1000)).unregisterCluster(BeaconSystem.XPIPE_ONE_WAY.getSystemName(), "cluster1");
     }
 
     private XpipeMeta mockXPipeMeta() {
         XpipeMeta xpipeMeta = new XpipeMeta();
         xpipeMeta.addDc(new DcMeta("jq")
-                .addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()))
-                .addCluster(new ClusterMeta("cluster2").setOrgId(2).setType(ClusterType.ONE_WAY.name()))
+                .addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"))
+                .addCluster(new ClusterMeta("cluster2").setOrgId(2).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"))
         );
 
         return xpipeMeta;

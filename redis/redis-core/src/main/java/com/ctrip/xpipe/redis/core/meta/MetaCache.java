@@ -69,10 +69,12 @@ public interface MetaCache {
 
     boolean isCrossRegion(String activeDc, String backupDc);
 
+    boolean isDcInRegion(String dc, String zone);
+
     // get all redis from dc whose health status is visible to activeDc
     List<HostPort> getAllActiveRedisOfDc(String activeDc, String dcId);
 
-    String getActiveDc(String clusterId, String shardId);
+    String getActiveDc(String clusterId);
 
     String getActiveDc(HostPort hostPort);
 

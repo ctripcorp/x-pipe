@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.EncryptUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -70,13 +69,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
-    private static final String KEY_SENTINEL_REDUNDANT_REDIS_SENSITIVE = "console.health.sentinel.monitor.redundant.sensitive";
-
     private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
-
-    private static final String KEY_BEACON_DEFAULT_HOST = "beacon.host.default";
-
-    private static final String KEY_BEACON_HOST_BY_ORG = "beacon.host.org";
 
     public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
 
@@ -102,7 +95,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
     private static final String KEY_MIGRATION_UNSUPPORTED_CLUSTERS = "migration.unsupported.clusters";
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
-    private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
@@ -110,7 +102,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MAX_REMOVED_DCS_CNT = "max.removed.dcs.count";
     private static final String KEY_MAX_REMOVED_CLUSTERS_PERCENT = "max.removed.clusters.percent";
-    private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
     private static final String KEY_CONSOLE_KEEPER_PAIR_OVERLOAD_FACTOR = "console.keeper.container.pair.overload.standard.factor";
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_DISK_OVERLOAD_FACTOR = "console.keeper.container.disk.overload.factor";
@@ -496,11 +487,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public boolean isSensitiveForRedundantRedis() {
-        return getBooleanProperty(KEY_SENTINEL_REDUNDANT_REDIS_SENSITIVE, false);
-    }
-
-    @Override
     public String getParallelConsoleDomain() {
         return getProperty(KEY_PARALLEL_CONSOLE_DOMAIN, "");
     }
@@ -533,17 +519,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public float getSiteUnstableThreshold() {
         return getFloatProperty(KEY_CHECKER_UNSTABLE_THRESHOLD, 0.8f);
-    }
-
-    @Override
-    public String getDefaultBeaconHost() {
-        return getProperty(KEY_BEACON_DEFAULT_HOST);
-    }
-
-    @Override
-    public Map<Long, String> getBeaconHosts() {
-        String property = getProperty(KEY_BEACON_HOST_BY_ORG, "{}");
-        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<Long, String>>() {});
     }
 
     @Override
@@ -631,11 +606,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
     }
 
-    @Override
-    public String getBiDirectionMigrationDcPriority() {
-        return getProperty(KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY, "SHARB,SHAXY");
-    }
-
     public String crossDcSentinelMonitorNameSuffix() {
         return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
     }
@@ -702,19 +672,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public Set<String> getMigrationUnsupportedClusters() {
-        String raw = getProperty(KEY_MIGRATION_UNSUPPORTED_CLUSTERS, "").toLowerCase();
-        return getSplitStringSet(raw);
-    }
-
-    @Override
     public int getKeeperCheckerIntervalMilli() {
         return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 60 * 1000);
-    }
-
-    @Override
-    public int monitorUnregisterProtectCount() {
-        return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
     }
 
     @Override

@@ -21,24 +21,16 @@ public class DefaultBeaconManager implements BeaconManager {
 
     private BeaconMetaService beaconMetaService;
 
-    private CheckerConfig config;
-
     private static final Logger logger = LoggerFactory.getLogger(DefaultBeaconManager.class);
 
     @Autowired
-    public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
+    public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService) {
         this.monitorManager = monitorManager;
         this.beaconMetaService = beaconMetaService;
-        this.config = config;
     }
 
     @Override
     public void registerCluster(String clusterId, ClusterType clusterType, int orgId) {
-        if (config.getMigrationUnsupportedClusters().contains(clusterId.toLowerCase())) {
-            logger.debug("[registerCluster][{}] migration unsupported", clusterId);
-            return;
-        }
-
         MonitorService service = monitorManager.get(orgId, clusterId);
         if (null == service) {
             logger.debug("[registerCluster][{}] no beacon service for org {}, skip", clusterId, orgId);

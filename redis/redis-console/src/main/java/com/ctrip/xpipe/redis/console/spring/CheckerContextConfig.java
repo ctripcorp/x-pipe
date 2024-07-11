@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
@@ -32,6 +33,7 @@ import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -91,6 +93,11 @@ public class CheckerContextConfig {
     @Bean
     public ProxyManager proxyManager(GroupCheckerLeaderElector clusterServer, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         return new CheckerProxyManager(clusterServer, checkerConfig, checkerConsoleService);
+    }
+
+    @Bean
+    public ConsoleCommonConfig consoleCommonConfig() {
+        return new DefaultCommonConfig();
     }
 
     @Bean
@@ -155,8 +162,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public BeaconManager beaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig config) {
-        return new DefaultBeaconManager(monitorManager, beaconMetaService, config);
+    public BeaconManager beaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService) {
+        return new DefaultBeaconManager(monitorManager, beaconMetaService);
     }
 
     @Bean

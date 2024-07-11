@@ -83,7 +83,7 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalAction {
             String activeDc = null;
             if (clusterType.supportSingleActiveDC()) {
                 activeDc = activeDcCache.get(cluster);
-                if (null == activeDc) activeDcCache.put(cluster, metaCache.getActiveDc(cluster, shard));
+                if (null == activeDc) activeDcCache.put(cluster, metaCache.getActiveDc(cluster));
             }
 
             metricUnhealthyInstance(clusterType, dc, activeDc, cluster, shard, hostPort, isMaster);
