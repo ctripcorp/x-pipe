@@ -153,8 +153,7 @@ PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
-ARCH=`uname -r`
-#set the jdk to 11/17 version
+#set the jdk to 21/11 version
 if [[ -z "$JAVA_HOME" && -d /usr/java/jdk21/ ]]; then
     export JAVA_HOME=/usr/java/jdk21
     JAVA_OPTS="$JAVA_OPTS -XX:+ZGenerational"
