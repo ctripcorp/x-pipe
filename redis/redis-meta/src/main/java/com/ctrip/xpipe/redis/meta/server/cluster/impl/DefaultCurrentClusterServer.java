@@ -37,7 +37,7 @@ public class DefaultCurrentClusterServer extends AbstractClusterServer implement
 	private SlotManager slotManager;
 	
 	@Autowired
-	private MetaserverLeaderElector metaserverLeaderElector;
+	private MetaServerLeaderElector metaserverLeaderElector;
 	
 	private int currentServerId;
 	

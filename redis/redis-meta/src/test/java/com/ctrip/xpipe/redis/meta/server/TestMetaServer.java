@@ -4,7 +4,7 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskTrigger;
-import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaserverLeaderElector;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaServerLeaderElector;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
@@ -137,7 +137,7 @@ public class TestMetaServer extends AbstractLifecycle{
 
 		if(getLifecycleState().isStarted()){
 			try{
-				MetaserverLeaderElector metaserverLeaderElector = context.getBean(MetaserverLeaderElector.class);
+				MetaServerLeaderElector metaserverLeaderElector = context.getBean(MetaServerLeaderElector.class);
 				return metaserverLeaderElector.amILeader();
 			}catch(Exception e){
 				return false;
