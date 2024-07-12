@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.migration.auto;
+package com.ctrip.xpipe.redis.core.beacon;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.google.common.collect.Sets;
@@ -27,7 +27,7 @@ public enum BeaconSystem {
         return systemName;
     }
 
-    public boolean supportClusterType(ClusterType clusterType) {
+    public boolean support(ClusterType clusterType) {
         return supportClusterTypes.contains(clusterType);
     }
 
@@ -37,10 +37,14 @@ public enum BeaconSystem {
 
     public static BeaconSystem findByClusterType(ClusterType clusterType) {
         for (BeaconSystem system: values()) {
-            if (system.supportClusterType(clusterType)) return system;
+            if (system.support(clusterType)) return system;
         }
 
-        return getDefault();
+        return null;
+    }
+
+    public static boolean anySupport(ClusterType clusterType) {
+        return null != findByClusterType(clusterType);
     }
 
 }

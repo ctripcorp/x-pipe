@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +16,8 @@ import java.util.Set;
  */
 public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
 
+    private BeaconSystem beaconSystem;
+
     private Set<String> expectClusters;
 
     private List<MonitorService> monitorServices;
@@ -23,6 +25,11 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
     private int maxExcludeClusters;
 
     public UnknownClusterExcludeJob(Set<String> expectClusters, List<MonitorService> monitorServices, int maxExcludeClusters) {
+        this(BeaconSystem.getDefault(), expectClusters, monitorServices, maxExcludeClusters);
+    }
+
+    public UnknownClusterExcludeJob(BeaconSystem beaconSystem, Set<String> expectClusters, List<MonitorService> monitorServices, int maxExcludeClusters) {
+        this.beaconSystem = beaconSystem;
         this.expectClusters = expectClusters;
         this.monitorServices = monitorServices;
         this.maxExcludeClusters = maxExcludeClusters;
@@ -32,7 +39,7 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
     protected void doExecute() throws Throwable {
         Set<String> realClusters = new HashSet<>();
         Map<MonitorService, Set<String>> serviceClustersMap = new HashMap<>();
-        String system = BeaconSystem.getDefault().getSystemName();
+        String system = beaconSystem.getSystemName();
         monitorServices.forEach(ms -> {
             Set<String> clusters = ms.fetchAllClusters(system);
             serviceClustersMap.put(ms, clusters);

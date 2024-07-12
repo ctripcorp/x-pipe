@@ -19,12 +19,6 @@ import java.util.List;
 @Component
 public class BeaconMetaCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport {
 
-//    @Autowired
-//    private BeaconMetaService beaconMetaService;
-//
-//    @Autowired
-//    private MonitorServiceManager monitorServiceManager;
-
     @Autowired
     private BeaconManager beaconManager;
 

@@ -57,9 +57,15 @@ public class BeaconActiveDcControllerTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void activeDcZoneNotSupported() {
+    public void currentDcZoneNotSupported() {
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(false);
         Assert.assertFalse(controller.shouldCheck(instance));
+    }
+
+    @Test
+    public void testBiDirectionCluster() {
+        info = new DefaultClusterInstanceInfo("cluster1", "", ClusterType.BI_DIRECTION, 1);
+        Assert.assertTrue(controller.shouldCheck(instance));
     }
 
 }
