@@ -114,19 +114,22 @@ public class DefaultDcRelationsService implements DcRelationsService {
         if (availableDcs.isEmpty())
             return new HashSet<>();
 
+        Set<String> excludedDcs = new HashSet<>();
         Set<String> downDcsToUpperCase = downDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
         Set<String> availableDcsToUpperCase = availableDcs.stream().map(String::toUpperCase).collect(Collectors.toSet());
 
-        Set<String> ignoreDcs = new HashSet<>();
-        for (String downDc : downDcsToUpperCase) {
-            ignoreDcs.addAll(getClusterIgnoreDcs(clusterName, downDc));
+        for (String downDc: downDcsToUpperCase) {
+            Set<String> reachableDcs = new HashSet<>(availableDcsToUpperCase);
+            Set<String> unreachableDcs = getClusterIgnoreDcs(clusterName, downDc);
+            reachableDcs.removeAll(unreachableDcs);
+            if (reachableDcs.isEmpty()) {
+                // no other dc for downgrade, do not exclude down dc
+                continue;
+            }
+            excludedDcs.add(downDc);
         }
 
-        availableDcsToUpperCase.removeAll(ignoreDcs);
-        if (availableDcsToUpperCase.isEmpty())
-            return new HashSet<>();
-
-        return doGetExcludedDcs(downDcsToUpperCase, availableDcsToUpperCase);
+        return excludedDcs;
     }
 
     Set<String> doGetExcludedDcs(Set<String> downDcs, Set<String> availableDcs) {
