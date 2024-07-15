@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
  * date 2021/1/17
  */
 @Component
-public class BeaconActiveDcController implements BeaconMetaController {
+public class DefaultBeaconMetaController implements BeaconMetaController {
 
-    private static Logger logger = LoggerFactory.getLogger(BeaconActiveDcController.class);
+    private static Logger logger = LoggerFactory.getLogger(DefaultBeaconMetaController.class);
 
     private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
@@ -29,7 +29,7 @@ public class BeaconActiveDcController implements BeaconMetaController {
     private MetaCache metaCache;
 
     @Autowired
-    public BeaconActiveDcController(ConsoleCommonConfig consoleCommonConfig, MetaCache metaCache) {
+    public DefaultBeaconMetaController(ConsoleCommonConfig consoleCommonConfig, MetaCache metaCache) {
         this.config = consoleCommonConfig;
         this.metaCache = metaCache;
     }

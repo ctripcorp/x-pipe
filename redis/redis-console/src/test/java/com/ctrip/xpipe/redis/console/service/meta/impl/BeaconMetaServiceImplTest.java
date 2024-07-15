@@ -3,17 +3,14 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Set;
@@ -26,13 +23,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
     private MetaCache metaCache;
 
-    private ConsoleConfig config;
-
-    @Autowired
-    private DcService dcService;
-
-    @Autowired
-    private ClusterMetaService clusterMetaService;
+    private ConsoleCommonConfig config;
 
     private BeaconMetaServiceImpl beaconMetaService;
 
@@ -44,7 +35,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
     @Before
     public void setupBeaconMetaServiceImplTest() {
         metaCache = Mockito.mock(MetaCache.class);
-        config = Mockito.mock(ConsoleConfig.class);
+        config = Mockito.mock(ConsoleCommonConfig.class);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.doAnswer(invocation -> {
             String activeDc = invocation.getArgument(0, String.class);

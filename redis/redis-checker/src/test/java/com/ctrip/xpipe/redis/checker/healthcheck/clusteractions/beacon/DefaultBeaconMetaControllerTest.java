@@ -20,9 +20,9 @@ import org.mockito.junit.MockitoJUnitRunner;
  * date 2021/1/19
  */
 @RunWith(MockitoJUnitRunner.class)
-public class BeaconActiveDcControllerTest extends AbstractCheckerTest {
+public class DefaultBeaconMetaControllerTest extends AbstractCheckerTest {
 
-    private BeaconActiveDcController controller;
+    private DefaultBeaconMetaController controller;
 
     private ClusterHealthCheckInstance instance;
 
@@ -36,7 +36,7 @@ public class BeaconActiveDcControllerTest extends AbstractCheckerTest {
 
     @Before
     public void setupBeaconActiveDcControllerTest() {
-        controller = new BeaconActiveDcController(consoleCommonConfig, metaCache);
+        controller = new DefaultBeaconMetaController(consoleCommonConfig, metaCache);
         instance = Mockito.mock(ClusterHealthCheckInstance.class);
         info = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.ONE_WAY, 1);
 

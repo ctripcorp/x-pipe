@@ -155,7 +155,7 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public BeaconMetaService beaconMetaService(MetaCache metaCache, ConsoleConfig config) {
+    public BeaconMetaService beaconMetaService(MetaCache metaCache, ConsoleCommonConfig config) {
         return new BeaconMetaServiceImpl(metaCache, config);
     }
 
