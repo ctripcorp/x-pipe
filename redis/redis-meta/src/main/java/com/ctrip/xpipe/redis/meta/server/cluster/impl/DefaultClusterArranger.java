@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Jul 25, 2016
  */
 @Component
-public class DefaultClusterArranger extends AbstractLifecycle implements ClusterArranger, TopElement, LeaderAware, Observer{
+public class DefaultClusterArranger extends AbstractLifecycle implements ClusterArranger, TopElement, MetaServerLeaderAware, Observer{
 	
 	@Autowired
 	private ClusterServers<?> clusterServers;
