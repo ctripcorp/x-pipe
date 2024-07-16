@@ -79,6 +79,22 @@ public class RepeatAlertEntitySubscriber extends AbstractAlertEntitySubscriber {
         if(ignoreAlert(alert) || alert.getAlertType().onlyTrack()) {
             return;
         }
+        if(alert.getAlertType().delayedSendingTime() != 0) {
+            // 延迟告警的通过 addDelayAlert 函数加入
+            return;
+        }
+        if(alert.getAlertType().reportRecovery()) {
+            // 没有恢复逻辑
+            return;
+        }
+        addAlert(alert);
+    }
+
+    public void addDelayAlert(AlertEntity alert) {
+        addAlert(alert);
+    }
+
+    private void addAlert(AlertEntity alert) {
         synchronized (this) {
             holderManager.holdAlert(alert);
         }
