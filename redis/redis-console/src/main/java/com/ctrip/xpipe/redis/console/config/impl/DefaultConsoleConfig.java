@@ -92,10 +92,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
 
-    private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
-    private static final String KEY_MIGRATION_UNSUPPORTED_CLUSTERS = "migration.unsupported.clusters";
-    private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
-
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
     private static final String KEY_DCS_RELATIONS = "dcs.relations";
@@ -639,18 +635,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getDcsRelations() {
         return getProperty(KEY_DCS_RELATIONS, "{}");
-    }
-
-    @Override
-    public Set<String> getClustersSupportBiMigration() {
-        String raw = getProperty(KEY_BI_MIGRATION_CLUSTERS, "");
-
-        return getSplitStringSet(raw);
-    }
-
-    @Override
-    public String getBeaconSupportZone() {
-        return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
     }
 
     @Override

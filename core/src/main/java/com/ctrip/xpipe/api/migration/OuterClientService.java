@@ -52,6 +52,8 @@ public interface OuterClientService extends Ordered{
 
 	boolean excludeIdcs(String clusterName, String[] idcs) throws Exception;
 
+	OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception;
+
 	abstract class AbstractInfo {
 
 		protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -660,6 +662,64 @@ public interface OuterClientService extends Ordered{
 			this.idc = idc;
 		}
 
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class ClusterExcludedIdcInfo {
+		private String clusterName;
+		private List<String> excludedDcs;
+
+		public ClusterExcludedIdcInfo() {
+		}
+
+		public String getClusterName() {
+			return clusterName;
+		}
+
+		public void setClusterName(String clusterName) {
+			this.clusterName = clusterName;
+		}
+
+		public List<String> getExcludedDcs() {
+			return excludedDcs;
+		}
+
+		public void setExcludedDcs(List<String> excludedDcs) {
+			this.excludedDcs = excludedDcs;
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class OuterClientDataResp<T> {
+		private boolean Success;
+		private T Result;
+		private String Message;
+
+		public OuterClientDataResp() {}
+
+		public boolean isSuccess() {
+			return Success;
+		}
+
+		public void setSuccess(boolean success) {
+			Success = success;
+		}
+
+		public T getResult() {
+			return Result;
+		}
+
+		public void setResult(T result) {
+			Result = result;
+		}
+
+		public String getMessage() {
+			return Message;
+		}
+
+		public void setMessage(String message) {
+			Message = message;
+		}
 	}
 
 	enum ClusterType {
