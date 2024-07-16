@@ -27,9 +27,9 @@ function getTotalMem() {
 function getSafeXmx() {
     total=`getTotalMem`
     SAFE_PERCENT=55
-    MAX_MEM=5120
+    MAX_MEM=7168
 
-    if [ "$total" -gt 10240 ]
+    if [ "$total" -gt 14336 ]
     then
       echo "$MAX_MEM"
     else
@@ -46,9 +46,9 @@ function getSafeXmn() {
 function getSafeMaxDirect() {
     total=`getTotalMem`
     SAFE_PERCENT=10
-    if [ "$total" -gt 10240 ]
+    if [ "$total" -gt 14336 ]
     then
-      echo 2048
+      echo 3072
     else
       echo `expr $total \* $SAFE_PERCENT / 100`
     fi
@@ -146,21 +146,24 @@ echo "current env:"$ENV
   JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.maxDirectMemory=-1 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
 
-echo $JAVA_OPTS
+export LD_PRELOAD=/usr/local/lib/libjemalloc.so
+export MALLOC_CONF=prof:false,lg_prof_interval:30,lg_prof_sample:20,prof_prefix:/opt/logs/100013684/jeprof
 
 PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
-ARCH=`uname -r`
-#set the jdk to 11/17 version
-if [[ -z "$JAVA_HOME" && "$ARCH" == *"aarch64" && -d /usr/java/jdk17/ ]]; then
-    export JAVA_HOME=/usr/java/jdk17
+#set the jdk to 21/11 version
+if [[ -z "$JAVA_HOME" && -d /usr/java/jdk21/ ]]; then
+    export JAVA_HOME=/usr/java/jdk21
+    JAVA_OPTS="$JAVA_OPTS -XX:+ZGenerational"
 elif [[ -z "$JAVA_HOME" && -d /usr/java/jdk11/ ]]; then
     export JAVA_HOME=/usr/java/jdk11
 elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/
 fi
+
+echo $JAVA_OPTS
 
 cd `dirname $0`/..
 
