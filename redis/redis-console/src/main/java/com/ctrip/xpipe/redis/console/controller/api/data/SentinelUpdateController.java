@@ -452,6 +452,27 @@ public class SentinelUpdateController {
         }
     }
 
+    @PostMapping(value = "/bind/cluster/sentinels/{dcName}/" + CLUSTER_NAME_PATH_VARIABLE)
+    public RetMessage addClusterSentinels(@PathVariable String dcName, @PathVariable String clusterName, @RequestBody SentinelMeta sentinelMeta) {
+        try {
+            logger.info("[bindSentinel][{}-{}] {}", dcName, clusterName, sentinelMeta.getId());
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAllByDcCluster(dcName, clusterName);
+            SentinelGroupModel sentinelGroup = sentinelGroupService.findById(sentinelMeta.getId());
+            if (null == sentinelGroup) {
+                logger.debug("[bindSentinel][fail] no sentinel found");
+                return RetMessage.createFailMessage("no sentinel " + sentinelMeta.getId());
+            }
+            for (DcClusterShardTbl dcClusterShardTbl: dcClusterShardTbls) {
+                dcClusterShardTbl.setSetinelId(sentinelGroup.getSentinelGroupId());
+                dcClusterShardService.updateDcClusterShard(dcClusterShardTbl);
+            }
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.warn("[bindSentinel][fail]", th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
     void addSentinels(SentinelGroupModel sentinelGroup, String sentinelMonitorName, HostPort master) throws InterruptedException, ExecutionException, TimeoutException {
         ParallelCommandChain monitorChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
         for (SentinelInstanceModel sentinelModel : sentinelGroup.getSentinels()) {
