@@ -13,6 +13,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.entity.ClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
@@ -24,6 +26,8 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.repository.ClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
@@ -39,6 +43,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -83,6 +88,12 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private DcRelationsService dcRelationsService;
+
+    @Resource
+    private ClusterRepository clusterRepository;
+
+    @Resource
+    private MigrationBiClusterRepository migrationBiClusterRepository;
 
     private MigrationShardTblDao migrationShardTblDao;
 
@@ -638,6 +649,26 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Override
     public List<MigrationClusterTbl> fetchMigrationClusters(Set<String> clusters, long from, long to) {
         return migrationClusterDao.findMigrationClustersByNameAndTime(clusters, new Date(from), new Date(to));
+    }
+
+    @Override
+    public List<BiMigrationRecord> loadAllBiMigration() {
+        List<MigrationBiClusterEntity> entities = migrationBiClusterRepository.selectAll();
+        if (entities.isEmpty()) return Collections.emptyList();
+
+        Set<Long> relatedClusterIds = entities.stream().map(MigrationBiClusterEntity::getClusterId).collect(Collectors.toSet());
+        List<ClusterEntity> clusterEntities = clusterRepository.selectAllByIds(Lists.newArrayList(relatedClusterIds));
+        Map<Long, String> clusterId2Name = new HashMap<>();
+        clusterEntities.forEach(cluster -> clusterId2Name.put(cluster.getId(), cluster.getClusterName()));
+
+        List<BiMigrationRecord> records = new ArrayList<>(entities.size());
+        for (MigrationBiClusterEntity event: entities) {
+            BiMigrationRecord record = BiMigrationRecord.fromMigrationBiClusterEntity(event);
+            record.setClusterName(clusterId2Name.get(event.getClusterId()));
+            records.add(record);
+        }
+
+        return records;
     }
 
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {

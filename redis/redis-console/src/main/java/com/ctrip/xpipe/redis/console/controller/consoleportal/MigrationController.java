@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
@@ -15,6 +17,7 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.*;
 
 /**
@@ -188,4 +191,10 @@ public class MigrationController extends AbstractConsoleController {
 		}
 		return clusterTbl;
 	}
+
+	@GetMapping("/bi-migration/events")
+	public List<BiMigrationRecord> findAllBiMigrationEvents() {
+		return migrationService.loadAllBiMigration();
+	}
+
 }

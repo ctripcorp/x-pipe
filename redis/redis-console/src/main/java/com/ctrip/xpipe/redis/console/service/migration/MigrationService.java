@@ -90,4 +90,7 @@ public interface MigrationService {
     List<MigrationClusterTbl> getLatestMigrationClusters(int seconds);
 
     List<MigrationClusterTbl> fetchMigrationClusters(Set<String> clusters, long from, long to);
+
+    List<BiMigrationRecord> loadAllBiMigration();
+
 }

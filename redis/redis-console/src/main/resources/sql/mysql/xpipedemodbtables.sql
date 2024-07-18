@@ -491,3 +491,19 @@ CREATE TABLE `applier_tbl` (
   KEY `active` (`active`),
   KEY `shard_id_deleted` (`shard_id`,`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='applier base info';
+
+-- migration_bi_cluster_tbl
+drop table if exists migration_bi_cluster_tbl;
+CREATE TABLE `migration_bi_cluster_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference bi cluster',
+  `operation_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'migration time',
+  `operator` varchar(128) NOT NULL DEFAULT 'xpipe' COMMENT 'migration operator',
+  `status` varchar(16) NOT NULL DEFAULT 'unknown' COMMENT 'migration status',
+  `publish_info` varchar(10240) NOT NULL DEFAULT '' COMMENT 'migration publish information',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `cluster_id` (`cluster_id`),
+  KEY `operator` (`operator`)
+) DEFAULT CHARSET=utf8 COMMENT='bi cluster migration record';

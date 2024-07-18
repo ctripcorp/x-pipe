@@ -405,3 +405,16 @@ CREATE TABLE `applier_tbl` (
   deleted tinyint(1) NOT NULL DEFAULT 0,
   deleted_at int NOT NULL DEFAULT 0,
 );
+
+-- migration_bi_cluster_tbl
+drop table if exists migration_bi_cluster_tbl;
+CREATE TABLE `migration_bi_cluster_tbl` (
+  id bigint(20) NOT NULL AUTO_INCREMENT primary key,
+  cluster_id bigint(20) NOT NULL DEFAULT 0,
+  operation_time timestamp default CURRENT_TIMESTAMP,
+  operator varchar(128) not null default 'xpipe',
+  status varchar(16) not null default 'unknown',
+  publish_info varchar(10240) not null default '',
+  DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+  deleted tinyint(1) NOT NULL DEFAULT 0,
+);
