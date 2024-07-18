@@ -723,6 +723,32 @@ public enum ALERT_TYPE {
             return ALERT_LEVEL.HIGH;
         }
     },
+    CRDT_CLUSTER_IDC_EXCLUDED("crdt cluster exclude idcs", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public boolean sendToCheckerLeader() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("CRDT cluster idc excluded", "双向同步有拉出机房，应尽快拉入");
+        }
+
+        @Override
+        public ALERT_LEVEL getAlertLevel() {
+            return ALERT_LEVEL.HIGH;
+        }
+    },
     MIGRATION_DATA_CONFLICT("migration info conflict", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {

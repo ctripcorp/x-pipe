@@ -82,4 +82,9 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
 
 	}
+
+	@Override
+	public OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception {
+		return null;
+	}
 }

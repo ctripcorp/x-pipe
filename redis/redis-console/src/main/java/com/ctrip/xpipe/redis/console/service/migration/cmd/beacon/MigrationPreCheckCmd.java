@@ -58,10 +58,6 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
         BeaconMigrationRequest migrationRequest = getMigrationRequest();
         String clusterName = migrationRequest.getClusterName();
-        if (config.getMigrationUnsupportedClusters().contains(clusterName.toLowerCase())) {
-            future().setFailure(new MigrationNotSupportException(clusterName));
-            return;
-        }
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (null == clusterTbl) {
             future().setFailure(new ClusterNotFoundException(clusterName));

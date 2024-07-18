@@ -128,13 +128,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getCrossDcLeaderLeaseName();
 
-	boolean isSensitiveForRedundantRedis();
-
 	String getParallelConsoleDomain();
-
-	String getDefaultBeaconHost();
-
-	Map<Long, String> getBeaconHosts();
 
 	List<BeaconOrgRoute> getBeaconOrgRoutes();
 
@@ -150,15 +144,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getRedisConfigCheckRules();
 
-	Set<String> getClustersSupportBiMigration();
-
-	String getBeaconSupportZone();
-
-	String getBiDirectionMigrationDcPriority();
-
 	String getChooseRouteStrategyType();
-
-	int monitorUnregisterProtectCount();
 
 	boolean isAutoMigrateOverloadKeeperContainerOpen();
 

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -26,10 +27,10 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private MetaCache metaCache;
 
-    public ConsoleConfig config;
+    private ConsoleCommonConfig config;
 
     @Autowired
-    public BeaconMetaServiceImpl(MetaCache metaCache, ConsoleConfig config) {
+    public BeaconMetaServiceImpl(MetaCache metaCache, ConsoleCommonConfig config) {
         this.metaCache = metaCache;
         this.config = config;
     }

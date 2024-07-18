@@ -73,7 +73,7 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
         when(metaCache.findClusterShard(new HostPort("10.2.73.170", 6379))).thenReturn(new Pair<>("cluster_shyin", "shard1"));
         when(metaCache.findClusterShard(new HostPort("10.2.73.170", 6389))).thenReturn(new Pair<>("cluster_shyin", "shard2"));
 
-        when(metaCache.getActiveDc(anyString(), anyString())).thenReturn("NTGXH");
+        when(metaCache.getActiveDc(anyString())).thenReturn("NTGXH");
         analyzer.setMetaCache(metaCache);
 
         analyzer.setExecutors(executors);

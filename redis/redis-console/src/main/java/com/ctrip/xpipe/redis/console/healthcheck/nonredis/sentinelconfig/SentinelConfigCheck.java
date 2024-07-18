@@ -70,7 +70,7 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalAction {
     private boolean isDcClusterShardSafe(DcMeta dcMeta, ClusterMeta cluster, ShardMeta shard) {
         if (!ClusterType.lookup(cluster.getType()).supportMultiActiveDC()) {
             // sentinel is unnecessary for single active cluster in cross-region dc
-            String activeDc = metaCache.getActiveDc(cluster.getId(), shard.getId());
+            String activeDc = metaCache.getActiveDc(cluster.getId());
             if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) return true;
         }
 

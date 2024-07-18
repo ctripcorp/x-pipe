@@ -217,12 +217,6 @@ public class MigrationApi extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/unsupported/clusters", method = RequestMethod.GET)
-    public Set<String> getMigrationUnsupportedClusters() {
-        return migrationService.migrationUnsupportedClusters();
-    }
-
-
     private void mapResponseIdc(List<? extends AbstractClusterMeta> results) {
 
         results.forEach(clusterMeta -> {
