@@ -317,6 +317,12 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public boolean isDcInRegion(String dc, String zone) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        return xpipeMetaManager.getDcZone(dc).equalsIgnoreCase(zone);
+    }
+
+    @Override
     public List<HostPort> getAllActiveRedisOfDc(String activeDc, String dcId) {
         List<HostPort> result = Lists.newLinkedList();
         boolean isDcActiveDc = activeDc.equalsIgnoreCase(dcId);
@@ -421,7 +427,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
-        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId);
         return xpipeMetaManager.getSentinelMonitorName(activeDc, clusterId, shardId);
     }
 
@@ -430,7 +436,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
-        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId);
         SentinelMeta sentinel = xpipeMetaManager.getSentinel(activeDc, clusterId, shardId);
 
         return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
@@ -562,9 +568,9 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public String getActiveDc(String clusterId, String shardId){
+    public String getActiveDc(String clusterId){
         XpipeMetaManager xpipeMetaManager  =  meta.getValue();
-        return xpipeMetaManager.getActiveDc(clusterId, shardId);
+        return xpipeMetaManager.getActiveDc(clusterId);
     }
 
     @Override

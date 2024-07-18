@@ -23,6 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -161,6 +162,58 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("call.credis", metricData.getMetricType());
         Assert.assertEquals("excludeClusterDc", metricData.getTags().get("api"));
         Assert.assertEquals("test-cluster", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
+    public void testgetAllExcludeIdcs() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\"Success\":true,\"Result\":[" +
+                "{\"clusterName\":\"test_crdt_cluster\",\"excludedDcs\":[\"PTJQ\"]}" +
+                "]}")
+                .setHeader("Content-Type", "application/json"));
+
+        OuterClientService.OuterClientDataResp<List<OuterClientService.ClusterExcludedIdcInfo>> resp = credisService.getAllExcludedIdcs();
+        Assert.assertTrue(resp.isSuccess());
+
+        List<OuterClientService.ClusterExcludedIdcInfo> excludedIdcs = resp.getResult();
+        Assert.assertEquals(1, excludedIdcs.size());
+        Assert.assertEquals("test_crdt_cluster", excludedIdcs.get(0).getClusterName());
+        Assert.assertEquals(Collections.singletonList("PTJQ"), excludedIdcs.get(0).getExcludedDcs());
+        Assert.assertEquals(1, webServer.getRequestCount());
+
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals(CREDIS_SERVICE.BATCH_EXCLUDE_IDCS.getPath(),
+                request.getPath());
+        Assert.assertEquals("GET", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("getAllExcludedIdcs", metricData.getTags().get("api"));
+        Assert.assertEquals("-", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
+    public void testgetAllExcludeIdcsFail() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\"Success\":false,\"Message\":\"test fail\"}")
+                .setHeader("Content-Type", "application/json"));
+
+        OuterClientService.OuterClientDataResp<List<OuterClientService.ClusterExcludedIdcInfo>> resp = credisService.getAllExcludedIdcs();
+        Assert.assertFalse(resp.isSuccess());
+
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals(CREDIS_SERVICE.BATCH_EXCLUDE_IDCS.getPath(),
+                request.getPath());
+        Assert.assertEquals("GET", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("getAllExcludedIdcs", metricData.getTags().get("api"));
+        Assert.assertEquals("-", metricData.getClusterName());
         Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
         Assert.assertNull(metricProxy.poll());
     }

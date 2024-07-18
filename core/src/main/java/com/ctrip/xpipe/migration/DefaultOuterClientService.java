@@ -113,4 +113,12 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		logger.info("[markInstanceDownIfNoModifyFor]{}", clusterShardHostPort);
 		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
 	}
+
+	@Override
+	public OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception {
+		OuterClientDataResp<List<ClusterExcludedIdcInfo>> resp = new OuterClientDataResp<>();
+		resp.setSuccess(true);
+		resp.setResult(Collections.emptyList());
+		return resp;
+	}
 }

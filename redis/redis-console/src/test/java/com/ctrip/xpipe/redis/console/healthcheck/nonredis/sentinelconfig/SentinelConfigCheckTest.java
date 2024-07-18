@@ -68,7 +68,7 @@ public class SentinelConfigCheckTest {
     public void beforeSentinelConfigCheckTest() {
         when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
         when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(Collections.emptySet());
-        when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
+        when(metaCache.getActiveDc(Mockito.anyString())).then(invocationOnMock -> {
             String cluster = invocationOnMock.getArgument(0, String.class);
             return activeDcMap.get(cluster);
         });

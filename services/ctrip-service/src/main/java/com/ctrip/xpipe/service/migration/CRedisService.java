@@ -18,7 +18,6 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -45,6 +44,8 @@ public class CRedisService extends AbstractOuterClientService {
 
 	private static final ParameterizedTypeReference<List<ClusterInfo>> clustersRespTypeDef =
 			new ParameterizedTypeReference<List<ClusterInfo>>(){};
+	private static final ParameterizedTypeReference<OuterClientDataResp<List<ClusterExcludedIdcInfo>>> excludedIdcInfosRespTypeDef =
+			new ParameterizedTypeReference<OuterClientDataResp<List<ClusterExcludedIdcInfo>>>(){};
 
 	@Override
 	public int getOrder() {
@@ -299,6 +300,17 @@ public class CRedisService extends AbstractOuterClientService {
 				CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - " + result.getMessage());
 				return false;
 			}
+		});
+	}
+
+	@Override
+	public OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception {
+		return catTransactionMonitor.logTransaction(TYPE, "getAllExcludedIdcs", () -> {
+			String address = CREDIS_SERVICE.BATCH_EXCLUDE_IDCS.getRealPath(credisConfig.getCredisServiceAddress());
+			return doRequest("getAllExcludedIdcs", null,
+					() -> restOperations
+							.exchange(address, HttpMethod.GET, null, excludedIdcInfosRespTypeDef)
+							.getBody());
 		});
 	}
 

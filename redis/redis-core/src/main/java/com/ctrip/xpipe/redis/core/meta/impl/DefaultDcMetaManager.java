@@ -233,7 +233,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public String getActiveDc(String clusterId, String shardId) {
-		return metaManager.getActiveDc(clusterId, shardId);
+		return metaManager.getActiveDc(clusterId);
 	}
 
 	@Override

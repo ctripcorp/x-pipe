@@ -61,24 +61,7 @@ function MigrationService($resource, $q) {
 			method: 'GET',
 			url: '/console/migration/default/cluster'
 		},
-		get_migration_unsupported_clusters:{
-			method: 'GET',
-			url: '/api/migration/unsupported/clusters',
-			isArray: true
-		}
 	});
-
-	function getMigrationUnsupportedClusters() {
-		var d = $q.defer();
-		resource.get_migration_unsupported_clusters({},
-			function(result) {
-				d.resolve(result);
-			},
-			function(result) {
-				d.reject(result);
-			});
-		return d.promise;
-	}
 
 	function createEvent(migrationClusters) {
 		var d = $q.defer();
@@ -298,6 +281,5 @@ function MigrationService($resource, $q) {
 		forceEndMigrationCluster : forceEndMigrationCluster,
         checkMigrationSystem : checkMigrationSystem,
         getDefaultMigrationCluster : getDefaultMigrationCluster,
-		getMigrationUnsupportedClusters: getMigrationUnsupportedClusters
 	}
 }

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.google.common.collect.Sets;
 import org.assertj.core.util.Lists;
 import org.junit.Assert;
