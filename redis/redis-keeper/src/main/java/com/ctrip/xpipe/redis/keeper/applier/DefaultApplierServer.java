@@ -172,7 +172,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        stateThread = Executors.newFixedThreadPool(1,
+        stateThread = Executors.newFixedThreadPool(8,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
         workerThreads = Executors.newScheduledThreadPool(8,

@@ -19,7 +19,7 @@ public class RedisOpCrdtCounterTransfer implements RedisOpCrdtTransfer {
     public Pair<RedisOpType, byte[][]> transformCrdtRedisOp(RedisOpType redisOpType, byte[][] args) {
         // "CRDT.COUNTER" "hailu1945" "5" "1706183220461" "5:16" "4" "4:5" "6" ->set hailu1945 6
         if (args.length < 8) {
-            throw new IllegalArgumentException("Invalid CRDT.COUNTER command");
+            return Pair.of(RedisOpType.UNKNOWN, args);
         }
         byte[][] commonArgs = new byte[3][];
         commonArgs[0] = RedisOpType.SET.name().getBytes();

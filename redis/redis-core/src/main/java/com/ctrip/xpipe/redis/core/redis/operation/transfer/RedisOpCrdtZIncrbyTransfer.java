@@ -19,7 +19,7 @@ public class RedisOpCrdtZIncrbyTransfer implements RedisOpCrdtTransfer {
     @Override
     public Pair<RedisOpType, byte[][]> transformCrdtRedisOp(RedisOpType redisOpType, byte[][] args) {
         if (args.length < 8) {
-            throw new IllegalArgumentException("Invalid CRDT.ZINCRBY command");
+            return Pair.of(RedisOpType.UNKNOWN, args);
         }
         // "CRDT.Zincrby" "hailusortedset" "1" "1717742949954" "1:6" "hello" "2:20" "80" -> "ZADD" "hailusortedset" "80" "hello"
         byte[][] commonArgs = new byte[args.length - 4][];
