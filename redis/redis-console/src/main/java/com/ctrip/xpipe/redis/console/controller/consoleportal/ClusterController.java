@@ -137,6 +137,12 @@ public class ClusterController extends AbstractConsoleController {
         }
     }
 
+    @GetMapping(value = "/clusters/type/{clusterType}")
+    public List<ClusterTbl> findAllByClusterType(@PathVariable String clusterType) {
+        ClusterType type = ClusterType.lookup(clusterType);
+        return clusterService.findClustersWithOrgInfoByClusterType(type.name());
+    }
+
     @RequestMapping(value = "/clusters/unhealthy", method = RequestMethod.GET)
     public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
         return valueOrEmptySet(ClusterListUnhealthyClusterModel.class, clusterService.findUnhealthyClusters());

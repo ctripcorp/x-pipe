@@ -52,6 +52,8 @@ public interface OuterClientService extends Ordered{
 
 	boolean excludeIdcs(String clusterName, String[] idcs) throws Exception;
 
+	boolean batchExcludeIdcs(List<ClusterExcludedIdcInfo> excludedClusterIdcs) throws Exception;
+
 	OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception;
 
 	abstract class AbstractInfo {

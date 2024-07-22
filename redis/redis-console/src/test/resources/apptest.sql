@@ -406,3 +406,8 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(122,'unknown',72,'10.0.0.6',5000,'redis',0,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(123,'unknown',73,'10.0.0.5',5001,'redis',1,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(124,'unknown',73,'10.0.0.6',5001,'redis',0,0,null);
+
+insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(1, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
+insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(2, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
+insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(3, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
+insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(4, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');

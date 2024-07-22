@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.mapper.ClusterMapper;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @Repository
 public class ClusterRepository {
@@ -20,6 +21,10 @@ public class ClusterRepository {
         QueryWrapper<ClusterEntity> wrapper = new QueryWrapper<>();
         wrapper.eq(ClusterEntity.CLUSTER_NAME, clusterName);
         return clusterMapper.selectOne(wrapper);
+    }
+
+    public List<ClusterEntity> selectAllByIds(List<Long> ids) {
+        return clusterMapper.selectBatchIds(ids);
     }
 
 }

@@ -61,6 +61,15 @@ function MigrationService($resource, $q) {
 			method: 'GET',
 			url: '/console/migration/default/cluster'
 		},
+		find_all_bi_migration: {
+			method: 'GET',
+			url: '/console/bi-migration/events',
+			isArray : true
+		},
+		sync_bi_migration: {
+			method: 'POST',
+			url: '/console/bi-migration/sync'
+		}
 	});
 
 	function createEvent(migrationClusters) {
@@ -83,6 +92,34 @@ function MigrationService($resource, $q) {
 	function findAll() {
 		var d = $q.defer();
 		resource.find_all({},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
+	function findAllBiMigration() {
+		var d = $q.defer();
+		resource.find_all_bi_migration({},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
+	function syncBiMigration(clusters, excludedDcs) {
+		var d = $q.defer();
+		resource.sync_bi_migration(
+			{
+				excludedDcs: excludedDcs,
+				clusters: clusters
+			},
 			function(result) {
 				d.resolve(result);
 			},
@@ -281,5 +318,7 @@ function MigrationService($resource, $q) {
 		forceEndMigrationCluster : forceEndMigrationCluster,
         checkMigrationSystem : checkMigrationSystem,
         getDefaultMigrationCluster : getDefaultMigrationCluster,
+		findAllBiMigration: findAllBiMigration,
+		syncBiMigration: syncBiMigration,
 	}
 }

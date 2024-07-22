@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.service.migration;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientException;
@@ -298,6 +299,30 @@ public class CRedisService extends AbstractOuterClientService {
 					return true;
 				}
 				CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - " + result.getMessage());
+				return false;
+			}
+		});
+	}
+
+	@Override
+	public boolean batchExcludeIdcs(List<ClusterExcludedIdcInfo> excludedClusterIdcs) throws Exception {
+		String NAME = "batch-exclude-idcs";
+		return catTransactionMonitor.logTransaction(TYPE, NAME, new Callable<Boolean>() {
+
+			@Override
+			public Boolean call() throws Exception {
+				logger.info("[batchExcludeIdcs] {}", Codec.DEFAULT.encode(excludedClusterIdcs));
+				String address = CREDIS_SERVICE.BATCH_EXCLUDE_IDCS.getRealPath(credisConfig.getCredisServiceAddress());
+				SimpleResult result = doRequest("batchExcludeClusterDc", null,
+						() -> restOperations.postForObject(address, excludedClusterIdcs, SimpleResult.class));
+				if (result != null && result.getSuccess()) {
+					CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - success");
+					logger.info("[batchExcludeIdcs][success]");
+					return true;
+				}
+				String failMsg = null == result ? "null" : result.getMessage();
+				CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - " + failMsg);
+				logger.info("[batchExcludeIdcs][fail] {}", failMsg);
 				return false;
 			}
 		});
