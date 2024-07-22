@@ -155,4 +155,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	double getKeeperContainerDiskOverLoadFactor();
 
 	double getKeeperContainerIoRate();
+
+	long getMetaServerSlotClusterMapCacheTimeOutMilli();
 }

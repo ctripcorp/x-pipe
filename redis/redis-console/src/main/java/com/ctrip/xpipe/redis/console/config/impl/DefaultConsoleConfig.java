@@ -104,6 +104,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE = "console.keeper.container.io.rate";
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_OPEN = "console.auto.migrate.overload.keeper.container.open";
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI = "console.auto.migrate.overload.keeper.container.interval.milli";
+    private static final String KEY_CONSOLE_META_SLOT_CACHE_MILLI = "console.meta.slot.cache.milli";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -683,6 +684,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public double getKeeperContainerIoRate() {
         return getFloatProperty(KEY_CONSOLE_KEEPER_CONTAINER_IO_RATE, 500F);
+    }
+
+    @Override
+    public long getMetaServerSlotClusterMapCacheTimeOutMilli() {
+        return getLongProperty(KEY_CONSOLE_META_SLOT_CACHE_MILLI, 30 * 1000L);
     }
 
 }

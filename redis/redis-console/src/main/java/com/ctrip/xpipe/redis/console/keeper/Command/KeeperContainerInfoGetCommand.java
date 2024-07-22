@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.keeper.Command;
+package com.ctrip.xpipe.redis.console.keeper.command;
 
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import org.springframework.core.ParameterizedTypeReference;

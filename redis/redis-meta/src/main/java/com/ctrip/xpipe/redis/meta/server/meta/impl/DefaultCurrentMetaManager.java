@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -473,7 +474,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		JsonCodec codec = new JsonCodec(true, true);
 		return codec.encode(desc);
 	}
-	
+
+	@Override
+	public List<KeeperMeta> getOneWaySurviveKeepers(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getOneWaySurviveKeepers(clusterDbId, shardDbId);
+	}
+
 	protected Set<Integer> getCurrentSlots() {
 		return currentSlots;
 	}

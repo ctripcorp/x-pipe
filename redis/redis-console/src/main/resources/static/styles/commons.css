@@ -82,3 +82,15 @@ a {
     -webkit-transform: rotate(45deg) scale(1);
     transform: rotate(45deg) scale(1);
 }
+
+.custom-card {
+    padding: 6px 15px 5px;
+}
+
+.centered-text {
+    display: flex;
+    justify-content: center;
+    padding-left: 5px;
+    font-size: 18px;
+    width: 100%;
+}
