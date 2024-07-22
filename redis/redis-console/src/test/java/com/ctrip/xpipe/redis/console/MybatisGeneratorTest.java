@@ -19,7 +19,7 @@ import java.util.Collections;
 public class MybatisGeneratorTest {
 
     private static final DataSourceConfig DATA_SOURCE_CONFIG = new DataSourceConfig
-        .Builder("jdbc:mysql://127.0.0.1:3301/xpipe?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
+        .Builder("jdbc:mysql://127.0.0.1:3306/fxxpipe?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai",
         "root", "123456")
         .build();
 
@@ -30,7 +30,7 @@ public class MybatisGeneratorTest {
         return new GlobalConfig.Builder()
             .author("mybatis-generator")
             //            .enableSwagger()
-            .outputDir("D:/Projects/x-pipe/redis/redis-console/src/main/java")
+            .outputDir("/Users/ccsa/prog/ctrip-framework/x-pipe/redis/redis-console/src/main/java")
             // 时间类型均生成Date对象
             .dateType(DateType.ONLY_DATE)
             .disableOpenDir()
@@ -43,7 +43,7 @@ public class MybatisGeneratorTest {
     protected static PackageConfig packageConfig() {
         return new PackageConfig.Builder()
             .parent("com.ctrip.xpipe.redis.console")
-            .pathInfo(Collections.singletonMap(OutputFile.xml, "D:/Projects/x-pipe/redis/redis-console/src/main/resources/mapper"))
+            .pathInfo(Collections.singletonMap(OutputFile.xml, "/Users/ccsa/prog/ctrip-framework/x-pipe/redis/redis-console/src/main/resources/mapper"))
             .build();
     }
 
@@ -52,7 +52,7 @@ public class MybatisGeneratorTest {
      */
     protected static StrategyConfig strategyConfig() {
         return new StrategyConfig.Builder()
-            .addInclude("az_group_cluster_tbl")
+            .addInclude("migration_bi_cluster_tbl")
             // 删除tbl后缀
             .addTableSuffix("_tbl")
             .entityBuilder()

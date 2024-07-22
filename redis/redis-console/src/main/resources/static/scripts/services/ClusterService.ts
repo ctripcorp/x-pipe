@@ -25,6 +25,11 @@ function ClusterService($resource, $q) {
             url: '/console/clusters/all',
             isArray: true
         },
+        find_all_by_type: {
+            method: 'GET',
+            url: '/console/clusters/type/:clusterType',
+            isArray: true
+        },
         find_clusters_by_active_dc_name: {
             method: 'GET',
             url: '/console/clusters/all?activeDcName=:activeDcName',
@@ -265,6 +270,18 @@ function ClusterService($resource, $q) {
                                    function (result) {
                                        d.resolve(result);
                                    }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findAllClustersByType(clusterType) {
+        var d = $q.defer();
+        resource.find_all_by_type(
+            {clusterType: clusterType},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -540,6 +557,7 @@ function ClusterService($resource, $q) {
         findClusterDCs: findClusterDCs,
         findClustersByNames: findClustersByNames,
         findAllClusters: findAllClusters,
+        findAllClustersByType: findAllClustersByType,
         findClustersByActiveDcName: findClustersByActiveDcName,
         createCluster: createCluster,
         updateCluster: updateCluster,

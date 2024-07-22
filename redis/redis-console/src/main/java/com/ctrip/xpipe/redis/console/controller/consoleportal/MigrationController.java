@@ -188,4 +188,27 @@ public class MigrationController extends AbstractConsoleController {
 		}
 		return clusterTbl;
 	}
+
+	@GetMapping("/bi-migration/events")
+	public List<BiMigrationRecord> findAllBiMigrationEvents() {
+		return migrationService.loadAllBiMigration();
+	}
+
+	@PostMapping("/bi-migration/sync")
+	public RetMessage syncBiMigration(@RequestBody BiMigrationReq biMigrationReq) {
+		if (null == biMigrationReq || null == biMigrationReq.clusters || biMigrationReq.clusters.isEmpty()) {
+			return RetMessage.createSuccessMessage();
+		}
+		if (null == biMigrationReq.excludedDcs) biMigrationReq.excludedDcs = Collections.emptyList();
+
+		try {
+			String user = userInfoHolder.getUser().getUserId();
+			boolean rst = migrationService.syncBiMigration(biMigrationReq, user);
+			if (rst) return RetMessage.createSuccessMessage();
+			else return RetMessage.createFailMessage("credis fail");
+		} catch (Throwable th) {
+			return RetMessage.createFailMessage(th.getMessage());
+		}
+	}
+
 }

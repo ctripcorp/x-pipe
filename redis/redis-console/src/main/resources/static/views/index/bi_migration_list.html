@@ -1,0 +1,36 @@
+<div class="col-md-12">
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-12"><span>双向迁移事件记录</span></div>
+            </div>
+        </header>
+
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+            <tr ng-repeat-start="event in $data">
+                <td data-title="'id'">{{event.id}}</td>
+                <td data-title="'涉及集群'" filter="{ clusterName : 'text' }">{{event.clusterName}}</td>
+                <td data-title="'切换参数'">
+                    <div class="action-buttons">
+                        <a href="javascript:void(0)" class="green bigger-140 show-details-btn"
+                           title="Show Details" ng-click="event.showDetail = !event.showDetail">
+                            <i ng-show="!event.showDetail" class="ace-icon fa fa-angle-double-down blue"></i>
+                            <i ng-show="event.showDetail" class="ace-icon fa fa-angle-double-up blue"></i>
+                        </a>
+                    </div>
+                </td>
+                <td data-title="'操作时间'">{{event.operationTime | date:'yyyy-MM-dd HH:mm:ss'}}</td>
+                <td data-title="'操作人'" filter="{ operator : 'text' }">{{event.operator}}</td>
+                <td data-title="'状态'">{{event.status}}</td>
+            </tr>
+            <tr ng-repeat-end ng-show="event.showDetail">
+                <td colspan="6" class="text-left">{{event.publishInfo}} </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up"
+   class="btn-scroll-up btn btn-sm btn-inverse"> <i
+        class="icon-double-angle-up icon-only bigger-110"></i>
+</a>

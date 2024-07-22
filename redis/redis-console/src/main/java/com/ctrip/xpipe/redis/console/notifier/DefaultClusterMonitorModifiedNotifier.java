@@ -81,61 +81,69 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     @Override
     public void notifyClusterUpdate(final String clusterName, long orgId) {
-        if (!shouldClusterNotify(clusterName)) return;
+        try {
+            if (!shouldClusterNotify(clusterName)) return;
 
-        MonitorService monitorService = monitorManager.get(orgId, clusterName);
-        if (null == monitorService) {
-            logger.info("[notifyClusterUpdate][{}] no beacon for {}, skip", clusterName, orgId);
-            return;
+            MonitorService monitorService = monitorManager.get(orgId, clusterName);
+            if (null == monitorService) {
+                logger.info("[notifyClusterUpdate][{}] no beacon for {}, skip", clusterName, orgId);
+                return;
+            }
+
+            keyedExecutor.execute(clusterName, new AbstractCommand<Void>() {
+                @Override
+                public String getName() {
+                    return "NotifyClusterMonitorModified-" + clusterName;
+                }
+
+                @Override
+                protected void doExecute() {
+                    monitorService.registerCluster(BeaconSystem.getDefault().getSystemName(), clusterName,
+                            beaconMetaService.buildCurrentBeaconGroups(clusterName));
+                    future().setSuccess();
+                }
+
+                @Override
+                protected void doReset() {
+                    // do nothing
+                }
+            });
+        } catch (Throwable th) {
+            logger.info("[notifyClusterUpdate][{}:{}] fail", clusterName, orgId, th);
         }
-
-        keyedExecutor.execute(clusterName, new AbstractCommand<Void>() {
-            @Override
-            public String getName() {
-                return "NotifyClusterMonitorModified-" + clusterName;
-            }
-
-            @Override
-            protected void doExecute() {
-                monitorService.registerCluster(BeaconSystem.getDefault().getSystemName(), clusterName,
-                    beaconMetaService.buildCurrentBeaconGroups(clusterName));
-                future().setSuccess();
-            }
-
-            @Override
-            protected void doReset() {
-                // do nothing
-            }
-        });
     }
 
     @Override
     public void notifyClusterDelete(String clusterName, long orgId) {
-        if (!shouldClusterNotify(clusterName)) return;
+        try {
+            if (!shouldClusterNotify(clusterName)) return;
 
-        MonitorService monitorService = monitorManager.get(orgId, clusterName);
-        if (null == monitorService) {
-            logger.info("[notifyClusterDelete][{}] no beacon for {}, skip", clusterName, orgId);
-            return;
+            MonitorService monitorService = monitorManager.get(orgId, clusterName);
+            if (null == monitorService) {
+                logger.info("[notifyClusterDelete][{}] no beacon for {}, skip", clusterName, orgId);
+                return;
+            }
+
+            keyedExecutor.execute(clusterName, new AbstractCommand<Void>() {
+                @Override
+                public String getName() {
+                    return "NotifyClusterMonitorDeleted-" + clusterName;
+                }
+
+                @Override
+                protected void doExecute() {
+                    monitorService.unregisterCluster(BeaconSystem.getDefault().getSystemName(), clusterName);
+                    future().setSuccess();
+                }
+
+                @Override
+                protected void doReset() {
+                    // do nothing
+                }
+            });
+        } catch (Throwable th) {
+            logger.info("[notifyClusterDelete][{}:{}] fail", clusterName, orgId, th);
         }
-
-        keyedExecutor.execute(clusterName, new AbstractCommand<Void>() {
-            @Override
-            public String getName() {
-                return "NotifyClusterMonitorDeleted-" + clusterName;
-            }
-
-            @Override
-            protected void doExecute() {
-                monitorService.unregisterCluster(BeaconSystem.getDefault().getSystemName(), clusterName);
-                future().setSuccess();
-            }
-
-            @Override
-            protected void doReset() {
-                // do nothing
-            }
-        });
     }
 
 

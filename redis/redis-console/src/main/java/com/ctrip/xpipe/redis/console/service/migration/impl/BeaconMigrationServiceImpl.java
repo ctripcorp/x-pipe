@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -15,9 +17,12 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
@@ -33,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -67,6 +73,9 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     private AlertManager alertManager;
 
     private DcRelationsService dcRelationsService;
+
+    @Resource
+    private MigrationBiClusterRepository migrationBiClusterRepository;
 
     @Resource( name = MigrationResources.MIGRATION_PREPARE_EXECUTOR )
     private Executor prepareExecutors;
@@ -154,6 +163,15 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         DefaultCommandFuture<String> commandFuture = new DefaultCommandFuture<>();
         biDirectionMigrationExecutors.execute(()->{
             try {
+                ClusterTbl clusterTbl = clusterService.find(migrationRequest.getClusterName());
+                if (null == clusterTbl) {
+                    commandFuture.setFailure(new RejectedExecutionException("unfound cluster " + migrationRequest.getClusterName()));
+                    return;
+                } else if (!ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.BI_DIRECTION)) {
+                    commandFuture.setFailure(new RejectedExecutionException("only bi_direction cluster support"));
+                    return;
+                }
+
                 Set<MonitorGroupMeta> groups = migrationRequest.getGroups();
                 String[] excludes = decideExcludes(migrationRequest.getClusterName(), groups);
                 boolean result = OuterClientService.DEFAULT.excludeIdcs(migrationRequest.getClusterName(), excludes);
@@ -162,11 +180,27 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
                 } else {
                     commandFuture.setFailure(new XpipeRuntimeException("outer client service returns false"));
                 }
+
+                tryRecordBiMigration(clusterTbl, excludes, result);
             } catch (Throwable t) {
                 commandFuture.setFailure(t);
             }
         });
         return commandFuture;
+    }
+
+    private void tryRecordBiMigration(ClusterTbl clusterTbl, String[] excludes, boolean result) {
+        try {
+            MigrationBiClusterEntity migrationRecord = new MigrationBiClusterEntity();
+            migrationRecord.setClusterId(clusterTbl.getId());
+            migrationRecord.setStatus(result ? "SUCCESS":"FAIL");
+            migrationRecord.setOperator("Beacon");
+            migrationRecord.setPublishInfo(Codec.DEFAULT.encode(excludes));
+            migrationRecord.setOperationTime(new Date());
+            migrationBiClusterRepository.insert(migrationRecord);
+        } catch (Throwable th) {
+            logger.info("[tryRecordBiMigration][{}][fail]", clusterTbl.getClusterName(), th);
+        }
     }
 
     @VisibleForTesting

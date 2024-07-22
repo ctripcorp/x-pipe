@@ -197,7 +197,7 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     }
 
     @Test
-    public void testgetAllExcludeIdcsFail() throws Exception {
+    public void testGetAllExcludeIdcsFail() throws Exception {
         webServer.enqueue(new MockResponse().setBody("{\"Success\":false,\"Message\":\"test fail\"}")
                 .setHeader("Content-Type", "application/json"));
 
@@ -213,6 +213,32 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertNotNull(metricData);
         Assert.assertEquals("call.credis", metricData.getMetricType());
         Assert.assertEquals("getAllExcludedIdcs", metricData.getTags().get("api"));
+        Assert.assertEquals("-", metricData.getClusterName());
+        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
+        Assert.assertNull(metricProxy.poll());
+    }
+
+    @Test
+    public void testBatchExcludeIdcs() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\"Message\":\"done\",\"Success\":true}")
+                .setHeader("Content-Type", "application/json"));
+
+        List<OuterClientService.ClusterExcludedIdcInfo> req = new ArrayList<>();
+        OuterClientService.ClusterExcludedIdcInfo info = new OuterClientService.ClusterExcludedIdcInfo();
+        info.setClusterName("test");
+        info.setExcludedDcs(Collections.singletonList("jq"));
+        req.add(info);
+
+        Assert.assertTrue(credisService.batchExcludeIdcs(req));
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals(CREDIS_SERVICE.BATCH_EXCLUDE_IDCS.getPath(),
+                request.getPath());
+        Assert.assertEquals("POST", request.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertNotNull(metricData);
+        Assert.assertEquals("call.credis", metricData.getMetricType());
+        Assert.assertEquals("batchExcludeClusterDc", metricData.getTags().get("api"));
         Assert.assertEquals("-", metricData.getClusterName());
         Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
         Assert.assertNull(metricProxy.poll());
