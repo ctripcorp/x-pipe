@@ -45,9 +45,14 @@ public class HickwallMetric implements MetricProxy {
 
     private static final Logger logger = LoggerFactory.getLogger(HickwallMetric.class);
 
+    private final static long TIME_SEND_MAX_SPANE = 60 * 1000;
+
+    private long lastSendTime;
+
     public HickwallMetric(HickwallConfig config) {
         this.config = config;
         start();
+        lastSendTime = System.currentTimeMillis();
     }
 
     public HickwallMetric() {
@@ -67,7 +72,7 @@ public class HickwallMetric implements MetricProxy {
             @Override
             protected void doRun() {
 
-                while(datas.size() >= config.getHickwallBatchSize()) {
+                while(datas.size() >= config.getHickwallBatchSize() || longTimeNoSending()) {
                     if (dataToSend == null) {
                         dataToSend = new ArrayList<>();
                         datas.drainTo(dataToSend, config.getHickwallBatchSize());
@@ -84,6 +89,7 @@ public class HickwallMetric implements MetricProxy {
                         logger.error("[metric][fail][unknown] client:{}", client, th);
                         sleepAfterFail();
                     }
+                    lastSendTime = System.currentTimeMillis();
                 }
             }
         }, HICKWALL_SEND_INTERVAL, HICKWALL_SEND_INTERVAL, TimeUnit.MILLISECONDS);
@@ -188,6 +194,14 @@ public class HickwallMetric implements MetricProxy {
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    private boolean longTimeNoSending() {
+        long now = System.currentTimeMillis();
+        if(now < lastSendTime) {
+            lastSendTime = now;
+        }
+        return datas.size() > 0 && now - lastSendTime >= TIME_SEND_MAX_SPANE;
     }
 
 }
