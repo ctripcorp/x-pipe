@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
+import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,6 +52,10 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String allLocalRedisInfosUrl;
 
+    private final String shardAllCheckerGroupHealthCheckUrl;
+
+    private final String shardAllMetaUrl;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
@@ -73,6 +80,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         crossMasterDelayUrl = String.format("%s/api/cross-master/delay/{dcId}/{cluster}/{shard}", this.address);
         innerCrossMasterDelayUrl = String.format("%s/api/cross-master/inner/delay/{cluster}/{shard}", this.address);
         allLocalRedisInfosUrl = String.format("%s/api/redis/info/local", this.address);
+        shardAllCheckerGroupHealthCheckUrl = String.format("%s/api/shard/checker/group/health/check/{dcId}/{clusterId}/{shardId}", this.address);
+        shardAllMetaUrl = String.format("%s/api/shard/meta/{dcId}/{clusterId}/{shardId}", this.address);
     }
 
     @Override
@@ -84,6 +93,17 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     public Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus() {
         return restTemplate.getForObject(allHealthStatusUrl, AllInstanceHealthStatus.class);
     }
+
+    @Override
+    public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String dcId, String clusterId, String shardId) {
+        return restTemplate.getForObject(shardAllCheckerGroupHealthCheckUrl, ShardCheckerHealthCheckModels.class, dcId, clusterId, shardId);
+    }
+
+    @Override
+    public ShardAllMetaModel getShardAllMeta(String dcId, String clusterId, String shardId) {
+        return restTemplate.getForObject(shardAllMetaUrl, ShardAllMetaModel.class, dcId, clusterId, shardId);
+    }
+
 
     @Override
     public Boolean getInstancePingStatus(String ip, int port) {

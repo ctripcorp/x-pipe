@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.console.keeper.Command.AbstractGetAllDcCommand;
-import com.ctrip.xpipe.redis.console.keeper.Command.KeeperContainerInfoGetCommand;
-import com.ctrip.xpipe.redis.console.keeper.Command.MigrationKeeperContainerDetailInfoGetCommand;
+import com.ctrip.xpipe.redis.console.keeper.command.AbstractGetAllDcCommand;
+import com.ctrip.xpipe.redis.console.keeper.command.KeeperContainerInfoGetCommand;
+import com.ctrip.xpipe.redis.console.keeper.command.MigrationKeeperContainerDetailInfoGetCommand;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,8 +19,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static org.mockito.ArgumentMatchers.anyString;
 
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class GetAllDcCommandTest {

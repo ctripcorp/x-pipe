@@ -1,0 +1,245 @@
+
+<div layout layout-padding layout-align="left end" style="height:10px">
+    <md-checkbox ng-model="showErrMsg">Show err message</md-checkbox>
+</div>
+
+<md-content class="md-padding" layout-xs="column" layout="row">
+    <div flex-xs flex-gt-xs="50" layout="column">
+        <!--Redis-->
+        <md-card md-theme="{{masterRoles != [] && slaveRoles != [] ? 'default' : 'red'}}" md-theme-watch>
+            <md-card-title class="custom-card">
+                <md-card-title-text class="centered-text">
+                    <span class="md-headline">Redis</span>
+                </md-card-title-text>
+                <md-card-actions layout="row" layout-align="end center">
+                    <md-button class="md-raised" ng-click="redisRoleHealthCheck()">刷新</md-button>
+                </md-card-actions>
+            </md-card-title>
+            <md-card-content>
+                <div ng-repeat="master in masterRoles">
+                    <md-card md-theme="{{ master.err==null ? 'green' : 'red' }}" md-theme-watch>
+                        <md-card-title class="custom-card">
+                            <md-card-title-text class="centered-text">
+                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{master.err}}</div>
+                                <div style="white-space: nowrap;">
+                                    <span>{{master.host}}:{{master.port}}</span>
+                                    <span style="margin-left: 20px;">{{master.role.serverRole}}</span>
+                                    <span style="margin-left: 20px;">{{master.role.offset}}</span>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div ng-repeat="masterSlave in master.role.slaves">
+                                <md-card md-theme="default" md-theme-watch>
+                                    <md-card-title class="custom-card">
+                                        <md-card-title-text class="centered-text">
+                                            <div  style="white-space: nowrap;">
+                                                <span>{{masterSlave.host}}:{{masterSlave.port}}</span>
+                                                <span style="margin-left: 20px;">{{masterSlave.lastAckOffset}}</span>
+                                            </div>
+                                        </md-card-title-text>
+                                    </md-card-title>
+                                </md-card>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <div ng-repeat="slave in slaveRoles">
+                    <md-card md-theme="{{ slave.err!=null ? 'red' : (slave.role.masterState == 'REDIS_REPL_CONNECTED' ? 'green' : 'orange') }}" md-theme-watch>
+                        <md-card-title class="custom-card">
+                            <md-card-title-text class="centered-text">
+                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{slave.err}}</div>
+                                <div  style="white-space: nowrap;">
+                                    <span>{{slave.host}}:{{slave.port}}</span>
+                                    <span style="margin-left: 20px;">{{slave.role.serverRole}}</span>
+                                    <span style="margin-left: 20px;">{{slave.role.masterOffset}}</span>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div  style="white-space: nowrap;">
+                                <span>Master:</span>
+                                <span style="margin-left: 20px;">{{slave.role.masterHost}}:{{slave.role.masterPort}}</span>
+                            </div>
+                            <div  style="white-space: nowrap;">
+                                <span>State:</span>
+                                <span style="margin-left: 20px;">{{slave.role.masterState}}</span>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+            </md-card-content>
+        </md-card>
+        <!--Keeper-->
+        <md-card md-theme="{{shardKeeperState != [] ? 'default' : 'red'}}" md-theme-watch>
+            <md-card-title class="custom-card">
+                <md-card-title-text class="centered-text">
+                    <span class="md-headline">Keepers</span>
+                </md-card-title-text>
+                <md-card-actions layout="row" layout-align="end center">
+                    <md-button class="md-raised" ng-click="getShardKeeperState()">刷新</md-button>
+                </md-card-actions>
+            </md-card-title>
+            <md-card-content>
+                <div ng-repeat="keeper in shardKeeperState">
+                    <md-card md-theme="{{ keeper.errs.length=={} ? 'red' : (keeper.role == 'REDIS_REPL_CONNECTED' ? 'green' : 'orange') }}" md-theme-watch>
+                        <md-card-title class="custom-card">
+                            <md-card-title-text class="centered-text">
+                                <div ng-show="showErrMsg && !keeper.errs=={}" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{keeper.errs}}</div>
+                                <div  style="white-space: nowrap;">
+                                    <span>{{keeper.host}}:{{keeper.port}}</span>
+                                    <span style="margin-left: 20px;">{{keeper.state}}</span>
+                                    <span style="margin-left: 20px;">{{keeper.masterReplOffset}}</span>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div  style="white-space: nowrap;">
+                                <span>Master:</span>
+                                <span style="margin-left: 20px;">{{keeper.masterHost}}:{{keeper.masterPort}}</span>
+                            </div>
+                            <div  style="white-space: nowrap;">
+                                <span>State:</span>
+                                <span style="margin-left: 20px;">{{keeper.role}}</span>
+                            </div>
+                            <div  style="white-space: nowrap;">
+                                <span>replBacklogSize:</span>
+                                <span style="margin-left: 20px;">{{keeper.replBacklogSize/1024/1024 | number:2}}G</span>
+                            </div>
+                            <div ng-repeat="keeperSlave in keeper.slaves">
+                                <md-card md-theme="default" md-theme-watch>
+                                    <md-card-title class="custom-card">
+                                        <md-card-title-text class="centered-text">
+                                            <div  style="white-space: nowrap;">
+                                                <span>{{keeperSlave.host}}:{{keeperSlave.port}}</span>
+                                                <span style="margin-left: 20px;">{{keeperSlave.state}}</span>
+                                                <span style="margin-left: 20px;">{{keeperSlave.offset}}</span>
+                                                <span style="margin-left: 20px;">{{keeperSlave.remotePort}}</span>
+                                            </div>
+                                        </md-card-title-text>
+                                    </md-card-title>
+                                </md-card>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+            </md-card-content>
+        </md-card>
+    </div>
+    <div flex-xs flex-gt-xs="50" layout="column">
+        <!--Checker-->
+        <md-card md-theme="{{shardCheckerHealthCheckResult != [] ? 'default' : 'red'}}" md-theme-watch>
+            <md-card-title class="custom-card">
+                <md-card-title-text class="centered-text">
+                    <span class="md-headline">Checker Groups</span>
+                </md-card-title-text>
+                <md-card-actions layout="row" layout-align="end center">
+                    <md-button class="md-raised" ng-click="doShowActions()">Show Actions</md-button>
+                    <md-button class="md-raised" ng-click="shardCheckerGroupHealthCheck()">刷新</md-button>
+                </md-card-actions>
+            </md-card-title>
+            <md-card-content>
+                <div ng-repeat="checker in shardCheckerHealthCheckResult">
+                    <md-card md-theme="default" md-theme-watch>
+                        <md-card-title class="custom-card">
+                            <md-card-title-text class="centered-text">
+                                <div  style="white-space: nowrap;">
+                                    <span>{{checker.host}}:{{checker.port}}</span>
+                                    <span style="margin-left: 20px;">{{checker.checkerRole}}</span>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                            <div ng-repeat="instance in checker.instances">
+                                <md-card md-theme="{{ instance.state=='HEALTHY' ? 'green' : 'red' }}" md-theme-watch>
+                                    <md-card-title class="custom-card">
+                                        <md-card-title-text class="centered-text">
+                                            <div  style="white-space: nowrap;">
+                                                <span>{{instance.host}}:{{instance.port}}</span>
+                                                <span style="margin-left: 20px;">{{instance.state}}</span>
+                                            </div>
+                                            <span ng-show="showActions" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{instance.actions}}</span>
+                                        </md-card-title-text>
+                                    </md-card-title>
+                                </md-card>
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+            </md-card-content>
+        </md-card>
+        <!--Meta-->
+        <md-card md-theme="{{ shardAllMeta != null && shardAllMeta.err == null ? 'green' : 'red' }}" md-theme-watch>
+            <md-card-title class="custom-card">
+                <md-card-title-text class="centered-text">
+                    <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{shardAllMeta.err}}</div>
+                    <div class="md-headline" style="white-space: nowrap;">
+                        <span class="md-headline">Meta</span>
+                        <span style="margin-left: 20px;">{{shardAllMeta.metaHost}}:{{shardAllMeta.metaPort}}</span>
+                    </div>
+                </md-card-title-text>
+                <md-card-actions layout="row" layout-align="end center">
+                    <md-button class="md-raised" ng-click="getShardAllMeta()">刷新</md-button>
+                </md-card-actions>
+            </md-card-title>
+            <md-card-content>
+                <md-card md-theme="default" md-theme-watch>
+                    <md-card-title class="custom-card">
+                        <md-card-title-text class="centered-text">
+                            <span>Meta Current Message</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content>
+                        <div  style="white-space: nowrap;">
+                            <span>ShardDbId:</span>
+                            <span style="margin-left: 20px;">{{shardAllMeta.shardCurrentMeta.shardDbId}}</span>
+                        </div>
+                        <div  style="white-space: nowrap; display: inline-block;">
+                            <span>SurviveKeepers:</span>
+                            <div ng-repeat="surviveKeeper in shardAllMeta.shardCurrentMeta.surviveKeepers" style="white-space: nowrap; display: inline-block;">
+                                <span style="margin-left: 20px;">{{surviveKeeper.ip}}:{{surviveKeeper.port}}</span>
+                                <span style="margin-left: 5px;" ng-if="surviveKeeper.active">Active</span>
+                                <span style="margin-left: 5px;" ng-if="!surviveKeeper.active">BackUp</span>
+                            </div>
+                        </div>
+                        <div  style="white-space: nowrap;">
+                            <span>KeeperMaster:</span>
+                            <div ng-repeat="(key, value) in shardAllMeta.shardCurrentMeta.keeperMaster" style="white-space: nowrap; display: inline-block;">
+                                <span style="margin-left: 20px;">{{key}}:{{value}}</span>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+                <md-card md-theme="default" md-theme-watch>
+                    <md-card-title class="custom-card">
+                        <md-card-title-text class="centered-text">
+                            <span>Meta Message</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content>
+                        <div  style="white-space: nowrap;">
+                            <span>ShardDbId:</span>
+                            <span style="margin-left: 20px;">{{shardAllMeta.shardCurrentMeta.shardMeta.dbId}}</span>
+                        </div>
+                        <div  style="white-space: nowrap;">
+                            <span>ShardId:</span>
+                            <span style="margin-left: 20px;">{{shardAllMeta.shardCurrentMeta.shardMeta.id}}</span>
+                        </div>
+                        <div  style="white-space: nowrap;">
+                            <span>Redis:</span>
+                            <div ng-repeat="redis in shardAllMeta.shardCurrentMeta.shardMeta.redises" style="white-space: nowrap; display: inline-block;">
+                                <span style="margin-left: 20px;">{{redis.ip}}:{{redis.port}}</span>
+                            </div>
+                        </div>
+                        <div  style="white-space: nowrap;">
+                            <span>Keepers:</span>
+                            <div ng-repeat="keeper in shardAllMeta.shardCurrentMeta.shardMeta.keepers" style="white-space: nowrap; display: inline-block;">
+                                <span style="margin-left: 20px;">{{keeper.ip}}:{{keeper.port}}</span>
+                            </div>
+                        </div>
+                    </md-card-content>
+                </md-card>
+            </md-card-content>
+        </md-card>
+    </div>
+</md-content>

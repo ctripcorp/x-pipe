@@ -1,9 +1,7 @@
-package com.ctrip.xpipe.redis.console.keeper.Command;
+package com.ctrip.xpipe.redis.console.keeper.command;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class KeeperResetCommand<T> extends AbstractCommand<T> {
 
