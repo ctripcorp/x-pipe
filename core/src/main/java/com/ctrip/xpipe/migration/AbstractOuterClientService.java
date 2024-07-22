@@ -74,6 +74,11 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
+	public boolean batchExcludeIdcs(List<ClusterExcludedIdcInfo> excludedClusterIdcs) throws Exception {
+		return true;
+	}
+
+	@Override
 	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
 
 	}

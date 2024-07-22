@@ -1,0 +1,48 @@
+<div class="col-md-12">
+    <h3 class="header smaller lighter blue">
+        <span>双向机房拉出</span>
+    </h3>
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-sm-2">
+                    <md-checkbox class="border-white" ng-checked="chooseAllClusters" ng-click="toggleAllClusters()"></md-checkbox>
+                    <span ng-if="chooseAllClusters">取消全选</span> <span ng-if="!chooseAllClusters">全选</span>
+                </div>
+                <div class="col-sm-8">
+					<span class="col-md-2">拉出机房：</span>
+                    <div class="col-md-10">
+                        <label ng-repeat="dc in allDcs">
+                            <md-checkbox ng-checked="dc.selected" ng-click="toggleDc(dc)"></md-checkbox>
+                            <span class="lbl" ng-bind="dc.dcName"></span>
+                            &nbsp&nbsp&nbsp&nbsp
+                        </label>
+					</div>
+                </div>
+                <div class="col-md-2 text-right	">
+                    <a type="button" ng-disabled="loading" ng-click="migrate()" class="btn btn-primary radius-border-fat">
+                        <i ng-show="loading" class="ace-icon fa fa-spinner fa-spin orange bigger-125"></i>
+                        <strong>执行拉出</strong>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+            <tr ng-repeat="cluster in $data">
+                <td>
+                    <input type="checkbox" ng-checked="cluster.isChecked" ng-click="toggleCluster(cluster)">
+                </td>
+                <td data-title="'cluster'" filter="{ clusterName : 'text' }" ng-bind="cluster.clusterName"></td>
+                <td data-title="'描述'" ng-bind="cluster.clusterDescription"></td>
+                <td data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
+                <td data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up"
+   class="btn-scroll-up btn btn-sm btn-inverse"> <i
+        class="icon-double-angle-up icon-only bigger-110"></i>
+</a>

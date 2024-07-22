@@ -103,6 +103,11 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public boolean batchExcludeIdcs(List<ClusterExcludedIdcInfo> excludedClusterIdcs) throws Exception {
+		return true;
+	}
+
+	@Override
 	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
 		logger.info("[markInstanceUpIfNoModifyFor]{}", clusterShardHostPort);
 		instanceStatus.put(clusterShardHostPort.getHostPort(), true);

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
@@ -92,5 +93,7 @@ public interface MigrationService {
     List<MigrationClusterTbl> fetchMigrationClusters(Set<String> clusters, long from, long to);
 
     List<BiMigrationRecord> loadAllBiMigration();
+
+    boolean syncBiMigration(BiMigrationReq biMigrationReq, String operator) throws Exception;
 
 }

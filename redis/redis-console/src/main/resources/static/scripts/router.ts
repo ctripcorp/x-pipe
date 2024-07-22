@@ -157,6 +157,11 @@ function router($stateProvider, $urlRouterProvider) {
         	templateUrl: 'views/index/migration_list.html',
         	controller: 'ActiveDcMigrationEventListCtl'
         })
+        .state('bi_migration', {
+            url: '/bi_migration',
+            templateUrl: 'views/index/bi_migration.html',
+            controller: 'BiMigrationCtl'
+        })
         .state('bi_migration_event_list', {
             url: '/bi_migration_event_list?clusterName',
             templateUrl: 'views/index/bi_migration_list.html',

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -49,6 +51,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
@@ -669,6 +673,45 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
 
         return records;
+    }
+
+    @Override
+    public boolean syncBiMigration(BiMigrationReq biMigrationReq, String operator) throws Exception {
+        logger.info("[syncBiMigration][begin]");
+        List<ClusterTbl> migrateClusters = biMigrationReq.clusters.stream()
+                .filter(cluster -> ClusterType.isSameClusterType(cluster.getClusterType(), ClusterType.BI_DIRECTION))
+                .collect(Collectors.toList());
+        List<String> excludedDcs = biMigrationReq.excludedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
+
+        List<OuterClientService.ClusterExcludedIdcInfo> clusterExcludedIdcInfos = new ArrayList<>(migrateClusters.size());
+        for (ClusterTbl cluster: migrateClusters) {
+            OuterClientService.ClusterExcludedIdcInfo info = new OuterClientService.ClusterExcludedIdcInfo();
+            info.setClusterName(cluster.getClusterName());
+            info.setExcludedDcs(excludedDcs);
+            clusterExcludedIdcInfos.add(info);
+        }
+
+        boolean rst = OuterClientService.DEFAULT.batchExcludeIdcs(clusterExcludedIdcInfos);
+        try {
+            Date current = new Date();
+            List<MigrationBiClusterEntity> migrationRecord = new ArrayList<>(migrateClusters.size());
+
+            for (ClusterTbl cluster: migrateClusters) {
+                MigrationBiClusterEntity entity = new MigrationBiClusterEntity();
+                entity.setClusterId(cluster.getId());
+                entity.setStatus(rst ? "SUCCESS":"FAIL");
+                entity.setOperator(operator);
+                entity.setPublishInfo(Codec.DEFAULT.encode(excludedDcs));
+                entity.setOperationTime(current);
+                migrationRecord.add(entity);
+            }
+
+            migrationBiClusterRepository.batchInsert(migrationRecord);
+        } catch (Throwable th) {
+            logger.info("[syncBiMigration][record fail]", th);
+        }
+        logger.info("[syncBiMigration][end] {}", rst);
+        return rst;
     }
 
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {
