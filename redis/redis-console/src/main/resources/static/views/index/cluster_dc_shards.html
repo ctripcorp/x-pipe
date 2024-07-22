@@ -28,6 +28,7 @@
                         <div class="row">
                             <div class="col-md-6">{{shard.shardTbl.shardName}}(cluster_{{shard.shardTbl.clusterId}}.shard_{{shard.shardTbl.id}})</div>
                             <div class="col-md-6 text-right">
+                                <a class="btn btn-success btn-sm" ng-if="clusterType == 'one_way' || clusterType == 'hetero' " href="/#/full_link_health_check?currentDcName={{currentDcName}}&clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}" target="_blank">健康检测</a>
                                 <a class="btn btn-primary btn-sm" ng-if="routeAvail === true && (clusterType == 'bi_direction'|| clusterType == 'one_way')" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                             	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>

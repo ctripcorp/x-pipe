@@ -233,6 +233,11 @@ function router($stateProvider, $urlRouterProvider) {
             url: '/keepercontainer_overall?keepercontainerIp',
             templateUrl: 'views/index/keepercontainer_overall.html',
             controller: 'KeepercontainerOverallCtl'
+        })
+        .state('full_link_health_check',{
+            url: '/full_link_health_check?currentDcName&clusterName&shardName',
+            templateUrl: 'views/index/full_link_health_check.html',
+            controller: 'FullLinkHealthCheckCtl'
         });
 
 }

@@ -51,6 +51,8 @@ public interface CurrentMetaManager extends Observable {
 
 	String getCurrentMetaDesc();
 
+	List<KeeperMeta> getOneWaySurviveKeepers(Long clusterDbId, Long shardDbId);
+
 	/************* update support *****************/
 
 	void setRedises(Long clusterDbId, Long shardDbId, List<RedisMeta> redises);

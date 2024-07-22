@@ -462,6 +462,14 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<KeeperMeta> getKeeperOfDcClusterShard(String dc, String cluster, String shard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+        if (null == shardMeta) return Collections.emptyList();
+        return shardMeta.getKeepers();
+    }
+
+    @Override
     public List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);

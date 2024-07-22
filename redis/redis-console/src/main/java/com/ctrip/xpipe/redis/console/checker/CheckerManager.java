@@ -17,4 +17,9 @@ public interface CheckerManager {
     List<Map<HostPort, CheckerStatus>> getCheckers();
 
     List<ConsoleCheckerService> getLeaderCheckerServices();
+
+    List<HostPort> getClusterCheckerManager(long clusterId);
+
+    HostPort getClusterCheckerLeader(long clusterId);
+
 }

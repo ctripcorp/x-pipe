@@ -6,14 +6,13 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.console.keeper.Command.AbstractKeeperCommand;
+import com.ctrip.xpipe.redis.console.keeper.command.AbstractKeeperCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 
 import javax.annotation.PostConstruct;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.mockito.Mockito.when;

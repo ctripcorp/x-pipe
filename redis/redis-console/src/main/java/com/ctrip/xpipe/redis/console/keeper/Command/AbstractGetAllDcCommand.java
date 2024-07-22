@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.keeper.Command;
+package com.ctrip.xpipe.redis.console.keeper.command;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import org.springframework.web.client.RestOperations;

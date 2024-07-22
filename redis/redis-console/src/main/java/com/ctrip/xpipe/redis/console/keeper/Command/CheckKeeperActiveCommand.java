@@ -1,10 +1,9 @@
-package com.ctrip.xpipe.redis.console.keeper.Command;
+package com.ctrip.xpipe.redis.console.keeper.command;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.concurrent.ScheduledExecutorService;
 
