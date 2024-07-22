@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.google.common.base.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,18 +20,18 @@ public class InfoResultExtractor {
     private static final String KEY_SYNC_FULL = "sync_full";
     private static final String KEY_SYNC_PARTIAL_OK = "sync_partial_ok";
     private static final String KEY_SYNC_PARTIAL_ERR = "sync_partial_err";
-
     private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
     private static final String KEY_SLAVE_REPL_OFFSET = "slave_repl_offset";
-
     private static final String KEY_INSTANTANEOUS_INPUT_KBPS = "instantaneous_input_kbps";
-
     private static final String KEY_SWAP_USED_DB_SIZE = "swap_used_db_size";
     private static final String KEY_USED_MEMORY ="used_memory";
     private static final String KEY_MAX_MEMORY ="maxmemory";
     private static final String KEY_KEEPER_ACTIVE = "state";
-
     private static final String KEY_SWAP_VERSION = "swap_version";
+    private static final String KEY_KEEPER_MASTER_HOST = "master_host";
+    private static final String KEY_KEEPER_MASTER_PORT = "master_port";
+    private static final String KEY_KEEPER_REPL_BACKLOG_SIZE = "repl_backlog_size";
+    private static final String KEY_SLAVE = "slave";
 
     protected static Logger logger = LoggerFactory.getLogger(InfoResultExtractor.class);
 
@@ -145,5 +148,41 @@ public class InfoResultExtractor {
     public long getSlaveReplOffset() {
         Long result = extractAsLong(KEY_SLAVE_REPL_OFFSET);
         return result == null ? 0L : result;
+    }
+
+    public String getKeeperState() {
+        return extract(KEY_KEEPER_ACTIVE);
+    }
+
+    public String getKeyKeeperMasterHost() {
+        return extract(KEY_KEEPER_MASTER_HOST);
+    }
+
+    public int getKeyKeeperMasterPort() {
+        Integer result = extractAsInteger(KEY_KEEPER_MASTER_PORT);
+        return result == null ? 0 : result;
+    }
+
+    public long getKeyKeeperReplBacklogSize() {
+        Long result = extractAsLong(KEY_KEEPER_REPL_BACKLOG_SIZE);
+        return result == null ? 0L : result;
+    }
+
+    public List<Map<String, String>> getKeyKeeperSlaves() {
+        List<Map<String, String>> result = new ArrayList<>();
+        for (Map.Entry<String, String> entry : keyValues.entrySet()) {
+            if (entry.getKey().length() >= 5 && KEY_SLAVE.equals(entry.getKey().substring(0, 5))) {
+                Map<String, String> map = new HashMap<>();
+                for (String element : entry.getValue().split(",")) {
+                    String[] split = element.split("=");
+                    if (split.length != 2) continue;
+                    map.put(split[0], split[1]);
+                }
+                if (!map.isEmpty()) {
+                    result.add(map);
+                }
+            }
+        }
+        return result;
     }
 }

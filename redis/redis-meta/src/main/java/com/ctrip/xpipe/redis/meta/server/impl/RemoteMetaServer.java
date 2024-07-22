@@ -15,7 +15,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.impl.AbstractRemoteClusterServe
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException;
 import com.ctrip.xpipe.rest.ForwardType;
+import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.http.*;
+
+import java.util.List;
 
 import static com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE.GET_CURRENT_MASTER;
 
@@ -234,6 +237,16 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 
 	@Override
 	public String getCurrentMeta() {
+		return null;
+	}
+
+	@Override
+	public List<KeeperMeta> getOneWaySurviveKeepers(String clusterId, String shardId) {
+		return null;
+	}
+
+	@Override
+	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
 		return null;
 	}
 

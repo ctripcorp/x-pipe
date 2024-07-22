@@ -5,10 +5,7 @@ import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
@@ -22,6 +19,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
@@ -200,6 +198,18 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public String getCurrentMeta() {
 		return currentMetaManager.getCurrentMetaDesc();
+	}
+
+	@Override
+	public List<KeeperMeta> getOneWaySurviveKeepers(String clusterId, String shardId) {
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getOneWaySurviveKeepers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getKeeperMaster(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override

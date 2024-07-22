@@ -93,6 +93,25 @@ public class DefaultCheckerManager implements CheckerManager {
         return services;
     }
 
+    @Override
+    public List<HostPort> getClusterCheckerManager(long clusterId) {
+        int totalParts = config.getClusterDividedParts();
+        int index = (int) (clusterId % totalParts);
+        return new ArrayList<>(checkers.get(index).keySet());
+    }
+
+    @Override
+    public HostPort getClusterCheckerLeader(long clusterId) {
+        int totalParts = config.getClusterDividedParts();
+        int index = (int) (clusterId % totalParts);
+        for (Map.Entry<HostPort, CheckerStatus> entry : checkers.get(index).entrySet()) {
+            if (entry.getValue().getCheckerRole().equals(LEADER)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     @VisibleForTesting
     protected void expireCheckers() {
         logger.debug("[expireCheckers] start");

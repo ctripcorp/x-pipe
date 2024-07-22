@@ -1,6 +1,5 @@
-package com.ctrip.xpipe.redis.console.keeper.Command;
+package com.ctrip.xpipe.redis.console.keeper.command;
 
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;

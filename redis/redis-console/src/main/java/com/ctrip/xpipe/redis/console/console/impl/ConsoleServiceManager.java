@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
+import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -83,6 +85,16 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     @Override
     public List<CheckerService> getAllCheckerServices() {
         return new ArrayList<>(loadAllConsoleServices().values());
+    }
+
+    public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String activeDc, String dcId, String clusterId, String shardId) {
+        ConsoleService service = getServiceByDc(activeDc);
+        return service.getShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId);
+    }
+
+    public ShardAllMetaModel getShardAllMeta(String dcId, String clusterId, String shardId) {
+        ConsoleService service = getServiceByDc(dcId);
+        return service.getShardAllMeta(dcId, clusterId, shardId);
     }
 
     public long getDelay(String ip, int port, String activeIdc) {

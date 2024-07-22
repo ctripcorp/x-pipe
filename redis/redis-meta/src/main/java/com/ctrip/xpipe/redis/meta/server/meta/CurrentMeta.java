@@ -350,6 +350,25 @@ public class CurrentMeta implements Releasable {
 		return currentClusterMeta.getShard(shardDbId);
 	}
 
+	public List<KeeperMeta> getOneWaySurviveKeepers(Long clusterDbId, Long shardDbId) {
+		CurrentShardMeta currentShardMeta = getCurrentShardMeta(clusterDbId, shardDbId);
+		CurrentOneWayShardMeta shard = (CurrentOneWayShardMeta)currentShardMeta;
+		List<KeeperMeta> surviveKeepers = null;
+		if (shard != null) {
+			surviveKeepers = shard.getShardKeeperMeta().getSurviveKeepers();
+		}
+		List<KeeperMeta> keeperMetas = new ArrayList<>();
+		if (surviveKeepers != null) {
+			for (KeeperMeta surviveKeeper : surviveKeepers) {
+				keeperMetas.add(new KeeperMeta()
+						.setIp(surviveKeeper.getIp())
+						.setPort(surviveKeeper.getPort())
+						.setActive(surviveKeeper.getActive()));
+			}
+		}
+		return keeperMetas;
+	}
+
 	@Override
 	public void release() throws Exception {
 

@@ -16,6 +16,10 @@ function HealthCheckService($resource, $q) {
 	const GET_PEER_INCOMING = "get_peer_incoming";
 	const GET_PEER_FULL_SYNC = "get_peer_full_sync";
 	const GET_PEER_PARTIAL_SYNC = "get_peer_partial_sync";
+	const GET_SHARD_REDIS_ROLE = "get_shard_redis_role";
+	const GET_SHARD_KEEPER_STATE = "get_shard_keeper_state";
+	const GET_SHARD_CHECKER_HEALTH_CHECK = "get_shard_checker_health_check";
+	const GET_SHARD_ALL_META = "get_shard_all_meta";
 
 	var apis = (function initResourceParam() {
 		var apis = {};
@@ -63,6 +67,25 @@ function HealthCheckService($resource, $q) {
 			method: 'GET',
 			url: '/console/redis/peer/sync/partial/hickwall/:redisIp/:redisPort'
 		};
+		apis[GET_SHARD_REDIS_ROLE] = {
+			method: 'GET',
+			url: '/api/redis/role/:dcId/:clusterId/:shardId',
+			isArray : true
+		};
+		apis[GET_SHARD_KEEPER_STATE] = {
+			method: 'GET',
+			url: '/api/keeper/states/:dcId/:clusterId/:shardId',
+			isArray : true
+		};
+		apis[GET_SHARD_CHECKER_HEALTH_CHECK] = {
+			method: 'GET',
+			url: '/api/checker/groups/:dcId/:clusterId/:shardId',
+			isArray : true
+		};
+		apis[GET_SHARD_ALL_META] = {
+			method: 'GET',
+			url: '/api/meta/all/:dcId/:clusterId/:shardId'
+		};
 		return apis;
 	})();
 	var resource = $resource('', {}, apis);
@@ -75,7 +98,7 @@ function HealthCheckService($resource, $q) {
 		});
 		return q.promise;
 	}
-	
+
 	function isRedisHealth(ip,port) {
 		return request($q.defer(), IS_REDIS_HEALTH, {
 			redisIp : ip,
@@ -158,6 +181,38 @@ function HealthCheckService($resource, $q) {
 		});
 	}
 
+	function getShardRedisRole(dcId, clusterId, shardId) {
+		return request($q.defer(), GET_SHARD_REDIS_ROLE, {
+			dcId: dcId,
+			clusterId: clusterId,
+			shardId: shardId
+		});
+	}
+
+	function getShardKeeperState(dcId, clusterId, shardId) {
+		return request($q.defer(), GET_SHARD_KEEPER_STATE, {
+			dcId: dcId,
+			clusterId: clusterId,
+			shardId: shardId
+		});
+	}
+
+	function getShardCheckerHealthCheck(dcId, clusterId, shardId) {
+		return request($q.defer(), GET_SHARD_CHECKER_HEALTH_CHECK, {
+			dcId: dcId,
+			clusterId: clusterId,
+			shardId: shardId
+		});
+	}
+
+	function getShardAllMeta(dcId, clusterId, shardId) {
+		return request($q.defer(), GET_SHARD_ALL_META, {
+			dcId: dcId,
+			clusterId: clusterId,
+			shardId: shardId
+		});
+	}
+
 	return {
 		isRedisHealth : isRedisHealth,
 		getReplDelay : getReplDelay,
@@ -169,7 +224,11 @@ function HealthCheckService($resource, $q) {
 		getOutComingTrafficToPeerHickwallAddr: getOutComingTrafficToPeerHickwallAddr,
 		getInComingTrafficFromPeerHickwallAddr: getInComingTrafficFromPeerHickwallAddr,
 		getPeerSyncFullHickwallAddr: getPeerSyncFullHickwallAddr,
-		getPeerSyncPartialHickwallAddr: getPeerSyncPartialHickwallAddr
+		getPeerSyncPartialHickwallAddr: getPeerSyncPartialHickwallAddr,
+		getShardRedisRole: getShardRedisRole,
+		getShardKeeperState: getShardKeeperState,
+		getShardCheckerHealthCheck: getShardCheckerHealthCheck,
+		getShardAllMeta: getShardAllMeta
 
 	}
 }
