@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.unidal.tuple.Triple;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
-public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
+public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
     
     protected MetaCache metaCache;
     
@@ -40,7 +41,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
 
     private static final int LONG_SENTINEL_COMMAND_TIMEOUT = 2000;
     private static final int SENTINEL_COMMAND_TIMEOUT = 1000;
-    public SentinelMonitorsCheckCrossDc(
+    public SentinelMonitorsCheck(
             MetaCache metaCache,
             PersistenceCache persistenceCache,
             CheckerConfig config,
@@ -125,15 +126,17 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
             ClusterType clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
             if (!config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName()))
                 continue;
-            if (metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
+
+            Triple<String, String, Long> clusterShardAndSentinelGroupId = metaCache.findClusterShardBySentinelMonitor(monitorName);
+            if (clusterShardAndSentinelGroupId == null || !clusterShardAndSentinelGroupId.getLast().equals(sentinelMeta.getId())) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName)
                         .execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
-                    logger.error("[removeSentinelMonitor] sentinel master {} from {} : {}", monitorName, sentinel, throwable.getMessage());
+                    logger.error("[removeSentinelMonitor] remove sentinel {} from {} : {}", sentinel, monitorName, throwable.getMessage());
                     return null;
                 });
 
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
-                String message = String.format("Sentinel monitor: %s not exist in Xpipe", monitorName);
+                String message = String.format("Sentinel monitor: %s not exist in Xpipe or Sentinel Group %d is mismatched", monitorName, sentinelMeta.getId());
                 if (sentinelInfo.isAvailable()) {
                     alertManager.alert(sentinelInfo.getClusterName(), sentinelInfo.getShardName(), null,
                             ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);

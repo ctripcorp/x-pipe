@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
+import org.unidal.tuple.Triple;
 
 import java.util.Collections;
 import java.util.List;
@@ -109,7 +110,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
+    public Triple<String, String, Long> findClusterShardBySentinelMonitor(String monitor) {
         return null;
     }
 
