@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMe
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelShardBind;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
@@ -212,13 +212,13 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
-                                                                     CheckerConfig config, 
-                                                                     FoundationService foundationService,
-                                                                     SentinelManager manager,
-                                                                     AlertManager alertManager
+    public SentinelMonitorsCheck sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
+                                                              CheckerConfig config,
+                                                              FoundationService foundationService,
+                                                              SentinelManager manager,
+                                                              AlertManager alertManager
                                                                      ) {
-        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+        return new SentinelMonitorsCheck(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 
     @Bean

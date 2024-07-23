@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
+import org.unidal.tuple.Triple;
 
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ public interface MetaCache {
 
     String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard);
 
-    Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
+    Triple<String, String, Long> findClusterShardBySentinelMonitor(String monitor);
 
     List<RouteMeta> getCurrentDcConsoleRoutes();
 

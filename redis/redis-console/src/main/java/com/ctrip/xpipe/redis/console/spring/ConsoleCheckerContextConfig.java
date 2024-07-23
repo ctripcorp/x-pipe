@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelShardBind;
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
@@ -106,13 +106,13 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
     }
 
     @Bean
-    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(MetaCache metaCache, PersistenceCache persistenceCache,
-                                                                     CheckerConfig config,
-                                                                     FoundationService foundationService,
-                                                                     SentinelManager manager,
-                                                                     AlertManager alertManager
+    public SentinelMonitorsCheck sentinelMonitorsCheckCrossDc(MetaCache metaCache, PersistenceCache persistenceCache,
+                                                              CheckerConfig config,
+                                                              FoundationService foundationService,
+                                                              SentinelManager manager,
+                                                              AlertManager alertManager
     ) {
-        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+        return new SentinelMonitorsCheck(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 
     @Bean
