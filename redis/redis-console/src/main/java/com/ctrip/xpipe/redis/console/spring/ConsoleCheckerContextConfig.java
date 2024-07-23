@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
@@ -10,7 +9,6 @@ import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelShardBind;
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -27,13 +25,8 @@ import com.ctrip.xpipe.redis.console.service.impl.DefaultRedisInfoService;
 import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
-
-import java.util.concurrent.ExecutorService;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
  * @author lishanglin
@@ -115,9 +108,4 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
         return new SentinelMonitorsCheck(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 
-    @Bean
-    public SentinelShardBind sentinelShardBind(MetaCache metaCache, CheckerConfig checkerConfig, SentinelManager sentinelManager,
-                                               @Qualifier(GLOBAL_EXECUTOR) ExecutorService executor, CheckerConsoleService checkerConsoleService) {
-        return new SentinelShardBind(metaCache, checkerConfig, sentinelManager, executor, checkerConsoleService);
-    }
 }
