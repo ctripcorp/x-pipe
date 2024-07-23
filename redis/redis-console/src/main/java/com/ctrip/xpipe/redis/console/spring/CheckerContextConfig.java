@@ -13,8 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMe
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelShardBind;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -212,19 +211,13 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
-                                                                     CheckerConfig config, 
-                                                                     FoundationService foundationService,
-                                                                     SentinelManager manager,
-                                                                     AlertManager alertManager
+    public SentinelMonitorsCheck sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
+                                                              CheckerConfig config,
+                                                              FoundationService foundationService,
+                                                              SentinelManager manager,
+                                                              AlertManager alertManager
                                                                      ) {
-        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
-    }
-
-    @Bean
-    public SentinelShardBind sentinelShardBind(CheckerAllMetaCache metaCache, CheckerConfig checkerConfig, SentinelManager sentinelManager,
-                                               @Qualifier(GLOBAL_EXECUTOR) ExecutorService executor, CheckerConsoleService checkerConsoleService) {
-        return new SentinelShardBind(metaCache, checkerConfig, sentinelManager, executor, checkerConsoleService);
+        return new SentinelMonitorsCheck(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 
     @Bean

@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +40,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Pair<XpipeMeta, XpipeMetaManager> meta;
 
-    protected Map<String, Pair<String, String>> monitor2ClusterShard;
+    protected Map<String, Triple<String, String, Long>> monitor2ClusterShard;
 
     protected Set<HostPort> allKeepers;
 
@@ -534,12 +535,12 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Pair<String, String> findClusterShardBySentinelMonitor(String monitor) {
+    public Triple<String, String, Long> findClusterShardBySentinelMonitor(String monitor) {
         if(StringUtil.isEmpty(monitor)) {
             return null;
         }
 
-        Pair<String, String> clusterShard = monitor2ClusterShard.get(monitor);
+        Triple<String, String, Long> clusterShard = monitor2ClusterShard.get(monitor);
         if(clusterShard != null) {
             return clusterShard;
         }
@@ -565,7 +566,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
                     for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                         monitor2ClusterShard.put(shardMeta.getSentinelMonitorName(),
-                            new Pair<>(clusterMeta.getId(), shardMeta.getId()));
+                                new Triple(clusterMeta.getId(), shardMeta.getId(), shardMeta.getSentinelId()));
                     }
                 }
             }
@@ -674,7 +675,7 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @VisibleForTesting
-    public AbstractMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
+    public AbstractMetaCache setMonitor2ClusterShard(Map<String, Triple<String, String, Long>> monitorMap) {
         this.monitor2ClusterShard = monitorMap;
         return this;
     }

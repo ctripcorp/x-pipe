@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -203,12 +203,12 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache,PersistenceCache persistenceCache,
-                                                                     CheckerConfig config,
-                                                                     FoundationService foundationService,
-                                                                     SentinelManager manager,
-                                                                     AlertManager alertManager
+    public SentinelMonitorsCheck sentinelMonitorsCheckCrossDc(CheckerAllMetaCache metaCache, PersistenceCache persistenceCache,
+                                                              CheckerConfig config,
+                                                              FoundationService foundationService,
+                                                              SentinelManager manager,
+                                                              AlertManager alertManager
     ) {
-        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+        return new SentinelMonitorsCheck(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 }

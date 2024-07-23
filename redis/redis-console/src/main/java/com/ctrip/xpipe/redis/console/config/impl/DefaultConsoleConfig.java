@@ -88,10 +88,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
 
-    private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "checker.sentinel.bind.timeout.milli";
-
-    private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
-
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
     private static final String KEY_DCS_RELATIONS = "dcs.relations";
@@ -605,16 +601,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public String crossDcSentinelMonitorNameSuffix() {
         return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
-    }
-
-    @Override
-    public boolean shouldBindOuterClusterShardAndSentinel() {
-        return getBooleanProperty(KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL, false);
-    }
-
-    @Override
-    public int sentinelBindTimeoutMilli() {
-        return getIntProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000);
     }
 
     @Override

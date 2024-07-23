@@ -274,16 +274,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public int getNonCoreCheckIntervalMilli() {
         return 3 * 60 * 60 *1000;
     }
-  
-    @Override
-    public boolean shouldBindOuterClusterShardAndSentinel() {
-        return false;
-    }
-
-    @Override
-    public int sentinelBindTimeoutMilli() {
-        return 0;
-    }
 
     @Override
     public Set<String> getOuterClusterTypes() {

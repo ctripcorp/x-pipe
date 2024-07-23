@@ -189,10 +189,6 @@ public interface CheckerConfig {
 
     int getNonCoreCheckIntervalMilli();
 
-    boolean shouldBindOuterClusterShardAndSentinel();
-
-    int sentinelBindTimeoutMilli();
-
     Set<String> getOuterClusterTypes();
 
     Map<String, String> sentinelMasterConfig();
