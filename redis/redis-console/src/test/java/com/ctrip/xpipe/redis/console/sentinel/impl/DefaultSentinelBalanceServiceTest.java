@@ -60,12 +60,12 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(2, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage(null);
-        Map<String, Pair<Long, String>> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
+        Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
 
-        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(2).getSentinelsAddressString()).getKey().longValue());
-        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(102).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(2).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(102).getSentinelsAddressString()).longValue());
         // inactive 104 not involved
-        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(104).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(104).getSentinelsAddressString()).longValue());
     }
 
     @Test
@@ -80,12 +80,12 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(3, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage("");
-        Map<String, Pair<Long, String>> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
+        Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
 
-        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(1).getSentinelsAddressString()).getKey().longValue());
-        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(101).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(1).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(101).getSentinelsAddressString()).longValue());
         // inactive 104 not involved
-        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(103).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(103).getSentinelsAddressString()).longValue());
     }
 
 }
