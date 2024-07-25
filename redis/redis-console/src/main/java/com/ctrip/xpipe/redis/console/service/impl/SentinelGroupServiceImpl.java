@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
@@ -26,6 +27,8 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl.CLUSTER_DEFAULT_TAG;
 
 @Service
 public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGroupTblDao> implements SentinelGroupService {
@@ -263,7 +266,10 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
                 Set<String> dcs = sentinelGroupModel.dcInfos().keySet();
                 for (String dc : dcs) {
                     result.putIfAbsent(dc, new SentinelUsageModel(dc));
-                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount(), sentinelGroupModel.getTag());
+                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
+                    if (!StringUtil.trimEquals(CLUSTER_DEFAULT_TAG, sentinelGroupModel.getTag(), true)) {
+                        result.get(dc).addSentinelTag(sentinelGroupModel.getTag(), sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
+                    }
                 }
             }
         });
