@@ -87,11 +87,11 @@ public class SentinelUpdateControllerTest {
     @Test
     public void testJsonShow() {
         SentinelUsageModel usageModel1 = new SentinelUsageModel("SHAJQ", 2)
-                .addSentinelUsage("127.0.0.1:6379,127.0.0.1:6380", 100,"")
-                .addSentinelUsage("192.168.0.1:6379,192.168.0.1:6380", 200,"");
+                .addSentinelUsage("127.0.0.1:6379,127.0.0.1:6380", 100)
+                .addSentinelUsage("192.168.0.1:6379,192.168.0.1:6380", 200);
         SentinelUsageModel usageModel2 = new SentinelUsageModel("SHAOY", 2)
-                .addSentinelUsage("127.0.0.2:6381,127.0.0.1:6382", 150,"")
-                .addSentinelUsage("192.168.0.2:6381,192.168.0.1:6382", 150,"");
+                .addSentinelUsage("127.0.0.2:6381,127.0.0.1:6382", 150)
+                .addSentinelUsage("192.168.0.2:6381,192.168.0.1:6382", 150);
         Map<String, SentinelUsageModel> map = Maps.newHashMapWithExpectedSize(2);
         map.put("SHAJQ", usageModel1);
         map.put("SHAOY", usageModel2);
