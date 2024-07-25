@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 
 import java.util.List;
@@ -35,4 +36,6 @@ public interface SentinelGroupService {
     void reheal(long id);
 
     void updateActive(long id, int active);
+
+    SentinelGroupTbl updateTag(long id, String tag);
 }

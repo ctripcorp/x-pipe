@@ -146,7 +146,7 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
         for (String shardName : shardNames) {
             ShardModel shardModel = new ShardModel();
             shardModel.setShardTbl(new ShardTbl().setShardName(shardName).setSetinelMonitorName(shardName));
-            shardModel.setSentinels(sentinelBalanceService.selectMultiDcSentinels(clusterType));
+            shardModel.setSentinels(sentinelBalanceService.selectMultiDcSentinels(clusterType, ""));
             shards.add(shardModel);
         }
 

@@ -28,6 +28,8 @@ public interface ClusterService {
 	List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType);
 	List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc);
 	List<String> findAllClusterNames();
+	String findClusterTag(String clusterName);
+	void updateClusterTag(String clusterName, String clusterTag);
 	Long getCountByActiveDc(long activeDcId);
 	Map<String, Long> getAllCountByActiveDc();
 	Map<String, Long> getMigratableClustersCountByActiveDc();

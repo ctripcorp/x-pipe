@@ -174,6 +174,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         } else {
             SentinelGroupTbl insertTbl = new SentinelGroupTbl()
                     .setClusterType(sentinelGroupModel.getClusterType())
+                    .setTag(sentinelGroupModel.getTag().trim().toUpperCase())
                     .setSentinelDescription(sentinelGroupModel.getDesc())
                     .setActive(sentinelGroupModel.getActive());
             queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -262,7 +263,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
                 Set<String> dcs = sentinelGroupModel.dcInfos().keySet();
                 for (String dc : dcs) {
                     result.putIfAbsent(dc, new SentinelUsageModel(dc));
-                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
+                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount(), sentinelGroupModel.getTag());
                 }
             }
         });
@@ -393,6 +394,30 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
                 return dao.updateByPK(sentinelGroupTbl, SentinelGroupTblEntity.UPDATESET_FULL);
             }
         });
+    }
+
+    @Override
+    public SentinelGroupTbl updateTag(long id, String tag) {
+        SentinelGroupTbl sentinelGroupTbl = queryHandler.handleQuery(new DalQuery<SentinelGroupTbl>() {
+            @Override
+            public SentinelGroupTbl doQuery() throws DalException {
+                return dao.findByPK(id, SentinelGroupTblEntity.READSET_FULL);
+            }
+        });
+        if (sentinelGroupTbl == null) {
+            throw new IllegalArgumentException(String.format("sentinel group with id:%s not exist", id));
+        }
+        if (tag == null) {
+            throw new IllegalArgumentException("sentinel group tag can not be null!");
+        }
+        sentinelGroupTbl.setTag(tag.trim().toUpperCase());
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return dao.updateByPK(sentinelGroupTbl, SentinelGroupTblEntity.UPDATESET_FULL);
+            }
+        });
+        return sentinelGroupTbl;
     }
 
     private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {

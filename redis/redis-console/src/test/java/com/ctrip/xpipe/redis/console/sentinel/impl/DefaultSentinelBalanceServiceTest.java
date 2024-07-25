@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,15 +33,15 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testSelectSentinel() {
-        SentinelGroupModel jqSetinelTbl = sentinelBalanceService.selectSentinel("jq", ClusterType.ONE_WAY);
-        SentinelGroupModel oySetinelTbl = sentinelBalanceService.selectSentinel("oy", ClusterType.ONE_WAY);
+        SentinelGroupModel jqSetinelTbl = sentinelBalanceService.selectSentinel("jq", ClusterType.ONE_WAY, "");
+        SentinelGroupModel oySetinelTbl = sentinelBalanceService.selectSentinel("oy", ClusterType.ONE_WAY, "");
         Assert.assertEquals(101L, jqSetinelTbl.getSentinelGroupId());
         Assert.assertEquals(102L, oySetinelTbl.getSentinelGroupId());
     }
 
     @Test
     public void testSelectMultiSentinels() {
-        Map<Long, SentinelGroupModel> dcSentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.ONE_WAY);
+        Map<Long, SentinelGroupModel> dcSentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.ONE_WAY, "");
         Assert.assertEquals(3, dcSentinels.size());
         Assert.assertEquals(101L, dcSentinels.get(1L).getSentinelGroupId());
         Assert.assertEquals(102L, dcSentinels.get(2L).getSentinelGroupId());
@@ -49,8 +50,8 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testReBalanceBackupDcSentinels() throws Exception {
-        sentinelBalanceService.rebalanceBackupDcSentinel("oy");
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",ClusterType.ONE_WAY);
+        sentinelBalanceService.rebalanceBackupDcSentinel("oy", "");
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",ClusterType.ONE_WAY, "");
         waitConditionUntilTimeOut(() -> task.future().isDone());
         // active: 2 102; inactive: 104
         Assert.assertEquals(2, task.getTotalActiveSize());
@@ -59,18 +60,18 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(2, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage(null);
-        Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
+        Map<String, Pair<Long, String>> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
 
-        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(2).getSentinelsAddressString()).longValue());
-        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(102).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(2).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(2L, sentinelUsage.get(sentinelService.findById(102).getSentinelsAddressString()).getKey().longValue());
         // inactive 104 not involved
-        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(104).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(104).getSentinelsAddressString()).getKey().longValue());
     }
 
     @Test
     public void testReBalanceSentinels() throws Exception {
-        sentinelBalanceService.rebalanceDcSentinel("jq",ClusterType.ONE_WAY);
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,ClusterType.ONE_WAY);
+        sentinelBalanceService.rebalanceDcSentinel("jq",ClusterType.ONE_WAY,"");
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,ClusterType.ONE_WAY, "");
         waitConditionUntilTimeOut(() -> task.future().isDone(), 10000000);
         // active: 1 101; inactive: 103
         Assert.assertEquals(2, task.getTotalActiveSize());
@@ -79,12 +80,12 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(3, task.getTargetUsages());
 
         Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage("");
-        Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
+        Map<String, Pair<Long, String>> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
 
-        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(1).getSentinelsAddressString()).longValue());
-        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(101).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(1).getSentinelsAddressString()).getKey().longValue());
+        Assert.assertEquals(3L, sentinelUsage.get(sentinelService.findById(101).getSentinelsAddressString()).getKey().longValue());
         // inactive 104 not involved
-        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(103).getSentinelsAddressString()).longValue());
+        Assert.assertEquals(0L, sentinelUsage.get(sentinelService.findById(103).getSentinelsAddressString()).getKey().longValue());
     }
 
 }
