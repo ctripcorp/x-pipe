@@ -21,6 +21,8 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected String dcId;
 
+    protected String tag;
+
     protected SentinelBalanceService sentinelBalanceService;
 
     protected DcClusterShardService dcClusterShardService;
@@ -31,8 +33,9 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected List<SentinelGroupModel> busySentinels;
 
-    public BackupDcOnlySentinelBalanceTask(String dcId, SentinelBalanceService sentinelBalanceService, DcClusterShardService dcClusterShardService) {
+    public BackupDcOnlySentinelBalanceTask(String dcId, SentinelBalanceService sentinelBalanceService, DcClusterShardService dcClusterShardService, String tag) {
         this.dcId = dcId;
+        this.tag = tag;
         this.sentinelBalanceService = sentinelBalanceService;
         this.dcClusterShardService = dcClusterShardService;
         this.initTask();
@@ -42,7 +45,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
         this.busySentinels = new LinkedList<>();
 
         long totalUsages = 0;
-        List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, ClusterType.ONE_WAY);
+        List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, ClusterType.ONE_WAY, tag);
         for (SentinelGroupModel sentinel: sentinels) {
             if (sentinel.isActive()) {
                 totalActiveSize++;
@@ -87,6 +90,11 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
     }
 
     @Override
+    public String getTag() {
+        return tag;
+    }
+
+    @Override
     protected void doExecute() throws Throwable {
         rebalanceBackupDcSentinels();
         future().setSuccess();
@@ -104,7 +112,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected void doBalanceSentinel(SentinelGroupModel sentinelGroupModel, List<DcClusterShardTbl> dcClusterShards) {
         dcClusterShards.forEach(dcClusterShard -> {
-            SentinelGroupModel suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId, ClusterType.ONE_WAY);
+            SentinelGroupModel suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId, ClusterType.ONE_WAY, tag);
             if (null == suitableSentinel) {
                 getLogger().info("[doBalanceSentinel]{} none sentinel selected", getName());
                 throw new NoSentinelsToUseException(getName() + "none sentinel selected");

@@ -5,9 +5,12 @@ import org.apache.commons.lang.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl.CLUSTER_DEFAULT_TAG;
+
 public class SentinelGroupModel {
 
     private long sentinelGroupId;
+    private String tag = CLUSTER_DEFAULT_TAG;
     private List<SentinelInstanceModel> sentinels = new ArrayList<>();
     private String clusterType;
     private String desc = "";
@@ -20,6 +23,7 @@ public class SentinelGroupModel {
         this.sentinelGroupId = sentinelGroupTbl.getSentinelGroupId();
         this.clusterType = sentinelGroupTbl.getClusterType();
         this.active = sentinelGroupTbl.getActive();
+        this.tag = sentinelGroupTbl.getTag();
     }
 
     public long getSentinelGroupId() {
@@ -28,6 +32,15 @@ public class SentinelGroupModel {
 
     public SentinelGroupModel setSentinelGroupId(long sentinelGroupId) {
         this.sentinelGroupId = sentinelGroupId;
+        return this;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public SentinelGroupModel setTag(String tag) {
+        this.tag = tag;
         return this;
     }
 

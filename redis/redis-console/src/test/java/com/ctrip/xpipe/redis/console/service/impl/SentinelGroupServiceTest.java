@@ -139,7 +139,7 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
         sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc2);
 
         //force refresh cache
-        sentinelBalanceService.selectSentinelWithoutCache("OY", ClusterType.ONE_WAY);
+        sentinelBalanceService.selectSentinelWithoutCache("OY", ClusterType.ONE_WAY, "");
 
         createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_11", "one_way_shard_12", "one_way_shard_13"), "one_way_1");
         createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_21", "one_way_shard_22"), "one_way_2");

@@ -87,11 +87,11 @@ public class SentinelUpdateControllerTest {
     @Test
     public void testJsonShow() {
         SentinelUsageModel usageModel1 = new SentinelUsageModel("SHAJQ", 2)
-                .addSentinelUsage("127.0.0.1:6379,127.0.0.1:6380", 100)
-                .addSentinelUsage("192.168.0.1:6379,192.168.0.1:6380", 200);
+                .addSentinelUsage("127.0.0.1:6379,127.0.0.1:6380", 100,"")
+                .addSentinelUsage("192.168.0.1:6379,192.168.0.1:6380", 200,"");
         SentinelUsageModel usageModel2 = new SentinelUsageModel("SHAOY", 2)
-                .addSentinelUsage("127.0.0.2:6381,127.0.0.1:6382", 150)
-                .addSentinelUsage("192.168.0.2:6381,192.168.0.1:6382", 150);
+                .addSentinelUsage("127.0.0.2:6381,127.0.0.1:6382", 150,"")
+                .addSentinelUsage("192.168.0.2:6381,192.168.0.1:6382", 150,"");
         Map<String, SentinelUsageModel> map = Maps.newHashMapWithExpectedSize(2);
         map.put("SHAJQ", usageModel1);
         map.put("SHAOY", usageModel2);
@@ -107,7 +107,7 @@ public class SentinelUpdateControllerTest {
 
 
     private void mockSentinel() {
-        ClusterTbl cluster = new ClusterTbl().setId(1L).setClusterName(clusterName).setClusterType(ClusterType.ONE_WAY.toString());
+        ClusterTbl cluster = new ClusterTbl().setId(1L).setClusterName(clusterName).setClusterType(ClusterType.ONE_WAY.toString()).setTag("");
         DcClusterShardTbl dcClusterShard = new DcClusterShardTbl().setSetinelId(1L);
         when(clusterService.find(clusterName)).thenReturn(cluster);
         when(dcClusterShardService.find(dcName, clusterName, shardName)).thenReturn(dcClusterShard);
@@ -116,8 +116,8 @@ public class SentinelUpdateControllerTest {
         SentinelInstanceModel instanceModel2 = new SentinelInstanceModel().setSentinelIp("127.0.0.1").setSentinelPort(7001);
         SentinelGroupModel model1 = new SentinelGroupModel().setSentinelGroupId(1L).setSentinels(Collections.singletonList(instanceModel1));
         SentinelGroupModel model2 = new SentinelGroupModel().setSentinelGroupId(2L).setSentinels(Collections.singletonList(instanceModel2));
-        when(sentinelBalanceService.selectSentinel(dcName, ClusterType.ONE_WAY)).thenReturn(model1);
-        when(sentinelBalanceService.selectSentinel(dcName, ClusterType.SINGLE_DC)).thenReturn(model2);
+        when(sentinelBalanceService.selectSentinel(dcName, ClusterType.ONE_WAY, "")).thenReturn(model1);
+        when(sentinelBalanceService.selectSentinel(dcName, ClusterType.SINGLE_DC, "")).thenReturn(model2);
     }
 
     @Test

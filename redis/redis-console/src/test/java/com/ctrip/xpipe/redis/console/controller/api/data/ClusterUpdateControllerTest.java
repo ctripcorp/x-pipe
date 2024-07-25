@@ -128,7 +128,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
             .setIsXpipeInterested(true)
             .setStatus("normal")
             .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+            .setTag("");
         ClusterTbl clusterTbl2 = new ClusterTbl()
             .setClusterName("cluster-name2")
             .setClusterType(ClusterType.SINGLE_DC.toString())
@@ -137,7 +138,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
             .setIsXpipeInterested(true)
             .setStatus("normal")
             .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+            .setTag("");
         clusterDao.createCluster(clusterTbl1);
         clusterDao.createCluster(clusterTbl2);
 
@@ -163,7 +165,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
             .setIsXpipeInterested(true)
             .setStatus("normal")
             .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+            .setTag("");
         ClusterTbl clusterTbl2 = new ClusterTbl()
             .setClusterName("cluster-name2")
             .setClusterType(ClusterType.SINGLE_DC.toString())
@@ -172,7 +175,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
             .setIsXpipeInterested(true)
             .setStatus("normal")
             .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+            .setTag("");
         clusterDao.createCluster(clusterTbl1);
         clusterDao.createCluster(clusterTbl2);
 
@@ -194,7 +198,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
             .setIsXpipeInterested(true)
             .setStatus("normal")
             .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+            .setTag("");
         clusterDao.createCluster(clusterTbl);
 
         long orgId = 5L;
@@ -253,7 +258,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
-                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+                .setTag("");
         clusterDao.createCluster(clusterTbl);
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
@@ -283,7 +289,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
-                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+                .setTag("");
         clusterDao.createCluster(clusterTbl);
 
         ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
@@ -313,7 +320,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
                 .setClusterDesignatedRouteIds("")
-                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
+                .setTag("");
         clusterDao.createCluster(clusterTbl);
         clusterTbl.setId(LATTER_ID).setClusterName(LATTER_NAME);
         clusterDao.createCluster(clusterTbl);

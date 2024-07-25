@@ -4,11 +4,13 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
@@ -36,6 +38,9 @@ public class ClusterTypeUpdateEventListener implements ClusterEventListener {
 
     @Autowired
     private DcClusterService dcClusterService;
+
+    @Autowired
+    private ClusterService clusterService;
 
     @Override
     public void update(Object args, Observable observable) {
@@ -83,7 +88,7 @@ public class ClusterTypeUpdateEventListener implements ClusterEventListener {
     void changeCrossDcShardSentinel(String dcName, String clusterName, String shardName, ClusterType clusterType){
         try {
             List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardName);
-            SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
+            SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType, clusterService.findClusterTag(clusterName));
             if (sentinelGroupModel != null) {
                 for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
                     dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
@@ -104,7 +109,7 @@ public class ClusterTypeUpdateEventListener implements ClusterEventListener {
     void changeDcShardSentinel(String dcName, String clusterName, String shardName, ClusterType clusterType) {
         try {
             DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcName, clusterName, shardName);
-            SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
+            SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType, clusterService.findClusterTag(clusterName));
             if (dcClusterShardTbl != null && sentinelGroupModel != null) {
                 dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
                 CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateSentinel]%s-%s-%s-%s,sentinelGroupId:%s", clusterType.name(), dcName, clusterName, shardName, dcClusterShardTbl.getSetinelId()));
