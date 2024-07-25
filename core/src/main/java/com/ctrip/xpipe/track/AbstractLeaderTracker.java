@@ -58,10 +58,15 @@ public abstract class AbstractLeaderTracker extends AbstractStartStoppable {
         MetricData metricData = new MetricData(metricType);
         metricData.setValue(1);
         metricData.setTimestampMilli(System.currentTimeMillis());
+        addTages(metricData);
         try {
             metricProxy.writeBinMultiDataPoint(metricData);
         } catch (Throwable th) {
             logger.debug("[tryMetric] fail", th);
         }
+    }
+
+    protected void addTages(MetricData metricData) {
+        // default do nothing
     }
 }
