@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl.CLUSTER_DEFAULT_TAG;
+
 public class ShardMetaSynchronizer implements MetaSynchronizer {
     private static Logger logger = LoggerFactory.getLogger(ShardMetaSynchronizer.class);
     private Set<ShardMeta> added;
@@ -70,7 +72,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                         ClusterMeta clusterMeta = shardMeta.parent();
                         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
                         if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterMeta.getId())) {
-                            shardService.findOrCreateShardIfNotExist(((ClusterMeta) shardMeta.parent()).getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                            shardService.findOrCreateShardIfNotExist(((ClusterMeta) shardMeta.parent()).getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null, sentinelBalanceService.selectMultiDcSentinels(clusterType, CLUSTER_DEFAULT_TAG));
                         } else {
                             shardService.findOrCreateShardIfNotExist(((ClusterMeta) shardMeta.parent()).getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null, null);
                         }

@@ -12,20 +12,20 @@ import java.util.Map;
  */
 public interface SentinelBalanceService {
 
-    List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType);
+    List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType, String tag);
 
-    SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType);
+    SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType, String tag);
 
-    SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType);
+    SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType, String tag);
 
-    Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType);
+    Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType, String tag);
 
-    void rebalanceDcSentinel(String dc, ClusterType clusterType);
+    void rebalanceDcSentinel(String dc, ClusterType clusterType, String tag);
 
-    void rebalanceBackupDcSentinel(String dc);
+    void rebalanceBackupDcSentinel(String dc, String tag);
 
-    void cancelCurrentBalance(String dc, ClusterType clusterType);
+    void cancelCurrentBalance(String dc, ClusterType clusterType, String tag);
 
-    SentinelBalanceTask getBalanceTask(String dc, ClusterType clusterType);
+    SentinelBalanceTask getBalanceTask(String dc, ClusterType clusterType, String tag);
 
 }

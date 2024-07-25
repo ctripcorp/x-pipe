@@ -107,6 +107,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
   `cluster_designated_route_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT 'designated routeIds',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
+  `tag` varchar(32) NOT NULL DEFAULT '' COMMENT 'special marking',
 
   PRIMARY KEY (`id`),
   UNIQUE KEY `cluster_name` (`cluster_name`),
@@ -418,6 +419,7 @@ CREATE TABLE `sentinel_group_tbl`
     `active`             tinyint(4) NOT NULL DEFAULT '1' COMMENT '是否有效',
     `datachange_lasttime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP (3) COMMENT '更新时间',
     `sentinel_description` varchar(100)  NOT NULL DEFAULT '',
+    `tag`                  varchar(32) not null default '' COMMENT 'special marking',
     PRIMARY KEY (`sentinel_group_id`),
     KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵组表';
