@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
@@ -40,6 +41,9 @@ public class ClusterTypeUpdateEventListenerTest {
     @Mock
     private DcClusterService dcClusterService;
 
+    @Mock
+    private ClusterService clusterService;
+
     @Test
     public void updateNonCrossDcClusterTest() throws Exception {
 
@@ -65,8 +69,9 @@ public class ClusterTypeUpdateEventListenerTest {
         when(dcClusterShardService.find("dc2", "cluster", "shard1")).thenReturn(dc2shard1);
         when(dcClusterShardService.find("dc2", "cluster", "shard2")).thenReturn(dc2shard2);
 
-        when(sentinelBalanceService.selectSentinel("dc1", ClusterType.LOCAL_DC)).thenReturn(new SentinelGroupModel().setSentinelGroupId(5).setClusterType(ClusterType.LOCAL_DC.name()));
-        when(sentinelBalanceService.selectSentinel("dc2", ClusterType.LOCAL_DC)).thenReturn(new SentinelGroupModel().setSentinelGroupId(6).setClusterType(ClusterType.LOCAL_DC.name()));
+        when(clusterService.findClusterTag("cluster")).thenReturn("");
+        when(sentinelBalanceService.selectSentinel("dc1", ClusterType.LOCAL_DC, "")).thenReturn(new SentinelGroupModel().setSentinelGroupId(5).setClusterType(ClusterType.LOCAL_DC.name()));
+        when(sentinelBalanceService.selectSentinel("dc2", ClusterType.LOCAL_DC, "")).thenReturn(new SentinelGroupModel().setSentinelGroupId(6).setClusterType(ClusterType.LOCAL_DC.name()));
 
         listener.update(event.getClusterEventType(), event);
 
@@ -101,7 +106,8 @@ public class ClusterTypeUpdateEventListenerTest {
         when(dcClusterShardService.find("cluster", "shard1")).thenReturn(Lists.newArrayList(dc1shard1, dc2shard1));
         when(dcClusterShardService.find("cluster", "shard2")).thenReturn(Lists.newArrayList(dc1shard2, dc2shard2));
 
-        when(sentinelBalanceService.selectSentinel("dc1", ClusterType.CROSS_DC)).thenReturn(new SentinelGroupModel().setSentinelGroupId(5).setClusterType(ClusterType.CROSS_DC.name()));
+        when(clusterService.findClusterTag("cluster")).thenReturn("");
+        when(sentinelBalanceService.selectSentinel("dc1", ClusterType.CROSS_DC, "")).thenReturn(new SentinelGroupModel().setSentinelGroupId(5).setClusterType(ClusterType.CROSS_DC.name()));
 //        when(sentinelBalanceService.selectSentinel("dc2", ClusterType.CROSS_DC)).thenReturn(new SentinelGroupModel().setSentinelGroupId(6).setClusterType(ClusterType.CROSS_DC.name()));
 
         listener.update(event.getClusterEventType(), event);

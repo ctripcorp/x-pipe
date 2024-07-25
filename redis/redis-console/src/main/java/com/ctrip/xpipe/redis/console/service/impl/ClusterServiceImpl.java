@@ -147,6 +147,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private static final String PROXY_SPLITTER = "\\s*-\\s*";
 	private static final String PROXYTCP = "PROXYTCP://%s:80";
 	private static final String PROXYTLS = "PROXYTLS://%s:443";
+	public static final String CLUSTER_DEFAULT_TAG = "";
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -233,6 +234,31 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbls.forEach(clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
 
 		return clusterNames;
+	}
+
+	@Override
+	public String findClusterTag(String clusterName) {
+		ClusterTbl clusterTbl = find(clusterName);
+		String tag;
+		if (clusterTbl == null) {
+			tag = "";
+		} else {
+			tag = clusterTbl.getTag();
+		}
+		return tag;
+	}
+
+	@Override
+	public void updateClusterTag(String clusterName, String clusterTag) {
+		ClusterTbl clusterTbl = find(clusterName);
+		if (clusterTbl == null) {
+			throw new IllegalArgumentException("cluster not found:" + clusterName);
+		}
+		if (clusterTag == null) {
+			throw new IllegalArgumentException("clusterTag can not be null!");
+		}
+		clusterTbl.setTag(clusterTag.trim().toUpperCase());
+		clusterDao.updateCluster(clusterTbl);
 	}
 
 	@Override
@@ -423,6 +449,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
         proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+		proto.setTag(CLUSTER_DEFAULT_TAG);
 
         final ClusterTbl queryProto = proto;
         ClusterTbl result = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -456,7 +483,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
                     dcCluster.getShards().forEach(shardModel -> {
                         shardService.findOrCreateShardIfNotExist(result.getClusterName(), shardModel.getShardTbl(),
-                            dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType));
+                            dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(clusterType, CLUSTER_DEFAULT_TAG));
                     });
                 }
             }
@@ -587,6 +614,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setIsXpipeInterested(true);
 		clusterTbl.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		clusterTbl.setClusterDesignatedRouteIds("");
+		clusterTbl.setTag(CLUSTER_DEFAULT_TAG);
 
 		return clusterDao.createCluster(clusterTbl);
 	}
@@ -845,7 +873,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                         String azGroupType = azGroupCluster.getAzGroupClusterType();
                         clusterType = StringUtil.isEmpty(azGroupType) ? clusterType : ClusterType.lookup(azGroupType);
                     }
-                    SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType);
+                    SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType, cluster.getTag());
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, sentinelGroupModel);
 				} else
 					return clusterDao.bindDc(cluster, dc, dcClusterTbl, null);
@@ -893,7 +921,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         if (consoleConfig.supportSentinelHealthCheck(clusterType, cluster.getClusterName())) {
 			ClusterType type = azGroupType == null ? clusterType : azGroupType;
-			sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, type);
+			sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, type, cluster.getTag());
         }
 
         Long sentinelId = sentinelGroupModel == null ? null : sentinelGroupModel.getSentinelGroupId();

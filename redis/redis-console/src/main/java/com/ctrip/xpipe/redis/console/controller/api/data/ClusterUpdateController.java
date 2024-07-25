@@ -129,6 +129,18 @@ public class ClusterUpdateController extends AbstractController {
         }
     }
 
+    @PutMapping(value = "/cluster/tag/{clusterName}/{tag}")
+    public RetMessage updateClusterTag(@PathVariable String clusterName, @PathVariable String tag) {
+        try {
+            clusterService.updateClusterTag(clusterName, tag);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[updateCluster]Failed", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+
     @PutMapping(value = "/clusters")
     public RetMessage updateClusters(@RequestBody List<ClusterCreateInfo> clusterInfos) {
         for(ClusterCreateInfo clusterCreateInfo : clusterInfos) {

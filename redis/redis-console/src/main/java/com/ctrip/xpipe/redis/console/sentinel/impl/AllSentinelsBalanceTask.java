@@ -26,10 +26,10 @@ public class AllSentinelsBalanceTask extends BackupDcOnlySentinelBalanceTask imp
 
     private int balanceIntervalMilli;
 
-    public AllSentinelsBalanceTask(String dcId, SentinelBalanceService sentinelBalanceService,
+    public AllSentinelsBalanceTask(String dcId, String tag, SentinelBalanceService sentinelBalanceService,
                                    DcClusterShardService dcClusterShardService, ScheduledExecutorService scheduled,
                                    int balanceBatch, int balanceIntervalMilli) {
-        super(dcId, sentinelBalanceService, dcClusterShardService);
+        super(dcId, sentinelBalanceService, dcClusterShardService, tag);
         this.scheduled = scheduled;
         this.balanceBatch = balanceBatch;
         this.balanceIntervalMilli = balanceIntervalMilli;

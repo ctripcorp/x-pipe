@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl.CLUSTER_DEFAULT_TAG;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 @Service
@@ -227,7 +228,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 				String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
 					cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
 				Map<Long, SentinelGroupModel> sentinelModelMap =
-					sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType));
+					sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType), CLUSTER_DEFAULT_TAG);
 
 				List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
 				for (DcClusterEntity dcCluster : regionDcClusters) {

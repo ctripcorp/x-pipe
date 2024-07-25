@@ -98,6 +98,7 @@ create table CLUSTER_TBL (
     cluster_last_modified_time varchar(40) not null default '20230101000000000',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
+    tag varchar(32) not null default '',
 );
 
 
@@ -348,6 +349,7 @@ CREATE TABLE `sentinel_group_tbl`
     `active`             tinyint(4) NOT NULL DEFAULT '1',
     `datachange_lasttime` timestamp default CURRENT_TIMESTAMP,
     `sentinel_description` varchar(100)  NOT NULL DEFAULT '',
+    `tag`                  varchar(32) not null default '',
 ) ;
 
 -- sentinel_tbl

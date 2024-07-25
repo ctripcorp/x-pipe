@@ -380,7 +380,7 @@ public class ClusterController extends AbstractConsoleController {
 
                 toCreate.getShards().forEach(shardModel -> {
                         shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), shardModel.getShardTbl(),
-                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.SINGLE_DC));
+                                dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.SINGLE_DC, clusterTbl.getTag()));
                     });
             }
         });
@@ -440,7 +440,7 @@ public class ClusterController extends AbstractConsoleController {
             dcClusterService.findAllByClusterAndGroupType(clusterTbl.getId(), dcClusterTbl.getDcId(), dcGroupType);
 
         clusterType = DcGroupType.isNullOrDrMaster(dcGroupType) ? clusterType : ClusterType.SINGLE_DC;
-        Map<Long, SentinelGroupModel> dcSentinelMap = sentinelBalanceService.selectMultiDcSentinels(clusterType);
+        Map<Long, SentinelGroupModel> dcSentinelMap = sentinelBalanceService.selectMultiDcSentinels(clusterType, clusterTbl.getTag());
         toCreates.forEach(
             toCreate -> shardService.findOrCreateShardIfNotExist(clusterTbl.getClusterName(), toCreate, dcClusterTbls,
                 dcSentinelMap));
