@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
+import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.track.AbstractLeaderTracker;
 import org.springframework.stereotype.Component;
 
