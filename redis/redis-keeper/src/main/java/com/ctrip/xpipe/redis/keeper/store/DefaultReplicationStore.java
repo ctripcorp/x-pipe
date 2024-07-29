@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
@@ -68,19 +69,22 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private CommandReaderWriterFactory cmdReaderWriterFactory;
 
+	protected SyncRateManager syncRateManager;
+
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
-								   KeeperMonitor keeperMonitor) throws IOException {
-		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor);
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
+		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager);
 	}
 
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor) throws IOException {
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
+		this.syncRateManager = syncRateManager;
 
 		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -232,6 +236,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
 				cmdReaderWriterFactory, keeperMonitor);
+		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
 			cmdStore.initialize();
 		} catch (Exception e) {
@@ -243,7 +248,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-		return new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
+		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
+		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
+		return rdbStore;
 	}
 
 	protected RdbStoreListener createRdbStoreListener(RdbStore rdbStore) {

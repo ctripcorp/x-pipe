@@ -4,6 +4,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
@@ -20,6 +21,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
@@ -76,6 +78,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private static final String INDEX_FILE_PREFIX = "idx_";
 
     private AtomicBoolean initialized = new AtomicBoolean(false);
+
+    private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
     
     public abstract Logger getLogger();
 
@@ -233,11 +237,19 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public void attachRateLimiter(SyncRateLimiter rateLimiter) {
+        this.rateLimiterRef.set(rateLimiter);
+    }
+
+    @Override
     public int appendCommands(ByteBuf byteBuf) throws IOException {
 
         makeSureOpen();
 
         cmdWriter.rotateFileIfNecessary();
+
+        SyncRateLimiter rateLimiter = rateLimiterRef.get();
+        if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
         commandStoreDelay.beginWrite();
 

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
@@ -26,6 +27,20 @@ public class KeeperContainerController extends AbstractController {
 
     @Autowired
     private CompositeLeakyBucket leakyBucket;
+
+    @Autowired
+    private SyncRateManager syncRateManager;
+
+    @PostMapping("/limit/totalIO")
+    public boolean setTotalIOLimit(@RequestParam int limit) {
+        this.syncRateManager.setTotalIOLimit(Math.max(0, limit));
+        return true;
+    }
+
+    @GetMapping("/limit/totalIO")
+    public int getTotalIOLimit() {
+        return syncRateManager.getTotalIOLimit();
+    }
 
     @RequestMapping(method = RequestMethod.POST)
     public void add(@RequestBody KeeperTransMeta keeperTransMeta) {
