@@ -52,20 +52,6 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testDcClusterWontMarkDown() {
-        System.setProperty(DefaultConsoleConfig.KEY_DC_CLUSTER_WONT_MARK_DOWN,
-            "FAT-AWS:cluster_shyin, FAT:cluster_shyin:300");
-
-        Set<DcClusterDelayMarkDown> result = consoleConfig.getDelayedMarkDownDcClusters();
-
-        Set<DcClusterDelayMarkDown> expected = Sets.newHashSet(
-            new DcClusterDelayMarkDown().setDcId("FAT-AWS").setClusterId("cluster_shyin").setDelaySecond(3600),
-            new DcClusterDelayMarkDown().setDcId("FAT").setClusterId("cluster_shyin").setDelaySecond(300));
-
-        Assert.assertEquals(result, expected);
-    }
-
-    @Test
     public void testGetBeaconOrgRoutes() {
         System.setProperty(DefaultConsoleConfig.KEY_BEACON_ORG_ROUTE, beaconConfig);
 

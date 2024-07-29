@@ -57,8 +57,6 @@ public interface CheckerConfig {
 
     String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
-    String KEY_DC_CLUSTER_WONT_MARK_DOWN = "console.dc.cluster.pairs.delay.mark.down";
-
     String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
     String KEY_CHECKER_SITE_STABLE = "checker.stable";
@@ -142,8 +140,6 @@ public interface CheckerConfig {
     boolean isSentinelRateLimitOpen();
 
     QuorumConfig getDefaultSentinelQuorumConfig();
-
-    Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
 
     int getStableLossAfterRounds();
 

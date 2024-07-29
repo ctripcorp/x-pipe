@@ -161,11 +161,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters() {
-        return new HashSet<>();
-    }
-
-    @Override
     public int getStableLossAfterRounds() {
         return 2;
     }

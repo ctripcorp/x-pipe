@@ -106,17 +106,6 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
     }
 
     @Test
-    public void testOnEventConfiguredNotMarkDown() throws HealthEventProcessorException {
-
-        when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(
-                Sets.newHashSet(new DcClusterDelayMarkDown().setDcId(dc).setClusterId(cluster)));
-        when(metaCache.inBackupDc(hostPort)).thenReturn(true);
-        when(siteStability.isSiteStable()).thenReturn(true);
-        processor.onEvent(new InstanceSick(instance));
-        verify(alertManager, atLeastOnce()).alert(instance.getCheckInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
-    }
-
-    @Test
     public void testHandleExecute() {
         instanceDownHandler = spy(instanceDownHandler);
         instanceSickHandler = spy(instanceSickHandler);

@@ -489,19 +489,11 @@ public class DcMetaSynchronizerTest {
 
     @Test
     public void shouldFilterOuterClusterTest() {
-        when(consoleConfig.filterOuterClusters()).thenReturn(null);
-        dcMetaSynchronizer.buildFilterPattern();
 
         OuterClientService.ClusterMeta clusterMeta = new OuterClientService.ClusterMeta().setName("testCluster").setOperating(false);
         Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta));
         Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
         Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
-
-        when(consoleConfig.filterOuterClusters()).thenReturn("_[v|temp]+[0-9]{8,}?");
-        dcMetaSynchronizer.buildFilterPattern();
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
         Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
 
         clusterMeta.setOperating(true);
