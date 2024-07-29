@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.keeper.health.DiskHealthChecker;
 import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -57,6 +58,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private GeneralRedisOpParser redisOpParser;
     @Autowired
     private DiskHealthChecker diskHealthChecker;
+    @Autowired
+    private SyncRateManager syncRateManager;
 
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
@@ -106,7 +109,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
                     File baseDir = getReplicationStoreDir(keeperMeta);
                     RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
-                            keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, redisOpParser);
+                            keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser);
 
                     try {
                         register(redisKeeperServer);
@@ -289,7 +292,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                                                       File baseDir) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
-                baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, redisOpParser);
+                baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser);
 
         register(redisKeeperServer);
         return redisKeeperServer;

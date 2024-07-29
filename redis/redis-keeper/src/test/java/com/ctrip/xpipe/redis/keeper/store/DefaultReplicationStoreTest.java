@@ -9,12 +9,14 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,28 +52,28 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 		String keeperRunid = randomKeeperRunid();
 		int dataLen = 100;
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 		RdbStore rdbStore = beginRdb(store, dataLen);
 
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
 
 		Thread.currentThread().interrupt();
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 
 
 		//clear interrupt
 		Thread.interrupted();
 
 		store.appendCommands(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 
 	}
 	
 	@Test
 	public void testReadWhileDestroy() throws Exception{
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
@@ -177,7 +179,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testReadWrite() throws Exception {
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 		store.getMetaStore().becomeActive();
 
 
@@ -203,7 +205,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testGcNotContinueRdb() throws Exception {
 		TestKeeperConfig config = new TestKeeperConfig(100, 1, 1024, 0);
-		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor());
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 100;

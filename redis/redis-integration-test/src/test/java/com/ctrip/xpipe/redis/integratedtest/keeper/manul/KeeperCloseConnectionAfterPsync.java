@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.channel.Channel;
 import org.junit.Test;
 
@@ -32,10 +33,12 @@ public class KeeperCloseConnectionAfterPsync extends AbstractKeeperIntegratedSin
 	}
 
 	@Override
-	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
+														LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager,
+														SyncRateManager syncRateManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-				keeperMonitorManager, resourceManager){
+				keeperMonitorManager, resourceManager, syncRateManager){
 
 			@Override
 			protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
