@@ -125,13 +125,11 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(true);
         RedisInstanceInfo info = instance.getCheckInfo();
-        when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(Sets.newHashSet(new DcClusterDelayMarkDown()
-                .setDcId(info.getDcId()).setClusterId(info.getClusterId()).setDelaySecond(1)));
+
         sickHandler.markdown(new InstanceSick(instance));
         sleep(1500);
         verify(finalStateSetterManager, times(1)).set(any(), any());
 
-        when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(null);
         when(siteStability.isSiteStable()).thenReturn(true);
         sickHandler.markdown(new InstanceSick(instance));
         verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
@@ -152,7 +150,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testHandle() {
-        when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(null);
+
         when(checkerConfig.getQuorum()).thenReturn(0);
         when(metaCache.inBackupDc(any())).thenReturn(true);
         future.setSuccess(true);

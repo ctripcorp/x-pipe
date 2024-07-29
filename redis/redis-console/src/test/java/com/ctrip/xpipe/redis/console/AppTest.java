@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -19,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_REDIS_CONF_CHECK_INTERVAL;
 
 /**
  * @author lepdou 2016-11-09
@@ -41,10 +40,10 @@ public class AppTest extends AbstratAppTest {
 	@Before
 	public void startUp() {
 
-		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "15000");
+		System.setProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "15000");
 		System.setProperty(HealthChecker.ENABLED, "true");
 		System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
-		System.setProperty(DefaultConsoleConfig.KEY_REDIS_CONF_CHECK_INTERVAL, "30000");
+		System.setProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "30000");
 
 	}
 
@@ -53,7 +52,6 @@ public class AppTest extends AbstratAppTest {
 	public void startConsole8080() throws IOException, SQLException {
 
 		System.setProperty("server.port", "8080");
-		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER.name());
 		start();
 
 	}

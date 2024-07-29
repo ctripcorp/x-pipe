@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.util;
 
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
@@ -21,10 +20,14 @@ import java.util.Map;
  */
 public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServerConsoleServiceManagerWrapper, MetaServerManager {
 
-	private ConsoleConfig config = new DefaultConsoleConfig();
+	private ConsoleConfig config;
 
 	private MetaServerConsoleServiceManager metaServerConsoleServiceManager = new DefaultMetaServerConsoleServiceManager();
-	
+
+	public DefaultMetaServerConsoleServiceManagerWrapper(ConsoleConfig config) {
+		this.config = config;
+	}
+
 	
 	@Override
 	public List<MetaServerConsoleService> get(List<String> dcNames) {

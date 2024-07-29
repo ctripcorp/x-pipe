@@ -4,6 +4,7 @@
 package com.ctrip.xpipe.foundation;
 
 import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ public class DefaultFoundationService implements FoundationService {
 	
 	public static final String LOCAL_IP_KEY = "localIp";
 	
-	private Config config = Config.DEFAULT;
+	private Config config = ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.DATA_CENTER_CONFIG_NAME);
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);
 

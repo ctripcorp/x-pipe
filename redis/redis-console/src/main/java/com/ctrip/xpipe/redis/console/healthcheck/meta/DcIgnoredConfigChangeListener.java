@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
@@ -9,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Set;
+
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_IGNORED_DC_FOR_HEALTH_CHECK;
 
 /**
  * @author chen.zhu
@@ -44,6 +45,6 @@ public class DcIgnoredConfigChangeListener extends AbstractHealthCheckConfigChan
 
     @Override
     public List<String> supportsKeys() {
-        return Lists.newArrayList(DefaultConsoleConfig.KEY_IGNORED_DC_FOR_HEALTH_CHECK);
+        return Lists.newArrayList(KEY_IGNORED_DC_FOR_HEALTH_CHECK);
     }
 }

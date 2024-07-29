@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.spring;
 
-import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.google.common.base.Enums;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 public class ConsoleServerModeCondition implements Condition {
 
-    public static final String KEY_SERVER_MODE = "console.server.mode";
+    private static CheckConfigBean checkConfig = new CheckConfigBean(FoundationService.DEFAULT);
 
     public enum SERVER_MODE {
         CONSOLE_CHECKER,
@@ -32,7 +33,7 @@ public class ConsoleServerModeCondition implements Condition {
     }
 
     protected SERVER_MODE getMode() {
-        String value = Config.DEFAULT.get(KEY_SERVER_MODE, SERVER_MODE.CONSOLE_CHECKER.name());
+        String value = checkConfig.getServerMode();
         return Enums.getIfPresent(SERVER_MODE.class, value.toUpperCase()).or(SERVER_MODE.CONSOLE_CHECKER);
     }
 

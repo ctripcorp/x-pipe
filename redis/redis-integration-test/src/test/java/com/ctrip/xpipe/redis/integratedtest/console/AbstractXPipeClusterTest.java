@@ -43,13 +43,12 @@ import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
 import static com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector.KEY_CHECKER_ID;
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_CHECKER_META_REFRESH_INTERVAL;
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_SENTINEL_CHECK_INTERVAL;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_META_REFRESH_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_SENTINEL_CHECK_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CHECKER;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 import static com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector.KEY_CONSOLE_ID;
-import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACON_GROUP_SEPARATOR;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 import static com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig.KEY_REPLICATION_STORE_COMMANDFILE_SIZE;
@@ -147,7 +146,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
                 new HashMap<String, String>() {{
                     put(KEY_CONSOLE_ADDRESS, "http://" + localDcConsoles.get(0));
                     put(KEY_CHECKER_ID, idc + port);
-                    put(KEY_SERVER_MODE, CHECKER.name());
+                    //put(KEY_SERVER_MODE, CHECKER.name());
                 }});
     }
 
@@ -159,7 +158,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
                 metaservers,
                 new HashMap<String, String>() {{
                     put(KEY_CONSOLE_ID, idc + port);
-                    put(KEY_SERVER_MODE, CONSOLE.name());
+                    //put(KEY_SERVER_MODE, CONSOLE.name());
                 }});
     }
 

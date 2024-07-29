@@ -10,7 +10,7 @@ import com.ctrip.xpipe.utils.ServicesUtil;
  */
 public interface Config extends Ordered{
 	
-	Config DEFAULT = ServicesUtil.getConfigService();
+	 Config DEFAULT = ServicesUtil.getConfigService();
 
 	String get(String key);
 
