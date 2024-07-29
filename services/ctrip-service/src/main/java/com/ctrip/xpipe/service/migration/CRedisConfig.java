@@ -3,6 +3,7 @@ package com.ctrip.xpipe.service.migration;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.api.config.ConfigProvider;
 
 import java.util.Map;
 
@@ -13,11 +14,11 @@ import java.util.Map;
  */
 public enum CRedisConfig {
 	INSTANCE;
-	
+
 	public static final String KEY_CREDIS_SERVEICE_ADDRESS = "credis.service.address";
 	public static final String KEY_CREDIS_IDC_MAPPING_RULE = "credis.service.idc.mapping.rule";
 	
-	public Config config = Config.DEFAULT;
+	public Config config = ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.DATA_CENTER_CONFIG_NAME);
 	
 	public String getCredisServiceAddress() {
 		return config.get(KEY_CREDIS_SERVEICE_ADDRESS, "localhost:8080");

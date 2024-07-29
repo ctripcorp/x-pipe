@@ -1,13 +1,17 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * @author marsqing
@@ -31,13 +35,16 @@ public class ContextConfig {
 	}
 
 	@Bean
-	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
-		return new DefaultMetaServerConsoleServiceManagerWrapper();
+	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper(ConsoleConfig config) {
+		return new DefaultMetaServerConsoleServiceManagerWrapper(config);
 	}
 
 	@Bean
 	public ConsoleConfig consoleConfig() {
-		return new DefaultConsoleConfig();
+		return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+				new ConsoleConfigBean(FoundationService.DEFAULT),
+				new DataCenterConfigBean(),
+				new CommonConfigBean());
 	}
 
 }

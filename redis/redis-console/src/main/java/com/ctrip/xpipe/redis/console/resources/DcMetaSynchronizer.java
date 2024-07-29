@@ -38,7 +38,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     private ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync"));
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
-    private Pattern filterClusterPattern;
 
     @Autowired
     private MetaCache metaCache;
@@ -95,7 +94,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             @Override
             public void go() throws Exception {
                 try {
-                    buildFilterPattern();
                     refreshOrganizationsCache();
                     outerDcMeta = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId));
                     future = outerDcMeta.getKey();
@@ -120,14 +118,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                 return transactionData;
             }
         });
-    }
-
-    void buildFilterPattern() {
-        String filterPattern = consoleConfig.filterOuterClusters();
-        if (!Strings.isNullOrEmpty(filterPattern))
-            filterClusterPattern = Pattern.compile(filterPattern);
-        else
-            filterClusterPattern = null;
     }
 
     void refreshOrganizationsCache() {
@@ -280,15 +270,11 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
 
 
     boolean shouldFilterOuterCluster(OuterClientService.ClusterMeta clusterMeta) {
-        return isOperating(clusterMeta) || nameMatchFilterPattern(clusterMeta.getName());
+        return isOperating(clusterMeta);
     }
 
     boolean shouldFilterInnerCluster(ClusterMeta clusterMeta, Set<String> filteredOuterClusters) {
         return filteredOuterClusters.contains(clusterMeta.getId());
-    }
-
-    boolean nameMatchFilterPattern(String clusterName) {
-        return filterClusterPattern != null && filterClusterPattern.matcher(clusterName).find();
     }
 
     boolean isOperating(OuterClientService.ClusterMeta clusterMeta) {

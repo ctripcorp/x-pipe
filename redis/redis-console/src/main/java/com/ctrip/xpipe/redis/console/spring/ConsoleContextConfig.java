@@ -6,6 +6,10 @@ import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
@@ -13,7 +17,7 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -21,13 +25,11 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerMigrationAnalyzer;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
@@ -54,8 +56,8 @@ import org.springframework.context.annotation.*;
 public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
-	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
-		return new DefaultMetaServerConsoleServiceManagerWrapper();
+	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper(ConsoleConfig config) {
+		return new DefaultMetaServerConsoleServiceManagerWrapper(config);
 	}
 
 	@Bean
@@ -100,8 +102,12 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public ConsoleConfig consoleConfig() {
-		return new DefaultConsoleConfig();
+	public ConsoleConfig consoleConfig(FoundationService foundationService) {
+		return new CombConsoleConfig(
+				new CheckConfigBean(foundationService),
+				new ConsoleConfigBean(foundationService),
+				new DataCenterConfigBean(),
+				new CommonConfigBean());
 	}
 
 	@Bean

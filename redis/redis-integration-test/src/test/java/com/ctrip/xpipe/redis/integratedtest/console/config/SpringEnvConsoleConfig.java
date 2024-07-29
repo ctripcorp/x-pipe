@@ -1,11 +1,23 @@
 package com.ctrip.xpipe.redis.integratedtest.console.config;
 
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-public class SpringEnvConsoleConfig extends DefaultConsoleConfig implements ApplicationContextAware {
+public class SpringEnvConsoleConfig extends CombConsoleConfig implements ApplicationContextAware {
+
+    public SpringEnvConsoleConfig() {
+        super(new CheckConfigBean(FoundationService.DEFAULT),
+                new ConsoleConfigBean(FoundationService.DEFAULT),
+                new DataCenterConfigBean(),
+                new CommonConfigBean());
+    }
 
     @Override
     protected String getProperty(String key) {

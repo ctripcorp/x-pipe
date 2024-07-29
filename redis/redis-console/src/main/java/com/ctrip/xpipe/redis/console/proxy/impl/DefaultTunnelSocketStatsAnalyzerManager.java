@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_SOCKET_STATS_ANALYZERS;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 @Component
@@ -61,14 +60,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
-        config.register(Lists.newArrayList(KEY_SOCKET_STATS_ANALYZERS), new ConfigChangeListener() {
-            @Override
-            public void onChange(String key, String oldValue, String newValue) {
-                configuredAnalyzers = config.getSocketStatsAnalyzingKeys();
-                addConfiguredAnalyzers();
-                removeUsed();
-            }
-        });
+
         chainAnalyzer.addListener(new ProxyChainAnalyzer.Listener() {
             @Override
             public void onChange(Map<DcClusterShardPeer, ProxyChain> previous, Map<DcClusterShardPeer, ProxyChain> current) {
@@ -108,7 +100,6 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         putAnalyzer(new RetransAnalyzer());
         putAnalyzer(new RttAnalyzer());
         putAnalyzer(new SendRateAnalyzer());
-        addConfiguredAnalyzers();
     }
 
     @Override
@@ -155,15 +146,6 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     private void putAnalyzer(TunnelSocketStatsAnalyzer analyzer) {
         analyzers.put(analyzer.getType(), analyzer);
-    }
-
-    private void addConfiguredAnalyzers() {
-        configuredAnalyzers = config.getSocketStatsAnalyzingKeys();
-        for(Map.Entry<String, String> entry : configuredAnalyzers.entrySet()) {
-            if(analyzers.containsKey(entry.getValue())) {
-                putAnalyzer(new ConfiguredAnalyzer(entry.getKey(), entry.getValue()));
-            }
-        }
     }
 
     private void removeUsed() {

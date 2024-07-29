@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
@@ -14,9 +13,10 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import java.util.*;
+
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.*;
 
 /**
  * @author shyin
@@ -35,15 +35,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_HICKWALL_CLUSTER_METRIC_FORMAT = "console.hickwall.cluster.metric.format";
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
     public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
-    public static final String KEY_ALL_CONSOLES = "console.all.addresses";
 
     private static final String KEY_CONFIG_DEFAULT_RESTORE_HOUR = "console.config.default.restore.hour";
 
     private static final String KEY_REBALANCE_SENTINEL_INTERVAL = "rebalance.sentinel.interval.second";
 
     private static final String KEY_REBALANCE_SENTINEL_MAX_NUM_ONCE = "rebalance.sentinel.max.num.once";
-
-    public static final String KEY_SOCKET_STATS_ANALYZERS = "console.socket.stats.analyzers";
 
     public static final String KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK = "console.cluster.shard.for.migrate.sys.check";
 
@@ -63,13 +60,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTER_CLUSTER_TYPES = "console.outer.cluster.types";
 
-    private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
-
     private static final String KEY_NO_HEALTH_CHECK_MINUTES = "no.health.check.minutes";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
-
-    private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
 
     public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
 
@@ -101,6 +94,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_OPEN = "console.auto.migrate.overload.keeper.container.open";
     private static final String KEY_CONSOLE_AUTO_MIGRATE_OVERLOAD_KEEPER_CONTAINER_INTERVAL_MILLI = "console.auto.migrate.overload.keeper.container.interval.milli";
     private static final String KEY_CONSOLE_META_SLOT_CACHE_MILLI = "console.meta.slot.cache.milli";
+
+    private static final String KEY_CLUSTERS_PART_INDEX = "checker.clusters.part.index" ;
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -262,11 +257,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getAllConsoles() {
-        return getProperty(KEY_ALL_CONSOLES, "127.0.0.1:8080");
-    }
-
-    @Override
     public int getQuorum() {
         return getIntProperty(KEY_QUORUM, 1);
     }
@@ -327,23 +317,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
 
-    private int getDefaultMarkDownDelaySecond() {
-        return getIntProperty(KEY_DEFAULT_MARK_DOWN_DELAY_SEC, 60 * 60);
-    }
-
-    @Override
-    public Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters() {
-        Set<DcClusterDelayMarkDown> result = Sets.newHashSet();
-        Set<String> dcClusters = getSplitStringSet(getProperty(KEY_DC_CLUSTER_WONT_MARK_DOWN, ""));
-        for(String dcCluster : dcClusters) {
-            String[] pair = StringUtil.splitRemoveEmpty("\\s*:\\s*", dcCluster);
-            DcClusterDelayMarkDown instance = new DcClusterDelayMarkDown().setDcId(pair[0]).setClusterId(pair[1]);
-            int delaySec = pair.length > 2 ? Integer.parseInt(pair[2]) : getDefaultMarkDownDelaySecond();
-            result.add(instance.setDelaySecond(delaySec));
-        }
-        return result;
-    }
-
     @Override
     public int getPingDownAfterMilli() {
         return getIntProperty(KEY_PING_DOWN_AFTER_MILLI, 12 * 1000);
@@ -371,12 +344,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
             listeners.putIfAbsent(key, new LinkedList<>());
             listeners.get(key).add(configListener);
         }
-    }
-
-    @Override
-    public Map<String, String> getSocketStatsAnalyzingKeys() {
-        String property = getProperty(KEY_SOCKET_STATS_ANALYZERS, "{}");
-        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     @Override
@@ -450,11 +417,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getSplitStringSet(clusterTypes);
     }
 
-    @Override
-    public String filterOuterClusters() {
-        return getProperty(KEY_FILTER_OUTER_CLUSTERS, "");
-    }
-
     boolean shouldSentinelCheckOuterClientClusters() {
         return getBooleanProperty(KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES, false);
     }
@@ -477,11 +439,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getCrossDcLeaderLeaseName() {
         return getProperty(KEY_CROSS_DC_LEADER_LEASE_NAME, "CROSS_DC_LEADER");
-    }
-
-    @Override
-    public String getParallelConsoleDomain() {
-        return getProperty(KEY_PARALLEL_CONSOLE_DOMAIN, "");
     }
 
     @Override
@@ -558,11 +515,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getConsoleAddress() {
         return getProperty(KEY_CONSOLE_ADDRESS, "http://localhost:8080");
-    }
-
-    @Override
-    public Set<String> getAllCheckerAddress() {
-        return getSplitStringSet(getProperty(KEY_CHECKER_ADDRESS_ALL, "127.0.0.1:8080"));
     }
 
     @Override

@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
-import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
+import com.ctrip.xpipe.redis.checker.config.impl.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
@@ -18,8 +18,8 @@ import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
@@ -100,8 +100,11 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public DefaultConsoleConfig consoleConfig() {
-        return new DefaultConsoleConfig();
+    public CheckerConfig checkerConfig(CheckConfigBean checkConfigBean,
+                                       ConsoleConfigBean consoleConfigBean,
+                                       DataCenterConfigBean dataCenterConfigBean,
+                                       CommonConfigBean commonConfigBean) {
+        return new CombConsoleConfig(checkConfigBean, consoleConfigBean, dataCenterConfigBean, commonConfigBean);
     }
 
     @Bean
@@ -120,8 +123,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public MetaServerManager metaServerManager() {
-        return new DefaultMetaServerConsoleServiceManagerWrapper();
+    public MetaServerManager metaServerManager(ConsoleConfig consoleConfig) {
+        return new DefaultMetaServerConsoleServiceManagerWrapper(consoleConfig);
     }
 
     @Bean
@@ -171,8 +174,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
-        return new DefaultRemoteCheckerManager(checkerConfig);
+    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig, GroupCheckerLeaderElector checkerLeaderElector) {
+        return new DefaultRemoteCheckerManager(checkerConfig, checkerLeaderElector);
     }
 
     @Bean

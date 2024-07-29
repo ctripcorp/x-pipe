@@ -8,7 +8,6 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
-import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilderImpl;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
@@ -52,11 +51,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private String shard;
 	private String newPrimaryDc;
 	private String prevPrimaryDc;
-
-	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
-			MigrationService migrationService) {
-		this(parent, migrationShard, currentShard, dcs, migrationService, MigrationCommandBuilderImpl.INSTANCE);
-	}
 
 	public DefaultMigrationShard(MigrationCluster parent, MigrationShardTbl migrationShard, ShardTbl currentShard,Map<Long, DcTbl> dcs,
 								 MigrationService migrationService, MigrationCommandBuilder commandBuilder) {

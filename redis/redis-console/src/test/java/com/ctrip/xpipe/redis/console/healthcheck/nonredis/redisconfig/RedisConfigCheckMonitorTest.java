@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
@@ -39,7 +39,7 @@ public class RedisConfigCheckMonitorTest {
     DcServiceImpl dcService;
 
     @Mock
-    DefaultConsoleConfig consoleConfig;
+    CombConsoleConfig consoleConfig;
 
 
     private ClusterType mockClusterType = ClusterType.BI_DIRECTION;

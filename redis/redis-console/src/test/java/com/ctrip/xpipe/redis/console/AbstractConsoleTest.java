@@ -1,8 +1,13 @@
 package com.ctrip.xpipe.redis.console;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import org.junit.BeforeClass;
 
 /**
@@ -19,7 +24,11 @@ public abstract class AbstractConsoleTest extends AbstractCheckerTest {
 
     @Override
     protected CheckerConfig buildCheckerConfig() {
-        return new DefaultConsoleConfig();
+
+        return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+                new ConsoleConfigBean(FoundationService.DEFAULT),
+                new DataCenterConfigBean(),
+                new CommonConfigBean());
     }
 
 }

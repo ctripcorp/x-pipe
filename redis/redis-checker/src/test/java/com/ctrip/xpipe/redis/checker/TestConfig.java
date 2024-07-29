@@ -161,11 +161,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters() {
-        return new HashSet<>();
-    }
-
-    @Override
     public int getStableLossAfterRounds() {
         return 2;
     }
@@ -228,11 +223,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public int getCheckerAckIntervalMilli() {
         return 10000;
-    }
-
-    @Override
-    public Set<String> getAllCheckerAddress() {
-        return Collections.singleton("127.0.0.1:8080");
     }
 
     @Override

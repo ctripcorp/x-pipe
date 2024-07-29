@@ -46,7 +46,7 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		this.config = config;
 	}
 
-	protected String getProperty(String key){
+	public String getProperty(String key){
 		return config.get(key);
 	}
 
@@ -131,6 +131,10 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		}
 
 		return getValueAndStoreToCache(key, parser, cache, defaultValue);
+	}
+
+	public void addConfigChangeListener(ConfigChangeListener listener) {
+		config.addConfigChangeListener(listener);
 	}
 
 	private <T> T getValueAndStoreToCache(String key, Function<String, T> parser, Map<String, T> cache, T defaultValue) {
