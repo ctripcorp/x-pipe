@@ -226,6 +226,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public void releaseRdb() throws IOException {
+		getCurrentReplicationStore().releaseRdb();
+	}
+
+	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 

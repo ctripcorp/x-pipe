@@ -100,4 +100,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 
 	long getLastElectionResetTime();
 
+	void releaseRdb() throws IOException;
+
 }
