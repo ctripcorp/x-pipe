@@ -276,4 +276,9 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public long lastReplDataUpdatedAt() {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public void releaseRdb() throws IOException {
+
+	}
 }

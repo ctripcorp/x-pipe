@@ -16,6 +16,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 /**
@@ -35,6 +36,8 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
 
     private AtomicLongArray psyncIORecords;
 
+    private AtomicLong fsyncIORecord;
+
     private volatile int currentRecord = 0;
 
     private long avgPsyncIO;
@@ -50,6 +53,7 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
     public FixSyncRateManager() {
         this.diskIOLimit = new AtomicInteger(0);
         this.psyncIORecords = new AtomicLongArray(recordCnt);
+        this.fsyncIORecord = new AtomicLong();
         this.globalFsyncRateLimiter = UNLIMITED;
     }
 
@@ -76,7 +80,7 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
     @Override
     protected void doStart() throws Exception {
         future = scheduled.scheduleWithFixedDelay(() -> {
-            logger.debug("[rotate][{}] {}", currentRecord, psyncIORecords.get(currentRecord));
+            logger.debug("[rotate][{}] psync:{}, fsync:{}", currentRecord, psyncIORecords.get(currentRecord), fsyncIORecord.get());
             int next = this.currentRecord >= recordCnt - 1 ? 0 : this.currentRecord + 1;
             if (0 == next) {
                 long totalPsyncIO = 0;
@@ -88,6 +92,7 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
 
             psyncIORecords.set(next, 0);
             this.currentRecord = next;
+            this.fsyncIORecord.set(0);
 
             if (0 == currentRecord) {
                 refreshRateLimiter();
@@ -100,7 +105,10 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
 
         logger.debug("[refreshRateLimiter] total:{}", totalIOLimit);
         if (totalIOLimit <= 0) {
-            this.globalFsyncRateLimiter = UNLIMITED;
+            if (this.globalFsyncRateLimiter != UNLIMITED) {
+                logger.info("[refreshRateLimiter] unlimited");
+                this.globalFsyncRateLimiter = UNLIMITED;
+            }
             return;
         }
 
@@ -108,6 +116,10 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
         long fsyncRateLimit = (long) Math.max(0.1 * totalIOLimit, totalIOLimit - retainIO4Psync - avgPsyncIO);
 
         logger.debug("[refreshRateLimiter] psyncAvg:{},psyncRetain:{},fsyncLimit:{}", avgPsyncIO, retainIO4Psync, fsyncRateLimit);
+        if (this.globalFsyncRateLimiter == UNLIMITED) {
+            logger.info("[refreshRateLimiter] limit {}", fsyncRateLimit);
+            this.globalFsyncRateLimiter = RateLimiter.create(fsyncRateLimit);
+        }
         this.globalFsyncRateLimiter.setRate(fsyncRateLimit);
     }
 
@@ -136,6 +148,7 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
         public void acquire(int syncByte) {
             if (diskIOLimit.get() <= 0) return;
             globalFsyncRateLimiter.acquire(syncByte);
+            fsyncIORecord.addAndGet(syncByte);
         }
     }
 

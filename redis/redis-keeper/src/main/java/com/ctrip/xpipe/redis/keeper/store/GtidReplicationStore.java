@@ -82,7 +82,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     public DumpedRdbStore prepareNewRdb() throws IOException {
         makeSureOpen();
-        return new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()));
+        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()));
+        rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
+        return rdbStore;
     }
 
     @Override

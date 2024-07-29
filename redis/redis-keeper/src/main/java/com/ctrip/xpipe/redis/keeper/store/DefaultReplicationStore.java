@@ -262,6 +262,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()));
+		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}
 
@@ -557,6 +558,23 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		getLogger().info("[destroy]{}", this);
 		FileUtils.recursiveDelete(baseDir);
+	}
+
+	public void releaseRdb() throws IOException {
+		synchronized (lock) {
+			tryReleaseRdb(rdbStoreRef);
+			tryReleaseRdb(rordbStoreRef);
+		}
+	}
+
+	private void tryReleaseRdb(AtomicReference<RdbStore> rdbStoreRef) throws IOException {
+		RdbStore originRdbStore = rdbStoreRef.get();
+		if (null != originRdbStore && !originRdbStore.isWriting()
+				&& rdbStoreRef.compareAndSet(originRdbStore, null)) {
+			getLogger().info("[releaseRdb] {}", originRdbStore);
+			previousRdbStores.put(originRdbStore, Boolean.TRUE);
+			metaStore.releaseRdbFile(originRdbStore.getRdbFileName());
+		}
 	}
 
 	private void gcRdbIfNeeded(AtomicReference<RdbStore> rdbStoreRef) throws IOException {
