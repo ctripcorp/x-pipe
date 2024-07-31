@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.unidal.tuple.Triple;
 
 import java.util.List;
 import java.util.Map;
@@ -167,16 +168,26 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void testFindBiClusterShardBySentinelMonitor() {
         String monitorNameOY = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "oy");
         String monitorNameJQ = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "jq");
-        Assert.assertEquals(Pair.of("cluster3", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameOY));
-        Assert.assertEquals(Pair.of("cluster3", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameJQ));
+        Triple<String, String, Long> clusterAndShardOY = metaCache.findClusterShardBySentinelMonitor(monitorNameOY);
+        Assert.assertEquals("cluster3", clusterAndShardOY.getFirst());
+        Assert.assertEquals("shard1", clusterAndShardOY.getMiddle());
+
+        Triple<String, String, Long> clusterAndShardJQ = metaCache.findClusterShardBySentinelMonitor(monitorNameJQ);
+        Assert.assertEquals("cluster3", clusterAndShardJQ.getFirst());
+        Assert.assertEquals("shard1", clusterAndShardJQ.getMiddle());
     }
 
     @Test
     public void testFindOneWayClusterShardBySentinelMonitor() {
         String monitorNameOY = SentinelUtil.getSentinelMonitorName("cluster1", "shard1", "oy");
         String monitorNameJQ = SentinelUtil.getSentinelMonitorName("cluster1", "shard1", "jq");
-        Assert.assertNull(metaCache.findClusterShardBySentinelMonitor(monitorNameOY));
-        Assert.assertEquals(Pair.of("cluster1", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameJQ));
+
+        Triple<String, String, Long> clusterAndShardOY = metaCache.findClusterShardBySentinelMonitor(monitorNameOY);
+        Assert.assertNull(clusterAndShardOY);
+
+        Triple<String, String, Long> clusterAndShardJQ = metaCache.findClusterShardBySentinelMonitor(monitorNameJQ);
+        Assert.assertEquals("cluster1", clusterAndShardJQ.getFirst());
+        Assert.assertEquals("shard1", clusterAndShardJQ.getMiddle());
     }
 
     @Test
