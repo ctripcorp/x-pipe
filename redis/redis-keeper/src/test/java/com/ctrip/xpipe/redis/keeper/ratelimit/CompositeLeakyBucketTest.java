@@ -15,6 +15,7 @@ import org.mockito.Spy;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -136,7 +137,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
 
     @Test
-    public void testRefresh() throws InterruptedException {
+    public void testRefresh() throws InterruptedException, TimeoutException {
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.setScheduled(scheduled);
         leakyBucket.checkKeeperConfigChange();
@@ -176,7 +177,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     }
 
     @Test
-    public void testCloseAndOpen() throws InterruptedException {
+    public void testCloseAndOpen() throws InterruptedException, TimeoutException {
         //first close
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.setScheduled(scheduled);
@@ -214,14 +215,14 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(latch.await(3000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(3 < counter.get());
 
         // second, open
         counter.set(0);
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
         leakyBucket.checkKeeperConfigChange();
-        sleep(110);
+        sleep(200);
         latch = new CountDownLatch(task);
         barrier = new CyclicBarrier(task + 1);
         CyclicBarrier finalBarrier = barrier;
@@ -253,7 +254,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(latch.await(3000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(3 >= counter.get());
     }
 

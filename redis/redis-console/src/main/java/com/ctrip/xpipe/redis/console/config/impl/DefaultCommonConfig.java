@@ -18,6 +18,8 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
+    private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
+
     public DefaultCommonConfig() {
         super(ConfigProvider.DEFAULT.getOrCreateConfig(COMMON_CONFIG));
     }
@@ -32,4 +34,8 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
     }
 
+    @Override
+    public boolean autoSetKeeperSyncLimit() {
+        return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
+    }
 }

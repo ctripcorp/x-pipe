@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.store;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.lifecycle.Initializable;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
@@ -64,4 +65,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	default void setBaseIndex(String baseGtidSet, long localOffset) {
 		//ignore
 	}
+
+	void attachRateLimiter(SyncRateLimiter rateLimiter);
 }
