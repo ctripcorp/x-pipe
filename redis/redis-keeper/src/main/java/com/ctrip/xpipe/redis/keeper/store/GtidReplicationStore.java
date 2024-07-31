@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.Gtid2OffsetIndexGenerator;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +34,10 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     protected final Object indexingLock = new Object();
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
-                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) throws IOException {
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
         super(baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor);
+                keeperMonitor, syncRateManager);
     }
 
     @Override
@@ -51,6 +52,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor);
+        cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {
             cmdStore.initialize();
@@ -63,7 +65,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     @Override
     protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-        return new GtidRdbStore(rdb, replId, rdbOffset, eofType, null);
+        RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, null);
+        rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
+        return rdbStore;
     }
 
     @Override
@@ -78,7 +82,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     public DumpedRdbStore prepareNewRdb() throws IOException {
         makeSureOpen();
-        return new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()));
+        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()));
+        rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
+        return rdbStore;
     }
 
     @Override

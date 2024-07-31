@@ -10,4 +10,7 @@ public interface ConsoleCommonConfig {
     String getBeaconSupportZone();
     int monitorUnregisterProtectCount();
 
+    // TODO: remove after all KeeperContainer upgrade to the latest version
+    boolean autoSetKeeperSyncLimit();
+
 }

@@ -10,11 +10,13 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +56,8 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class)){
+				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class),
+				Mockito.mock(SyncRateManager.class)){
 		
 			@Override
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {

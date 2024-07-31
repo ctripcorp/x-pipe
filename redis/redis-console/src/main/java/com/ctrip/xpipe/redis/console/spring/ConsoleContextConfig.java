@@ -4,9 +4,11 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.impl.DefaultKeeperContainerService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
@@ -21,13 +23,11 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerMigrationAnalyzer;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
@@ -167,6 +167,11 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	public FoundationService foundationService() {
 		return FoundationService.DEFAULT;
+	}
+
+	@Bean
+	public KeeperContainerService keeperContainerService() {
+		return new DefaultKeeperContainerService();
 	}
 
 }

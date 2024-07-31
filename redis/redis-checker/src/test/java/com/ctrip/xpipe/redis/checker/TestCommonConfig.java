@@ -17,4 +17,9 @@ public class TestCommonConfig implements ConsoleCommonConfig {
     public int monitorUnregisterProtectCount() {
         return 10;
     }
+
+    @Override
+    public boolean autoSetKeeperSyncLimit() {
+        return false;
+    }
 }

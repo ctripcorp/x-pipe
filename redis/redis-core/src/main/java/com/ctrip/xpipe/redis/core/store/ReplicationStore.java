@@ -68,5 +68,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	boolean checkOk();
 
+	void releaseRdb() throws IOException;
+
 	boolean gc() throws IOException;
 }

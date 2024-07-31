@@ -21,4 +21,10 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
                 HttpMethod.GET, null, KeeperDiskInfo.class).getBody();
     }
 
+    @Override
+    public boolean setKeeperContainerDiskIOLimit(String keeperContainerIp, int keeperContainerPort, int limitInByte) {
+        Boolean rst = restTemplate.postForObject("http://{ip}:{port}/keepers/limit/totalIO?limit={limit}",
+                null, Boolean.class, keeperContainerIp, keeperContainerPort, limitInByte);
+        return null != rst && rst;
+    }
 }

@@ -78,6 +78,8 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 				return true;
 			case KEEPER_ALREADY_STARTED:
 				return true;
+			case KEEPER_NOT_STARTED:
+				return false;
 			case INTERNAL_EXCEPTION:
 				return false;
 			case KEEPER_ALREADY_DELETED:
