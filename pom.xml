@@ -17,7 +17,7 @@
 
     <properties>
         <commons-io.version>2.4</commons-io.version>
-        <curator.version>5.5.0</curator.version>
+        <curator.version>5.7.0</curator.version>
         <zookeeper.version>3.8.2</zookeeper.version>
         <maven-jar-plugin.version>2.6</maven-jar-plugin.version>
         <maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
