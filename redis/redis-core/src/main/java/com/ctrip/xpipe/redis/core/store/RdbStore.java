@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
@@ -71,5 +72,7 @@ public interface RdbStore extends Destroyable, Closeable{
 	boolean isWriting();
 
 	long getRdbFileLastModified();
+
+	void attachRateLimiter(SyncRateLimiter rateLimiter);
 
 }

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.io.Files;
@@ -66,13 +67,16 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final RedisOpParser redisOpParser;
 
+    private SyncRateManager syncRateManager;
+
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, null);
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, null);
     }
 
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) {
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
+                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
         super(MoreExecutors.directExecutor());
         this.replId = replId;
         this.keeperRunid = keeperRunid;
@@ -80,6 +84,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.keeperMonitor = keeperMonitor;
         this.keeperBaseDir = baseDir;
         this.redisOpParser = redisOpParser;
+        this.syncRateManager = syncRateManager;
     }
 
     @Override
@@ -155,7 +160,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         recrodLatestStore(storeBaseDir.getName());
 
-        ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor);
+        ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
 
         closeCurrentStore();
 
@@ -166,8 +171,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
-                                                      KeeperMonitor keeperMonitor) throws IOException {
-        return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser);
+                                                      KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
+        return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser, syncRateManager);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -234,7 +239,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
                     if (latestStoreDir.isDirectory()) {
-                        currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor));
+                        currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager));
                     }
                 }
             }
@@ -324,8 +329,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         private ShardId deprecatedShardId;
 
         public ClusterAndShardCompatible(KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser) {
-            super(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, redisOpParser);
+                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
+                                         SyncRateManager syncRateManager) {
+            super(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
             this.keeperBaseDir = baseDir;
             this.replId = replId;
         }

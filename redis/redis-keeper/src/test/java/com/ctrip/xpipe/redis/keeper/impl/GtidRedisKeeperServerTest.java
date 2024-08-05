@@ -16,11 +16,13 @@ import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -57,7 +59,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
         KeeperMeta keeperMeta = createKeeperMeta();
         DefaultRedisKeeperServer keeperServer = new DefaultRedisKeeperServer(getReplId().id(), keeperMeta, keeperConfig,
                 getReplicationStoreManagerBaseDir(keeperMeta), getRegistry().getComponent(LeaderElectorManager.class),
-                createkeepersMonitorManager(), getResourceManager(), parser);
+                createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), parser);
         keeperServer.initialize();
         keeperServer.start();
 

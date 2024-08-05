@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 
+import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -79,16 +80,16 @@ public class KeeperContainerController extends AbstractConsoleController{
     }
 
     @RequestMapping(value = "/keepercontainer/ioRate", method = RequestMethod.GET)
-    public String getIORate() {
+    public RetMessage getIORate() {
         try {
             Map<String, String> map = new HashMap<>();
             List<ConfigModel> configs = configService.getConfigs(KEY_KEEPER_CONTAINER_IO_RATE);
             for (ConfigModel configModel : configs) {
                 map.put(configModel.getSubKey(), configModel.getVal());
             }
-            return map.toString();
+            return new GenericRetMessage(0, map);
         } catch (Exception e) {
-            return e.getMessage();
+            return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
