@@ -97,6 +97,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CLUSTERS_PART_INDEX = "checker.clusters.part.index" ;
 
+    private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
@@ -627,6 +629,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long getMetaServerSlotClusterMapCacheTimeOutMilli() {
         return getLongProperty(KEY_CONSOLE_META_SLOT_CACHE_MILLI, 30 * 1000L);
+    }
+
+    @Override
+    public boolean autoSetKeeperSyncLimit() {
+        return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
     }
 
 }

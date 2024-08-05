@@ -4,13 +4,11 @@ import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.config.AbstractConfigBean;
-import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
 import java.util.Set;
 
 @Configuration
@@ -59,6 +57,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     public static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     public static final String KEY_CONSOLE_META_SLOT_CACHE_MILLI = "console.meta.slot.cache.milli";
+
+    private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
 
     private FoundationService foundationService;
 
@@ -161,6 +161,10 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public long getMetaServerSlotClusterMapCacheTimeOutMilli() {
         return getLongProperty(KEY_CONSOLE_META_SLOT_CACHE_MILLI, 30 * 1000L);
+    }
+
+    public boolean autoSetKeeperSyncLimit() {
+        return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
     }
 
 }
