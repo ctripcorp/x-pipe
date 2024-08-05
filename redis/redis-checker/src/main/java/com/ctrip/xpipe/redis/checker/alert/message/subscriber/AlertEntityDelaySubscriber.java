@@ -45,6 +45,9 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
     @Autowired
     private DelayAlertRecoverySubscriber delayAlertRecoverySubscriber;
 
+    @Autowired
+    private RepeatAlertEntitySubscriber repeatAlertEntitySubscriber;
+
     @PostConstruct
     public void initCleaner() {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
@@ -141,6 +144,7 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
         if(alert.getAlertType().delayedSendingTime() != 0) {
             //  延迟发布的要推送主动给AlertRecoverySubscriber，这边主动触发
             delayAlertRecoverySubscriber.addDelayAlerts(alert);
+            repeatAlertEntitySubscriber.addDelayAlert(alert);
         }
     }
 
