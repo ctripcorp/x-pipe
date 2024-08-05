@@ -52,7 +52,6 @@ public class TwoChecker2SameConsole extends AbstractXpipeServerMultiDcTest {
         Map<String, String> metaServers = new HashMap<>();
         Map<String, String> extraOptions = new HashMap<>();
         extraOptions.put(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster-dr,cluster-dr-shard1");
-        //extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
         extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
 
         startSpringConsole(jqConsolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + jqConsolePort), consoles, metaServers, extraOptions);

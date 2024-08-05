@@ -147,4 +147,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	double getKeeperContainerIoRate();
 
 	long getMetaServerSlotClusterMapCacheTimeOutMilli();
+
+	boolean autoSetKeeperSyncLimit();
 }

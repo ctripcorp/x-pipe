@@ -551,6 +551,11 @@ public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
     }
 
     @Override
+    public boolean autoSetKeeperSyncLimit() {
+        return consoleConfigBean.autoSetKeeperSyncLimit();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }
