@@ -22,6 +22,8 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
 import com.ctrip.xpipe.zk.ZkConfig;
@@ -151,7 +153,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
 		RedisKeeperServer gtidRedisKeeperServer = createGtidRedisKeeperServer(keeperMeta, baseDir, keeperConfig,
-				leaderElectorManager, new NoneKeepersMonitorManager(), redisOpParser);
+				leaderElectorManager, new NoneKeepersMonitorManager(), new UnlimitedSyncRateManager(), redisOpParser);
 		add(gtidRedisKeeperServer);
 		return gtidRedisKeeperServer;
 	}
@@ -169,7 +171,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager, new NoneKeepersMonitorManager());
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager,
+				new NoneKeepersMonitorManager(), new UnlimitedSyncRateManager());
 		add(redisKeeperServer);
 		return redisKeeperServer;
 	}
@@ -183,19 +186,21 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected RedisKeeperServer createGtidRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
 																LeaderElectorManager leaderElectorManager,
 																KeepersMonitorManager keeperMonitorManager,
+																SyncRateManager syncRateManager,
 																RedisOpParser redisOpParser) {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, redisOpParser);
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, redisOpParser);
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-			 LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
+														LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager,
+														SyncRateManager syncRateManager) {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager);
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager);
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {

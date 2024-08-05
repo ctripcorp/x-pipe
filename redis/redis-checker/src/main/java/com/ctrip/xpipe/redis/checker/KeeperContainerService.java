@@ -7,4 +7,6 @@ public interface KeeperContainerService {
 
     KeeperDiskInfo getKeeperDiskInfo(String keeperContainerIp) throws RestClientException;
 
+    boolean setKeeperContainerDiskIOLimit(String keeperContainerIp, int keeperContainerPort, int limitInByte);
+
 }

@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +40,6 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     @Override
     public boolean supportGtidSet() {
         return isGtidSetInit() && !GtidSet.EMPTY_GTIDSET.equals(getGtidSet());
-    }
-
-    @Override
-    public int writeRdb(ByteBuf byteBuf) throws IOException {
-        makeSureOpen();
-
-        int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
-        return wrote;
     }
 
     @Override

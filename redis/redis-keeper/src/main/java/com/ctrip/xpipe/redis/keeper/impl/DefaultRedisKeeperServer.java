@@ -41,6 +41,7 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
@@ -100,6 +101,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private AtomicBoolean crossRegion;
 	
 	private long keeperStartTime;
+
+	private SyncRateManager syncRateManager;
 	
 	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
 
@@ -161,14 +164,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
-									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
+									KeepersMonitorManager keepersMonitorManager,
+									KeeperResourceManager resourceManager, SyncRateManager syncRateManager){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, null);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
-									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager, RedisOpParser redisOpParser){
+									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager,
+									SyncRateManager syncRateManager, RedisOpParser redisOpParser){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
@@ -182,12 +187,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.resourceManager = resourceManager;
 		this.redisOpParser = redisOpParser;
 		this.crossRegion = new AtomicBoolean(false);
+		this.syncRateManager = syncRateManager;
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
 		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser).setDeprecatedClusterAndShard(clusterId, shardId);
+				baseDir, keeperMonitor, redisOpParser, syncRateManager).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -217,6 +223,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public long getLastElectionResetTime() {
 		return this.lastResetElectionTime;
+	}
+
+	@Override
+	public void releaseRdb() throws IOException {
+		getCurrentReplicationStore().releaseRdb();
 	}
 
 	@Override

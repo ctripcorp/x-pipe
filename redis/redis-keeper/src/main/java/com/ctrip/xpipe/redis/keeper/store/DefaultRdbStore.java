@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -55,6 +56,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	private Object truncateLock = new Object();
 
 	private AtomicReference<Type> typeRef;
+
+	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 	
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
 
@@ -63,7 +66,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		this.eofType = eofType;
 		this.rdbOffset = rdbOffset;
 		this.typeRef = new AtomicReference<>(Type.UNKNOWN);
-		
+
 		if(file.length() > 0){
 			checkAndSetRdbState();
 		}else{
@@ -103,11 +106,18 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
+	public void attachRateLimiter(SyncRateLimiter rateLimiter) {
+		this.rateLimiterRef.set(rateLimiter);
+	}
+
+	@Override
 	public int writeRdb(ByteBuf byteBuf) throws IOException {
 		makeSureOpen();
 
-		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
-		return wrote;
+		SyncRateLimiter rateLimiter = rateLimiterRef.get();
+		if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
+
+		return ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
 	}
 
 	@Override

@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,8 +47,9 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
 
     @Override
     protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-                                                        LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
-        RedisKeeperServer keeperServer = super.createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager, keeperMonitorManager);
+                                                        LeaderElectorManager leaderElectorManager,
+                                                        KeepersMonitorManager keeperMonitorManager, SyncRateManager syncRateManager) {
+        RedisKeeperServer keeperServer = super.createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager, keeperMonitorManager, syncRateManager);
         if (keeperMeta.equals(getKeeperActive())) {
             originActiveKeeperServer = keeperServer;
             spyActiveKeeperServer = spy(keeperServer);

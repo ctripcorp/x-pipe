@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.utils.VersionUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -87,10 +88,12 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
 
 
     @Override
-    protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
+    protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
+                                                        LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager,
+                                                        SyncRateManager syncRateManager) {
 
         return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-                keeperMonitorManager, resourceManager) {
+                keeperMonitorManager, resourceManager, syncRateManager) {
 
             private int count = 0;
 

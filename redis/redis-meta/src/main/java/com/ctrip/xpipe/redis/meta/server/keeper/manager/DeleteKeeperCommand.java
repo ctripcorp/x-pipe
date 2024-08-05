@@ -50,6 +50,8 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 				return false;
 			case INTERNAL_EXCEPTION:
 				return false;
+			case KEEPER_NOT_STARTED:
+				return false;
 			case KEEPER_ALREADY_DELETED:
 				return true;
 			case KEEPER_ALREADY_STOPPED:
