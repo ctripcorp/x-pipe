@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
