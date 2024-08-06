@@ -26,8 +26,6 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
 
-    public static final String KEY_CONSOLE_DOMAINS = "console.domains";
-
     public static final String KEY_DOMAIN = "console.domain";
 
     public static final String KEY_XPIPE_RUNTIME_ENVIRONMENT = "xpipe.runtime.environment";
@@ -45,8 +43,6 @@ public class CommonConfigBean extends AbstractConfigBean {
     private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
 
     private static final String KEY_DCS_RELATIONS = "dcs.relations";
-
-    public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
 
     public static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
 
@@ -78,11 +74,6 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public String getXPipeAdminEmails() {
         return getProperty(KEY_XPIPE_ADMIN_EMAILS, "XPipeAdmin@email.com");
-    }
-
-    public Map<String, String> getConsoleDomains() {
-        String property = getProperty(KEY_CONSOLE_DOMAINS, "{}");
-        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     public String getConsoleDomain() {
@@ -135,10 +126,6 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public int getNoAlarmMinutesForClusterUpdate() {
         return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE, 15);
-    }
-
-    public String getBeaconOrgRoutes() {
-        return getProperty(KEY_BEACON_ORG_ROUTE, "[]");
     }
 
 }

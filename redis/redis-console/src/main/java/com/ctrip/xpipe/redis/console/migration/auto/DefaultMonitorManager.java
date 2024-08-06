@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean.KEY_BEACON_ORG_ROUTE;
+import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_BEACON_ORG_ROUTE;
 
 /**
  * @author lishanglin
