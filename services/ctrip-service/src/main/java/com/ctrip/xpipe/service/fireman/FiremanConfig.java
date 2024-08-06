@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.service.fireman;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.api.config.ConfigProvider;
 
 import java.util.Set;
 
