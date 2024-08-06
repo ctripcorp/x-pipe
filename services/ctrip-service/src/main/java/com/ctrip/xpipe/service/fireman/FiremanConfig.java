@@ -12,6 +12,10 @@ public class FiremanConfig extends AbstractConfigBean {
 
     public static final String KEY_FIREMAN_POOLS = "fireman.poolids";
 
+    public FiremanConfig() {
+        super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.COMMON_CONFIG));
+    }
+
     public Set<String> getFiremanRelatedPools() {
         return getSplitStringSet(getProperty(KEY_FIREMAN_POOLS, ""));
     }

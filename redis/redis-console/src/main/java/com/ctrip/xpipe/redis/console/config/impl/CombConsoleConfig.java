@@ -445,7 +445,7 @@ public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
 
     @Override
     public Map<String, String> getConsoleDomains() {
-        return commonConfigBean.getConsoleDomains();
+        return dataCenterConfigBean.getConsoleDomains();
     }
 
     @Override
@@ -480,7 +480,7 @@ public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
 
     @Override
     public List<BeaconOrgRoute> getBeaconOrgRoutes() {
-        String property = commonConfigBean.getBeaconOrgRoutes();
+        String property = dataCenterConfigBean.getBeaconOrgRoutes();
         return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<List<BeaconOrgRoute>>() {});
     }
 

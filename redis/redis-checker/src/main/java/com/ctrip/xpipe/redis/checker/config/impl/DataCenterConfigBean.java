@@ -29,6 +29,10 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public static final String KEY_FOUNDATION_GROUP_DC_MAP = "foundation.group.dc.map";
 
+    public static final String KEY_CONSOLE_DOMAINS = "console.domains";
+
+    public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
+
     private AtomicReference<String> zkConnection = new AtomicReference<>();
     private AtomicReference<String> zkNameSpace = new AtomicReference<>();
 
@@ -68,5 +72,14 @@ public class DataCenterConfigBean extends AbstractConfigBean {
     public Map<String, String> getGroupDcMap() {
         String mappingRule = getProperty(KEY_FOUNDATION_GROUP_DC_MAP, "{}");
         return JsonCodec.INSTANCE.decode(mappingRule, Map.class);
+    }
+
+    public Map<String, String> getConsoleDomains() {
+        String property = getProperty(KEY_CONSOLE_DOMAINS, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
+    }
+
+    public String getBeaconOrgRoutes() {
+        return getProperty(KEY_BEACON_ORG_ROUTE, "[]");
     }
 }
