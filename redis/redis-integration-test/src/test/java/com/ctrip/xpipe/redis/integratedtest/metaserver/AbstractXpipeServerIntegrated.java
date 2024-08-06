@@ -44,11 +44,10 @@ import java.util.stream.Collectors;
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.LOCAL_IP_KEY;
 import static com.ctrip.xpipe.redis.checker.cluster.AbstractCheckerLeaderElector.KEY_CHECKER_ID;
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.*;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.*;
+import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CHECKER;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER;
-import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 
 
@@ -176,7 +175,7 @@ public class AbstractXpipeServerIntegrated extends AbstractXPipeClusterTest {
                                                                       Map<String, String> extras) {
         System.setProperty("DisableLoadProxyAgentJar", "false");
         Map<String, String> ex = new HashMap<>(extras);
-        ex.put(KEY_SERVER_MODE, CONSOLE_CHECKER.name());
+        //ex.put(KEY_SERVER_MODE, CONSOLE_CHECKER.name());
         return startSpringConsole(port, idc, zk, localDcConsoles, crossDcConsoles, metaservers, ex);
     }
 
@@ -211,7 +210,7 @@ public class AbstractXpipeServerIntegrated extends AbstractXPipeClusterTest {
                 new HashMap<String, String>() {{
                     put(KEY_CONSOLE_ADDRESS, "http://" + localDcConsoles.get(0));
                     put(KEY_CHECKER_ID, idc + port);
-                    put(KEY_SERVER_MODE, CHECKER.name());
+                    //put(KEY_SERVER_MODE, CHECKER.name());
                     put(LOCAL_IP_KEY, localIp);
                     put(KEY_REDIS_CONF_CHECK_INTERVAL, "1000");
                 }});

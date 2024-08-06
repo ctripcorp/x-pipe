@@ -1,11 +1,16 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal.migration;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
@@ -83,7 +88,10 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
 
         @Bean
         public ConsoleConfig consoleConfig() {
-            return new DefaultConsoleConfig();
+            return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+                    new ConsoleConfigBean(FoundationService.DEFAULT),
+                    new DataCenterConfigBean(),
+                    new CommonConfigBean());
         }
 
         @Bean

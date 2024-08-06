@@ -6,7 +6,6 @@ import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -24,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean.KEY_BEACON_ORG_ROUTE;
 
 /**
  * @author lishanglin
@@ -66,7 +67,7 @@ public class DefaultMonitorManager implements MonitorManager {
             }));
 
         // 注册beacon.org.routes配置监听
-        this.config.register(Collections.singletonList(DefaultConsoleConfig.KEY_BEACON_ORG_ROUTE),
+        this.config.register(Collections.singletonList(KEY_BEACON_ORG_ROUTE),
             ((key, oldValue, newValue) -> {
                 logger.info("key: {}, oldValue: {}, newValue{}", key, oldValue, newValue);
                 List<BeaconOrgRoute> oldOrgRoutes = JsonCodec.INSTANCE

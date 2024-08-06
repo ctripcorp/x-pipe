@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.console;
 
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Before;
+
+import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_METASERVERS;
 
 /**
  * @author wenchao.meng
@@ -18,7 +19,7 @@ public class AbstratAppTest extends AbstractConsoleDbTest {
 
     @Before
     public void beforeAbstratAppTest(){
-        System.setProperty(DefaultConsoleConfig.KEY_METASERVERS, metaServers);
+        System.setProperty(KEY_METASERVERS, metaServers);
         System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 
     }

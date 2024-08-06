@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_PROXY_CHECK_INTERVAL;
 
 /**
  * @author chen.zhu

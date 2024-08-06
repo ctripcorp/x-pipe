@@ -18,8 +18,4 @@ public class TestCommonConfig implements ConsoleCommonConfig {
         return 10;
     }
 
-    @Override
-    public boolean autoSetKeeperSyncLimit() {
-        return false;
-    }
 }

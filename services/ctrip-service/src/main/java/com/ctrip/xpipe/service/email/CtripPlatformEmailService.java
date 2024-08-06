@@ -38,8 +38,6 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static final String TYPE = "SOA.EMAIL.SERVICE";
 
-    private static EmailConfig config = new EmailConfig();
-
     private static EmailServiceClient client = EmailServiceClient.getInstance();
 
     @Override
