@@ -17,7 +17,7 @@ public class HickwallConfig extends AbstractConfigBean {
 	public static final String KEY_HICKWALL_WRITE_MONITOR = "hickwall.monitor.write";
 
 	public HickwallConfig() {
-		super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.COMMON_CONFIG));
+		super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.DATA_CENTER_CONFIG_NAME));
 	}
 
 	public int getHickwallBatchSize() {
