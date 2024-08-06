@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.api.config.ConfigProvider;
 
 /**
  * @author marsqing
@@ -14,6 +15,10 @@ public class HickwallConfig extends AbstractConfigBean {
 	public static final String KEY_HICKWALL_DATABASE = "hickwall.database";
 	public static final String KEY_HICKWALL_BATCH_SIZE = "hickwall.batch.size";
 	public static final String KEY_HICKWALL_WRITE_MONITOR = "hickwall.monitor.write";
+
+	public HickwallConfig() {
+		super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.COMMON_CONFIG));
+	}
 
 	public int getHickwallBatchSize() {
 		return getIntProperty(KEY_HICKWALL_BATCH_SIZE, 1000);

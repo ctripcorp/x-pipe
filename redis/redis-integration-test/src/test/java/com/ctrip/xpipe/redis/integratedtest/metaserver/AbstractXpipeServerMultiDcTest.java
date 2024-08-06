@@ -27,14 +27,11 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.springframework.web.client.RestOperations;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.*;
 
 public class AbstractXpipeServerMultiDcTest extends AbstractXpipeServerIntegrated {
@@ -285,14 +282,14 @@ public class AbstractXpipeServerMultiDcTest extends AbstractXpipeServerIntegrate
                 switch (info.mode) {
                     case CONSOLE:
                         logger.info("================= start console server ==================");
-                        extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
+                        // extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
                         startConsole(info.console_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)), consoles, metaservers, extraOptions);
                         logger.info("================= start checker server ==================");
                         checks.put(idc, new HealthServer("http://127.0.0.1:"+ info.checker_port + "/health" , startChecker(info.checker_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(String.format("127.0.0.1:" + info.console_port)))));
                         break;
                     case CONSOLE_CHECKER:
                         logger.info("================= start console + checker server ==================");
-                        extraOptions.put(KEY_SERVER_MODE, CONSOLE_CHECKER.name());
+                        // extraOptions.put(KEY_SERVER_MODE, CONSOLE_CHECKER.name());
                         ServerStartCmd console_checker = startConsole(info.console_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)), consoles, metaservers, extraOptions);
                         checks.put(idc, new HealthServer("http://127.0.0.1:" + info.console_port + "/health", console_checker));
                         break;

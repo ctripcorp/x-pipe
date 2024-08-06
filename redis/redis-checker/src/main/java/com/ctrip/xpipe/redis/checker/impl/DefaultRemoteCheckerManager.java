@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
@@ -21,16 +22,19 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
 
     private CheckerConfig config;
 
+    private GroupCheckerLeaderElector checkerLeaderElector;
+
     private Logger logger = LoggerFactory.getLogger(DefaultRemoteCheckerManager.class);
 
-    public DefaultRemoteCheckerManager(CheckerConfig checkerConfig) {
+    public DefaultRemoteCheckerManager(CheckerConfig checkerConfig, GroupCheckerLeaderElector checkerLeaderElector) {
         this.remoteCheckers = new HashMap<>();
         this.config = checkerConfig;
+        this.checkerLeaderElector = checkerLeaderElector;
     }
 
     @Override
     public List<HEALTH_STATE> getHealthStates(String ip, int port) {
-        Set<String> checkerAddressList = config.getAllCheckerAddress();
+        Set<String> checkerAddressList = getAllCheckerAddress();
         List<HEALTH_STATE> result = new ArrayList<>();
 
         checkerAddressList.forEach(checker -> {
@@ -48,7 +52,7 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
 
     @Override
     public List<Map<HostPort, HealthStatusDesc>> allInstanceHealthStatus() {
-        Set<String> checkerAddressList = config.getAllCheckerAddress();
+        Set<String> checkerAddressList = getAllCheckerAddress();
         List<Map<HostPort, HealthStatusDesc>> result = new ArrayList<>();
 
         checkerAddressList.forEach(checker -> {
@@ -66,7 +70,7 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
 
     @Override
     public List<CheckerService> getAllCheckerServices() {
-        Set<String> checkerAddressList = config.getAllCheckerAddress();
+        Set<String> checkerAddressList = getAllCheckerAddress();
         List<CheckerService> checkerServices = new ArrayList<>();
 
         checkerAddressList.forEach(checkerAddress -> {
@@ -75,5 +79,18 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
         });
 
         return checkerServices;
+    }
+
+    private Set<String> getAllCheckerAddress() {
+        Set<String> result = new HashSet<>();
+        List<String> servers = checkerLeaderElector.getAllServers();
+        String port = System.getProperty("server.port", "8080");
+        if(servers.size() == 0) {
+            servers.add("127.0.0.1");
+        }
+        for(String server : servers) {
+            result.add(server + ":" + port);
+        }
+        return result;
     }
 }

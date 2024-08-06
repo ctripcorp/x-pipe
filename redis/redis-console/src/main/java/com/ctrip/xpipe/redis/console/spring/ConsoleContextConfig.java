@@ -7,6 +7,10 @@ import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
+import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.DefaultKeeperContainerService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
@@ -15,7 +19,7 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -54,8 +58,8 @@ import org.springframework.context.annotation.*;
 public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
-	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
-		return new DefaultMetaServerConsoleServiceManagerWrapper();
+	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper(ConsoleConfig config) {
+		return new DefaultMetaServerConsoleServiceManagerWrapper(config);
 	}
 
 	@Bean
@@ -100,8 +104,12 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public ConsoleConfig consoleConfig() {
-		return new DefaultConsoleConfig();
+	public ConsoleConfig consoleConfig(FoundationService foundationService) {
+		return new CombConsoleConfig(
+				new CheckConfigBean(foundationService),
+				new ConsoleConfigBean(foundationService),
+				new DataCenterConfigBean(),
+				new CommonConfigBean());
 	}
 
 	@Bean

@@ -13,6 +13,12 @@ public interface ConfigProvider extends Ordered {
 
     String COMMON_CONFIG = "common.properties";
 
+    String CHECK_CONFIG_NAME = "checker.properties";
+
+    String CONSOLE_CONFIG_NAME = "console.properties";
+
+    String DATA_CENTER_CONFIG_NAME = "dc.properties";
+
     Config getDefaultConfig();
 
     Config getOrCreateConfig(String name);

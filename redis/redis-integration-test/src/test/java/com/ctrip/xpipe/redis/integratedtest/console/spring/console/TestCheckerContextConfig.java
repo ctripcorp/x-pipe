@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
@@ -104,8 +103,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public DefaultConsoleConfig consoleConfig() {
-        return  new SpringEnvConsoleConfig();
+    public ConsoleConfig consoleConfig() {
+        return new SpringEnvConsoleConfig();
     }
 
     @Bean
@@ -119,8 +118,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public MetaServerManager metaServerManager() {
-        return new DefaultMetaServerConsoleServiceManagerWrapper();
+    public MetaServerManager metaServerManager(ConsoleConfig config) {
+        return new DefaultMetaServerConsoleServiceManagerWrapper(config);
     }
 
     @Bean
@@ -170,8 +169,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
-        return new DefaultRemoteCheckerManager(checkerConfig);
+    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig,GroupCheckerLeaderElector clusterServer) {
+        return new DefaultRemoteCheckerManager(checkerConfig, clusterServer);
     }
 
     @Bean

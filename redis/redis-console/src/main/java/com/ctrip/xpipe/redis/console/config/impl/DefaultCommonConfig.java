@@ -34,8 +34,4 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
         return getIntProperty(KEY_MONITOR_UNREGISTER_PROTECT_COUNT, 10);
     }
 
-    @Override
-    public boolean autoSetKeeperSyncLimit() {
-        return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
-    }
 }

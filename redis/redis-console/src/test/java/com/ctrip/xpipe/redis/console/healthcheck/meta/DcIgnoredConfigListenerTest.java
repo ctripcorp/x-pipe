@@ -12,7 +12,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_IGNORED_DC_FOR_HEALTH_CHECK;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_IGNORED_DC_FOR_HEALTH_CHECK;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 

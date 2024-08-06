@@ -24,10 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_REDIS_CONF_CHECK_INTERVAL;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_REDIS_CONF_CHECK_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.*;
-import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
 
 public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
     
@@ -87,7 +86,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         Map<String, String> metaServers = new HashMap<>();
         Map<String, String> extraOptions = new HashMap<>();
         extraOptions.put(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster-dr,cluster-dr-shard1");
-        extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
+        // extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
         extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
         logger.info("========== start jq console ============");
         startSpringConsole(JQConsolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), consoles, metaServers, extraOptions);
@@ -139,7 +138,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         Map<String, String> metaServers = new HashMap<>();
         Map<String, String> extraOptions = new HashMap<>();
         extraOptions.put(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster-dr,cluster-dr-shard1");
-        extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
+        // extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
         extraOptions.put(KEY_REDIS_CONF_CHECK_INTERVAL, "1000");
         extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
         logger.info("========== start jq console ============");

@@ -5,9 +5,9 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -43,7 +43,7 @@ public class KeeperContainerDiskIOLimitDispatcher extends AbstractSiteLeaderInte
     private ConfigService configService;
 
     @Autowired
-    private ConsoleCommonConfig config;
+    private ConsoleConfig config;
 
     private AtomicBoolean running = new AtomicBoolean(false);
 

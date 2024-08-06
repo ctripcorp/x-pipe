@@ -3,15 +3,12 @@ package com.ctrip.xpipe.redis.console.keeper.impl;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CONTAINER_STANDARD;
 

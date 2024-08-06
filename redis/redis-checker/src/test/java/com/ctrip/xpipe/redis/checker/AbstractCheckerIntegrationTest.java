@@ -6,6 +6,7 @@ import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
@@ -121,7 +122,7 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
 
         @Bean
         public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
-            return new DefaultRemoteCheckerManager(checkerConfig);
+            return new DefaultRemoteCheckerManager(checkerConfig, new GroupCheckerLeaderElector("test"));
         }
 
         @Bean

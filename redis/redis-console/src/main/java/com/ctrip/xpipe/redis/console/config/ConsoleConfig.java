@@ -54,8 +54,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getAlertWhileList();
 
-	String getAllConsoles();
-
 	int getQuorum();
 
 	int getRedisConfCheckIntervalMilli();
@@ -94,13 +92,9 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getIgnoredHealthCheckDc();
 
-	Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters();
-
 	int getPingDownAfterMilli();
 
 	int getPingDownAfterMilliThroughProxy();
-
-	Map<String, String> getSocketStatsAnalyzingKeys();
 
 	Pair<String, String> getClusterShardForMigrationSysCheck();
 
@@ -111,8 +105,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getOuterClientSyncInterval();
 
 	String getOuterClientToken();
-
-	String filterOuterClusters();
 
 	Map<String, String> getConsoleDomains();
 
@@ -127,8 +119,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	Set<String> shouldNotifyClusterTypes();
 
 	String getCrossDcLeaderLeaseName();
-
-	String getParallelConsoleDomain();
 
 	List<BeaconOrgRoute> getBeaconOrgRoutes();
 
@@ -157,4 +147,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	double getKeeperContainerIoRate();
 
 	long getMetaServerSlotClusterMapCacheTimeOutMilli();
+
+	boolean autoSetKeeperSyncLimit();
 }

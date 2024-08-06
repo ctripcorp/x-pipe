@@ -70,8 +70,8 @@ public class TestConsoleContextConfig {
     }
 
     @Bean
-    public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
-        return new DefaultMetaServerConsoleServiceManagerWrapper();
+    public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper(ConsoleConfig config) {
+        return new DefaultMetaServerConsoleServiceManagerWrapper(config);
     }
 
     @Bean
