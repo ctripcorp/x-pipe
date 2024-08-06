@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.service.fireman;
 
+import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.framework.fireman.container.application.AppNode;
 import com.ctrip.framework.fireman.remote.http.NodesProvider;
 import com.ctrip.framework.fireman.remote.http.cms.DefaultNodesProvider;
