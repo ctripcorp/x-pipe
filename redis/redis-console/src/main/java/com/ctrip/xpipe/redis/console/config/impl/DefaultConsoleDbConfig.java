@@ -19,14 +19,11 @@ import java.util.stream.Collectors;
  *         <p>
  *         Jun 15, 2017
  */
-public class DefaultConsoleDbConfig extends AbstractConfigBean implements ConsoleDbConfig, AlertDbConfig {
+public class DefaultConsoleDbConfig implements ConsoleDbConfig, AlertDbConfig {
 
     private TimeBoundCache<Set<String>> sentinelCheckWhitelistCache;
 
     private TimeBoundCache<Set<String>> clusterAlertWhitelistCache;
-
-    @Autowired
-    private DbConfig dbConfig;
 
     @Autowired
     private ConsoleConfig config;
@@ -36,8 +33,6 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     @PostConstruct
     public void postConstruct(){
-        setConfig(dbConfig);
-
         sentinelCheckWhitelistCache = new TimeBoundCache<>(config::getCacheRefreshInterval, this::refreshSentinelCheckWhiteList);
         clusterAlertWhitelistCache = new TimeBoundCache<>(config::getCacheRefreshInterval, this::refreshClusterAlertWhiteList);
     }
