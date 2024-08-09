@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,17 +46,23 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
     @Autowired
     private List<DelayPingActionCollector> delayPingCollectors;
 
+    @Autowired
+    private List<PsubPingActionCollector> psubPingActionCollectors;
+
     private Map<ClusterType, List<PingActionController>> controllersByClusterType;
 
     private Map<ClusterType, List<PingActionListener>> listenerByClusterType;
 
     private Map<ClusterType, List<DelayPingActionCollector>> delayPingCollectorsByClusterType;
 
+    private Map<ClusterType, List<PsubPingActionCollector>> psubPingActionCollectorsByClusterType;
+
     @PostConstruct
     public void postConstruct() {
         controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
         listenerByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(listeners);
         delayPingCollectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(delayPingCollectors);
+        psubPingActionCollectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(psubPingActionCollectors);
     }
 
     @Override
@@ -70,6 +77,10 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
         }
 
         delayPingCollectorsByClusterType.get(clusterType).forEach(collector -> {
+            if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
+        });
+
+        psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
             if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
         });
 

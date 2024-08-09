@@ -109,6 +109,10 @@ public class RedisSession {
         subscribeIfAbsent(callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
+    public synchronized void psubscribeIfAbsent(SubscribeCallback callback, String... channel) {
+        subscribeIfAbsent(callback, () -> new PsubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
+    }
+
     private synchronized void subscribeIfAbsent(SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier, String... channel) {
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(Sets.newHashSet(channel));
         if (pubSubConnectionWrapper == null || pubSubConnectionWrapper.shouldCreateNewSession()) {
