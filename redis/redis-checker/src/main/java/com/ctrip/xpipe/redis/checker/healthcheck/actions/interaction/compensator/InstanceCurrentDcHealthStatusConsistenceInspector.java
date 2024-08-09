@@ -11,11 +11,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -28,7 +23,6 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -42,76 +36,63 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
-/**
- * @author lishanglin
- * date 2022/7/21
- */
 @Service
-public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle implements TopElement {
+public class InstanceCurrentDcHealthStatusConsistenceInspector extends AbstractLifecycle implements TopElement {
+    private InstanceHealthStatusCollector collector;
 
-    protected InstanceHealthStatusCollector collector;
+    private InstanceStatusAdjuster adjuster;
 
-    protected InstanceStatusAdjuster adjuster;
+    private StabilityHolder siteStability;
 
-    protected StabilityHolder siteStability;
+    private CheckerConfig config;
 
-    protected CheckerConfig config;
+    private MetaCache metaCache;
 
-    protected MetaCache metaCache;
-
-    protected GroupCheckerLeaderElector leaderElector;
+    private GroupCheckerLeaderElector leaderElector;
 
     private DynamicDelayPeriodTask task;
 
     private ScheduledExecutorService scheduled;
 
-    private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
-
-    private HealthCheckInstanceManager healthCheckInstanceManager;
-
-    private static final Logger logger = LoggerFactory.getLogger(InstanceHealthStatusConsistenceInspector.class);
+    private static final Logger logger = LoggerFactory.getLogger(InstanceCurrentDcHealthStatusConsistenceInspector.class);
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     private static final String TYPE = "HealthCheck";
 
     @Autowired
-    public InstanceHealthStatusConsistenceInspector(InstanceHealthStatusCollector instanceHealthStatusCollector,
+    public InstanceCurrentDcHealthStatusConsistenceInspector(InstanceHealthStatusCollector instanceHealthStatusCollector,
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
                                                     @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
                                                     StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
-                                                    MetaCache metaCache, DefaultDelayPingActionCollector delayPingActionCollector,
-                                                    HealthCheckInstanceManager healthCheckInstanceManager) {
+                                                    MetaCache metaCache) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
         this.leaderElector = groupCheckerLeaderElector;
         this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         this.metaCache = metaCache;
-        this.defaultDelayPingActionCollector = delayPingActionCollector;
-        this.healthCheckInstanceManager = healthCheckInstanceManager;
     }
 
-    @VisibleForTesting
-    protected void inspect() {
+    protected void inspectCurrentDc() {
         if(!siteStability.isSiteStable()) {
-            logger.debug("[inspect][skip] unstable");
+            logger.debug("[inspectCurrentDc][skip] unstable");
             return;
         }
         if (null == leaderElector || !leaderElector.amILeader()) {
-            logger.debug("[inspect][skip] not leader");
+            logger.debug("[inspectCurrentDc][skip] not leader");
             return;
         }
 
-        logger.debug("[inspect] begin");
+        logger.debug("[inspectCurrentDc] begin");
         final long timeoutMill = System.currentTimeMillis() + Math.min(config.getPingDownAfterMilli() / 2,
                 config.getDownAfterCheckNums() * config.getRedisReplicationHealthCheckInterval() / 2);
-        TransactionMonitor.DEFAULT.logTransactionSwallowException(TYPE, "compensator.inspect", new Task() {
+        TransactionMonitor.DEFAULT.logTransactionSwallowException(TYPE, "compensator.inspect.currentDc", new Task() {
             @Override
             public void go() throws Exception {
-                Map<String, Set<HostPort>> interested = fetchInterestedClusterInstances();
-                if (interested.isEmpty()) {
-                    logger.debug("[inspect][skip] no interested instance");
+                Map<String, Set<HostPort>> interestedCurrentDc = fetchInterestedCurrentDcClusterInstances();
+                if (interestedCurrentDc.isEmpty()) {
+                    logger.debug("[inspectCurrentDc][skip] no interested instance");
                     return;
                 }
 
@@ -120,15 +101,15 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
                 XPipeInstanceHealthHolder xpipeInstanceHealth = instanceHealth.getKey();
                 OutClientInstanceHealthHolder outClientInstanceHealth = instanceHealth.getValue();
-                UpDownInstances instanceNeedAdjust = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interested);
+                UpDownInstances hostPortNeedAdjustForPingAction = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interestedCurrentDc);
 
                 checkTimeout(timeoutMill, "after compare");
-                if (!instanceNeedAdjust.getHealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), true, timeoutMill);
+                if (!hostPortNeedAdjustForPingAction.getHealthyInstances().isEmpty())
+                    adjuster.adjustInstances(hostPortNeedAdjustForPingAction.getHealthyInstances(), true, timeoutMill);
 
                 checkTimeout(timeoutMill, "after adjust up");
-                if (!instanceNeedAdjust.getUnhealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, timeoutMill);
+                if (!hostPortNeedAdjustForPingAction.getUnhealthyInstances().isEmpty())
+                    adjuster.adjustInstances(hostPortNeedAdjustForPingAction.getUnhealthyInstances(), false, timeoutMill);
             }
 
             @Override
@@ -138,36 +119,33 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         });
     }
 
-    protected void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
+    private void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
         if (System.currentTimeMillis() > timeoutAtMilli) {
             logger.info("[timeout] {}", msg);
             throw new TimeoutException(msg);
         }
     }
 
-    // return instance with clusterName so that we can check if out-client-service instance in the same cluster
-    @VisibleForTesting
-    protected Map<String, Set<HostPort>> fetchInterestedClusterInstances() {
-        Map<String, Set<HostPort>> interestedClusterInstances = new HashMap<>();
+    protected Map<String, Set<HostPort>> fetchInterestedCurrentDcClusterInstances() {
+        Map<String, Set<HostPort>> interestedCurrentDcClusterInstances = new HashMap<>();
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta) return interestedClusterInstances;
+        if (null == xpipeMeta) return interestedCurrentDcClusterInstances;
 
         for (DcMeta dcMeta: xpipeMeta.getDcs().values()) {
-            if (dcMeta.getId().equalsIgnoreCase(currentDc)) continue;
+            if (!dcMeta.getId().equalsIgnoreCase(currentDc)) continue;
 
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
                 if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                if (metaCache.isCrossRegion(currentDc, clusterMeta.parent().getId())) continue;;
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
+                if (!metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;
 
-                Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
+                Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedCurrentDcClusterInstances, clusterMeta.getId(), HashSet::new);
                 for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
                     shardMeta.getRedises().forEach(redis -> interestedInstances.add(new HostPort(redis.getIp(), redis.getPort())));
                 }
             }
         }
 
-        return interestedClusterInstances;
+        return interestedCurrentDcClusterInstances;
     }
 
     protected UpDownInstances findHostPortNeedAdjust(XPipeInstanceHealthHolder xpipeInstanceHealthHolder,
@@ -215,11 +193,11 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
-        this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("InstanceHealthStatusConsistenceInspector"));
-        this.task = new DynamicDelayPeriodTask("inspect", new AbstractExceptionLogTask() {
+        this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("InstanceCurrentDcHealthStatusConsistenceInspector"));
+        this.task = new DynamicDelayPeriodTask("inspectCurrentDc", new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                inspect();
+                inspectCurrentDc();
             }
         }, config::getHealthMarkCompensateIntervalMill, scheduled);
     }
@@ -248,5 +226,4 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
     public int getOrder() {
         return Ordered.LOWEST_PRECEDENCE;
     }
-
 }

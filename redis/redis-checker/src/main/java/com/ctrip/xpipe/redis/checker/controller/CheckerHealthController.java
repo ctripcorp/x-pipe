@@ -97,6 +97,16 @@ public class CheckerHealthController {
         return Codec.DEFAULT.encode(model);
     }
 
+    @RequestMapping(value = "/health/check/redis-for-ping-action/{ip}/{port}", method = RequestMethod.GET)
+    public String getHealthCheckRedisInstanceForPingAction(@PathVariable String ip, @PathVariable int port) {
+        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForPingAction(new HostPort(ip, port));
+        if(instance == null) {
+            return "Not found";
+        }
+        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
+        return Codec.DEFAULT.encode(model);
+    }
+
     @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
     public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
         return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
