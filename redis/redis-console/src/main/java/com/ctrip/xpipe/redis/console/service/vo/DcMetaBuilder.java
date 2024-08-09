@@ -299,9 +299,35 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 dc2DcClusterShardMap = Maps.newHashMap();
 
                 List<DcClusterShardTbl> allDcClusterShards = new LinkedList<>();
-                for (DcTbl dcTbl : allDcsTblList) {
-                    allDcClusterShards.addAll(dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), interestClusterTypes));
+                ParallelCommandChain chain = new ParallelCommandChain(executors, false);
+                for(String type : interestClusterTypes) {
+                    Set<String> typeSet = new HashSet<>();
+                    typeSet.add(type);
+                    for (DcTbl dcTbl : allDcsTblList) {
+                        chain.add(new AbstractCommand<Object>() {
+                            @Override
+                            public String getName() {
+                                return "FindAllByDcIdAndInClusterTypes";
+                            }
+
+                            @Override
+                            protected void doExecute() throws Throwable {
+                                List<DcClusterShardTbl> res = dcClusterShardService.findAllByDcIdAndInClusterTypes(dcTbl.getId(), typeSet);
+                                synchronized (allDcClusterShards) {
+                                    allDcClusterShards.addAll(res);
+                                }
+                                future().setSuccess();
+                            }
+
+                            @Override
+                            protected void doReset() {
+
+                            }
+                        });
+                    }
                 }
+
+                chain.execute().get();
 
                 for (DcClusterShardTbl dcClusterShardTbl : allDcClusterShards) {
                     if (dcClusterShardTbl.getDcClusterInfo() == null) {
