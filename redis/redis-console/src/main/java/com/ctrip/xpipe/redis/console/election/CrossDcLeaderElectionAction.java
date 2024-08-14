@@ -80,7 +80,9 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     @Override
     protected boolean shouldElect() {
-        try {
+        return false;
+        // 不需要  CrossDcLeader 选主
+        /*try {
             refreshConfig();
         } catch (Exception e) {
             logger.info("[shouldElect] get master dc lease fail {}", e.getMessage());
@@ -95,7 +97,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             }
         }
 
-        return isLeaseExpired();
+        return isLeaseExpired();*/
     }
 
     @Override
