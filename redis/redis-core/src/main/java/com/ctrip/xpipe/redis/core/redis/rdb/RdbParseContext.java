@@ -91,6 +91,7 @@ public interface RdbParseContext {
         HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST, false, RdbHashZipListParser::new),
         LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST, false, RdbQuickListParser::new),
         STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS, false, RdbStreamListpacksParser::new),
+        BITMAP(RdbConstant.REDIS_RDB_TYPE_BITMAP, false, RdbBitmapParser::new),
         CRDT(RdbConstant.REDIS_RDB_TYPE_CRDT, false, DefaultRdbCrdtParser::new),
         //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
         IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),

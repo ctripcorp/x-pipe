@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
 
+    public static final String AUX_GTID_KEY = "gtid";
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -74,6 +75,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
+
+    private int dbNumber = 0;
 
     public DefaultCommandDispatcher() {
         this.rdbParser = createRdbParser();
@@ -317,8 +320,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
             try {
-                int db = toInt(redisOp.buildRawOpArgs()[1]);
-                client.selectDB(db);
+                dbNumber = toInt(redisOp.buildRawOpArgs()[1]);
             } catch (Throwable unlikely) {
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
                 logger.error("[onRedisOp] unlikely - fail to select db]", unlikely);
@@ -344,9 +346,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
             addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads), commandOffsetToAccumulate);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber), commandOffsetToAccumulate);
         }
     }
 
@@ -372,7 +374,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAux(String key, String value) {
-        if (key.equalsIgnoreCase("gtid")) {
+        if (key.equalsIgnoreCase(AUX_GTID_KEY)) {
             rdbGtidSet = GtidSet.PLACE_HOLDER.equals(value) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(value);
             this.gtid_received = rdbGtidSet.clone();
             this.gtid_executed.set(rdbGtidSet.clone());
@@ -381,7 +383,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 return;
             }
             //ctrip.merge_start
-            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
+            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), dbNumber);
         }
     }
 
