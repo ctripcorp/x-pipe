@@ -109,8 +109,8 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     
     @Override
     public void recordAlert(String eventOperator, AlertMessageEntity message, EmailResponse response) {
-        EventModel model = createEventModel(eventOperator, message, response);
-        alertEventService.insert(model);
+        // EventModel model = createEventModel(eventOperator, message, response);
+        // alertEventService.insert(model);
     }
 
     private Set<String> findConfigWhiteList(String key) {

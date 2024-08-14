@@ -1221,7 +1221,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
+				throw new RuntimeException("[metacache] checkExchangeCluster");
+				//return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 			}
 		});
 
