@@ -37,7 +37,8 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
         return queryHandler.handleQuery(new DalQuery<OrganizationTbl>() {
             @Override
             public OrganizationTbl doQuery() throws DalException {
-                return organizationTblDao.findByPK(id, OrganizationTblEntity.READSET_FULL);
+                throw new RuntimeException("[metacache] findByPK");
+                //return organizationTblDao.findByPK(id, OrganizationTblEntity.READSET_FULL);
             }
         });
     }
