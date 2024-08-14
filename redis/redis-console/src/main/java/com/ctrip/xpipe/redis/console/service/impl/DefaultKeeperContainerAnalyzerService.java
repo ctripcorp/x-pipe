@@ -92,7 +92,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
                                                                   Map<String, Long> peerDataStandardMap,
                                                                  KeeperContainerOverloadStandardModel defaultOverloadStandard,
                                                                  KeeperContainerUsedInfoModel infoModel){
-        KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
+        KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();//keeperContainerService.find(infoModel.getKeeperIp());
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
         infoModel.setExpectFullSyncTime(getExpectFullSyncTime(keepercontainerTbl.getKeepercontainerDiskType(), infoModel.getActiveRedisUsedMemory()));

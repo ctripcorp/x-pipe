@@ -93,7 +93,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         try {
             //become dc leader
             start();
-            triggerElection(configService.getCrossDcLeader());
+            // triggerElection(configService.getCrossDcLeader()); NOT NEED
         } catch (Exception e) {
             logger.error("[isCrossDcLeader]", e);
         }
