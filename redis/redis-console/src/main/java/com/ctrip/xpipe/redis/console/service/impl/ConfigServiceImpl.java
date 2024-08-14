@@ -268,12 +268,13 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     private List<ConfigModel> getActiveConfig(String key, String val) {
+        List<ConfigModel> models = new ArrayList<>();
+        /*
         List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, val, new Date());
         if (configTbls.isEmpty()) return Collections.emptyList();
-        List<ConfigModel> models = new ArrayList<>();
 
         configTbls.forEach(configTbl -> models.add(new ConfigModel(configTbl)));
-
+       */
         return models;
     }
 
