@@ -51,6 +51,7 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
 
     @Override
     public void updateRedisRole(RedisHealthCheckInstance instance, Server.SERVER_ROLE role) {
+        /*
         if (!Server.SERVER_ROLE.MASTER.equals(role) && !Server.SERVER_ROLE.SLAVE.equals(role)) {
             // only handle role as master or slave
             return;
@@ -82,7 +83,7 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
                 redisDao.updateBatchMaster(Lists.newArrayList(redis));
                 break;
             }
-        }
+        }*/
     }
     
     @VisibleForTesting
@@ -114,13 +115,14 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
 
     private Set<String> findConfigWhiteList(String key) {
         Set<String> whiteList = new HashSet<>();
+        /*
         List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, String.valueOf(true), new Date());
         if (null == configTbls) {
             logger.debug("[findConfigWhiteList][{}] no such config", key);
             return whiteList;
         }
 
-        configTbls.forEach(configTbl -> whiteList.add(configTbl.getSubKey()));
+        configTbls.forEach(configTbl -> whiteList.add(configTbl.getSubKey()));*/
         return whiteList;
     }
     
@@ -136,13 +138,18 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
 
     @Override
     Set<String> doGetMigratingClusterList() {
+        return new HashSet<>();
+        /*
         return clusterDao.findMigratingClusterNames()
                 .stream().map(ClusterTbl::getClusterName)
                 .collect(Collectors.toSet());
+               /
+         */
     }
 
     private boolean isConfigOnOrExpired(String key, boolean defaultVal) {
-        try {
+        return true;
+        /* try {
             ConfigTbl config = configDao.getByKey(key);
             boolean value = Boolean.parseBoolean(config.getValue());
             Date expireDate = config.getUntil();
@@ -151,7 +158,7 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
         } catch (Throwable th) {
             logger.info("[isSentinelAutoProcess] fail", th);
             return defaultVal;
-        }
+        }*/
     }
 
     private boolean isConfigOnOrExpired(String key) {
@@ -176,11 +183,12 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     @Override
     Map<String, Date> doLoadAllClusterCreateTime() {
         Map<String, Date> clusterCreateTimes = new HashMap<>();
+        /*
         List<ClusterTbl> clusterTbls = clusterDao.findAllClustersWithCreateTime();
         for(ClusterTbl clusterTbl : clusterTbls) {
             clusterCreateTimes.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
         }
-
+        */
         return clusterCreateTimes;
     }
     
