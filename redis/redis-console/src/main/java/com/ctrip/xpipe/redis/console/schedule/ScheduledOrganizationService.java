@@ -44,6 +44,6 @@ public class ScheduledOrganizationService implements CrossDcLeaderAware {
             return;
         }
         logger.info("[updateOrganizations] update organization table @ {}", DateTimeUtils.currentTimeAsString());
-        organizationService.updateOrganizations();
+        // organizationService.updateOrganizations();
     }
 }
