@@ -57,8 +57,9 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
 
     @Override
     public List<OrganizationTbl> getAllOrganizations() {
-        return organizationDao.findAllOrgs()
-            .stream().filter(org->org.getOrgId() != 0).collect(Collectors.toList());
+        throw new RuntimeException("[metacache]findByKeyAndSubKey]");
+        /*return organizationDao.findAllOrgs()
+            .stream().filter(org->org.getOrgId() != 0).collect(Collectors.toList());*/
     }
 
     @Override
