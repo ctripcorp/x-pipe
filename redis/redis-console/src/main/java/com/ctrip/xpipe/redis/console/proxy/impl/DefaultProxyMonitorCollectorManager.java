@@ -108,12 +108,12 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
 
     protected void update() {
-        List<ProxyModel> proxies = proxyService.getMonitorActiveProxiesByDc(currentDc);
+        /*List<ProxyModel> proxies = proxyService.getMonitorActiveProxiesByDc(currentDc);
 
         if (proxies == null || proxies.isEmpty()) return;
         addActiveProxies(proxies);
         removeUnusedProxies(proxies);
-
+*/
     }
 
     private void addActiveProxies(List<ProxyModel> proxies) {
