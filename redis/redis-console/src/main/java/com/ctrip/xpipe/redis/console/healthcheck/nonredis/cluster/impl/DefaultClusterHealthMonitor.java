@@ -96,7 +96,7 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
     private void checkIfStateChange() {
         int warningShardNums = warningShards.size();
-        int totalShards = shardService.findAllShardNamesByClusterName(getClusterId()).size();
+        int totalShards = 0;// shardService.findAllShardNamesByClusterName(getClusterId()).size();
         ClusterHealthState current = ClusterHealthState.getState(totalShards, warningShardNums);
         ClusterHealthState prev = state.get();
         if(!prev.equals(current) && state.compareAndSet(prev, current)) {
