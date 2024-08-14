@@ -61,7 +61,7 @@ public class DefaultOuterClientCache extends AbstractLifecycle implements OuterC
 
     private Map<String, OuterClientService.ClusterInfo> loadActiveDcClusters(String activeDc) {
         Map<String, OuterClientService.ClusterInfo> clusters = new HashMap<>();
-        try {
+       /* try {
             List<OuterClientService.ClusterInfo> clusterInfos = outerClientService.getActiveDcClusters(activeDc);
             for (OuterClientService.ClusterInfo cluster: clusterInfos) {
                 clusters.put(cluster.getName().toLowerCase(), cluster);
@@ -71,7 +71,7 @@ public class DefaultOuterClientCache extends AbstractLifecycle implements OuterC
         } catch (Throwable th) {
             logger.warn("[refresh] fail", th);
         }
-
+*/
         return clusters;
     }
 
