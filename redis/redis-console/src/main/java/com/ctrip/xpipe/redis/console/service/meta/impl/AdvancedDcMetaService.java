@@ -149,11 +149,11 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
+       /* DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
             dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
             azGroupCache, replDirectionService, zoneService, keeperContainerService, applierService, factory,
             consoleConfig);
-        chain.add(retry3TimesUntilSuccess(builder));
+        chain.add(retry3TimesUntilSuccess(builder));*/
 
         try {
             chain.execute().get();
@@ -184,11 +184,11 @@ public class AdvancedDcMetaService implements DcMetaService {
             chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
         }
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors,
+      /*  DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors,
             redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
             azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
             applierService, factory, consoleConfig);
-        chain.add(retry3TimesUntilSuccess(builder));
+        chain.add(retry3TimesUntilSuccess(builder));*/
 
         try {
             chain.execute().get();
