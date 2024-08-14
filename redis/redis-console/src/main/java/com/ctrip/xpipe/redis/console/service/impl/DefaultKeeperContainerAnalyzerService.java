@@ -128,8 +128,8 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         if (StringUtil.isEmpty(diskType)) {
             ioRate = consoleConfig.getKeeperContainerIoRate();
         } else {
-            ConfigModel config = configService.getConfig(KEY_KEEPER_CONTAINER_IO_RATE, diskType.split(KeeperContainerDiskType.DEFAULT.interval)[0]);
-            ioRate = Double.parseDouble(config.getVal());
+            // ConfigModel config = configService.getConfig(KEY_KEEPER_CONTAINER_IO_RATE, diskType.split(KeeperContainerDiskType.DEFAULT.interval)[0]);
+            ioRate = 0.0; //Double.parseDouble(config.getVal()); configdao
         }
         double result = (double) activeRedisUsedMemory /1024/1024/ioRate/60;
         return Double.parseDouble(String.format("%.2f", result));
