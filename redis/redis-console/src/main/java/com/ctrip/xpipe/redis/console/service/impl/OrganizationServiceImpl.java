@@ -14,10 +14,7 @@ import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
@@ -57,7 +54,7 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
 
     @Override
     public List<OrganizationTbl> getAllOrganizations() {
-        throw new RuntimeException("[metacache]findByKeyAndSubKey]");
+        return new ArrayList<>();
         /*return organizationDao.findAllOrgs()
             .stream().filter(org->org.getOrgId() != 0).collect(Collectors.toList());*/
     }
