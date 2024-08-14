@@ -125,22 +125,24 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public List<ShardTbl> findAllByClusterName(final String clusterName) {
-		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+		throw new RuntimeException("[metacache] not support findAllByClusterName");
+		/*return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return dao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
 			}
-    	});
+    	});*/
 	}
 
 	@Override
 	public List<ShardTbl> findAllShardNamesByClusterName(final String clusterName) {
-		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+		throw new RuntimeException("[metacache] not support findAllByClusterName");
+		/*return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return dao.findAllByClusterName(clusterName, ShardTblEntity.READSET_NAME);
 			}
-    	});
+    	});*/
 	}
 
 	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl,

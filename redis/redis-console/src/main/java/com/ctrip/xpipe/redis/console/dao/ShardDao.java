@@ -58,12 +58,14 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 
 	public List<ShardTbl> queryAllShardsByClusterName(String clusterName) {
+		throw new RuntimeException("[metacache]queryAllShardsByClusterName]");
+		/*
         return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
             @Override
             public List<ShardTbl> doQuery() throws DalException {
                 return shardTblDao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
             }
-        });
+        });*/
     }
 
     public Set<String> queryAllShardMonitorNames() {
@@ -139,6 +141,8 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 	
 	public void validateShard(final String clusterName, ShardTbl shard) {
+		throw new RuntimeException("[metacache]queryAllShardsByClusterName]");
+		/*
 		// validate monitor name
 		if (!shard.getShardName().equals(shard.getSetinelMonitorName())) {
 			throw new BadRequestException("Monitor name should be exact same with shard name");
@@ -160,7 +164,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 			if(shardTbl.getSetinelMonitorName().trim().equals(shard.getSetinelMonitorName().trim())) {
 				throw new BadRequestException("Duplicated sentinel monitor name under same cluster.");
 			}
-		}
+		}*/
 	}
 
 	public void insertShard(ShardTbl proto) {
