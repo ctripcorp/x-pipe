@@ -131,37 +131,7 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
-        List<DcTbl> dcTblList = dcService.findAllDcs();
-        DcTbl dcTbl = dcTblList.stream().filter(dc -> dc.getDcName().equalsIgnoreCase(dcName)).findFirst().orElse(null);
-        if (dcTbl == null) {
-            return new DcMeta();
-        }
-        ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
-
-        DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
-        Map<String, DcMeta> dcMetaMap = new HashMap<>();
-        dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
-
-        ParallelCommandChain chain = new ParallelCommandChain(executors, false);
-        chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
-
-       /* DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
-            dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
-            azGroupCache, replDirectionService, zoneService, keeperContainerService, applierService, factory,
-            consoleConfig);
-        chain.add(retry3TimesUntilSuccess(builder));*/
-
-        try {
-            chain.execute().get();
-        } catch (Throwable th) {
-            EventMonitor.DEFAULT.logAlertEvent("getDcMeta throw exception");
-            throw th;
-        }
-
+        DcMeta dcMeta = new DcMeta();
         return dcMeta;
     }
 
