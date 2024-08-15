@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
 
     @PostConstruct
     public void init() {
-        dcIdNameMap = dcService.dcNameMap();
+        dcIdNameMap = new HashMap<>();//dcService.dcNameMap();
         orgIdNameMap = organizationService.getAllOrganizations().stream().collect(Collectors.toMap(OrganizationTbl::getId, OrganizationTbl::getOrgName));
     }
 
