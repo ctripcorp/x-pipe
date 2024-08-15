@@ -393,15 +393,15 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public List<ConfigModel> getConfigs(String key) {
-        try {
-            List<ConfigTbl> configTbl = configDao.getAllByKey(key);
+       // try {
+            List<ConfigTbl> configTbl = new ArrayList<>();//configDao.getAllByKey(key);
             List<ConfigModel> configModels = new ArrayList<>();
             configTbl.forEach(config -> configModels.add(new ConfigModel(config)));
             return configModels;
-        } catch (DalException e) {
-            logger.error("[getConfig]", e);
-            return null;
-        }
+       // } catch (DalException e) {
+       //     logger.error("[getConfig]", e);
+        //    return null;
+       // }
     }
 
     private ConfigModel getOrCreate(String key, String defaultValue) {

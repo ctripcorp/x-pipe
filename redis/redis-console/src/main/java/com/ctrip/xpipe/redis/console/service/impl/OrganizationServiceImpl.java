@@ -61,7 +61,8 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
 
     @Override
     public OrganizationTbl getOrganizationTblByCMSOrganiztionId(long organizationId) {
-        return organizationDao.findByOrgId(organizationId);
+        return new OrganizationTbl();
+        // return organizationDao.findByOrgId(organizationId);
     }
 
     @Override
