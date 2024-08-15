@@ -146,7 +146,7 @@
                     <span class="md-headline">Checker Groups</span>
                 </md-card-title-text>
                 <md-card-actions layout="row" layout-align="end center">
-                    <md-button class="md-raised" ng-click="doShowActions()">Show Actions</md-button>
+                    <md-button class="md-raised" ng-click="doShowActions()">Show Actions(err)</md-button>
                     <md-button class="md-raised" ng-click="shardCheckerGroupHealthCheck()">刷新</md-button>
                 </md-card-actions>
             </md-card-title>
@@ -156,7 +156,8 @@
                         <md-card-title class="custom-card">
                             <md-card-title-text class="centered-text">
                                 <div  style="white-space: nowrap;">
-                                    <span>{{checker.host}}:{{checker.port}}</span>
+                                    <span>{{checker.idc}}</span>
+                                    <span style="margin-left: 20px;">{{checker.host}}:{{checker.port}}</span>
                                     <span style="margin-left: 20px;">{{checker.checkerRole}}</span>
                                 </div>
                             </md-card-title-text>
