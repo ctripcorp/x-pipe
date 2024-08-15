@@ -96,7 +96,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
         infoModel.setExpectFullSyncTime(getExpectFullSyncTime(keepercontainerTbl.getKeepercontainerDiskType(), infoModel.getActiveRedisUsedMemory()));
-        AzTbl availableZoneTblById = azService.getAvailableZoneTblById(keepercontainerTbl.getAzId());
+        AzTbl availableZoneTblById = new AzTbl(); // azService.getAvailableZoneTblById(keepercontainerTbl.getAzId());
         if (availableZoneTblById != null) {
             infoModel.setAz(availableZoneTblById.getAzName());
         }

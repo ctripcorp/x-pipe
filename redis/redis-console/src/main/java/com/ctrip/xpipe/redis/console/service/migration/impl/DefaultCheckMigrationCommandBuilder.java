@@ -21,6 +21,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,7 +183,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
 
         @Override
         protected List<String> getResponse() throws Exception {
-            List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+            List<DcTbl> dcTbls = new ArrayList<>(); //dcService.findClusterRelatedDc(clusterName);
             for(DcTbl dcTbl : dcTbls) {
                 if(metaServerAddresses.containsKey(dcTbl.getDcName())) {
                     targetMetaServers.add(metaServerAddresses.get(dcTbl.getDcName()));
