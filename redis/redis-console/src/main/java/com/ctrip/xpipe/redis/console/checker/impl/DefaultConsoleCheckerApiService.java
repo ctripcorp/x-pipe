@@ -15,8 +15,18 @@ public class DefaultConsoleCheckerApiService extends AbstractService implements 
     }
 
     @Override
+    public String getCrossRegionHealthCheckInstance(HostPort checker, String ip, int port) {
+        return restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_CHECK_INSTANCE), String.class, ip, port);
+    }
+
+    @Override
     public HEALTH_STATE getHealthStates(HostPort checker, String ip, int port) {
         return restTemplate.getForObject(getPath(checker, PATH_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
+    }
+
+    @Override
+    public HEALTH_STATE getCrossRegionHealthStates(HostPort checker, String ip, int port) {
+        return restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
     }
 
     private String getPath(HostPort key, String path) {

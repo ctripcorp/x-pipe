@@ -207,8 +207,13 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @GetMapping(value = ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS)
-    public Map<String, OuterClientService.ClusterInfo> loadAllOuterClientClusters(@RequestParam String activeDc) {
-        return outerClientCache.getAllActiveDcClusters(activeDc);
+    public Map<String, OuterClientService.ClusterInfo> loadAllOuterClientClusters(@RequestParam String dc) {
+        return outerClientCache.getAllDcClusters(dc);
+    }
+
+    @GetMapping(value = ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ONE_WAY_CLUSTERS)
+    public Map<String, OuterClientService.ClusterInfo> loadCurrentDcOuterClientClusters(@RequestParam String dc) {
+        return outerClientCache.getAllCurrentDcClusters(dc);
     }
 
 
