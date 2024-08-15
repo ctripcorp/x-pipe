@@ -37,7 +37,7 @@ public class MybatisDataSourceConfig {
         // 强制查询使Xpipe DataSource初始化
         ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
         configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
-        // 这里要去除
+        // 这里要去除 但是不查询的话 Xpipe DataSource 不会初始化 无法启动
         XPipeDataSource dataSource = tryGetXpipeDataSource();
         if (dataSource == null) {
             logger.info("[mybatisSqlSessionFactoryBean] no xpipe datasource found");
