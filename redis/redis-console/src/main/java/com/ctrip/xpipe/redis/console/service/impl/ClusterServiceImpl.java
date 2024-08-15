@@ -151,7 +151,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
-		return clusterDao.findClusterByClusterName(clusterName);
+		throw new RuntimeException("[metacache] findClusterByClusterName");
+		//return clusterDao.findClusterByClusterName(clusterName);
 	}
 
 	@Override
@@ -166,7 +167,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public List<ClusterTbl> findAllByNames(List<String> clusterNames) {
-		return clusterDao.findClustersWithName(clusterNames);
+		throw new RuntimeException("[metacache] findClusterByClusterName");
+		//return clusterDao.findClustersWithName(clusterNames);
 	}
 
 	@Override
@@ -575,7 +577,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private ClusterTbl createCluster(ClusterCreateDTO clusterCreateDTO) {
-		String clusterName = clusterCreateDTO.getClusterName().trim();
+		throw new RuntimeException("[metacache] findClusterByClusterName");
+		/*String clusterName = clusterCreateDTO.getClusterName().trim();
 		ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
 		if (clusterTbl != null) {
 			throw new BadRequestException(String.format("cluster - %s exist", clusterName));
@@ -616,7 +619,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setClusterDesignatedRouteIds("");
 		clusterTbl.setTag(CLUSTER_DEFAULT_TAG);
 
-		return clusterDao.createCluster(clusterTbl);
+		return clusterDao.createCluster(clusterTbl);*/
 	}
 
 	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {

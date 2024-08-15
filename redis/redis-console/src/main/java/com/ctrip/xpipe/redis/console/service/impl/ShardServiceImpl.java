@@ -191,7 +191,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public void createRegionShard(String clusterName, String regionName, String shardName) {
-		ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+		throw new RuntimeException("[metacache] findClusterByClusterName");
+		/*ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
 		if (cluster == null) {
 			throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
 		}
@@ -245,7 +246,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 		if (!dcClusterShardList.isEmpty()) {
 			dcClusterShardService.insertBatch(dcClusterShardList);
-		}
+		}*/
 	}
 
 	@Override
