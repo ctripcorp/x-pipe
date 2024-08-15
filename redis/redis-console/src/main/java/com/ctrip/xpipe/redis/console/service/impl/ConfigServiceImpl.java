@@ -445,7 +445,8 @@ public class ConfigServiceImpl implements ConfigService {
 
     private boolean getAndResetExpectIfExpired(String key, boolean defaultVal) {
         try {
-            ConfigTbl config = configDao.getByKey(key);
+            ConfigTbl config = new ConfigTbl();
+                    //configDao.getByKey(key);
             boolean result = Boolean.parseBoolean(config.getValue());
             if(result != defaultVal) {
                 Date expireDate = config.getUntil();
