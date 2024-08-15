@@ -383,7 +383,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 return;
             }
             //ctrip.merge_start
-            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), dbNumber);
+            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
         }
     }
 

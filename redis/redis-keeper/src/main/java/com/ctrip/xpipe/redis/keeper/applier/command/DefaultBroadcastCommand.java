@@ -30,7 +30,7 @@ public class DefaultBroadcastCommand extends AbstractCommand<Boolean> implements
         for (Object rc : resources) {
 
             client
-                    .write(rc, 0, rawArgs) // merge_start&merge_start&lwm do not distinguish dbNumber
+                    .write(rc, 0, rawArgs) // merge_start&merge_end&lwm do not distinguish dbNumber
                     .addListener(f -> {
                         try {
                             if (f.isSuccess()) {
