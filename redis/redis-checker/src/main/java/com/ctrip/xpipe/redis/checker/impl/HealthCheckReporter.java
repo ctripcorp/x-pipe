@@ -9,6 +9,9 @@ import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultPsubPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerRole;
@@ -21,8 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
@@ -30,7 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class HealthCheckReporter implements GroupCheckerLeaderAware {
 
-    private HealthStateService healthStateService;
+    private List<HealthStateService> healthStateServices;
 
     private RedisDelayManager redisDelayManager;
 
@@ -60,11 +67,11 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
-    public HealthCheckReporter(HealthStateService healthStateService, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
+    public HealthCheckReporter(List<HealthStateService> healthStateServices, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
                                ClusterServer clusterServer, ClusterServer allCheckerServer, RedisDelayManager redisDelayManager,
                                CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
                                ClusterHealthManager clusterHealthManager, int serverPort) {
-        this.healthStateService = healthStateService;
+        this.healthStateServices = healthStateServices;
         this.serverPort = serverPort;
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
@@ -142,13 +149,37 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
             result.encodeCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
             result.encodeRedisAlives(pingService.getAllRedisAlives());
             result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
-            result.encodeRedisStates(healthStateService.getAllCachedState());
+            result.encodeRedisStates(getAllRedisStates());
             result.setHeteroShardsDelay(redisDelayManager.getAllHeteroShardsDelays());
 
             checkerConsoleService.report(config.getConsoleAddress(), result);
         } catch (Throwable th) {
             logger.info("[reportCheckResult] fail", th);
         }
+    }
+
+    private Map<HostPort, HEALTH_STATE> getAllRedisStates() {
+        Map<HostPort, HEALTH_STATE> redisStates = new HashMap<>();
+        DefaultDelayPingActionCollector delayPingActionCollector = null;
+        DefaultPsubPingActionCollector psubPingActionCollector = null;
+        for (HealthStateService service : healthStateServices) {
+            if (service instanceof DefaultDelayPingActionCollector) {
+                delayPingActionCollector = (DefaultDelayPingActionCollector) service;
+            }
+            if (service instanceof DefaultPsubPingActionCollector) {
+                psubPingActionCollector = (DefaultPsubPingActionCollector) service;
+            }
+        }
+        if (delayPingActionCollector != null) {
+            redisStates.putAll(delayPingActionCollector.getAllCachedState());
+        }
+        if (psubPingActionCollector != null) {
+            Map<HostPort, HEALTH_STATE> allCachedState = psubPingActionCollector.getAllCachedState();
+            for (Map.Entry<HostPort, HEALTH_STATE> entry : allCachedState.entrySet()) {
+                redisStates.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return redisStates;
     }
 
 }
