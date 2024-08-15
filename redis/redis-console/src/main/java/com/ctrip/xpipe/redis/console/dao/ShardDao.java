@@ -178,13 +178,13 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 
 	@DalTransaction
 	public ShardTbl insertShard(String clusterName, ShardTbl shard) throws DalException{
-
-		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
+		throw new RuntimeException("[metacache] insertShard");
+		/*final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 		shard.setClusterId(cluster.getId());
 		shard.setShardName(shard.getShardName().trim());
 		shard.setSetinelMonitorName(shard.getSetinelMonitorName().trim());
 		insertShard(shard);
 
-		return shard;
+		return shard;*/
 	}
 }

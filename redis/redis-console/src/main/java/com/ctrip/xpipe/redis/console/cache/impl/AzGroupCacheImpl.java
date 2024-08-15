@@ -51,7 +51,7 @@ public class AzGroupCacheImpl implements AzGroupCache {
     }
 
     private void loadAzGroupCache() {
-        List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
+       /* List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
         Map<Long, List<Long>> azGroupAzsMap = azGroupMappingRepository.getAzGroupAzsMap();
         Map<Long, String> azIdNameMap = dcRepository.getDcIdNameMap();
 
@@ -64,7 +64,7 @@ public class AzGroupCacheImpl implements AzGroupCache {
             azGroupModels.add(azGroupModel);
         }
         this.azGroupModels = azGroupModels;
-        this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
+        this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));*/
     }
 
     @Override

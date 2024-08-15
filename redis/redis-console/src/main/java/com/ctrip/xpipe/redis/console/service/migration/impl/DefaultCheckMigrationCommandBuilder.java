@@ -131,7 +131,8 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
 
         @Override
         protected ClusterTbl getResponse() {
-            return clusterService.find(clusterName);
+            return new ClusterTbl();
+            //return clusterService.find(clusterName);
         }
 
         @Override
