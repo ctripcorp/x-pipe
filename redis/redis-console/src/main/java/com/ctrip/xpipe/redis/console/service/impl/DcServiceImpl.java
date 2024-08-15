@@ -88,12 +88,13 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 
 	@Override
 	public List<DcTbl> findClusterRelatedDc(final String clusterName) {
-		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
+		throw new RuntimeException("[metacache] findClusterRelatedDc");
+		/*return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
 			public List<DcTbl> doQuery() throws DalException {
 				return dao.findClusterRelatedDc(clusterName, DcTblEntity.READSET_FULL);
 			}
-    	});
+    	});*/
 	}
 
 	@Override
