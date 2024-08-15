@@ -10,6 +10,9 @@ import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
@@ -124,7 +127,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
-        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService);
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
 
         instance.setEndpoint(endpoint)
                 .setSession(redisSessionManager.findOrCreateSession(endpoint))
@@ -228,7 +231,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redis);
-        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService);
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redis);
 
         instance.setEndpoint(endpoint)
@@ -242,9 +245,35 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         return instance;
     }
 
+    @Override
+    public RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis) {
+        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+
+        RedisInstanceInfo info = createRedisInstanceInfo(redis);
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
+        Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redis);
+
+        instance.setEndpoint(endpoint)
+                .setSession(redisSessionManager.findOrCreateSession(endpoint))
+                .setInstanceInfo(info)
+                .setHealthCheckConfig(config);
+
+        initActionsForRedisForPsubPingAction(instance);
+        startCheck(instance);
+
+        return instance;
+    }
+
     private void initActionsForRedisForAssignedAction(DefaultRedisHealthCheckInstance instance) {
         for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
             if (factory instanceof KeeperSupport)
+                initActions(instance, factory);
+        }
+    }
+
+    private void initActionsForRedisForPsubPingAction(DefaultRedisHealthCheckInstance instance) {
+        for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+            if (factory instanceof PingActionFactory || factory instanceof PsubActionFactory)
                 initActions(instance, factory);
         }
     }

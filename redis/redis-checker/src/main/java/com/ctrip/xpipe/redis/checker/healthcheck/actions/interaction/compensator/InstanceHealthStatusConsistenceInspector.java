@@ -49,17 +49,17 @@ import java.util.concurrent.TimeoutException;
 @Service
 public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle implements TopElement {
 
-    private InstanceHealthStatusCollector collector;
+    protected InstanceHealthStatusCollector collector;
 
-    private InstanceStatusAdjuster adjuster;
+    protected InstanceStatusAdjuster adjuster;
 
-    private StabilityHolder siteStability;
+    protected StabilityHolder siteStability;
 
-    private CheckerConfig config;
+    protected CheckerConfig config;
 
-    private MetaCache metaCache;
+    protected MetaCache metaCache;
 
-    private GroupCheckerLeaderElector leaderElector;
+    protected GroupCheckerLeaderElector leaderElector;
 
     private DynamicDelayPeriodTask task;
 
@@ -124,11 +124,11 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
                 checkTimeout(timeoutMill, "after compare");
                 if (!instanceNeedAdjust.getHealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), true, timeoutMill);
+                    adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), false, true, timeoutMill);
 
                 checkTimeout(timeoutMill, "after adjust up");
                 if (!instanceNeedAdjust.getUnhealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, timeoutMill);
+                    adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, false, timeoutMill);
             }
 
             @Override
@@ -138,7 +138,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         });
     }
 
-    private void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
+    protected void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
         if (System.currentTimeMillis() > timeoutAtMilli) {
             logger.info("[timeout] {}", msg);
             throw new TimeoutException(msg);
@@ -157,6 +157,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
                 if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
+                if (metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;;
                 if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
 
                 Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
@@ -181,7 +182,8 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         needMarkUpInstances.retainAll(outClientInstances.getUnhealthyInstances());
         needMarkDownInstances.retainAll(outClientInstances.getHealthyInstances());
         needMarkDownInstances = filterMasterHealthyInstances(xpipeInstanceHealthHolder, needMarkDownInstances, quorum);
-        needMarkDownInstances = filterMarkDowUnsupportedInstances(needMarkDownInstances);
+        logger.info("[InstanceHealthStatusConsistenceInspector] needMarkUpInstances:{}", needMarkUpInstances);
+        logger.info("[InstanceHealthStatusConsistenceInspector] needMarkDownInstances:{}", needMarkDownInstances);
         return new UpDownInstances(needMarkUpInstances, needMarkDownInstances);
     }
 
@@ -211,33 +213,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
         return masterHealthyInstances;
     }
-
-    protected Set<HostPort> filterMarkDowUnsupportedInstances(Set<HostPort> instances) {
-        Set<HostPort> wontMarkdownInstances = new HashSet<>();
-        for (HostPort instance : instances) {
-            HEALTH_STATE healthState = defaultDelayPingActionCollector.getState(instance);
-            if (healthState.equals(HEALTH_STATE.SICK)) {
-                if (!shouldMarkdownDcClusterSickInstances(healthCheckInstanceManager.findRedisHealthCheckInstance(instance)))
-                    wontMarkdownInstances.add(instance);
-            }
-        }
-        instances.removeAll(wontMarkdownInstances);
-        return instances;
-    }
-
-    boolean shouldMarkdownDcClusterSickInstances(RedisHealthCheckInstance healthCheckInstance) {
-        RedisInstanceInfo info = healthCheckInstance.getCheckInfo();
-        if (info.isCrossRegion()) {
-            logger.info("[markdown][{} is cross region, do not call client service ]", info.getHostPort());
-            return false;
-        }
-        if (healthCheckInstance.getHealthCheckConfig().getDelayConfig(info.getClusterId(), currentDc, info.getDcId()).getClusterLevelHealthyDelayMilli() < 0) {
-            logger.info("[markdown][cluster {} dcs {}->{} distance is -1, do not call client service ]", info.getClusterId(), currentDc, info.getDcId());
-            return false;
-        }
-        return true;
-    }
-
 
     @Override
     protected void doInitialize() throws Exception {

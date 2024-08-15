@@ -74,7 +74,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         when(checkerConfig.getConsoleAddress()).thenReturn("127.0.0.1");
         when(checkerConsoleService.getXpipeDcAllMeta(Mockito.anyString(), Mockito.anyString())).thenReturn(getXpipeMeta());
         
-        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, checkerConsoleService, checkerConfig);
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, checkerConsoleService, checkerConfig, metaCache);
     }
 
     private void prepareData(String dc) {
@@ -263,7 +263,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemovedClusterActiveDc(){
-        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig));
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig, metaCache));
         manager.compare(getDcMeta("jq"), null);
 
         DcMeta dcMeta = MetaCloneFacade.INSTANCE.clone(getDcMeta("jq"));
@@ -359,7 +359,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testHeteroClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig);
+        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig, metaCache);
         DcMeta dcMeta= getDcMeta("jq");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
         cluster1.setBackupDcs("ali");
@@ -384,7 +384,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testBackupDcClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig);
+        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, checkerConsoleService, checkerConfig, metaCache);
         DcMeta dcMeta= getDcMeta("jq");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
         cluster1.setBackupDcs("jq,ali");
@@ -491,7 +491,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Test
     public void testKeeperChange() throws Exception {
         String dcId = FoundationService.DEFAULT.getDataCenter();
-        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig);
+        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig, metaCache);
         prepareData(dcId);
         DcMeta future = cloneDcMeta(dcId);
         future.addKeeperContainer(new KeeperContainerMeta().setId(4L).setIp("1.1.1.4").setPort(8080));
@@ -512,7 +512,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Test
     public void testRedisChange() throws Exception {
         String dcId = FoundationService.DEFAULT.getDataCenter();
-        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig);
+        manager = new DefaultDcMetaChangeManager(dcId, instanceManager, factory, checkerConsoleService, checkerConfig, metaCache);
         prepareData(dcId);
         DcMeta future = cloneDcMeta(dcId);
         future.addKeeperContainer(new KeeperContainerMeta().setId(4L).setIp("1.1.1.4").setPort(8080));
