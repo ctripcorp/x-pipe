@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -27,6 +29,8 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
 
     private ConfigTblDao configTblDao;
 
+    private static final Logger logger = LoggerFactory.getLogger(ConfigDao.class);
+
     @PostConstruct
     private void postConstruct() {
         try {
@@ -40,7 +44,16 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return getKey(key, "");
     }
 
+    public static void printStackTrace() {
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTraceElements) {
+            logger.info(element.toString());
+        }
+    }
+
     public String getKey(String key, String subId) throws DalException {
+         logger.info("[metacache] getByKeyAndSubId");
+         printStackTrace();
          ConfigTbl byKey = configTblDao.findByKeyAndSubKey(key, null == subId ? "" : subId, ConfigTblEntity.READSET_VALUE);
          return byKey.getValue();
     }
@@ -103,6 +116,8 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public ConfigTbl getByKeyAndSubId(String key, String subId) throws DalException {
+         logger.info("[metacache] getByKeyAndSubId");
+         printStackTrace();
          return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
     }
 
