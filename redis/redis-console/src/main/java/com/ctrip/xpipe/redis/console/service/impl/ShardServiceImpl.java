@@ -125,24 +125,22 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public List<ShardTbl> findAllByClusterName(final String clusterName) {
-		throw new RuntimeException("[metacache] not support findAllByClusterName");
-		/*return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return dao.findAllByClusterName(clusterName, ShardTblEntity.READSET_FULL);
 			}
-    	});*/
+    	});
 	}
 
 	@Override
 	public List<ShardTbl> findAllShardNamesByClusterName(final String clusterName) {
-		throw new RuntimeException("[metacache] not support findAllByClusterName");
-		/*return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
 				return dao.findAllByClusterName(clusterName, ShardTblEntity.READSET_NAME);
 			}
-    	});*/
+    	});
 	}
 
 	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl,
@@ -191,8 +189,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public void createRegionShard(String clusterName, String regionName, String shardName) {
-		throw new RuntimeException("[metacache] findClusterByClusterName");
-		/*ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
+		ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
 		if (cluster == null) {
 			throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
 		}
@@ -246,7 +243,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 		if (!dcClusterShardList.isEmpty()) {
 			dcClusterShardService.insertBatch(dcClusterShardList);
-		}*/
+		}
 	}
 
 	@Override

@@ -112,7 +112,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             protected void doRun() throws Exception {
                 if(!taskTrigger.get())
                     return;
-                // loadCache();
+               // loadCache();
             }
 
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);

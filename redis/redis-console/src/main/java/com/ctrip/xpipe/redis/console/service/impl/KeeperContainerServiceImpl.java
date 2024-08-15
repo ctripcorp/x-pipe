@@ -69,8 +69,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
       @Override
       public KeepercontainerTbl doQuery() throws DalException {
-        throw new RuntimeException("[metacache] KeepercontainerTbl");
-        // return dao.findByIp(ip, KeepercontainerTblEntity.READSET_FULL);
+         return dao.findByIp(ip, KeepercontainerTblEntity.READSET_FULL);
       }
     });
   }

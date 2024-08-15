@@ -173,8 +173,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public AzTbl getAvailableZoneTblById(Long azId) {
-        throw new RuntimeException("[metacache] getAvailableZoneTblById");
-        // return azDao.findAvailableZoneById(azId);
+         return azDao.findAvailableZoneById(azId);
     }
 
     @VisibleForTesting

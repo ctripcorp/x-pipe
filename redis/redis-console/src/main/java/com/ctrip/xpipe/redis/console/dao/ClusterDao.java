@@ -54,9 +54,8 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	public ClusterTbl createCluster(final ClusterTbl cluster) {
-		throw new RuntimeException("[metacache] createCluster");
 		// check for unique cluster name
-	/*	ClusterTbl clusterWithSameName = queryHandler.handleQuery(
+		ClusterTbl clusterWithSameName = queryHandler.handleQuery(
 			() -> clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL));
 		if (null != clusterWithSameName) {
 			throw new BadRequestException("Duplicated cluster name");
@@ -69,7 +68,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		queryHandler.handleInsert(() -> clusterTblDao.insert(cluster));
 
 		return queryHandler.handleQuery(
-			() -> clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL));*/
+			() -> clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL));
 //	    if (!ClusterType.lookup(newCluster.getClusterType()).supportMultiActiveDC()) {
 //			// related dc-cluster
 //			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
@@ -205,14 +204,13 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	public ClusterTbl findClusterByClusterName(String clusterName) {
-		throw new RuntimeException("[metacache] findClusterByClusterName");
-		/*return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 			}
 
-		});*/
+		});
 	}
 
 	public List<ClusterTbl> findAllClusters() {

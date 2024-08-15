@@ -151,8 +151,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
-		throw new RuntimeException("[metacache] findClusterByClusterName");
-		//return clusterDao.findClusterByClusterName(clusterName);
+		return clusterDao.findClusterByClusterName(clusterName);
 	}
 
 	@Override
@@ -167,8 +166,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public List<ClusterTbl> findAllByNames(List<String> clusterNames) {
-		throw new RuntimeException("[metacache] findClusterByClusterName");
-		//return clusterDao.findClustersWithName(clusterNames);
+		return clusterDao.findClustersWithName(clusterNames);
 	}
 
 	@Override
@@ -577,8 +575,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private ClusterTbl createCluster(ClusterCreateDTO clusterCreateDTO) {
-		throw new RuntimeException("[metacache] findClusterByClusterName");
-		/*String clusterName = clusterCreateDTO.getClusterName().trim();
+		String clusterName = clusterCreateDTO.getClusterName().trim();
 		ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterName);
 		if (clusterTbl != null) {
 			throw new BadRequestException(String.format("cluster - %s exist", clusterName));
@@ -619,7 +616,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setClusterDesignatedRouteIds("");
 		clusterTbl.setTag(CLUSTER_DEFAULT_TAG);
 
-		return clusterDao.createCluster(clusterTbl);*/
+		return clusterDao.createCluster(clusterTbl);
 	}
 
 	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {
@@ -1224,8 +1221,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
 			public ClusterTbl doQuery() throws DalException {
-				throw new RuntimeException("[metacache] checkExchangeCluster");
-				//return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
+				return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 			}
 		});
 
