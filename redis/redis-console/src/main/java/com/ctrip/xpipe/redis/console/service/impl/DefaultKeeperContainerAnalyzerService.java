@@ -100,7 +100,7 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
         if (availableZoneTblById != null) {
             infoModel.setAz(availableZoneTblById.getAzName());
         }
-        OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
+        OrganizationTbl organizationTbl = new OrganizationTbl();//organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
         if (organizationTbl != null) {
             infoModel.setOrg(organizationTbl.getOrgName());
         }
