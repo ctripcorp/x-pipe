@@ -41,14 +41,12 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public String getKey(String key, String subId) throws DalException {
-        throw new RuntimeException("[metacache] findByKeyAndSubKey getKe");
-        //ConfigTbl byKey = configTblDao.findByKeyAndSubKey(key, null == subId ? "" : subId, ConfigTblEntity.READSET_VALUE);
-        //return byKey.getValue();
+        ConfigTbl byKey = configTblDao.findByKeyAndSubKey(key, null == subId ? "" : subId, ConfigTblEntity.READSET_VALUE);
+        return byKey.getValue();
     }
 
     protected ConfigTbl findByKey(long id) throws DalException {
-        throw new RuntimeException("[metacache] findByKey");
-        // return configTblDao.findByPK(id, ConfigTblEntity.READSET_FULL);
+        return configTblDao.findByPK(id, ConfigTblEntity.READSET_FULL);
     }
 
     public synchronized void setKey(String key, String val) throws DalException {
@@ -105,8 +103,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public ConfigTbl getByKeyAndSubId(String key, String subId) throws DalException {
-         throw new RuntimeException("[metacache] getByKeyAndSubId");
-         //return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
+         return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
     }
 
     public void insertConfig(ConfigModel config, Date until, String desc) throws DalInsertException {
