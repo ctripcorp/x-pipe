@@ -61,7 +61,8 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
 			public List<DcTbl> doQuery() throws DalException {
-				return dao.findAllDcs(DcTblEntity.READSET_BASIC);
+				throw new RuntimeException("[metacache] findAllDcs");
+				// return dao.findAllDcs(DcTblEntity.READSET_BASIC);
 			}
     	});
 	}
@@ -81,7 +82,8 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
 			public List<DcTbl> doQuery() throws DalException {
-				return dao.findAllDcs(DcTblEntity.READSET_BASIC);
+				throw new RuntimeException("[metacache] findAllDcBasic");
+				// return dao.findAllDcs(DcTblEntity.READSET_BASIC);
 			}
     	});
 	}
