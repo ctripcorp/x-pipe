@@ -65,7 +65,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             }
 
             try {
-                refreshConfig();
+                // 不选主 不需要了 refreshConfig();
                 if (isLeaseOn()) {
                     logger.info("[doElect] new lease take effect, cross dc leader {}", lease.getValue());
                     return;
