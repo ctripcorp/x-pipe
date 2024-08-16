@@ -21,13 +21,18 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
     private Set<InstanceNode> added;
     private Set<InstanceNode> removed;
     private Set<MetaComparator> modified;
+    private String dcId;
 
 
-    public RedisMetaSynchronizer(Set<InstanceNode> added, Set<InstanceNode> removed, Set<MetaComparator> modified, RedisService redisService) {
+    public RedisMetaSynchronizer(Set<InstanceNode> added, Set<InstanceNode> removed,
+                                 Set<MetaComparator> modified, RedisService redisService,
+                                 String dcId
+    ) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
         this.redisService = redisService;
+        this.dcId = dcId;
     }
 
     public void sync() {
@@ -48,7 +53,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 shardId = ((RedisMeta) instanceNode).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
-            redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
+            redisService.deleteRedises(dcId, clusterId, shardId, toDeleted);
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[deleteRedises]%s", toDeleted));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][deleteRedises]", e);
@@ -70,7 +75,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 shardId = ((RedisMeta) instanceNode).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
-            redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
+            redisService.insertRedises(dcId, clusterId, shardId, toAdded);
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);

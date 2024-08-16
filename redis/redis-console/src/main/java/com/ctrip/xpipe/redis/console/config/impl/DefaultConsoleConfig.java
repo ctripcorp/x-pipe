@@ -636,4 +636,14 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
     }
 
+    @Override
+    public boolean disableDb() {
+        return false;
+    }
+
+    @Override
+    public Set<String> getExtraSyncDC() {
+        return Collections.emptySet();
+    }
+
 }

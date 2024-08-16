@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -28,7 +29,7 @@ public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthMana
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterHealthMonitorManager.class);
 
     @Autowired
-    private ShardService shardService;
+    private MetaCache metaCache;
 
     private ConcurrentMap<String, DefaultClusterHealthMonitor> monitors = Maps.newConcurrentMap();
 
@@ -98,7 +99,7 @@ public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthMana
         return MapUtils.getOrCreate(monitors, clusterId, new ObjectFactory<DefaultClusterHealthMonitor>() {
             @Override
             public DefaultClusterHealthMonitor create() {
-                DefaultClusterHealthMonitor monitor = new DefaultClusterHealthMonitor(clusterId, shardService);
+                DefaultClusterHealthMonitor monitor = new DefaultClusterHealthMonitor(clusterId, metaCache);
                 monitor.addListener(clusterHealthMonitorListener);
                 return monitor;
             }
@@ -133,8 +134,8 @@ public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthMana
     }
 
     @VisibleForTesting
-    protected DefaultClusterHealthMonitorManager setShardService(ShardService shardService) {
-        this.shardService = shardService;
+    protected DefaultClusterHealthMonitorManager setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
         return this;
     }
 

@@ -8,9 +8,11 @@ import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DO_STATUS;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,9 +34,6 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
 
     @Autowired
     private MigrationService migrationService;
-
-    @Autowired
-    private DcService dcService;
 
     @Autowired
     private OrganizationService organizationService;
@@ -63,14 +63,38 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
     @Autowired
     private MigrationReporterConfig migrationReporterConfig;
 
+    @Autowired
+    private MetaCache metaCache;
+
+    private boolean isInited = false;
+
     @PostConstruct
     public void init() {
-        dcIdNameMap = dcService.dcNameMap();
+        dcIdNameMap = buildDcNameMap();
+        if(dcIdNameMap == null) {
+            isInited = false;
+            return;
+        }
         orgIdNameMap = organizationService.getAllOrganizations().stream().collect(Collectors.toMap(OrganizationTbl::getId, OrganizationTbl::getOrgName));
+        isInited = true;
+    }
+
+    private Map<Long, String> buildDcNameMap() {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if(xpipeMeta == null) {
+            return null;
+        }
+        Map<String, DcMeta> allDcs = xpipeMeta.getDcs();
+        Map<Long, String> result = new HashMap<>();
+        allDcs.values().forEach(dc -> result.put(dc.getNo(), dc.getId()));
+        return result;
     }
 
     @Override
     protected void doAction() {
+        if(!isInited) {
+            init();
+        }
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
         List<MigrationClusterTbl> latestMigrationClusters = migrationService.getLatestMigrationClusters(DEFAULT_STATISTICAL_INTERVAL);
         if (latestMigrationClusters == null || latestMigrationClusters.size() == 0) return;

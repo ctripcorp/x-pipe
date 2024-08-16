@@ -31,6 +31,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 /**
@@ -74,6 +77,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
+    private final Lock lock = new ReentrantLock();
+    protected final Condition condition = lock.newCondition();
+
     @Override
     public void isleader() {
         if (taskTrigger.compareAndSet(false, true)) {
@@ -86,6 +92,26 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     public void notLeader() {
         if (taskTrigger.compareAndSet(true, false))
             stopLoadMeta();
+    }
+
+    @Override
+    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+        XpipeMeta xpipeMeta = null;
+        if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
+            try {
+                if(lastUpdateTime <= updateTime) {
+                    condition.await(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS);
+                }
+                xpipeMeta = meta.getKey();
+            } catch (Exception e) {
+                logger.debug("[getXpipeMeta]", e);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            xpipeMeta = meta.getKey();
+        }
+        return xpipeMeta;
     }
 
     private synchronized void stopLoadMeta(){
@@ -112,7 +138,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             protected void doRun() throws Exception {
                 if(!taskTrigger.get())
                     return;
-                loadCache();
+                if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
+                    try {
+                        loadCache();
+                        condition.signalAll();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
             }
 
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
@@ -161,7 +194,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         });
     }
 
-    private void refreshMetaParts() {
+    protected void refreshMetaParts() {
         try {
             int parts = Math.max(1, consoleConfig.getClusterDividedParts());
             logger.debug("[refreshClusterParts] start parts {}", parts);

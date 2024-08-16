@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.*;
+import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -26,7 +27,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.*;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;

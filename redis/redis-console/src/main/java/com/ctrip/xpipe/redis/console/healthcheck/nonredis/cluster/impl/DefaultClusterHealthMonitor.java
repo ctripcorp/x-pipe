@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -16,7 +17,7 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
     private String clusterId;
 
-    private ShardService shardService;
+    private MetaCache metaCache;
 
     private AtomicReference<ClusterHealthState> state = new AtomicReference<>(ClusterHealthState.NORMAL);
 
@@ -28,9 +29,9 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
-    public DefaultClusterHealthMonitor(String clusterId, ShardService shardService) {
+    public DefaultClusterHealthMonitor(String clusterId, MetaCache metaCache) {
         this.clusterId = clusterId;
-        this.shardService = shardService;
+        this.metaCache = metaCache;
     }
 
     @Override
@@ -96,7 +97,7 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
     private void checkIfStateChange() {
         int warningShardNums = warningShards.size();
-        int totalShards = shardService.findAllShardNamesByClusterName(getClusterId()).size();
+        int totalShards = metaCache.getAllShardNamesByClusterName(getClusterId()).size();
         ClusterHealthState current = ClusterHealthState.getState(totalShards, warningShardNums);
         ClusterHealthState prev = state.get();
         if(!prev.equals(current) && state.compareAndSet(prev, current)) {

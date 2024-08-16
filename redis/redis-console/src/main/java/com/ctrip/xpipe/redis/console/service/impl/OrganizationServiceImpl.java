@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.dao.OrganizationDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTblDao;
@@ -12,6 +14,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -27,6 +30,8 @@ import java.util.stream.Collectors;
  * Sep 04, 2017
  */
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class OrganizationServiceImpl extends AbstractConsoleService<OrganizationTblDao>
     implements OrganizationService {
 

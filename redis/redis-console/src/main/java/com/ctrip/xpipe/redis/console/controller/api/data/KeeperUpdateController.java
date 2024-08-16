@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -186,6 +187,11 @@ public class KeeperUpdateController extends AbstractConsoleController {
       logger.error("[deleteKeepercontainer][fail] {}:{}", keepercontaierIp, keepercontainerPort, th);
       return RetMessage.createFailMessage(th.getMessage());
     }
+  }
+
+  @RequestMapping(value = "/keeper_container/all", method = RequestMethod.GET)
+  public List<KeepercontainerTbl> getAllKeeperContainers() {
+    return keeperContainerService.findAll();
   }
 
 }

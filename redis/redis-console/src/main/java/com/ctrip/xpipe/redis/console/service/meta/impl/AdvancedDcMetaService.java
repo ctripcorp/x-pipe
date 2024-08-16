@@ -7,6 +7,8 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -26,6 +28,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -45,6 +48,8 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  * Apr 02, 2018
  */
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class AdvancedDcMetaService implements DcMetaService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdvancedDcMetaService.class);
@@ -174,7 +179,11 @@ public class AdvancedDcMetaService implements DcMetaService {
         for (DcTbl dcTbl : dcTblList) {
             ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
-            DcMeta dcMeta = new DcMeta().setId(dcTbl.getDcName()).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
+            DcMeta dcMeta = new DcMeta()
+                    .setId(dcTbl.getDcName())
+                    .setLastModifiedTime(dcTbl.getDcLastModifiedTime())
+                    .setZone(zoneTbl.getZoneName())
+                    .setNo(dcTbl.getId());
             dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
 
             chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));

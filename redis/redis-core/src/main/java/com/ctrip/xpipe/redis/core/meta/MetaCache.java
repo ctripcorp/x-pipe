@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.tuple.Triple;
@@ -22,6 +19,8 @@ import java.util.Set;
 public interface MetaCache {
 
     XpipeMeta getXpipeMeta();
+
+    XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException;
 
     XpipeMeta getDividedXpipeMeta(int partIndex);
 
@@ -93,4 +92,6 @@ public interface MetaCache {
     Map<Long, String> dcShardIds(String clusterId, String dcId);
 
     boolean isAsymmetricCluster(String clusterName);
+
+    List<ShardMeta> getAllShardNamesByClusterName(String clusterName);
 }
