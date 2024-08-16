@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
@@ -32,6 +29,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public XpipeMeta getXpipeMeta() {
         return xpipeMeta;
+    }
+
+    @Override
+    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+        return null;
     }
 
     @Override
@@ -204,5 +206,10 @@ public class TestMetaCache implements MetaCache {
     @Override
     public boolean isAsymmetricCluster(String clusterName) {
         return false;
+    }
+
+    @Override
+    public List<ShardMeta> getAllShardNamesByClusterName(String clusterName) {
+        return Collections.emptyList();
     }
 }

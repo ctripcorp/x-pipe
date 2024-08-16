@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.config.AbstractConfigBean;
@@ -58,6 +59,8 @@ public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
     private String hickwallInfo;
 
     private HickwallMetricInfo info;
+
+
 
     @Override
     public String getServerMode() {
@@ -553,6 +556,16 @@ public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
     @Override
     public boolean autoSetKeeperSyncLimit() {
         return consoleConfigBean.autoSetKeeperSyncLimit();
+    }
+
+    @Override
+    public boolean disableDb() {
+        return commonConfigBean.disableDb();
+    }
+
+    @Override
+    public Set<String> getExtraSyncDC() {
+        return commonConfigBean.getExtraSyncDC();
     }
 
     @Override

@@ -6,6 +6,8 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -28,6 +30,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +46,10 @@ import java.util.stream.Collectors;
  * <p>
  * Jun 19, 2018
  */
+
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Autowired
@@ -51,9 +57,6 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Autowired
     private DcService dcService;
-
-    @Autowired
-    private ProxyService proxyService;
 
     @Autowired
     private ProxyChainCollector proxyChainCollector;

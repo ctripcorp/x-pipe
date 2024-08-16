@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.config.impl;
 
 import com.ctrip.xpipe.api.config.ConfigProvider;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.config.AbstractConfigBean;
@@ -48,6 +49,8 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE = "no.alarm.minute.for.cluster.update";
 
+    public static final String KEY_META_SYNC_EXTERNAL_DC = "meta.sync.external.dc";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     public CommonConfigBean() {
@@ -57,6 +60,15 @@ public class CommonConfigBean extends AbstractConfigBean {
     public Set<String> getConsoleUserAccessWhiteList() {
         String whiteList = getProperty(KEY_USER_ACCESS_WHITE_LIST, "*");
         return new HashSet<>(Arrays.asList(whiteList.split(",")));
+    }
+
+    public Set<String> getExtraSyncDC() {
+        String dcs = getProperty(KEY_META_SYNC_EXTERNAL_DC, "");
+        return getSplitStringSet(dcs);
+    }
+
+    public boolean disableDb() {
+        return getExtraSyncDC().contains(FoundationService.DEFAULT.getDataCenter());
     }
 
     public Set<String> getAlertWhileList() {

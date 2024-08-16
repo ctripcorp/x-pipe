@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -21,13 +23,13 @@ public class DefaultClusterHealthMonitorManagerTest {
 
     private DefaultClusterHealthMonitorManager manager;
 
-    private ShardService shardService;
+    private MetaCache metaCache;
 
     @Before
     public void beforeDefaultClusterHealthMonitorManagerTest() {
         manager = new DefaultClusterHealthMonitorManager();
-        shardService = mock(ShardService.class);
-        manager.setShardService(shardService);
+        metaCache = mock(MetaCache.class);
+        manager.setMetaCache(metaCache);
     }
 
     @Test
@@ -149,10 +151,10 @@ public class DefaultClusterHealthMonitorManagerTest {
     }
 
     private void fakeShardService(String clusterId, String... shardIds) {
-        List<ShardTbl> result = Lists.newArrayList();
+        List<ShardMeta> result = Lists.newArrayList();
         for(String shardId : shardIds) {
-            result.add(new ShardTbl().setShardName(shardId));
+            result.add(new ShardMeta().setId(shardId));
         }
-        when(shardService.findAllShardNamesByClusterName(clusterId)).thenReturn(result);
+        when(metaCache.getAllShardNamesByClusterName(clusterId)).thenReturn(result);
     }
 }

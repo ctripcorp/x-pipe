@@ -3,25 +3,22 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
-import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,12 +30,12 @@ public class DefaultClusterHealthMonitorTest {
 
     private String clusterId = "cluster";
 
-    private ShardService shardService;
+    private MetaCache metaCache;
 
     @Before
     public void beforeDefaultClusterHealthMonitorTest() {
-        shardService = mock(ShardService.class);
-        monitor = new DefaultClusterHealthMonitor(clusterId, shardService);
+        metaCache = mock(MetaCache.class);
+        monitor = new DefaultClusterHealthMonitor(clusterId, metaCache);
     }
 
     @Test
@@ -157,10 +154,10 @@ public class DefaultClusterHealthMonitorTest {
     }
 
     private void fakeShardService(String... shardIds) {
-        List<ShardTbl> result = Lists.newArrayList();
+        List<ShardMeta> result = Lists.newArrayList();
         for(String shardId : shardIds) {
-            result.add(new ShardTbl().setShardName(shardId));
+            result.add(new ShardMeta().setId(shardId));
         }
-        when(shardService.findAllShardNamesByClusterName(clusterId)).thenReturn(result);
+        when(metaCache.getAllShardNamesByClusterName(clusterId)).thenReturn(result);
     }
 }

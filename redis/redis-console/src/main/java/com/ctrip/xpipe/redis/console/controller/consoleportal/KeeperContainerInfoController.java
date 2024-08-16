@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerMigrationService;
@@ -39,7 +40,6 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     public List<KeeperContainerInfoModel> getAllKeeperContainerInfos() {
         return keeperContainerService.findAllInfos();
     }
-
 
     @RequestMapping(value = "/keepercontainer/{id}", method = RequestMethod.GET)
     public KeeperContainerInfoModel getKeeperContainerById(@PathVariable long id) {

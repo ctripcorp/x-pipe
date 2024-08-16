@@ -12,6 +12,8 @@ public class ConsoleCheckerPath {
     
     public static final String PATH_GET_ALL_META = "/api/meta/divide";
 
+    public static final String PATH_GET_ALL_META_LONG_PULL = "/api/meta/divide/long";
+
     public static final String PATH_GET_DC_ALL_META = "/api/meta/{dcName}/all";
 
     public static final String PATH_GET_META = "/api/meta/divide/{index}";

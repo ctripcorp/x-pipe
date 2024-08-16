@@ -15,9 +15,11 @@ import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
 import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.spring.AbstractController;
@@ -27,15 +29,7 @@ import com.dianping.cat.Cat;
 import com.dianping.cat.message.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,6 +43,9 @@ public class ClusterUpdateController extends AbstractController {
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private DcService dcService;
 
     @Autowired
     private RedisService redisService;
@@ -418,6 +415,16 @@ public class ClusterUpdateController extends AbstractController {
     @VisibleForTesting
     void setConfig(ConsoleConfig config) {
         this.config = config;
+    }
+
+    @RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
+    public List<ClusterTbl> findAllClusters() {
+        return clusterService.findAllClustersWithOrgInfo();
+    }
+
+    @RequestMapping(value = "/clusters/{clusterId}/dcs", method = RequestMethod.GET)
+    public List<DcTbl> findClusterRelatedDc(@PathVariable String clusterId) {
+        return dcService.findClusterRelatedDc(clusterId);
     }
 
 }

@@ -24,6 +24,9 @@ import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -104,6 +107,11 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         return xpipeMeta;
 
+    }
+
+    @Override
+    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+        return null;
     }
 
     void setActiveDcForCrossDcClusters(XpipeMeta xpipeMeta) {
@@ -666,6 +674,20 @@ public abstract class AbstractMetaCache implements MetaCache {
         int futureClusterCount = futureDcMeta.getClusters().size();
         if ((currentClusterCount - futureClusterCount) > currentClusterCount * maxRemovedClusterPercent / 100)
             throw new TooManyClustersRemovedException(String.format("dc:%s, current cluster count:%d,future cluster count:%d", currentDcMeta.getId(), currentClusterCount, futureClusterCount));
+    }
+
+    @Override
+    public List<ShardMeta> getAllShardNamesByClusterName(String clusterName) {
+        List<ShardMeta> shards = new ArrayList<>();
+        XpipeMeta xpipeMeta = meta.getKey();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta != null) {
+               Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
+               shards.addAll(shardMetaMap.values());
+            }
+        }
+        return shards;
     }
 
     @VisibleForTesting

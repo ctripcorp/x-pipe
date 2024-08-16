@@ -95,6 +95,13 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
 
+    @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
+    public String getDividedMetaLongPull(@RequestParam(value="format", required = false) String format,
+                                         @RequestParam(value="updateTime") long updateTime) throws InterruptedException {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMetaLongPull(updateTime);
+        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+    }
+
     @GetMapping(ConsoleCheckerPath.PATH_GET_DC_ALL_META)
     public String getDcAllMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
         DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);

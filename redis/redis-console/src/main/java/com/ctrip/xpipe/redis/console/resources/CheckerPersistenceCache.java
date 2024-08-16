@@ -20,18 +20,18 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
 
     @Override
     public void updateRedisRole(RedisHealthCheckInstance instance, Server.SERVER_ROLE role) {
-        service.updateRedisRole(config.getConsoleAddress(), instance, role);
+        service.updateRedisRole(getConsoleAddress(), instance, role);
     }
 
     @Override
     public void recordAlert(String eventOperator, AlertMessageEntity message, EmailResponse response) {
-        service.recordAlert(config.getConsoleAddress(), eventOperator, message, response);
+        service.recordAlert(getConsoleAddress(), eventOperator, message, response);
     }
 
     @Override
     public Set<String> doSentinelCheckWhiteList() {
         try {
-            Set<String> originWhitelist = service.sentinelCheckWhiteList(config.getConsoleAddress());
+            Set<String> originWhitelist = service.sentinelCheckWhiteList(getConsoleAddress());
             return originWhitelist.stream().map(String::toLowerCase).collect(Collectors.toSet());
         } catch (RestClientException e) {
             logger.warn("[doSentinelCheckWhiteList] rest fail, {}", e.getMessage());
@@ -45,7 +45,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     public Set<String> doClusterAlertWhiteList() {
         try {
-            Set<String> originWhitelist = service.clusterAlertWhiteList(config.getConsoleAddress());
+            Set<String> originWhitelist = service.clusterAlertWhiteList(getConsoleAddress());
             return originWhitelist.stream().map(String::toLowerCase).collect(Collectors.toSet());
         } catch (RestClientException e) {
             logger.warn("[doClusterAlertWhiteList] rest fail, {}", e.getMessage());
@@ -59,7 +59,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     Set<String> doGetMigratingClusterList() {
         try {
-            return service.migratingClusterList(config.getConsoleAddress());
+            return service.migratingClusterList(getConsoleAddress());
         } catch (RestClientException e) {
             logger.warn("[doGetMigratingClusterList] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
@@ -72,7 +72,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     public boolean doIsSentinelAutoProcess() {
         try {
-            return service.isSentinelAutoProcess(config.getConsoleAddress());
+            return service.isSentinelAutoProcess(getConsoleAddress());
         } catch (RestClientException e) {
             logger.warn("[doIsSentinelAutoProcess] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
@@ -85,7 +85,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     public boolean doIsAlertSystemOn() {
         try {
-            return service.isAlertSystemOn(config.getConsoleAddress());
+            return service.isAlertSystemOn(getConsoleAddress());
         } catch (RestClientException e) {
             logger.warn("[doIsAlertSystemOn] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
@@ -98,7 +98,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     boolean doIsKeeperBalanceInfoCollectOn() {
         try {
-            return service.isKeeperBalanceInfoCollectOn(config.getConsoleAddress());
+            return service.isKeeperBalanceInfoCollectOn(getConsoleAddress());
         } catch (RestClientException e) {
             logger.warn("[doIsKeeperBalanceInfoCollectOn] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
@@ -111,7 +111,7 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     @Override
     public Map<String, Date> doLoadAllClusterCreateTime() {
         try {
-            return service.loadAllClusterCreateTime(config.getConsoleAddress());
+            return service.loadAllClusterCreateTime(getConsoleAddress());
         } catch (RestClientException e) {
             logger.warn("[doLoadAllClusterCreateTime] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
@@ -119,5 +119,9 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
         }
 
         return Collections.emptyMap();
+    }
+
+    protected String getConsoleAddress() {
+        return config.getConsoleAddress();
     }
 }
