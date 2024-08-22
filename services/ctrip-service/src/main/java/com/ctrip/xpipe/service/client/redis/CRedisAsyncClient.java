@@ -55,8 +55,6 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     boolean isInMulti = false;
 
-    int db = 0;
-
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
@@ -113,11 +111,6 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         }
     }
 
-    @Override
-    public void selectDB(int db) {
-        this.db = db;
-    }
-
     private void cleanTransactionResource() {
         if (clients2TxnClients.isEmpty()) return;
 
@@ -146,11 +139,11 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     @Override
-    public CommandFuture<Object> write(Object resource, Object... rawArgs) {
+    public CommandFuture<Object> write(Object resource, int dbNumber, Object... rawArgs) {
         if (isInMulti) {
             try {
                 RedisClient client = (RedisClient) resource;
-                client.selectDB(db);
+                client.selectDB(dbNumber);
                 RedisTransactionClient txnClient = clients2TxnClients.get(client);
                 txnClient.write(rawArgs);
                 return resultFuture("OK");
@@ -164,7 +157,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         for (Object rawArg : rawArgs) {
             command.write(rawArg);
         }
-        CRedisAsyncRequest<Object> request = CRedisAsyncRequest.from(new ValueResult<>(), db);
+        CRedisAsyncRequest<Object> request = CRedisAsyncRequest.from(new ValueResult<>(), dbNumber);
         DefaultCommandFuture<Object> commandFuture = new DefaultCommandFuture<>();
         channel.dispatch(request, command).addListener(new FutureCallback<Object>() {
             @Override

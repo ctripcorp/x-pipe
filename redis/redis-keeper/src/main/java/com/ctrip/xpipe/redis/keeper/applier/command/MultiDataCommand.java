@@ -20,11 +20,13 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
     final RedisMultiKeyOp redisMultiKeyOp;
 
     final ExecutorService workThreads;
+    final int dbNumber;
 
-    public MultiDataCommand(AsyncRedisClient client, RedisMultiKeyOp redisMultiKeyOp, ExecutorService workThreads) {
+    public MultiDataCommand(AsyncRedisClient client, RedisMultiKeyOp redisMultiKeyOp, int dbNumber, ExecutorService workThreads) {
         this.client = client;
         this.redisMultiKeyOp = redisMultiKeyOp;
         this.workThreads = workThreads;
+        this.dbNumber = dbNumber;
     }
 
     @SuppressWarnings("rawtypes")
@@ -33,7 +35,8 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
         return client.selectMulti(keys).entrySet().stream().map(e ->
                 new DefaultDataCommand(client,
                         /* resource */ e.getKey(),
-                        /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())))).collect(Collectors.toList());
+                        /* subOp */ redisOpAsMulti().subOp(e.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())),
+                        dbNumber)).collect(Collectors.toList());
     }
 
     @SuppressWarnings("rawtypes")

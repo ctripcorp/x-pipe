@@ -10,6 +10,7 @@ import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -66,27 +67,4 @@ public class DefaultSequenceControllerTest extends AbstractTest {
         assertTrue(second.startTime >= first.endTime);
     }
 
-    @Test
-    public void multiKeyCommand() throws ExecutionException, InterruptedException, TimeoutException {
-
-        TestLwmManager lwmManager = new TestLwmManager();
-        controller.lwmManager = lwmManager;
-
-        RedisOpDataCommand<String> command = spy(new TestMSetCommand(0L, "MSET", "A", "A", "B", "B"));
-
-        TestMSetCommand first = new TestMSetCommand(100, "MSET", "A", "A");
-        TestMSetCommand second = new TestMSetCommand(200, "MSET", "B", "B");
-
-        when(command.gtid()).thenReturn("A:1");
-
-        controller.submit(new TestMultiDataCommandWrapper(command, executors, Lists.newArrayList(first, second)), 0);
-
-        first.future().get(5, TimeUnit.SECONDS);
-        second.future().get(5, TimeUnit.SECONDS);
-
-        waitConditionUntilTimeOut(()->lwmManager.lastSubmitTime >= first.endTime);
-        waitConditionUntilTimeOut(()->lwmManager.lastSubmitTime >= second.endTime);
-
-        assertEquals(1, lwmManager.count);
-    }
 }

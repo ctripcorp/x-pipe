@@ -63,8 +63,8 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
-    @InstanceDependency
-    public ApplierLwmManager lwmManager;
+    /*@InstanceDependency
+    public ApplierLwmManager lwmManager;*/
 
     @InstanceDependency
     public AtomicReference<ApplierSyncReplication> replication;
@@ -80,9 +80,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public InstanceComponentWrapper<LeaderElector> leaderElectorWrapper;
-
-    //@InstanceDependency
-    //public QPSThreshold qpsThreshold;
 
     /* cardinal info */
 
@@ -155,7 +152,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig,
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
-        this.lwmManager = new DefaultLwmManager();
         this.dispatcher = new DefaultCommandDispatcher();
         this.replication = new AtomicReference<>();
         this.offsetRecorder = new AtomicLong(-1);

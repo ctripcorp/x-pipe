@@ -12,8 +12,8 @@ public class TestMultiDataCommandWrapper extends MultiDataCommand {
 
     private List<RedisOpDataCommand> subCommands;
 
-    public TestMultiDataCommandWrapper(RedisOpDataCommand inner, ExecutorService workThreads,  List<RedisOpDataCommand> redisOpDataCommands) {
-        super(null, inner.redisOpAsMulti(), workThreads);
+    public TestMultiDataCommandWrapper(RedisOpDataCommand inner, ExecutorService workThreads, List<RedisOpDataCommand> redisOpDataCommands) {
+        super(null, inner.redisOpAsMulti(), 0, workThreads);
         this.inner = inner;
         this.subCommands = redisOpDataCommands;
     }

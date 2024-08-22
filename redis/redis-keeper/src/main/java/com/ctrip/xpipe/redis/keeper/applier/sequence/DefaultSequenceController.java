@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
@@ -27,9 +26,6 @@ import java.util.stream.Collectors;
  * Jan 29, 2022 4:19 PM
  */
 public class DefaultSequenceController extends AbstractInstanceComponent implements ApplierSequenceController {
-
-    @InstanceDependency
-    public ApplierLwmManager lwmManager;
 
     @InstanceDependency
     public ExecutorService stateThread;
@@ -158,7 +154,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        mergeGtidWhenSuccess(current, command.gtid());
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
 
@@ -194,7 +189,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        mergeGtidWhenSuccess(current, command.gtid());
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
 
@@ -218,7 +212,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             forgetWhenDone(current, key);
         }
 
-        mergeGtidWhenSuccess(current, command.gtid());
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
 
@@ -247,7 +240,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        mergeGtidWhenSuccess(current, command.gtid());
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
 
@@ -272,17 +264,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         });
     }
 
-    private void mergeGtidWhenSuccess(SequenceCommand<?> sequenceCommand, String gtid) {
-        sequenceCommand.future().addListener((f) -> {
-            if (f.isSuccess()) {
-                if (gtid != null) {
-                    if (lwmManager != null) {
-                        lwmManager.submit(gtid);
-                    }
-                }
-            }
-        });
-    }
 
     private void releaseMemoryThresholdWhenDone(SequenceCommand<?> sequenceCommand, long memory) {
         sequenceCommand.future().addListener((f)->{
