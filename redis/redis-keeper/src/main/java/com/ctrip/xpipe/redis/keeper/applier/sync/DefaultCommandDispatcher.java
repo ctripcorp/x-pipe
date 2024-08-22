@@ -35,8 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Jun 05, 2022 18:21
  */
 public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
-
-    public static final String AUX_GTID_KEY = "gtid";
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -130,16 +128,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
-
-        logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-
-        if (rdbGtidSet.isEmpty()) {
-            logger.info("[endReadRdb] rdbGtidSet is empty, skip merge end");
-            return;
-        }
-
-        //ctrip.merge_end [gtid_set]
-        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())), 0);
     }
 
     @Override
@@ -329,14 +317,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        if (updateGtidState(redisOp.getOpGtid())) {
-            // MULTI and command in transaction not have gtid, so clean the transaction command if redisOp skip
-            transactionCommand.set(null);
-            return;
-        }
-
         if (shouldFilter(redisOp)) {
-            addLwm(redisOp);
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
@@ -352,21 +333,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
-    private void addLwm(RedisOp redisOp) {
-        String gtid = redisOp.getOpGtid();
-        if (StringUtils.isBlank(gtid)) {
-            return;
-        }
-        stateThread.execute(() -> {
-            try {
-                logger.debug("[addLwm][start] gtid:{}", gtid);
-                gtid_executed.get().add(redisOp.getOpGtid());
-            } catch (Throwable t) {
-                logger.error("[addLwm][fail] gtid:{}", gtid, t);
-            }
-        });
-    }
-
     @Override
     public void onRedisOp(RedisOp redisOp) {
         doOnRedisOp(redisOp, 0);
@@ -374,17 +340,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAux(String key, String value) {
-        if (key.equalsIgnoreCase(AUX_GTID_KEY)) {
-            rdbGtidSet = GtidSet.PLACE_HOLDER.equals(value) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(value);
-            this.gtid_received = rdbGtidSet.clone();
-            this.gtid_executed.set(rdbGtidSet.clone());
-            if (rdbGtidSet.isEmpty()) {
-                logger.info("[beginReadRdb] rdbGtidSet is empty, skip merge start");
-                return;
-            }
-            //ctrip.merge_start
-            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
-        }
     }
 
     @Override
