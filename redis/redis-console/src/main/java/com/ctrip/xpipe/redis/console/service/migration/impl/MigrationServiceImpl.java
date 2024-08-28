@@ -699,7 +699,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             for (ClusterTbl cluster: migrateClusters) {
                 MigrationBiClusterEntity entity = new MigrationBiClusterEntity();
                 entity.setClusterId(cluster.getId());
-                entity.setStatus(rst ? "SUCCESS":"FAIL");
+                entity.setStatus(rst ? MigrationStatus.TYPE_SUCCESS : MigrationStatus.TYPE_FAIL);
                 entity.setOperator(operator);
                 entity.setPublishInfo(Codec.DEFAULT.encode(excludedDcs));
                 entity.setOperationTime(current);
