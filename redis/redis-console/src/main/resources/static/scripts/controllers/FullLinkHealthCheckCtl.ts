@@ -14,6 +14,7 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
                                    toastr, NgTableParams, $interval) {
     $scope.masterRoles = [];
     $scope.slaveRoles = [];
+    $scope.unknownRoles = [];
     $scope.shardCheckerHealthCheckResult = [];
     $scope.showActions=false;
     $scope.shardAllMeta = null;
@@ -34,10 +35,13 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
         HealthCheckService.getShardRedisRole($stateParams.currentDcName, $stateParams.clusterName, $stateParams.shardName).then(function (response) {
             $scope.masterRoles = [];
             $scope.slaveRoles = [];
+            $scope.unknownRoles = [];
             response.forEach(function (item){
-                if (item.role.serverRole == "SLAVE") {
+                if (item.role == null) {
+                    $scope.unknownRoles.push(item)
+                }else if (item.role.serverRole == "SLAVE") {
                     $scope.slaveRoles.push(item);
-                } else {
+                } else if (item.role.serverRole == "MASTER") {
                     $scope.masterRoles.push(item);
                 }
             })
