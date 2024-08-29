@@ -17,6 +17,10 @@ public interface CheckerService {
 
     HEALTH_STATE getInstanceStatus(String ip, int port);
 
+    HEALTH_STATE getCrossRegionInstanceStatus(String ip, int port);
+
     Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus();
+
+    Map<HostPort, HealthStatusDesc> getAllInstanceCrossRegionHealthStatus();
 
 }
