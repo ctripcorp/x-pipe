@@ -29,6 +29,10 @@ public class TestMetaCache implements MetaCache {
     public TestMetaCache(){
     }
 
+    public void setXpipeMeta(XpipeMeta xpipeMeta) {
+        this.xpipeMeta = xpipeMeta;
+    }
+
     @Override
     public XpipeMeta getXpipeMeta() {
         return xpipeMeta;

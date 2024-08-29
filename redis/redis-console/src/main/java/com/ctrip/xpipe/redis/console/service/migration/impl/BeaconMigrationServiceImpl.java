@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -193,7 +194,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         try {
             MigrationBiClusterEntity migrationRecord = new MigrationBiClusterEntity();
             migrationRecord.setClusterId(clusterTbl.getId());
-            migrationRecord.setStatus(result ? "SUCCESS":"FAIL");
+            migrationRecord.setStatus(result ? MigrationStatus.TYPE_SUCCESS : MigrationStatus.TYPE_FAIL);
             migrationRecord.setOperator("Beacon");
             migrationRecord.setPublishInfo(Codec.DEFAULT.encode(excludes));
             migrationRecord.setOperationTime(new Date());

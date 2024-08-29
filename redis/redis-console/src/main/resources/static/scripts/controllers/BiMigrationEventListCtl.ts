@@ -12,7 +12,7 @@ function BiMigrationEventListCtl($rootScope, $scope, $window, $stateParams, AppU
             count : 10
         }, {
             filterDelay:100,
-            dataset: data,
+            dataset: data.reverse(),
         });
     })
 
