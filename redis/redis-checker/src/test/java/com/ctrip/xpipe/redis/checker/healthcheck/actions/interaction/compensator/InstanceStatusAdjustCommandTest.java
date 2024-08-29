@@ -59,12 +59,12 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
         when(config.getHealthMarkCompensateIntervalMill()).thenReturn(1000L);
         when(config.getQuorum()).thenReturn(2);
         when(siteStability.isSiteStable()).thenReturn(true);
-        when(collector.collectXPipeInstanceHealth(instance.getHostPort())).thenReturn(xpipeInstanceHealth);
+        when(collector.collectXPipeInstanceHealth(instance.getHostPort(), false)).thenReturn(xpipeInstanceHealth);
     }
 
     @Test
     public void testAdjust() throws Exception {
-        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
+        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, false, collector, outerClientService, true,
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(Boolean.TRUE);
@@ -75,21 +75,21 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
 
     @Test(expected = ExecutionException.class)
     public void testTimeoutAfterCollect() throws Exception {
-        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
+        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, false, collector, outerClientService, true,
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(Boolean.TRUE);
         doAnswer(inv -> {
             sleep(timeoutMilli + 1);
             return xpipeInstanceHealth;
-        }).when(collector).collectXPipeInstanceHealth(instance.getHostPort());
+        }).when(collector).collectXPipeInstanceHealth(instance.getHostPort(), false);
 
         cmd.execute().get();
     }
 
     @Test
     public void testSkipForOuterClientChange() throws Exception {
-        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
+        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, false, collector, outerClientService, true,
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(true);
         cmd.execute().get();
@@ -99,7 +99,7 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
 
     @Test
     public void testSkipForXPipeChange() throws Exception {
-        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
+        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, false, collector, outerClientService, true,
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(outerClientService.isInstanceUp(instance)).thenReturn(false);
         when(xpipeInstanceHealth.aggregate(instance.getHostPort(),2)).thenReturn(null);
@@ -110,7 +110,7 @@ public class InstanceStatusAdjustCommandTest extends AbstractTest {
 
     @Test
     public void testSiteUnstable() throws Exception {
-        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, collector, outerClientService, true,
+        InstanceStatusAdjustCommand cmd = new InstanceStatusAdjustCommand(instance, false, collector, outerClientService, true,
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, alertManager);
         when(siteStability.isSiteStable()).thenReturn(false);
         cmd.execute().get();

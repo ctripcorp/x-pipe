@@ -27,4 +27,6 @@ public interface HealthCheckInstanceFactory {
     void remove(ClusterHealthCheckInstance instance);
 
     RedisHealthCheckInstance createRedisInstanceForAssignedAction(RedisMeta redis);
+
+    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
 }
