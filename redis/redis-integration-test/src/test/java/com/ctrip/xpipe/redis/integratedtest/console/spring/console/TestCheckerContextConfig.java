@@ -169,8 +169,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig,GroupCheckerLeaderElector clusterServer) {
-        return new DefaultRemoteCheckerManager(checkerConfig, clusterServer);
+    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig,GroupCheckerLeaderElector clusterServer, MetaCache metaCache) {
+        return new DefaultRemoteCheckerManager(checkerConfig, clusterServer, metaCache);
     }
 
     @Bean
