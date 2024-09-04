@@ -121,8 +121,8 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
-        public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
-            return new DefaultRemoteCheckerManager(checkerConfig, new GroupCheckerLeaderElector("test"));
+        public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig, MetaCache metaCache) {
+            return new DefaultRemoteCheckerManager(checkerConfig, new GroupCheckerLeaderElector("test"), metaCache);
         }
 
         @Bean
