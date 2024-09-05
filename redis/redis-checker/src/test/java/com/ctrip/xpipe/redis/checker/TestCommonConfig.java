@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * @author lishanglin
  * date 2024/7/11
@@ -9,8 +12,8 @@ import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 public class TestCommonConfig implements ConsoleCommonConfig {
 
     @Override
-    public String getBeaconSupportZone() {
-        return "";
+    public Set<String> getBeaconSupportZones() {
+        return Collections.emptySet();
     }
 
     @Override

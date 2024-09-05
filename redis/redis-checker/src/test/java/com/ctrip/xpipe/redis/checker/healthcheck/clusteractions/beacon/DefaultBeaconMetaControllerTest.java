@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Collections;
+
 /**
  * @author lishanglin
  * date 2021/1/19
@@ -41,7 +43,7 @@ public class DefaultBeaconMetaControllerTest extends AbstractCheckerTest {
         info = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.ONE_WAY, 1);
 
         Mockito.when(instance.getCheckInfo()).thenReturn(info);
-        Mockito.when(consoleCommonConfig.getBeaconSupportZone()).thenReturn("SHA");
+        Mockito.when(consoleCommonConfig.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
     }
 
