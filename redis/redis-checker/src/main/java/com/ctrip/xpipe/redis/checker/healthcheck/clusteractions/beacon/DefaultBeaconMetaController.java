@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /**
  * @author lishanglin
  * date 2021/1/17
@@ -43,8 +45,9 @@ public class DefaultBeaconMetaController implements BeaconMetaController {
             logger.debug("[shouldCheck][{}][skip] {} unsupport", info.getClusterId(), info.getClusterType());
             return false;
         }
-        if (!StringUtil.isEmpty(config.getBeaconSupportZone()) && !metaCache.isDcInRegion(CURRENT_DC, config.getBeaconSupportZone())) {
-            logger.debug("[shouldCheck][{}][skip] current {} not in {}", info.getClusterId(), CURRENT_DC, config.getBeaconSupportZone());
+        Set<String> supportZones = config.getBeaconSupportZones();
+        if (!supportZones.isEmpty() && supportZones.stream().noneMatch(zone -> metaCache.isDcInRegion(CURRENT_DC, zone))) {
+            logger.debug("[shouldCheck][{}][skip] current {} not in {}", info.getClusterId(), CURRENT_DC, supportZones);
             return false;
         }
         if(clusterType.supportSingleActiveDC() && !CURRENT_DC.equalsIgnoreCase(info.getActiveDc())) {
