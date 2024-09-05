@@ -5,6 +5,8 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 import static com.ctrip.xpipe.api.config.ConfigProvider.COMMON_CONFIG;
 
 /**
@@ -18,15 +20,13 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
 
-    private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
-
     public DefaultCommonConfig() {
         super(ConfigProvider.DEFAULT.getOrCreateConfig(COMMON_CONFIG));
     }
 
     @Override
-    public String getBeaconSupportZone() {
-        return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
+    public Set<String> getBeaconSupportZones() {
+        return getSplitStringSet(getProperty(KEY_BEACON_SUPPORT_ZONE, ""));
     }
 
     @Override

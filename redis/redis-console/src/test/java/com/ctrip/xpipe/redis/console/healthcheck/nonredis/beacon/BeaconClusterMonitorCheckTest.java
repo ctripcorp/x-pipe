@@ -65,7 +65,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         orgServicesMap.put(1L, Collections.singletonList(monitorService1));
         Mockito.when(monitorManager.getAllServices()).thenReturn(orgServicesMap);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXPipeMeta());
-        Mockito.when(config.getBeaconSupportZone()).thenReturn("");
+        Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.emptySet());
         Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(10);
     }
 
@@ -106,7 +106,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Test
     public void testClusterActiveDcZoneNotSupport() {
-        Mockito.when(config.getBeaconSupportZone()).thenReturn("FRA");
+        Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("FRA"));
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster2","hetero-cluster2"));
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1","hetero-cluster1"));
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster2"));
@@ -131,7 +131,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         xpipeMeta.addDc(new DcMeta("jq").setZone("SHA").addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("fra")))
                 .addDc(new DcMeta("fra").setZone("FRA").addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("fra")));
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-        Mockito.when(config.getBeaconSupportZone()).thenReturn("SHA");
+        Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
 
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1"));
         check.doAction();

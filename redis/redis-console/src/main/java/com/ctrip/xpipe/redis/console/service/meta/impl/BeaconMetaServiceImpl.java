@@ -101,10 +101,10 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             return !ClusterType.isSameClusterType(clusterMeta.getAzGroupType(), ClusterType.SINGLE_DC);
         } else {
             XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-            String supportZone = config.getBeaconSupportZone();
-            if (null == xpipeMeta || StringUtil.isEmpty(supportZone)) return false;
+            Set<String> supportZones = config.getBeaconSupportZones();
+            if (null == xpipeMeta || supportZones.isEmpty()) return false;
 
-            return supportZone.equalsIgnoreCase(clusterMeta.parent().getZone());
+            return supportZones.stream().anyMatch(zone -> zone.equalsIgnoreCase(clusterMeta.parent().getZone()));
         }
     }
 

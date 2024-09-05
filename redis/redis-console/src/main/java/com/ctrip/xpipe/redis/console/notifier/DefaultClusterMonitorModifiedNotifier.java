@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -67,11 +68,11 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     private boolean shouldClusterNotify(String clusterName) {
         ClusterType clusterType = metaCache.getClusterType(clusterName);
-        if (clusterType.supportSingleActiveDC() && !StringUtil.isEmpty(config.getBeaconSupportZone())) {
+        Set<String> supportZones = config.getBeaconSupportZones();
+        if (clusterType.supportSingleActiveDC() && !supportZones.isEmpty()) {
             String activeDc = metaCache.getActiveDc(clusterName);
-            String supportZone = config.getBeaconSupportZone();
-            if (!metaCache.isDcInRegion(activeDc, supportZone)) {
-                logger.info("[notifyClusterUpdate][{}] active dc {} not in {}", clusterName, activeDc, supportZone);
+            if (supportZones.stream().noneMatch(zone -> metaCache.isDcInRegion(activeDc, zone))) {
+                logger.info("[notifyClusterUpdate][{}] active dc {} not in {}", clusterName, activeDc, supportZones);
                 return false;
             }
         }
