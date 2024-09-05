@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -45,7 +46,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
-        Mockito.when(config.getBeaconSupportZone()).thenReturn("SHA");
+        Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
 
         beaconMetaService = new BeaconMetaServiceImpl(metaCache, config);
     }

@@ -88,10 +88,10 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
             clusterByBeaconSystemOrg.put(beaconSystem, clustersByOrg);
         }
 
-        String supportZone = config.getBeaconSupportZone();
+        Set<String> supportZones = config.getBeaconSupportZones();
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (!StringUtil.isEmpty(supportZone) && !supportZone.equalsIgnoreCase(dcMeta.getZone())) {
-                logger.debug("[separateClustersByOrg][zoneUnsupported] {} not in {}", dcMeta.getId(), supportZone);
+            if (!supportZones.isEmpty() && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
+                logger.debug("[separateClustersByOrg][zoneUnsupported] {} not in {}", dcMeta.getId(), supportZones);
                 continue;
             }
 
