@@ -80,7 +80,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	KeeperConfig getKeeperConfig();
 
-	void clearRdbDumper(RdbDumper rdbDumper);
+	void clearRdbDumper(RdbDumper rdbDumper, boolean forceRdb);
 	
 	void setRdbDumper(RdbDumper rdbDumper) throws SetRdbDumperException;
 

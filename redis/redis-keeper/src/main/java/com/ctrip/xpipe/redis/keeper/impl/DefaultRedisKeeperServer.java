@@ -956,7 +956,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void clearRdbDumper(RdbDumper oldDumper) {
+	public void clearRdbDumper(RdbDumper oldDumper, boolean forceRdb) {
 		
 		logger.info("[clearRdbDumper]{}", oldDumper);
 		if(!rdbDumper.compareAndSet(oldDumper, null)){
@@ -974,8 +974,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			if (!waitingSlaves.isEmpty()) {
 				try {
-					logger.info("[clearRdbDumper][redump][rdb] waiting:{}, needRordb:{}", waitingSlaves.size(), needRordbSlaves);
-					dumpNewRdb(false);
+					logger.info("[clearRdbDumper][redump][rdb] waiting:{}, needRordb:{}, forceRdb:{}", waitingSlaves.size(), needRordbSlaves, forceRdb);
+					if (forceRdb) {
+						dumpNewRdb(false);
+					} else {
+						// use RORDB only if all slaves accept it
+						dumpNewRdb(waitingSlaves.size() == needRordbSlaves);
+					}
 				} catch (Throwable th) {
 					logger.info("[clearRdbDumper][redump] fail", th);
 					waitingSlaves.forEach(redisSlave -> {
