@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
@@ -163,12 +162,12 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 
 		redisKeeperServer.setRdbDumper(dump1);
 
-		redisKeeperServer.clearRdbDumper(dump1);
+		redisKeeperServer.clearRdbDumper(dump1, false);
 
 		// too quick
 		// force can success
 		redisKeeperServer.setRdbDumper(dump1, true);
-		redisKeeperServer.clearRdbDumper(dump1);
+		redisKeeperServer.clearRdbDumper(dump1, false);
 
 		try {
 			redisKeeperServer.setRdbDumper(dump1);
