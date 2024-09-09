@@ -796,8 +796,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				}
 
 				try{
-					dumpNewRdb(tryRordb);
+					RdbDumper newDumper = dumpNewRdb(tryRordb);
 					redisSlave.waitForRdbDumping();
+					if (newDumper.future().isDone() && !newDumper.future().isSuccess()) {
+						logger.info("[fullSyncToSlave][new dumper fail immediatelly]");
+						redisSlave.close();
+					}
 				}catch(AbstractRdbDumperException e){
 					logger.error("[fullSyncToSlave]", e);
 					if(e.isCancelSlave()){
