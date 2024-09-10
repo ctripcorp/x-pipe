@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.utils.CloseState;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
@@ -78,7 +79,14 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				}
 				getCommandStoreDelay().beginSend(listener, referenceFileRegion.getTotalPos());
 
-				ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), referenceFileRegion);
+				ChannelFuture future = null;
+				try {
+					future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), referenceFileRegion);
+				} catch (CloseState.CloseStateException e) {
+					logger.info("[addCommandsListener][listener closed] deallocate fileRegion");
+					referenceFileRegion.deallocate();
+					throw e;
+				}
 
 				if(future != null){
 					CommandReader<ReferenceFileRegion> finalCmdReader = cmdReader;
