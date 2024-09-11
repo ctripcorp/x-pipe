@@ -42,6 +42,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	public void setRdbDumpState(RdbDumpState rdbDumpState) {
 		lock.writeLock().lock();
 		try {
+			RdbDumpState preState = this.rdbDumpState;
 			this.rdbDumpState = rdbDumpState;
 			switch (rdbDumpState) {
 				case DUMPING:
@@ -50,12 +51,13 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 					doWhenAuxParsed();
 					break;
 				case FAIL:
+					boolean failOnDumping = preState.equals(DUMPING) || preState.equals(AUX_PARSED);
 					doWhenDumpFailed();
-					redisKeeperServer.clearRdbDumper(this);
+					redisKeeperServer.clearRdbDumper(this, failOnDumping);
 					break;
 				case NORMAL:
 					// clear dumper
-					redisKeeperServer.clearRdbDumper(this);
+					redisKeeperServer.clearRdbDumper(this, false);
 					break;
 				case WAIT_DUMPPING:
 					break;
@@ -138,7 +140,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 			case FAIL:
 			case NORMAL:
 				getLogger().warn("[tryFullSync]{}", redisSlave);
-				redisKeeperServer.clearRdbDumper(this);
+				redisKeeperServer.clearRdbDumper(this, false);
 				redisKeeperServer.fullSyncToSlave(redisSlave);
 				break;
 		}

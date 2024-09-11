@@ -30,7 +30,7 @@ public class ReferenceFileRegion extends DefaultFileRegion{
 
 	
 	@Override
-	protected void deallocate() {
+	public void deallocate() {
 		
 		try {
 			referenceFileChannel.release();

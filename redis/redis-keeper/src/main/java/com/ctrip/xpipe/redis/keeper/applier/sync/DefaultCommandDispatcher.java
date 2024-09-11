@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * Jun 05, 2022 18:21
  */
 public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
-
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -74,6 +73,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
+
+    private int dbNumber = 0;
 
     public DefaultCommandDispatcher() {
         this.rdbParser = createRdbParser();
@@ -127,16 +128,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
-
-        logger.info("[endReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-
-        if (rdbGtidSet.isEmpty()) {
-            logger.info("[endReadRdb] rdbGtidSet is empty, skip merge end");
-            return;
-        }
-
-        //ctrip.merge_end [gtid_set]
-        sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeEnd(rdbGtidSet.toString())), 0);
     }
 
     @Override
@@ -317,8 +308,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
         if (RedisOpType.SELECT.equals(redisOp.getOpType())) {
             try {
-                int db = toInt(redisOp.buildRawOpArgs()[1]);
-                client.selectDB(db);
+                dbNumber = toInt(redisOp.buildRawOpArgs()[1]);
             } catch (Throwable unlikely) {
                 logger.error("[onRedisOp] unlikely - fail to select db : {}", Arrays.toString(redisOp.buildRawOpArgs()[1]));
                 logger.error("[onRedisOp] unlikely - fail to select db]", unlikely);
@@ -327,14 +317,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return;
         }
 
-        if (updateGtidState(redisOp.getOpGtid())) {
-            // MULTI and command in transaction not have gtid, so clean the transaction command if redisOp skip
-            transactionCommand.set(null);
-            return;
-        }
-
         if (shouldFilter(redisOp)) {
-            addLwm(redisOp);
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
         }
@@ -344,25 +327,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
             addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, workerThreads), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads), commandOffsetToAccumulate);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber), commandOffsetToAccumulate);
         }
-    }
-
-    private void addLwm(RedisOp redisOp) {
-        String gtid = redisOp.getOpGtid();
-        if (StringUtils.isBlank(gtid)) {
-            return;
-        }
-        stateThread.execute(() -> {
-            try {
-                logger.debug("[addLwm][start] gtid:{}", gtid);
-                gtid_executed.get().add(redisOp.getOpGtid());
-            } catch (Throwable t) {
-                logger.error("[addLwm][fail] gtid:{}", gtid, t);
-            }
-        });
     }
 
     @Override
@@ -372,17 +340,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAux(String key, String value) {
-        if (key.equalsIgnoreCase("gtid")) {
-            rdbGtidSet = GtidSet.PLACE_HOLDER.equals(value) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(value);
-            this.gtid_received = rdbGtidSet.clone();
-            this.gtid_executed.set(rdbGtidSet.clone());
-            if (rdbGtidSet.isEmpty()) {
-                logger.info("[beginReadRdb] rdbGtidSet is empty, skip merge start");
-                return;
-            }
-            //ctrip.merge_start
-            sequenceController.submit(new DefaultBroadcastCommand(client, new RedisOpMergeStart()), 0);
-        }
     }
 
     @Override

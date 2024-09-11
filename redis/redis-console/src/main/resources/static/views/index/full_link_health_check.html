@@ -20,7 +20,7 @@
                     <md-card md-theme="{{ master.err==null ? 'green' : 'red' }}" md-theme-watch>
                         <md-card-title class="custom-card">
                             <md-card-title-text class="centered-text">
-                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{master.err}}</div>
+                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{master.err.message}}</div>
                                 <div style="white-space: nowrap;">
                                     <span>{{master.host}}:{{master.port}}</span>
                                     <span style="margin-left: 20px;">{{master.role.serverRole}}</span>
@@ -48,7 +48,7 @@
                     <md-card md-theme="{{ slave.err!=null ? 'red' : (slave.role.masterState == 'REDIS_REPL_CONNECTED' ? 'green' : 'orange') }}" md-theme-watch>
                         <md-card-title class="custom-card">
                             <md-card-title-text class="centered-text">
-                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{slave.err}}</div>
+                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{slave.err.message}}</div>
                                 <div  style="white-space: nowrap;">
                                     <span>{{slave.host}}:{{slave.port}}</span>
                                     <span style="margin-left: 20px;">{{slave.role.serverRole}}</span>
@@ -66,6 +66,18 @@
                                 <span style="margin-left: 20px;">{{slave.role.masterState}}</span>
                             </div>
                         </md-card-content>
+                    </md-card>
+                </div>
+                <div ng-repeat="redis in unknownRoles">
+                    <md-card md-theme="orange" md-theme-watch>
+                        <md-card-title class="custom-card">
+                            <md-card-title-text class="centered-text">
+                                <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{redis.err.message}}</div>
+                                <div  style="white-space: nowrap;">
+                                    <span>{{redis.host}}:{{redis.port}}</span>
+                                </div>
+                            </md-card-title-text>
+                        </md-card-title>
                     </md-card>
                 </div>
             </md-card-content>
@@ -104,7 +116,7 @@
                             </div>
                             <div  style="white-space: nowrap;">
                                 <span>replBacklogSize:</span>
-                                <span style="margin-left: 20px;">{{keeper.replBacklogSize/1024/1024 | number:2}}G</span>
+                                <span style="margin-left: 20px;">{{keeper.replBacklogSize/1024/1024/1024 | number:2}}G</span>
                             </div>
                             <div ng-repeat="keeperSlave in keeper.slaves">
                                 <md-card md-theme="default" md-theme-watch>
@@ -134,7 +146,7 @@
                     <span class="md-headline">Checker Groups</span>
                 </md-card-title-text>
                 <md-card-actions layout="row" layout-align="end center">
-                    <md-button class="md-raised" ng-click="doShowActions()">Show Actions</md-button>
+                    <md-button class="md-raised" ng-click="doShowActions()">Show Actions(err)</md-button>
                     <md-button class="md-raised" ng-click="shardCheckerGroupHealthCheck()">刷新</md-button>
                 </md-card-actions>
             </md-card-title>
@@ -144,7 +156,8 @@
                         <md-card-title class="custom-card">
                             <md-card-title-text class="centered-text">
                                 <div  style="white-space: nowrap;">
-                                    <span>{{checker.host}}:{{checker.port}}</span>
+                                    <span>{{checker.idc}}</span>
+                                    <span style="margin-left: 20px;">{{checker.host}}:{{checker.port}}</span>
                                     <span style="margin-left: 20px;">{{checker.checkerRole}}</span>
                                 </div>
                             </md-card-title-text>
@@ -172,7 +185,7 @@
         <md-card md-theme="{{ shardAllMeta != null && shardAllMeta.err == null ? 'green' : 'red' }}" md-theme-watch>
             <md-card-title class="custom-card">
                 <md-card-title-text class="centered-text">
-                    <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{shardAllMeta.err}}</div>
+                    <div ng-show="showErrMsg" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{shardAllMeta.err.message}}</div>
                     <div class="md-headline" style="white-space: nowrap;">
                         <span class="md-headline">Meta</span>
                         <span style="margin-left: 20px;">{{shardAllMeta.metaHost}}:{{shardAllMeta.metaPort}}</span>

@@ -22,11 +22,6 @@ public class ShardMetaVisitor implements MetaVisitor<ShardMeta> {
 
     @Override
     public void accept(ShardMeta shardMeta) {
-        if (ClusterType.lookup(((ClusterMeta) shardMeta.parent()).getType()).supportSingleActiveDC()
-                && shardMeta.getBackupDcs() != null
-                && Sets.newHashSet(shardMeta.getBackupDcs().toUpperCase().split("\\s*,\\s*")).contains(FoundationService.DEFAULT.getDataCenter().toUpperCase())) {
-            return;
-        }
         for(RedisMeta redisMeta : shardMeta.getRedises()) {
             redisMetaVisitor.accept(redisMeta);
         }

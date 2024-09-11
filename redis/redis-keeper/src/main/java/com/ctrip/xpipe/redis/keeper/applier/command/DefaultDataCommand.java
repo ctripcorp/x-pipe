@@ -26,15 +26,18 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
     final RedisOp redisOp;
 
-    public DefaultDataCommand(AsyncRedisClient client, RedisOp redisOp) {
-        this(client, null, redisOp);
+    final int dbNumber;
+
+    public DefaultDataCommand(AsyncRedisClient client, RedisOp redisOp, int dbNumber) {
+        this(client, null, redisOp, dbNumber);
     }
 
-    public DefaultDataCommand(AsyncRedisClient client, Object resource, RedisOp redisOp) {
+    public DefaultDataCommand(AsyncRedisClient client, Object resource, RedisOp redisOp, int dbNumber) {
 
         this.client = client;
         this.resource = resource;
         this.redisOp = redisOp;
+        this.dbNumber = dbNumber;
     }
 
     @Override
@@ -49,7 +52,7 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
         long startTime = System.nanoTime();
 
         client
-                .write(rc, rawArgs)
+                .write(rc, dbNumber, rawArgs)
                 .addListener(f -> {
                     if (getLogger().isDebugEnabled()) {
                         getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
