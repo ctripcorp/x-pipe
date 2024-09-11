@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
@@ -58,7 +59,7 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
     public void testCollect() throws Exception {
         Map<HostPort, HealthStatusDesc> healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
         Mockito.when(remoteCheckerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
-        Mockito.when(outerClientCache.getAllDcClusters("jq")).thenReturn(mockOutClientResp(true));
+        Mockito.when(outerClientCache.getAllActiveDcClusters("jq")).thenReturn(mockOutClientResp(true));
         healthStatus = mockHealthStatusMap(HEALTH_STATE.HEALTHY);
         Mockito.when(localCheckerService.getAllInstanceHealthStatus()).thenReturn(healthStatus);
         Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> result = this.collector.collect();
@@ -112,7 +113,7 @@ public class InstanceHealthStatusCollectorTest extends AbstractTest {
         HostPort mockInstance = new HostPort("10.0.0.1", 6379);
         Mockito.when(remoteCheckerService.getInstanceStatus(mockInstance.getHost(), mockInstance.getPort())).thenReturn(HEALTH_STATE.HEALTHY);
         Mockito.when(localCheckerService.getInstanceStatus(mockInstance.getHost(), mockInstance.getPort())).thenReturn(HEALTH_STATE.HEALTHY);
-        XPipeInstanceHealthHolder xpipeInstanceHealthHolder = this.collector.collectXPipeInstanceHealth(mockInstance, false);
+        XPipeInstanceHealthHolder xpipeInstanceHealthHolder = this.collector.collectXPipeInstanceHealth(mockInstance);
         Assert.assertEquals(Boolean.TRUE, xpipeInstanceHealthHolder.aggregate(mockInstance, 2));
     }
 

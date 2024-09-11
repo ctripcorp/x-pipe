@@ -31,10 +31,10 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     public static long UNSET_TIME = -1L;
 
-    protected AtomicLong lastPongTime = new AtomicLong(UNSET_TIME);
+    private AtomicLong lastPongTime = new AtomicLong(UNSET_TIME);
     private AtomicLong lastHealthDelayTime = new AtomicLong(UNSET_TIME);
 
-    protected AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
+    private AtomicReference<HEALTH_STATE> state = new AtomicReference<>(HEALTH_STATE.UNKNOWN);
 
     protected RedisHealthCheckInstance instance;
     protected final IntSupplier delayDownAfterMilli;
@@ -110,7 +110,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         return lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0;
     }
 
-    protected void loading() {
+    void loading() {
         HEALTH_STATE preState = state.get();
         if(preState.equals(preState.afterPingFail())) {
             return;
@@ -124,7 +124,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    protected void pong(){
+    void pong(){
         lastPongTime.set(System.currentTimeMillis());
         setPingUp();
     }
@@ -134,8 +134,6 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
             lastPongTime.set(System.currentTimeMillis());
         }
     }
-
-    protected void subSuccess(){}
 
     void delay(long delayMilli, long...srcShardDbId){
 
