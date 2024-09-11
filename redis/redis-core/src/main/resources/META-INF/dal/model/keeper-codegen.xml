@@ -12,7 +12,7 @@
   </entity>
   <entity name="dc">
     <attribute name="id" value-type="String" />
-    <attribute name="no" value-type="Long" />
+    <attribute name="dcId" value-type="Long" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="zone" value-type="String" />
     <entity-ref name="metaServer" type="list" names="metaServers" />

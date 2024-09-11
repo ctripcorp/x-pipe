@@ -86,7 +86,7 @@ public class DefaultMigrationResultReporter extends AbstractSiteLeaderIntervalAc
         }
         Map<String, DcMeta> allDcs = xpipeMeta.getDcs();
         Map<Long, String> result = new HashMap<>();
-        allDcs.values().forEach(dc -> result.put(dc.getNo(), dc.getId()));
+        allDcs.values().forEach(dc -> result.put(dc.getDcId(), dc.getId()));
         return result;
     }
 
