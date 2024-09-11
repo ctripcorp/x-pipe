@@ -204,12 +204,8 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         if(!(response instanceof Object[])) {
             throw new RedisRuntimeException(String.format("Subscribe subscribeChannel response incorrect: %s", response));
         }
-        SubscribeMessageHandler handler;
-        if (this.getName().equals(PSUBSCRIBE)) {
-            handler = getPSubscribeMessageHandler();
-        } else {
-            handler = getSubscribeMessageHandler();
-        }
+
+        SubscribeMessageHandler handler = getSubscribeMessageHandler();
 
         Pair<String, String> channelAndMessage = handler.handle(payloadToStringArray(response));
         if(channelAndMessage != null) {
@@ -219,10 +215,6 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
     protected SubscribeMessageHandler getSubscribeMessageHandler() {
         return new DefaultSubscribeMessageHandler();
-    }
-
-    protected SubscribeMessageHandler getPSubscribeMessageHandler() {
-        return new PsubscribeMessageHandler();
     }
 
     private void notifyListeners(Pair<String, String> channelAndMessage) {

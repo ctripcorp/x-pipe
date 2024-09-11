@@ -30,11 +30,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String healthStatusUrl;
 
-    private final String crossRegionHealthStatusUrl;
-
     private final String allHealthStatusUrl;
-
-    private final String allCrossRegionHealthStatusUrl;
 
     private final String pingStatusUrl;
 
@@ -73,9 +69,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
-        crossRegionHealthStatusUrl = String.format("%s/api/cross/region/health/{ip}/{port}", this.address);
         allHealthStatusUrl = String.format("%s/api/health/check/status/all", this.address);
-        allCrossRegionHealthStatusUrl = String.format("%s/api/health/cross/region/check/status/all", this.address);
         pingStatusUrl = String.format("%s/api/redis/ping/{ip}/{port}", this.address);
         innerShardDelayStatusUrl = String.format("%s/api/shard/inner/delay/{shardId}", this.address);
         innerDelayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
@@ -96,18 +90,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public HEALTH_STATE getCrossRegionInstanceStatus(String ip, int port) {
-        return restTemplate.getForObject(crossRegionHealthStatusUrl, HEALTH_STATE.class, ip, port);
-    }
-
-    @Override
     public Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus() {
         return restTemplate.getForObject(allHealthStatusUrl, AllInstanceHealthStatus.class);
-    }
-
-    @Override
-    public Map<HostPort, HealthStatusDesc> getAllInstanceCrossRegionHealthStatus() {
-        return restTemplate.getForObject(allCrossRegionHealthStatusUrl, AllInstanceHealthStatus.class);
     }
 
     @Override

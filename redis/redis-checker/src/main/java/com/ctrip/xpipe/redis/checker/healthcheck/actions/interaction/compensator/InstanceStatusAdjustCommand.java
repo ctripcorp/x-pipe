@@ -22,8 +22,6 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private ClusterShardHostPort instance;
 
-    private boolean isCrossRegion;
-
     private InstanceHealthStatusCollector collector;
 
     private OuterClientService outerClientService;
@@ -42,12 +40,11 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceStatusAdjustCommand.class);
 
-    public InstanceStatusAdjustCommand(ClusterShardHostPort instance, boolean isCrossRegion, InstanceHealthStatusCollector collector,
+    public InstanceStatusAdjustCommand(ClusterShardHostPort instance, InstanceHealthStatusCollector collector,
                                        OuterClientService outerClientService, boolean state, long deadlineTimeMilli,
                                        StabilityHolder stabilityHolder, CheckerConfig config, MetaCache metaCache,
                                        AlertManager alertManager) {
         this.instance = instance;
-        this.isCrossRegion = isCrossRegion;
         this.collector = collector;
         this.outerClientService = outerClientService;
         this.state = state;
@@ -77,7 +74,7 @@ public class InstanceStatusAdjustCommand extends AbstractCommand<Void> {
             return;
         }
         Boolean xpipeHealthState =
-                collector.collectXPipeInstanceHealth(instance.getHostPort(), isCrossRegion).aggregate(instance.getHostPort(), config.getQuorum());
+                collector.collectXPipeInstanceHealth(instance.getHostPort()).aggregate(instance.getHostPort(), config.getQuorum());
         if (null == xpipeHealthState || !xpipeHealthState.equals(state)) {
             logger.info("[compensate][skip][xpipe state change] {}->{} {}", state, xpipeHealthState, instance);
             future().setSuccess();

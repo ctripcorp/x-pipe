@@ -83,8 +83,6 @@ public class RedisSession {
                 Subscribe command = pubSubConnectionWrapper.command.get();
                 if (command instanceof CRDTSubscribeCommand) {
                     crdtsubscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
-                } else if (command instanceof PsubscribeCommand) {
-                    psubscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
                 } else {
                     subscribeIfAbsent(pubSubConnectionWrapper.getCallback(), channelArray);
                 }
@@ -109,10 +107,6 @@ public class RedisSession {
 
     public synchronized void crdtsubscribeIfAbsent(SubscribeCallback callback, String... channel) {
         subscribeIfAbsent(callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
-    }
-
-    public synchronized void psubscribeIfAbsent(SubscribeCallback callback, String... channel) {
-        subscribeIfAbsent(callback, () -> new PsubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
     private synchronized void subscribeIfAbsent(SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier, String... channel) {

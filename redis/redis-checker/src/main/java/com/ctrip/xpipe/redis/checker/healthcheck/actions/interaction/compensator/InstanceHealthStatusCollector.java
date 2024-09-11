@@ -7,7 +7,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -49,31 +48,27 @@ public class InstanceHealthStatusCollector {
         this.executors = executors;
     }
 
-    public Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> collect() throws ExecutionException, InterruptedException, TimeoutException {
-        return collect(false);
-    }
-
-    public Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> collect(boolean isCrossRegion)
+    public Pair<XPipeInstanceHealthHolder, OutClientInstanceHealthHolder> collect()
             throws InterruptedException, ExecutionException, TimeoutException {
         XPipeInstanceHealthHolder xpipeInstanceHealthHolder = new XPipeInstanceHealthHolder();
         OutClientInstanceHealthHolder outClientInstanceHealthHolder = new OutClientInstanceHealthHolder();
 
         ParallelCommandChain commandChain = new ParallelCommandChain(executors);
-        commandChain.add(new GetAllOutClientInstanceStatusCmd(outClientInstanceHealthHolder, isCrossRegion));
+        commandChain.add(new GetAllOutClientInstanceStatusCmd(outClientInstanceHealthHolder));
         remoteCheckerManager.getAllCheckerServices().forEach(checkerService -> {
-            commandChain.add(new GetRemoteCheckResultCmd(checkerService, xpipeInstanceHealthHolder, isCrossRegion));
+            commandChain.add(new GetRemoteCheckResultCmd(checkerService, xpipeInstanceHealthHolder));
         });
         commandChain.execute().get(5, TimeUnit.SECONDS);
 
         return new Pair<>(xpipeInstanceHealthHolder, outClientInstanceHealthHolder);
     }
 
-    public XPipeInstanceHealthHolder collectXPipeInstanceHealth(HostPort hostPort, boolean isCrossRegion)
+    public XPipeInstanceHealthHolder collectXPipeInstanceHealth(HostPort hostPort)
             throws InterruptedException, ExecutionException, TimeoutException {
         ParallelCommandChain commandChain = new ParallelCommandChain(executors);
         XPipeInstanceHealthHolder xpipeInstanceHealthHolder = new XPipeInstanceHealthHolder();
         remoteCheckerManager.getAllCheckerServices().forEach(checkerService -> {
-            commandChain.add(new GetRemoteHealthStateCmd(hostPort, checkerService, xpipeInstanceHealthHolder, isCrossRegion));
+            commandChain.add(new GetRemoteHealthStateCmd(hostPort, checkerService, xpipeInstanceHealthHolder));
         });
         commandChain.execute().get(5, TimeUnit.SECONDS);
 
@@ -86,22 +81,15 @@ public class InstanceHealthStatusCollector {
 
         private XPipeInstanceHealthHolder resultHolder;
 
-        private boolean isCrossRegion;
-
-        public GetRemoteCheckResultCmd(CheckerService checkerService, XPipeInstanceHealthHolder xpipeInstanceHealthHolder, boolean isCrossRegion) {
+        public GetRemoteCheckResultCmd(CheckerService checkerService, XPipeInstanceHealthHolder xpipeInstanceHealthHolder) {
             this.checkerService = checkerService;
             this.resultHolder = xpipeInstanceHealthHolder;
-            this.isCrossRegion = isCrossRegion;
         }
 
         @Override
         protected void doExecute() throws Throwable {
             try {
-                if (isCrossRegion) {
-                    resultHolder.add(checkerService.getAllInstanceCrossRegionHealthStatus());
-                } else {
-                    resultHolder.add(checkerService.getAllInstanceHealthStatus());
-                }
+                resultHolder.add(checkerService.getAllInstanceHealthStatus());
             } catch (RestClientException restException) {
                 logger.info("[doExecute][rest fail] {}", restException.getMessage());
             } catch (Throwable th) {
@@ -126,23 +114,15 @@ public class InstanceHealthStatusCollector {
 
         private OutClientInstanceHealthHolder resultHolder;
 
-        private boolean isCrossRegion;
-
-        public GetAllOutClientInstanceStatusCmd(OutClientInstanceHealthHolder outClientInstanceHealthHolder, boolean isCrossRegion) {
+        public GetAllOutClientInstanceStatusCmd(OutClientInstanceHealthHolder outClientInstanceHealthHolder) {
             this.resultHolder = outClientInstanceHealthHolder;
-            this.isCrossRegion = isCrossRegion;
         }
 
         @Override
         protected void doExecute() throws Throwable {
             try {
-                if (isCrossRegion) {
-                    resultHolder.addClusters(
-                            outerClientCache.getAllCurrentDcClusters(FoundationService.DEFAULT.getDataCenter()));
-                } else {
-                    resultHolder.addClusters(
-                            outerClientCache.getAllDcClusters(FoundationService.DEFAULT.getDataCenter()));
-                }
+                resultHolder.addClusters(
+                        outerClientCache.getAllActiveDcClusters(FoundationService.DEFAULT.getDataCenter()));
             } catch (Throwable th) {
                 logger.info("[doExecute][fail]", th);
             }
@@ -169,25 +149,16 @@ public class InstanceHealthStatusCollector {
 
         private XPipeInstanceHealthHolder resultHolder;
 
-        private boolean isCrossRegion;
-
-        public GetRemoteHealthStateCmd(HostPort hostPort, CheckerService checkerService, XPipeInstanceHealthHolder xpipeInstanceHealthHolder, boolean isCrossRegion) {
+        public GetRemoteHealthStateCmd(HostPort hostPort, CheckerService checkerService, XPipeInstanceHealthHolder xpipeInstanceHealthHolder) {
             this.hostPort = hostPort;
             this.checkerService = checkerService;
             this.resultHolder = xpipeInstanceHealthHolder;
-            this.isCrossRegion = isCrossRegion;
         }
 
         @Override
         protected void doExecute() throws Throwable {
             try {
-                HEALTH_STATE status;
-                if (isCrossRegion) {
-                    status = checkerService.getCrossRegionInstanceStatus(hostPort.getHost(), hostPort.getPort());
-                } else {
-                    status = checkerService.getInstanceStatus(hostPort.getHost(), hostPort.getPort());
-                }
-                resultHolder.add(new HealthStatusDesc(hostPort, status));
+                resultHolder.add(new HealthStatusDesc(hostPort, checkerService.getInstanceStatus(hostPort.getHost(), hostPort.getPort())));
             } catch (RestClientException restException) {
                 logger.info("[doExecute][rest fail] {}", restException.getMessage());
             } catch (Throwable th) {

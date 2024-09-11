@@ -18,8 +18,6 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis);
 
-    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
-
     KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
     ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
@@ -27,8 +25,6 @@ public interface HealthCheckInstanceManager {
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
     RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort);
-
-    RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort);
 
     KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
 
@@ -39,8 +35,6 @@ public interface HealthCheckInstanceManager {
     KeeperHealthCheckInstance removeKeeper(HostPort hostPort);
 
     RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort);
-
-    RedisHealthCheckInstance removeRedisInstanceForPingAction(HostPort hostPort);
 
     ClusterHealthCheckInstance remove(String cluster);
 
