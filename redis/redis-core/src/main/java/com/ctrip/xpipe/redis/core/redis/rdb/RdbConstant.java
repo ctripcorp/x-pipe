@@ -40,6 +40,7 @@ public class RdbConstant {
     public static final short REDIS_RDB_TYPE_HASH_ZIPLIST = 13;
     public static final short REDIS_RDB_TYPE_LIST_QUICKLIST = 14;
     public static final short REDIS_RDB_TYPE_STREAM_LISTPACKS = 15;
+    public static final short REDIS_RDB_TYPE_BITMAP = 16;
     public static final short REDIS_RDB_TYPE_CRDT = 200;
 
     // extend for rordb

@@ -24,7 +24,7 @@ public class CRedisAsyncClientTest {
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         AsyncRedisClient client = CRedisAsyncClientFactory.DEFAULT.getOrCreateClient("BBZ_RedisGovUni", null, executorService);
         Object resource = client.select("K");
-        CommandFuture<Object> future = client.write(resource, "SET", "K", "K1");
+        CommandFuture<Object> future = client.write(resource, 0, "SET", "K", "K1");
         assertArrayEquals("OK".getBytes(), (byte[]) future.get());
         executorService.shutdown();
     }

@@ -21,11 +21,6 @@ public class ClusterMetaVisitor implements MetaVisitor<ClusterMeta> {
 
     @Override
     public void accept(ClusterMeta clusterMeta) {
-        if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()
-                && clusterMeta.getBackupDcs() != null
-                && Sets.newHashSet(clusterMeta.getBackupDcs().toUpperCase().split("\\s*,\\s*")).contains(FoundationService.DEFAULT.getDataCenter().toUpperCase())) {
-            return;
-        }
         for(ShardMeta shard : clusterMeta.getShards().values()) {
             shardMetaVisitor.accept(shard);
         }

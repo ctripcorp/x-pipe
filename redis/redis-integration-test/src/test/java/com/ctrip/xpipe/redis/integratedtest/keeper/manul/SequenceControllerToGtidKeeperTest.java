@@ -77,7 +77,7 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
         if (redisOp.getOpType().equals(RedisOpType.PING) || redisOp.getOpType().equals(RedisOpType.SELECT)) {
             return;
         }
-        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
+        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp, 0);
         sequenceController.submit(command, commandOffset);
     }
 }

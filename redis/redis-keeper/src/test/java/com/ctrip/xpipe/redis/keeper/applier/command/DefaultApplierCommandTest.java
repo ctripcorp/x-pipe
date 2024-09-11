@@ -67,16 +67,16 @@ public class DefaultApplierCommandTest extends AbstractTest {
 
     @Test
     public void simple() throws Throwable {
-        RedisOpDataCommand command = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"));
+        RedisOpDataCommand command = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"), 0);
         command.execute().get();
     }
 
     @Test
     public void cooperateWithSequenceController() throws InterruptedException {
-        RedisOpDataCommand c1 = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"));
-        RedisOpDataCommand c2 = new DefaultDataCommand(client, newSetOp("SET", "K", "V12"));
-        RedisOpDataCommand c3 = new DefaultDataCommand(client, newSetOp("SET", "K", "V14"));
-        RedisOpDataCommand c4 = new DefaultDataCommand(client, newSetOp("SET", "K", "V16"));
+        RedisOpDataCommand c1 = new DefaultDataCommand(client, newSetOp("SET", "K", "V10"), 0);
+        RedisOpDataCommand c2 = new DefaultDataCommand(client, newSetOp("SET", "K", "V12"), 0);
+        RedisOpDataCommand c3 = new DefaultDataCommand(client, newSetOp("SET", "K", "V14"), 0);
+        RedisOpDataCommand c4 = new DefaultDataCommand(client, newSetOp("SET", "K", "V16"), 0);
 
         controller.submit(c1, 0);
         controller.submit(c2, 0);

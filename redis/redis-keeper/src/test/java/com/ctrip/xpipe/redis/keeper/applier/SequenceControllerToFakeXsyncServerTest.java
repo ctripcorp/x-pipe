@@ -84,7 +84,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
 
     @Override
     public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
-        
+
     }
 
     @Override
@@ -111,7 +111,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
     public void onCommand(long commandOffset, Object[] rawCmdArgs) {
 
         RedisOp redisOp = parser.parse(rawCmdArgs);
-        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp);
+        RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp, 0);
 
         sequenceController.submit(command, 0);
     }

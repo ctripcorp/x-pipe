@@ -84,7 +84,6 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
         Mockito.when(config.getDownAfterCheckNums()).thenReturn(5);
         Mockito.when(siteStability.isSiteStable()).thenReturn(true);
-        Mockito.when(delayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
     }
 
     @Override
@@ -103,9 +102,9 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(true);
         inspector.inspect();
 
-        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.1", 6379))),
+        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.1", 6379))), anyBoolean(),
                 ArgumentMatchers.eq(true), anyLong());
-        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.2", 6379))),
+        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.2", 6379))), anyBoolean(),
                 ArgumentMatchers.eq(false), anyLong());
     }
 
@@ -118,7 +117,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(false);
         inspector.inspect();
 
-        Mockito.verify(adjuster, Mockito.never()).adjustInstances(any(), anyBoolean(), anyLong());
+        Mockito.verify(adjuster, Mockito.never()).adjustInstances(any(), anyBoolean(), anyBoolean(), anyLong());
     }
 
     @Test
