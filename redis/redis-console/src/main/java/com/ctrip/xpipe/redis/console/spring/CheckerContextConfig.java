@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -190,9 +189,9 @@ public class CheckerContextConfig {
     public HealthCheckReporter healthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
                                                    GroupCheckerLeaderElector clusterServer, AllCheckerLeaderElector allCheckerLeaderElector, RedisDelayManager redisDelayManager,
                                                    CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
-                                                   ClusterHealthManager clusterHealthManager, List<HealthStateService> healthStateServices,
+                                                   ClusterHealthManager clusterHealthManager, HealthStateService healthStateService,
                                                    @Value("${server.port}") int serverPort) {
-        return new HealthCheckReporter(healthStateServices, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
+        return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
                 crossMasterDelayManager, pingService, clusterHealthManager, serverPort);
     }
 

@@ -97,7 +97,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
                     @Override
                     public DcMetaChangeManager create() {
                         return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
-                                checkerConsoleService, checkerConfig, metaCache);
+                                checkerConsoleService, checkerConfig);
                     }
                 });
     }

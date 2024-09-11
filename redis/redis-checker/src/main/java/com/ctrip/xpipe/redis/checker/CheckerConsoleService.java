@@ -57,9 +57,7 @@ public interface CheckerConsoleService {
     
     Map<String, Date> loadAllClusterCreateTime(String console);
 
-    Map<String, OuterClientService.ClusterInfo> loadAllDcOneWayClusterInfo(String console, String dc);
-
-    Map<String, OuterClientService.ClusterInfo> loadCurrentDcOneWayClusterInfo(String console, String dc);
+    Map<String, OuterClientService.ClusterInfo> loadAllActiveDcOneWayClusterInfo(String console, String activeDc);
 
     void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta);
 
