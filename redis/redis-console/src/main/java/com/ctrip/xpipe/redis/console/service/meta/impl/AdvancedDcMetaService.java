@@ -183,7 +183,7 @@ public class AdvancedDcMetaService implements DcMetaService {
                     .setId(dcTbl.getDcName())
                     .setLastModifiedTime(dcTbl.getDcLastModifiedTime())
                     .setZone(zoneTbl.getZoneName())
-                    .setNo(dcTbl.getId());
+                    .setDcId(dcTbl.getId());
             dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
 
             chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
