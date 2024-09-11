@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -49,8 +48,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @Autowired
     private CheckerConfig checkerConfig;
 
-    protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-
     @SuppressWarnings("unchecked")
     @Override
     public void handle(AbstractInstanceEvent event) {
@@ -73,7 +70,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.warn("[onEvent][site down, skip] {}", event);
             return;
         }
-        if(!event.getInstance().getCheckInfo().isCrossRegion() && !masterUp(event)) {
+        if(!masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
         }
@@ -111,20 +108,11 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected void doRealMarkUp(final AbstractInstanceEvent event) {
-        RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        if (metaCache.isCrossRegion(currentDcId, info.getDcId())) {
-            logger.info("[doRealMarkUp][{} is cross region, do not call client service ]{}", info, event);
-            return;
-        }
         getHealthStateSetterManager().set(event.getInstance().getCheckInfo().getClusterShardHostport(), true);
     }
 
     protected void doRealMarkDown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        if (metaCache.isCrossRegion(currentDcId, info.getDcId())) {
-            logger.info("[doRealMarkDown][{} is cross region, do not call client service ]{}", info, event);
-            return;
-        }
         if(stateUpNow(event)) {
             logger.warn("[markdown] instance state up now, do not mark down, {}", info);
         } else {

@@ -54,20 +54,15 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
 
     @Override
     public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String dcId, String clusterId, String shardId) {
-        List<ShardCheckerHealthCheckModel> result = new ArrayList<>();
         ClusterTbl clusterTbl = clusterService.find(clusterId);
         if (clusterTbl == null) {
             return null;
         }
         String activeDc = dcService.getDcName(clusterTbl.getActivedcId());
-        if (metaCache.isCrossRegion(dcId, activeDc)) {
-            result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(dcId, dcId, clusterId, shardId));
-        }
         if (activeDc.equalsIgnoreCase(currentDc)) {
             return getLocalDcShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId);
         }
-        result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(activeDc, dcId, clusterId, shardId));
-        return result;
+        return consoleManager.getShardAllCheckerGroupHealthCheck(activeDc, dcId, clusterId, shardId);
     }
 
     @Override
@@ -80,9 +75,8 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
         Map<HostPort, CommandFuture<Map<HostPort, String>>> redisCheckerActionMap = new HashMap<>();
         Map<HostPort, CommandFuture<Map<HostPort, HEALTH_STATE>>> redisCheckerHealthStateMap = new HashMap<>();
         redisOfDcClusterShard.forEach(redisMeta -> {
-            boolean isCrossRegion = metaCache.isCrossRegion(currentDc, dcService.getDcName(clusterTbl.getActivedcId()));
-            CommandFuture<Map<HostPort, String>> allHealthCheckInstance = consoleCheckerGroupService.getAllHealthCheckInstance(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort(), isCrossRegion);
-            CommandFuture<Map<HostPort, HEALTH_STATE>> allHealthStates = consoleCheckerGroupService.getAllHealthStates(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort(), isCrossRegion);
+            CommandFuture<Map<HostPort, String>> allHealthCheckInstance = consoleCheckerGroupService.getAllHealthCheckInstance(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort());
+            CommandFuture<Map<HostPort, HEALTH_STATE>> allHealthStates = consoleCheckerGroupService.getAllHealthStates(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort());
             redisCheckerActionMap.put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), allHealthCheckInstance);
             redisCheckerHealthStateMap.put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), allHealthStates);
         });
@@ -94,7 +88,7 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
         List<ShardCheckerHealthCheckModel> result = new ArrayList<>();
         for (Map.Entry<HostPort, Map<HostPort, InstanceCheckerHealthCheckModel>> entry : checkerInstancesMap.entrySet()) {
             HostPort checker = entry.getKey();
-            ShardCheckerHealthCheckModel shardCheckerHealthCheckModel = new ShardCheckerHealthCheckModel(checker.getHost(), checker.getPort(), currentDc);
+            ShardCheckerHealthCheckModel shardCheckerHealthCheckModel = new ShardCheckerHealthCheckModel(checker.getHost(), checker.getPort());
             if (checker.equals(checkerLeader)) {
                 shardCheckerHealthCheckModel.setCheckerRole(CheckerRole.LEADER);
             }
