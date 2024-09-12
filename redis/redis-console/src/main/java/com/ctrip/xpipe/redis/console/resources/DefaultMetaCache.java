@@ -58,7 +58,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private KeeperContainerService keeperContainerService;
 
     @Autowired
-    private ConsoleConfig consoleConfig;
+    protected ConsoleConfig consoleConfig;
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
@@ -71,11 +71,11 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
-    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+    protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    private ScheduledFuture<?> future;
+    protected ScheduledFuture<?> future;
 
-    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
+    protected AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
     protected final Condition condition = lock.newCondition();
@@ -99,7 +99,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         XpipeMeta xpipeMeta = null;
         if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
             try {
-                if(lastUpdateTime <= updateTime) {
+                if(getLastUpdateTime() <= updateTime) {
                     condition.await(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS);
                 }
                 xpipeMeta = meta.getKey();
@@ -125,7 +125,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         monitor2ClusterShard = null;
         allKeepers = null;
         allKeeperSize = DEFAULT_KEEPER_NUMBERS;
-        lastUpdateTime = 0;
     }
 
     public void startLoadMeta() {

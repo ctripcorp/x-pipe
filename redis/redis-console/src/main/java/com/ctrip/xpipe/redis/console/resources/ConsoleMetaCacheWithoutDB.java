@@ -2,29 +2,41 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
 
     private ConsolePortalService consolePortalService;
 
-    public ConsoleMetaCacheWithoutDB(ConsolePortalService consolePortalService) {
+    private ConsoleConfig config;
+
+    public ConsoleMetaCacheWithoutDB(ConsolePortalService consolePortalService, ConsoleConfig config) {
         this.consolePortalService = consolePortalService;
+        this.config = config;
     }
 
     @Override
     void loadCache() throws Exception {
 
-        TransactionMonitor.DEFAULT.logTransaction("MetaCache", "load", new Task() {
+        TransactionMonitor.DEFAULT.logTransaction("MetaCacheApi", "load", new Task() {
 
             @Override
-            public void go() throws Exception {
-                XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(lastUpdateTime);
-                refreshMetaParts();
-                refreshMeta(xpipeMeta);
+            public void go() {
+                try {
+                    XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getLastUpdateTime());
+                    checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
+                    refreshMetaParts();
+                    refreshMeta(xpipeMeta);
+                } catch (Throwable th) {
+                    logger.error("[MetaCacheApi][load]", th);
+                }
+
             }
 
             @Override
@@ -37,18 +49,17 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
     public void startLoadMeta() {
 
         logger.info("[loadMeta][start]{}", this);
-        while (true) {
-            try {
+
+        long refreshIntervalMilli = 500;
+
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                if(!taskTrigger.get())
+                    return;
                 loadCache();
-            } catch (Exception e) {
-                try {
-                    // 如果抛异常，特别是刚启动时候，不能大量请求
-                    Thread.sleep(500);
-                } catch (InterruptedException ex) {
-                    logger.error("[loadMeta][interrupted]", ex);
-                }
-                logger.error("[loadMeta]", e);
             }
-        }
+
+        }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 }

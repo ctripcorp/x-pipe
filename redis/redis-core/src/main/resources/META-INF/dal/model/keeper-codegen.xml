@@ -4,6 +4,7 @@
   <entity name="xpipe" root="true">
     <entity-ref name="redisCheckRule" type="list" names="redisCheckRules" />
     <entity-ref name="dc" type="list" names="dcs" />
+    <attribute name="updateTime" value-type="Long" />
   </entity>
   <entity name="redisCheckRule">
     <attribute name="id" value-type="long" />

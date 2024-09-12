@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFact
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,52 +87,24 @@ public class MetaSynchronizer {
         }, consoleConfig.getOuterClientSyncInterval(), consoleConfig.getOuterClientSyncInterval(), TimeUnit.MILLISECONDS);
     }
 
-    public void sync() {
-        Set<String> dcs = consoleConfig.getExtraSyncDC();
-        for(String dc : dcs) {
-            if(consoleCrossDcServer.amILeader()) {
-                if(!dcMetaSynchronizers.containsKey(dc)) {
-                    // meta.sync.external.dc 下dc 同步任务交给 cross dc leader
-                    dcMetaSynchronizers.put(dc, new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
-                            clusterService, dcService, organizationService, sentinelBalanceService,
-                            clusterTypeUpdateEventFactory, outerClientService, dc));
-                    dcMetaSynchronizers.get(dc).start();
-
-                }
-            } else {
-                if(dcMetaSynchronizers.containsKey(dc)) {
-                    dcMetaSynchronizers.get(dc).stop();
-                    dcMetaSynchronizers.remove(dc);
-                }
-            }
-
-        }
-        String currentDc = foundationService.getDataCenter();
-        if(dcs.contains(currentDc)) {
-            if(dcMetaSynchronizers.containsKey(currentDc)) {
-                dcMetaSynchronizers.get(currentDc).stop();
-                dcMetaSynchronizers.remove(currentDc);
-            }
-            return;
-        }
-        if(consoleLeaderElector.amILeader()) {
-            if(!dcMetaSynchronizers.containsKey(currentDc)) {
-                // 没有被cross dc leader 托管需要自己完成
-                dcMetaSynchronizers.put(currentDc, new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
+    private void processNeedAdd(Set<String> needProcess) {
+        for(String dc : needProcess) {
+            if(!dcMetaSynchronizers.containsKey(dc)) {
+                // 还未加入，需要添加
+                dcMetaSynchronizers.put(dc, new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                         clusterService, dcService, organizationService, sentinelBalanceService,
-                        clusterTypeUpdateEventFactory, outerClientService,currentDc));
-                dcMetaSynchronizers.get(currentDc).start();
-            }
-        } else {
-            if(dcMetaSynchronizers.containsKey(currentDc)) {
-                dcMetaSynchronizers.get(currentDc).stop();
-                dcMetaSynchronizers.remove(currentDc);
+                        clusterTypeUpdateEventFactory, outerClientService, dc));
+                dcMetaSynchronizers.get(dc).start();
             }
         }
-        // 检查 被移除托管的 dc
+    }
+
+    private void processNeedRemove(Set<String> needProcess) {
         Set<String> needRemoved = new HashSet<>();
+
         for(String dc : dcMetaSynchronizers.keySet()) {
-            if(!dcs.contains(dc) && !StringUtil.trimEquals(dc, currentDc)) {
+            if(!needProcess.contains(dc)) {
+                // 不在need process集合里面需要删除
                 needRemoved.add(dc);
             }
         }
@@ -142,6 +113,29 @@ public class MetaSynchronizer {
             dcMetaSynchronizers.get(dc).stop();
             dcMetaSynchronizers.remove(dc);
         }
+    }
+
+    private void updateTasks(Set<String> needProcess) {
+        processNeedAdd(needProcess);
+        processNeedRemove(needProcess);
+    }
+
+
+    public void sync() {
+
+        Set<String> dcs = consoleConfig.getExtraSyncDC();
+        String currentDc = foundationService.getDataCenter();
+        Set<String> needProcess = new HashSet<>();
+
+        if(consoleCrossDcServer.amILeader()) {
+            needProcess.addAll(dcs);
+            needProcess.add(currentDc);
+        } else {
+            if(consoleLeaderElector.amILeader() && !consoleConfig.disableDb()) {
+                needProcess.add(currentDc);
+            }
+        }
+        updateTasks(needProcess);
     }
 
 }

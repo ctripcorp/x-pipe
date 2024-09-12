@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -43,7 +44,7 @@ public class ConsolePortalService extends AbstractService {
     private FoundationService foundationService;
 
     public List<AzGroupModel> getAllAzGroups() {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain()
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain()
                         + AbstractConsoleController.API_PREFIX + "/azGroup/all").build();
         ResponseEntity<List<AzGroupModel>> resp = exchange(comp.toUri(),
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<AzGroupModel>>(){}, "getAllAzGroups");
@@ -52,7 +53,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<ProxyModel> getAllProxy() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() + "/api/proxies/all").build();
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() + "/api/proxies/all").build();
 
         ResponseEntity<List<ProxyModel>> resp = exchange(comp.toUri(),
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<ProxyModel>>(){}, "getAllProxy");
@@ -61,7 +62,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<ProxyModel> getMonitorActiveProxiesByDc() {
         String dc = foundationService.getDataCenter();
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() + "/api/proxies/monitor_active")
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() + "/api/proxies/monitor_active")
                 .queryParam("dc", dc)
                 .build();
 
@@ -72,7 +73,7 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public XpipeMeta getXpipeAllMeta(long updateTime) throws SAXException, IOException {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() + ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() + ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
                 .queryParam("format", "xml")
                 .queryParam("updateTime", updateTime)
                 .build();
@@ -84,7 +85,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<KeepercontainerTbl> getAllKeeperContainers() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                         AbstractConsoleController.API_PREFIX + "/keeper_container/all").build();
 
         ResponseEntity<List<KeepercontainerTbl>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
@@ -99,7 +100,7 @@ public class ConsolePortalService extends AbstractService {
             params.add("util", util);
         }
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(params);
-        ResponseEntity<RetMessage> resp = exchange(config.getConsoleDomain() +
+        ResponseEntity<RetMessage> resp = exchange(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/config/set", HttpMethod.POST, requestEntity, RetMessage.class, "setConfig");
         RetMessage retMessage = resp.getBody();
         return retMessage.getState() == 0;
@@ -107,7 +108,7 @@ public class ConsolePortalService extends AbstractService {
 
     public ConfigTbl getConfig(String key, String subId) {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/config")
                 .queryParam("key", key)
                 .queryParam("subId", subId).
@@ -120,7 +121,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<ConfigTbl> getAllConfigs(String key) {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/config/getAll/{key}").buildAndExpand(key);
 
         ResponseEntity<List<ConfigTbl>> resp = exchange(comp.toUri(),
@@ -129,7 +130,7 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public List<ConfigTbl> findAllByKeyAndValueAndUntilAfter(String key, String value, Date until) {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                         AbstractConsoleController.API_PREFIX  + "/config/findAll").build();
         MultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
         params.add("key", key);
@@ -143,7 +144,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<OrganizationTbl> getAllOrganizations() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/organizations/all").build();
 
         ResponseEntity<List<OrganizationTbl>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
@@ -153,7 +154,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<DcTbl> getAllDcs() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/dc_tbls").build();
 
         ResponseEntity<List<DcTbl>> resp = restTemplate.exchange(comp.toUri(), HttpMethod.GET, null,
@@ -162,7 +163,7 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public List<DcTbl> findClusterRelatedDc(String clusterId) {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/clusters/" + clusterId + "/dcs").build();
         ResponseEntity<List<DcTbl>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<DcTbl>>(){}, "findClusterRelatedDc");
@@ -171,7 +172,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<ClusterTbl> findAllClusters() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX + "/clusters/all").build();
 
         ResponseEntity<List<ClusterTbl>> resp = exchange(comp.toUri(),
@@ -182,7 +183,7 @@ public class ConsolePortalService extends AbstractService {
 
     public List<ProxyTunnelInfo> findAllTunnelInfo() {
 
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 ConsoleCheckerPath.PATH_GET_PROXY_CHAINS).build();
 
         ResponseEntity<List<ProxyTunnelInfo>> resp = exchange(comp.toUri(),
@@ -192,7 +193,7 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId) {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleDomain() +
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX + "/redis/{dcClusterShardId}").buildAndExpand(dcClusterShardId);
         ResponseEntity<List<RedisTbl>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<RedisTbl>>(){}, "findAllByDcClusterShard");
@@ -201,7 +202,7 @@ public class ConsolePortalService extends AbstractService {
 
     public void updateBatchKeeperActive(List<RedisTbl> redises) {
         HttpEntity<List<RedisTbl>> requestEntity = new HttpEntity<>(redises);
-        ResponseEntity<RetMessage> resp = exchange(config.getConsoleDomain() +
+        ResponseEntity<RetMessage> resp = exchange(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX + "/redis/updateBatchKeeperActive",
                 HttpMethod.POST, requestEntity, RetMessage.class, "updateBatchKeeperActive"
         );
@@ -225,7 +226,7 @@ public class ConsolePortalService extends AbstractService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<RedisCreateInfo> requestEntity = new HttpEntity<>(redisCreateInfo, headers);
-        ResponseEntity<RetMessage> resp = exchange(config.getConsoleDomain() +
+        ResponseEntity<RetMessage> resp = exchange(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX  + "/redis/insert", HttpMethod.POST,
                 requestEntity, RetMessage.class, "insertRedises");
         RetMessage retMessage = resp.getBody();
@@ -237,7 +238,7 @@ public class ConsolePortalService extends AbstractService {
     public void bindDc(DcClusterTbl dcClusterTbl) {
         HttpEntity<DcClusterTbl> requestEntity = new HttpEntity<>(dcClusterTbl);
 
-        ResponseEntity<RetMessage> resp = exchange(config.getConsoleDomain() +
+        ResponseEntity<RetMessage> resp = exchange(config.getConsoleNoDbDomain() +
                         AbstractConsoleController.API_PREFIX + "/dc/bind",
                 HttpMethod.POST, requestEntity, RetMessage.class, "bindDc"
         );
@@ -248,7 +249,7 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public List<RouteModel> getActiveRoutes() {
-        ResponseEntity<String> resp = exchange(config.getConsoleDomain() +
+        ResponseEntity<String> resp = exchange(config.getConsoleNoDbDomain() +
                         AbstractConsoleController.API_PREFIX + "/routes/active",
                 HttpMethod.GET, null, String.class, "getActiveRoutes"
         );
@@ -257,9 +258,25 @@ public class ConsolePortalService extends AbstractService {
         return pretty.decode(content, List.class);
     }
 
+    public void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper) {
+        try {
+            catTransactionMonitor.logTransaction("ConsoleForwardAPI", "updateKeeperStatus",  new Callable<String>() {
+                @Override
+                public String call() {
+                    restTemplate.put( config.getConsoleNoDbDomain() + "/api/dc/{dcId}/cluster/{clusterId}/shard/{shardId}/keepers/adjustment",
+                            newActiveKeeper, dcId, clusterId, shardId);
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            logger.error("[updateKeeperStatus]", e);
+        }
+
+    }
+
     <T> ResponseEntity<T> exchange(String url, HttpMethod var2, HttpEntity<?> httpEntity, Class<T> type, String name) {
         try {
-            return catTransactionMonitor.logTransaction("API", name, new Callable<ResponseEntity<T>>() {
+            return catTransactionMonitor.logTransaction("ConsoleForwardAPI", name, new Callable<ResponseEntity<T>>() {
                 @Override
                 public ResponseEntity<T> call() {
                     return restTemplate.exchange(url, var2, httpEntity, type);
@@ -273,7 +290,7 @@ public class ConsolePortalService extends AbstractService {
 
     <T> ResponseEntity<T> exchange(URI uri, HttpMethod var2, HttpEntity<?> httpEntity, ParameterizedTypeReference<T> type, String name) {
         try {
-            return catTransactionMonitor.logTransaction("API", name, new Callable<ResponseEntity<T>>() {
+            return catTransactionMonitor.logTransaction("ConsoleForwardAPI", name, new Callable<ResponseEntity<T>>() {
                 @Override
                 public ResponseEntity<T> call() {
                     return restTemplate.exchange(uri, var2, httpEntity, type);
