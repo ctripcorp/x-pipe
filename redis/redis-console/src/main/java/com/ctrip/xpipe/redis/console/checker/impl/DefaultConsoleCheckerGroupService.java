@@ -40,13 +40,13 @@ public class DefaultConsoleCheckerGroupService implements ConsoleCheckerGroupSer
     }
 
     @Override
-    public CommandFuture<Map<HostPort, String>> getAllHealthCheckInstance(long clusterDbId, String ip, int port, boolean isCrossRegion) {
-        return new InstanceHealthCheckGetGroupCommand(checkerApiService, getAllChecker(clusterDbId), ip, port, isCrossRegion, executor).execute(executor);
+    public CommandFuture<Map<HostPort, String>> getAllHealthCheckInstance(long clusterDbId, String ip, int port) {
+        return new InstanceHealthCheckGetGroupCommand(checkerApiService, getAllChecker(clusterDbId), ip, port, executor).execute(executor);
     }
 
     @Override
-    public CommandFuture<Map<HostPort, HEALTH_STATE>> getAllHealthStates(long clusterDbId, String ip, int port, boolean isCrossRegion) {
-        return new InstanceHealthStatusGetGroupCommand(checkerApiService, getAllChecker(clusterDbId), ip, port, isCrossRegion, executor).execute(executor);
+    public CommandFuture<Map<HostPort, HEALTH_STATE>> getAllHealthStates(long clusterDbId, String ip, int port) {
+        return new InstanceHealthStatusGetGroupCommand(checkerApiService, getAllChecker(clusterDbId), ip, port, executor).execute(executor);
     }
 
 }

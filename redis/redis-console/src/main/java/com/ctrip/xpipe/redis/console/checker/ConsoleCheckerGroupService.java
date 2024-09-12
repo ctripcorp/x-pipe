@@ -10,8 +10,8 @@ public interface ConsoleCheckerGroupService {
 
     HostPort getCheckerLeader(long clusterDbId);
 
-    CommandFuture<Map<HostPort, String>> getAllHealthCheckInstance(long clusterDbId, String ip, int port, boolean isCrossRegion);
+    CommandFuture<Map<HostPort, String>> getAllHealthCheckInstance(long clusterDbId, String ip, int port);
 
-    CommandFuture<Map<HostPort, HEALTH_STATE>> getAllHealthStates(long clusterDbId, String ip, int port, boolean isCrossRegion);
+    CommandFuture<Map<HostPort, HEALTH_STATE>> getAllHealthStates(long clusterDbId, String ip, int port);
 
 }

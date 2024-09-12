@@ -121,8 +121,8 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
-        public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig, MetaCache metaCache) {
-            return new DefaultRemoteCheckerManager(checkerConfig, new GroupCheckerLeaderElector("test"), metaCache);
+        public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
+            return new DefaultRemoteCheckerManager(checkerConfig, new GroupCheckerLeaderElector("test"));
         }
 
         @Bean
@@ -210,12 +210,7 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
                 }
 
                 @Override
-                public Map<String, OuterClientService.ClusterInfo> getAllDcClusters(String dc) {
-                    return null;
-                }
-
-                @Override
-                public Map<String, OuterClientService.ClusterInfo> getAllCurrentDcClusters(String dc) {
+                public Map<String, OuterClientService.ClusterInfo> getAllActiveDcClusters(String activeDc) {
                     return null;
                 }
 

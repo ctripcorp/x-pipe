@@ -74,8 +74,8 @@ public class DefaultConsoleDcCheckerServiceTest {
         Mockito.when(metaCache.getRedisOfDcClusterShard(DC, CLUSTER, SHARD)).thenReturn(redisMetas);
         CommandFuture future1 = Mockito.mock(CommandFuture.class);
         CommandFuture future2 = Mockito.mock(CommandFuture.class);
-        Mockito.when(consoleCheckerGroupService.getAllHealthCheckInstance(clusterDbId, IP, PORT, false)).thenReturn(future1);
-        Mockito.when(consoleCheckerGroupService.getAllHealthStates(clusterDbId, IP, PORT, false)).thenReturn(future2);
+        Mockito.when(consoleCheckerGroupService.getAllHealthCheckInstance(clusterDbId, IP, PORT)).thenReturn(future1);
+        Mockito.when(consoleCheckerGroupService.getAllHealthStates(clusterDbId, IP, PORT)).thenReturn(future2);
         HostPort checker = new HostPort("127.0.0.2", 8080);
         Map<HostPort, String> checkerActionMap = new HashMap<>();
         Map<HostPort, HEALTH_STATE> checkerHealthStateMap = new HashMap<>();;

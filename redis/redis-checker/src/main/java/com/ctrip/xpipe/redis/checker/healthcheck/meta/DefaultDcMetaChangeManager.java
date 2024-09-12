@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -49,8 +48,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private CheckerConfig checkerConfig;
 
-    private MetaCache metaCache;
-
     private final String dcId;
 
     private final List<ClusterMeta> clustersToDelete = new ArrayList<>();
@@ -61,14 +58,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager,
                                       HealthCheckEndpointFactory healthCheckEndpointFactory,
                                       CheckerConsoleService checkerConsoleService,
-                                      CheckerConfig checkerConfig,
-                                      MetaCache metaCache) {
+                                      CheckerConfig checkerConfig) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
         this.healthCheckEndpointFactory = healthCheckEndpointFactory;
         this.checkerConsoleService = checkerConsoleService;
         this.checkerConfig = checkerConfig;
-        this.metaCache = metaCache;
     }
 
     @Override
@@ -109,12 +104,10 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private void removeAndAdd() {
         this.redisListToDelete.forEach(this::removeRedis);
-        this.redisListToDelete.forEach(this::removeRedisOnlyForPingAction);
         this.clustersToDelete.forEach(this::removeCluster);
 
         this.clustersToAdd.forEach(this::addCluster);
         this.redisListToAdd.forEach(this::addRedis);
-        this.redisListToAdd.forEach(this::addRedisOnlyForPingAction);
     }
 
     private void clearUp() {
@@ -132,24 +125,19 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         logger.info("[removeCluster][{}][{}] remove health check", dcId, removed.getId());
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
-        ClusterMetaVisitor clusterMetaPingActionVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removePingActionConsumer)));
         clusterMetaVisitor.accept(removed);
-        clusterMetaPingActionVisitor.accept(removed);
     }
 
     private void addCluster(ClusterMeta added) {
-        if (isInterestedInCluster(added)) {
-            logger.info("[addCluster][{}][{}] add health check", dcId, added.getId());
-            instanceManager.getOrCreate(added);
-            ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
-            clusterMetaVisitor.accept(added);
+        if (!isInterestedInCluster(added)) {
+            logger.info("[addCluster][{}][skip] cluster not interested", added.getId());
+            return;
         }
 
-        if (isOneWayClusterActiveDcCrossRegionAndCurrentDc(added)) {
-            ClusterMetaVisitor clusterMetaPingActionVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addPingActionConsumer)));
-            clusterMetaPingActionVisitor.accept(added);
-        }
-
+        logger.info("[addCluster][{}][{}] add health check", dcId, added.getId());
+        instanceManager.getOrCreate(added);
+        ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
+        clusterMetaVisitor.accept(added);
     }
 
     private void removeRedis(RedisMeta removed) {
@@ -211,11 +199,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return result;
     }
 
-    private boolean isOneWayClusterActiveDcCrossRegionAndCurrentDc(ClusterMeta cluster) {
-        ClusterType clusterType = ClusterType.lookup(cluster.getType());
-        return clusterType == ClusterType.ONE_WAY && isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster);
-    }
-
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
     }
@@ -237,10 +220,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
     }
 
-    private boolean isClusterActiveDcCrossRegion(ClusterMeta clusterMeta) {
-        return metaCache.isCrossRegion(currentDcId, clusterMeta.getActiveDc());
-    }
-
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
@@ -252,20 +231,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         @Override
         public void accept(RedisMeta redisMeta) {
             addRedis(redisMeta);
-        }
-    };
-
-    private Consumer<RedisMeta> removePingActionConsumer = new Consumer<RedisMeta>() {
-        @Override
-        public void accept(RedisMeta redisMeta) {
-            removeRedisOnlyForPingAction(redisMeta);
-        }
-    };
-
-    private Consumer<RedisMeta> addPingActionConsumer = new Consumer<RedisMeta>() {
-        @Override
-        public void accept(RedisMeta redisMeta) {
-            addRedisOnlyForPingAction(redisMeta);
         }
     };
 
@@ -309,20 +274,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private void addRedisOnlyForUsedMemory(RedisMeta added) {
         logger.info("[addRedisOnlyForUsedMemory][{}:{}] {}", added.getIp(), added.getPort(), added);
         instanceManager.getOrCreateRedisInstanceForAssignedAction(added);
-    }
-
-    private void removeRedisOnlyForPingAction(RedisMeta removed) {
-        if (null != instanceManager.removeRedisInstanceForPingAction(new HostPort(removed.getIp(), removed.getPort()))) {
-            logger.info("[removeRedisOnlyForPingAction][{}:{}] {}", removed.getIp(), removed.getPort(), removed);
-        }
-    }
-
-    private void addRedisOnlyForPingAction(RedisMeta added) {
-        if (!isOneWayClusterActiveDcCrossRegionAndCurrentDc(added.parent().parent())) {
-            return;
-        }
-        logger.info("[addRedisOnlyForPingAction][{}:{}] {}", added.getIp(), added.getPort(), added);
-        instanceManager.getOrCreateRedisInstanceForPsubPingAction(added);
     }
 
     private class KeeperContainerMetaComparatorVisitor implements MetaComparatorVisitor<InstanceNode> {

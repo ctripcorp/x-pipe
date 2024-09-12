@@ -7,7 +7,6 @@ import java.util.List;
 
 public class ShardCheckerHealthCheckModel {
 
-    private String idc;
     private String host;
     private int port;
     private CheckerRole checkerRole;
@@ -16,20 +15,11 @@ public class ShardCheckerHealthCheckModel {
     public ShardCheckerHealthCheckModel() {
     }
 
-    public ShardCheckerHealthCheckModel(String host, int port, String idc) {
+    public ShardCheckerHealthCheckModel(String host, int port) {
         this.host = host;
         this.port = port;
-        this.idc = idc;
         this.checkerRole = CheckerRole.FOLLOWER;
         this.instances = new ArrayList<>();
-    }
-
-    public String getIdc() {
-        return idc;
-    }
-
-    public void setIdc(String idc) {
-        this.idc = idc;
     }
 
     public String getHost() {

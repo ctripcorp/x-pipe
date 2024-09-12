@@ -15,14 +15,11 @@ public class InstanceHealthCheckGetCommand extends AbstractCommand<String> {
 
     int port;
 
-    boolean isCrossRegion;
-
-    public InstanceHealthCheckGetCommand(ConsoleCheckerApiService service, HostPort checker, String ip, int port, boolean isCrossRegion) {
+    public InstanceHealthCheckGetCommand(ConsoleCheckerApiService service, HostPort checker, String ip, int port) {
         this.service = service;
         this.checker = checker;
         this.ip = ip;
         this.port = port;
-        this.isCrossRegion = isCrossRegion;
     }
 
     @Override
@@ -32,11 +29,7 @@ public class InstanceHealthCheckGetCommand extends AbstractCommand<String> {
 
     @Override
     protected void doExecute() throws Throwable {
-        if (isCrossRegion) {
-            future().setSuccess(service.getCrossRegionHealthCheckInstance(checker, ip, port));
-        } else {
-            future().setSuccess(service.getHealthCheckInstance(checker, ip, port));
-        }
+        future().setSuccess(service.getHealthCheckInstance(checker, ip, port));
     }
 
     @Override
