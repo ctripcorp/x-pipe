@@ -14,7 +14,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -154,9 +156,9 @@ public class DefaultClusterHealthMonitorTest {
     }
 
     private void fakeShardService(String... shardIds) {
-        List<ShardMeta> result = Lists.newArrayList();
+        Set<String> result = new HashSet<>();
         for(String shardId : shardIds) {
-            result.add(new ShardMeta().setId(shardId));
+            result.add(shardId);
         }
         when(metaCache.getAllShardNamesByClusterName(clusterId)).thenReturn(result);
     }

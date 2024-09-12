@@ -213,7 +213,8 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public List<ShardMeta> getAllShardNamesByClusterName(String clusterName) {
-        return Collections.emptyList();
+    public Set<String> getAllShardNamesByClusterName(String clusterName) {
+        return Collections.emptySet();
     }
+
 }
