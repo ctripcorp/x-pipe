@@ -89,7 +89,6 @@ public abstract class AbstractMetaCache implements MetaCache {
         monitor2ClusterShard = Maps.newHashMap();
         allKeeperSize = allKeepers == null ? DEFAULT_KEEPER_NUMBERS : allKeepers.size();
         allKeepers = null;
-        lastUpdateTime = System.currentTimeMillis();
     }
 
     protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas, List<RedisCheckRuleMeta> redisCheckRuleMetas){
@@ -104,6 +103,8 @@ public abstract class AbstractMetaCache implements MetaCache {
         for(RedisCheckRuleMeta redisCheckRuleMeta : redisCheckRuleMetas) {
             xpipeMeta.addRedisCheckRule(redisCheckRuleMeta);
         }
+
+        xpipeMeta.setUpdateTime(System.currentTimeMillis());
 
         return xpipeMeta;
 
@@ -307,7 +308,11 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     @Override
     public long getLastUpdateTime() {
-        return lastUpdateTime;
+        if(getXpipeMeta() != null) {
+            return getXpipeMeta().getUpdateTime();
+        } else {
+            return 0l;
+        }
     }
 
 

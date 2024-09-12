@@ -154,4 +154,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getExtraSyncDC();
 
+	String getConsoleNoDbDomain();
+
 }

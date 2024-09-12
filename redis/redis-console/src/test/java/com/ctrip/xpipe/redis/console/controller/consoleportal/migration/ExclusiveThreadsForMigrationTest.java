@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
@@ -88,7 +88,7 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
 
         @Bean
         public ConsoleConfig consoleConfig() {
-            return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+            return new DefaultConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
                     new ConsoleConfigBean(FoundationService.DEFAULT),
                     new DataCenterConfigBean(),
                     new CommonConfigBean());

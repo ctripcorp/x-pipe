@@ -33,11 +33,17 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
 
+    public static final String KEY_CONSOLE_NO_DB_DOMAIN = "console.no.db.domain";
+
     private AtomicReference<String> zkConnection = new AtomicReference<>();
     private AtomicReference<String> zkNameSpace = new AtomicReference<>();
 
     public DataCenterConfigBean() {
         super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.DATA_CENTER_CONFIG_NAME));
+    }
+
+    public String getConsoleNoDbDomain() {
+        return getProperty(KEY_CONSOLE_NO_DB_DOMAIN, "");
     }
 
     public String getZkConnectionString() {

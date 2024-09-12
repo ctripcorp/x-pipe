@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
@@ -29,15 +30,18 @@ import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @author lishanglin
@@ -46,6 +50,9 @@ import java.util.*;
 @RestController
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class ConsoleCheckerController extends AbstractConsoleController {
+
+    @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+    private ExecutorService executors;
 
     @Autowired
     private MetaCache metaCache;
@@ -81,6 +88,8 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     private CheckerDbConfig checkerDbConfig;
 
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
     public String getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
@@ -96,10 +105,23 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
-    public String getDividedMetaLongPull(@RequestParam(value="format", required = false) String format,
-                                         @RequestParam(value="updateTime") long updateTime) throws InterruptedException {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMetaLongPull(updateTime);
-        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+    public DeferredResult<String> getDividedMetaLongPull(@RequestParam(value="format", required = false) String format,
+                                                         @RequestParam(value="updateTime") long updateTime) {
+        DeferredResult<String> response = new DeferredResult<>(Long.valueOf(consoleConfig.getServletMethodTimeoutMilli()));
+
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    XpipeMeta xpipeMeta = metaCache.getXpipeMetaLongPull(updateTime);
+                    response.setResult((format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta));
+                } catch (InterruptedException e) {
+                    response.setErrorResult(e.getMessage());
+                }
+            }
+        });
+
+        return response;
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_DC_ALL_META)

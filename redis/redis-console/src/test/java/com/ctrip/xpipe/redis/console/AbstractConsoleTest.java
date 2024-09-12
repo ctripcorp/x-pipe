@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import org.junit.BeforeClass;
 
 /**
@@ -25,7 +25,7 @@ public abstract class AbstractConsoleTest extends AbstractCheckerTest {
     @Override
     protected CheckerConfig buildCheckerConfig() {
 
-        return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+        return new DefaultConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
                 new ConsoleConfigBean(FoundationService.DEFAULT),
                 new DataCenterConfigBean(),
                 new CommonConfigBean());

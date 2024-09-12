@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -44,7 +44,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
-import org.springframework.stereotype.Service;
 
 
 /**
@@ -91,7 +90,7 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 	public MetaCache metaCache(ConsolePortalService consolePortalService, ConsoleConfig config) {
 		if(config.disableDb()) {
-			return new ConsoleMetaCacheWithoutDB(consolePortalService);
+			return new ConsoleMetaCacheWithoutDB(consolePortalService, config);
 		}
 		return new DefaultMetaCache();
 	}
@@ -110,7 +109,7 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public ConsoleConfig consoleConfig(FoundationService foundationService) {
-		return new CombConsoleConfig(
+		return new DefaultConsoleConfig(
 				new CheckConfigBean(foundationService),
 				new ConsoleConfigBean(foundationService),
 				new DataCenterConfigBean(),

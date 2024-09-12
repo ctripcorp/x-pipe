@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Configuration
 public class CommonConfigBean extends AbstractConfigBean {
@@ -68,7 +69,10 @@ public class CommonConfigBean extends AbstractConfigBean {
     }
 
     public boolean disableDb() {
-        return getExtraSyncDC().contains(FoundationService.DEFAULT.getDataCenter());
+        return getExtraSyncDC().stream()
+                .map(String::toUpperCase)
+                .collect(Collectors.toSet())
+                .contains(FoundationService.DEFAULT.getDataCenter());
     }
 
     public Set<String> getAlertWhileList() {
