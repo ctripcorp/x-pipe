@@ -677,14 +677,14 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public List<ShardMeta> getAllShardNamesByClusterName(String clusterName) {
-        List<ShardMeta> shards = new ArrayList<>();
+    public Set<String> getAllShardNamesByClusterName(String clusterName) {
+        Set<String> shards = new HashSet<>();
         XpipeMeta xpipeMeta = meta.getKey();
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
             if (clusterMeta != null) {
                Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
-               shards.addAll(shardMetaMap.values());
+               shards.addAll(shardMetaMap.keySet());
             }
         }
         return shards;

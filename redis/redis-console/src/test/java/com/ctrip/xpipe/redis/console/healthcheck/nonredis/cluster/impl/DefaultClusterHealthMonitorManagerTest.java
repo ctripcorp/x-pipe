@@ -14,7 +14,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -151,9 +153,9 @@ public class DefaultClusterHealthMonitorManagerTest {
     }
 
     private void fakeShardService(String clusterId, String... shardIds) {
-        List<ShardMeta> result = Lists.newArrayList();
+        Set<String> result = new HashSet<>();
         for(String shardId : shardIds) {
-            result.add(new ShardMeta().setId(shardId));
+            result.add(shardId);
         }
         when(metaCache.getAllShardNamesByClusterName(clusterId)).thenReturn(result);
     }
