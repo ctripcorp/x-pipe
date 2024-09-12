@@ -38,7 +38,7 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     @Override
     public String getName() {
-        return SUBSCRIBE;
+        return "subscribe";
     }
 
     @Override

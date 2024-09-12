@@ -50,10 +50,10 @@ public class InstanceStatusAdjuster {
         this.executors = executorFactory.createExecutorService();
     }
 
-    public void adjustInstances(Set<HostPort> instances, boolean isCrossRegion, boolean state, long timeoutAtMilli) {
+    public void adjustInstances(Set<HostPort> instances, boolean state, long timeoutAtMilli) {
         for (HostPort instance: instances) {
             Pair<String, String> clusterShard = metaCache.findClusterShard(instance);
-            new InstanceStatusAdjustCommand(new ClusterShardHostPort(clusterShard.getKey(), clusterShard.getValue(), instance), isCrossRegion,
+            new InstanceStatusAdjustCommand(new ClusterShardHostPort(clusterShard.getKey(), clusterShard.getValue(), instance),
                     collector, OuterClientService.DEFAULT, state, timeoutAtMilli, siteStability, config, metaCache, alertManager).execute(executors);
         }
     }

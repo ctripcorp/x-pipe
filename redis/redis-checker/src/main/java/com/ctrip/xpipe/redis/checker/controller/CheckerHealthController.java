@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultPsubPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
@@ -38,9 +37,6 @@ public class CheckerHealthController {
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Autowired
-    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
-
-    @Autowired
     private RedisUsedMemoryCollector redisUsedMemoryCollector;
 
     @Autowired
@@ -61,25 +57,9 @@ public class CheckerHealthController {
         else return HEALTH_STATE.UNKNOWN;
     }
 
-    @RequestMapping(value = "/health/cross/region/{ip}/{port}", method = RequestMethod.GET)
-    public HEALTH_STATE getCrossRegionHealthState(@PathVariable String ip, @PathVariable int port) {
-        if (siteStability.isSiteStable()) return defaultPsubPingActionCollector.getHealthState(new HostPort(ip, port));
-        else return HEALTH_STATE.UNKNOWN;
-    }
-
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
     public String getHealthCheckInstance(@PathVariable String ip, @PathVariable int port) {
         RedisHealthCheckInstance instance = instanceManager.findRedisHealthCheckInstance(new HostPort(ip, port));
-        if(instance == null) {
-            return "Not found";
-        }
-        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
-        return Codec.DEFAULT.encode(model);
-    }
-
-    @RequestMapping(value = "/health/check/cross/region//instance/{ip}/{port}", method = RequestMethod.GET)
-    public String getCrossRegionHealthCheckInstance(@PathVariable String ip, @PathVariable int port) {
-        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForPsubPingAction(new HostPort(ip, port));
         if(instance == null) {
             return "Not found";
         }
@@ -117,16 +97,6 @@ public class CheckerHealthController {
         return Codec.DEFAULT.encode(model);
     }
 
-    @RequestMapping(value = "/health/check/redis-for-ping-action/{ip}/{port}", method = RequestMethod.GET)
-    public String getHealthCheckRedisInstanceForPingAction(@PathVariable String ip, @PathVariable int port) {
-        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForPsubPingAction(new HostPort(ip, port));
-        if(instance == null) {
-            return "Not found";
-        }
-        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
-        return Codec.DEFAULT.encode(model);
-    }
-
     @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
     public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
         return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
@@ -140,12 +110,6 @@ public class CheckerHealthController {
     @GetMapping("/health/check/status/all")
     public Map<HostPort, HealthStatusDesc> getAllHealthStatusDesc() {
         if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getAllHealthStatus();
-        else return Collections.emptyMap();
-    }
-
-    @GetMapping("/health/check/cross/region/status/all")
-    public Map<HostPort, HealthStatusDesc> getAllCrossRegionHealthStatusDesc() {
-        if (siteStability.isSiteStable()) return defaultPsubPingActionCollector.getAllHealthStatus();
         else return Collections.emptyMap();
     }
 

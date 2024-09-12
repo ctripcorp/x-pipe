@@ -24,16 +24,13 @@ public class InstanceHealthCheckGetGroupCommand extends AbstractCommand<Map<Host
 
     int port;
 
-    boolean isCrossRegion;
-
     ExecutorService executor;
 
-    public InstanceHealthCheckGetGroupCommand(ConsoleCheckerApiService service, List<HostPort> checkers, String ip, int port, boolean isCrossRegion, ExecutorService executor) {
+    public InstanceHealthCheckGetGroupCommand(ConsoleCheckerApiService service, List<HostPort> checkers, String ip, int port, ExecutorService executor) {
         this.service = service;
         this.checkers = checkers;
         this.ip = ip;
         this.port = port;
-        this.isCrossRegion = isCrossRegion;
         this.executor = executor;
     }
 
@@ -46,7 +43,7 @@ public class InstanceHealthCheckGetGroupCommand extends AbstractCommand<Map<Host
     protected void doExecute() {
         Map<HostPort, CommandFuture<String>> futureMap = new HashMap<>();
         checkers.forEach(checker -> {
-            CommandFuture<String> future = new InstanceHealthCheckGetCommand(service, checker, ip, port, isCrossRegion).execute(executor);
+            CommandFuture<String> future = new InstanceHealthCheckGetCommand(service, checker, ip, port).execute(executor);
             futureMap.put(checker, future);
         });
         Map<HostPort, String> result = new HashMap<>();
