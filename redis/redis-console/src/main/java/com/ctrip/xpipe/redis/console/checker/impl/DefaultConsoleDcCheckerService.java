@@ -64,9 +64,10 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
             result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(dcId, dcId, clusterId, shardId));
         }
         if (activeDc.equalsIgnoreCase(currentDc)) {
-            return getLocalDcShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId);
+            result.addAll(getLocalDcShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId));
+        } else {
+            result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(activeDc, dcId, clusterId, shardId));
         }
-        result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(activeDc, dcId, clusterId, shardId));
         return result;
     }
 
