@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListenerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
+import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderTest;
@@ -85,6 +86,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DiskHealthCheckerTest.class,
 
         RordbReplicationSupportTest.class,
+
+        FixSyncRateManagerTest.class,
 
         AllApplierTests.class,
 })
