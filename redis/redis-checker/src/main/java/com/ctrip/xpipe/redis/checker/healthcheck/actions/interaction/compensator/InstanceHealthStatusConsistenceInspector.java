@@ -156,13 +156,17 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
             if (dcMeta.getId().equalsIgnoreCase(currentDc)) continue;
 
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
-                if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                if (metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;;
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
+                try {
+                    if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
+                    if (clusterMeta.getActiveDc() != null && metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;;
+                    if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
 
-                Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
-                for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
-                    shardMeta.getRedises().forEach(redis -> interestedInstances.add(new HostPort(redis.getIp(), redis.getPort())));
+                    Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
+                    for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+                        shardMeta.getRedises().forEach(redis -> interestedInstances.add(new HostPort(redis.getIp(), redis.getPort())));
+                    }
+                } catch (Exception e) {
+                    logger.error("fetch interested currentDc cluster instances err, clusterMeta:{}", clusterMeta, e);
                 }
             }
         }

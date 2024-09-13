@@ -132,7 +132,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         logger.info("[removeCluster][{}][{}] remove health check", dcId, removed.getId());
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
-        ClusterMetaVisitor clusterMetaPingActionVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removePingActionConsumer)));
+        ClusterMetaCrossRegionVisitor clusterMetaPingActionVisitor = new ClusterMetaCrossRegionVisitor(new ShardMetaCrossRegionVisitor(new RedisMetaVisitor(removePingActionConsumer)));
         clusterMetaVisitor.accept(removed);
         clusterMetaPingActionVisitor.accept(removed);
     }
@@ -146,7 +146,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         if (isOneWayClusterActiveDcCrossRegionAndCurrentDc(added)) {
-            ClusterMetaVisitor clusterMetaPingActionVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addPingActionConsumer)));
+            ClusterMetaCrossRegionVisitor clusterMetaPingActionVisitor = new ClusterMetaCrossRegionVisitor(new ShardMetaCrossRegionVisitor(new RedisMetaVisitor(addPingActionConsumer)));
             clusterMetaPingActionVisitor.accept(added);
         }
 
@@ -211,7 +211,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return result;
     }
 
-    private boolean isOneWayClusterActiveDcCrossRegionAndCurrentDc(ClusterMeta cluster) {
+    public boolean isOneWayClusterActiveDcCrossRegionAndCurrentDc(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
         return clusterType == ClusterType.ONE_WAY && isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster);
     }
@@ -238,6 +238,10 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private boolean isClusterActiveDcCrossRegion(ClusterMeta clusterMeta) {
+        if (clusterMeta.getActiveDc() == null) {
+            logger.error("[DefaultDcMetaChangeManager][isClusterActiveDcCrossRegion]cluster has no active dc, clusterMeta:{}", clusterMeta);
+            return false;
+        }
         return metaCache.isCrossRegion(currentDcId, clusterMeta.getActiveDc());
     }
 

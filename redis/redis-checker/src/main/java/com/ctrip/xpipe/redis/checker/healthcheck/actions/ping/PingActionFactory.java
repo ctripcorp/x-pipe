@@ -78,8 +78,8 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
 
         pingAction.addControllers(controllersByClusterType.get(clusterType));
-
-        if (currentDcId.equalsIgnoreCase(instance.getCheckInfo().getActiveDc())) {
+        String activeDc = instance.getCheckInfo().getActiveDc();
+        if (currentDcId.equalsIgnoreCase(activeDc) || ClusterType.BI_DIRECTION.equals(instance.getCheckInfo().getClusterType())) {
             pingAction.addListeners(listenerByClusterType.get(clusterType));
             if(instance instanceof DefaultRedisHealthCheckInstance) {
                 pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createPingListener());
@@ -89,7 +89,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
             });
         }
 
-        if (metaCache.isCrossRegion(currentDcId, instance.getCheckInfo().getActiveDc())) {
+        if (activeDc != null && metaCache.isCrossRegion(currentDcId, activeDc)) {
             psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
                 if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
             });

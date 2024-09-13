@@ -265,14 +265,18 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private void initActionsForRedisForAssignedAction(DefaultRedisHealthCheckInstance instance) {
-        for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+        List<RedisHealthCheckActionFactory<?>> redisHealthCheckActionFactories = factoriesByClusterType.get(instance.getCheckInfo().getClusterType());
+        if (redisHealthCheckActionFactories == null) return;
+        for(RedisHealthCheckActionFactory<?> factory : redisHealthCheckActionFactories) {
             if (factory instanceof KeeperSupport)
                 initActions(instance, factory);
         }
     }
 
     private void initActionsForRedisForPsubPingAction(DefaultRedisHealthCheckInstance instance) {
-        for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+        List<RedisHealthCheckActionFactory<?>> redisHealthCheckActionFactories = factoriesByClusterType.get(instance.getCheckInfo().getClusterType());
+        if (redisHealthCheckActionFactories == null) return;
+        for(RedisHealthCheckActionFactory<?> factory : redisHealthCheckActionFactories) {
             if (factory instanceof PingActionFactory || factory instanceof PsubActionFactory)
                 initActions(instance, factory);
         }
@@ -280,7 +284,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @SuppressWarnings("unchecked")
     private void initActions(DefaultRedisHealthCheckInstance instance) {
-        for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+        List<RedisHealthCheckActionFactory<?>> redisHealthCheckActionFactories = factoriesByClusterType.get(instance.getCheckInfo().getClusterType());
+        if (redisHealthCheckActionFactories == null) return;
+        for(RedisHealthCheckActionFactory<?> factory : redisHealthCheckActionFactories) {
             initActions(instance, factory);
         }
     }
@@ -314,7 +320,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private void initActions(DefaultClusterHealthCheckInstance instance) {
-        for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
+        List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckActionFactories = clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType());
+        if (clusterHealthCheckActionFactories == null) return;
+        for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
             if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
                 installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
             } else {
