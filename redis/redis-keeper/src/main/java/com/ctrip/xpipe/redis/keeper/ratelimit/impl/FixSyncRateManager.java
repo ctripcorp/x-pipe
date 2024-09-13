@@ -4,11 +4,13 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.Executors;
@@ -44,17 +46,21 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
 
     private RateLimiter globalFsyncRateLimiter;
 
+    private KeeperConfig keeperConfig;
+
     private ScheduledExecutorService scheduled;
 
     private ScheduledFuture<?> future;
 
     private static Logger logger = LoggerFactory.getLogger(FixSyncRateManager.class);
 
-    public FixSyncRateManager() {
+    @Autowired
+    public FixSyncRateManager(KeeperConfig keeperConfig) {
         this.diskIOLimit = new AtomicInteger(0);
         this.psyncIORecords = new AtomicLongArray(recordCnt);
         this.fsyncIORecord = new AtomicLong();
         this.globalFsyncRateLimiter = UNLIMITED;
+        this.keeperConfig = keeperConfig;
     }
 
     @Override
@@ -146,7 +152,8 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
     public class FsyncRateLimiter implements SyncRateLimiter {
         @Override
         public void acquire(int syncByte) {
-            if (diskIOLimit.get() <= 0) return;
+            if (!keeperConfig.fsyncRateLimit()) return;
+            if (diskIOLimit.get() <= 0 || syncByte <= 0) return;
             globalFsyncRateLimiter.acquire(syncByte);
             fsyncIORecord.addAndGet(syncByte);
         }
