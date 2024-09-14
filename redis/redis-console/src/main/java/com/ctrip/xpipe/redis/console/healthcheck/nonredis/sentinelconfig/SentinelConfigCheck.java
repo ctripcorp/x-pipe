@@ -42,8 +42,12 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalAction {
         if (null == xpipeMeta) return;
 
         for (DcMeta dc: xpipeMeta.getDcs().values()) {
-            List<DcClusterShard> clusterShards = findUnsafeClusterShardInDc(dc);
-            alertForSentinelMissing(dc.getId(), clusterShards);
+            try {
+                List<DcClusterShard> clusterShards = findUnsafeClusterShardInDc(dc);
+                alertForSentinelMissing(dc.getId(), clusterShards);
+            } catch (Exception e) {
+                logger.error("[SentinelConfigCheck] err", e);
+            }
         }
     }
 

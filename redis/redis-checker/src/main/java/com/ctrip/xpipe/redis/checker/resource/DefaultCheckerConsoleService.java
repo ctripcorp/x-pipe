@@ -198,10 +198,21 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public Map<String, OuterClientService.ClusterInfo> loadAllActiveDcOneWayClusterInfo(String console, String activeDc) {
+    public Map<String, OuterClientService.ClusterInfo> loadAllDcOneWayClusterInfo(String console, String dc) {
         UriComponents comp = UriComponentsBuilder
                 .fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ACTIVE_DC_ONE_WAY_CLUSTERS)
-                .queryParam("activeDc", activeDc).build();
+                .queryParam("dc", dc).build();
+
+        ResponseEntity<Map<String, OuterClientService.ClusterInfo>> times = restTemplate.exchange(
+                comp.toString(), HttpMethod.GET, null, clusterInfoMapTypeDef);
+        return times.getBody();
+    }
+
+    @Override
+    public Map<String, OuterClientService.ClusterInfo> loadCurrentDcOneWayClusterInfo(String console, String dc) {
+        UriComponents comp = UriComponentsBuilder
+                .fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_CURRENT_DC_ONE_WAY_CLUSTERS)
+                .queryParam("dc", dc).build();
 
         ResponseEntity<Map<String, OuterClientService.ClusterInfo>> times = restTemplate.exchange(
                 comp.toString(), HttpMethod.GET, null, clusterInfoMapTypeDef);
