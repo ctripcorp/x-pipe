@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.utils.CloseState;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,7 +48,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
-    Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
+    Map<RedisKey, SequenceCommand<?>> runningCommands = new ConcurrentHashMap<>();
 
     SequenceCommand<?> obstacle;
 
