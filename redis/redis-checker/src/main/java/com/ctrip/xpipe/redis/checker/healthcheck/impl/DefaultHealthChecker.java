@@ -24,7 +24,6 @@ import javax.annotation.Resource;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getAllKeeperContainerDetailInfoFromDcMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -133,17 +132,25 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             }
 
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
+                try {
+                    ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                ClusterType clusterType = ClusterType.lookup(cluster.getType());
+                    if (dcClusterIsMasterType(clusterType, cluster) && clusterDcIsCurrentDc(cluster)){
+                        generateHealthCheckInstances(cluster);
+                    }
+                    if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
+                        generateHealthCheckInstances(cluster);
+                    }
+                    if (hasMultipleActiveDcs(clusterType) && isClusterInCurrentIdc(cluster)) {
+                        generateHealthCheckInstances(cluster);
+                    }
 
-                if (dcClusterIsMasterType(clusterType, cluster) && clusterDcIsCurrentDc(cluster)){
-                    generateHealthCheckInstances(cluster);
-                }
-                if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
-                    generateHealthCheckInstances(cluster);
-                }
-                if (hasMultipleActiveDcs(clusterType) && isClusterInCurrentIdc(cluster)) {
-                    generateHealthCheckInstances(cluster);
+                    if (clusterType == ClusterType.ONE_WAY && isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
+                        generatePsubPingActionHealthCheckInstances(cluster);
+                    }
+
+                } catch (Exception e) {
+                    logger.error("generate cluster health check instances, clusterMeta:{}", cluster, e);
                 }
 
             }
@@ -166,6 +173,14 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
             }
         }
         instanceManager.getOrCreate(clusterMeta);
+    }
+
+    void generatePsubPingActionHealthCheckInstances(ClusterMeta clusterMeta){
+        for(ShardMeta shard : clusterMeta.getShards().values()) {
+            for(RedisMeta redis : shard.getRedises()) {
+                instanceManager.getOrCreateRedisInstanceForPsubPingAction(redis);
+            }
+        }
     }
 
 
@@ -204,6 +219,10 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private boolean hasMultipleActiveDcs(ClusterType clusterType) {
         return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
+    }
+
+    private boolean isClusterActiveDcCrossRegion(ClusterMeta clusterMeta) {
+        return metaCache.isCrossRegion(currentDcId, clusterMeta.getActiveDc());
     }
 
 }

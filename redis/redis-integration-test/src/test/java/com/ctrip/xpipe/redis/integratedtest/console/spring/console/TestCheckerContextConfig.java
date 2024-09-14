@@ -44,6 +44,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -169,8 +170,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig,GroupCheckerLeaderElector clusterServer) {
-        return new DefaultRemoteCheckerManager(checkerConfig, clusterServer);
+    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig,GroupCheckerLeaderElector clusterServer, MetaCache metaCache) {
+        return new DefaultRemoteCheckerManager(checkerConfig, clusterServer, metaCache);
     }
 
     @Bean
@@ -184,9 +185,9 @@ public class TestCheckerContextConfig {
     public HealthCheckReporter healthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
                                                    GroupCheckerLeaderElector clusterServer, AllCheckerLeaderElector allCheckerLeaderElector, RedisDelayManager redisDelayManager,
                                                    CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
-                                                   ClusterHealthManager clusterHealthManager, HealthStateService healthStateService,
+                                                   ClusterHealthManager clusterHealthManager, List<HealthStateService> healthStateServices,
                                                    @Value("${server.port}") int serverPort) {
-        return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
+        return new HealthCheckReporter(healthStateServices, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
                 crossMasterDelayManager, pingService, clusterHealthManager, serverPort);
     }
 

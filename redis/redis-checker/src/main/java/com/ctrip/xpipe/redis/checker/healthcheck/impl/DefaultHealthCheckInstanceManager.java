@@ -35,6 +35,8 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForAssignedAction = Maps.newConcurrentMap();
 
+    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForPingAction = Maps.newConcurrentMap();
+
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
 
@@ -44,7 +46,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             HostPort key = new HostPort(redis.getIp(), redis.getPort());
             return MapUtils.getOrCreate(instances, key, () -> instanceFactory.create(redis));
         } catch (Throwable th) {
-            logger.error("getOrCreate health check instance:{}:{}", redis.getIp(), redis.getPort());
+            logger.error("getOrCreate health check instance:{}:{}", redis.getIp(), redis.getPort(), th);
         }
         return null;
     }
@@ -56,7 +58,19 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             return MapUtils.getOrCreate(redisInstanceForAssignedAction, key,
                     () -> instanceFactory.createRedisInstanceForAssignedAction(redis));
         } catch (Throwable th) {
-            logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort());
+            logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort(), th);
+        }
+        return null;
+    }
+
+    @Override
+    public RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis) {
+        try {
+            HostPort key = new HostPort(redis.getIp(), redis.getPort());
+            return MapUtils.getOrCreate(redisInstanceForPingAction, key,
+                    () -> instanceFactory.getOrCreateRedisInstanceForPsubPingAction(redis));
+        } catch (Throwable th) {
+            logger.error("getOrCreate ping action health check redis instance:{}:{}", redis.getIp(), redis.getPort(), th);
         }
         return null;
     }
@@ -67,7 +81,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             HostPort key = new HostPort(keeper.getIp(), keeper.getPort());
             return MapUtils.getOrCreate(keeperInstances, key, () -> instanceFactory.create(keeper));
         } catch (Throwable th) {
-            logger.error("getOrCreate health check keeper instance:{}:{}", keeper.getIp(), keeper.getPort());
+            logger.error("getOrCreate health check keeper instance:{}:{}", keeper.getIp(), keeper.getPort(), th);
         }
         return null;
     }
@@ -78,7 +92,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             String key = cluster.getId().toLowerCase();
             return MapUtils.getOrCreate(clusterHealthCheckerInstances, key, () -> instanceFactory.create(cluster));
         } catch (Throwable th) {
-            logger.error("getOrCreate health check cluster:{}", cluster.getId());
+            logger.error("getOrCreate health check cluster:{}", cluster.getId(), th);
         }
         return null;
     }
@@ -91,6 +105,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort) {
         return redisInstanceForAssignedAction.get(hostPort);
+    }
+
+    @Override
+    public RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort) {
+        return redisInstanceForPingAction.get(hostPort);
     }
 
     @Override
@@ -121,6 +140,13 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort) {
         RedisHealthCheckInstance instance = redisInstanceForAssignedAction.remove(hostPort);
+        if (null != instance) instanceFactory.remove(instance);
+        return instance;
+    }
+
+    @Override
+    public RedisHealthCheckInstance removeRedisInstanceForPingAction(HostPort hostPort) {
+        RedisHealthCheckInstance instance = redisInstanceForPingAction.remove(hostPort);
         if (null != instance) instanceFactory.remove(instance);
         return instance;
     }
