@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
@@ -77,5 +78,11 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     @Override
     public RedisOp redisOp() {
         return redisOp;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        EventMonitor.DEFAULT.logEvent("SINGLE.KEY", "DELETE.KEY");
     }
 }

@@ -330,6 +330,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         } else if (redisOp instanceof RedisMultiKeyOp) {
             addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads), commandOffsetToAccumulate);
         } else {
+            EventMonitor.DEFAULT.logEvent("SINGLE.KEY", "ADD.KEY");
             addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber), commandOffsetToAccumulate);
         }
     }

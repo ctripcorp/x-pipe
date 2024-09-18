@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -155,8 +156,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -190,8 +191,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -213,8 +214,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             forgetWhenDone(current, key);
         }
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         current.execute();
     }
@@ -241,8 +242,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -268,6 +269,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     private void releaseMemoryThresholdWhenDone(SequenceCommand<?> sequenceCommand, long memory) {
         sequenceCommand.future().addListener((f)->{
+            EventMonitor.DEFAULT.logEvent("SINGLE.KEY", "RELEASE.KEY");
             concurrencyThreshold.release();
             memoryThreshold.release(memory);
         });
