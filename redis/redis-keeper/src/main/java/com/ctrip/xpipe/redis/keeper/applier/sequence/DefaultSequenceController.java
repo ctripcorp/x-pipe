@@ -155,8 +155,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
+        increaseOffsetWhenSuccess(current, commandOffset);
 
         /* run self */
 
@@ -170,10 +170,10 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         List<SequenceCommand<?>> dependencies = new ArrayList<>();
 
         RedisKey key = command.key();
-        SequenceCommand<?> lastSameKey = runningCommands.get(key);
-        if (lastSameKey != null) {
-            dependencies.add(lastSameKey);
-        }
+//        SequenceCommand<?> lastSameKey = runningCommands.get(key);
+//        if (lastSameKey != null) {
+//            dependencies.add(lastSameKey);
+//        }
 
         if (obstacle != null) {
             dependencies.add(obstacle);
@@ -190,8 +190,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
+        increaseOffsetWhenSuccess(current, commandOffset);
 
         /* run self */
 
@@ -213,8 +213,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             forgetWhenDone(current, key);
         }
 
-        increaseOffsetWhenSuccess(current, commandOffset);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
+        increaseOffsetWhenSuccess(current, commandOffset);
 
         current.execute();
     }
@@ -241,8 +241,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
+        increaseOffsetWhenSuccess(current, commandOffset);
 
         /* run self */
 
