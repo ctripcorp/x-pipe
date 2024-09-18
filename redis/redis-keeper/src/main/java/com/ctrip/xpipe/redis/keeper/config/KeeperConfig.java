@@ -72,4 +72,6 @@ public interface KeeperConfig extends CoreConfig{
 	 */
     int getCrossRegionMaxLoadingSlavesCnt();
 
+    boolean fsyncRateLimit();
+
 }
