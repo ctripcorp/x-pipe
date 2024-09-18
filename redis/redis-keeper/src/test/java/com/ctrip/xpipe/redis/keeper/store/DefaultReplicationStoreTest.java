@@ -137,7 +137,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 						@Override
 						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
-							sleep(10);
+							sleep(100);
 						}
 						
 						@Override

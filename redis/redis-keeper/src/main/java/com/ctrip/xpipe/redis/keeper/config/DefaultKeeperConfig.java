@@ -49,6 +49,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
 
+	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -187,5 +189,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getCrossRegionMaxLoadingSlavesCnt() {
 		return getIntProperty(KEY_CROSS_REGION_MAX_FSYNC_SLAVES, 1);
+	}
+
+	@Override
+	public boolean fsyncRateLimit() {
+		return getBooleanProperty(KEY_FSYNC_RATE_LIMIT, true);
 	}
 }
