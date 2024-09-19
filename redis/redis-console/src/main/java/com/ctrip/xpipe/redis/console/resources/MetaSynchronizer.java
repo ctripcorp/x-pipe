@@ -82,7 +82,11 @@ public class MetaSynchronizer {
         scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                sync();
+                try {
+                    sync();
+                } catch (Throwable e) {
+                    logger.error("[sync]", e);
+                }
             }
         }, consoleConfig.getOuterClientSyncInterval(), consoleConfig.getOuterClientSyncInterval(), TimeUnit.MILLISECONDS);
     }
