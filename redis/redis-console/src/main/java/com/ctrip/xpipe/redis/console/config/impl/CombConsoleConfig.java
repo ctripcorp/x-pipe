@@ -21,7 +21,10 @@ import io.netty.util.internal.ConcurrentSet;
 
 import java.util.*;
 
-public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener {
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_INSTANCE_PULL_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_INSTANCE_PULL_RANDOM;
+
+public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
 
     private CheckConfigBean checkConfigBean;
 
@@ -33,10 +36,10 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
 
     private List<AbstractConfigBean> configBeans;
 
-    public DefaultConsoleConfig(CheckConfigBean checkConfigBean,
-                                ConsoleConfigBean consoleConfigBean,
-                                DataCenterConfigBean dataCenterConfigBean,
-                                CommonConfigBean commonConfigBean) {
+    public CombConsoleConfig(CheckConfigBean checkConfigBean,
+                             ConsoleConfigBean consoleConfigBean,
+                             DataCenterConfigBean dataCenterConfigBean,
+                             CommonConfigBean commonConfigBean) {
         this.checkConfigBean = checkConfigBean;
         this.consoleConfigBean = consoleConfigBean;
         this.dataCenterConfigBean = dataCenterConfigBean;
@@ -58,8 +61,6 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     private String hickwallInfo;
 
     private HickwallMetricInfo info;
-
-
 
     @Override
     public String getServerMode() {
@@ -411,6 +412,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getInstancePullIntervalSeconds() {
+        return checkConfigBean.getInstancePullIntervalSeconds();
+    }
+
+    @Override
+    public int getInstancePullRandomSeconds() {
+        return checkConfigBean.getInstancePullRandomSeconds();
+    }
+
+    @Override
     public int getPingDownAfterMilli() {
         return checkConfigBean.getPingDownAfterMilli();
     }
@@ -523,16 +534,6 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public int getInstancePullIntervalSeconds() {
-        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_INTERVAL, 5);
-    }
-
-    @Override
-    public int getInstancePullRandomSeconds() {
-        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_RANDOM, 5);
-    }
-
-    @Override
     public boolean isAutoMigrateOverloadKeeperContainerOpen() {
         return consoleConfigBean.isAutoMigrateOverloadKeeperContainerOpen();
     }
@@ -565,21 +566,6 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public boolean autoSetKeeperSyncLimit() {
         return consoleConfigBean.autoSetKeeperSyncLimit();
-    }
-
-    @Override
-    public boolean disableDb() {
-        return commonConfigBean.disableDb();
-    }
-
-    @Override
-    public Set<String> getExtraSyncDC() {
-        return commonConfigBean.getExtraSyncDC();
-    }
-
-    @Override
-    public String getConsoleNoDbDomain() {
-        return dataCenterConfigBean.getConsoleNoDbDomain();
     }
 
     @Override

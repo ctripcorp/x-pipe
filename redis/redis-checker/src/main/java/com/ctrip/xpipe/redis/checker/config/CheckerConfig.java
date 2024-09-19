@@ -108,4 +108,8 @@ public interface CheckerConfig {
 
     int getKeeperCheckerIntervalMilli();
 
+    int getInstancePullIntervalSeconds();
+
+    int getInstancePullRandomSeconds();
+
 }

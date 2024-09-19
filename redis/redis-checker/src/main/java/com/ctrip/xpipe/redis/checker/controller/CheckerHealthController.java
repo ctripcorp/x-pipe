@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.controller;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
@@ -15,14 +16,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -54,6 +54,11 @@ public class CheckerHealthController {
 
     @Autowired
     private StabilityHolder siteStability;
+
+    @Autowired
+    private MetaCache metaCache;
+
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter();;
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
@@ -147,6 +152,20 @@ public class CheckerHealthController {
     public Map<HostPort, HealthStatusDesc> getAllCrossRegionHealthStatusDesc() {
         if (siteStability.isSiteStable()) return defaultPsubPingActionCollector.getAllHealthStatus();
         else return Collections.emptyMap();
+    }
+
+    @RequestMapping(value = "/health/check/instances/status", method = RequestMethod.POST)
+    public Map<HostPort, HealthStatusDesc> getHealthCheckInstanceCluster(@RequestBody List<HostPort> hostPorts) {
+        if (hostPorts == null || hostPorts.isEmpty()) return Collections.emptyMap();
+        Map<HostPort, HealthStatusDesc> result = new HashMap<>();
+        for (HostPort hostPort : hostPorts) {
+            if (Objects.equals(currentDc, metaCache.getDc(hostPort)) && metaCache.isCrossRegion(metaCache.getActiveDc(hostPort), currentDc)) {
+                result.put(hostPort, new HealthStatusDesc(hostPort, getCrossRegionHealthState(hostPort.getHost(), hostPort.getPort())));
+            } else {
+                result.put(hostPort, new HealthStatusDesc(hostPort, getHealthState(hostPort.getHost(), hostPort.getPort())));
+            }
+        }
+        return result;
     }
 
     @GetMapping("/health/keeper/status/all")

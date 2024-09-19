@@ -12,6 +12,7 @@ public enum CREDIS_SERVICE {
 	MIGRATION_PRE_CHECK(PATH.PATH_MIGRATION_PRE_CHECK),
 	MIGRATION_PUBLISH(PATH.PATH_MIGRATION_PUBLISH),
 	SWITCH_STATUS(PATH.PATH_SWITCH_STATUS),
+	BATCH_SWITCH_STATUS(PATH.PATH_BATCH_SWITCH_STATUS),
 	QUERY_STATUS(PATH.PATH_QUERY_STATUS),
 	QUERY_CLUSTER(PATH.PATH_QUERY_CLUSTER),
 	QUERY_CLUSTERS(PATH.QUERY_CLUSTERS),
@@ -43,6 +44,7 @@ public enum CREDIS_SERVICE {
 		public static final String PATH_MIGRATION_PRE_CHECK = "/keeperApi/checkcluster/{clusterName}";
 		public static final String PATH_MIGRATION_PUBLISH = "/keeperApi/primarydc/{clusterName}/{primaryDcName}";
 		public static final String PATH_SWITCH_STATUS  = "/keeperApi/switchReadStatus";
+		public static final String PATH_BATCH_SWITCH_STATUS  = "/keeperApi/switchReadStatus/batch";
 		public static final String PATH_QUERY_STATUS = "keeperApi/queryReadStatus";
 		public static final String PATH_QUERY_CLUSTER = "keeperApi/querycluster";
 		public static final String PATH_QUERY_DC_META = "config/getIdcClusters";
