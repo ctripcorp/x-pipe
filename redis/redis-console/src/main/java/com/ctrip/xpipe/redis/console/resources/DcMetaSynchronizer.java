@@ -81,7 +81,11 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                sync();
+                try {
+                    sync();
+                } catch (Exception e) {
+                    logger.error("[DcMetaSynchronizer]", e);
+                }
             }
         }, consoleConfig.getOuterClientSyncInterval(), consoleConfig.getOuterClientSyncInterval(), TimeUnit.MILLISECONDS);
     }
