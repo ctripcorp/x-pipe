@@ -114,8 +114,13 @@ public class KeeperContainerDiskIOLimitDispatcher extends AbstractSiteLeaderInte
     }
 
     @Override
+    protected long getIntervalMilli() {
+        return Math.max(60000, super.getIntervalMilli());
+    }
+
+    @Override
     protected boolean shouldDoAction() {
-        return config.autoSetKeeperSyncLimit();
+        return config.autoSetKeeperSyncLimit() && super.shouldDoAction();
     }
 
 }

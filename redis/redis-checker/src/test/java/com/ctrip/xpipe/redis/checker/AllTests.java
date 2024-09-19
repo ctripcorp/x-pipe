@@ -84,6 +84,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstanceManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
@@ -217,6 +218,8 @@ import org.junit.runners.Suite;
 
         DefaultHealthCheckConfigTest.class,
         DefaultRouteChooserTest.class,
+
+        DefaultHealthCheckInstanceManagerTest.class
 })
 public class AllTests {
 }

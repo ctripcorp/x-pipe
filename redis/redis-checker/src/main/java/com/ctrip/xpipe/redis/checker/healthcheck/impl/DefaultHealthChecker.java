@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperContainerDetailInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -116,8 +117,13 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         super.doStop();
     }
 
+    @VisibleForTesting
+    protected void setInstanceManager(HealthCheckInstanceManager instanceManager) {
+        this.instanceManager = instanceManager;
+    }
 
-    void generateHealthCheckInstances() {
+    @VisibleForTesting
+    protected void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
 
         for(DcMeta dcMeta : meta.getDcs().values()) {
