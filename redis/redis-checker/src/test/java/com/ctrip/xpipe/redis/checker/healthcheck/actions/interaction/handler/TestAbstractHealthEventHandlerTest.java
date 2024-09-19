@@ -71,6 +71,9 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     @Mock
     private FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
 
+    @Mock
+    private OuterClientAggregator outerClientAggregator;
+
     private RedisHealthCheckInstance instance;
 
     private CommandFuture<Boolean> future = new DefaultCommandFuture<>();
@@ -93,8 +96,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
-        when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
-        doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
         ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
     }
 
@@ -110,41 +111,41 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(false);
         downHandler.tryMarkDown(new InstanceLoading(instance));
-        verify(finalStateSetterManager, never()).set(any(), anyBoolean());
+        verify(outerClientAggregator, never()).markInstance(any());
 
         when(siteStability.isSiteStable()).thenReturn(true);
         downHandler.tryMarkDown(new InstanceLoading(instance));
-        verify(finalStateSetterManager, times(1)).set(any(), anyBoolean());
+        verify(outerClientAggregator, times(1)).markInstance(any());
     }
 
     @Test
     public void testMarkDown() {
         when(siteStability.isSiteStable()).thenReturn(false);
         sickHandler.markdown(new InstanceSick(instance));
-        verify(finalStateSetterManager, never()).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, never()).markInstance(any());
 
         when(siteStability.isSiteStable()).thenReturn(true);
         RedisInstanceInfo info = instance.getCheckInfo();
 
         sickHandler.markdown(new InstanceSick(instance));
         sleep(1500);
-        verify(finalStateSetterManager, times(1)).set(any(), any());
+        verify(outerClientAggregator, times(1)).markInstance(any());
 
         when(siteStability.isSiteStable()).thenReturn(true);
         sickHandler.markdown(new InstanceSick(instance));
-        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(2)).markInstance(any());
     }
 
     @Test
     public void testMarkDownForInstanceDown() {
         when(siteStability.isSiteStable()).thenReturn(false);
         downHandler.markdown(new InstanceDown(instance));
-        verify(finalStateSetterManager, never()).set(any(), anyBoolean());
+        verify(outerClientAggregator, never()).markInstance(any());
 
         when(siteStability.isSiteStable()).thenReturn(true);
 
         downHandler.markdown(new InstanceDown(instance));
-        verify(finalStateSetterManager, times(1)).set(any(), anyBoolean());
+        verify(outerClientAggregator, times(1)).markInstance(any());
     }
 
     @SuppressWarnings("unchecked")
@@ -161,13 +162,13 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
-        verify(finalStateSetterManager, times(1)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(1)).markInstance(any());
 
         event = new InstanceSick(instance);
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
-        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(2)).markInstance(any());
 
         //do not markdown cross region instance
         DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
@@ -175,7 +176,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
-        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(2)).markInstance(any());
 
         //do not markdown instance which dcs distance is -1
         instanceInfo.setCrossRegion(false);
@@ -186,13 +187,13 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
-        verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(2)).markInstance(any());
 
         event = new InstanceDown(instance);
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
-        verify(finalStateSetterManager, times(3)).set(any(ClusterShardHostPort.class), anyBoolean());
+        verify(outerClientAggregator, times(3)).markInstance(any());
     }
 
     private RedisHealthCheckInstance randomInstance(String dc) {

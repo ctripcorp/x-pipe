@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientException;
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -173,6 +174,40 @@ public class CRedisService extends AbstractOuterClientService {
             });
 		} catch (Exception e) {
 			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
+		}
+
+	}
+
+	@Override
+	public void batchMarkInstance(OuterClientService.MarkInstanceRequest markInstanceRequest) throws OuterClientException {
+		try {
+			catTransactionMonitor.logTransaction(TYPE, String.format("doBatchMarkInstance-%s", markInstanceRequest.getClusterName()), new Task() {
+				@Override
+				public void go() throws Exception {
+
+					logger.info("[doBatchMarkInstance][begin]{}", markInstanceRequest);
+					String address = CREDIS_SERVICE.BATCH_SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+					String reqType = "batchMarkInstance";
+
+					MarkInstanceResponse response = doRequest(reqType, markInstanceRequest.getClusterName(), () -> restOperations.postForObject(address, markInstanceRequest, MarkInstanceResponse.class)
+					);
+					logger.info("[doBatchMarkInstance][end]{},{}", markInstanceRequest, response);
+					if(!response.isSuccess()){
+						throw new IllegalStateException(String.format("%s, response:%s", markInstanceRequest, response));
+					}
+				}
+
+				@Override
+				public Map getData() {
+					return new HashMap<String, Object>() {{
+						put("cluster", markInstanceRequest.getClusterName());
+						put("hostPortDcStatuses", markInstanceRequest.getHostPortDcStatuses());
+						put("activeDc", markInstanceRequest.getActiveDc());
+					}};
+				}
+			});
+		} catch (Exception e) {
+			throw new OuterClientException("batch mark:" + markInstanceRequest, e);
 		}
 
 	}

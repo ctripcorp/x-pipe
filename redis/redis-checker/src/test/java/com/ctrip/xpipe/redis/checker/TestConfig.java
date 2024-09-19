@@ -305,4 +305,14 @@ public class TestConfig implements CheckerConfig, AlertConfig {
         return 1000;
     }
 
+    @Override
+    public int getInstancePullIntervalSeconds() {
+        return 5;
+    }
+
+    @Override
+    public int getInstancePullRandomSeconds() {
+        return 5;
+    }
+
 }

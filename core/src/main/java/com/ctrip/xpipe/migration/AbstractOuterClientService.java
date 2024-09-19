@@ -89,6 +89,11 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
+	public void batchMarkInstance(MarkInstanceRequest markInstanceRequest) throws OuterClientException {
+
+	}
+
+	@Override
 	public OuterClientDataResp<List<ClusterExcludedIdcInfo>> getAllExcludedIdcs() throws Exception {
 		return null;
 	}
