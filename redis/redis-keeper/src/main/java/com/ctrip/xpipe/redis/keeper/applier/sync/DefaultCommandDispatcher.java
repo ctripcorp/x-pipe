@@ -128,6 +128,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
+        logger.info("[endReadRdb] eofType={}", eofType);
     }
 
     @Override
