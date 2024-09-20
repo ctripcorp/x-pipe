@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.migration.OuterClientService.*;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.AggregatorStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -45,9 +46,13 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         synchronized (info.getClusterName().intern()) {
             Set<HostPort> instances = registry.computeIfAbsent(info.getClusterName(), k -> new HashSet<>());
             if (instances.add(info.getHostPort()) && instances.size() == 1) {
-                scheduled.schedule(() -> {
-                    synchronized (info.getClusterName().intern()) {
-                        Set<HostPort> instancesToRemove = registry.remove(info.getClusterName());
+                scheduled.schedule(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        Set<HostPort> instancesToRemove;
+                        synchronized (info.getClusterName().intern()) {
+                            instancesToRemove = registry.remove(info.getClusterName());
+                        }
                         if (instancesToRemove != null) {
                             handleInstances(info.getClusterName(), instancesToRemove);
                         }

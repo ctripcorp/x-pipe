@@ -4,12 +4,12 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public class AggregatorStateSetterManager<K, S extends Set> {
+public class AggregatorStateSetterManager<K, S extends Collection<?>> {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -43,23 +43,30 @@ public class AggregatorStateSetterManager<K, S extends Set> {
 
             Exception exception = null;
 
-            S currentValue = null;
+            S newValue = null;
 
             if(getter != null){
                 try{
-                    currentValue = getter.apply(k);
+                    newValue = getter.apply(k);
                 }catch(Exception e){
                     logger.error("[doRun][aggregator]" + k, e);
                 }
             }
 
-            if(currentValue != null && !currentValue.isEmpty()){
+            if (null == newValue) {
+                logger.info("[doRun] unexpected null newValue");
+                future().setFailure(new IllegalArgumentException("new value null"));
+                return;
+            }
+
+            if(!newValue.isEmpty()) {
 
                 for(int i=0; i < retry ;i++){
                     try{
                         logger.debug("[doRun][aggregator][begin]{}", k);
-                        setter.accept(k, currentValue);
+                        setter.accept(k, newValue);
                         logger.debug("[doRun][aggregator][end]{}", k);
+                        exception = null;
                         break;
                     }catch (Exception e){
                         exception = e;
@@ -67,7 +74,7 @@ public class AggregatorStateSetterManager<K, S extends Set> {
                     }
                 }
             }else{
-                logger.info("[doRun][aggregator][already current state]{},{}", k, currentValue);
+                logger.info("[doRun][aggregator][newValue empty, skip] {}", k);
             }
 
             if(exception != null){
