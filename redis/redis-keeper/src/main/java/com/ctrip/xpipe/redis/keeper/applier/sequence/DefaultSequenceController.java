@@ -154,8 +154,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -189,8 +189,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -212,8 +212,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             forgetWhenDone(current, key);
         }
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         current.execute();
     }
@@ -240,8 +240,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
         increaseOffsetWhenSuccess(current, commandOffset);
+        releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
 
@@ -266,7 +266,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
 
     private void releaseMemoryThresholdWhenDone(SequenceCommand<?> sequenceCommand, long memory) {
-        sequenceCommand.future().addListener((f)->{
+        sequenceCommand.future().addListener((f) -> {
             concurrencyThreshold.release();
             memoryThreshold.release(memory);
         });
