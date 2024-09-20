@@ -24,6 +24,9 @@ import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -86,7 +89,6 @@ public abstract class AbstractMetaCache implements MetaCache {
         monitor2ClusterShard = Maps.newHashMap();
         allKeeperSize = allKeepers == null ? DEFAULT_KEEPER_NUMBERS : allKeepers.size();
         allKeepers = null;
-        lastUpdateTime = System.currentTimeMillis();
     }
 
     protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas, List<RedisCheckRuleMeta> redisCheckRuleMetas){
@@ -102,8 +104,15 @@ public abstract class AbstractMetaCache implements MetaCache {
             xpipeMeta.addRedisCheckRule(redisCheckRuleMeta);
         }
 
+        xpipeMeta.setUpdateTime(System.currentTimeMillis());
+
         return xpipeMeta;
 
+    }
+
+    @Override
+    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+        return null;
     }
 
     void setActiveDcForCrossDcClusters(XpipeMeta xpipeMeta) {
@@ -299,7 +308,11 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     @Override
     public long getLastUpdateTime() {
-        return lastUpdateTime;
+        if(getXpipeMeta() != null) {
+            return getXpipeMeta().getUpdateTime();
+        } else {
+            return 0l;
+        }
     }
 
 
@@ -666,6 +679,20 @@ public abstract class AbstractMetaCache implements MetaCache {
         int futureClusterCount = futureDcMeta.getClusters().size();
         if ((currentClusterCount - futureClusterCount) > currentClusterCount * maxRemovedClusterPercent / 100)
             throw new TooManyClustersRemovedException(String.format("dc:%s, current cluster count:%d,future cluster count:%d", currentDcMeta.getId(), currentClusterCount, futureClusterCount));
+    }
+
+    @Override
+    public Set<String> getAllShardNamesByClusterName(String clusterName) {
+        Set<String> shards = new HashSet<>();
+        XpipeMeta xpipeMeta = meta.getKey();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta != null) {
+               Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
+               shards.addAll(shardMetaMap.keySet());
+            }
+        }
+        return shards;
     }
 
     @VisibleForTesting

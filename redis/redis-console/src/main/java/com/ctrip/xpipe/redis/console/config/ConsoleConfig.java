@@ -149,4 +149,11 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	long getMetaServerSlotClusterMapCacheTimeOutMilli();
 
 	boolean autoSetKeeperSyncLimit();
+
+	boolean disableDb();
+
+	Set<String> getExtraSyncDC();
+
+	String getConsoleNoDbDomain();
+
 }

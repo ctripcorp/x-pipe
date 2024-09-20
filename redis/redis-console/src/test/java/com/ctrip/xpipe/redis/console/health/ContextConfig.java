@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
@@ -41,7 +41,7 @@ public class ContextConfig {
 
 	@Bean
 	public ConsoleConfig consoleConfig() {
-		return new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+		return new DefaultConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
 				new ConsoleConfigBean(FoundationService.DEFAULT),
 				new DataCenterConfigBean(),
 				new CommonConfigBean());

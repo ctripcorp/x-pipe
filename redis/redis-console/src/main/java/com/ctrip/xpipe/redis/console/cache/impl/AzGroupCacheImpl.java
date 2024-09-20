@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.cache.impl;
 
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.entity.AzGroupEntity;
@@ -11,7 +13,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.commons.collections.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -25,16 +27,27 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class AzGroupCacheImpl implements AzGroupCache {
 
-    @Autowired
     private ConsoleConfig config;
-    @Autowired
+
     private DcRepository dcRepository;
-    @Autowired
+
     private AzGroupRepository azGroupRepository;
-    @Autowired
+
     private AzGroupMappingRepository azGroupMappingRepository;
+
+    public AzGroupCacheImpl(ConsoleConfig config,
+                            DcRepository dcRepository,
+                            AzGroupRepository azGroupRepository,
+                            AzGroupMappingRepository azGroupMappingRepository) {
+        this.config = config;
+        this.dcRepository = dcRepository;
+        this.azGroupRepository = azGroupRepository;
+        this.azGroupMappingRepository  = azGroupMappingRepository;
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(AzGroupCacheImpl.class.getName());
 //    private static final AzGroupModel DEFAULT_AZ_GROUP = new AzGroupModel(0L, "", "", Collections.emptyList());

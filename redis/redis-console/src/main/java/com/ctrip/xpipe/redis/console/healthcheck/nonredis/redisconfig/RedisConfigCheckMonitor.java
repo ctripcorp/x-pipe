@@ -5,6 +5,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -26,7 +27,7 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalAction {
     private MetaCache metaCache;
 
     @Autowired
-    private DcServiceImpl dcService;
+    private DcService dcService;
 
     @Autowired
     private DcClusterServiceImpl dcClusterService;

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.*;
+import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -18,7 +19,7 @@ import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
@@ -26,7 +27,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.*;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -105,7 +106,7 @@ public class CheckerContextConfig {
                                        ConsoleConfigBean consoleConfigBean,
                                        DataCenterConfigBean dataCenterConfigBean,
                                        CommonConfigBean commonConfigBean) {
-        return new CombConsoleConfig(checkConfigBean, consoleConfigBean, dataCenterConfigBean, commonConfigBean);
+        return new DefaultConsoleConfig(checkConfigBean, consoleConfigBean, dataCenterConfigBean, commonConfigBean);
     }
 
     @Bean

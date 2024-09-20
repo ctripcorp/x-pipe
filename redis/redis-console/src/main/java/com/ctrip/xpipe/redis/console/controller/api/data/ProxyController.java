@@ -9,10 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -43,6 +40,13 @@ public class ProxyController {
             return pretty.encode(RetMessage.createFailMessage(e.getMessage()));
         }
     }
+
+    @RequestMapping(value = "/proxies/monitor_active", method = RequestMethod.GET)
+    public String getMonitorActiveProxiesByDc(@RequestParam(value="dc") String dc) {
+        return pretty.encode(service.getMonitorActiveProxiesByDc(dc));
+    }
+
+
 
     @RequestMapping(value = "/proxies/active", method = RequestMethod.GET)
     public String getActiveProxies() {

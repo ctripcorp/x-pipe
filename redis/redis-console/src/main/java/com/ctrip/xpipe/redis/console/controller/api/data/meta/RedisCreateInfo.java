@@ -16,6 +16,7 @@ import java.util.Set;
  */
 public class RedisCreateInfo extends AbstractCreateInfo {
     private String dcId;
+    private String clusterId;
     private String shardName;
     private String redises;
 
@@ -63,5 +64,13 @@ public class RedisCreateInfo extends AbstractCreateInfo {
             addresses.add(IpUtils.parseSingleAsPair(redis));
         }
         return Lists.newArrayList(addresses);
+    }
+
+    public String getClusterId() {
+        return clusterId;
+    }
+
+    public void setClusterId(String clusterId) {
+        this.clusterId = clusterId;
     }
 }

@@ -4,6 +4,7 @@
   <entity name="xpipe" root="true">
     <entity-ref name="redisCheckRule" type="list" names="redisCheckRules" />
     <entity-ref name="dc" type="list" names="dcs" />
+    <attribute name="updateTime" value-type="Long" />
   </entity>
   <entity name="redisCheckRule">
     <attribute name="id" value-type="long" />
@@ -12,6 +13,7 @@
   </entity>
   <entity name="dc">
     <attribute name="id" value-type="String" />
+    <attribute name="dcId" value-type="Long" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="zone" value-type="String" />
     <entity-ref name="metaServer" type="list" names="metaServers" />

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
@@ -14,12 +13,14 @@ import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.DefaultKeeperContainerService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
+import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -29,10 +30,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultCl
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerMigrationAnalyzer;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
-import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.RedisInfoService;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
+import com.ctrip.xpipe.redis.console.resources.*;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
@@ -87,7 +88,10 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	@Lazy
 	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-	public MetaCache metaCache() {
+	public MetaCache metaCache(ConsolePortalService consolePortalService, ConsoleConfig config) {
+		if(config.disableDb()) {
+			return new ConsoleMetaCacheWithoutDB(consolePortalService, config);
+		}
 		return new DefaultMetaCache();
 	}
 
@@ -96,7 +100,7 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 		return new DefaultRouteChooseStrategyFactory();
 	}
 
-	@Bean
+	@Bean(name = "metaCache")
 	@Lazy
 	@Profile(AbstractProfile.PROFILE_NAME_TEST)
 	public MetaCache testMetaCache() {
@@ -105,7 +109,7 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public ConsoleConfig consoleConfig(FoundationService foundationService) {
-		return new CombConsoleConfig(
+		return new DefaultConsoleConfig(
 				new CheckConfigBean(foundationService),
 				new ConsoleConfigBean(foundationService),
 				new DataCenterConfigBean(),
@@ -123,6 +127,7 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
+	@DependsOn("metaCache")
 	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 	public ConsoleLeaderElector consoleLeaderElector() {
 		return new ConsoleLeaderElector();
@@ -157,12 +162,16 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public PersistenceCache persistenceCache3(CheckerConfig config,
+	public PersistenceCache persistenceCache3(ConsoleConfig config,
 											  AlertEventService alertEventService,
 											  ConfigDao configDao,
 											  DcClusterShardService dcClusterShardService,
 											  RedisDao redisDao,
-											  ClusterDao clusterDao) {
+											  ClusterDao clusterDao
+											  ) {
+		if(config.disableDb()) {
+			return new PersistenceCacheWithoutDB(config, new DefaultCheckerConsoleService());
+		}
 		return new DefaultPersistenceCache(
 				config, 
 				alertEventService,
@@ -180,6 +189,18 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	public KeeperContainerService keeperContainerService() {
 		return new DefaultKeeperContainerService();
+	}
+
+	@Bean
+	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+	public MetaSynchronizer metaSynchronizer(ConsoleConfig consoleConfig, ConsoleLeaderElector leaderElector,
+											 MetaCache metaCache, RedisService redisService, ShardService shardService,
+											 ClusterService clusterService, DcService dcService, OrganizationService organizationService,
+											 SentinelBalanceService sentinelBalanceService, ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory,
+											 FoundationService foundationService, ConsoleCrossDcServer consoleCrossDcServer) {
+		return new MetaSynchronizer(consoleConfig, leaderElector, metaCache, redisService, shardService,clusterService, dcService,
+				organizationService, sentinelBalanceService, clusterTypeUpdateEventFactory,
+				foundationService, consoleCrossDcServer);
 	}
 
 }

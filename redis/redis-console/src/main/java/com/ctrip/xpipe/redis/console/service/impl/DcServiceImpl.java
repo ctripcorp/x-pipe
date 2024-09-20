@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.model.DcModel;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
@@ -14,6 +16,7 @@ import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
@@ -22,6 +25,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements DcService {
 
 	@Autowired
@@ -184,7 +189,6 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 
 	@Override
 	public DcModel findDcModelByDcName(String dcName) {
-		DcTbl dcTbl = find(dcName);
 		return convertDcTblToDcModel(find(dcName));
 	}
 
@@ -210,7 +214,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		});
 	}
 
-	private DcModel convertDcTblToDcModel(DcTbl dcTbl) {
+	public static DcModel convertDcTblToDcModel(DcTbl dcTbl) {
 		if (dcTbl == null) {
 			return null;
 		}

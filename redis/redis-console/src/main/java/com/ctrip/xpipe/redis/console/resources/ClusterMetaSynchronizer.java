@@ -38,12 +38,15 @@ public class ClusterMetaSynchronizer {
     private SentinelBalanceService sentinelBalanceService;
     private ConsoleConfig consoleConfig;
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
+    private String dcId;
 
     public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified,
                                    DcService dcService, ClusterService clusterService, ShardService shardService,
                                    RedisService redisService, OrganizationService organizationService,
                                    SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig,
-                                   ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory) {
+                                   ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory,
+                                   String dcId
+    ) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -55,6 +58,7 @@ public class ClusterMetaSynchronizer {
         this.sentinelBalanceService = sentinelBalanceService;
         this.consoleConfig = consoleConfig;
         this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
+        this.dcId = dcId;
     }
 
     public void sync() {
@@ -68,17 +72,17 @@ public class ClusterMetaSynchronizer {
             removed.forEach(clusterMeta -> {
                 try {
                     List<DcTbl> relatedDcs = clusterService.getClusterRelatedDcs(clusterMeta.getId());
-                    if (relatedDcs.size() == 0 || relatedDcs.size() == 1 && relatedDcs.get(0).getDcName().equalsIgnoreCase(DcMetaSynchronizer.currentDcId)) {
-                        logger.info("[ClusterMetaSynchronizer][remove]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
+                    if (relatedDcs.size() == 0 || relatedDcs.size() == 1 && relatedDcs.get(0).getDcName().equalsIgnoreCase(dcId)) {
+                        logger.info("[ClusterMetaSynchronizer][remove]{}, {}", clusterMeta, dcId);
                         clusterService.deleteCluster(clusterMeta.getId());
-                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[delCluster]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[delCluster]%s-%s", dcId, clusterMeta.getId()));
                     } else {
-                        logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
-                        clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
-                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[unbindDc]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
+                        logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, dcId);
+                        clusterService.unbindDc(clusterMeta.getId(), dcId);
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[unbindDc]%s-%s", dcId, clusterMeta.getId()));
                     }
                 } catch (Exception e) {
-                    logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId, e);
+                    logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, dcId, e);
                 }
             });
         } catch (Exception e) {
@@ -103,7 +107,7 @@ public class ClusterMetaSynchronizer {
                             return;
                         }
 
-                        new ShardMetaSynchronizer(Sets.newHashSet(toAdd.getShards().values()), null, null, redisService, shardService, sentinelBalanceService, consoleConfig).sync();
+                        new ShardMetaSynchronizer(Sets.newHashSet(toAdd.getShards().values()), null, null, redisService, shardService, sentinelBalanceService, consoleConfig, dcId).sync();
                     } catch (Exception e) {
                         logger.error("[ClusterMetaSynchronizer][add]{}", toAdd, e);
                     }
@@ -115,9 +119,9 @@ public class ClusterMetaSynchronizer {
     }
 
     void bindDc(ClusterMeta toAdd){
-        logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", toAdd, DcMetaSynchronizer.currentDcId);
-        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(DcMetaSynchronizer.currentDcId));
-        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
+        logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", toAdd, dcId);
+        clusterService.bindDc(new DcClusterTbl().setClusterName(toAdd.getId()).setDcName(dcId));
+        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", dcId, toAdd.getId()));
     }
 
     void createCluster(ClusterMeta toAdd){
@@ -136,18 +140,18 @@ public class ClusterMetaSynchronizer {
         ClusterCreateDTO clusterCreateDTO = ClusterCreateDTO.builder()
             .clusterName(toAdd.getId())
             .clusterType(toAdd.getType())
-            .activeAz(DcMetaSynchronizer.currentDcId)
+            .activeAz(dcId)
             .description(toAdd.getId())
             .orgName(orgName)
             .adminEmails(toAdd.getAdminEmails())
             .build();
         SingleGroupClusterCreateDTO createDTO = new SingleGroupClusterCreateDTO(clusterCreateDTO,
-            Collections.singletonList(DcMetaSynchronizer.currentDcId));
+            Collections.singletonList(dcId));
 
         logger.info("[ClusterMetaSynchronizer][createCluster]{}", toAdd);
         clusterService.createSingleGroupCluster(createDTO);
 
-        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
+        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", dcId, toAdd.getId()));
     }
 
     boolean shouldAddDc(ClusterMeta toAdd, ClusterTbl exist) {
@@ -160,7 +164,7 @@ public class ClusterMetaSynchronizer {
 
     void update() {
         try {
-            long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+            long currentDcId = dcService.find(dcId).getId();
             modified.forEach(metaComparator -> {
                 try {
                     ClusterSyncMetaComparator clusterMetaComparator = (ClusterSyncMetaComparator) metaComparator;
@@ -182,10 +186,11 @@ public class ClusterMetaSynchronizer {
                         }
                         logger.info("[ClusterMetaSynchronizer][update]{} -> {}, toUpdateTbl: {}", clusterMetaComparator.getCurrent(), future, currentClusterTbl);
                         clusterService.update(currentClusterTbl);
-                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateCluster]%s-%s", DcMetaSynchronizer.currentDcId, future.getId()));
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateCluster]%s-%s", dcId, future.getId()));
                         notifyIfClusterTypeUpdated(currentClusterTye, currentClusterTbl);
                     }
-                    new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService, sentinelBalanceService, consoleConfig).sync();
+                    new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(),
+                            redisService, shardService, sentinelBalanceService, consoleConfig, dcId).sync();
                 } catch (Exception e) {
                     logger.error("[ClusterMetaSynchronizer][update]{} -> {}", ((ClusterMetaComparator) metaComparator).getCurrent(), ((ClusterMetaComparator) metaComparator).getFuture(), e);
                 }
