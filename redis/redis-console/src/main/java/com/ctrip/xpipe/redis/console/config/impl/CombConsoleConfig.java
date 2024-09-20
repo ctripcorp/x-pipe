@@ -21,8 +21,6 @@ import io.netty.util.internal.ConcurrentSet;
 
 import java.util.*;
 
-import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_INSTANCE_PULL_INTERVAL;
-import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_INSTANCE_PULL_RANDOM;
 
 public class CombConsoleConfig implements ConsoleConfig, ConfigChangeListener {
 

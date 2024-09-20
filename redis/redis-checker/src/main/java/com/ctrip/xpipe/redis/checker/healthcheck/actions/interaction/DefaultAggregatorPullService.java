@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -32,19 +31,20 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     private CheckerConfig checkerConfig;
     @Autowired
     private MetaCache metaCache;
-    private final OuterClientService outerClientService = OuterClientService.DEFAULT;
+    private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
 
     @Override
     public Set<HostPortDcStatus> getNeedAdjustInstances(Set<HostPort> instances) throws Exception{
         Set<HostPortDcStatus> instanceNeedAdjust = new HashSet<>();
         Map<HostPort, Boolean> xpipeAllHealthStatus = getXpipeAllHealthStatus(instances);
-        logger.info("[DefaultAggregatorPullService][getNeedAdjustInstances]xpipeAllHealthStatus:{}", xpipeAllHealthStatus);
+        logger.debug("[DefaultAggregatorPullService][getNeedAdjustInstances]xpipeAllHealthStatus:{}", xpipeAllHealthStatus);
         Map<HostPort, Boolean> outerClientAllHealthStatus = getOuterClientAllHealthStatus(instances);
-        logger.info("[DefaultAggregatorPullService][getNeedAdjustInstances]outerClientAllHealthStatus:{}", outerClientAllHealthStatus);
+        logger.debug("[DefaultAggregatorPullService][getNeedAdjustInstances]outerClientAllHealthStatus:{}", outerClientAllHealthStatus);
         for (Map.Entry<HostPort, Boolean> entry : xpipeAllHealthStatus.entrySet()) {
-            if (!outerClientAllHealthStatus.containsKey(entry.getKey()) || entry.getValue() != outerClientAllHealthStatus.get(entry.getKey())) {
-                instanceNeedAdjust.add(new HostPortDcStatus(entry.getKey().getHost(), entry.getKey().getPort(), metaCache.getDc(new HostPort(entry.getKey().getHost(), entry.getKey().getPort())), entry.getValue()));
+            if (!outerClientAllHealthStatus.containsKey(entry.getKey()) || !entry.getValue().equals(outerClientAllHealthStatus.get(entry.getKey()))) {
+                instanceNeedAdjust.add(
+                        new HostPortDcStatus(entry.getKey().getHost(), entry.getKey().getPort(), metaCache.getDc(entry.getKey()), entry.getValue()));
             }
         }
         return instanceNeedAdjust;
@@ -70,7 +70,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         for (HostPort hostPort : hostPorts) {
             ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort(null, null, hostPort);
             instancesUp.put(clusterShardHostPort, outerClientService.isInstanceUp(clusterShardHostPort));
-        };
+        }
         Map<HostPort, Boolean> result = new HashMap<>();
         for (Map.Entry<ClusterShardHostPort, Boolean> entry : instancesUp.entrySet()) {
             result.put(entry.getKey().getHostPort(), entry.getValue());
