@@ -40,11 +40,14 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     private ConfigTbl lease;
 
+    private ConsoleConfig config;
+
     @Autowired
     public CrossDcLeaderElectionAction(ConfigDao configDao, MetaCache metaCache, ConsoleConfig consoleConfig) {
         this.configDao = configDao;
         this.metaCache = metaCache;
         this.leaseName = consoleConfig.getCrossDcLeaderLeaseName();
+        this.config = consoleConfig;
     }
 
     @Override
@@ -80,6 +83,9 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     @Override
     protected boolean shouldElect() {
+        if(config.disableDb()) {
+            return false;
+        }
         try {
             refreshConfig();
         } catch (Exception e) {

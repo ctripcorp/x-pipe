@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
@@ -19,68 +17,81 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcSyncMetaComparator;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
-@Component
 public class DcMetaSynchronizer implements MetaSynchronizer {
-    private static Logger logger = LoggerFactory.getLogger(DcMetaSynchronizer.class);
-    static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-    private ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync"));
-    private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
-    @Autowired
+    private static Logger logger = LoggerFactory.getLogger(DcMetaSynchronizer.class);
+
+    private final String currentDcId;
+
+    private ScheduledExecutorService scheduledExecutorService;
+
+    private OuterClientService outerClientService;
+
+    public DcMetaSynchronizer(ConsoleConfig consoleConfig,
+                              MetaCache metaCache, RedisService redisService, ShardService shardService,
+                              ClusterService clusterService, DcService dcService,
+                              OrganizationService organizationService, SentinelBalanceService sentinelBalanceService,
+                              ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory, OuterClientService outerClientService,
+                              String dcId
+
+    ) {
+        this.consoleConfig = consoleConfig;
+        this.metaCache = metaCache;
+        this.redisService = redisService;
+        this.shardService = shardService;
+        this.clusterService = clusterService;
+        this.dcService = dcService;
+        this.organizationService = organizationService;
+        this.sentinelBalanceService = sentinelBalanceService;
+        this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
+        this.outerClientService = outerClientService;
+        this.currentDcId = dcId;
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync-" + dcId));
+    }
+
     private MetaCache metaCache;
 
-    @Autowired
     private RedisService redisService;
 
-    @Autowired
     private ShardService shardService;
 
-    @Autowired
     private ClusterService clusterService;
 
-    @Autowired
     private DcService dcService;
 
-    @Autowired
     private OrganizationService organizationService;
 
-    @Autowired
     private ConsoleConfig consoleConfig;
 
-    @Autowired(required = false)
-    private ConsoleLeaderElector consoleLeaderElector;
-
-    @Autowired
     private SentinelBalanceService sentinelBalanceService;
 
-    @Autowired
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     private Map<Long, OrganizationTbl> organizations = new HashMap<>();
 
-    @PostConstruct
     public void start() {
         scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                if (consoleLeaderElector != null && consoleLeaderElector.amILeader()) {
+                try {
                     sync();
+                } catch (Exception e) {
+                    logger.error("[DcMetaSynchronizer]", e);
                 }
             }
         }, consoleConfig.getOuterClientSyncInterval(), consoleConfig.getOuterClientSyncInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    public void stop() {
+        scheduledExecutorService.shutdown();
     }
 
     public void sync() {
@@ -103,7 +114,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                     new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(),
                             dcService, clusterService, shardService, redisService,
                             organizationService, sentinelBalanceService, consoleConfig,
-                            clusterTypeUpdateEventFactory).sync();
+                            clusterTypeUpdateEventFactory, currentDcId).sync();
                 } catch (Throwable e) {
                     logger.error("[DcMetaSynchronizer][sync]", e);
                 }

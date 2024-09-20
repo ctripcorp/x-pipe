@@ -5,12 +5,12 @@ import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
-import com.ctrip.xpipe.redis.console.config.impl.CombConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-public class SpringEnvConsoleConfig extends CombConsoleConfig implements ApplicationContextAware {
+public class SpringEnvConsoleConfig extends DefaultConsoleConfig implements ApplicationContextAware {
 
     public SpringEnvConsoleConfig() {
         super(new CheckConfigBean(FoundationService.DEFAULT),

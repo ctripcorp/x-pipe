@@ -24,11 +24,11 @@ import java.util.Set;
  */
 public class DefaultConsoleConfigTest extends AbstractConsoleTest {
 
-    private CombConsoleConfig consoleConfig;
+    private DefaultConsoleConfig consoleConfig;
 
     @Before
     public void beforeDefaultConsoleConfigTest() {
-        consoleConfig = new CombConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+        consoleConfig = new DefaultConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
                 new ConsoleConfigBean(FoundationService.DEFAULT),
                 new DataCenterConfigBean(),
                 new CommonConfigBean());

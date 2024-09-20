@@ -31,6 +31,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
 /**
@@ -55,7 +58,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private KeeperContainerService keeperContainerService;
 
     @Autowired
-    private ConsoleConfig consoleConfig;
+    protected ConsoleConfig consoleConfig;
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
@@ -68,11 +71,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
-    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+    protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
-    private ScheduledFuture<?> future;
+    protected ScheduledFuture<?> future;
 
-    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
+    protected AtomicBoolean taskTrigger = new AtomicBoolean(false);
+
+    private final Lock lock = new ReentrantLock();
+    protected final Condition condition = lock.newCondition();
 
     @Override
     public void isleader() {
@@ -88,6 +94,26 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             stopLoadMeta();
     }
 
+    @Override
+    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+        XpipeMeta xpipeMeta = null;
+        if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
+            try {
+                if(getLastUpdateTime() <= updateTime) {
+                    condition.await(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS);
+                }
+                xpipeMeta = meta.getKey();
+            } catch (Exception e) {
+                logger.debug("[getXpipeMeta]", e);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            xpipeMeta = meta.getKey();
+        }
+        return xpipeMeta;
+    }
+
     private synchronized void stopLoadMeta(){
         logger.info("[loadMeta][stop]{}", this);
         if (future != null)
@@ -99,7 +125,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         monitor2ClusterShard = null;
         allKeepers = null;
         allKeeperSize = DEFAULT_KEEPER_NUMBERS;
-        lastUpdateTime = 0;
     }
 
     public void startLoadMeta() {
@@ -112,7 +137,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             protected void doRun() throws Exception {
                 if(!taskTrigger.get())
                     return;
-                loadCache();
+                if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
+                    try {
+                        loadCache();
+                        condition.signalAll();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
             }
 
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
@@ -161,7 +193,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         });
     }
 
-    private void refreshMetaParts() {
+    protected void refreshMetaParts() {
         try {
             int parts = Math.max(1, consoleConfig.getClusterDividedParts());
             logger.debug("[refreshClusterParts] start parts {}", parts);

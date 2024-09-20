@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcModel;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -62,6 +63,11 @@ public class DcApiController extends AbstractConsoleController {
         }
     }
 
+    @RequestMapping(value = "/dc_tbls", method = RequestMethod.GET)
+    public List<DcTbl> getAllDcTbls(HttpServletRequest request) {
+        return dcService.findAllDcs();
+    }
+
     @RequestMapping(value = "/dc", method = RequestMethod.PUT)
     public RetMessage updateDc(HttpServletRequest request, @RequestBody DcModel dcModel){
 
@@ -96,6 +102,16 @@ public class DcApiController extends AbstractConsoleController {
         }
 
         return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/dc/bind", method = RequestMethod.POST)
+    public RetMessage bindDc(@RequestBody DcClusterTbl dcClusterTbl){
+        try {
+            clusterService.bindDc(dcClusterTbl);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
 }

@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
@@ -34,9 +35,13 @@ public class MybatisDataSourceConfig {
 
     @Bean
     public javax.sql.DataSource dataSource() throws Exception {
-        // 强制查询使Xpipe DataSource初始化
-        ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
-        configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
+        try {
+            // 强制查询使Xpipe DataSource初始化
+            ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
+            configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
+        } catch (ComponentLookupException | DalException e) {
+            logger.error("[MybatisDataSourceConfig]", e);
+        }
         XPipeDataSource dataSource = tryGetXpipeDataSource();
         if (dataSource == null) {
             logger.info("[mybatisSqlSessionFactoryBean] no xpipe datasource found");

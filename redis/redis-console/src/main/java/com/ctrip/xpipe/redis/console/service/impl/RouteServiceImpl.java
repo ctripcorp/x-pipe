@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
 import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -33,13 +34,12 @@ import java.util.*;
  * Jun 19, 2018
  */
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class RouteServiceImpl implements RouteService {
 
     @Autowired
     private RouteDao routeDao;
-
-    @Autowired
-    private ClusterDao clusterDao;
 
     @Autowired
     private DcService dcService;
