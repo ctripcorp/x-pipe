@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
 import java.util.List;
 
@@ -18,6 +19,8 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis);
 
+    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
+
     KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
     ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
@@ -25,6 +28,8 @@ public interface HealthCheckInstanceManager {
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
     RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort);
+
+    RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort);
 
     KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
 
@@ -36,6 +41,8 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort);
 
+    RedisHealthCheckInstance removeRedisInstanceForPingAction(HostPort hostPort);
+
     ClusterHealthCheckInstance remove(String cluster);
 
     List<RedisHealthCheckInstance> getAllRedisInstance();
@@ -45,5 +52,7 @@ public interface HealthCheckInstanceManager {
     List<RedisHealthCheckInstance> getAllRedisInstanceForAssignedAction();
 
     List<ClusterHealthCheckInstance> getAllClusterInstance();
+
+    boolean checkInstancesMiss(XpipeMeta xpipeMeta);
 
 }

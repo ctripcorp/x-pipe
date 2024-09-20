@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -12,7 +13,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
@@ -36,11 +36,14 @@ public class DefaultRemoteCheckerManagerTest extends AbstractCheckerTest {
     @Mock
     private GroupCheckerLeaderElector checkerLeaderElector;
 
+    @Mock
+    private MetaCache metaCache;
+
     private MockWebServer webServer;
 
     @Before
     public void setupDefaultRemoteCheckerManagerTest() throws Exception {
-        this.manager = new DefaultRemoteCheckerManager(checkerConfig, checkerLeaderElector);
+        this.manager = new DefaultRemoteCheckerManager(checkerConfig, checkerLeaderElector, metaCache);
         webServer = new MockWebServer();
         String port = System.getProperty("server.port", "8080");
         webServer.start(InetAddress.getByName("127.0.0.1"), Integer.parseInt(port));

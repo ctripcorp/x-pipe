@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+    <dc id="fra-aws" zone="fra">
+        <cluster id="BBZ_artemis_registry_sgp_ali" db-id="16056" active-dc="fra-aws" backup-dcs="" downstream-dcs="" dc-group-name="fra-aws" org-id="18" type="SINGLE_DC" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="BBZ_artemis_registry_sgp_ali_1" db-id="117472">
+                <redis id="unknown" ip="10.147.78.75" port="6379" master=""/>
+                <redis id="unknown" ip="10.147.138.206" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="IBU_quic_cache" db-id="5809" active-dc="jq" backup-dcs="fra-aws,oy" downstream-dcs="" dc-group-type="DR_MASTER" dc-group-name="fra-aws" org-id="29" type="ONE_WAY" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="IBU_quic_cache_v202110151745_1" db-id="42285">
+                <keeper id="218d0a87364fe550c0c4cbc0c488c0c5e9eee68d" ip="10.147.241.56" port="6523" active="false" keeperContainerId="1697"/>
+                <keeper id="218d0a87364fe550c0c4cbc0c488c0c5e9eee68d" ip="10.147.242.3" port="6512" active="false" keeperContainerId="1698"/>
+                <redis id="unknown" ip="10.147.131.172" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.147.84.69" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="bbz_qmq_idempotent_fra_default" db-id="11496" active-dc="fra-aws" backup-dcs="jq,oy" downstream-dcs="" dc-group-type="DR_MASTER" dc-group-name="fra-aws" org-id="18" type="ONE_WAY" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="bbz_qmq_idempotent_fra_default_1" db-id="92519">
+                <keeper id="8c57a9ca5608d7791714f765a97327e0393e6bae" ip="10.147.242.71" port="6401" active="false" keeperContainerId="1247"/>
+                <keeper id="8c57a9ca5608d7791714f765a97327e0393e6bae" ip="10.147.241.157" port="6401" active="false" keeperContainerId="1249"/>
+                <redis id="unknown" ip="10.147.85.104" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.147.208.149" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="BBZ_ares_meta_datum" db-id="8186" downstream-dcs="" dc-group-name="fra-aws" org-id="18" type="LOCAL_DC" admin-emails="test@trip.com" dcs="jq,oy,fra-aws" clusterDesignatedRouteIds="">
+            <shard id="BBZ_ares_meta_datum_1" db-id="62096">
+                <redis id="unknown" ip="10.147.85.79" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.147.139.139" port="6379" master=""/>
+            </shard>
+        </cluster>
+        <cluster id="RSK_cross_site_cache" db-id="13723" downstream-dcs="" dc-group-name="fra-aws" org-id="28" type="BI_DIRECTION" admin-emails="test@trip.com" dcs="fra-aws,jq,oy" activeRedisCheckRules="1" clusterDesignatedRouteIds="">
+            <shard id="RSK_cross_site_cache_2" db-id="119342">
+                <redis id="unknown" ip="10.147.89.249" port="6379" master=""/>
+                <redis id="unknown" ip="10.147.143.156" port="6379" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="RSK_cross_site_cache_1" db-id="119343" sentinelId="420">
+                <redis id="unknown" ip="10.147.143.171" port="6379" master=""/>
+                <redis id="unknown" ip="10.147.89.243" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="jq" zone="jq">
+        <cluster id="bbz_qmq_idempotent_fra_default" db-id="11496" active-dc="fra-aws" backup-dcs="jq,oy" downstream-dcs="" dc-group-type="DR_MASTER" dc-group-name="jq" org-id="18" type="ONE_WAY" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="bbz_qmq_idempotent_fra_default_1" db-id="92519">
+                <keeper id="e86f24749b8bc7a916e23f2896095dc3f216445d" ip="10.61.38.73" port="6471" active="false" keeperContainerId="1408"/>
+                <keeper id="e86f24749b8bc7a916e23f2896095dc3f216445d" ip="10.61.38.72" port="6488" active="false" keeperContainerId="1409"/>
+                <redis id="unknown" ip="10.43.49.173" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.56.204.175" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="IBU_quic_cache" db-id="5809" active-dc="jq" backup-dcs="fra-aws,oy" downstream-dcs="" dc-group-type="DR_MASTER" dc-group-name="jq" org-id="29" type="ONE_WAY" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="IBU_quic_cache_v202110151745_1" db-id="42285">
+                <keeper id="905866aaa8ecf991b49c756c7020f969fc6f2d0b" ip="10.60.6.123" port="6788" active="false" keeperContainerId="1403"/>
+                <keeper id="905866aaa8ecf991b49c756c7020f969fc6f2d0b" ip="10.61.4.87" port="6480" active="false" keeperContainerId="1658"/>
+                <redis id="unknown" ip="10.97.136.93" port="6379" master=""/>
+                <redis id="unknown" ip="10.141.145.48" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="RSK_cross_site_cache" db-id="13723" downstream-dcs="" dc-group-name="jq" org-id="28" type="BI_DIRECTION" admin-emails="test@trip.com" dcs="fra-aws,jq,oy" activeRedisCheckRules="1" clusterDesignatedRouteIds="">
+            <shard id="RSK_cross_site_cache_2" db-id="119342" sentinelId="390">
+                <redis id="unknown" ip="10.61.173.42" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.62.68.145" port="6379" master=""/>
+            </shard>
+            <shard id="RSK_cross_site_cache_1" db-id="119343" sentinelId="390">
+                <redis id="unknown" ip="10.58.56.107" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.62.114.205" port="6379" master=""/>
+            </shard>
+        </cluster>
+        <cluster id="BBZ_ares_meta_datum" db-id="8186" downstream-dcs="" dc-group-name="jq" org-id="18" type="LOCAL_DC" admin-emails="test@trip.com" dcs="jq,oy,fra-aws" clusterDesignatedRouteIds="">
+            <shard id="BBZ_ares_meta_datum_1" db-id="62096">
+                <redis id="unknown" ip="10.43.181.159" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.43.182.103" port="6379" master=""/>
+            </shard>
+        </cluster>
+        <cluster id="FLT_Trine_Draft_Queues" db-id="11045" active-dc="jq" backup-dcs="" downstream-dcs="" dc-group-name="jq" org-id="18" type="SINGLE_DC" admin-emails="test@trip.com" clusterDesignatedRouteIds="">
+            <shard id="FLT_Trine_Draft_Queues_v20230713_1" db-id="88649">
+                <redis id="unknown" ip="10.58.70.115" port="6379" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="10.96.94.245" port="6379" master=""/>
+            </shard>
+        </cluster>
+        <cluster id="j_kang_redis3" db-id="14807" active-dc="jq" downstream-dcs="" dc-group-name="jq" org-id="2" type="CROSS_DC" admin-emails="test@trip.com" dcs="jq" clusterDesignatedRouteIds="">
+            <shard id="j_kang_redis3_1" db-id="111300" sentinelId="138">
+                <redis id="unknown" ip="10.58.107.181" port="6379" master=""/>
+                <redis id="unknown" ip="10.58.91.145" port="6379" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>

@@ -68,6 +68,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
             @Override
             protected void doRun() throws Exception {
                 checkDcMetaChange();
+                instanceManager.checkInstancesMiss(metaCache.getXpipeMeta());
             }
         }, interval * 2, interval, TimeUnit.MILLISECONDS);
     }
@@ -97,7 +98,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
                     @Override
                     public DcMetaChangeManager create() {
                         return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
-                                checkerConsoleService, checkerConfig);
+                                checkerConsoleService, checkerConfig, metaCache);
                     }
                 });
     }
