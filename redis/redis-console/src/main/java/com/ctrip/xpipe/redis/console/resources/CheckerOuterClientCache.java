@@ -34,9 +34,22 @@ public class CheckerOuterClientCache implements OuterClientCache {
     }
 
     @Override
-    public Map<String, OuterClientService.ClusterInfo> getAllActiveDcClusters(String activeDc) {
+    public Map<String, OuterClientService.ClusterInfo> getAllDcClusters(String dc) {
         try {
-            return service.loadAllActiveDcOneWayClusterInfo(config.getConsoleAddress(), activeDc);
+            return service.loadAllDcOneWayClusterInfo(config.getConsoleAddress(), dc);
+        } catch (RestClientException e) {
+            logger.warn("[getAllOneWayClusters] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[getAllOneWayClusters] fail", th);
+        }
+
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public Map<String, OuterClientService.ClusterInfo> getAllCurrentDcClusters(String dc) {
+        try {
+            return service.loadCurrentDcOneWayClusterInfo(config.getConsoleAddress(), dc);
         } catch (RestClientException e) {
             logger.warn("[getAllOneWayClusters] rest fail, {}", e.getMessage());
         } catch (Throwable th) {

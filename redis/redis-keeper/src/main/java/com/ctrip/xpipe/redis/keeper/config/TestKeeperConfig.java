@@ -269,4 +269,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getApplierReadIdleSeconds() {
 		return 60;
 	}
+
+	@Override
+	public boolean fsyncRateLimit() {
+		return true;
+	}
 }
