@@ -3,6 +3,7 @@ package com.ctrip.xpipe.api.migration;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,6 +31,8 @@ public interface OuterClientService extends Ordered{
 	void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
 
 	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
+
+	Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException;
 
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 

@@ -37,6 +37,15 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+		Map<HostPort, Boolean> result = new HashMap<>();
+		for (HostPort instance: instances) {
+			result.put(instance, isInstanceUp(new ClusterShardHostPort(instance)));
+		}
+		return result;
+	}
+
+	@Override
 	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 		logger.info("[markInstanceDown]{}", clusterShardHostPort);
 		instanceStatus.put(clusterShardHostPort.getHostPort(), false);

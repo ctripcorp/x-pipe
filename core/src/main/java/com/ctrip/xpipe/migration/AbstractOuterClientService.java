@@ -3,11 +3,15 @@ package com.ctrip.xpipe.migration;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author shyin
@@ -36,6 +40,11 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	@Override
 	public boolean isInstanceUp(ClusterShardHostPort hostPort) throws OuterClientException {
 		return false;
+	}
+
+	@Override
+	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+		return Collections.emptyMap();
 	}
 
 	@Override
