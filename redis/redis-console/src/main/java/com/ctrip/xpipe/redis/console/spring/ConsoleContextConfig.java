@@ -53,7 +53,11 @@ import org.springframework.context.annotation.*;
  */
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan(basePackages = {"com.ctrip.xpipe.service", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
+@ComponentScan(basePackages = {"com.ctrip.xpipe.service",
+		"com.ctrip.xpipe.redis.console",
+		"com.ctrip.xpipe.redis.checker.alert"},
+		excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.ctrip\\.xpipe\\.service\\.ignite\\.DalIgniteValidate")
+)
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class ConsoleContextConfig implements XPipeMvcRegistrations {
