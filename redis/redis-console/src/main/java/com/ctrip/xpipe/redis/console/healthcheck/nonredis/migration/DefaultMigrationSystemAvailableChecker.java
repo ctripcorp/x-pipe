@@ -188,6 +188,9 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     @Override
     protected boolean shouldDoAction() {
         if (!super.shouldDoAction()) return false;
+        if(consoleConfig.disableDb()) {
+            return false;
+        }
 
         // only check migration system when the cluster in manage can migrate
         Set<String> ownTypes =  consoleConfig.getOwnClusterType();
