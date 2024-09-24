@@ -13,7 +13,6 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
-import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -211,8 +210,8 @@ public class CRedisService extends AbstractOuterClientService {
 					String address = CREDIS_SERVICE.BATCH_SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
 					String reqType = "batchMarkInstance";
 
-					MarkInstanceResponse response = doRequest(reqType, markInstanceRequest.getClusterName(), () -> restOperations.postForObject(address, markInstanceRequest, MarkInstanceResponse.class)
-					);
+					MarkInstanceResponse response = doRequest(reqType, markInstanceRequest.getClusterName(),
+							() -> restOperations.postForObject(address, markInstanceRequest, MarkInstanceResponse.class));
 					logger.info("[doBatchMarkInstance][end]{},{}", markInstanceRequest, response);
 					if(!response.isSuccess()){
 						throw new IllegalStateException(String.format("%s, response:%s", markInstanceRequest, response));

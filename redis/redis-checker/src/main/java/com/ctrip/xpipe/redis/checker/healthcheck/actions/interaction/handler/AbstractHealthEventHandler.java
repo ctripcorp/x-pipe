@@ -142,11 +142,13 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
         RedisInstanceInfo info = instanceEvent.getInstance().getCheckInfo();
         HostPort redisMaster = metaCache.findMasterInSameShard(info.getHostPort());
-        boolean masterUp = defaultDelayPingActionCollector.getState(redisMaster) == HEALTH_STATE.HEALTHY;
-        if (!masterUp) {
-            logger.info("[masterUp][master down instance:{}, master:{}]", info, redisMaster);
+        HEALTH_STATE masterState = defaultDelayPingActionCollector.getState(redisMaster);
+
+        if (HEALTH_STATE.UNHEALTHY.equals(masterState) || HEALTH_STATE.DOWN.equals(masterState) || HEALTH_STATE.SICK.equals(masterState)) {
+            logger.info("[masterUp][master down instance:{}, master:{}] {}", info, redisMaster, masterState);
+            return false;
         }
-        return masterUp;
+        return true;
     }
 
     protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {

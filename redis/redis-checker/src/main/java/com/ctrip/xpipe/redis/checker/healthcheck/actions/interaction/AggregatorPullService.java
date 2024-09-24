@@ -8,7 +8,7 @@ import java.util.Set;
 
 public interface AggregatorPullService {
 
-    Set<HostPortDcStatus> getNeedAdjustInstances(Set<HostPort> instances) throws Exception;
+    Set<HostPortDcStatus> getNeedAdjustInstances(String cluster, Set<HostPort> instances) throws Exception;
 
     void doMarkInstances(String clusterName, Set<HostPortDcStatus> instances) throws OuterClientException;
 
