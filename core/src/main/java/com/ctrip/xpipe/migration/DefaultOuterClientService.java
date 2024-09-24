@@ -7,10 +7,7 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -35,6 +32,15 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		Boolean result = instanceStatus.get(clusterShardHostPort.getHostPort());
 		if(result == null){
 			return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
+		}
+		return result;
+	}
+
+	@Override
+	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+		Map<HostPort, Boolean> result = new HashMap<>();
+		for (HostPort instance: instances) {
+			result.put(instance, isInstanceUp(new ClusterShardHostPort(instance)));
 		}
 		return result;
 	}
@@ -117,6 +123,14 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
 		logger.info("[markInstanceDownIfNoModifyFor]{}", clusterShardHostPort);
 		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
+	}
+
+	@Override
+	public void batchMarkInstance(MarkInstanceRequest markInstanceRequest) throws OuterClientException {
+		logger.info("[batchMarkInstance]{}", markInstanceRequest);
+		for (HostPortDcStatus hostPortDcStatus : markInstanceRequest.getHostPortDcStatuses()) {
+			instanceStatus.put(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()), hostPortDcStatus.isCanRead());
+		}
 	}
 
 	@Override

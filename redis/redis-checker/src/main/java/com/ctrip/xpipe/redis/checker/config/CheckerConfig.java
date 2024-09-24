@@ -108,4 +108,8 @@ public interface CheckerConfig {
 
     int getKeeperCheckerIntervalMilli();
 
+    int getMarkInstanceBaseDelayMilli();
+
+    int getMarkInstanceMaxDelayMilli();
+
 }

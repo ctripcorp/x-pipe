@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
-import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.checker.alert.AlertDbConfig;
 import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
