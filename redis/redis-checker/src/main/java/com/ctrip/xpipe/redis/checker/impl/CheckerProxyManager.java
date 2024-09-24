@@ -82,8 +82,17 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
 
     @Override
     public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId) {
-        if (!clusterServer.amILeader()) return null;
-        return proxyTunnelInfos.get(new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId));
+        if (!clusterServer.amILeader()) {
+            logger.info("[getProxyTunnelInfo] not leader");
+            return null;
+        }
+        DcClusterShardPeer dcClusterShardPeer = new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId);
+        ProxyTunnelInfo proxyTunnelInfo = proxyTunnelInfos.get(dcClusterShardPeer);
+        if (proxyTunnelInfo == null) {
+            logger.info("[getProxyTunnelInfo][unfound]{}", dcClusterShardPeer);
+            logger.debug("[getProxyTunnelInfo]{}", proxyTunnelInfos.keySet());
+        }
+        return proxyTunnelInfo;
     }
 
     @Override

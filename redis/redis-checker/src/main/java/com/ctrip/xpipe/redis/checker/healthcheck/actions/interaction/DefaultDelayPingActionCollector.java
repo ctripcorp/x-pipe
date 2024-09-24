@@ -187,6 +187,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
                 executors.execute(new AbstractExceptionLogTask() {
                     @Override
                     protected void doRun() throws Exception {
+                        logger.debug("[onInstanceStateChange] {}", processor.getClass().getSimpleName());
                         processor.onEvent((AbstractInstanceEvent) args);
                     }
                 });
