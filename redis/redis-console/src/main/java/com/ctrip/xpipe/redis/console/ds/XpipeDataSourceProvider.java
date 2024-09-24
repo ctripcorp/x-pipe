@@ -21,6 +21,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
     private String m_baseDirRef;
     private String m_defaultBaseDir;
     private DataSourceProvider m_delegate;
+
     private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String qconfigDataSourceProviderClass =
