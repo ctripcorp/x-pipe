@@ -5,7 +5,10 @@ import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -22,6 +25,8 @@ public class DefaultCheckerService extends AbstractService implements CheckerSer
     private static final String PATH_GET_ALL_INSTANCE_HEALTH_STATUS = "/api/health/check/status/all";
 
     private static final String PATH_GET_ALL_CROSS_REGION_INSTANCE_HEALTH_STATUS = "/api/health/check/cross/region/status/all";
+
+    private static final String PATH_GRT_INSTANCE_CLUSTER_HEALTH_STATUS = "/api/health/check/instances/status";
 
     public DefaultCheckerService(String host) {
         if (host.startsWith("http://")) this.host = host;
@@ -41,6 +46,11 @@ public class DefaultCheckerService extends AbstractService implements CheckerSer
     @Override
     public Map<HostPort, HealthStatusDesc> getAllInstanceCrossRegionHealthStatus() {
         return restTemplate.getForObject(host + PATH_GET_ALL_CROSS_REGION_INSTANCE_HEALTH_STATUS, AllInstanceHealthStatus.class);
+    }
+
+    @Override
+    public Map<HostPort, HealthStatusDesc> getAllClusterInstanceHealthStatus(Set<HostPort> hostPorts) {
+        return restTemplate.postForObject(host + PATH_GRT_INSTANCE_CLUSTER_HEALTH_STATUS, hostPorts, AllInstanceHealthStatus.class);
     }
 
     @Override
