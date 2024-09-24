@@ -523,13 +523,13 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public int getInstancePullIntervalSeconds() {
-        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_INTERVAL, 5);
+    public int getMarkInstanceBaseDelayMilli() {
+        return checkConfigBean.getMarkInstanceBaseDelayMilli();
     }
 
     @Override
-    public int getInstancePullRandomSeconds() {
-        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_RANDOM, 5);
+    public int getMarkInstanceMaxDelayMilli() {
+        return checkConfigBean.getMarkInstanceMaxDelayMilli();
     }
 
     @Override

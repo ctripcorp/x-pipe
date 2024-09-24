@@ -764,6 +764,11 @@ public interface OuterClientService extends Ordered{
 		public void setActiveDc(String activeDc) {
 			this.activeDc = activeDc;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("[%s:%s]%s", clusterName, activeDc, hostPortDcStatuses);
+		}
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -814,6 +819,11 @@ public interface OuterClientService extends Ordered{
 
 		public void setCanRead(boolean canRead) {
 			this.canRead = canRead;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("{%s:%d-%s|%s}", host, port, dc, canRead);
 		}
 	}
 

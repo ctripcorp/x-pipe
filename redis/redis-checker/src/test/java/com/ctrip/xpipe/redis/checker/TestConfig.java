@@ -306,13 +306,13 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public int getInstancePullIntervalSeconds() {
-        return 5;
+    public int getMarkInstanceBaseDelayMilli() {
+        return 1000;
     }
 
     @Override
-    public int getInstancePullRandomSeconds() {
-        return 5;
+    public int getMarkInstanceMaxDelayMilli() {
+        return 2000;
     }
 
 }
