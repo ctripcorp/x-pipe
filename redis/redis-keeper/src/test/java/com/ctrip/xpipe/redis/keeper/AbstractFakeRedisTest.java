@@ -86,7 +86,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				commandFileSize, 
 				replicationStoreCommandFileNumToKeep, 
 				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
-
+        ((TestKeeperConfig)keeperConfig).setRdbDumpMinIntervalMilli(0);
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
