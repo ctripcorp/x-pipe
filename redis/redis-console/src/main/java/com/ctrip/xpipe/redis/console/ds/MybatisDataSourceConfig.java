@@ -13,11 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 @Configuration
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
@@ -27,6 +30,7 @@ public class MybatisDataSourceConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MybatisDataSourceConfig.class);
     private XPipeDataSource dataSource;
+
     private CommonConfigBean commonConfigBean = new CommonConfigBean();
 
     @Bean
@@ -40,8 +44,8 @@ public class MybatisDataSourceConfig {
     public javax.sql.DataSource dataSource() throws Exception {
 
         if(commonConfigBean.disableDb()) {
-            // if disableDb is true, datasource is useless, only for autowired
-            return new SimpleDriverDataSource();
+            // if disableDb is true, set a fake datasource, only for autowired.
+            return makeFakeDataSource();
         }
         // 强制查询使Xpipe DataSource初始化
         ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
@@ -83,5 +87,18 @@ public class MybatisDataSourceConfig {
 
             return this.dataSource;
         }
+    }
+
+    private javax.sql.DataSource makeFakeDataSource() {
+        return new AbstractDataSource() {
+            @Override
+            public Connection getConnection() throws SQLException {
+                throw new SQLException("This is a fake datasource");
+            }
+            @Override
+            public Connection getConnection(String username, String password) throws SQLException {
+                throw new SQLException("This is a fake datasource");
+            }
+        };
     }
 }

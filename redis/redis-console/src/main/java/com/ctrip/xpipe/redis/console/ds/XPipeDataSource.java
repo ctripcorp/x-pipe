@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.ds;
 
 import com.ctrip.xpipe.datasource.DataSourceFactory;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.slf4j.Logger;
@@ -34,6 +35,8 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     private static final String ctripDalDataSourceFactory =
         "com.ctrip.xpipe.service.datasource.CtripDalDataSourceFactory";
 
+    private CommonConfigBean commonConfigBean  = new CommonConfigBean();
+
     private static boolean ctripDataSourceEnabled =
         ClassUtils.isPresent(ctripDalDataSource, XPipeDataSource.class.getClassLoader());
 
@@ -52,7 +55,7 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
 
     @Override
     public void initialize(DataSourceDescriptor descriptor) {
-        if (ctripDataSourceEnabled) {
+        if (ctripDataSourceEnabled && !commonConfigBean.disableDb()) {
             try {
                 m_factory = (DataSourceFactory)(Class.forName(ctripDalDataSourceFactory).newInstance());
                 Class<?> clazz = Class.forName(ctripDalDataSource);
