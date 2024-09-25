@@ -523,6 +523,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getMarkInstanceBaseDelayMilli() {
+        return checkConfigBean.getMarkInstanceBaseDelayMilli();
+    }
+
+    @Override
+    public int getMarkInstanceMaxDelayMilli() {
+        return checkConfigBean.getMarkInstanceMaxDelayMilli();
+    }
+
+    @Override
     public boolean isAutoMigrateOverloadKeeperContainerOpen() {
         return consoleConfigBean.isAutoMigrateOverloadKeeperContainerOpen();
     }

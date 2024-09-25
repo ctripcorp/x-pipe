@@ -80,6 +80,7 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
 
     @VisibleForTesting
     protected void doOnEvent(AbstractInstanceEvent instanceSick) {
+        logger.info("[doOnEvent] {}", instanceSick.getInstance().getEndpoint());
         ProxyTunnelInfo proxyTunnelInfo = findProxyTunnelInfo(instanceSick);
         if (proxyTunnelInfo == null) {
             logger.warn("[doOnEvent]proxy chain not found for {}", instanceSick);

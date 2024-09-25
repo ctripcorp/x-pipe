@@ -3,6 +3,7 @@ package com.ctrip.xpipe.api.migration;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,10 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,9 +32,13 @@ public interface OuterClientService extends Ordered{
 
 	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
+	Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException;
+
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
 	void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
+
+	void batchMarkInstance(MarkInstanceRequest markInstanceRequest) throws OuterClientException;
 
 	boolean clusterMigratePreCheck(String clusterName) throws OuterClientException;
 
@@ -721,6 +723,107 @@ public interface OuterClientService extends Ordered{
 
 		public void setMessage(String message) {
 			Message = message;
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class MarkInstanceRequest{
+		private Set<HostPortDcStatus> hostPortDcStatuses;
+		private String clusterName;
+		private String activeDc;
+
+		public MarkInstanceRequest() {
+		}
+
+		public MarkInstanceRequest(Set<HostPortDcStatus> hostPortDcStatuses, String clusterName, String activeDc) {
+			this.hostPortDcStatuses = hostPortDcStatuses;
+			this.clusterName = clusterName;
+			this.activeDc = activeDc;
+		}
+
+		public Set<HostPortDcStatus> getHostPortDcStatuses() {
+			return hostPortDcStatuses;
+		}
+
+		public void setHostPortDcStatuses(Set<HostPortDcStatus> hostPortDcStatuses) {
+			this.hostPortDcStatuses = hostPortDcStatuses;
+		}
+
+		public String getClusterName() {
+			return clusterName;
+		}
+
+		public void setClusterName(String clusterName) {
+			this.clusterName = clusterName;
+		}
+
+		public String getActiveDc() {
+			return activeDc;
+		}
+
+		public void setActiveDc(String activeDc) {
+			this.activeDc = activeDc;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("[%s:%s]%s", clusterName, activeDc, hostPortDcStatuses);
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class HostPortDcStatus{
+
+		private String host;
+		private int port;
+		private String dc;
+		private boolean canRead;
+
+		public HostPortDcStatus() {
+		}
+
+		public HostPortDcStatus(String host, int port, String dc, boolean canRead) {
+			this.host = host;
+			this.port = port;
+			this.dc = dc;
+			this.canRead = canRead;
+		}
+
+		public String getHost() {
+			return host;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public boolean isCanRead() {
+			return canRead;
+		}
+
+		public void setHost(String host) {
+			this.host = host;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public String getDc() {
+			return dc;
+		}
+
+		public void setDc(String dc) {
+			this.dc = dc;
+		}
+
+		public void setCanRead(boolean canRead) {
+			this.canRead = canRead;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("{%s:%d-%s|%s}", host, port, dc, canRead);
 		}
 	}
 
