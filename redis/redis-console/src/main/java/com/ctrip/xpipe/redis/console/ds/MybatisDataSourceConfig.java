@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.ds;
 
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -12,19 +13,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 @Configuration
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 @MapperScan("com.ctrip.xpipe.redis.console.mapper")
 @EnableTransactionManagement
 public class MybatisDataSourceConfig {
+
     private static final Logger logger = LoggerFactory.getLogger(MybatisDataSourceConfig.class);
     private XPipeDataSource dataSource;
+
+    private CommonConfigBean commonConfigBean = new CommonConfigBean();
 
     @Bean
     public MybatisSqlSessionFactoryBean mybatisSqlSessionFactoryBean() throws Exception {
@@ -35,13 +42,15 @@ public class MybatisDataSourceConfig {
 
     @Bean
     public javax.sql.DataSource dataSource() throws Exception {
-        try {
-            // 强制查询使Xpipe DataSource初始化
-            ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
-            configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
-        } catch (ComponentLookupException | DalException e) {
-            logger.error("[MybatisDataSourceConfig]", e);
+
+        if(commonConfigBean.disableDb()) {
+            // if disableDb is true, set a fake datasource, only for autowired.
+            return makeFakeDataSource();
         }
+        // 强制查询使Xpipe DataSource初始化
+        ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
+        configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
+
         XPipeDataSource dataSource = tryGetXpipeDataSource();
         if (dataSource == null) {
             logger.info("[mybatisSqlSessionFactoryBean] no xpipe datasource found");
@@ -78,5 +87,18 @@ public class MybatisDataSourceConfig {
 
             return this.dataSource;
         }
+    }
+
+    private javax.sql.DataSource makeFakeDataSource() {
+        return new AbstractDataSource() {
+            @Override
+            public Connection getConnection() throws SQLException {
+                throw new SQLException("This is a fake datasource");
+            }
+            @Override
+            public Connection getConnection(String username, String password) throws SQLException {
+                throw new SQLException("This is a fake datasource");
+            }
+        };
     }
 }

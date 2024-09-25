@@ -14,7 +14,7 @@ public class PersistenceCacheWithoutDB extends CheckerPersistenceCache {
     }
 
     protected String getConsoleAddress() {
-        return consoleConfig.getConsoleDomain();
+        return consoleConfig.getConsoleNoDbDomain();
     }
 
 }
