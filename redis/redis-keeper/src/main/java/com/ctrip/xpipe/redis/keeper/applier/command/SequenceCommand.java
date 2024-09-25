@@ -11,7 +11,6 @@ import java.util.concurrent.Executor;
 
 /**
  * @author Slight
- *
  * Make sure to execute this command on stateThread.
  * Jan 31, 2022 1:06 PM
  */
@@ -44,7 +43,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
 
     private void executeSelf() {
         CommandFuture<V> future = inner.execute(workerThreads);
-        future.addListener((f)->{
+        future.addListener((f) -> {
             if (f.isSuccess()) {
                 stateThread.execute(() -> {
                     try {
@@ -65,10 +64,13 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
     }
 
     private void nextAfter(Collection<SequenceCommand<?>> pasts) {
-        for (SequenceCommand<?> past : pasts) {
-            past.future().addListener((f)->{
+        final int size = pasts.size();
+        List<SequenceCommand> temp = Lists.newArrayList(pasts);
+        for (SequenceCommand<?> past : temp) {
+            past.future().addListener((f) -> {
                 if (f.isSuccess()) {
-                    if (++complete == pasts.size()) {
+                    pasts.remove(past);
+                    if (++complete == size) {
                         executeSelf();
                     }
                 } else {
