@@ -42,7 +42,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 	@Test
 	public void testNewDumpCommandsLost() throws Exception{
 
-		startKeeperServerAndTestReFullSync(2, allCommandsSize);
+		startKeeperServerAndTestReFullSync(1, allCommandsSize);
 	}
 
 	@Test
