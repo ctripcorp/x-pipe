@@ -26,8 +26,8 @@ public class BeaconService implements MonitorService {
     protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/{system}/clusters";
     protected static final String PATH_CLUSTER = "/api/v1/monitor/{system}/cluster/{cluster}";
 
-    private final String getAllClustersPath;
-    private final String clusterPath;
+    private String getAllClustersPath;
+    private String clusterPath;
 
     private String name;
     private String host;
@@ -40,10 +40,8 @@ public class BeaconService implements MonitorService {
 
     public BeaconService(String name, String host, int weight) {
         this.name = name;
-        this.host = host;
         this.weight = weight;
-        getAllClustersPath = host + PATH_GET_CLUSTERS;
-        clusterPath = host + PATH_CLUSTER;
+        updateHost(host);
     }
 
     @Override
@@ -64,6 +62,13 @@ public class BeaconService implements MonitorService {
     @Override
     public void setWeight(int weight) {
         this.weight = weight;
+    }
+
+    @Override
+    public void updateHost(String host) {
+        this.host = host;
+        getAllClustersPath = host + PATH_GET_CLUSTERS;
+        clusterPath = host + PATH_CLUSTER;
     }
 
     @Override

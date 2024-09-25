@@ -21,6 +21,8 @@ public interface MonitorService {
 
     void setWeight(int weight);
 
+    void updateHost(String host);
+
     Set<String> fetchAllClusters(String system);
 
     void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
