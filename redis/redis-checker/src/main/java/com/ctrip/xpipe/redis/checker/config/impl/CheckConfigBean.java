@@ -113,6 +113,14 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPER_CHECKER_INTERVAL = "keeper.checker.interval";
 
+    public static final String KEY_CHECKER_MARK_DELAY_BASE = "checker.health.mark.delay.base.milli";
+
+    public static final String KEY_CHECKER_MARK_DELAY_MAX = "checker.health.mark.delay.max.milli";
+
+    public static final String KEY_CHECKER_INSTANCE_PULL_INTERVAL = "checker.instance.pull.interval";
+
+    public static final String KEY_CHECKER_INSTANCE_PULL_RANDOM = "checker.instance.pull.random";
+
     private FoundationService foundationService;
 
     @Autowired
@@ -340,6 +348,22 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public int getKeeperCheckerIntervalMilli() {
         return getIntProperty(KEY_KEEPER_CHECKER_INTERVAL, 60 * 1000);
+    }
+
+    public int getMarkInstanceBaseDelayMilli() {
+        return getIntProperty(KEY_CHECKER_MARK_DELAY_BASE, 3000);
+    }
+
+    public int getMarkInstanceMaxDelayMilli() {
+        return getIntProperty(KEY_CHECKER_MARK_DELAY_MAX, 10000);
+    }
+
+    public int getInstancePullIntervalSeconds() {
+        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_INTERVAL, 5);
+    }
+
+    public int getInstancePullRandomSeconds() {
+        return getIntProperty(KEY_CHECKER_INSTANCE_PULL_RANDOM, 5);
     }
 
     public int getStableResetAfterRounds() {

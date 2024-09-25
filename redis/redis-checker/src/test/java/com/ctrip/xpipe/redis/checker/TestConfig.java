@@ -305,4 +305,14 @@ public class TestConfig implements CheckerConfig, AlertConfig {
         return 1000;
     }
 
+    @Override
+    public int getMarkInstanceBaseDelayMilli() {
+        return 1000;
+    }
+
+    @Override
+    public int getMarkInstanceMaxDelayMilli() {
+        return 2000;
+    }
+
 }

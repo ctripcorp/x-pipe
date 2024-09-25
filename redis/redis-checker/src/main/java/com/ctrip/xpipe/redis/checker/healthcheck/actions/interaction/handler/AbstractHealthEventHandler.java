@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
@@ -48,6 +46,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
 
     @Autowired
     private CheckerConfig checkerConfig;
+
+    @Autowired
+    private OuterClientAggregator outerClientAggregator;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -116,7 +117,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.info("[doRealMarkUp][{} is cross region, do not call client service ]{}", info, event);
             return;
         }
-        getHealthStateSetterManager().set(event.getInstance().getCheckInfo().getClusterShardHostport(), true);
+        outerClientAggregator.markInstance(event.getInstance().getCheckInfo().getClusterShardHostport());
     }
 
     protected void doRealMarkDown(final AbstractInstanceEvent event) {
@@ -129,7 +130,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.warn("[markdown] instance state up now, do not mark down, {}", info);
         } else {
             logger.info("[markdown] mark down redis, {}, {}", event.getInstance().getCheckInfo(), event.getClass().getSimpleName());
-            getHealthStateSetterManager().set(info.getClusterShardHostport(), false);
+            outerClientAggregator.markInstance(event.getInstance().getCheckInfo().getClusterShardHostport());
         }
     }
 
@@ -141,11 +142,13 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
         RedisInstanceInfo info = instanceEvent.getInstance().getCheckInfo();
         HostPort redisMaster = metaCache.findMasterInSameShard(info.getHostPort());
-        boolean masterUp = defaultDelayPingActionCollector.getState(redisMaster) == HEALTH_STATE.HEALTHY;
-        if (!masterUp) {
-            logger.info("[masterUp][master down instance:{}, master:{}]", info, redisMaster);
+        HEALTH_STATE masterState = defaultDelayPingActionCollector.getState(redisMaster);
+
+        if (HEALTH_STATE.UNHEALTHY.equals(masterState) || HEALTH_STATE.DOWN.equals(masterState) || HEALTH_STATE.SICK.equals(masterState)) {
+            logger.info("[masterUp][master down instance:{}, master:{}] {}", info, redisMaster, masterState);
+            return false;
         }
-        return masterUp;
+        return true;
     }
 
     protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {
@@ -154,7 +157,4 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         return matchStates >= checkerConfig.getQuorum();
     }
 
-    private FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {
-        return defaultDelayPingActionCollector.getHealthStateSetterManager();
-    }
 }

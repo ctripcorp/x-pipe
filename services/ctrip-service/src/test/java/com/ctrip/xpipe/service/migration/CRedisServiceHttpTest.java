@@ -21,10 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.anyString;
@@ -288,6 +285,66 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
 
         MetricData metricData = metricProxy.poll();
         Assert.assertEquals("getActiveDcClusters", metricData.getTags().get("api"));
+    }
+
+    @Test
+    public void testBatchGetInstances() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\n" +
+                "    \"Success\": true,\n" +
+                "    \"Result\": [\n" +
+                "        {\n" +
+                "            \"ID\": 118991,\n" +
+                "            \"ParentID\": 0,\n" +
+                "            \"GroupID\": 1000079389,\n" +
+                "            \"PoolID\": 0,\n" +
+                "            \"IPAddress\": \"10.118.79.225\",\n" +
+                "            \"Port\": 21050,\n" +
+                "            \"Status\": 1,\n" +
+                "            \"CreateTime\": \"2021-06-07 16:56:27\",\n" +
+                "            \"UpdateTime\": \"2021-06-07 16:56:27\",\n" +
+                "            \"Remark\": null,\n" +
+                "            \"CanRead\": true,\n" +
+                "            \"Env\": \"PTOY\",\n" +
+                "            \"Token\": null\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"ID\": 118992,\n" +
+                "            \"ParentID\": 0,\n" +
+                "            \"GroupID\": 1000079389,\n" +
+                "            \"PoolID\": 0,\n" +
+                "            \"IPAddress\": \"10.118.79.225\",\n" +
+                "            \"Port\": 21051,\n" +
+                "            \"Status\": 1,\n" +
+                "            \"CreateTime\": \"2021-06-07 16:56:27\",\n" +
+                "            \"UpdateTime\": \"2021-06-07 16:56:27\",\n" +
+                "            \"Remark\": null,\n" +
+                "            \"CanRead\": false,\n" +
+                "            \"Env\": \"PTOY\",\n" +
+                "            \"Token\": null\n" +
+                "        }\n" +
+                "    ]\n" +
+                "}")
+                .setHeader("Content-Type", "application/json"));
+
+        Set<HostPort> instances = new HashSet<HostPort>() {{
+            add(new HostPort("10.118.79.225", 21050));
+            add(new HostPort("10.118.79.225", 21051));
+            add(new HostPort("10.118.79.225", 21052));
+        }};
+        Map<HostPort, Boolean> resp =credisService.batchQueryInstanceStatus("cluster1", instances);
+        Assert.assertEquals(new HashMap<HostPort, Boolean>(){{
+            put(new HostPort("10.118.79.225", 21050), true);
+            put(new HostPort("10.118.79.225", 21051), false);
+        }}, resp);
+
+        Assert.assertEquals(1, webServer.getRequestCount());
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals("/keeperApi/queryReadStatus/batch", req.getPath());
+        Assert.assertEquals("POST", req.getMethod());
+
+        MetricData metricData = metricProxy.poll();
+        Assert.assertEquals("batchGetInstances", metricData.getTags().get("api"));
+        Assert.assertEquals("cluster1", metricData.getClusterName());
     }
 
     private OuterClientService.ClusterInfo mockClusterInfo(String clusterName, String activeDc, String backupDc, String redisIp) {

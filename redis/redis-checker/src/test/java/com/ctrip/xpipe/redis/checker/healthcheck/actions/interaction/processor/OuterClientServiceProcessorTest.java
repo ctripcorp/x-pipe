@@ -101,7 +101,6 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(instance.getHealthCheckConfig()).thenReturn(config);
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
-        when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(manager);
         ((DefaultInstanceSickHandler)instanceSickHandler).setScheduled(scheduled);
     }
 
