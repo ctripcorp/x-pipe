@@ -29,7 +29,7 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
             @Override
             public void go() {
                 try {
-                    XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getLastUpdateTime());
+                    XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getVersion());
                     checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
                     refreshMetaParts();
                     refreshMeta(xpipeMeta);
@@ -50,9 +50,9 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
 
         logger.info("[loadMeta][start]{}", this);
 
-        long refreshIntervalMilli = 500;
+        long refreshIntervalMilli = config.getCacheRefreshInterval();
 
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+        future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 if(!taskTrigger.get())

@@ -20,7 +20,7 @@ public interface MetaCache {
 
     XpipeMeta getXpipeMeta();
 
-    XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException;
+    XpipeMeta getXpipeMetaLongPull(long version) throws InterruptedException;
 
     XpipeMeta getDividedXpipeMeta(int partIndex);
 
@@ -84,6 +84,8 @@ public interface MetaCache {
     ClusterType getAzGroupType(HostPort hostPort);
 
     long getLastUpdateTime();
+
+    long getVersion();
 
     ClusterType getClusterType(String clusterId);
 
