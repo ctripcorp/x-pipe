@@ -67,7 +67,6 @@ public class MigrationApiIntegrationTest extends AbstractConsoleIntegrationTest 
         req.to = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + 600;
         req.clusters = new HashSet<>(Arrays.asList("cluster2", "bi_cluster1"));
 
-        getXpipeMeta();
         Map<String, List<ClusterMigrationStatusV2>> resp = migrationApi.getClusterMigrationHistoryV2(req);
         logger.info("[testGetClusterMigrationHistoryV2] {}", resp);
         Assert.assertTrue(resp.containsKey("cluster2"));
@@ -75,6 +74,39 @@ public class MigrationApiIntegrationTest extends AbstractConsoleIntegrationTest 
         Assert.assertEquals("Processing", resp.get("cluster2").get(0).status);
         Assert.assertEquals(Collections.singleton("jq"), resp.get("cluster2").get(0).sourceDcs);
         Assert.assertEquals(Collections.singleton("oy"), resp.get("cluster2").get(0).destDcs);
+        Assert.assertTrue(resp.containsKey("bi_cluster1"));
+        Assert.assertEquals(1, resp.get("bi_cluster1").size());
+        Assert.assertEquals("Success", resp.get("bi_cluster1").get(0).status);
+        Assert.assertEquals(new HashSet<>(Arrays.asList("jq", "oy")), resp.get("bi_cluster1").get(0).sourceDcs);
+        Assert.assertEquals(Collections.singleton("oy"), resp.get("bi_cluster1").get(0).destDcs);
+    }
+
+    @Test
+    public void testOnlyGetOneWayClusterMigrationHistoryV2() {
+        MigrationHistoryReq req = new MigrationHistoryReq();
+        req.from = 0;
+        req.to = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + 600;
+        req.clusters = new HashSet<>(Arrays.asList("cluster2"));
+
+        Map<String, List<ClusterMigrationStatusV2>> resp = migrationApi.getClusterMigrationHistoryV2(req);
+        Assert.assertEquals(1, resp.size());
+        logger.info("[testGetClusterMigrationHistoryV2] {}", resp);
+        Assert.assertTrue(resp.containsKey("cluster2"));
+        Assert.assertEquals(1, resp.get("cluster2").size());
+        Assert.assertEquals("Processing", resp.get("cluster2").get(0).status);
+        Assert.assertEquals(Collections.singleton("jq"), resp.get("cluster2").get(0).sourceDcs);
+        Assert.assertEquals(Collections.singleton("oy"), resp.get("cluster2").get(0).destDcs);
+    }
+
+    @Test
+    public void testOnlyGetBiClusterMigrationHistoryV2() {
+        MigrationHistoryReq req = new MigrationHistoryReq();
+        req.from = 0;
+        req.to = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) + 600;
+        req.clusters = new HashSet<>(Arrays.asList("bi_cluster1"));
+
+        Map<String, List<ClusterMigrationStatusV2>> resp = migrationApi.getClusterMigrationHistoryV2(req);
+        Assert.assertEquals(1, resp.size());
         Assert.assertTrue(resp.containsKey("bi_cluster1"));
         Assert.assertEquals(1, resp.get("bi_cluster1").size());
         Assert.assertEquals("Success", resp.get("bi_cluster1").get(0).status);
