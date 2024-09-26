@@ -95,11 +95,11 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     }
 
     @Override
-    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+    public XpipeMeta getXpipeMetaLongPull(long version) throws InterruptedException {
         XpipeMeta xpipeMeta = null;
         if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
             try {
-                if(getLastUpdateTime() <= updateTime) {
+                if(getVersion() <= version) {
                     condition.await(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS);
                 }
                 xpipeMeta = meta.getKey();
