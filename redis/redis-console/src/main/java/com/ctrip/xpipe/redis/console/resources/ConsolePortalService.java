@@ -72,10 +72,10 @@ public class ConsolePortalService extends AbstractService {
         return resp.getBody();
     }
 
-    public XpipeMeta getXpipeAllMeta(long updateTime) throws SAXException, IOException {
+    public XpipeMeta getXpipeAllMeta(long version) throws SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() + ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
                 .queryParam("format", "xml")
-                .queryParam("updateTime", updateTime)
+                .queryParam("version", version)
                 .build();
 
         ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, null, String.class, "getXpipeAllMeta");
