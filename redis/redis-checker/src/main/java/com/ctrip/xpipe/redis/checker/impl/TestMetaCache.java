@@ -36,7 +36,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public XpipeMeta getXpipeMetaLongPull(long updateTime) throws InterruptedException {
+    public XpipeMeta getXpipeMetaLongPull(long version) throws InterruptedException {
         return null;
     }
 
@@ -165,6 +165,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public long getLastUpdateTime() {
         return 0;
+    }
+
+    @Override
+    public long getVersion() {
+        return xpipeMeta.getVersion();
     }
 
     @Override
