@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.cluster.ClusterServer;
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.cluster.AbstractLeaderElector;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -14,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         <p>
  *         Jun 12, 2017
  */
-public class ConsoleLeaderElector extends AbstractLeaderElector implements ClusterServer{
+public class ConsoleLeaderElector extends AbstractLeaderElector implements ClusterServer, TopElement {
 
     private AtomicInteger forceHealthy = new AtomicInteger(0);
 
@@ -22,11 +23,6 @@ public class ConsoleLeaderElector extends AbstractLeaderElector implements Clust
 
     public ConsoleLeaderElector() {
         setLeaderAwareClass(ConsoleLeaderAware.class);
-    }
-    
-    @PostConstruct
-    public void postContruct() throws Exception {
-        doStart();
     }
 
     public void forceSetLeader() {
