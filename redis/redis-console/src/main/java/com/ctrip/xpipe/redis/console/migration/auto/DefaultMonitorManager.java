@@ -118,6 +118,7 @@ public class DefaultMonitorManager implements MonitorManager {
                             monitorClusterManager.removeService(service);
                         } else if (!newClusterRoute.equals(oldClusterRoute)) {
                             monitorClusterManager.updateServiceWeight(service, newClusterRoute.getWeight());
+                            service.updateHost(newClusterRoute.getHost());
                         }
                     });
                     newHostRouteMap.forEach((name, newClusterRoute) -> {

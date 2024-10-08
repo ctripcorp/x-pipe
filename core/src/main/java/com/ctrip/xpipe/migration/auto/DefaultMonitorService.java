@@ -43,6 +43,11 @@ public class DefaultMonitorService implements MonitorService {
     }
 
     @Override
+    public void updateHost(String host) {
+        // do nothing
+    }
+
+    @Override
     public Set<String> fetchAllClusters(String system) {
         return Collections.emptySet();
     }
