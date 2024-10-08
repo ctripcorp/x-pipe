@@ -248,26 +248,30 @@ public class MigrationApi extends AbstractConsoleController {
 
         long from = TimeUnit.SECONDS.toMillis(req.from);
         long to = TimeUnit.SECONDS.toMillis(req.to);
-        List<MigrationClusterTbl> migrationClusterTbls = migrationService.fetchMigrationClusters(oneWayClusters.keySet(), from, to);
-        List<MigrationBiClusterEntity> biMigrationRecords = biMigrationRepository.selectAllByClusterIdAndOpTime(biDirectionClusters.keySet(),
-                new Date(from), new Date(to));
-
         Map<String, List<ClusterMigrationStatusV2>> resp = new HashMap<>();
-        for (MigrationClusterTbl migrationClusterTbl: migrationClusterTbls) {
-            String clusterName = migrationClusterTbl.getCluster().getClusterName();
-            ClusterEntity cluster = oneWayClusters.get(clusterName);
-            if (!resp.containsKey(clusterName)) resp.put(clusterName, new ArrayList<>());
-            ClusterMigrationStatusV2 clusterMigrationStatus = ClusterMigrationStatusV2.from(cluster, migrationClusterTbl, dcCache);
-            resp.get(clusterName).add(clusterMigrationStatus);
+
+        if (!oneWayClusters.isEmpty()) {
+            List<MigrationClusterTbl> migrationClusterTbls = migrationService.fetchMigrationClusters(oneWayClusters.keySet(), from, to);
+            for (MigrationClusterTbl migrationClusterTbl: migrationClusterTbls) {
+                String clusterName = migrationClusterTbl.getCluster().getClusterName();
+                ClusterEntity cluster = oneWayClusters.get(clusterName);
+                if (!resp.containsKey(clusterName)) resp.put(clusterName, new ArrayList<>());
+                ClusterMigrationStatusV2 clusterMigrationStatus = ClusterMigrationStatusV2.from(cluster, migrationClusterTbl, dcCache);
+                resp.get(clusterName).add(clusterMigrationStatus);
+            }
         }
 
-        for (MigrationBiClusterEntity biMigrationRecord: biMigrationRecords) {
-            Long clusterId = biMigrationRecord.getClusterId();
-            ClusterEntity cluster = biDirectionClusters.get(clusterId);
-            String clusterName = cluster.getClusterName();
-            if (!resp.containsKey(clusterName)) resp.put(clusterName, new ArrayList<>());
-            ClusterMigrationStatusV2 clusterMigrationStatus = ClusterMigrationStatusV2.from(cluster, biMigrationRecord, getBiRelatedDcs(clusterName));
-            resp.get(clusterName).add(clusterMigrationStatus);
+        if (!biDirectionClusters.isEmpty()) {
+            List<MigrationBiClusterEntity> biMigrationRecords = biMigrationRepository.selectAllByClusterIdAndOpTime(biDirectionClusters.keySet(),
+                    new Date(from), new Date(to));
+            for (MigrationBiClusterEntity biMigrationRecord: biMigrationRecords) {
+                Long clusterId = biMigrationRecord.getClusterId();
+                ClusterEntity cluster = biDirectionClusters.get(clusterId);
+                String clusterName = cluster.getClusterName();
+                if (!resp.containsKey(clusterName)) resp.put(clusterName, new ArrayList<>());
+                ClusterMigrationStatusV2 clusterMigrationStatus = ClusterMigrationStatusV2.from(cluster, biMigrationRecord, getBiRelatedDcs(clusterName));
+                resp.get(clusterName).add(clusterMigrationStatus);
+            }
         }
 
         return resp;
