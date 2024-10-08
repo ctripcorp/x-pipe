@@ -1,21 +1,17 @@
 package com.ctrip.xpipe.redis.checker.cluster;
 
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import javax.annotation.PostConstruct;
 
-public class AllCheckerLeaderElector extends AbstractCheckerLeaderElector {
+public class AllCheckerLeaderElector extends AbstractCheckerLeaderElector implements TopElement {
     
     private String currentDcId;
     
     public AllCheckerLeaderElector(String currentDcId) {
         setLeaderAwareClass(AllCheckerLeaderAware.class);
         this.currentDcId = currentDcId;
-    }
-    
-    @PostConstruct
-    public void postConstruct() throws Exception {
-        doStart();
     }
     
     @Override

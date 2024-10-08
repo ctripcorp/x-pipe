@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.cluster;
 
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
@@ -10,7 +11,7 @@ import javax.annotation.PreDestroy;
  * @author lishanglin
  * date 2021/3/8
  */
-public class GroupCheckerLeaderElector extends AbstractCheckerLeaderElector {
+public class GroupCheckerLeaderElector extends AbstractCheckerLeaderElector implements TopElement {
 
     private String groupId;
     
@@ -18,12 +19,6 @@ public class GroupCheckerLeaderElector extends AbstractCheckerLeaderElector {
         setLeaderAwareClass(GroupCheckerLeaderAware.class);
         this.groupId = groupId;
     }
-    
-    @PostConstruct
-    public void postContruct() throws Exception {
-        doStart();
-    }
-
 
     @Override
     protected String getServerId() {
