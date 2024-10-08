@@ -39,8 +39,16 @@ public class MetaCacheCheck extends AbstractSiteLeaderIntervalAction {
         return alertType;
     }
 
+    private int getMetaCacheUpdateThreshold() {
+        if(consoleConfig.disableDb()) {
+            return META_CACHE_UPDATE_THREASHOLD * 2;
+        } else {
+            return META_CACHE_UPDATE_THREASHOLD;
+        }
+    }
+
     private boolean isMetaCacheOverDue() {
-        return System.currentTimeMillis() - metaCache.getLastUpdateTime() > META_CACHE_UPDATE_THREASHOLD;
+        return System.currentTimeMillis() - metaCache.getLastUpdateTime() > getMetaCacheUpdateThreshold();
     }
 
     @VisibleForTesting

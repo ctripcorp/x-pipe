@@ -503,7 +503,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     return result;
   }
 
-
   @Override
   public List<KeeperContainerInfoModel> findAllInfos() {
     List<KeepercontainerTbl> baseInfos = findContainerBaseInfos();
