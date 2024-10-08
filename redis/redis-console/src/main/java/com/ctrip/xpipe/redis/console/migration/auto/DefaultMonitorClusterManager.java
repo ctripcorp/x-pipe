@@ -202,4 +202,9 @@ public class DefaultMonitorClusterManager {
         this.executor.schedule(new ClustersRingSyncTask(), 5, TimeUnit.MILLISECONDS);
     }
 
+    @VisibleForTesting
+    protected SortedMap<Integer, MonitorService> getRing() {
+        return ring;
+    }
+
 }

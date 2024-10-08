@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
-import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorClusterManagerTest;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;

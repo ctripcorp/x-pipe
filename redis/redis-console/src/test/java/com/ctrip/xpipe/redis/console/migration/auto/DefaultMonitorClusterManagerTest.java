@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.beacon;
+package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManager;
@@ -15,13 +15,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultMonitorClusterManagerTest {
@@ -133,6 +127,27 @@ public class DefaultMonitorClusterManagerTest {
         Mockito.verify(monitorService1).unregisterCluster("xpipe", "SmartTrip_Redis");
         Mockito.verify(monitorService1).unregisterCluster("xpipe", "BDAI_FEEDS_DICT_CP11");
 
+    }
+
+    @Test
+    public void testUpdateServiceHost() throws Exception {
+        DefaultMonitorClusterManager monitorClusterManager1 = new DefaultMonitorClusterManager(metaCache, 10,
+                new ArrayList<>(), 1L);
+        monitorClusterManager1.addService(monitorService1);
+        monitorClusterManager1.addService(monitorService2);
+
+        DefaultMonitorClusterManager monitorClusterManager2 = new DefaultMonitorClusterManager(metaCache, 10,
+                new ArrayList<>(), 1L);
+        monitorClusterManager2.addService(monitorService1);
+        monitorClusterManager2.addService(monitorService2);
+        monitorService1.updateHost("127.0.0.1");
+        for (String cluster : clusters) {
+            Assert.assertEquals(monitorClusterManager1.getService(cluster), monitorClusterManager2.getService(cluster));
+        }
+        SortedMap<Integer, MonitorService> ring1 = monitorClusterManager1.getRing();
+        SortedMap<Integer, MonitorService> ring2 = monitorClusterManager2.getRing();
+        Assert.assertEquals(ring1, ring2);
+        Assert.assertEquals(ring1.hashCode(), ring2.hashCode());
     }
 
 }

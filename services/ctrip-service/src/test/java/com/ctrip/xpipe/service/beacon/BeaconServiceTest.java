@@ -100,6 +100,22 @@ public class BeaconServiceTest extends AbstractServiceTest {
         Assert.assertEquals("DELETE", request.getMethod());
     }
 
+    @Test
+    public void testUpdateBeaconHost() throws Exception {
+        MockWebServer mockWebServer = new MockWebServer();
+        mockWebServer.start(InetAddress.getByName("127.0.0.2"), randomPort());
+        beaconService.updateHost("http://127.0.0.2:" + mockWebServer.getPort());
+        mockWebServer.enqueue(new MockResponse().setBody("{\n" +
+                        "    \"code\": 0,\n" +
+                        "    \"msg\": \"success\"" +
+                        "}")
+                .setHeader("Content-Type", "application/json"));
+        beaconService.unregisterCluster(system, "cluster1");
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assert.assertEquals("127.0.0.2", request.getRequestUrl().host());
+    }
+
     @Test(expected = BeaconServiceException.class)
     public void testUnregisterClusterRespErr() {
         enqueueServerErr();
