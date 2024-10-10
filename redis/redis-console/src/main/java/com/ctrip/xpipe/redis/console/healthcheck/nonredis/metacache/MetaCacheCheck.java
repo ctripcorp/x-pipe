@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -39,8 +40,16 @@ public class MetaCacheCheck extends AbstractSiteLeaderIntervalAction {
         return alertType;
     }
 
+    private int getMetaCacheUpdateThreshold() {
+        if(consoleConfig.disableDb()) {
+            return META_CACHE_UPDATE_THREASHOLD * 2;
+        } else {
+            return META_CACHE_UPDATE_THREASHOLD;
+        }
+    }
+
     private boolean isMetaCacheOverDue() {
-        return System.currentTimeMillis() - metaCache.getLastUpdateTime() > META_CACHE_UPDATE_THREASHOLD;
+        return System.currentTimeMillis() - metaCache.getLastUpdateTime() > getMetaCacheUpdateThreshold();
     }
 
     @VisibleForTesting
@@ -52,6 +61,12 @@ public class MetaCacheCheck extends AbstractSiteLeaderIntervalAction {
     @VisibleForTesting
     protected MetaCacheCheck setAlertManager(AlertManager alertManager) {
         this.alertManager = alertManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected MetaCacheCheck setConfig(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
         return this;
     }
 }
