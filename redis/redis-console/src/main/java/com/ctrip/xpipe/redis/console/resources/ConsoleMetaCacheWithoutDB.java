@@ -31,7 +31,7 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
                 try {
                     XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getVersion());
                     checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
-                    refreshMetaParts();
+                    refreshMetaParts(xpipeMeta);
                     refreshMeta(xpipeMeta);
                 } catch (Throwable th) {
                     logger.error("[MetaCacheApi][load]", th);

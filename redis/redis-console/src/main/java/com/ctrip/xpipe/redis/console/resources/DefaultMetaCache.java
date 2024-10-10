@@ -12,10 +12,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
@@ -180,8 +177,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                 }
 
                 synchronized (this) {
-                    refreshMetaParts();
                     XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
+                    refreshMetaParts(xpipeMeta);
                     refreshMeta(xpipeMeta);
                 }
             }
@@ -193,17 +190,44 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         });
     }
 
-    protected void refreshMetaParts() {
+    protected List<Set<String>> divideClusters(int partsCnt, XpipeMeta xpipeMeta) {
+
+        List<Set<String>> parts = new ArrayList<>(partsCnt);
+        IntStream.range(0, partsCnt).forEach(i -> parts.add(new HashSet<>()));
+
+        for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                parts.get((int) (clusterMeta.getDbId() % partsCnt))
+                        .add(clusterMeta.getId());
+            }
+        }
+        return parts;
+    }
+
+    List<Set<Long>> divideKeeperContainers(int partsCount, XpipeMeta xpipeMeta) {
+        List<Set<Long>> result = new ArrayList<>(partsCount);
+        IntStream.range(0, partsCount).forEach(i -> result.add(new HashSet<>()));
+        for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            for(KeeperContainerMeta keeperContainerMeta : dcMeta.getKeeperContainers()) {
+                result.get((int) (keeperContainerMeta.getId() % partsCount)).add(
+                        keeperContainerMeta.getId()
+                );
+            }
+        }
+        return result;
+    }
+
+    protected void refreshMetaParts(XpipeMeta xpipeMeta) {
         try {
             int parts = Math.max(1, consoleConfig.getClusterDividedParts());
             logger.debug("[refreshClusterParts] start parts {}", parts);
 
-            List<Set<String>> newClusterParts = clusterService.divideClusters(parts);
+            List<Set<String>> newClusterParts = divideClusters(parts, xpipeMeta);
             if (newClusterParts.size() < parts) {
                 logger.info("[refreshClusterParts] skip for parts miss, expect {}, actual {}", parts, newClusterParts.size());
                 return;
             }
-            List<Set<Long>> newKeeperContainerParts = keeperContainerService.divideKeeperContainers(parts);
+            List<Set<Long>> newKeeperContainerParts = divideKeeperContainers(parts, xpipeMeta);
             if (newKeeperContainerParts.size() < parts) {
                 logger.info("[refreshKeeperContainerParts] skip for parts miss, expect {}, actual {}",
                         parts, newKeeperContainerParts.size());
