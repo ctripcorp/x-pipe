@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.unidal.tuple.Triple;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -142,6 +143,36 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
                 new HostPort("127.0.0.2", 6100),
                 new HostPort("127.0.0.2", 6101)), allKeepers);
     }
+
+    @Test
+    public void testDivideKeeperAndCluster() {
+        when(consoleConfig.getClusterDividedParts()).thenReturn(3);
+
+        metaCache.refreshMetaParts(metaCache.getXpipeMeta());
+
+        Set<HostPort> allKeepers = new HashSet<>();
+        Set<Long> allCluster = new HashSet<>();
+        XpipeMeta meta = metaCache.getDividedXpipeMeta(0);
+
+        for(DcMeta dcMeta : meta.getDcs().values()) {
+            for(KeeperContainerMeta keeperContainerMeta : dcMeta.getKeeperContainers()) {
+                allKeepers.add(new HostPort(keeperContainerMeta.getIp(), keeperContainerMeta.getPort()));
+            }
+            for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                allCluster.add(clusterMeta.getDbId());
+            }
+        }
+
+        Assert.assertEquals(1, allKeepers.size());
+        Assert.assertEquals(Sets.newHashSet(new HostPort("1.1.1.3", 8080)), allKeepers);
+
+        Assert.assertEquals(1, allCluster.size());
+        Assert.assertEquals(3, allCluster.stream().findFirst().get().intValue());
+
+
+    }
+
+
 
     @Test
     public void testGetAllKeeperContainersDcMap() {
