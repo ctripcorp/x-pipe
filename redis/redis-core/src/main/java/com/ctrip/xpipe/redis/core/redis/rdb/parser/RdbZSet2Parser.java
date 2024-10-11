@@ -86,6 +86,7 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
                         propagateCmdIfNeed(member, score.readDoubleLE());
 
                         member = null;
+                        score.release();
                         score = null;
                         readCnt++;
                         if (readCnt >= len.getLenValue()) {
@@ -134,7 +135,10 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
         }
         this.state = STATE.READ_INIT;
         this.member = null;
-        this.score = null;
+        if (score != null) {
+            score.release();
+            score = null;
+        }
     }
 
     @Override
