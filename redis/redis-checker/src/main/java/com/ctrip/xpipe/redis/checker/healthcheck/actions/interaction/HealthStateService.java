@@ -12,8 +12,12 @@ public interface HealthStateService {
 
     HEALTH_STATE getHealthState(HostPort hostPort);
 
+    HealthStatusDesc getHealthStatusDesc(HostPort hostPort);
+
     Map<HostPort, HEALTH_STATE> getAllCachedState();
 
     void updateHealthState(Map<HostPort, HEALTH_STATE> redisStates);
+
+    void updateLastMarkHandled(HostPort hostPort, boolean lastMark);
 
 }

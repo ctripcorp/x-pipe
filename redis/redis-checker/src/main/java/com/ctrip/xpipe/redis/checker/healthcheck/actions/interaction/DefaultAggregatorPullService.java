@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
 
-    private ExecutorService executors;
+    private Executor executors;
 
     @PostConstruct
     public void postConstruct() {
@@ -54,17 +55,30 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         QueryXPipeInstanceStatusCmd queryXPipeInstanceStatusCmd = new QueryXPipeInstanceStatusCmd(cluster, instances);
         QueryOuterClintInstanceStatusCmd queryOuterClintInstanceStatusCmd = new QueryOuterClintInstanceStatusCmd(cluster, instances);
 
-        CommandFuture<Map<HostPort, Boolean>> xpipeQueryFuture = queryXPipeInstanceStatusCmd.execute(executors);
+        CommandFuture<XPipeInstanceHealthHolder> xpipeQueryFuture = queryXPipeInstanceStatusCmd.execute(executors);
         CommandFuture<Map<HostPort, Boolean>> outerClientQueryFuture = queryOuterClintInstanceStatusCmd.execute(executors);
 
-        Map<HostPort, Boolean> xpipeAllHealthStatus = xpipeQueryFuture.get();
+        XPipeInstanceHealthHolder xpipeInstanceHealthHolder = xpipeQueryFuture.get();
         Map<HostPort, Boolean> outerClientAllHealthStatus = outerClientQueryFuture.get();
+        Map<HostPort, Boolean> xpipeAllHealthStatus = xpipeInstanceHealthHolder.getAllHealthStatus(checkerConfig.getQuorum());
+        Map<HostPort, Boolean> lastMarks = xpipeInstanceHealthHolder.getOtherCheckerLastMark();
 
         for (Map.Entry<HostPort, Boolean> entry : xpipeAllHealthStatus.entrySet()) {
-            if (!outerClientAllHealthStatus.containsKey(entry.getKey())
-                    || !entry.getValue().equals(outerClientAllHealthStatus.get(entry.getKey()))) {
-                instanceNeedAdjust.add(
-                        new HostPortDcStatus(entry.getKey().getHost(), entry.getKey().getPort(), metaCache.getDc(entry.getKey()), entry.getValue()));
+            HostPort instance = entry.getKey();
+            Boolean expectMark = entry.getValue();
+            if (null == expectMark) {
+                logger.info("[getNeedAdjustInstances][unknown host] {}", instance);
+                continue;
+            }
+
+            if (!outerClientAllHealthStatus.containsKey(instance)
+                    || !expectMark.equals(outerClientAllHealthStatus.get(instance))) {
+                if (lastMarks.containsKey(instance) && expectMark.equals(lastMarks.get(instance))) {
+                    logger.info("[getNeedAdjustInstances][otherCheckerMark][{}-{}] skip", instance, expectMark);
+                    continue;
+                }
+                instanceNeedAdjust.add(new HostPortDcStatus(instance.getHost(), instance.getPort(),
+                        metaCache.getDc(instance), expectMark));
             }
         }
         return instanceNeedAdjust;
@@ -95,7 +109,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         }
     }
 
-    private class QueryXPipeInstanceStatusCmd extends AbstractCommand<Map<HostPort, Boolean>> {
+    protected class QueryXPipeInstanceStatusCmd extends AbstractCommand<XPipeInstanceHealthHolder> {
 
         private String cluster;
 
@@ -112,7 +126,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
             for (CheckerService checkerService : remoteCheckerManager.getAllCheckerServices()) {
                 xpipeInstanceHealthHolder.add(checkerService.getAllClusterInstanceHealthStatus(instances));
             }
-            future().setSuccess(xpipeInstanceHealthHolder.getAllHealthStatus(checkerConfig.getQuorum()));
+            future().setSuccess(xpipeInstanceHealthHolder);
         }
 
         @Override
@@ -125,7 +139,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         }
     }
 
-    private class QueryOuterClintInstanceStatusCmd extends AbstractCommand<Map<HostPort, Boolean>> {
+    protected class QueryOuterClintInstanceStatusCmd extends AbstractCommand<Map<HostPort, Boolean>> {
 
         private String cluster;
 
@@ -149,6 +163,11 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         public String getName() {
             return "[QueryOuterClintInstanceStatusCmd]" + cluster;
         }
+    }
+
+    @VisibleForTesting
+    protected void setExecutors(Executor executors) {
+        this.executors = executors;
     }
 
 }

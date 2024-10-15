@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -42,6 +43,14 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
     @Override
     public PsubActionListener createPsubActionListener() {
         return psubActionListener;
+    }
+
+    protected HealthStatus getHealthStatus(HostPort hostPort) {
+        RedisHealthCheckInstance key = allHealthStatus.keySet().stream()
+                .filter(instance -> instance.getCheckInfo().getHostPort().equals(hostPort))
+                .findFirst().orElse(null);
+
+        return null == key ? null : allHealthStatus.get(key);
     }
 
     protected class CollectorPingActionListener implements PingActionListener {

@@ -6,10 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultPsubPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
@@ -157,12 +154,14 @@ public class CheckerHealthController {
     @RequestMapping(value = "/health/check/instances/status", method = RequestMethod.POST)
     public Map<HostPort, HealthStatusDesc> getHealthCheckInstanceCluster(@RequestBody List<HostPort> hostPorts) {
         if (hostPorts == null || hostPorts.isEmpty()) return Collections.emptyMap();
+        if (!siteStability.isSiteStable()) return Collections.emptyMap();
+
         Map<HostPort, HealthStatusDesc> result = new HashMap<>();
         for (HostPort hostPort : hostPorts) {
             if (Objects.equals(currentDc, metaCache.getDc(hostPort)) && metaCache.isCrossRegion(metaCache.getActiveDc(hostPort), currentDc)) {
-                result.put(hostPort, new HealthStatusDesc(hostPort, getCrossRegionHealthState(hostPort.getHost(), hostPort.getPort())));
+                result.put(hostPort, defaultPsubPingActionCollector.getHealthStatusDesc(hostPort));
             } else {
-                result.put(hostPort, new HealthStatusDesc(hostPort, getHealthState(hostPort.getHost(), hostPort.getPort())));
+                result.put(hostPort, defaultDelayPingActionCollector.getHealthStatusDesc(hostPort));
             }
         }
         return result;
