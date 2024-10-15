@@ -87,9 +87,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
             delayPingCollectorsByClusterType.get(clusterType).forEach(collector -> {
                 if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
             });
-        }
-
-        if (activeDc != null && metaCache.isCrossRegion(currentDcId, activeDc)) {
+        } else if (activeDc != null && metaCache.isCrossRegion(currentDcId, activeDc)) {
             psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
                 if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
             });

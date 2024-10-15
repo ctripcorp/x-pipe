@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -32,6 +33,14 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         if(healthStatus != null) {
             healthStatus.stop();
         }
+    }
+
+    protected HealthStatus getHealthStatus(HostPort hostPort) {
+        RedisHealthCheckInstance key = allHealthStatus.keySet().stream()
+                .filter(instance -> instance.getCheckInfo().getHostPort().equals(hostPort))
+                .findFirst().orElse(null);
+
+        return null == key ? null : allHealthStatus.get(key);
     }
 
     @Override
