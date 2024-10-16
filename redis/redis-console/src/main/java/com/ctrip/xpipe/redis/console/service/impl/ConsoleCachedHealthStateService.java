@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.google.common.collect.Maps;
@@ -33,5 +34,19 @@ public class ConsoleCachedHealthStateService implements HealthStateService {
     @Override
     public void updateHealthState(Map<HostPort, HEALTH_STATE> redisStates) {
         cachedRedisStates.putAll(redisStates);
+    }
+
+    @Override
+    public HealthStatusDesc getHealthStatusDesc(HostPort hostPort) {
+        if (cachedRedisStates.containsKey(hostPort)) {
+            return new HealthStatusDesc(hostPort, cachedRedisStates.get(hostPort));
+        } else {
+            return new HealthStatusDesc(hostPort, HEALTH_STATE.UNKNOWN);
+        }
+    }
+
+    @Override
+    public void updateLastMarkHandled(HostPort hostPort, boolean lastMark) {
+        // do nothing
     }
 }

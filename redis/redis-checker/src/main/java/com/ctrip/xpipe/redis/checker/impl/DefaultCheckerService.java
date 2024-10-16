@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -35,6 +36,9 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
     @Autowired
     private List<HealthEventProcessor> healthEventProcessors;
 
+    @Autowired
+    private CheckerConfig config;
+
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
@@ -49,6 +53,25 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
 
         if (null != key) return allHealthStatus.get(key).getState();
         return HEALTH_STATE.UNKNOWN;
+    }
+
+    @Override
+    public HealthStatusDesc getHealthStatusDesc(HostPort hostPort) {
+        HealthStatus status = getHealthStatus(hostPort);
+        if (null != status) {
+            long timeoutMill = config.getMarkInstanceMaxDelayMilli() + config.getCheckerMetaRefreshIntervalMilli();
+            return new HealthStatusDesc(hostPort, status, status.getLastMarkHandled(timeoutMill));
+        } else {
+            return new HealthStatusDesc(hostPort, HEALTH_STATE.UNKNOWN);
+        }
+    }
+
+    @Override
+    public void updateLastMarkHandled(HostPort hostPort, boolean lastMark) {
+        HealthStatus status = getHealthStatus(hostPort);
+        if (null != status) {
+            status.updateLastMarkHandled(lastMark);
+        }
     }
 
     @Override

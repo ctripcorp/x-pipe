@@ -13,6 +13,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -21,6 +22,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +67,9 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
 
     @Autowired
     private AlertManager alertManager;
+
+    @Autowired
+    private CheckerConfig config;
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
 
@@ -153,6 +158,25 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     }
 
     @Override
+    public HealthStatusDesc getHealthStatusDesc(HostPort hostPort) {
+        HealthStatus status = getHealthStatus(hostPort);
+        if (null != status) {
+            long timeoutMill = config.getMarkInstanceMaxDelayMilli() + config.getCheckerMetaRefreshIntervalMilli();
+            return new HealthStatusDesc(hostPort, status, status.getLastMarkHandled(timeoutMill));
+        } else {
+            return new HealthStatusDesc(hostPort, HEALTH_STATE.UNKNOWN);
+        }
+    }
+
+    @Override
+    public void updateLastMarkHandled(HostPort hostPort, boolean lastMark) {
+        HealthStatus status = getHealthStatus(hostPort);
+        if (null != status) {
+            status.updateLastMarkHandled(lastMark);
+        }
+    }
+
+    @Override
     public Map<HostPort, HEALTH_STATE> getAllCachedState() {
         Map<HostPort, HEALTH_STATE> cachedHealthStatus = new HashMap<>();
         allHealthStatus.forEach(((instance, healthStatus) -> {
@@ -205,6 +229,11 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
             return false;
         }
         return ClusterType.lookup(azGroupType) == ClusterType.SINGLE_DC;
+    }
+
+    @VisibleForTesting
+    protected void setScheduled(ScheduledExecutorService scheduled) {
+        this.scheduled = scheduled;
     }
 
 }

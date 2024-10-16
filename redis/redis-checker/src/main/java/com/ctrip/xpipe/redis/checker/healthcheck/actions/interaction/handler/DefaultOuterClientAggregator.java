@@ -8,6 +8,7 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorPullService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -39,6 +40,9 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
     @Autowired
     private AggregatorPullService aggregatorPullService;
+
+    @Autowired
+    private List<HealthStateService> healthStateServices; // loop depend?
 
     private Random rand = new Random();
 
@@ -139,6 +143,18 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 logger.info("[aggregator][getEmpty] skip");
                 future().setSuccess();
             } else {
+                for (HostPortDcStatus hostPortDcStatus: instancesToUpdate) {
+                    for (HealthStateService stateService: healthStateServices) {
+                        try {
+                            stateService.updateLastMarkHandled(
+                                    new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()),
+                                    hostPortDcStatus.isCanRead());
+                        } catch (Throwable th) {
+                            logger.info("[aggregator][updateLastMark][fail]", th);
+                        }
+                    }
+                }
+
                 for(int i=0; i < retry ;i++){
                     try{
                         logger.debug("[aggregator][begin] {}", cluster);
@@ -167,6 +183,11 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
     @VisibleForTesting
     public void setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
+    }
+
+    @VisibleForTesting
+    public void setHealthStateServices(List<HealthStateService> healthStateServices) {
+        this.healthStateServices = healthStateServices;
     }
 
 }
