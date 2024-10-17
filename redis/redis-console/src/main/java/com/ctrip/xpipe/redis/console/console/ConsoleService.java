@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,8 @@ public interface ConsoleService extends CheckerService {
     Boolean getInstancePingStatus(String ip, int port);
 
     Long getInstanceDelayStatus(String ip, int port);
+
+    Map<HostPort, Long> getInstancesDelayStatus(List<HostPort> hostPorts);
 
     Long getShardDelay(long shardId);
 
@@ -44,5 +47,7 @@ public interface ConsoleService extends CheckerService {
     ShardAllMetaModel getShardAllMeta(String dcId, String clusterId, String shardId);
 
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
+
+    class InstancesDelayStatusModels extends HashMap<HostPort, Long> {};
 
 }

@@ -524,6 +524,11 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getAllInstanceOfDc(String cluster, String dc) {
+        return meta.getValue().getRedises(dc, cluster);
+    }
+
+    @Override
     public String getDc(HostPort hostPort) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
