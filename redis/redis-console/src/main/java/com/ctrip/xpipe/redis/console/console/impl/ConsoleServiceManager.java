@@ -102,6 +102,11 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return service.getInstanceDelayStatus(ip, port);
     }
 
+    public Map<HostPort, Long> getDelay(List<HostPort> hostPorts, String activeIdc) {
+        ConsoleService service = getServiceByDc(activeIdc);
+        return service.getInstancesDelayStatus(hostPorts);
+    }
+
     public long getShardDelay(long shardId, String activeIdc) {
         ConsoleService service = getServiceByDc(activeIdc);
         return service.getShardDelay(shardId);
