@@ -235,7 +235,7 @@ function router($stateProvider, $urlRouterProvider) {
             controller: 'KeepercontainerOverallCtl'
         })
         .state('full_link_health_check',{
-            url: '/full_link_health_check?currentDcName&clusterName&shardName',
+            url: '/full_link_health_check?currentDcName&clusterName&shardName&shardId',
             templateUrl: 'views/index/full_link_health_check.html',
             controller: 'FullLinkHealthCheckCtl'
         });
