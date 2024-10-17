@@ -213,6 +213,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getAllInstanceOfDc(String cluster, String dc) {
+        return null;
+    }
+
+    @Override
     public boolean isAsymmetricCluster(String clusterName) {
         return false;
     }

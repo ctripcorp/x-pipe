@@ -139,6 +139,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     }
 
     function checkCrossMasterDelay() {
+        var clusterType = ClusterType.lookup($scope.clusterType)
+        if (!clusterType.healthCheck) return;
         if($scope.showCrossMasterHealthStatus && $scope.shards) {
             $scope.shards.forEach(function(shard) {
                 HealthCheckService.getCrossMasterDelay($scope.currentDcName, $scope.clusterName, shard.shardTbl.shardName, $scope.clusterType)
@@ -174,22 +176,25 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     }
 
     function healthCheck() {
-    	if($scope.shards) {
-    		$scope.shards.forEach(function(shard) {
-    			shard.redises.forEach(function(redis) {
-    				HealthCheckService.getReplDelay(redis.redisIp, redis.redisPort, $scope.clusterType)
-    					.then(function(result) {
-    						redis.delay = result.delay;
-    						if (redis.master && $scope.showCrossMasterHealthStatus) {
+        var clusterType = ClusterType.lookup($scope.clusterType)
+        if (!clusterType.healthCheck) return;
+        HealthCheckService.getReplDelay($scope.currentDcName, $scope.clusterName)
+            .then(function(result) {
+                if($scope.shards) {
+                    $scope.shards.forEach(function(shard) {
+                        shard.redises.forEach(function(redis) {
+                            redis.delay = result.delay[redis.redisIp + ":" + redis.redisPort];
+                            if (redis.master && $scope.showCrossMasterHealthStatus) {
                                 redis.healthy = isRedisHealthy(redis) && isCrossMasterHealthy(shard);
                                 shard.healthy = isShardHealthy(shard);
                             } else {
                                 redis.healthy = isRedisHealthy(redis);
                             }
-    					});
-    			});
-    		});
-    	}
+                        });
+                    });
+                }
+            });
+
 
         if ($scope.sources) {
             $scope.sources.forEach(function (source) {
