@@ -7,15 +7,13 @@ import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +30,9 @@ public class KeeperContainerController extends AbstractConsoleController{
 
     @Autowired
     ConfigService configService;
+
+    @Autowired
+    KeeperContainerService keeperContainerService;
 
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
@@ -93,5 +94,14 @@ public class KeeperContainerController extends AbstractConsoleController{
         }
     }
 
+    @RequestMapping(value = "/keepers/election/reset", method = RequestMethod.POST)
+    public RetMessage resetElection(@RequestBody KeeperRestElectionModel model){
+        try {
+            keeperContainerService.resetKeeper(model.getIp(), Long.parseLong(model.getShardId()));
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
 
 }

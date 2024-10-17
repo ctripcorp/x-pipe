@@ -104,6 +104,9 @@
                                     <span style="margin-left: 20px;">{{keeper.masterReplOffset}}</span>
                                 </div>
                             </md-card-title-text>
+                            <md-card-actions layout="row" layout-align="end center">
+                                <md-button class="md-raised" ng-disabled="getDisableResetElection()" ng-click="resetElection(keeper.host, keeper.port)">reset Election</md-button>
+                            </md-card-actions>
                         </md-card-title>
                         <md-card-content>
                             <div  style="white-space: nowrap;">
@@ -138,6 +141,12 @@
             </md-card-content>
         </md-card>
     </div>
+
+
+    <xpipeconfirmdialog xpipe-dialog-id="'resetElectionErr'" xpipe-title="'resetElection Err'"
+                        xpipe-detail="getResetElectionErr()"
+                        xpipe-show-cancel-btn="true"></xpipeconfirmdialog>
+
     <div flex-xs flex-gt-xs="50" layout="column">
         <!--Checker-->
         <md-card md-theme="{{shardCheckerHealthCheckResult != [] ? 'default' : 'red'}}" md-theme-watch>
