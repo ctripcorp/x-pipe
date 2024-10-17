@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
 @DisableDbMode(true)
-public class ProxyServiceWithoutDB implements ProxyService {
+public class ProxyServiceWithoutDB extends ProxyServiceImpl implements ProxyService {
 
     private ConsolePortalService consolePortalService;
 
@@ -121,17 +121,7 @@ public class ProxyServiceWithoutDB implements ProxyService {
     }
 
     @Override
-    public List<DefaultTunnelInfo> getProxyTunnels(String dcId, String ip) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Map<String, List<ProxyChain>> getProxyChains(String backupDcId, String clusterId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<ProxyPingStatsModel> getProxyPingStatsModels(String dcName) {
         throw new UnsupportedOperationException();
     }
 
