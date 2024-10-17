@@ -7,10 +7,10 @@ angular
         $mdThemingProvider.theme('orange').backgroundPalette('orange');
     });
 
-FullLinkHealthCheckCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', 'HealthCheckService',
+FullLinkHealthCheckCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', 'HealthCheckService', 'KeeperContainerService',
     'toastr', 'NgTableParams', 'AppUtil', '$interval'];
 
-function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, HealthCheckService,
+function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, HealthCheckService, KeeperContainerService,
                                    toastr, NgTableParams, $interval) {
     $scope.masterRoles = [];
     $scope.slaveRoles = [];
@@ -25,6 +25,11 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
     $scope.doShowActions = doShowActions;
     $scope.getShardAllMeta = getShardAllMeta;
     $scope.getShardKeeperState = getShardKeeperState;
+    $scope.resetElection = resetElection;
+    $scope.disableResetElection = false;
+    $scope.getDisableResetElection = getDisableResetElection;
+    $scope.resetElectionErr = null;
+    $scope.getResetElectionErr = getResetElectionErr;
 
     redisRoleHealthCheck();
     shardCheckerGroupHealthCheck();
@@ -73,9 +78,40 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
         })
     }
 
+    let timer = null;
+    function resetElection(ip, port) {
+        $scope.disableResetElection = true;
+        KeeperContainerService.resetElection(ip, port, $stateParams.shardId).then(function (response) {
+            if (response.state != 0) {
+                $scope.disableResetElection = false;
+                $scope.resetElectionErr = response.message;
+                $('#resetElectionErr').modal('show');
+            } else {
+                if (!timer) {
+                    timer = setTimeout(() => {
+                        clearTimeout(timer);
+                        timer = null;
+                        $scope.disableResetElection = false;
+                    }, 5000);
+                }
+            }
+        }).catch(function (error){
+            $scope.disableResetElection = false;
+            $scope.resetElectionErr = "Status Code:" + error.status + " " + error.statusText + "\n" + error.data.exception;
+            $('#resetElectionErr').modal('show');
+        })
+    }
+
+    function getResetElectionErr() {
+        return $scope.resetElectionErr;
+    }
+
     function doShowActions() {
         $scope.showActions = !$scope.showActions;
     }
 
+    function getDisableResetElection() {
+        return $scope.disableResetElection;
+    }
 
 }
