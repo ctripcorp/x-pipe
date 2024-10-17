@@ -45,6 +45,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String innerDelayStatusUrl;
 
+    private final String instancesDelayStatusUrl;
+
     private final String delayStatusUrl;
 
     private final String allDelayStatusUrl;
@@ -83,6 +85,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         pingStatusUrl = String.format("%s/api/redis/ping/{ip}/{port}", this.address);
         innerShardDelayStatusUrl = String.format("%s/api/shard/inner/delay/{shardId}", this.address);
         innerDelayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
+        instancesDelayStatusUrl = String.format("%s/api/redises/inner/delay", this.address);
         delayStatusUrl = String.format("%s/api/redis/delay/{ip}/{port}", this.address);
         allDelayStatusUrl = String.format("%s/api/redis/inner/delay/all", this.address);
         unhealthyInstanceUrl = String.format("%s/api/redis/inner/unhealthy", this.address);
@@ -138,6 +141,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public Long getInstanceDelayStatus(String ip, int port) {
         return restTemplate.getForObject(innerDelayStatusUrl, Long.class, ip, port);
+    }
+
+    @Override
+    public Map<HostPort, Long> getInstancesDelayStatus(List<HostPort> hostPorts) {
+        return restTemplate.postForObject(instancesDelayStatusUrl, hostPorts, InstancesDelayStatusModels.class);
     }
 
     @Override

@@ -29,11 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
@@ -101,18 +100,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
     @Override
     public long getDelay(HostPort hostPort) {
-        Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
-        if (null == clusterShard) return -1L;
-
-        ClusterType clusterType = metaCache.getClusterType(clusterShard.getKey());
-        ClusterType azGroupType = metaCache.getAzGroupType(hostPort);
-        String dcId = null;
-        if (clusterType.supportSingleActiveDC() && azGroupType != ClusterType.SINGLE_DC) {
-            dcId = metaCache.getActiveDc(hostPort);
-        } else if (clusterType.supportMultiActiveDC() || azGroupType == ClusterType.SINGLE_DC) {
-            dcId = metaCache.getDc(hostPort);
-        }
-
+        String dcId = getClusterActiveDc(hostPort);
         if (StringUtil.isEmpty(dcId)) {
             return -1L;
         }
@@ -131,13 +119,60 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
     }
 
     @Override
-    public long getDelay(ClusterType clusterType, HostPort hostPort) {
+    public Map<HostPort, Long> getDelay(String dcId, String clusterId) {
+        Map<HostPort, Long> result = new HashMap<>();
+        List<RedisMeta> allInstancesOfDc = metaCache.getAllInstanceOfDc(clusterId, dcId);
+        if (allInstancesOfDc == null || allInstancesOfDc.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<HostPort> hostPorts = new ArrayList<>();
+        for (RedisMeta redisMeta : allInstancesOfDc) {
+            hostPorts.add(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+        }
+        ClusterType clusterType = metaCache.getClusterType(clusterId);
         if (consoleConfig.getOwnClusterType().contains(clusterType.toString())) {
-            return getDelay(hostPort);
+            try {
+                String activeDcId = getClusterActiveDc(hostPorts.get(0));
+                if(!foundationService.getDataCenter().equals(activeDcId)) {
+                    try {
+                        Map<HostPort, Long> delay = consoleServiceManager.getDelay(hostPorts, activeDcId);
+                        result = delay.entrySet().stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, longEntry -> TimeUnit.NANOSECONDS.toMillis(longEntry.getValue())));
+                    } catch (Exception e) {
+                        result.putAll(getFailDelayResult(hostPorts));
+                    }
+                } else {
+                    for (HostPort hostPort : hostPorts) {
+                        result.put(hostPort, TimeUnit.NANOSECONDS.toMillis(hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG)));
+                    }
+                }
+            } catch (Exception e) {
+                result = getFailDelayResult(hostPorts);
+            }
         } else {
-            return consoleServiceManager.getDelayFromParallelService(hostPort.getHost(), hostPort.getPort());
+            result = getFailDelayResult(hostPorts);
         }
 
+        return result;
+    }
+
+    private Map<HostPort, Long> getFailDelayResult(List<HostPort> instances) {
+        return instances.stream().collect(Collectors.toMap(instance -> instance, instance -> -1L));
+    }
+
+    protected String getClusterActiveDc(HostPort hostPort) {
+        Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
+        if (null == clusterShard) return null;
+
+        ClusterType clusterType = metaCache.getClusterType(clusterShard.getKey());
+        ClusterType azGroupType = metaCache.getAzGroupType(hostPort);
+        String dcId = null;
+        if (clusterType.supportSingleActiveDC() && azGroupType != ClusterType.SINGLE_DC) {
+            dcId = metaCache.getActiveDc(hostPort);
+        } else if (clusterType.supportMultiActiveDC() || azGroupType == ClusterType.SINGLE_DC) {
+            dcId = metaCache.getDc(hostPort);
+        }
+        return dcId;
     }
 
     @Override

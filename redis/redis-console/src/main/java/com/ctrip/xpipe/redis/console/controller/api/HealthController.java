@@ -12,12 +12,11 @@ import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -61,6 +60,11 @@ public class HealthController extends AbstractConsoleController{
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
         return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
+    }
+
+    @RequestMapping(value = "/redises/inner/delay", method = RequestMethod.POST)
+    public Map<HostPort, Long> getInnerReplDelaysMillis(@RequestBody List<HostPort> hostPorts) {
+        return hostPorts.stream().collect(Collectors.toMap(instance -> instance, instance -> delayService.getLocalCachedDelay(instance)));
     }
 
     @RequestMapping(value = "/redis/inner/delay/all", method = RequestMethod.GET)

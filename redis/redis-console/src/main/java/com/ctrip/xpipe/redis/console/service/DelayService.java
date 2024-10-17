@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,7 +22,7 @@ public interface DelayService extends RedisDelayManager {
 
     long getDelay(HostPort hostPort);
 
-    long getDelay(ClusterType clusterType, HostPort hostPort);
+    Map<HostPort, Long> getDelay(String dcId, String clusterId);
 
     long getLocalCachedDelay(HostPort hostPort);
 

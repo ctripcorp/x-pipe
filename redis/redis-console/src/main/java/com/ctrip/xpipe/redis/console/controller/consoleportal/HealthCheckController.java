@@ -64,11 +64,11 @@ public class HealthCheckController extends AbstractConsoleController {
         return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
     }
 
-    @RequestMapping(value = "/redis/delay/{clusterType}/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, Long> getReplDelayMillis(@PathVariable String clusterType, @PathVariable String redisIp, @PathVariable int redisPort) {
-        ClusterType type = ClusterType.lookup(clusterType);
-        return ImmutableMap.of("delay", delayService.getDelay(type, new HostPort(redisIp, redisPort)));
+    @RequestMapping(value = "/redises/delay/{dcId}/{clusterId}", method = RequestMethod.GET)
+    public Map<String, Map<HostPort, Long>> getAllReplDelayMillis(@PathVariable String dcId, @PathVariable String clusterId) {
+        return ImmutableMap.of("delay", delayService.getDelay(dcId, clusterId));
     }
+
 
     @RequestMapping(value = "/cross-master/delay/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public Map<String, Pair<HostPort, Long>> getCrossMasterReplHealthStatus(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {

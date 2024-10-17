@@ -29,7 +29,7 @@ function HealthCheckService($resource, $q) {
 		};
 		apis[GET_REPL_DELAY] = {
 			method: 'GET',
-			url: '/console/redis/delay/:clusterType/:redisIp/:redisPort'
+			url: '/console/redises/delay/:dcId/:clusterId'
 		};
 		apis[GET_SHARD_DELAY] = {
 			method: 'GET',
@@ -106,11 +106,10 @@ function HealthCheckService($resource, $q) {
 		});
 	}
 	
-	function getReplDelay(ip, port, clusterType) {
+	function getReplDelay(dcId, clusterId) {
 		return request($q.defer(), GET_REPL_DELAY, {
-			clusterType,
-			redisIp : ip,
-			redisPort : port
+			dcId : dcId,
+			clusterId : clusterId
 		});
 	}
 
