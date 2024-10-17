@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
@@ -249,13 +250,12 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public List<RouteModel> getActiveRoutes() {
-        ResponseEntity<String> resp = exchange(config.getConsoleNoDbDomain() +
-                        AbstractConsoleController.API_PREFIX + "/routes/active",
-                HttpMethod.GET, null, String.class, "getActiveRoutes"
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
+                AbstractConsoleController.API_PREFIX + "/routes/active").build();
+        ResponseEntity<List<RouteModel>> resp = exchange(comp.toUri(),
+                HttpMethod.GET, null, new ParameterizedTypeReference<List<RouteModel>>(){}, "getActiveRoutes"
         );
-        String content = resp.getBody();
-        JsonCodec pretty = new JsonCodec(true, true);
-        return pretty.decode(content, List.class);
+        return resp.getBody();
     }
 
     public void updateKeeperStatus(String dcId, String clusterId, String shardId, KeeperMeta newActiveKeeper) {
