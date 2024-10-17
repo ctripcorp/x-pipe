@@ -76,6 +76,10 @@ angular
         stop_to_migrate_overload_keepercontainer:{
             method:'POST',
             url:'/console/keepercontainer/overload/migration/stop'
+        },
+        reset_election:{
+            method:'POST',
+            url:'/api/keepers/election/reset/:ip/:port/:shardId'
         }
     });
 
@@ -285,6 +289,21 @@ angular
         return d.promise;
     }
 
+    function resetElection(ip, port, shardId) {
+        var d = $q.defer();
+        resource.reset_election({
+                ip:ip,
+                port:port,
+                shardId:shardId
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
@@ -301,5 +320,6 @@ angular
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
         migrateKeeperTaskTerminate : migrateKeeperTaskTerminate,
+        resetElection: resetElection
     }
 }]);
