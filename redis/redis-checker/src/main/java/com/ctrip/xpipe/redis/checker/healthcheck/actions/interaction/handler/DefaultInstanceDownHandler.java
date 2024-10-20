@@ -16,16 +16,9 @@ import java.util.List;
 @Component
 public class DefaultInstanceDownHandler extends AbstractHealthEventHandler<InstanceDown> implements InstanceDownHandler {
 
-    private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN, HEALTH_STATE.UNHEALTHY);
-
     @Override
     protected void doHandle(InstanceDown instanceDown) {
         tryMarkDown(instanceDown);
-    }
-
-    @Override
-    protected List<HEALTH_STATE> getSatisfiedStates() {
-        return satisfiedStates;
     }
 
     @Override
