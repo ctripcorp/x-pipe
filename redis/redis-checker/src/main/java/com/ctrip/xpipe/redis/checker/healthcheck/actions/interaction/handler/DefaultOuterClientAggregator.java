@@ -50,6 +50,8 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
     private static final Logger logger =  LoggerFactory.getLogger(DefaultOuterClientAggregator.class);
 
+    private static final int DELTA = 500;
+
     @PostConstruct
     public void postConstruct() {
         clusterOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
@@ -94,8 +96,9 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
     @VisibleForTesting
     public int randomMill() {
-        int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(), 0);
-        int delayMax = Math.max(checkerConfig.getMarkInstanceMaxDelayMilli(), delayBase);
+        int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
+                checkerConfig.getCheckerMetaRefreshIntervalMilli() + checkerConfig.getRedisReplicationHealthCheckInterval() + DELTA);
+        int delayMax = Math.max(checkerConfig.getMarkInstanceMaxDelayMilli(), delayBase + DELTA);
         return delayBase + rand.nextInt(delayMax - delayBase);
     }
 
