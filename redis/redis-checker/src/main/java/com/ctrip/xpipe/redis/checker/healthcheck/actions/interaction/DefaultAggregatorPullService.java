@@ -85,9 +85,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     }
 
     @Override
-    public void doMarkInstances(String clusterName, Set<HostPortDcStatus> instances) throws OuterClientException {
+    public void doMarkInstances(String clusterName, String activeDc, Set<HostPortDcStatus> instances) throws OuterClientException {
         alertMarkInstance(clusterName, instances);
-        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, metaCache.getActiveDc(clusterName));
+        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc);
         outerClientService.batchMarkInstance(markInstanceRequest);
     }
 
