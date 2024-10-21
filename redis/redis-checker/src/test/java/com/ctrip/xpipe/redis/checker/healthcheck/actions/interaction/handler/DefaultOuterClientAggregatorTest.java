@@ -45,6 +45,10 @@ public class DefaultOuterClientAggregatorTest {
 
     private final String cluster1 = "cluster1";
 
+    private final String activeDc = "jq";
+
+    private final String backupDc = "oy";
+
     private ClusterShardHostPort info1, info2, info3;
 
     private int baseDelay = 3;
@@ -53,9 +57,9 @@ public class DefaultOuterClientAggregatorTest {
 
     @Before
     public void beforeDefaultOuterClientAggregatorTest() {
-        info1 = new ClusterShardHostPort(cluster1, null, hostPort1);
-        info2 = new ClusterShardHostPort(cluster1, null, hostPort2);
-        info3 = new ClusterShardHostPort(cluster1, null, hostPort3);
+        info1 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort1);
+        info2 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort2);
+        info3 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort3);
         when(checkerConfig.getMarkInstanceBaseDelayMilli()).thenReturn(baseDelay * 1000);
         when(checkerConfig.getMarkInstanceMaxDelayMilli()).thenReturn(maxDelay * 1000);
         outerClientAggregator.setScheduled(MoreExecutors.getExitingScheduledExecutorService(
@@ -81,14 +85,14 @@ public class DefaultOuterClientAggregatorTest {
         when(aggregatorPullService.getNeedAdjustInstances(anyString(), anySet())).thenReturn(toMarkInstances);
 
         DefaultOuterClientAggregator.AggregatorCheckAndSetTask aggregateTask =
-                outerClientAggregator.new AggregatorCheckAndSetTask(cluster1, Sets.newHashSet(hostPort1, hostPort2, hostPort3));
+                outerClientAggregator.new AggregatorCheckAndSetTask(cluster1, activeDc, Sets.newHashSet(hostPort1, hostPort2, hostPort3));
         aggregateTask.execute().get();
 
         Mockito.verify(healthStateService, times(2)).updateLastMarkHandled(any(), anyBoolean());
         Mockito.verify(healthStateService).updateLastMarkHandled(hostPort1, true);
         Mockito.verify(healthStateService).updateLastMarkHandled(hostPort2, false);
 
-        Mockito.verify(aggregatorPullService).doMarkInstances(cluster1, toMarkInstances);
+        Mockito.verify(aggregatorPullService).doMarkInstances(cluster1, activeDc, toMarkInstances);
     }
 
 }
