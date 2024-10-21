@@ -429,7 +429,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
         @Override
         protected void doExecute() throws Throwable {
-            if (slaves.isEmpty())
+            if (slaves == null || slaves.isEmpty())
                 future().setSuccess(new SentinelInvalidSlaves());
             else {
                 Set<HostPort> toManyKeepers = tooManyKeepers(slaves);
