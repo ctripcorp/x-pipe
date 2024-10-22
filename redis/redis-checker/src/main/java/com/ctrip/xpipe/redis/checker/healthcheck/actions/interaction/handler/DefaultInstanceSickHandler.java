@@ -37,12 +37,6 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
     private ScheduledExecutorService scheduled;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-    private static final List<HEALTH_STATE> satisfiedStates = Lists.newArrayList(HEALTH_STATE.DOWN, HEALTH_STATE.SICK, HEALTH_STATE.UNHEALTHY);
-
-    @Override
-    protected List<HEALTH_STATE> getSatisfiedStates() {
-        return satisfiedStates;
-    }
 
     @Override
     protected void doHandle(InstanceSick instanceSick) {

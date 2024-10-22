@@ -64,11 +64,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
 
     protected abstract void doHandle(T t);
 
-    @SuppressWarnings("unchecked")
-    protected List<HEALTH_STATE> getSatisfiedStates(){
-        return Collections.EMPTY_LIST;
-    }
-
     protected void tryMarkDown(AbstractInstanceEvent event) {
         if (!siteStability.isSiteStable()) {
             logger.warn("[onEvent][site down, skip] {}", event);
@@ -78,23 +73,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
         }
-        if (event instanceof InstanceLoading) {
-            markdown(event);
-        } else {
-            quorumMarkInstanceDown(event);
-        }
-    }
-
-    protected void quorumMarkInstanceDown(AbstractInstanceEvent event) {
-        RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        boolean quorum = quorumState(getSatisfiedStates(), info.getHostPort());
-
-        if (quorum) {
-            markdown(event);
-        } else {
-            logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", info.getClusterShardHostport(), quorum);
-            alertManager.alert(info, ALERT_TYPE.QUORUM_DOWN_FAIL, info.getHostPort().toString());
-        }
+        markdown(event);
     }
 
     @VisibleForTesting
@@ -149,12 +128,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             return false;
         }
         return true;
-    }
-
-    protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {
-        List<HEALTH_STATE> health_states = remoteCheckerManager.getHealthStates(hostPort.getHost(), hostPort.getPort());
-        long matchStates = health_states.stream().filter(healthStates::contains).count();
-        return matchStates >= checkerConfig.getQuorum();
     }
 
 }

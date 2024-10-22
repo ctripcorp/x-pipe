@@ -12,6 +12,8 @@ public class HealthStatusDesc {
 
     private HEALTH_STATE state;
 
+    private Boolean lastMarkHandled = null;
+
     private long lastPongTime = -1;
 
     private long lastHealthDelayTime = -1;
@@ -25,11 +27,22 @@ public class HealthStatusDesc {
         this.state = state;
     }
 
+    public HealthStatusDesc(HostPort hostPort, HEALTH_STATE state, Boolean lastMarkHandled) {
+        this.hostPort = hostPort;
+        this.state = state;
+        this.lastMarkHandled = lastMarkHandled;
+    }
+
     public HealthStatusDesc(HostPort hostPort, HealthStatus status) {
+        this(hostPort, status, null);
+    }
+
+    public HealthStatusDesc(HostPort hostPort, HealthStatus status, Boolean lastMarkHandled) {
         this.hostPort = hostPort;
         this.state = status.getState();
         this.lastPongTime = status.getLastPongTime();
         this.lastHealthDelayTime = status.getLastHealthyDelayTime();
+        this.lastMarkHandled = lastMarkHandled;
     }
 
     public HostPort getHostPort() {
@@ -48,4 +61,7 @@ public class HealthStatusDesc {
         return lastHealthDelayTime;
     }
 
+    public Boolean getLastMarkHandled() {
+        return lastMarkHandled;
+    }
 }
