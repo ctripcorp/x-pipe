@@ -70,6 +70,9 @@ public class DefaultProxyChainCollector extends AbstractStartStoppable implement
 
     @Override
     public void isleader() {
+        if(consoleConfig.disableDb()) {
+            return;
+        }
         taskTrigger.set(true);
         try {
             logger.info("isLeader {}", getClass().getSimpleName());
