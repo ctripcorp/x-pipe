@@ -18,6 +18,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.IntSupplier;
 
 /**
@@ -46,6 +48,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     private ScheduledFuture<?> future;
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     protected static Logger delayLogger = LoggerFactory.getLogger(HealthStatus.class.getName() + ".delay");
+
+    private ReadWriteLock lastMarkHandledLock = new ReentrantReadWriteLock();
+
+    private volatile boolean lastMarkHandled = false;
+
+    private volatile long lastMarkHandledTime = -1;
 
     public HealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled){
         this.instance = instance;
@@ -273,6 +281,40 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     public long getLastHealthyDelayTime() {
         return lastHealthDelayTime.get();
+    }
+
+    public void updateLastMarkHandled(boolean handleMarkUp) {
+        try {
+            lastMarkHandledLock.writeLock().lock();
+            this.lastMarkHandled = handleMarkUp;
+            this.lastMarkHandledTime = System.currentTimeMillis();
+        } finally {
+            lastMarkHandledLock.writeLock().unlock();
+        }
+    }
+
+    public Boolean getLastMarkHandled(long timeoutMill) {
+        try {
+            lastMarkHandledLock.readLock().lock();
+            long current = System.currentTimeMillis();
+            if (lastMarkHandledTime > current) {
+                resetLastMarkHandled();
+            } else if (lastMarkHandledTime > 0 && lastMarkHandledTime + timeoutMill > current) {
+                return lastMarkHandled;
+            }
+        } finally {
+            lastMarkHandledLock.readLock().unlock();
+        }
+        return null;
+    }
+
+    private void resetLastMarkHandled() {
+        try {
+            lastMarkHandledLock.writeLock().lock();
+            this.lastMarkHandledTime = -1;
+        } finally {
+            lastMarkHandledLock.writeLock().unlock();
+        }
     }
 
 }

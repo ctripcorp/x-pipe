@@ -589,6 +589,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                                 shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
                             }
                         } else {
+                            if (!StringUtil.isEmpty(clusterMeta.getActiveDc())
+                                    && !clusterMeta.getActiveDc().equalsIgnoreCase(dcMeta.getId())) {
+                                // redis role haven't changed but activeDc already switch in migration
+                                redis.setMaster(false);
+                            }
                             shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                         }
                     }
