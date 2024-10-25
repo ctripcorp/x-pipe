@@ -79,7 +79,11 @@ public class ConsolePortalService extends AbstractService {
                 .queryParam("version", version)
                 .build();
 
-        ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, null, String.class, "getXpipeAllMeta");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.ACCEPT_ENCODING, "lz4");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, entity, String.class, "getXpipeAllMeta");
         if (StringUtil.isEmpty(raw.getBody())) return null;
         return DefaultSaxParser.parse(raw.getBody());
     }
@@ -300,6 +304,10 @@ public class ConsolePortalService extends AbstractService {
             logger.error("[exchange]", e);
             return null;
         }
+    }
+
+    public void setConsoleConfig(ConsoleConfig config) {
+        this.config = config;
     }
 
 }

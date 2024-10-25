@@ -26,6 +26,7 @@ public class MvcConfig extends WebMvcConfigurerAdapter{
     @Autowired
     private ConsoleConfig config;
 
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LogInterceptor());

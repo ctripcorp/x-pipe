@@ -88,4 +88,5 @@ public class DataCenterConfigBean extends AbstractConfigBean {
     public String getBeaconOrgRoutes() {
         return getProperty(KEY_BEACON_ORG_ROUTE, "[]");
     }
+
 }

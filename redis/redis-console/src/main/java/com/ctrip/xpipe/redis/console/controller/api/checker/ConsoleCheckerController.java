@@ -105,16 +105,17 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)
-    public DeferredResult<String> getDividedMetaLongPull(@RequestParam(value="format", required = false) String format,
+    public DeferredResult<byte []> getDividedMetaLongPull(@RequestParam(value="format", required = false) String format,
                                                          @RequestParam(value="version") long version) {
-        DeferredResult<String> response = new DeferredResult<>(Long.valueOf(consoleConfig.getServletMethodTimeoutMilli()));
+        DeferredResult<byte []> response = new DeferredResult<>(Long.valueOf(consoleConfig.getServletMethodTimeoutMilli()));
 
         executors.execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     XpipeMeta xpipeMeta = metaCache.getXpipeMetaLongPull(version);
-                    response.setResult((format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta));
+                    String result = format != null && format.equals("xml")? xpipeMeta.toString() : coder.encode(xpipeMeta);
+                    response.setResult(result.getBytes());
                 } catch (InterruptedException e) {
                     response.setErrorResult(e.getMessage());
                 }
