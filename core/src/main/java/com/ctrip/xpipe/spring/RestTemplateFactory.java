@@ -83,6 +83,7 @@ public class RestTemplateFactory {
                 .setMaxConnTotal(maxConnTotal)
                 .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
                 .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
+                .addInterceptorLast(new LZ4DecompressionInterceptor())
                 .build();
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient) {
             @Override
