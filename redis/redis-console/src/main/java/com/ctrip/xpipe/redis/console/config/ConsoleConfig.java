@@ -156,4 +156,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getConsoleNoDbDomain();
 
+	String getHttpAcceptEncoding();
+
 }

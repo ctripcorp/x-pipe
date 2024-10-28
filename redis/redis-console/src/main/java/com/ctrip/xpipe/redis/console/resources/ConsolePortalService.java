@@ -78,11 +78,12 @@ public class ConsolePortalService extends AbstractService {
                 .queryParam("format", "xml")
                 .queryParam("version", version)
                 .build();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.ACCEPT_ENCODING, "lz4");
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
+        HttpEntity<String> entity = null;
+        if(!StringUtil.isEmpty(config.getHttpAcceptEncoding())) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.ACCEPT_ENCODING, config.getHttpAcceptEncoding());
+            entity = new HttpEntity<>(headers);
+        }
         ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, entity, String.class, "getXpipeAllMeta");
         if (StringUtil.isEmpty(raw.getBody())) return null;
         return DefaultSaxParser.parse(raw.getBody());
