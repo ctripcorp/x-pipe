@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
-import org.apache.commons.lang3.SerializationUtils;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
@@ -10,10 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -23,29 +22,20 @@ public class DcMetaServiceWithoutDB implements DcMetaService {
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private ConsolePortalService consolePortalService;
+
     @Override
     public DcMeta getDcMeta(String dcName) throws Exception {
-        return metaCache.getXpipeMeta().getDcs().get(dcName);
+        return getDcMeta(dcName, consoleConfig.getOwnClusterType());
     }
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
-        // 大小写
-
-        Set<String> upperCaseAllowTypes = allowTypes.stream()
-                .map(String::toUpperCase)
-                .collect(Collectors.toSet());
-
-        DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);
-        DcMeta result = SerializationUtils.clone(dcMeta);
-        result.getClusters().clear();
-        Map<String, ClusterMeta> clusterMetas = dcMeta.getClusters();
-        for(ClusterMeta clusterMeta : clusterMetas.values()) {
-            if(upperCaseAllowTypes.contains(clusterMeta.getType().toUpperCase())) {
-                result.addCluster(SerializationUtils.clone(clusterMeta));
-            }
-        }
-        return result;
+        return consolePortalService.getDcMeta(dcName, allowTypes);
     }
 
     @Override
