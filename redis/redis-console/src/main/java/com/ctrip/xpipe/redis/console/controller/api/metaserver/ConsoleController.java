@@ -51,7 +51,7 @@ public class ConsoleController extends AbstractConsoleController {
 	private KeeperContainerService keeperContainerService;
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
-	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
+	public byte[] getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
 							@RequestParam(value ="types", required = false) Set<String> types) throws Exception {
 		DcMeta dcMeta;
 		Set<String> upperCaseTypes = types == null ? Collections.emptySet()
@@ -79,7 +79,8 @@ public class ConsoleController extends AbstractConsoleController {
 			}
 		});
 		toRemoveClusters.forEach(clusterName -> dcMeta.getClusters().remove(clusterName));
-		return (format != null && format.equals("xml"))? dcMeta.toString() : coder.encode(dcMeta);
+		String res = (format != null && format.equals("xml"))? dcMeta.toString() : coder.encode(dcMeta);
+		return res.getBytes();
 	}
 
 	@RequestMapping(value = "/dc/{dcId}/cluster/{clusterId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})

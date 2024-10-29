@@ -35,6 +35,8 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public static final String KEY_CONSOLE_NO_DB_DOMAIN = "console.no.db.domain";
 
+    public static final String KEY_HTTP_ACCEPT_ENCODING = "http.accept.encoding";
+
     private AtomicReference<String> zkConnection = new AtomicReference<>();
     private AtomicReference<String> zkNameSpace = new AtomicReference<>();
 
@@ -88,4 +90,9 @@ public class DataCenterConfigBean extends AbstractConfigBean {
     public String getBeaconOrgRoutes() {
         return getProperty(KEY_BEACON_ORG_ROUTE, "[]");
     }
+
+    public String getHttpAcceptEncoding() {
+        return getProperty(KEY_HTTP_ACCEPT_ENCODING, null);
+    }
+
 }

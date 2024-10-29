@@ -583,6 +583,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public String getHttpAcceptEncoding() {
+        return dataCenterConfigBean.getHttpAcceptEncoding();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }
