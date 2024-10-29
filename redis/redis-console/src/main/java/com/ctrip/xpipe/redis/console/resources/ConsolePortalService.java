@@ -79,8 +79,8 @@ public class ConsolePortalService extends AbstractService {
                 .queryParam("format", "xml")
                 .queryParam("version", version)
                 .build();
-
-        ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, null, String.class, "getXpipeAllMeta");
+        HttpEntity<String> entity = buildHttpEntity();
+        ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, entity, String.class, "getXpipeAllMeta");
         if (StringUtil.isEmpty(raw.getBody())) return null;
         return DefaultSaxParser.parse(raw.getBody());
     }
@@ -287,7 +287,8 @@ public class ConsolePortalService extends AbstractService {
                     .queryParam("types", allowTypes.toArray())
                     .buildAndExpand(dcName);
         }
-        ResponseEntity<DcMeta> resp = exchange(comp.toUriString(), HttpMethod.GET, null, DcMeta.class, "getDcMeta");
+        HttpEntity<String> entity = buildHttpEntity();
+        ResponseEntity<DcMeta> resp = exchange(comp.toUriString(), HttpMethod.GET, entity, DcMeta.class, "getDcMeta");
         return resp.getBody();
     }
 
@@ -317,6 +318,20 @@ public class ConsolePortalService extends AbstractService {
             logger.error("[exchange]", e);
             return null;
         }
+    }
+
+    public void setConsoleConfig(ConsoleConfig config) {
+        this.config = config;
+    }
+
+    private HttpEntity<String> buildHttpEntity() {
+        HttpEntity<String> entity = null;
+        if(!StringUtil.isEmpty(config.getHttpAcceptEncoding())) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.ACCEPT_ENCODING, config.getHttpAcceptEncoding());
+            entity = new HttpEntity<>(headers);
+        }
+        return entity;
     }
 
 }
