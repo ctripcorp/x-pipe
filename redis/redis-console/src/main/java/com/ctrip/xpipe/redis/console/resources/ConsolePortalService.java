@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
@@ -277,6 +278,22 @@ public class ConsolePortalService extends AbstractService {
             logger.error("[updateKeeperStatus]", e);
         }
 
+    }
+
+    public DcMeta getDcMeta(String dcName, Set<String> allowTypes) {
+        UriComponents comp;
+        if (null == allowTypes) {
+            comp = UriComponentsBuilder
+                    .fromHttpUrl(config.getConsoleNoDbDomain() + "/api/dc/{dcId}")
+                    .buildAndExpand(dcName);
+        } else {
+            comp = UriComponentsBuilder
+                    .fromHttpUrl(config.getConsoleNoDbDomain() + "/api/dc/{dcId}")
+                    .queryParam("types", allowTypes.toArray())
+                    .buildAndExpand(dcName);
+        }
+        ResponseEntity<DcMeta> resp = exchange(comp.toUriString(), HttpMethod.GET, null, DcMeta.class, "getDcMeta");
+        return resp.getBody();
     }
 
     <T> ResponseEntity<T> exchange(String url, HttpMethod var2, HttpEntity<?> httpEntity, Class<T> type, String name) {
