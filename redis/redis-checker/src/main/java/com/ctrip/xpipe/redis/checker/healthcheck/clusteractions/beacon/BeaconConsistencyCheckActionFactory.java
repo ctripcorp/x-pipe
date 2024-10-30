@@ -13,12 +13,8 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * @author lishanglin
- * date 2021/1/15
- */
 @Component
-public class BeaconMetaCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
+public class BeaconConsistencyCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
     @Autowired
     private BeaconManager beaconManager;
@@ -28,14 +24,14 @@ public class BeaconMetaCheckActionFactory extends AbstractClusterLeaderAwareHeal
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
-        BeaconMetaCheckAction action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconManager);
+        BeaconConsistencyCheckAction action = new BeaconConsistencyCheckAction(scheduled, instance, executors, beaconManager);
         action.addControllers(controllers);
         return action;
     }
 
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
-        return BeaconMetaCheckAction.class;
+        return BeaconConsistencyCheckAction.class;
     }
 
     @Override
