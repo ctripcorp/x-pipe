@@ -150,8 +150,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public MonitorManager monitorServiceManager(MetaCache metaCache, ConsoleConfig config) {
-        return new DefaultMonitorManager(metaCache, config);
+    public MonitorManager monitorServiceManager(MetaCache metaCache, ConsoleConfig config, ConsoleCommonConfig consoleCommonConfig) {
+        return new DefaultMonitorManager(metaCache, config, consoleCommonConfig);
     }
 
     @Bean

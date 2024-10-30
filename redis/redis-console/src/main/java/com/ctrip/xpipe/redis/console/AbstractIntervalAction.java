@@ -38,7 +38,7 @@ public abstract class AbstractIntervalAction {
 
     @PostConstruct
     public void postConstruct(){
-        logger.info("[postConstruct]{}", this);
+        logger.info("[postConstruct] {}", this);
 
         for(ALERT_TYPE type : alertTypes()) {
             alertPolicyManager.markCheckInterval(type, this::getIntervalMilli);
