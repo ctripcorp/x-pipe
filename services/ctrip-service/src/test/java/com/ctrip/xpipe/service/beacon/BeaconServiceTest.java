@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -103,8 +104,8 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test
     public void testUpdateBeaconHost() throws Exception {
         MockWebServer mockWebServer = new MockWebServer();
-        mockWebServer.start(InetAddress.getByName("127.0.0.2"), randomPort());
-        beaconService.updateHost("http://127.0.0.2:" + mockWebServer.getPort());
+        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
+        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
         mockWebServer.enqueue(new MockResponse().setBody("{\n" +
                         "    \"code\": 0,\n" +
                         "    \"msg\": \"success\"" +
@@ -114,6 +115,51 @@ public class BeaconServiceTest extends AbstractServiceTest {
 
         RecordedRequest request = mockWebServer.takeRequest();
         Assert.assertEquals("127.0.0.2", request.getRequestUrl().host());
+    }
+
+    @Test
+    public void testGetAllClusterWithDc() throws Exception {
+        MockWebServer mockWebServer = new MockWebServer();
+        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
+        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
+        mockWebServer.enqueue(new MockResponse().setBody("{\n" +
+                        "    \"code\": 0,\n" +
+                        "    \"msg\": \"success\",\n" +
+                        "    \"data\": {\n" +
+                        "      \"xpipe_dr_pt_cluster_2271\": [\n" +
+                        "        \"PTOY\"\n" +
+                        "      ],\n" +
+                        "      \"xpipe_dr_pt_cluster_210\": [\n" +
+                        "        \"PTOY\"\n" +
+                        "      ],\n" +
+                        "      \"xpipe_dr_pt_cluster_453\": [\n" +
+                        "        \"PTOY\"\n" +
+                        "      ],\n" +
+                        "      \"xpipe_dr_pt_cluster_2270\": [\n" +
+                        "        \"PTOY\"\n" +
+                        "      ]\n" +
+                        "    }\n" +
+                        "  }")
+                .setHeader("Content-Type", "application/json"));
+        Map<String, Set<String>>  data = beaconService.getAllClusterWithDc(system);
+        Set<String> remote = data.get("xpipe_dr_pt_cluster_2271");
+        Set<String> local = new HashSet<>();
+        local.add("PTOY");
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assert.assertEquals(remote, local);
+    }
+
+    @Test
+    public void testGetBeaconClusterHash() throws Exception {
+        MockWebServer mockWebServer = new MockWebServer();
+        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
+        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
+        mockWebServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\",\"data\":44773398}")
+                .setHeader("Content-Type", "application/json"));
+        int hash = beaconService.getBeaconClusterHash(system, "xpipe_dr_pt_cluster_2247");
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        Assert.assertEquals(44773398, hash);
     }
 
     @Test(expected = BeaconServiceException.class)

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
 
 /**
  * @author lishanglin
@@ -9,5 +10,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 public interface BeaconManager {
 
     void registerCluster(String clusterId, ClusterType clusterType, int orgId);
+
+    void updateCluster(String clusterId, ClusterType clusterType, int orgId);
+
+    BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId);
 
 }
