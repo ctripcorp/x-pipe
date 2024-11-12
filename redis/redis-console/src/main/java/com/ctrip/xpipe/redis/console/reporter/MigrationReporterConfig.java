@@ -7,6 +7,10 @@ import com.ctrip.xpipe.utils.EncryptUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.ctrip.xpipe.api.config.ConfigProvider.COMMON_CONFIG;
 
 @Configuration
@@ -66,8 +70,8 @@ public class MigrationReporterConfig extends AbstractConfigBean {
         return getLongProperty(KEY_MIGRATION_PROCESS_REPORT_INTERVAL_MILLI, 10000L);
     }
 
-    public String getBreakDownDc() {
-        return getProperty(KEY_MIGRATION_BREAK_DOWN_DC, "jq");
+    public Set<String> getBreakDownDc() {
+        return getSplitStringSet(getProperty(KEY_MIGRATION_BREAK_DOWN_DC, "jq"));
     }
 
 
