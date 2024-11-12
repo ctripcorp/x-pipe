@@ -15,6 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
 
+import java.util.Collections;
+import java.util.HashSet;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultMigrationProcessReporterTest {
@@ -53,7 +56,7 @@ public class DefaultMigrationProcessReporterTest {
     @Before
     public void before() {
         Mockito.when(migrationReporterConfig.getKeyMigrationProcessReportUrl()).thenReturn("127.0.0.1:8080");
-        Mockito.when(migrationReporterConfig.getBreakDownDc()).thenReturn("jq");
+        Mockito.when(migrationReporterConfig.getBreakDownDc()).thenReturn(new HashSet<>(Collections.singleton("jq")));
         Mockito.when(httpService.getRestTemplate()).thenReturn(restTemplate);
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
                 migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class)))
@@ -70,7 +73,7 @@ public class DefaultMigrationProcessReporterTest {
                         migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         MigrationProcessReportModel value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(0, value.getProcess());
-        Assert.assertEquals(1000, value.getObjectCount());
+        Assert.assertEquals(2000, value.getObjectCount());
         Assert.assertEquals("redis", value.getService());
 
         Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(1001L);
@@ -80,7 +83,7 @@ public class DefaultMigrationProcessReporterTest {
                         migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(0, value.getProcess());
-        Assert.assertEquals(1001, value.getObjectCount());
+        Assert.assertEquals(2002, value.getObjectCount());
 
         Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(400L);
         migrationReporter.doAction();
@@ -89,6 +92,6 @@ public class DefaultMigrationProcessReporterTest {
                         migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class));
         value = migrationProcessReportModelArgumentCaptor.getValue();
         Assert.assertEquals(60, value.getProcess());
-        Assert.assertEquals(1001, value.getObjectCount());
+        Assert.assertEquals(2002, value.getObjectCount());
     }
 }

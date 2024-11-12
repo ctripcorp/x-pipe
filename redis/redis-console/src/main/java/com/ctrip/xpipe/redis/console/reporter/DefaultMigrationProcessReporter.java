@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
@@ -43,13 +44,25 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
 
     private long totalClusters = 0;
 
+    private Set<String> lastBreakDownDc;
+
     @Override
     protected void doAction() {
         EventMonitor.DEFAULT.logEvent(REPORT_EVENT, "begin");
         MigrationProcessReportModel model = new MigrationProcessReportModel();
+        if (lastBreakDownDc == null) {
+            lastBreakDownDc = migrationReporterConfig.getBreakDownDc();
+        }
+        if (lastBreakDownDc != null && !lastBreakDownDc.equals(migrationReporterConfig.getBreakDownDc()) ) {
+            lastBreakDownDc = migrationReporterConfig.getBreakDownDc();
+            totalClusters = 0;
+        }
 
-        // TODO AzGroup need to be  considered after hetero cluster type online
-        Long nonMigrateClustersNum = clusterService.getCountByActiveDcAndClusterType(dcService.find(migrationReporterConfig.getBreakDownDc()).getId(), ClusterType.ONE_WAY.name());
+        Long nonMigrateClustersNum = 0L;
+        for (String breakDownDc : migrationReporterConfig.getBreakDownDc()) {
+            nonMigrateClustersNum += clusterService.getCountByActiveDcAndClusterType(dcService.find(breakDownDc).getId(), ClusterType.ONE_WAY.name());
+            nonMigrateClustersNum += clusterService.getCountByActiveDcAndClusterType(dcService.find(breakDownDc).getId(), ClusterType.HETERO.name());
+        }
         if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;
         }
