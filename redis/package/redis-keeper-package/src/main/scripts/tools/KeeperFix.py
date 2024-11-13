@@ -114,7 +114,7 @@ def fixCluster(cluster):
     if 'clusterType' not in clusterInfo.keys():
         print("unfind cluster %s skip"%cluster)
         return
-    if (clusterInfo.get('clusterType').lower() != 'one_way'):
+    if (clusterInfo.get('clusterType').lower() not in ['one_way', 'hetero']):
         print("cluster not one_way cluster, skip")
         return
 
@@ -168,7 +168,7 @@ def getActiveKeepers(cluster, dc):
 
 def chooseKeeperPort(keeperIp):
     global useKeeperPorts
-    if not useKeeperPorts.has_key(keeperIp):
+    if keeperIp not in useKeeperPorts:
         useKeeperPorts[keeperIp] = KEEPER_PORT_INIT
         return KEEPER_PORT_INIT
     else:
@@ -180,7 +180,7 @@ def existKeeper(keeperIp, keeperPort):
         "host":keeperIp,
         "port":keeperPort
     }).json()
-    return res.has_key("payload") and res.get("payload")
+    return "payload" in res and res.get("payload")
 
 def strictReplaceShardKeeper(cluster, dc, shard, shardInfo, availableKeepers):
     newKeepers = []
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     refreshUnhealthyInfo()
 
     while True:
-        action = input('''choose action:
+        action = int(input('''choose action:
     [1] refresh unhealthy info
     [2] show all unhealthy clusters
     [3] show cluster unhealthy shards
@@ -245,8 +245,7 @@ if __name__ == "__main__":
     [21] config strict replace
     [22] config keeper port init
     [0] exit
-''')
-
+'''))
         limit = -1
         if action == 0:
             break
@@ -255,13 +254,13 @@ if __name__ == "__main__":
         elif action == 2:
             showAllUnhealthyClusters()
         elif action == 3:
-            cluster = raw_input("input cluster name\n")
+            cluster = input("input cluster name\n")
             showAllUnhealthyShards(cluster)
         elif action == 11:
-            cluster = raw_input("input cluster name\n")
+            cluster = input("input cluster name\n")
             fixCluster(cluster)
         elif action == 12:
-            fixlimit = input("input fix limit\n")
+            fixlimit = int(input("input fix limit\n"))
             if fixlimit <= 0:
                 print("fix limit should gt 0")
                 continue
@@ -270,7 +269,7 @@ if __name__ == "__main__":
         elif action == 13:
             fixAll()
         elif action == 21:
-            inputStrictReplace = input("1 - use strict replace; 0 - use normal strict\n")
+            inputStrictReplace = int(input("1 - use strict replace; 0 - use normal strict\n"))
             if inputStrictReplace == 1:
                 strictReplace = True
             elif inputStrictReplace == 0:
@@ -282,7 +281,7 @@ if __name__ == "__main__":
             else:
                 print("now use normal replace")
         elif action == 22:
-            inputPortInit = input("input init port\n")
+            inputPortInit = int(input("input init port\n"))
             if inputPortInit <= 0:
                 print("unexpect input %d"%inputPortInit)
                 continue
