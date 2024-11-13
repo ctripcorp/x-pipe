@@ -4,7 +4,7 @@
 
 KeeperFix是一个通过替换keeper一键修复XPipe问题集群的脚本
 
-使用前需要替换脚本里的Cookie、XPIPE_HOST，并安装有python2.7
+使用前需要替换脚本里的Cookie、XPIPE_HOST，并安装有python3
 
 ## 功能&使用
 
