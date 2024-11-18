@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.keeper.command;
 
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 
 public class KeeperResetCommand<T> extends AbstractCommand<T> {
 

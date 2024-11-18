@@ -40,9 +40,5 @@ public interface KeeperContainerService {
 
 	void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
 
-	List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp);
-
-	void resetKeeper(String activeKeeperIp, Long replId);
-
 	Map<Long, Long> keeperContainerIdDcMap();
 }

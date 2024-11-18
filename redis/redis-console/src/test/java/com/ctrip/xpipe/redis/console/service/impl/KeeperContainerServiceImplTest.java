@@ -301,34 +301,6 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void getAllKeepersTest() {
-        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
-        keeperContainerService.setRestTemplate(restTemplate);
-        ResponseEntity<List<KeeperInstanceMeta>> response = Mockito.mock(ResponseEntity.class);
-        List<KeeperInstanceMeta> list = new ArrayList<>();
-        Mockito.when(response.getBody()).thenReturn(list);
-        Mockito.when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), Mockito.isNull(), Mockito.any(ParameterizedTypeReference.class))).thenReturn(response);
-        List<KeeperInstanceMeta> allKeepers = keeperContainerService.getAllKeepers("keeperContainerIp");
-        Assert.assertEquals(list, allKeepers);
-    }
-
-    @Test
-    public void resetKeepersTest() {
-        KeeperTransMeta keeperInstanceMeta = new KeeperInstanceMeta();
-        KeeperMeta meta = new KeeperMeta();
-        meta.setIp("");
-        keeperInstanceMeta.setKeeperMeta(meta);
-        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
-        keeperContainerService.setRestTemplate(restTemplate);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
-        Mockito.when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), eq(requestEntity), eq(Void.class))).thenReturn(null);
-        keeperContainerService.resetKeeper(keeperInstanceMeta.getKeeperMeta().getIp(), keeperInstanceMeta.getReplId());
-    }
-
-    @Test
     public void testUpdateKeeperContainerByInfoModelFail() {
         KeeperContainerInfoModel keeper = keeperContainerService.findKeeperContainerInfoModelById(30);
         Assert.assertNotNull(keeper);

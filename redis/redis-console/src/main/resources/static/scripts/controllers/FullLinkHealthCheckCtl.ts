@@ -25,11 +25,16 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
     $scope.doShowActions = doShowActions;
     $scope.getShardAllMeta = getShardAllMeta;
     $scope.getShardKeeperState = getShardKeeperState;
+    $scope.releaseRdb = releaseRdb;
     $scope.resetElection = resetElection;
     $scope.disableResetElection = false;
+    $scope.disableReleaseRdb = false;
     $scope.getDisableResetElection = getDisableResetElection;
+    $scope.getDisableReleaseRdb = getDisableReleaseRdb;
     $scope.resetElectionErr = null;
+    $scope.releaseRdbErr = null;
     $scope.getResetElectionErr = getResetElectionErr;
+    $scope.getReleaseRdbErr = getReleaseRdbErr;
 
     redisRoleHealthCheck();
     shardCheckerGroupHealthCheck();
@@ -78,6 +83,30 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
         })
     }
 
+    let rdbTimer = null;
+    function releaseRdb(ip, port) {
+        $scope.disableReleaseRdb = true;
+        KeeperContainerService.releaseRdb(ip, port, $stateParams.shardId).then(function (response) {
+            if (response.state != 0) {
+                $scope.disableReleaseRdb = false;
+                $scope.releaseRdbErr = response.message;
+                $('#releaseRdbErr').modal('show');
+            } else {
+                if (!rdbTimer) {
+                    rdbTimer = setTimeout(() => {
+                        clearTimeout(rdbTimer);
+                        rdbTimer = null;
+                        $scope.disableReleaseRdb = false;
+                    }, 3000);
+                }
+            }
+        }).catch(function (error){
+            $scope.disableReleaseRdb = false;
+            $scope.releaseRdbErr = "Status Code:" + error.status + " " + error.statusText + "\n" + error.data.exception;
+            $('#releaseRdbErr').modal('show');
+        })
+    }
+
     let timer = null;
     function resetElection(ip, port) {
         $scope.disableResetElection = true;
@@ -106,12 +135,20 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
         return $scope.resetElectionErr;
     }
 
+    function getReleaseRdbErr() {
+        return $scope.releaseRdbErr;
+    }
+
     function doShowActions() {
         $scope.showActions = !$scope.showActions;
     }
 
     function getDisableResetElection() {
         return $scope.disableResetElection;
+    }
+
+    function getDisableReleaseRdb() {
+        return $scope.disableReleaseRdb;
     }
 
 }
