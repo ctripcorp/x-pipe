@@ -107,6 +107,9 @@
                             <md-card-actions layout="row" layout-align="end center">
                                 <md-button class="md-raised" ng-disabled="getDisableResetElection()" ng-click="resetElection(keeper.host, keeper.port)">reset Election</md-button>
                             </md-card-actions>
+                            <md-card-actions layout="row" layout-align="end center">
+                                <md-button class="md-raised" ng-disabled="getDisableReleaseRdb()" ng-click="releaseRdb(keeper.host, keeper.port)">release rdb</md-button>
+                            </md-card-actions>
                         </md-card-title>
                         <md-card-content>
                             <div  style="white-space: nowrap;">
@@ -145,6 +148,10 @@
 
     <xpipeconfirmdialog xpipe-dialog-id="'resetElectionErr'" xpipe-title="'resetElection Err'"
                         xpipe-detail="getResetElectionErr()"
+                        xpipe-show-cancel-btn="true"></xpipeconfirmdialog>
+
+    <xpipeconfirmdialog xpipe-dialog-id="'releaseRdbErr'" xpipe-title="'releaseRdb Err'"
+                        xpipe-detail="getReleaseRdbErr()"
                         xpipe-show-cancel-btn="true"></xpipeconfirmdialog>
 
     <div flex-xs flex-gt-xs="50" layout="column">
