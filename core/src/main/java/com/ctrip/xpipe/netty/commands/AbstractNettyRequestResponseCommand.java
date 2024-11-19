@@ -56,16 +56,21 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		}
 		
 		if(getCommandTimeoutMilli() > 0 && scheduled != null){
+			int commandTimeoutMilli = getCommandTimeoutMilli();
+			if (nettyClient instanceof RedisNettyClient && !((RedisNettyClient) nettyClient).getDoAfterConnectedOver()) {
+				commandTimeoutMilli += ((RedisNettyClient) nettyClient).getAfterConnectCommandTimeoutMill();
+			}
 
-			getLogger().debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
+			getLogger().debug("[doSendRequest][schedule timeout]{}, {}", this, commandTimeoutMilli);
+			int finalCommandTimeoutMilli = commandTimeoutMilli;
 			timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
 				
 				@Override
 				public void doRun() {
 					getLogger().info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this, nettyClient);
-					future().setFailure(new CommandTimeoutException("timeout " +  + getCommandTimeoutMilli()));
+					future().setFailure(new CommandTimeoutException("timeout " + finalCommandTimeoutMilli));
 				}
-			}, getCommandTimeoutMilli(), TimeUnit.MILLISECONDS);
+			}, commandTimeoutMilli, TimeUnit.MILLISECONDS);
 			
 			future().addListener(new CommandFutureListener<V>() {
 

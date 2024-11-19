@@ -69,7 +69,7 @@ public class ShardModelServiceImpl implements ShardModelService{
     @Resource(name = REDIS_COMMAND_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
-    @Resource(name = MIGRATE_KEEPER_CLIENT_POOL)
+    @Resource(name = KEEPER_KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private RetryCommandFactory<Object> retryCommandFactory;

@@ -24,7 +24,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -36,11 +35,11 @@ public class AsyncNettyClientTest extends AbstractTest {
 
     private XpipeNettyClientKeyedObjectPool pool;
 
-    private Bootstrap b = new Bootstrap();
+    protected Bootstrap b = new Bootstrap();
 
-    private Server server;
+    protected Server server;
 
-    private String result = "";
+    protected String result = "";
 
     @Before
     public void beforeXpipeNettyClientKeyedObjectPoolTest() throws Exception{
@@ -143,7 +142,11 @@ public class AsyncNettyClientTest extends AbstractTest {
         sleep(2 * 1000);
     }
 
-    private void runTheTest(AsyncNettyClient client, StringBuffer sb, StringBuilder expected, int n) {
+    protected void runTheTest(AsyncNettyClient client, StringBuffer sb, StringBuilder expected, int n) {
+        this.runTheTest(client, sb, expected, n, null);
+    }
+
+    protected void runTheTest(AsyncNettyClient client, StringBuffer sb, StringBuilder expected, int n, String prefix) {
         for(int i = 0; i < n; i++) {
             String message = "+" + i + "\r\n";
             client.sendRequest(Unpooled.copiedBuffer(message.getBytes()), new ByteBufReceiver() {
@@ -169,6 +172,9 @@ public class AsyncNettyClientTest extends AbstractTest {
 
                 }
             });
+            if (prefix != null) {
+                expected.append(prefix).append("+");
+            }
             expected.append(i);
         }
     }

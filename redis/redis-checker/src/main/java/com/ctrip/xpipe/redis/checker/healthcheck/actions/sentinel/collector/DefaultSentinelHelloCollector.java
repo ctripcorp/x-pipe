@@ -46,7 +46,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
-import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.SENTINEL_KEYED_NETTY_CLIENT_POOL;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIME_OUT;
 
 /**
@@ -77,7 +77,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Autowired
     private PersistenceCache persistenceCache;
 
-    @Resource(name = KEYED_NETTY_CLIENT_POOL)
+    @Resource(name = SENTINEL_KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private SentinelLeakyBucket leakyBucket;
