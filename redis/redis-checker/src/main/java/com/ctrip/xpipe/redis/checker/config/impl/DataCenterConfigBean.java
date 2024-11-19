@@ -37,6 +37,8 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public static final String KEY_HTTP_ACCEPT_ENCODING = "http.accept.encoding";
 
+    private static final String KEY_NETTY_CLIENT_DO_AFTER_CONNECTED = "netty.client.do.after.connected";
+
     private AtomicReference<String> zkConnection = new AtomicReference<>();
     private AtomicReference<String> zkNameSpace = new AtomicReference<>();
 
@@ -93,6 +95,10 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public String getHttpAcceptEncoding() {
         return getProperty(KEY_HTTP_ACCEPT_ENCODING, null);
+    }
+
+    public boolean getDoAfterNettyClientConnected() {
+        return getBooleanProperty(KEY_NETTY_CLIENT_DO_AFTER_CONNECTED, true);
     }
 
 }

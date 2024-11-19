@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.redis.core.client.NettyRedisPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -148,9 +149,9 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
             );
         }
 
-        @Bean(name = KEYED_NETTY_CLIENT_POOL)
+        @Bean(name = REDIS_KEYED_NETTY_CLIENT_POOL)
         public XpipeNettyClientKeyedObjectPool getReqResNettyClientPool() throws Exception {
-            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(8));
+            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getRedisPoolClientFactory(8));
             LifecycleHelper.initializeIfPossible(keyedObjectPool);
             LifecycleHelper.startIfPossible(keyedObjectPool);
             return keyedObjectPool;
@@ -158,7 +159,23 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
 
         @Bean(name = REDIS_SESSION_NETTY_CLIENT_POOL)
         public XpipeNettyClientKeyedObjectPool getRedisSessionNettyClientPool() throws Exception {
-            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(12));
+            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getRedisPoolClientFactory(12));
+            LifecycleHelper.initializeIfPossible(keyedObjectPool);
+            LifecycleHelper.startIfPossible(keyedObjectPool);
+            return keyedObjectPool;
+        }
+
+        @Bean(name = SENTINEL_KEYED_NETTY_CLIENT_POOL)
+        public XpipeNettyClientKeyedObjectPool getSentinelReqResNettyClientPool() throws Exception {
+            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(8));
+            LifecycleHelper.initializeIfPossible(keyedObjectPool);
+            LifecycleHelper.startIfPossible(keyedObjectPool);
+            return keyedObjectPool;
+        }
+
+        @Bean(name = PROXY_KEYED_NETTY_CLIENT_POOL)
+        public XpipeNettyClientKeyedObjectPool getProxyReqResNettyClientPool() throws Exception {
+            XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(getKeyedPoolClientFactory(8));
             LifecycleHelper.initializeIfPossible(keyedObjectPool);
             LifecycleHelper.startIfPossible(keyedObjectPool);
             return keyedObjectPool;
@@ -194,6 +211,10 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
 
         private NettyKeyedPoolClientFactory getKeyedPoolClientFactory(int eventLoopThreads) {
             return new NettyKeyedPoolClientFactory(eventLoopThreads);
+        }
+
+        private NettyKeyedPoolClientFactory getRedisPoolClientFactory(int eventLoopThreads) {
+            return new NettyRedisPoolClientFactory(eventLoopThreads, "xpipe", () -> true);
         }
         
         @Bean

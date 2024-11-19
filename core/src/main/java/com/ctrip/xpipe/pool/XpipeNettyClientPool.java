@@ -61,7 +61,7 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 		try {
 			return objectPool.borrowObject();
 		} catch (Exception e) {
-			logger.error("[borrowObject]" + factory,  e);
+			logger.error("[borrowObject] NumIdle:{}, NumActive:{}" + factory, objectPool.getNumIdle(), objectPool.getNumActive(), e);
 			throw new BorrowObjectException("borrow " + factory, e);
 		}
 	}

@@ -19,7 +19,7 @@ import java.net.Socket;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.PROXY_KEYED_NETTY_CLIENT_POOL;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Component
@@ -28,7 +28,7 @@ public class ProxyConnectedChecker implements ProxyChecker {
     @Autowired
     private CheckerConfig checkerConfig;
     
-    @Resource(name = KEYED_NETTY_CLIENT_POOL)
+    @Resource(name = PROXY_KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     @Resource(name = SCHEDULED_EXECUTOR)
