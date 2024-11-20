@@ -36,8 +36,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
 
 /**
  * @author chen.zhu
@@ -53,7 +52,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
 
     private static final int LONG_SENTINEL_COMMAND_TIMEOUT = 2000;
 
-    @Resource(name = KEYED_NETTY_CLIENT_POOL)
+    @Resource(name = SENTINEL_KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
 
     @Resource(name = REDIS_COMMAND_EXECUTOR)

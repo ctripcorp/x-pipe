@@ -588,6 +588,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean getShouldDoAfterNettyClientConnected() {
+        return dataCenterConfigBean.getDoAfterNettyClientConnected();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }
