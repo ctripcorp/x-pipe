@@ -77,11 +77,13 @@ public class RedisAsyncNettyClientTest extends AsyncNettyClientTest {
         sleep(1000);
         String str = sb.toString();
         Assert.assertTrue(minReadAbleBytes[0] > 0);
+        Assert.assertTrue(client.getDoAfterConnectedSuccess());
         Assert.assertEquals(str, expected.toString());
     }
 
     @Test
     public void testUnpacking() throws Exception {
+        server = startUnpackingServer(randomPort(), "+O");
         RedisAsyncNettyClient client = new RedisAsyncNettyClient(b.connect("localhost", server.getPort()),
                 new DefaultEndPoint("localhost", server.getPort()), "xpipe", () -> true);
         client.channel().attr(NettyClientHandler.KEY_CLIENT).set(client);
@@ -89,48 +91,71 @@ public class RedisAsyncNettyClientTest extends AsyncNettyClientTest {
         StringBuffer sb = new StringBuffer();
 
         StringBuilder expected = new StringBuilder();
+        String message = "K\r\nOK1\r\n";
+        client.sendRequest(Unpooled.copiedBuffer(message.getBytes()), new ByteBufReceiver() {
 
-        int N = 100;
-        final int[] maxProtocolTime = {0};
-        for(int i = 0; i < N; i++) {
-            String message = "+" + i + "\r\n";
-            client.sendRequest(Unpooled.copiedBuffer(message.getBytes()), new ByteBufReceiver() {
-
-                private RedisClientProtocol<String> parser = new SimpleStringParser();
-                int protocolTime = 0;
-                @Override
-                public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
-                    RedisClientProtocol<String> clientProtocol = parser.read(byteBuf);
-                    if(clientProtocol != null) {
-                        sb.append(clientProtocol.getPayload());
-                        protocolTime++;
-                        if (protocolTime > maxProtocolTime[0]) {
-                            maxProtocolTime[0] = protocolTime;
-                        }
-                        return RECEIVER_RESULT.SUCCESS;
-                    }
-                    protocolTime++;
-                    return RECEIVER_RESULT.CONTINUE;
+            private RedisClientProtocol<String> parser = new SimpleStringParser();
+            @Override
+            public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
+                RedisClientProtocol<String> clientProtocol = parser.read(byteBuf);
+                if(clientProtocol != null) {
+                    sb.append(clientProtocol.getPayload());
+                    return RECEIVER_RESULT.SUCCESS;
                 }
+                return RECEIVER_RESULT.CONTINUE;
+            }
 
-                @Override
-                public void clientClosed(NettyClient nettyClient) {
+            @Override
+            public void clientClosed(NettyClient nettyClient) {
 
-                }
+            }
 
-                @Override
-                public void clientClosed(NettyClient nettyClient, Throwable th) {
+            @Override
+            public void clientClosed(NettyClient nettyClient, Throwable th) {
 
-                }
-            });
-            expected.append(prefix).append("+");
-            expected.append(i);
-        }
+            }
+        });
+        expected.append("OK1");
         waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
         sleep(1000);
         String str = sb.toString();
+        Assert.assertTrue(client.getDoAfterConnectedSuccess());
         Assert.assertEquals(str, expected.toString());
-        Assert.assertTrue(maxProtocolTime[0] >= 2);
+    }
+
+
+    protected Server startUnpackingServer(int port, String prefix) throws Exception {
+        return startServer(port, new IoActionFactory() {
+
+            boolean sended = false;
+
+            @Override
+            public IoAction createIoAction(Socket socket) {
+                return new AbstractIoAction(socket) {
+
+                    private String line;
+
+                    @Override
+                    protected Object doRead(InputStream ins) throws IOException {
+                        line = readLine(ins);
+                        return line;
+                    }
+
+                    @Override
+                    protected void doWrite(OutputStream ous, Object readResult) throws IOException {
+                        if (prefix != null && !sended) {
+                            ous.write(prefix.getBytes());
+                            sended = true;
+                        }
+                        if (!line.contains("CLIENT")) {
+                            ous.write(line.getBytes());
+                        }
+                        sleepIgnoreInterrupt(1);
+                        ous.flush();
+                    }
+                };
+            }
+        });
     }
 
     @Test

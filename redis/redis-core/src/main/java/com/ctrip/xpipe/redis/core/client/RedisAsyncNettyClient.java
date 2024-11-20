@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Transaction;
 import io.netty.buffer.ByteBuf;
@@ -40,6 +41,8 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
 
     private static final int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 660;
 
+    private boolean doAfterConnectedSuccess = false;
+
     protected final AtomicReference<Boolean> doAfterConnectedOver = new AtomicReference<>(false);
 
     public RedisAsyncNettyClient(ChannelFuture future, Endpoint endpoint, String clientName, AsyncConnectionCondition asyncConnectionCondition) {
@@ -64,50 +67,60 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
         RequestStringParser requestString = new RequestStringParser(CLIENT_SET_NAME, clientName);
         SimpleStringParser simpleStringParser = new SimpleStringParser();
         Transaction transaction = Cat.newTransaction("netty.client.setName", clientName);
-        RedisAsyncNettyClient.super.sendRequest(requestString.format(), new ByteBufReceiver() {
-            @Override
-            public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
-                try{
-                    transaction.addData("remoteAddress", ChannelUtil.getSimpleIpport(channel.remoteAddress()));
-                    transaction.addData("commandTimeoutMills", getAfterConnectCommandTimeoutMill());
-                    RedisClientProtocol<String> payload = simpleStringParser.read(byteBuf);
-                    String result = null;
-                    if(payload != null){
-                        result = payload.getPayload();
+        try {
+            RedisAsyncNettyClient.super.sendRequest(requestString.format(), new ByteBufReceiver() {
+                @Override
+                public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
+                    try{
+                        transaction.addData("remoteAddress", ChannelUtil.getSimpleIpport(channel.remoteAddress()));
+                        transaction.addData("commandTimeoutMills", getAfterConnectCommandTimeoutMill());
+                        RedisClientProtocol<String> payload = simpleStringParser.read(byteBuf);
+                        String result = null;
+                        if(payload != null){
+                            result = payload.getPayload();
+                        }
+                        if(result == null){
+                            return RECEIVER_RESULT.CONTINUE;
+                        }
+                        if (EXPECT_RESP.equalsIgnoreCase(result)){
+                            transaction.setStatus(Transaction.SUCCESS);
+                            doAfterConnectedSuccess = true;
+                            logger.info("[redisAsync][clientSetName][success][{}] {}", desc, result);
+                        } else {
+                            doAfterConnectedSuccess = false;
+                            transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-result][%s] result:%s", desc, result)));
+                            logger.warn("[redisAsync][clientSetName][err-result][{}] {}", desc, result);
+                        }
+                        transaction.complete();
+                    }catch(Throwable th){
+                        doAfterConnectedSuccess = false;
+                        transaction.setStatus(th);
+                        transaction.complete();
+                        logger.error("[logTransaction]" + "netty.client.setName" + "," + clientName, th);
+                        throw th;
                     }
-                    if(result == null){
-                        return RECEIVER_RESULT.CONTINUE;
-                    }
-                    if (EXPECT_RESP.equalsIgnoreCase(result)){
-                        transaction.setStatus(Transaction.SUCCESS);
-                        logger.info("[redisAsync][clientSetName][success][{}] {}", desc, result);
-                    } else {
-                        transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-result][%s] result:%s", desc, result)));
-                        logger.warn("[redisAsync][clientSetName][wont-result][{}] {}", desc, result);
-                    }
-                }catch(Throwable th){
-                    transaction.setStatus(th);
-                    logger.error("[logTransaction]" + "netty.client.setName" + "," + clientName, th);
-                }finally{
+                    return RECEIVER_RESULT.SUCCESS;
+                }
+
+                @Override
+                public void clientClosed(NettyClient nettyClient) {
+                    logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel());
+                    transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-send][%s]client closed %s", desc, nettyClient.channel())));
                     transaction.complete();
                 }
-                return RECEIVER_RESULT.SUCCESS;
-            }
 
-            @Override
-            public void clientClosed(NettyClient nettyClient) {
-                logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel());
-                transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-send][%s]client closed %s", desc, nettyClient.channel())));
-                transaction.complete();
-            }
-
-            @Override
-            public void clientClosed(NettyClient nettyClient, Throwable th) {
-                logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel(), th);
-                transaction.setStatus(th);
-                transaction.complete();
-            }
-        });
+                @Override
+                public void clientClosed(NettyClient nettyClient, Throwable th) {
+                    logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel(), th);
+                    transaction.setStatus(th);
+                    transaction.complete();
+                }
+            });
+        } catch (Exception e) {
+            transaction.setStatus(e);
+            transaction.complete();
+            logger.error("[redisAsync][clientSetName] err", e);
+        }
 
     }
 
@@ -119,6 +132,11 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
     @Override
     public int getAfterConnectCommandTimeoutMill() {
         return DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+    }
+
+    @VisibleForTesting
+    public boolean getDoAfterConnectedSuccess() {
+        return doAfterConnectedSuccess;
     }
 
 }
