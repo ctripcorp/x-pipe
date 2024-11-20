@@ -182,22 +182,6 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
-    public List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void resetKeeper(String activeKeeperIp, Long replId) {
-        KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
-        keeperInstanceMeta.setReplId(replId);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
-        restTemplate.exchange(String.format("http://%s:8080/keepers/election/reset", activeKeeperIp),
-                HttpMethod.POST, requestEntity, Void.class);
-    }
-
-    @Override
     public Map<Long, Long> keeperContainerIdDcMap() {
         Map<Long, Long> keeperContainerIdDcMap = new HashMap<>();
         List<KeepercontainerTbl> allKeeperContainers = findAll();

@@ -2,10 +2,18 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.redis.checker.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+
+import java.util.List;
 
 @Service
 public class DefaultKeeperContainerService extends AbstractService implements KeeperContainerService {
@@ -27,4 +35,33 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
                 null, Boolean.class, keeperContainerIp, keeperContainerPort, limitInByte);
         return null != rst && rst;
     }
+
+    @Override
+    public List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp) {
+        return restTemplate.exchange(String.format("http://%s:8080/keepers", keeperContainerIp), HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<KeeperInstanceMeta>>() {}).getBody();
+    }
+
+    @Override
+    public void resetKeeper(String activeKeeperIp, Long replId) {
+        KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
+        keeperInstanceMeta.setReplId(replId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
+        restTemplate.exchange(String.format("http://%s:8080/keepers/election/reset", activeKeeperIp),
+                HttpMethod.POST, requestEntity, Void.class);
+    }
+
+    @Override
+    public void releaseRdb(String ip, int port, Long replId) {
+        KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
+        keeperInstanceMeta.setReplId(replId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
+        restTemplate.exchange(String.format("http://%s:8080/keepers/rdb/release", ip),
+                HttpMethod.DELETE, requestEntity, Void.class);
+    }
+
 }

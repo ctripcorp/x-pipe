@@ -80,6 +80,10 @@ angular
         reset_election:{
             method:'POST',
             url:'/api/keepers/election/reset/:ip/:port/:shardId'
+        },
+        release_rdb:{
+            method:'POST',
+            url:'/api/keepers/release/rdb/:ip/:port/:shardId'
         }
     });
 
@@ -304,6 +308,21 @@ angular
         return d.promise;
     }
 
+    function releaseRdb(ip, port, shardId) {
+        var d = $q.defer();
+        resource.release_rdb({
+                ip:ip,
+                port:port,
+                shardId:shardId
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
@@ -320,6 +339,7 @@ angular
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
         migrateKeeperTaskTerminate : migrateKeeperTaskTerminate,
-        resetElection: resetElection
+        resetElection: resetElection,
+        releaseRdb: releaseRdb
     }
 }]);
