@@ -112,4 +112,6 @@ public interface CheckerConfig {
 
     int getMarkInstanceMaxDelayMilli();
 
+    boolean getShouldDoAfterNettyClientConnected();
+
 }

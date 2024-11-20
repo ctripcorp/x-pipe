@@ -315,4 +315,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
         return 2000;
     }
 
+    @Override
+    public boolean getShouldDoAfterNettyClientConnected() {
+        return true;
+    }
+
 }
