@@ -5,8 +5,10 @@ import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.xml.sax.SAXException;
 
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +29,7 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
         TransactionMonitor.DEFAULT.logTransaction("MetaCacheApi", "load", new Task() {
 
             @Override
-            public void go() {
+            public void go() throws IOException, SAXException {
                 try {
                     XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getVersion());
                     checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
@@ -35,6 +37,7 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
                     refreshMeta(xpipeMeta);
                 } catch (Throwable th) {
                     logger.error("[MetaCacheApi][load]", th);
+                    throw th;
                 }
 
             }

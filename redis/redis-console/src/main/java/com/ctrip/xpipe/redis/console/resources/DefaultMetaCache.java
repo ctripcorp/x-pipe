@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PreDestroy;
@@ -68,7 +69,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
-    protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+    protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+            XpipeThreadFactory.create("MetaCacheLoad"));
 
     protected ScheduledFuture<?> future;
 
