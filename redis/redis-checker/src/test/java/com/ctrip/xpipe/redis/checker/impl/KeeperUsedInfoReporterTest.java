@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
@@ -50,7 +50,7 @@ public class KeeperUsedInfoReporterTest {
     CheckerConfig config;
 
     @Mock
-    KeeperContainerService keeperContainerService;
+    KeeperContainerCheckerService keeperContainerService;
 
     @Mock
     private MetaCache metaCache;
