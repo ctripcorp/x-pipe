@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.*;
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -200,7 +200,7 @@ public class CheckerContextConfig {
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public KeeperContainerInfoReporter keeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector,
-           CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerService keeperContainerService, MetaCache metaCache) {
+                                                                   CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerCheckerService keeperContainerService, MetaCache metaCache) {
         return new KeeperContainerInfoReporter(redisUsedMemoryCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService, metaCache);
     }
     

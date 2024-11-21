@@ -12,7 +12,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcServiceTest.class,
         ClusterServiceTest.class,
         ShardServiceTest.class,
-        KeeperContainerServiceTest.class,
+        KeeperContainerCheckerServiceTest.class,
         SentinelGroupServiceTest.class,
         SentinelGroupServiceMockTest.class,
         SentinelServiceImplTest.class

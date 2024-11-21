@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +32,7 @@ public class KeeperContainerController extends AbstractConsoleController{
     ConfigService configService;
 
     @Autowired
-    KeeperContainerService keeperContainerService;
+    KeeperContainerCheckerService keeperContainerService;
 
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
