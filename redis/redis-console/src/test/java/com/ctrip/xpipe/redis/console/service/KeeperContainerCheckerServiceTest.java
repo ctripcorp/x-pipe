@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
  *         Sep 26, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class KeeperContainerServiceTest extends AbstractConsoleTest {
+public class KeeperContainerCheckerServiceTest extends AbstractConsoleTest {
 	@Mock
 	private KeepercontainerTblDao mockedKeepercontainerTblDao;
 	@InjectMocks

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -16,7 +17,6 @@ import com.ctrip.xpipe.redis.console.keeper.command.*;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.service.impl.KeeperContainerServiceImpl;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -27,7 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -56,10 +57,10 @@ public class ShardModelServiceImpl implements ShardModelService{
 	private ApplierService applierService;
 	@Autowired
 	private ReplDirectionService replDirectionService;
-	@Autowired
-	private KeeperContainerServiceImpl keeperContainerServiceImpl;
     @Autowired
     private KeeperContainerService keeperContainerService;
+    @Autowired
+    private KeeperContainerCheckerService keeperContainerCheckerService;
     @Autowired
     private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
@@ -128,7 +129,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                 return shardModels;
             }
 
-            Map<Long, Long> containerIdDcMap = keeperContainerServiceImpl.keeperContainerIdDcMap();
+            Map<Long, Long> containerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
             for (int i = 0; i < shards.size(); i++) {
                 ShardTbl shardInfo = shards.get(i);
                 Future<DcClusterShardTbl> dcClusterShardFuture = dcClusterShardFutures.get(i);
@@ -284,7 +285,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                     keepers.get(0).getRedisIp(), keepers.get(0).getRedisPort(), keepers.get(1).getRedisIp(), keepers.get(1).getRedisPort());
             return false;
         }
-        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerService));
+        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerCheckerService));
         Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
         SequenceCommandChain chain = new SequenceCommandChain(false, false);
         chain.add(switchMasterCommand);
@@ -337,7 +338,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                 return false;
             }
             Command<?> fullSyncJudgeRetryCommand = retryCommandFactory.createRetryCommand(new FullSyncJudgeCommand<>(keyedObjectPool, scheduled, activeKeeper, backUpKeeper, activeMasterReplOffset));
-            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerService));
+            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerCheckerService));
             Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
             chain = new SequenceCommandChain(false, false);
             chain.add(fullSyncJudgeRetryCommand);

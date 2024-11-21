@@ -37,7 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
  *         <p>
  *         Apr 06, 2017
  */
-public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
+public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTest{
 
 
     @Autowired
