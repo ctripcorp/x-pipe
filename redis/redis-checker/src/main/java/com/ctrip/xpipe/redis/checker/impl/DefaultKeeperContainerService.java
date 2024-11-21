@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClientException;
 import java.util.List;
 
 @Service
-public class DefaultKeeperContainerService extends AbstractService implements KeeperContainerService {
+public class DefaultKeeperContainerService extends AbstractService implements KeeperContainerCheckerService {
 
     private static final String HTTP_PREFIX = "http://";
     private static final String PATH_GET_KEEPER_DISK_INFO = "/keepers/disk";

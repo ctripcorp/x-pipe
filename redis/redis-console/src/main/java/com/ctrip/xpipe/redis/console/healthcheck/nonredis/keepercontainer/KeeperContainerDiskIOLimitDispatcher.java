@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.keepercontainer;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.redis.checker.KeeperContainerService;
+import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -34,7 +34,7 @@ import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_KEEPER_CON
 public class KeeperContainerDiskIOLimitDispatcher extends AbstractSiteLeaderIntervalAction {
 
     @Autowired
-    private KeeperContainerService keeperContainerService;
+    private KeeperContainerCheckerService keeperContainerService;
 
     @Autowired
     private MetaCache metaCache;

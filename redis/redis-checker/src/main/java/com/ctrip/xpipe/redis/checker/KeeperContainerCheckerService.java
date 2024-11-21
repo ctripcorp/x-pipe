@@ -6,7 +6,7 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 
-public interface KeeperContainerService {
+public interface KeeperContainerCheckerService {
 
     KeeperDiskInfo getKeeperDiskInfo(String keeperContainerIp) throws RestClientException;
 
