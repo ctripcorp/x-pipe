@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -28,7 +29,12 @@ public class AbstractSessionNettyHandlerTest extends AbstractNettyTest {
     @Mock
     private Session session;
 
-    private AbstractSessionNettyHandler handler = new AbstractSessionNettyHandler(){};
+    private AbstractSessionNettyHandler handler = new AbstractSessionNettyHandler(){
+        @Override
+        protected void doMsgTransfer(ByteBuf msg) {
+
+        }
+    };
 
     @Before
     public void beforeAbstractSessionNettyHandlerTest() {
