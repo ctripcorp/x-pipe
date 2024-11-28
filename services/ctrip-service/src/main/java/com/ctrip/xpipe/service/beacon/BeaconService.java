@@ -14,6 +14,7 @@ import org.springframework.web.client.RestOperations;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -25,9 +26,13 @@ public class BeaconService implements MonitorService {
 
     protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/{system}/clusters";
     protected static final String PATH_CLUSTER = "/api/v1/monitor/{system}/cluster/{cluster}";
+    protected static final String PATH_HASH_CLUSTER = "/api/v1/check/{system}/cluster/{cluster}/hash";
+    protected static final String PATH_CHECK_ALL_CLUSTER = "/api/v1/check/{systemName}/clusters";
 
     private String getAllClustersPath;
     private String clusterPath;
+    private String hashPath;
+    private String allClustersPath;
 
     private String name;
     private String host;
@@ -69,6 +74,9 @@ public class BeaconService implements MonitorService {
         this.host = host;
         getAllClustersPath = host + PATH_GET_CLUSTERS;
         clusterPath = host + PATH_CLUSTER;
+        hashPath = host + PATH_HASH_CLUSTER;
+        allClustersPath = host + PATH_CHECK_ALL_CLUSTER;
+
     }
 
     @Override
@@ -85,10 +93,19 @@ public class BeaconService implements MonitorService {
 
     @Override
     public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
+        registerCluster(system, clusterName, groups, HttpMethod.POST);
+    }
+
+    @Override
+    public void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
+        registerCluster(system, clusterName, groups, HttpMethod.PUT);
+    }
+
+    private void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, HttpMethod method) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups), headers);
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.POST, entity, BeaconResp.class, system, clusterName);
+        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, method, entity, BeaconResp.class, system, clusterName);
 
         BeaconResp beaconResp = respResponseEntity.getBody();
         if (!beaconResp.isSuccess()) {
@@ -138,6 +155,30 @@ public class BeaconService implements MonitorService {
     @Override
     public String toString() {
         return "BeaconService{" + "name='" + name + '\'' + ", host='" + host + '\'' + ", weight=" + weight + '}';
+    }
+
+    @Override
+    public int getBeaconClusterHash(String system, String clusterName) {
+        ResponseEntity<BeaconResp<Integer>> respResponseEntity = restTemplate.exchange(hashPath, HttpMethod.GET, null, new ParameterizedTypeReference<BeaconResp<Integer>>(){}, system, clusterName);
+        BeaconResp<Integer> beaconResp = respResponseEntity.getBody();
+        if (!beaconResp.isSuccess()) {
+            logger.info("[getBeaconClusterHash] fail, {}", beaconResp.getMsg());
+            throw new BeaconServiceException(clusterPath, beaconResp.getCode(), beaconResp.getMsg());
+        }
+        return beaconResp.getData();
+    }
+
+    @Override
+    public Map<String, Set<String>> getAllClusterWithDc(String system) {
+        ResponseEntity<BeaconResp<Map<String, Set<String>>>> responseEntity = restTemplate.exchange(allClustersPath,
+                HttpMethod.GET, null, new ParameterizedTypeReference<BeaconResp<Map<String, Set<String>>>>(){}, system);
+        BeaconResp<Map<String, Set<String>>> beaconResp = responseEntity.getBody();
+        if (!beaconResp.isSuccess()) {
+            logger.info("[getAllClusterWithDc] fail, {}", beaconResp.getMsg());
+            throw new BeaconServiceException(getAllClustersPath, beaconResp.getCode(), beaconResp.getMsg());
+        }
+
+        return beaconResp.getData();
     }
 }
 

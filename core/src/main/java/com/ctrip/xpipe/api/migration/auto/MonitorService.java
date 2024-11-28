@@ -2,6 +2,7 @@ package com.ctrip.xpipe.api.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,6 +28,12 @@ public interface MonitorService {
 
     void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
 
+    void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
+
     void unregisterCluster(String system, String clusterName);
+
+    int getBeaconClusterHash(String system, String clusterName);
+
+    Map<String,Set<String>> getAllClusterWithDc(String system);
 
 }
