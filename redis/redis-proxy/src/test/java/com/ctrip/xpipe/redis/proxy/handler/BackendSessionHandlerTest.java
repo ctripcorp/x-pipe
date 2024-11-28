@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
@@ -65,6 +66,17 @@ public class BackendSessionHandlerTest extends AbstractNettyTest {
         channel.writeInbound(Unpooled.copiedBuffer(expected.getBytes()));
 
         verify(tunnel).forwardToFrontend(any());
+    }
+
+    @Test
+    public void testByteBufReleasedAfterPipelineBroken() {
+        Throwable th = new WriteToClosedSessionException("session closed");
+        doThrow(th).when(tunnel).forwardToFrontend(any());
+
+        ByteBuf byteBuf = Unpooled.copiedBuffer("test".getBytes());
+        channel.writeInbound(byteBuf);
+        Assert.assertEquals(0, byteBuf.refCnt());
+        Assert.assertFalse(channel.isOpen());
     }
 
 }

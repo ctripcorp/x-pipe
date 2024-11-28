@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.proxy.AbstractNettyTest;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,6 +104,17 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
         Assert.assertNotNull(throwable);
         Assert.assertTrue(throwable instanceof ResourceIncorrectException);
         verify(tunnel, never()).forwardToBackend(any());
+    }
+
+    @Test
+    public void testByteBufReleasedAfterPipelineBroken() {
+        Throwable th = new WriteToClosedSessionException("session closed");
+        doThrow(th).when(tunnel).forwardToBackend(any());
+
+        ByteBuf byteBuf = Unpooled.copiedBuffer("test".getBytes());
+        channel.writeInbound(byteBuf);
+        Assert.assertEquals(0, byteBuf.refCnt());
+        Assert.assertFalse(channel.isOpen());
     }
 
 }
