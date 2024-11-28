@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -39,6 +40,9 @@ public class DefaultMonitorManagerTest extends AbstractTest {
     @Mock
     private ConsoleConfig config;
 
+    @Mock
+    private ConsoleCommonConfig commonConfig;
+
     private DefaultMonitorManager beaconServiceManager;
 
     private final String defaultBeaconHost1 = "http://127.0.0.1:8080";
@@ -63,7 +67,7 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Mockito.when(config.getServerMode()).thenReturn("console");
         Mockito.when(config.getBeaconOrgRoutes()).thenReturn(Lists.newArrayList(orgRoute1, orgRoute2, orgRoute3));
         Mockito.when(config.getClusterHealthCheckInterval()).thenReturn(1000);
-        beaconServiceManager = new DefaultMonitorManager(metaCache, config);
+        beaconServiceManager = new DefaultMonitorManager(metaCache, config, commonConfig);
     }
 
     @Test
