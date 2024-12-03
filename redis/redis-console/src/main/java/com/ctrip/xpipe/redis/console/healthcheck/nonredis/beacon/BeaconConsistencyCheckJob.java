@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,6 +43,11 @@ public class BeaconConsistencyCheckJob extends AbstractCommand<Void> {
         }
     }
 
+    @VisibleForTesting
+    public void setMetricProxy(MetricProxy metricProxy) {
+        this.metricProxy = metricProxy;
+    }
+
     private void doJob() {
         Map<String, Set<String>> allClusters = new HashMap<>();
         clustersByBeaconSystemOrg.forEach(((beaconSystem, clustersByOrg) -> {
@@ -59,16 +65,21 @@ public class BeaconConsistencyCheckJob extends AbstractCommand<Void> {
         Set<String> inconsistencyClusters = new HashSet<>();
         Set<String> notfoundCluster = new HashSet<>();
 
+        Set<String> supportDcs = getSupportDcs();
+
         Map<String, DcMeta> dcs = metaCache.getXpipeMeta().getDcs();
-        Set<String> supportZones = config.getBeaconSupportZones();
         for (DcMeta dcMeta : dcs.values()) {
-            if(!supportZones.isEmpty() && supportZones.stream().noneMatch(zone -> StringUtil.trimEquals(dcMeta.getZone(), zone, true))) {
+            if(!supportDcs.contains(dcMeta.getId().toUpperCase())) {
                 continue;
             }
             Map<String, ClusterMeta> clusterMetaMap = dcMeta.getClusters();
             for (ClusterMeta cluster : clusterMetaMap.values()) {
                 String clusterName = cluster.getId();
+                String activeDc = cluster.getActiveDc();
                 if(StringUtil.trimEquals(ClusterType.ONE_WAY.toString(), cluster.getType(), true)) {
+                    if(!StringUtil.trimEquals(dcMeta.getId(), activeDc, true)) {
+                        continue;
+                    }
                     String dc = cluster.getActiveDc().toUpperCase();
                     if(!allClusters.containsKey(clusterName)) {
                         notfoundCluster.add(clusterName);
@@ -87,6 +98,7 @@ public class BeaconConsistencyCheckJob extends AbstractCommand<Void> {
                         Set<String> beaconDcSet = getBeaconClusterDcSet(allClusters, clusterName);
                         Set<String> loaclDcSet = Arrays.stream(cluster.getDcs().split(","))
                                 .map(String::toUpperCase)
+                                .filter(dc -> supportDcs.contains(dc))
                                 .collect(Collectors.toSet());
                         if(!beaconDcSet.equals(loaclDcSet)) {
                             inconsistencyClusters.add(clusterName);
@@ -103,6 +115,10 @@ public class BeaconConsistencyCheckJob extends AbstractCommand<Void> {
         }
         for (String clusterName : notfoundCluster) {
             MetricData metricData = getMetricData(clusterName, "NOTFOUND");
+            sendMetricData(metricData);
+        }
+        if(inconsistencyClusters.isEmpty() && notfoundCluster.isEmpty()) {
+            MetricData metricData = getMetricData("", "CONSISTENT");
             sendMetricData(metricData);
         }
 
@@ -130,6 +146,18 @@ public class BeaconConsistencyCheckJob extends AbstractCommand<Void> {
         } catch (MetricProxyException e) {
             getLogger().error("[sendMetricData]", e);
         }
+    }
+
+    private Set<String> getSupportDcs() {
+        Set<String> dcs = metaCache.getXpipeMeta().getDcs().keySet();
+        Set<String> supportZones = config.getBeaconSupportZones();
+        Set<String> supportDcs = new HashSet<>();
+        for(String dc : dcs) {
+            if(supportZones.stream().anyMatch(zone -> metaCache.isDcInRegion(dc, zone))) {
+                supportDcs.add(dc.toUpperCase());
+            }
+        }
+        return supportDcs;
     }
 
     @Override
