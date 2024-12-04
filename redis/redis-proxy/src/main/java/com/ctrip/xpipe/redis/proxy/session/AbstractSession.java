@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionClosing;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -128,6 +129,11 @@ public abstract class AbstractSession extends AbstractLifecycleObservable implem
             logger.debug("[doWrite] {}: {}", getSessionType(), ByteBufUtil.prettyHexDump(byteBuf));
         }
         getChannel().writeAndFlush(byteBuf.retain(), getChannel().voidPromise());
+    }
+
+    protected boolean isClosed() {
+        SessionState sessionState = getSessionState();
+        return sessionState instanceof SessionClosing || sessionState instanceof SessionClosed;
     }
 
     protected void setSessionState(SessionState newState) {
