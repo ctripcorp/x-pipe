@@ -50,6 +50,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
+	private static String KEY_TRY_ROR_RDB = "keeper.try.ror.rdb";
 
 	public DefaultKeeperConfig(){
 
@@ -194,5 +195,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public boolean fsyncRateLimit() {
 		return getBooleanProperty(KEY_FSYNC_RATE_LIMIT, true);
+	}
+
+	@Override
+	public boolean tryRorRdb() {
+		return getBooleanProperty(KEY_TRY_ROR_RDB, true);
 	}
 }

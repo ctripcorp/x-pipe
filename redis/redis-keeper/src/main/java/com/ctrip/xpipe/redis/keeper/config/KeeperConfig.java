@@ -74,4 +74,6 @@ public interface KeeperConfig extends CoreConfig{
 
     boolean fsyncRateLimit();
 
+	boolean tryRorRdb();
+
 }

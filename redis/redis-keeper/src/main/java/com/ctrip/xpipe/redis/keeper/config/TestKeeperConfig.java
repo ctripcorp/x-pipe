@@ -274,4 +274,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public boolean fsyncRateLimit() {
 		return true;
 	}
+
+	@Override
+	public boolean tryRorRdb() {
+		return true;
+	}
 }
