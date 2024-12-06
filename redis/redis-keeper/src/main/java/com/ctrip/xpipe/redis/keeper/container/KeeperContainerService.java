@@ -302,9 +302,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
         ClusterMeta clusterMeta = new ClusterMeta().setDbId(keeperTransMeta.getClusterDbId());
-        clusterMeta.setDbId(keeperTransMeta.getClusterDbId());
         ShardMeta shardMeta = new ShardMeta().setDbId(keeperTransMeta.getShardDbId());
-        shardMeta.setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setParent(clusterMeta);
         keeperMeta.setParent(shardMeta);
     }
