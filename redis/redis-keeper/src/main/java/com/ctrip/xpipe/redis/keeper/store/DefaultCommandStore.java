@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.CloseState;
 import io.netty.channel.ChannelFuture;
@@ -35,12 +36,12 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor);
 	}
 
-	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress) throws IOException {
+	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
 
 		makeSureOpen();
 
 		CommandReader<ReferenceFileRegion> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this,
-				offsetNotifier, commandReaderFlyingThreshold);
+				offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
 		addReader(reader);
 		return reader;
 	}
@@ -58,7 +59,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		CommandReader<ReferenceFileRegion> cmdReader = null;
 
 		try {
-			cmdReader = beginRead((OffsetReplicationProgress) progress);
+			cmdReader = beginRead((OffsetReplicationProgress) progress, listener.getReplDelayConfig());
 		} finally {
 			// ensure beforeCommand() is always called
 			listener.beforeCommand();

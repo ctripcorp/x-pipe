@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import io.netty.channel.ChannelFuture;
 
 /**
@@ -17,4 +18,9 @@ public interface CommandsListener {
 	void beforeCommand();
 
 	Long processedOffset();
+
+	default ReplDelayConfig getReplDelayConfig() {
+		return null;
+	}
+
 }

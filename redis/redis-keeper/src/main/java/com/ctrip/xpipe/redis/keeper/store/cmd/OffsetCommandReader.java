@@ -5,6 +5,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import org.slf4j.Logger;
@@ -28,15 +29,18 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private OffsetNotifier offsetNotifier;
 
+    private ReplDelayConfig replDelayConfig;
+
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
     public OffsetCommandReader(CommandFile commandFile, long globalPosition, long filePosition, CommandStore commandStore,
-                               OffsetNotifier offsetNotifier, long flyingThreshold)
+                               OffsetNotifier offsetNotifier, ReplDelayConfig replDelayConfig, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);
         this.commandStore = commandStore;
         this.offsetNotifier = offsetNotifier;
         this.curCmdFile = commandFile;
+        this.replDelayConfig = replDelayConfig;
         curPosition = globalPosition;
         referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()), filePosition);
     }
@@ -44,9 +48,16 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     @Override
     public ReferenceFileRegion doRead(long milliSeconds) throws IOException {
         try {
-//            if (milliSeconds < 0) offsetNotifier.await(curPosition);
-//            else offsetNotifier.await(curPosition, milliSeconds);
-            offsetNotifier.await(curPosition+200*1024, 20);
+            long delayBytes, delayMilli;
+            if (null != replDelayConfig
+                    && (delayBytes = replDelayConfig.getDelayBytes()) > 0 && (delayMilli = replDelayConfig.getDelayMilli()) > 0) {
+                logger.debug("[readDelay]{}:{}", delayBytes, delayMilli);
+                offsetNotifier.await(curPosition + delayBytes, delayMilli);
+            } else if (milliSeconds >= 0) {
+                offsetNotifier.await(curPosition, milliSeconds);
+            } else {
+                offsetNotifier.await(curPosition);
+            }
             readNextFileIfNecessary();
         } catch (InterruptedException e) {
             logger.info("[read]", e);

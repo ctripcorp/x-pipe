@@ -1,12 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -29,6 +33,8 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
 	private int slaveListeningPort;
+
+	private String idc = null;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 
@@ -37,6 +43,10 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	private String clientIpAddress;
 
 	private Endpoint endpoint;
+
+	private ReplDelayConfigCache replDelayConfigCache;
+
+	private final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		super(channel, redisKeeperServer);
@@ -58,6 +68,39 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 			logger.info("[setSlaveListeningPort]" + this + "," + port);
 		}
 		this.slaveListeningPort = port;
+	}
+
+	@Override
+	public void setIdc(String _idc) {
+		if(logger.isInfoEnabled()){
+			logger.info("[setIdc][{}] {}", this, _idc);
+		}
+		this.idc = _idc;
+	}
+
+	@Override
+	public String getIdc() {
+		return this.idc;
+	}
+
+	public void setReplDelayConfigCache(ReplDelayConfigCache replDelayConfigCache) {
+		this.replDelayConfigCache = replDelayConfigCache;
+	}
+
+	@Override
+	public long getDelayMilli() {
+		if (null == replDelayConfigCache || StringUtil.isEmpty(idc)) return 0;
+		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getReplDelayConfig(idc);
+		if (null == replDelayConfig) return 0;
+		else return replDelayConfig.getDelayMilli();
+	}
+
+	@Override
+	public long getDelayBytes() {
+		if (null == replDelayConfigCache || StringUtil.isEmpty(idc)) return 0;
+		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getReplDelayConfig(idc);
+		if (null == replDelayConfig) return 0;
+		else return replDelayConfig.getDelayBytes();
 	}
 
 	@Override
