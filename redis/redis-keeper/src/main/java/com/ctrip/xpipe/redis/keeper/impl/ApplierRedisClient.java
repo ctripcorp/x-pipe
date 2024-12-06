@@ -100,4 +100,22 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
         return logger;
     }
 
+    @Override
+    public void setIdc(String idc) {
+    }
+
+    @Override
+    public String getIdc() {
+        return null;
+    }
+
+    @Override
+    public long getDelayMilli() {
+        return 0;
+    }
+
+    @Override
+    public long getDelayBytes() {
+        return 0;
+    }
 }

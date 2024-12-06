@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -98,7 +99,6 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient){
 		this.redisClient = redisClient;
-		this.setSlaveListeningPort(redisClient.getSlaveListeningPort());
 		this.redisClient.addChannelCloseReleaseResources(this);
 		initExecutor(((DefaultRedisClient)redisClient).channel);
 	}
@@ -525,6 +525,31 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public int getSlaveListeningPort() {
 		return redisClient.getSlaveListeningPort();
+	}
+
+	@Override
+	public void setIdc(String idc) {
+		redisClient.setIdc(idc);
+	}
+
+	@Override
+	public String getIdc() {
+		return redisClient.getIdc();
+	}
+
+	@Override
+	public long getDelayMilli() {
+		return redisClient.getDelayMilli();
+	}
+
+	@Override
+	public long getDelayBytes() {
+		return redisClient.getDelayBytes();
+	}
+
+	@Override
+	public ReplDelayConfig getReplDelayConfig() {
+		return this;
 	}
 
 	@Override

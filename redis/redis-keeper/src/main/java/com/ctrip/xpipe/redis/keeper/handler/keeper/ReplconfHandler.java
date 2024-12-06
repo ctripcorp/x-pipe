@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -49,7 +50,9 @@ public class ReplconfHandler extends AbstractCommandHandler {
 			throw new IllegalStateException("[doHandle][getack not supported]" );
 		}else if("keeper".equalsIgnoreCase(option)){//extends by keeper
 			redisClient.setKeeper();
-		}else{
+		}else if(Replconf.ReplConfType.IDC.name().equalsIgnoreCase(option)) {
+			redisClient.setIdc(args[1].toUpperCase());
+		} else{
 			logger.error("[doHandler][unkonwn command]" + StringUtil.join(" ", args));
 			redisClient.sendMessage(new RedisErrorParser("unknown replconf command " + StringUtil.join(" ", args)).format());
 			return;
