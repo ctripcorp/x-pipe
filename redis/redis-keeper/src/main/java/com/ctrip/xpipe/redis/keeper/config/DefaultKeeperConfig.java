@@ -199,6 +199,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public boolean tryRorRdb() {
+		// capa rordb as default
+		// if the master support rordb, the slaves will most likely support it too
 		return getBooleanProperty(KEY_TRY_ROR_RDB, true);
 	}
 }
