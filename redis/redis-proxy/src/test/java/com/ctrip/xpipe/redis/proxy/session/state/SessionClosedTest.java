@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -37,7 +38,7 @@ public class SessionClosedTest extends AbstractRedisProxyServerTest {
         Assert.assertEquals(new SessionClosed(frontend), sessionClosed.nextAfterFail());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test(expected = WriteToClosedSessionException.class)
     public void testTryWrite() {
         ByteBuf byteBuf = new UnpooledByteBufAllocator(false).buffer();
         byteBuf.setBytes(0, "+OK\r\n".getBytes());
