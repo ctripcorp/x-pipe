@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.session.state;
 
 import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
 import io.netty.buffer.ByteBuf;
 
@@ -27,7 +28,7 @@ public class SessionClosed extends AbstractSessionState {
 
     @Override
     public void tryWrite(ByteBuf byteBuf) {
-        throw new UnsupportedOperationException("Session's been closed");
+        throw new WriteToClosedSessionException("Session's been closed");
     }
 
     @Override

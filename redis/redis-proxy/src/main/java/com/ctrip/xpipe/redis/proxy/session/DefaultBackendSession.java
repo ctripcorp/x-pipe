@@ -26,6 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.ReferenceCountUtil;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -55,7 +56,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     private ProxyEndpointSelector selector;
 
-    private Queue<ByteBuf> sendAfterProtocol;
+    private volatile Queue<ByteBuf> sendAfterProtocol = new LinkedList<>();
 
     private EventLoopGroup nioEventLoopGroup;
 
@@ -145,12 +146,18 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
     }
 
     @Override
-    public void sendAfterProtocol(ByteBuf byteBuf) throws Exception {
-        if(sendAfterProtocol == null) {
-            sendAfterProtocol = new LinkedList<>();
+    public synchronized void sendAfterProtocol(ByteBuf byteBuf) throws Exception {
+        if (null == sendAfterProtocol) {
+            if (isClosed()) {
+                logger.info("[sendAfterProtocol][already closed] skip");
+            } else {
+                logger.info("[sendAfterProtocol][unexpected fail] close");
+                release();
+            }
+        } else {
+            if (logger.isDebugEnabled()) logger.debug("[sendAfterProtocol][{}] {}", getSessionId(), ByteBufUtil.prettyHexDump(byteBuf));
+            sendAfterProtocol.offer(byteBuf.retain());
         }
-        logger.debug("[sendAfterProtocol] {}", ByteBufUtil.prettyHexDump(byteBuf));
-        sendAfterProtocol.offer(byteBuf.retain());
     }
 
     protected void onChannelEstablished(Channel channel) {
@@ -203,7 +210,26 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
             logger.info("[setSessionState][Backend] Session state change from {} to {} ({})", oldState, newState, getSessionMeta());
             EventMonitor.DEFAULT.logEvent(SESSION_STATE_CHANGE, String.format("[Backend]%s->%s", oldState.toString(), newState.toString()),
                     Collections.singletonMap("channel", ChannelUtil.getDesc(getChannel())));
+            if (isClosed()) {
+                releaseByteBufSendAfterProtocol();
+            }
             notifyObservers(new SessionStateChangeEvent(oldState, newState));
+        }
+    }
+
+
+
+    private void releaseByteBufSendAfterProtocol() {
+        if (null == sendAfterProtocol) return;
+
+        synchronized (this) {
+            if (null == sendAfterProtocol) return;
+            logger.info("[release][{}] release sendAfterProtocol", getSessionId());
+            while(!sendAfterProtocol.isEmpty()) {
+                ByteBuf byteBuf = sendAfterProtocol.poll();
+                ReferenceCountUtil.release(byteBuf);
+            }
+            sendAfterProtocol = null;
         }
     }
 

@@ -3,12 +3,15 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.ssl.NotSslRecordException;
+import io.netty.util.ReferenceCountUtil;
 
 import static io.netty.util.internal.StringUtil.NEWLINE;
 
@@ -22,6 +25,36 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
     protected Tunnel tunnel;
 
     protected Session session;
+
+    protected abstract void doMsgTransfer(ByteBuf msg);
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        if(!(msg instanceof ByteBuf)) {
+            logger.error("[channelRead] InCorrect Type: {}", msg.getClass().getName());
+            ReferenceCountUtil.release(msg);
+            throw new ResourceIncorrectException("Unexpected type for read: {}" + msg.getClass().getName());
+        }
+
+        boolean sessionBroken = false;
+        try {
+            doMsgTransfer((ByteBuf) msg);
+        } catch (WriteToClosedSessionException e) {
+            logger.info("[forward][forward closed, close] {}", e.getMessage());
+            sessionBroken = true;
+        } catch (Throwable th) {
+            logger.info("[forward][fail, close]", th);
+            sessionBroken = true;
+        }
+
+        if (sessionBroken) {
+            ReferenceCountUtil.release(msg);
+            session.release();
+            return;
+        }
+
+        ctx.fireChannelRead(msg);
+    }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {

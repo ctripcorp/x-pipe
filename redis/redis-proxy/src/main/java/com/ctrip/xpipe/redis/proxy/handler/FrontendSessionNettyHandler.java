@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
+import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCountUtil;
 
 
 /**
@@ -20,20 +22,8 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-
-        if(msg instanceof ByteBuf) {
-            if(tunnel != null) {
-                tunnel.forwardToBackend((ByteBuf) msg);
-            } else {
-                logger.error("[doChannelRead] send non-proxy-protocol from channel {}: {} from channel: {}",
-                        ChannelUtil.getDesc(ctx.channel()), formatByteBuf("RECEIVE", (ByteBuf) msg));
-                ctx.channel().close();
-            }
-        } else {
-            throw new ResourceIncorrectException("Unexpected type for read: " + msg.getClass().getName());
-        }
-        ctx.fireChannelRead(msg);
+    protected void doMsgTransfer(ByteBuf msg) {
+        tunnel.forwardToBackend(msg);
     }
 
 }
