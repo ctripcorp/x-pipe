@@ -25,7 +25,7 @@ public class RedisMasterNewRdbDumperTest {
         RedisKeeperServer redisKeeperServer = mock(RedisKeeperServer.class);
         doNothing().when(redisKeeperServer).resetDefaultReplication();
 
-        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, redisKeeperServer, false, mock(NioEventLoopGroup.class),
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, redisKeeperServer, false, false, mock(NioEventLoopGroup.class),
                 mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
         doNothing().when(dumper).startRdbOnlyReplication();
 
@@ -37,7 +37,7 @@ public class RedisMasterNewRdbDumperTest {
 
     @Test
     public void cancel() throws Exception {
-        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(mock(RedisMaster.class), mock(RedisKeeperServer.class), false, mock(NioEventLoopGroup.class),
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(mock(RedisMaster.class), mock(RedisKeeperServer.class), false, false, mock(NioEventLoopGroup.class),
                 mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
 
         doNothing().when(dumper).doExecute();

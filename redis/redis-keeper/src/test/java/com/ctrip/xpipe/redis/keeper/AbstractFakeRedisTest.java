@@ -183,69 +183,68 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	}
 
 	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
-
-		SequenceCommandChain chain = new SequenceCommandChain(false);
-		
 		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
-		NettyClient nettyClient = null;
-		
-		try{
-			nettyClient = pool.borrowObject();
-			
-			SimpleObjectPool<NettyClient> clientPool = new FixedObjectPool<NettyClient>(nettyClient);  
-			chain.add(new Replconf(clientPool, 
-					ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
-			InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
-			chain.add(psync);
-
-			if(psyncObserver != null){
-				psync.addPsyncObserver(psyncObserver);
-			}
-			psync.addPsyncObserver(new PsyncObserver() {
-				
-				private long masterRdbOffset = 0;
-				@Override
-				public void reFullSync() {
-					
-				}
-				
-				@Override
-				public void onFullSync(long masterRdbOffset) {
-					
-				}
-				
-				@Override
-				public void onContinue(String requestReplId, String responseReplId) {
-					
-				}
-
-				@Override
-				public void onKeeperContinue(String replId, long beginOffset) {
-
-				}
-
-				@Override
-				public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
-
-				}
-
-				@Override
-				public void endWriteRdb() {
-					new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(masterRdbOffset)).execute();
-				}
-				
-				@Override
-				public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
-					this.masterRdbOffset = masterRdbOffset;
-				}
-			});
-			
-			chain.execute();
-			return psync;
-		}finally{
+		NettyClient nettyClient = pool.borrowObject();
+		try {
+			return sendInmemoryPsync(new FixedObjectPool<>(nettyClient), runid, offset, psyncObserver);
+		} finally {
 			if(nettyClient != null){
 				pool.returnObject(nettyClient);
 			}
 		}
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(SimpleObjectPool<NettyClient> clientPool, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
+
+		SequenceCommandChain chain = new SequenceCommandChain(false);
+		chain.add(new Replconf(clientPool,
+				ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
+		InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
+		chain.add(psync);
+
+		if(psyncObserver != null){
+			psync.addPsyncObserver(psyncObserver);
+		}
+		psync.addPsyncObserver(new PsyncObserver() {
+
+			private long masterRdbOffset = 0;
+			@Override
+			public void reFullSync() {
+
+			}
+
+			@Override
+			public void onFullSync(long masterRdbOffset) {
+
+			}
+
+			@Override
+			public void onContinue(String requestReplId, String responseReplId) {
+
+			}
+
+			@Override
+			public void onKeeperContinue(String replId, long beginOffset) {
+
+			}
+
+			@Override
+			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
+
+			}
+
+			@Override
+			public void endWriteRdb() {
+				new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(masterRdbOffset)).execute();
+			}
+
+			@Override
+			public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
+				this.masterRdbOffset = masterRdbOffset;
+			}
+		});
+
+		chain.execute();
+		return psync;
 	}
 }
