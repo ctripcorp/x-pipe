@@ -70,7 +70,11 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 		
 	}
 
-	void fullSyncToSlave(RedisSlave redisSlave) throws IOException;
+	default void fullSyncToSlave(RedisSlave redisSlave) throws IOException {
+		fullSyncToSlave(redisSlave, false);
+	}
+
+	void fullSyncToSlave(RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException;
 
 	void startIndexing() throws IOException;
 

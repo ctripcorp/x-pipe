@@ -46,7 +46,7 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	void markPsyncProcessed();
 
 	/**
-	 * If psync ? -1, slave start with no data, we should fsync immediately
+	 * If psync ? -1 or psync xxxx 1, slave start with no data, we should fsync immediately
 	 */
 	void markColdStart();
 

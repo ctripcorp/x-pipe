@@ -29,7 +29,7 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 
 	void reconnect();
 
-	RdbDumper createRdbDumper(boolean tryRrodb) throws CreateRdbDumperException;
+	RdbDumper createRdbDumper(boolean tryRrodb, boolean freshRdbNeeded) throws CreateRdbDumperException;
 
 	MASTER_STATE getMasterState();
 	
