@@ -1,14 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.KeeperMsgModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerMigrationService;
@@ -129,6 +128,15 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
         } catch (Exception e) {
             logger.error("[getAllDiskTypeName]", e);
             return Collections.emptySet();
+        }
+    }
+
+    @RequestMapping(value = "/keepercontainer/keepers/{ip}")
+    public List<KeeperMsgModel> getLocateKeeperContainerByIpAndPort(@PathVariable String ip) {
+        try {
+            return keeperContainerService.getAllKeepers(ip);
+        } catch (Exception e) {
+            return Collections.emptyList();
         }
     }
 

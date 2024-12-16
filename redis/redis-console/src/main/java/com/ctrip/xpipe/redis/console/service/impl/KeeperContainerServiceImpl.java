@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
@@ -32,9 +33,13 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
 import org.unidal.dal.jdbc.DalException;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -55,9 +60,19 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   private RedisService redisService;
 
   @Autowired
+  private DcClusterShardService dcClusterShardService;
+
+  @Autowired
+  private DcClusterService dcClusterService;
+
+  @Autowired
   private AzService azService;
 
+  @Autowired
+  private ShardService shardService;
+
   private RestOperations restTemplate;
+
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -468,6 +483,56 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       keeperContainerIdDcMap.put(keeperContainer.getKeyKeepercontainerId(), keeperContainer.getKeepercontainerDc());
     });
     return keeperContainerIdDcMap;
+  }
+
+  @Override
+  public List<KeeperMsgModel> getAllKeepers(String keeperIp) {
+    List<RedisTbl> keepers = redisService.findAllRedisByIp(keeperIp);
+    if (keepers.isEmpty()) return Collections.emptyList();
+    List<KeeperMsgModel> result = new ArrayList<>();
+    keepers.forEach(keeper -> {
+      try {
+        KeeperMsgModel keeperMsg = getKeeperMsg(keeper.getDcClusterShardId());
+        keeperMsg.setIp(keeper.getRedisIp());
+        keeperMsg.setPort(keeper.getRedisPort());
+        keeperMsg.setRole(keeper.getRedisRole());
+        if (XPipeConsoleConstant.ROLE_KEEPER.equals(keeper.getRedisRole())) {
+          keeperMsg.setActive(keeper.isKeeperActive());
+        } else if(XPipeConsoleConstant.ROLE_REDIS.equals(keeper.getRedisRole())) {
+          keeperMsg.setActive(keeper.isMaster());
+        } else {
+          keeperMsg.setErr("Instance role not in redis and keeper!");
+        }
+        result.add(keeperMsg);
+      } catch (Exception e) {
+        KeeperMsgModel keeperMsg = new KeeperMsgModel(e.getMessage());
+        keeperMsg.setIp(keeper.getRedisIp());
+        keeperMsg.setPort(keeper.getRedisPort());
+        keeperMsg.setRole(keeper.getRedisRole());
+        if (XPipeConsoleConstant.ROLE_KEEPER.equals(keeper.getRedisRole())) {
+          keeperMsg.setActive(keeper.isKeeperActive());
+        } else if(XPipeConsoleConstant.ROLE_REDIS.equals(keeper.getRedisRole())) {
+          keeperMsg.setActive(keeper.isMaster());
+        } else {
+          keeperMsg.addErr(" and Instance role not in redis and keeper!");
+        }
+        result.add(keeperMsg);
+      }
+    });
+
+    return result;
+  }
+
+  private KeeperMsgModel getKeeperMsg(long dcClusterShardId) {
+    DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findByPk(dcClusterShardId);
+    if (dcClusterShardTbl == null) return new KeeperMsgModel("Can't find dcClusterShardTbl by dcClusterShardId:" + dcClusterShardId);
+    DcClusterTbl dcClusterTbl = dcClusterService.findByPK(dcClusterShardTbl.getDcClusterId());
+    if (dcClusterTbl == null) return new KeeperMsgModel("Can't find dcClusterTbl by dcClusterId:" + dcClusterShardTbl.getDcClusterId());
+    ClusterTbl clusterTbl = clusterService.find(dcClusterTbl.getClusterId());
+    if (clusterTbl == null) return new KeeperMsgModel("Can't find clusterTbl by clusterId:" + dcClusterTbl.getClusterId());
+    ShardTbl shardTbl = shardService.find(dcClusterShardTbl.getShardId());
+    if (shardTbl == null) return new KeeperMsgModel("Can't find shardTbl by shardId:" + dcClusterShardTbl.getShardId());
+    return new KeeperMsgModel(clusterTbl.getClusterName(), shardTbl.getShardName());
   }
 
   @Override

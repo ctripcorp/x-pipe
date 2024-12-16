@@ -651,6 +651,28 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-by-shard-name" type="SELECT" multiple="true">
+				<param name='shard-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='shard-name' /> = ${shard-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-by-id" type="SELECT" multiple="false">
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='id' /> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-by-shard-names" type="SELECT" multiple="true">
 				<param name="cluster-name"/>
 				<param name="shard-names"/>
@@ -1056,6 +1078,14 @@
 			<readset name="IP-AND-PORT">
 				<member name='redis-ip'/>
 				<member name="redis-port"/>
+			</readset>
+			<readset name="REDIS-MSG-INFO">
+				<member name='redis-ip'/>
+				<member name="redis-port"/>
+				<member name="dc-cluster-shard-id"/>
+				<member name="redis-role"/>
+				<member name="keeper-active"/>
+				<member name="master"/>
 			</readset>
 			<readset name="REDIS_META_INFO">
 				<member name="redis-ip"/>

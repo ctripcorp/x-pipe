@@ -55,6 +55,11 @@ angular
             url: '/console/keepercontainer/overload/info/lasted',
             isArray: true
         },
+        get_all_keepers: {
+            method: 'GET',
+            url: '/console/keepercontainer/keepers/:ip',
+            isArray: true
+        },
         get_overload_keepercontainer_migration_process: {
             method: 'GET',
             url: '/console/keepercontainer/overload/migration/process',
@@ -259,6 +264,19 @@ angular
         return d.promise;
     }
 
+    function getAllKeepers(ip) {
+        var d = $q.defer();
+        resource.get_all_keepers({
+                ip:ip
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function getOverloadKeeperContainerMigrationProcess() {
         var d = $q.defer();
         resource.get_overload_keepercontainer_migration_process({},
@@ -336,6 +354,7 @@ angular
         updateKeepercontainer: updateKeepercontainer,
         getAllOverloadKeepercontainer : getAllOverloadKeepercontainer,
         getAllKeepercontainerUsedInfo : getAllKeepercontainerUsedInfo,
+        getAllKeepers:getAllKeepers,
         getOverloadKeeperContainerMigrationProcess : getOverloadKeeperContainerMigrationProcess,
         beginToMigrateOverloadKeeperContainers : beginToMigrateOverloadKeeperContainers,
         migrateKeeperTaskTerminate : migrateKeeperTaskTerminate,
