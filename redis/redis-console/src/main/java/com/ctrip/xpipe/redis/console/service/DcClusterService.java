@@ -10,6 +10,7 @@ import java.util.List;
 public interface DcClusterService {
 	DcClusterTbl find(long dcId, long clusterId);
 	DcClusterTbl find(String dcName, String clusterName);
+	DcClusterTbl findByPK(long keyDcClusterId);
 	DcClusterCreateInfo findDcClusterCreateInfo(final String dcName, final String clusterName);
 	void updateDcCluster(DcClusterCreateInfo dcClusterCreateInfo);
 	List<DcClusterTbl> findAllDcClusters();

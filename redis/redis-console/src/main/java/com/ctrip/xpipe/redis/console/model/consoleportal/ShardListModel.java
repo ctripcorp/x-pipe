@@ -9,6 +9,8 @@ public class ShardListModel extends AbstractClusterModel {
 
     private String shardName;
 
+    private Long shardId;
+
     private String clusterType;
 
     private List<String> dcNames = new ArrayList<>();
@@ -19,6 +21,15 @@ public class ShardListModel extends AbstractClusterModel {
 
     public ShardListModel setShardName(String shardName) {
         this.shardName = shardName;
+        return this;
+    }
+
+    public Long getShardId() {
+        return shardId;
+    }
+
+    public ShardListModel setShardId(Long shardId) {
+        this.shardId = shardId;
         return this;
     }
 
