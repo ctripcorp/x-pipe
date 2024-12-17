@@ -93,6 +93,16 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public List<RedisTbl> findAllRedisByIp(String ip) {
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.findByIp(ip, RedisTblEntity.READSET_REDIS_MSG_INFO);
+            }
+        });
+    }
+
+    @Override
     public List<RedisTbl> findAllByDcClusterShard(final long dcClusterShardId) {
         return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
             @Override

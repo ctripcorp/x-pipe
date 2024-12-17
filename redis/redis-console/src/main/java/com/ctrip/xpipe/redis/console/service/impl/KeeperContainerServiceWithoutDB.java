@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.console.model.KeeperMsgModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
@@ -189,6 +190,11 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
             keeperContainerIdDcMap.put(keeperContainer.getKeyKeepercontainerId(), keeperContainer.getKeepercontainerDc());
         });
         return keeperContainerIdDcMap;
+    }
+
+    @Override
+    public List<KeeperMsgModel> getAllKeepers(String keeperIp) {
+        throw new UnsupportedOperationException();
     }
 
 }

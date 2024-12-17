@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
@@ -141,6 +142,52 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 				return dao.findAllByClusterName(clusterName, ShardTblEntity.READSET_NAME);
 			}
     	});
+	}
+
+	@Override
+	public List<ShardListModel> findAllByShardName(String shardName) {
+		List<ShardTbl> shardTbls = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return dao.findAllByShardName(shardName, ShardTblEntity.READSET_FULL);
+			}
+		});
+		if (shardTbls == null || shardTbls.isEmpty()) throw new XpipeRuntimeException("Shard: " + shardName + " not found");
+		List<ShardListModel> shardListModels = new ArrayList<>();
+		shardTbls.forEach(shardTbl -> {
+			ClusterTbl cluster = clusterService.find(shardTbl.getClusterId());
+			if (cluster == null) throw new XpipeRuntimeException("ClusterId: " + shardTbl.getClusterId() + " not found");
+			shardListModels.add((ShardListModel) new ShardListModel().setShardName(shardTbl.getShardName())
+					.setShardId(shardTbl.getId())
+					.setActivedcId(cluster.getActivedcId())
+					.setClusterType(cluster.getClusterType())
+					.setClusterName(cluster.getClusterName())
+					.setClusterAdminEmails(cluster.getClusterAdminEmails())
+					.setClusterOrgName(cluster.getClusterOrgName())
+					.setClusterDescription(cluster.getClusterDescription()));
+		});
+		return shardListModels;
+	}
+
+	@Override
+	public ShardListModel findByReplId(long replId) {
+
+		ShardTbl shardTbl = queryHandler.handleQuery(new DalQuery<ShardTbl>() {
+			@Override
+			public ShardTbl doQuery() throws DalException {
+				return dao.findAllById(replId, ShardTblEntity.READSET_FULL);
+			}
+		});
+		if (shardTbl == null) throw new XpipeRuntimeException("Shard: " + replId + " not found");
+		ClusterTbl cluster = clusterService.find(shardTbl.getClusterId());
+		return (ShardListModel) new ShardListModel().setShardName(shardTbl.getShardName())
+				.setShardId(shardTbl.getId())
+				.setActivedcId(cluster.getActivedcId())
+				.setClusterType(cluster.getClusterType())
+				.setClusterName(cluster.getClusterName())
+				.setClusterAdminEmails(cluster.getClusterAdminEmails())
+				.setClusterOrgName(cluster.getClusterOrgName())
+				.setClusterDescription(cluster.getClusterDescription());
 	}
 
 	private DcClusterShardTbl generateDcClusterShardTbl(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl,

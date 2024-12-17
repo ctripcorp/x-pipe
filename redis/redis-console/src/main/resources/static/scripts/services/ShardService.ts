@@ -24,6 +24,14 @@ function ShardService($resource, $q) {
             url: '/console/clusters/:clusterName/shards',
             isArray: true
         },
+        find_all_by_repl_id: {
+            method: 'GET',
+            url: '/console/shards/allById/:id',
+        },
+        find_all_by_shard_name: {
+            method: 'GET',
+            url: '/console/shards/allByName/:shardName',
+        },
         createShard: {
             method: 'POST',
             url: '/console/clusters/:clusterName/shards'
@@ -99,6 +107,32 @@ function ShardService($resource, $q) {
         	function (result) {
         		d.resolve(result);
         	}, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findAllByReplId(id) {
+        var d = $q.defer();
+        resource.find_all_by_repl_id({
+                id: id
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findAllByShardName(shardName) {
+        var d = $q.defer();
+        resource.find_all_by_shard_name({
+                shardName: shardName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -184,6 +218,8 @@ function ShardService($resource, $q) {
         findClusterDcShard: findClusterDcShard,
         findClusterDcSourceShard: findClusterDcSourceShard,
         findClusterShards: findClusterShards,
+        findAllByReplId: findAllByReplId,
+        findAllByShardName: findAllByShardName,
         createShard: create_shard,
         deleteShard: delete_shard,
         bindRedis: bind_redis,

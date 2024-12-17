@@ -60,6 +60,16 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
+	public DcClusterTbl findByPK(long keyDcClusterId) {
+		return queryHandler.handleQuery(new DalQuery<DcClusterTbl>() {
+			@Override
+			public DcClusterTbl doQuery() throws DalException {
+				return dao.findByPK(keyDcClusterId, DcClusterTblEntity.READSET_FULL);
+			}
+		});
+	}
+
+	@Override
 	public DcClusterCreateInfo findDcClusterCreateInfo(final String dcName, final String clusterName) {
 		DcClusterTbl dcClusterTbl = find(dcName, clusterName);
 
