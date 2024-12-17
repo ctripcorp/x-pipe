@@ -194,6 +194,11 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/repl_direction_list.html',
             controller : 'ReplDirectionListCtl',
         })
+        .state('search_shard', {
+            url: '/search_shard',
+            templateUrl: 'views/index/search_shard.html',
+            controller : 'SearchShardCtl',
+        })
         .state('keepercontainer_list', {
             url: '/keepercontainers',
             templateUrl: 'views/index/keepercontainer_list.html',
@@ -233,6 +238,11 @@ function router($stateProvider, $urlRouterProvider) {
             url: '/keepercontainer_overall?keepercontainerIp',
             templateUrl: 'views/index/keepercontainer_overall.html',
             controller: 'KeepercontainerOverallCtl'
+        })
+        .state('keepercontainer_keeper_overall',{
+            url: '/keepercontainer_keeper_overall?ip',
+            templateUrl: 'views/index/keepercontainer_keeper_overall.html',
+            controller: 'KeeperContainerKeeperOverAllCtl'
         })
         .state('full_link_health_check',{
             url: '/full_link_health_check?currentDcName&clusterName&shardName&shardId',

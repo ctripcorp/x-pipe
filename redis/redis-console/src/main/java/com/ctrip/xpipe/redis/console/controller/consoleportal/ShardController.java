@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -60,6 +62,26 @@ public class ShardController extends AbstractConsoleController {
     @RequestMapping(value = "/shards/unhealthy", method = RequestMethod.GET)
     public List<ShardListModel> findAllUnhealthyShards() {
         return valueOrEmptySet(ShardListModel.class, shardService.findAllUnhealthy());
+    }
+
+    @RequestMapping(value = "/shards/allById/{id}", method = RequestMethod.GET)
+    public RetMessage findAllShardsById(@PathVariable long id) {
+        try {
+            List<ShardListModel> result = new ArrayList<>();
+            result.add(shardService.findByReplId(id));
+            return GenericRetMessage.createGenericRetMessage(result);
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/shards/allByName/{shardName}", method = RequestMethod.GET)
+    public RetMessage findAllShardsByShardName(@PathVariable String shardName) {
+        try {
+            return GenericRetMessage.createGenericRetMessage(shardService.findAllByShardName(shardName));
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
 }
