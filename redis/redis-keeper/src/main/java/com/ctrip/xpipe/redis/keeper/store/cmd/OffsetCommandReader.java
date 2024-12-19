@@ -52,7 +52,8 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
             if (null != replDelayConfig
                     && (delayBytes = replDelayConfig.getDelayBytes()) > 0 && (delayMilli = replDelayConfig.getDelayMilli()) > 0) {
                 logger.debug("[readDelay]{}:{}", delayBytes, delayMilli);
-                offsetNotifier.await(curPosition + delayBytes, delayMilli);
+                // offsetNotifier.await(curPosition, delayMilli);
+                Thread.sleep(delayMilli);
             } else if (milliSeconds >= 0) {
                 offsetNotifier.await(curPosition, milliSeconds);
             } else {
@@ -66,7 +67,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         }
 
         if (!referenceFileChannel.hasAnythingToRead()) return null;
-        ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+        ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEndWithDelay(replDelayConfig.getDelayBytes());
 
         curPosition += referenceFileRegion.count();
 
