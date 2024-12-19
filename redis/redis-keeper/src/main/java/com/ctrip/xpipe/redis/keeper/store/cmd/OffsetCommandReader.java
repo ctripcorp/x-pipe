@@ -67,7 +67,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         }
 
         if (!referenceFileChannel.hasAnythingToRead()) return null;
-        ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEndWithDelay(replDelayConfig.getDelayBytes());
+        ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 
         curPosition += referenceFileRegion.count();
 
