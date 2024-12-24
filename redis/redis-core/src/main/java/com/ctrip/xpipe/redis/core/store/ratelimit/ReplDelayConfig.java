@@ -4,6 +4,4 @@ public interface ReplDelayConfig {
 
     long getDelayMilli();
 
-    long getDelayBytes();
-
 }

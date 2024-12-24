@@ -543,11 +543,6 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public long getDelayBytes() {
-		return redisClient.getDelayBytes();
-	}
-
-	@Override
 	public ReplDelayConfig getReplDelayConfig() {
 		return this;
 	}
