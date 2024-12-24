@@ -8,8 +8,6 @@ public class KeeperReplDelayConfig {
 
     private long delayMilli;
 
-    private long delayBytes;
-
     public String getSrcDc() {
         return srcDc;
     }
@@ -34,11 +32,4 @@ public class KeeperReplDelayConfig {
         this.delayMilli = delayMilli;
     }
 
-    public long getDelayBytes() {
-        return delayBytes;
-    }
-
-    public void setDelayBytes(long delayBytes) {
-        this.delayBytes = delayBytes;
-    }
 }

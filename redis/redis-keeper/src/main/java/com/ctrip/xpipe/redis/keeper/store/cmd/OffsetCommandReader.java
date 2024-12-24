@@ -48,10 +48,9 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     @Override
     public ReferenceFileRegion doRead(long milliSeconds) throws IOException {
         try {
-            long delayBytes, delayMilli;
-            if (null != replDelayConfig
-                    && (delayBytes = replDelayConfig.getDelayBytes()) > 0 && (delayMilli = replDelayConfig.getDelayMilli()) > 0) {
-                logger.debug("[readDelay]{}:{}", delayBytes, delayMilli);
+            long delayMilli;
+            if (null != replDelayConfig && (delayMilli = replDelayConfig.getDelayMilli()) > 0) {
+                logger.debug("[readDelay]{}", delayMilli);
                 offsetNotifier.await(curPosition, milliSeconds);
                 Thread.sleep(delayMilli);
             } else if (milliSeconds >= 0) {

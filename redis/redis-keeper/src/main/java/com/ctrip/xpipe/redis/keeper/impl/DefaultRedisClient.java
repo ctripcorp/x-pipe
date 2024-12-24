@@ -96,14 +96,6 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	}
 
 	@Override
-	public long getDelayBytes() {
-		if (null == replDelayConfigCache || StringUtil.isEmpty(idc)) return 0;
-		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getReplDelayConfig(idc);
-		if (null == replDelayConfig) return 0;
-		else return replDelayConfig.getDelayBytes();
-	}
-
-	@Override
 	public void capa(CAPA capa) {
 		logger.info("[capa]{}, {}", capa, this);
 		capas.add(capa);
