@@ -78,6 +78,9 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				if(getDelayTraceLogger().isDebugEnabled()){
 					getDelayTraceLogger().debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
 				}
+
+				sleepForDealy(listener);
+
 				getCommandStoreDelay().beginSend(listener, referenceFileRegion.getTotalPos());
 
 				ChannelFuture future = null;
@@ -118,6 +121,18 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 			cmdReader.close();
 		}
 		logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
+	}
+
+	private void sleepForDealy(final CommandsListener listener) {
+		ReplDelayConfig replDelayConfig = listener.getReplDelayConfig();
+		long delayMilli;
+		if (null != replDelayConfig && (delayMilli = replDelayConfig.getDelayMilli()) > 0) {
+			logger.debug("[readDelay]{}", delayMilli);
+			try {
+				Thread.sleep(delayMilli);
+			} catch (InterruptedException e) {
+			}
+		}
 	}
 
 	@Override
