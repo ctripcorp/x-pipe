@@ -74,13 +74,12 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				if (null == referenceFileRegion) continue;
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
+				getCommandStoreDelay().endRead(listener, referenceFileRegion.getTotalPos());
+				sleepForDealy(listener);
 
 				if(getDelayTraceLogger().isDebugEnabled()){
 					getDelayTraceLogger().debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
 				}
-
-				sleepForDealy(listener);
-
 				getCommandStoreDelay().beginSend(listener, referenceFileRegion.getTotalPos());
 
 				ChannelFuture future = null;

@@ -13,6 +13,8 @@ public interface CommandStoreDelay {
 	
 	void endWrite(long offset);
 
+	void endRead(final CommandsListener commandsListener, final long offset);
+
 	void beginSend(CommandsListener commandsListener, long offset);
 
 	void flushSucceed(CommandsListener commandsListener, long offset);
