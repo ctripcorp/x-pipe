@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 
 import java.io.IOException;
 
@@ -10,7 +11,7 @@ import java.io.IOException;
  *
  * 2016年5月9日 下午5:28:47
  */
-public interface RdbFileListener {
+public interface RdbFileListener extends ReplDelayConfig {
 
 	void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress);
 

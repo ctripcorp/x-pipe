@@ -84,7 +84,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 						while (true) {
 							
 							count++;
-							ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd(1);
+							ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(1);
 							fileRegions.offer(referenceFileRegion);
 							if(count > totalFileLen){
 								logger.info("{}", referenceFileRegion);
