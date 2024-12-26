@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.controller;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.proxy.ProxyServer;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
@@ -29,6 +30,30 @@ public class ProxyController {
 
     @Autowired
     private TunnelMonitorManager tunnelMonitorManager;
+
+    @Autowired
+    private ProxyServer proxyServer;
+
+    @PostMapping(value = "/server/start")
+    public RetMessage startServer() {
+        try {
+            proxyServer.start();
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/server/stop")
+    public RetMessage stopServer() {
+        try {
+            proxyServer.stop();
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
 
     @RequestMapping(value = "/tunnels", method = RequestMethod.GET)
     public String getTunnelMetas() {
