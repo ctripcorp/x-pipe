@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -543,8 +544,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ReplDelayConfig getReplDelayConfig() {
-		return this;
+	public int getLimitBytesPerSecond() {
+		return redisClient.getLimitBytesPerSecond();
 	}
 
 	@Override

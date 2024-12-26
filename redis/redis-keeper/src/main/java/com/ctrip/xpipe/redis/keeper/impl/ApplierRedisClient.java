@@ -109,8 +109,4 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
         return null;
     }
 
-    @Override
-    public long getDelayMilli() {
-        return 0;
-    }
 }

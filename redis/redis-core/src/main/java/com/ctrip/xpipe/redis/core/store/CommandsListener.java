@@ -8,7 +8,7 @@ import io.netty.channel.ChannelFuture;
  *
  * 2016年4月19日 下午4:59:45
  */
-public interface CommandsListener {
+public interface CommandsListener extends ReplDelayConfig {
 
 	boolean isOpen();
 
@@ -18,9 +18,5 @@ public interface CommandsListener {
 	void beforeCommand();
 
 	Long processedOffset();
-
-	default ReplDelayConfig getReplDelayConfig() {
-		return null;
-	}
 
 }

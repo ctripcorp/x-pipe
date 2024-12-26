@@ -6,6 +6,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
 
     private Map<String, KeeperReplDelayConfig> keeperReplDelayConfigMap;
 
+    private RedisReplDelayConfig redisReplDelayConfig;
+
     public ReplDelayConfigCache() {
         this(null);
     }
@@ -34,15 +37,24 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
     @Autowired
     public ReplDelayConfigCache(KeeperCommonConfig keeperConfig) {
         this.keeperConfig = keeperConfig;
+        this.redisReplDelayConfig = null;
         this.keeperReplDelayConfigMap = new HashMap<>();
     }
 
     private void refresh() {
         logger.debug("[refresh]");
-        List<KeeperReplDelayConfig> replDelayConfigs = keeperConfig.getReplDelayConfigs();
-        Map<String, KeeperReplDelayConfig> localReplDelayConfigMap = new HashMap<>();
+        List<KeeperReplDelayConfig> keeperReplDelayConfigs = keeperConfig.getKeeperReplDelayConfigs();
+        Map<String, RedisReplDelayConfig> redisReplDelayConfigs = keeperConfig.getRedisReplDelayConfigs();
         String currentDc = FoundationService.DEFAULT.getDataCenter();
-        for (KeeperReplDelayConfig config: replDelayConfigs) {
+
+        if (redisReplDelayConfigs.containsKey(currentDc)) {
+            this.redisReplDelayConfig = redisReplDelayConfigs.get(currentDc);
+        } else {
+            this.redisReplDelayConfig = redisReplDelayConfigs.getOrDefault("DEFAULT", null);
+        }
+
+        Map<String, KeeperReplDelayConfig> localReplDelayConfigMap = new HashMap<>();
+        for (KeeperReplDelayConfig config: keeperReplDelayConfigs) {
             if (currentDc.equalsIgnoreCase(config.getSrcDc())) {
                 localReplDelayConfigMap.put(config.getDestDc().toUpperCase(), config);
             }
@@ -50,9 +62,15 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
         this.keeperReplDelayConfigMap = localReplDelayConfigMap;
     }
 
-    public KeeperReplDelayConfig getReplDelayConfig(String destIdc) {
+    @Nullable
+    public KeeperReplDelayConfig getKeeperReplDelayConfig(String destIdc) {
         if (null == destIdc || this.keeperReplDelayConfigMap.isEmpty()) return null;
         return this.keeperReplDelayConfigMap.get(destIdc);
+    }
+
+    @Nullable
+    public RedisReplDelayConfig getRedisReplDelayConfig() {
+        return this.redisReplDelayConfig;
     }
 
     @Override

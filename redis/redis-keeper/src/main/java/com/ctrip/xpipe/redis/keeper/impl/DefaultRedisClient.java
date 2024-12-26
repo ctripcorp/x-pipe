@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.config.RedisReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
@@ -89,10 +90,17 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 
 	@Override
 	public long getDelayMilli() {
-		if (null == replDelayConfigCache || StringUtil.isEmpty(idc)) return 0;
-		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getReplDelayConfig(idc);
-		if (null == replDelayConfig) return 0;
+		if (null == replDelayConfigCache || !isKeeper() || StringUtil.isEmpty(idc)) return super.getDelayMilli();
+		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getKeeperReplDelayConfig(idc);
+		if (null == replDelayConfig) return super.getDelayMilli();
 		else return replDelayConfig.getDelayMilli();
+	}
+
+	public int getLimitBytesPerSecond() {
+		if (null == replDelayConfigCache || isKeeper()) return super.getLimitBytesPerSecond();
+		RedisReplDelayConfig replDelayConfig = replDelayConfigCache.getRedisReplDelayConfig();
+		if (null == replDelayConfig) return super.getLimitBytesPerSecond();
+		else return replDelayConfig.getBytesLimitPerSecond();
 	}
 
 	@Override
