@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncCommandFailException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
@@ -159,6 +160,14 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperContex
             }
         };
 
+        Psync psync = rdbonlyRedisMasterReplication.createPsync();
+        Assert.assertTrue(psync instanceof RdbOnlyPsync);
+
+        psync.future().addListener(commandFuture -> {
+            if (!commandFuture.isSuccess()) {
+                rdbonlyRedisMasterReplication.dumpFail(new PsyncCommandFailException(commandFuture.cause()));
+            }
+        });
         when(replicationStore.firstAvailableOffset()).thenReturn(120L);
         rdbonlyRedisMasterReplication.onFullSync(100);
         Assert.assertFalse(dumper.future().isDone());
@@ -166,6 +175,9 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperContex
         rdbonlyRedisMasterReplication.masterDisconnected(Mockito.mock(Channel.class));
         Assert.assertEquals(1, reconnectCnt.get());
         Assert.assertFalse(dumper.future().isDone());
+
+        psync = rdbonlyRedisMasterReplication.createPsync();
+        Assert.assertTrue(psync instanceof FreshRdbOnlyPsync);
 
         rdbonlyRedisMasterReplication.masterDisconnected(Mockito.mock(Channel.class));
         Assert.assertEquals(1, reconnectCnt.get());

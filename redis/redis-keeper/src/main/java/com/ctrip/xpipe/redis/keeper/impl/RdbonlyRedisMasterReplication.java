@@ -11,8 +11,10 @@ import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.KeeperTolerantClosePsyncException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -24,6 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
@@ -46,6 +49,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	private REPL_STATE state;
+
+	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
 
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
 										 boolean tryRordb, boolean freshRdbNeeded,
@@ -120,14 +125,24 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected Psync createPsync() {
 
 		Psync psync;
+		RdbOnlyReplicationStore replicationStore;
+		try {
+			replicationStore = tryGetReplicationStore();
+		} catch (Throwable th) {
+			logger.info("[createPsync][prepareReplicationStore][fail] close", th);
+			disconnectWithMaster();
+			throw new PsyncRuntimeException("prepare ReplicationStore fail", th);
+		}
+
 		if (state.equals(REPL_STATE.FRESH_SYNC)) {
-			psync = new FreshRdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
+			psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
 		} else {
-			psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
+			psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
 		}
 
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer.createPsyncObserverForRdbOnlyRepl());
+		currentPsync.set(psync);
 		return psync;
 	}
 
@@ -175,17 +190,47 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			if (state.equals(REPL_STATE.NORMAL_SYNC)) {
 				state = REPL_STATE.FAIL_FOR_NOT_CONTINUE;
 				try {
-					logger.info("[retryOnceForRdbNotContinue][resetRdbStore]{}", dumpedRdbStore);
-					dumpedRdbStore = getRdbDumper().prepareRdbStore();
-					rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
+					logger.info("[retryOnceForRdbNotContinue][resetRdbStore][{}:{}]{}", masterRdbOffset, firstAvailable, dumpedRdbStore);
+					currentPsync.get().future().setFailure(new KeeperTolerantClosePsyncException(
+							new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable)));
+					resetReplicationStore();
 					disconnectWithMaster();
 				} catch (Exception e) {
+					logger.info("[doOnFullSync][retryForNotContinue] fail", e);
 					dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
 				}
 			} else {
 				dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
 			}
 		}
+	}
+
+	private synchronized void resetReplicationStore() {
+		dumpedRdbStore = null;
+		rdbOnlyReplicationStore = null;
+	}
+
+	private RdbOnlyReplicationStore tryGetReplicationStore() throws IOException {
+		if (null != rdbOnlyReplicationStore) return rdbOnlyReplicationStore;
+
+		synchronized (this) {
+			if (null != rdbOnlyReplicationStore) return rdbOnlyReplicationStore;
+
+			dumpedRdbStore = getRdbDumper().prepareRdbStore();
+			rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
+			return rdbOnlyReplicationStore;
+		}
+	}
+
+	@Override
+	protected void dumpFail(Throwable th) {
+		if (th instanceof KeeperTolerantClosePsyncException ||
+				(null != th.getCause() && th.getCause() instanceof KeeperTolerantClosePsyncException)) {
+			logger.info("[dumpFail][tolerant] {}", th.getMessage());
+			return;
+		}
+
+		super.dumpFail(th);
 	}
 
 	@Override
