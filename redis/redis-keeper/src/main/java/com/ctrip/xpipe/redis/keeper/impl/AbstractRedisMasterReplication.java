@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
@@ -90,7 +91,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     protected long connectedTime;
 
-    protected Channel masterChannel;
+    protected volatile Channel masterChannel;
 
     private NioEventLoopGroup nioEventLoopGroup;
 
@@ -103,6 +104,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     protected RedisMasterReplicationObserver replicationObserver;
 
     protected KeeperResourceManager resourceManager;
+
+    private AtomicInteger runningReconnect = new AtomicInteger(0);
 
     public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
                                           ScheduledExecutorService scheduled, KeeperResourceManager resourceManager) {
@@ -184,16 +187,22 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
             logger.info("[scheduleReconnect][do not connect, is stopped!!]{}", redisMaster.masterEndPoint());
             return;
         }
+        if (!runningReconnect.compareAndSet(0, 1)) {
+            logger.info("[scheduleReconnect][multi reconnect, skip] {}", runningReconnect.get());
+            return;
+        }
         scheduled.schedule(new AbstractExceptionLogTask() {
             @Override
             public void doRun() {
                 try {
+                    runningReconnect.set(0);
                     connectWithMaster();
                 } catch (Throwable th) {
                     logger.error("[scheduleReconnect]" + AbstractRedisMasterReplication.this, th);
                 }
             }
-        }, timeMilli, TimeUnit.MILLISECONDS);
+        }, Math.max(10, timeMilli), TimeUnit.MILLISECONDS);
+        // at least wait 10ms so that runningReconnect checking can avoid concurrent reconnecting
     }
 
     protected abstract void doConnect(Bootstrap b);
@@ -229,6 +238,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void masterConnected(Channel channel) {
+        logger.info("[masterConnected] {}", ChannelUtil.getDesc(channel));
+        if (null != masterChannel) {
+            logger.info("[masterConnected][unexpected connected channel][{}][{}] reset channels", ChannelUtil.getDesc(masterChannel), ChannelUtil.getDesc(channel));
+            masterChannel.close();
+            channel.close();
+            return;
+        }
 
         connectedTime = System.currentTimeMillis();
         this.masterChannel = channel;
@@ -319,7 +335,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     @Override
     public void masterDisconnected(Channel channel) {
 
-        logger.info("[masterDisconnected]{}", channel);
+        if (channel.equals(this.masterChannel)) {
+            logger.info("[masterDisconnected]{}", channel);
+            this.masterChannel = null;
+        } else {
+            logger.info("[masterDisconnected][unexpected disconnected channel][{}][{}] ignore",
+                    ChannelUtil.getDesc(masterChannel), ChannelUtil.getDesc(channel));
+        }
         dumpFail(new PsyncMasterDisconnectedException(channel));
     }
 
