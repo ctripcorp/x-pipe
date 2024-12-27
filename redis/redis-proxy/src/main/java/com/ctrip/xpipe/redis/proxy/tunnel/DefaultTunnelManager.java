@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -151,6 +152,14 @@ public class DefaultTunnelManager implements TunnelManager {
             LifecycleHelper.disposeIfPossible(tunnel);
         } catch (Exception e) {
             logger.error("[remove] error dispose Tunnel: {}", tunnel.getTunnelMeta(), e);
+        }
+    }
+
+    @Override
+    public void removeAll() {
+        Set<Channel> toCloseChannels = new HashSet<>(cache.keySet());
+        for (Channel channel: toCloseChannels) {
+            remove(channel);
         }
     }
 
