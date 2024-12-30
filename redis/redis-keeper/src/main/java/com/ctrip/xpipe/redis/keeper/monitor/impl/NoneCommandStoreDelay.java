@@ -21,6 +21,11 @@ public class NoneCommandStoreDelay implements CommandStoreDelay{
 	}
 
 	@Override
+	public void endRead(CommandsListener commandsListener, long offset) {
+
+	}
+
+	@Override
 	public void beginSend(CommandsListener commandsListener, long offset) {
 		
 	}

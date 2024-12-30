@@ -101,6 +101,16 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
+	public long getDelayMilli() {
+		return redisSlave.getDelayMilli();
+	}
+
+	@Override
+	public int getLimitBytesPerSecond() {
+		return redisSlave.getLimitBytesPerSecond();
+	}
+
+	@Override
 	public String toString() {
 		return String.format("%s:%s", getClass().getSimpleName(), redisSlave);
 	}

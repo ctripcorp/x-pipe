@@ -43,7 +43,12 @@ public class TestWithoutZkProfile extends AbstractProfile{
 	public KeeperConfig getKeeperConfig(){
 		return new TestKeeperConfig(1024, 2, 1024, 2000);
 	}
-	
+
+	@Bean
+	public KeeperCommonConfig getKeeperCommonConfig() {
+		return new TestKeeperCommonConfig();
+	}
+
 	@Bean
 	public KeeperContainerConfig getKeeperContainerConfig(){
 		return new TestKeeperContainerConfig(AbstractTest.getUserHome() + "/rsd");

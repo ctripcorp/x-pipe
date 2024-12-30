@@ -40,6 +40,11 @@ public class Production extends AbstractProfile{
 	public KeeperConfig getKeeperConfig(){
 		return new DefaultKeeperConfig();
 	}
+
+	@Bean
+	public KeeperCommonConfig getKeeperCommonConfig() {
+		return new DefaultKeeperCommonConfig();
+	}
 	
 	@Bean
 	public KeepersMonitorManager getKeeperMonitorManager(){

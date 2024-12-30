@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.health.DiskHealthChecker;
 import com.ctrip.xpipe.redis.keeper.health.HealthState;
@@ -61,6 +62,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private DiskHealthChecker diskHealthChecker;
     @Autowired
     private SyncRateManager syncRateManager;
+    @Autowired
+    private ReplDelayConfigCache replDelayConfigCache;
 
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
@@ -110,7 +113,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
                     File baseDir = getReplicationStoreDir(keeperMeta);
                     RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
-                            keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser);
+                            keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
+                            redisOpParser, replDelayConfigCache);
 
                     try {
                         register(redisKeeperServer);
@@ -311,7 +315,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                                                       File baseDir) throws Exception {
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
-                baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser);
+                baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
+                redisOpParser, replDelayConfigCache);
 
         register(redisKeeperServer);
         return redisKeeperServer;

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.cmd;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import org.slf4j.Logger;
 
@@ -22,8 +23,8 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
 
     @Override
     public CommandReader<ReferenceFileRegion> createCmdReader(OffsetReplicationProgress replProgress,
-                                                              CommandStore cmdStore,
-                                                              OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException {
+                                                              CommandStore cmdStore, OffsetNotifier offsetNotifier,
+                                                              ReplDelayConfig replDelayConfig, long commandReaderFlyingThreshold) throws IOException {
         long currentOffset = replProgress.getProgress();
         cmdStore.rotateFileIfNecessary();
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
@@ -32,7 +33,7 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
         }
 
         return new OffsetCommandReader(commandFile, currentOffset, currentOffset - commandFile.getStartOffset(),
-                cmdStore, offsetNotifier, commandReaderFlyingThreshold);
+                cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
     }
 
     @Override

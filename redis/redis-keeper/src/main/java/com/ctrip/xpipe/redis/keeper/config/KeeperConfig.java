@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.keeper.config;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author marsqing
  *
