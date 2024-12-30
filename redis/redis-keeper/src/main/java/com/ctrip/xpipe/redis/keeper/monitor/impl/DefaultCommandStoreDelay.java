@@ -87,6 +87,22 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 		});
 	}
 
+	public void endRead(final CommandsListener commandsListener, final long offset) {
+		exceptionLogWrapper.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				updateLastActionTime();
+
+				OffsetDelay offsetDelay = getOffsetDelay(offset);
+				if(offsetDelay != null){
+					offsetDelay.endRead(commandsListener);
+				}
+			}
+
+		});
+	}
+
 	@Override
 	public void beginSend(final CommandsListener commandsListener, final long offset){
 		
@@ -188,6 +204,13 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 			logIfShould(beginWriteTime.get(), endWriteTime.get(), "[endWrite]");
 		}
 
+		public void endRead(CommandsListener commandsListener) {
+			ListenerDelay listenerDelay = getOrAddListenerDelay(commandsListener);
+			if(listenerDelay != null){
+				listenerDelay.endRead();
+			}
+		}
+
 		public void beginSend(CommandsListener commandsListener, long offset){
 			
 			ListenerDelay listenerDelay = getOrAddListenerDelay(commandsListener);
@@ -259,15 +282,20 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 			
 			private CommandsListener commandsListener;
 			
+			private AtomicLong endReadTime = new AtomicLong();
+
 			private AtomicLong beginSendTime = new AtomicLong();
 			
 			private AtomicLong endSendTime = new AtomicLong();
 
+			public void endRead() {
+				this.endReadTime.set(System.nanoTime());
+				logIfShould(endWriteTime.get(), endReadTime.get(), "[readOut]");
+			}
+
 			public void beginSend(){
 				
 				this.beginSendTime.set(System.nanoTime());
-				logIfShould(endWriteTime.get(), beginSendTime.get(), "[beginSend]");
-				
 				logger.trace("[beginSend]{}", offset);
 			}
 			
@@ -279,6 +307,7 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 				}finally{
 					beginSendTime.set(0);
 					endSendTime.set(0);
+					endReadTime.set(0);
 					this.commandsListener = null;
 				}
 			}
@@ -306,7 +335,7 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 			logger.info("{}, {}, {}, delay:{} micro", message, begin, end, delayMicro);
 			return true;
 		}
-		return false;  
+		return false;
 	}
 
 }

@@ -46,7 +46,7 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 		tryCloseChannel();
 	}
 
-	protected ReferenceFileRegion readTilEnd(int maxBytes) throws IOException {
+	public ReferenceFileRegion read(int maxBytes) throws IOException {
 
 		while(true){
 			
@@ -70,7 +70,7 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 	}
 
 	public ReferenceFileRegion readTilEnd() throws IOException {
-		return readTilEnd(-1);
+		return read(-1);
 	}
 
 	private void increase() {

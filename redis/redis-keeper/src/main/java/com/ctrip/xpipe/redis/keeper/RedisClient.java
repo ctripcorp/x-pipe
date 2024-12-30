@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -15,7 +16,7 @@ import java.util.Set;
  *
  * 2016年4月22日 上午11:25:07
  */
-public interface RedisClient<T extends RedisServer> extends Observable, Infoable, Closeable, RedisRole, Releasable, Keeperable{
+public interface RedisClient<T extends RedisServer> extends Observable, Infoable, Closeable, RedisRole, ReplDelayConfig, Releasable, Keeperable{
 	
 	public static enum CLIENT_ROLE{
 		NORMAL,
@@ -32,6 +33,10 @@ public interface RedisClient<T extends RedisServer> extends Observable, Infoable
 	void setSlaveListeningPort(int port);
 
 	int getSlaveListeningPort();
+
+	void setIdc(String idc);
+
+	String getIdc();
 
 	void setClientIpAddress(String host);
 

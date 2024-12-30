@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandExecutionException;
@@ -272,6 +274,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
         Replconf crdt = new Replconf(clientPool, ReplConfType.CRDT, scheduled, commandTimeoutMilli, REPL_CONF_CRDT_MARK);
         chain.add(new FailSafeCommandWrapper<>(crdt));
+        chain.add(new FailSafeCommandWrapper<>(keeperIdcCommand()));
 
         try {
             executeCommand(chain).addListener(new CommandFutureListener() {
@@ -360,6 +363,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
             return command.execute();
         }
         return null;
+    }
+
+    private Replconf keeperIdcCommand() {
+        return new Replconf(clientPool, ReplConfType.IDC, scheduled, commandTimeoutMilli,
+                FoundationService.DEFAULT.getDataCenter());
     }
 
     private Replconf listeningPortCommand() {

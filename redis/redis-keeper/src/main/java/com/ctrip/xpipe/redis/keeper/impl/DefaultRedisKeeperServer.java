@@ -35,7 +35,9 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -162,18 +164,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private RedisOpParser redisOpParser;
 
+	private ReplDelayConfigCache replDelayConfigCache;
+
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
 									KeeperResourceManager resourceManager, SyncRateManager syncRateManager){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, null, null);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager,
-									SyncRateManager syncRateManager, RedisOpParser redisOpParser){
+									SyncRateManager syncRateManager, RedisOpParser redisOpParser, ReplDelayConfigCache replDelayConfigCache){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
@@ -188,6 +192,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.redisOpParser = redisOpParser;
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
+		this.replDelayConfigCache = replDelayConfigCache;
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
@@ -507,8 +512,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public RedisClient<RedisKeeperServer> clientConnected(Channel channel) {
-		
-		RedisClient<RedisKeeperServer> redisClient = new DefaultRedisClient(channel, this);
+
+		DefaultRedisClient redisClient = new DefaultRedisClient(channel, this);
+		redisClient.setReplDelayConfigCache(replDelayConfigCache);
 		redisClients.put(channel, redisClient);
 		
 		redisClient.addObserver(new Observer() {
