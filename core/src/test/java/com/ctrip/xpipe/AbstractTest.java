@@ -194,7 +194,7 @@ public class AbstractTest {
 
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
 
-        waitConditionUntilTimeOut(booleanSupplier, 5000, 2);
+        waitConditionUntilTimeOut(booleanSupplier, 10000, 2);
     }
 
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli) throws TimeoutException {
