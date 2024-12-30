@@ -10,8 +10,10 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
@@ -80,6 +82,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
 				scheduled, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+		when(redisKeeperServer.getKeeperConfig()).thenReturn(new TestKeeperConfig());
 
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);

@@ -55,7 +55,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
 		int keeperPort = redisKeeperServer.getListeningPort();
-		sleep(3000);
+		sleep(5000);
 		logger.info(remarkableMessage("send psync to redump rdb"));
 
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
