@@ -92,7 +92,20 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
-    public void testOnMasterConnected() {
+    public void testOnMasterConnected_resetToken() {
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+
+        listener.onMasterConnected();
+        Assert.assertTrue(listener.canSendPsync());
+        Assert.assertEquals(0, leakyBucket.references());
+        listener.onMasterConnected();
+        Assert.assertEquals(1, leakyBucket.references());
+        Assert.assertTrue(listener.canSendPsync());
+        Assert.assertEquals(0, leakyBucket.references());
     }
 
     @Test

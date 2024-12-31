@@ -70,6 +70,10 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
     protected abstract void innerDoHandle(final String[] args, final RedisSlave redisSlave, RedisKeeperServer redisKeeperServer) throws IOException;
 
     protected void doFullSync(RedisSlave redisSlave) {
+        doFullSync(redisSlave, false);
+    }
+
+    protected void doFullSync(RedisSlave redisSlave, boolean freshRdbNeeded) {
 
         try {
             if(logger.isInfoEnabled()){
@@ -83,7 +87,7 @@ public abstract class AbstractSyncCommandHandler extends AbstractCommandHandler 
             String alert = String.format("FULL(M)<-%s[%s]", redisSlave.metaInfo(), redisKeeperServer.getReplId());
             EventMonitor.DEFAULT.logAlertEvent(alert);
 
-            redisKeeperServer.fullSyncToSlave(redisSlave);
+            redisKeeperServer.fullSyncToSlave(redisSlave, freshRdbNeeded);
             redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
         } catch (IOException e) {
             logger.error("[doFullSync][close client]" + redisSlave, e);

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 
 import java.io.IOException;
 
+import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_FRESH_RDB_SYNC_OFFSET;
 import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFSET;
 
 /**
@@ -36,14 +37,17 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		
 		Long 	   offsetRequest = Long.valueOf(args[1]);
 		String 	   replIdRequest = args[0];
+		if (replIdRequest.equals("?") || offsetRequest == 1) {
+			redisSlave.markColdStart();
+		}
 
 		if(replIdRequest.equals("?")){
-			redisSlave.markColdStart();
-
 			if (redisSlave.isKeeper() && offsetRequest.equals(KEEPER_PARTIAL_SYNC_OFFSET) && null != keeperRepl.replId()) {
 				logger.info("[innerDoHandler][keeper psync]");
 				long continueOffset = keeperRepl.getEndOffset() + 1; // continue from next byte
 				doKeeperPartialSync(redisSlave, keeperRepl.replId(), continueOffset);
+			} else if (redisSlave.isKeeper() && offsetRequest.equals(KEEPER_FRESH_RDB_SYNC_OFFSET)) {
+				doFullSync(redisSlave, true);
 			} else {
 				doFullSync(redisSlave);
 			}

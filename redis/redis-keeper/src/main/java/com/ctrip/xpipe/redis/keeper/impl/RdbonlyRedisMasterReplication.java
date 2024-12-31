@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
@@ -10,19 +11,22 @@ import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.KeeperTolerantClosePsyncException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
-import com.ctrip.xpipe.redis.keeper.exception.psync.RdbOnlyPsyncReplIdNotSameException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
@@ -37,12 +41,25 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	private final boolean tryRordb;
 
-	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, boolean tryRordb,
+	enum REPL_STATE {
+		NORMAL_SYNC,
+		FAIL_FOR_NOT_CONTINUE,
+		FRESH_SYNC,
+		FAIL
+	}
+
+	private REPL_STATE state;
+
+	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
+
+	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
+										 boolean tryRordb, boolean freshRdbNeeded,
                                          NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                          RdbDumper rdbDumper, KeeperResourceManager resourceManager) {
 		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, resourceManager);
 		setRdbDumper(rdbDumper);
 		this.tryRordb = tryRordb;
+		this.state = freshRdbNeeded ? REPL_STATE.FRESH_SYNC : REPL_STATE.NORMAL_SYNC;
 	}
 
 	@Override
@@ -76,6 +93,20 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
+	public void masterDisconnected(Channel channel) {
+		if (state.equals(REPL_STATE.FAIL_FOR_NOT_CONTINUE)) {
+			logger.info("[retryOnceForRdbNotContinue][reconnect master]");
+			state = REPL_STATE.FRESH_SYNC;
+			if (replicationObserver != null) {
+				replicationObserver.onMasterDisconnected();
+			}
+			scheduleReconnect(0);
+		} else {
+			super.masterDisconnected(channel);
+		}
+	}
+
+	@Override
 	protected void doWhenCannotPsync() {
 		try {
 			dumpedRdbStore.close();
@@ -93,9 +124,25 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	protected Psync createPsync() {
 
-		Psync psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
+		Psync psync;
+		RdbOnlyReplicationStore replicationStore;
+		try {
+			replicationStore = tryGetReplicationStore();
+		} catch (Throwable th) {
+			logger.info("[createPsync][prepareReplicationStore][fail] close", th);
+			disconnectWithMaster();
+			throw new PsyncRuntimeException("prepare ReplicationStore fail", th);
+		}
+
+		if (state.equals(REPL_STATE.FRESH_SYNC)) {
+			psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
+		} else {
+			psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
+		}
+
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer.createPsyncObserverForRdbOnlyRepl());
+		currentPsync.set(psync);
 		return psync;
 	}
 
@@ -140,8 +187,50 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doOnFullSync(long masterRdbOffset) {
 		long firstAvailable = redisMaster.getCurrentReplicationStore().firstAvailableOffset();
 		if (firstAvailable > masterRdbOffset + 1) {
-			dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
+			if (state.equals(REPL_STATE.NORMAL_SYNC)) {
+				state = REPL_STATE.FAIL_FOR_NOT_CONTINUE;
+				try {
+					logger.info("[retryOnceForRdbNotContinue][resetRdbStore][{}:{}]{}", masterRdbOffset, firstAvailable, dumpedRdbStore);
+					currentPsync.get().future().setFailure(new KeeperTolerantClosePsyncException(
+							new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable)));
+					resetReplicationStore();
+					disconnectWithMaster();
+				} catch (Exception e) {
+					logger.info("[doOnFullSync][retryForNotContinue] fail", e);
+					dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
+				}
+			} else {
+				dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
+			}
 		}
+	}
+
+	private synchronized void resetReplicationStore() {
+		dumpedRdbStore = null;
+		rdbOnlyReplicationStore = null;
+	}
+
+	private RdbOnlyReplicationStore tryGetReplicationStore() throws IOException {
+		if (null != rdbOnlyReplicationStore) return rdbOnlyReplicationStore;
+
+		synchronized (this) {
+			if (null != rdbOnlyReplicationStore) return rdbOnlyReplicationStore;
+
+			dumpedRdbStore = getRdbDumper().prepareRdbStore();
+			rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
+			return rdbOnlyReplicationStore;
+		}
+	}
+
+	@Override
+	protected void dumpFail(Throwable th) {
+		if (th instanceof KeeperTolerantClosePsyncException ||
+				(null != th.getCause() && th.getCause() instanceof KeeperTolerantClosePsyncException)) {
+			logger.info("[dumpFail][tolerant] {}", th.getMessage());
+			return;
+		}
+
+		super.dumpFail(th);
 	}
 
 	@Override
