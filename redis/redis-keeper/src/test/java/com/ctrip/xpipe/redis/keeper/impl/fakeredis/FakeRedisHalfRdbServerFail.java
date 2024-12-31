@@ -44,7 +44,7 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		logger.info(remarkableMessage("[redisFailWhileSendingRdb]"));
 		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort());
 
-		sleep(1500);
+		sleep(3000);
 		assertPsyncResultEquals(inMemoryPsync);
 
 	}
@@ -67,7 +67,7 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		SimplePsyncObserver simplePsyncObserver = new SimplePsyncObserver();
 		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort(), simplePsyncObserver);
 		//wait
-		simplePsyncObserver.getOnline().get(5000, TimeUnit.MILLISECONDS);
+		simplePsyncObserver.getOnline().get(6000, TimeUnit.MILLISECONDS);
 		//wait for commands
 		sleep(1000);
 

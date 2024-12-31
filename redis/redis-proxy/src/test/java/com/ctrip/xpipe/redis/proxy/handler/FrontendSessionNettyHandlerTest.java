@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -114,7 +115,7 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
         ByteBuf byteBuf = Unpooled.copiedBuffer("test".getBytes());
         channel.writeInbound(byteBuf);
         Assert.assertEquals(0, byteBuf.refCnt());
-        Assert.assertFalse(channel.isOpen());
+        Mockito.verify(session).release();
     }
 
 }
