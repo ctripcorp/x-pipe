@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -616,6 +617,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected Logger getLogger() {
 		return logger;
+	}
+
+	@VisibleForTesting
+	public void setCommandsRetainTimeoutMilli(int timeoutMilli) {
+		this.commandsRetainTimeoutMilli = timeoutMilli;
 	}
 
 }

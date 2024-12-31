@@ -136,13 +136,13 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	
 	@Override
-	public RdbDumper createRdbDumper(boolean tryRrodb) throws CreateRdbDumperException {
+	public RdbDumper createRdbDumper(boolean tryRrodb, boolean freshRdbNeeded) throws CreateRdbDumperException {
 		
 		if(masterState != MASTER_STATE.REDIS_REPL_CONNECTED){
 			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
 			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
 		}
-		return new RedisMasterNewRdbDumper(this, redisKeeperServer, tryRrodb, rdbOnlyEventLoopGroup, scheduled, keeperResourceManager);
+		return new RedisMasterNewRdbDumper(this, redisKeeperServer, tryRrodb, freshRdbNeeded, rdbOnlyEventLoopGroup, scheduled, keeperResourceManager);
 	}
 	
 	public MASTER_STATE getMasterState() {

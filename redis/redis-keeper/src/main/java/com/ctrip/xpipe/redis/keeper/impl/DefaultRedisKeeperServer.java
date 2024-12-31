@@ -770,17 +770,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	@Override
-	public void fullSyncToSlave(final RedisSlave redisSlave) throws IOException {
+	public void fullSyncToSlave(final RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException {
 		
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 
-		if (crossRegion.get() && !tryFullSyncToSlaveWithOthers(redisSlave)) {
+		if (crossRegion.get() && !redisSlave.isKeeper() && !tryFullSyncToSlaveWithOthers(redisSlave)) {
 			redisSlave.waitForSeqFsync();
 			return;
 		}
 
 		boolean tryRordb = false; // slave and master all support rordb or not
-		if (redisSlave.capaOf(CAPA.RORDB) ) {
+		if (redisSlave.capaOf(CAPA.RORDB)) {
 			try {
 				logger.info("[fullSyncToSlave][rordb]{}", redisSlave);
 				tryRordb = keeperRedisMaster.checkMasterSupportRordb().get();
@@ -792,28 +792,30 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(rdbDumper.get() == null){
 			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
-			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-			FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener, tryRordb);
-			if(null != failCause){
-				if (FULLSYNC_PROGRESS_NOT_SUPPORTED.equals(failCause)) {
+			if (!freshRdbNeeded) {
+				FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
+				FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener, tryRordb);
+				if (null == failCause) {
+					return;
+				} else if (FULLSYNC_PROGRESS_NOT_SUPPORTED.equals(failCause)) {
 					logger.info("[fullSyncToSlave][progress not support][cancel slave]");
 					redisSlave.close();
 					return;
 				}
+			}
 
-				try{
-					RdbDumper newDumper = dumpNewRdb(tryRordb);
-					redisSlave.waitForRdbDumping();
-					if (newDumper.future().isDone() && !newDumper.future().isSuccess()) {
-						logger.info("[fullSyncToSlave][new dumper fail immediatelly]");
-						redisSlave.close();
-					}
-				}catch(AbstractRdbDumperException e){
-					logger.error("[fullSyncToSlave]", e);
-					if(e.isCancelSlave()){
-						logger.info("[fullSyncToSlave][cancel slave]");	
-						redisSlave.close();
-					}
+			try{
+				RdbDumper newDumper = dumpNewRdb(tryRordb, freshRdbNeeded);
+				redisSlave.waitForRdbDumping();
+				if (newDumper.future().isDone() && !newDumper.future().isSuccess()) {
+					logger.info("[fullSyncToSlave][new dumper fail immediatelly]");
+					redisSlave.close();
+				}
+			}catch(AbstractRdbDumperException e){
+				logger.error("[fullSyncToSlave]", e);
+				if(e.isCancelSlave()){
+					logger.info("[fullSyncToSlave][cancel slave]");
+					redisSlave.close();
 				}
 			}
 		}else{
@@ -822,7 +824,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	private synchronized boolean tryFullSyncToSlaveWithOthers(RedisSlave redisSlave) {
-		if (redisSlave.isKeeper()) return true;
 		if (loadingSlaves.contains(redisSlave)) return true;
 
 		int maxConcurrentLoadingSlaves = keeperConfig.getCrossRegionMaxLoadingSlavesCnt();
@@ -880,8 +881,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	private RdbDumper dumpNewRdb(boolean tryRordb) throws CreateRdbDumperException, SetRdbDumperException {
+		return dumpNewRdb(tryRordb, false);
+	}
+
+	private RdbDumper dumpNewRdb(boolean tryRordb, boolean freshRdbNeeded) throws CreateRdbDumperException, SetRdbDumperException {
 		
-		RdbDumper rdbDumper = keeperRedisMaster.createRdbDumper(tryRordb);
+		RdbDumper rdbDumper = keeperRedisMaster.createRdbDumper(tryRordb, freshRdbNeeded);
 		setRdbDumper(rdbDumper);
 		rdbDumper.execute();
 		return rdbDumper;

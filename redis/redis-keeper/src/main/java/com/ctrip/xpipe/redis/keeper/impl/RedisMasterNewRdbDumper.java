@@ -41,12 +41,16 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
     private final boolean tryRordb;
 
-    public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer, boolean tryRordb,
+    private final boolean freshRdbNeeded;
+
+    public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
+                                   boolean tryRordb, boolean freshRdbNeeded,
                                    NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                    KeeperResourceManager resourceManager) {
         super(redisKeeperServer);
         this.redisMaster = redisMaster;
         this.tryRordb = tryRordb;
+        this.freshRdbNeeded = freshRdbNeeded;
         this.nioEventLoopGroup = nioEventLoopGroup;
         this.scheduled = scheduled;
         this.resourceManager = resourceManager;
@@ -87,7 +91,8 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     protected void startRdbOnlyReplication() throws Exception {
-        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, nioEventLoopGroup, scheduled, this, resourceManager);
+        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
+                nioEventLoopGroup, scheduled, this, resourceManager);
 
         rdbonlyRedisMasterReplication.initialize();
         rdbonlyRedisMasterReplication.start();
