@@ -77,6 +77,8 @@ public interface CurrentMetaManager extends Observable {
 
 	void setKeeperMaster(Long clusterDbId, Long shardDbId, String addr);
 
+	void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port, String expectedPrimaryDc);
+
 	void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port);
 
 	void setApplierMasterAndNotify(Long clusterDbId, Long shardDbId, String ip, int port, String sids);
