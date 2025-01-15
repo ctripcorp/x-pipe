@@ -27,6 +27,7 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -534,8 +535,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@Override
 	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
-		
-		
+		setKeeperMaster(clusterDbId, shardDbId, ip, port, null);
+	}
+
+	@Override
+	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port, String expectedPrimaryDc) {
+		String dcName = dcMetaCache.getPrimaryDc(clusterDbId, shardDbId);
+		if(expectedPrimaryDc != null && !StringUtil.trimEquals(dcName, expectedPrimaryDc)) {
+			// 如果 expectedDc 为null, 不进行校验。发生了dr切换，禁止修改。
+			// 如果任务基于 PrimaryDc 来修改 keeper meta 就要校验检测过程是否 dc 切换。
+			logger.info("[setKeeperMaster][rejected] primaryDc:{}, expectedPrimaryDc:{}", dcName, expectedPrimaryDc);
+			return;
+		}
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
 		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
 			logger.info("[setKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);

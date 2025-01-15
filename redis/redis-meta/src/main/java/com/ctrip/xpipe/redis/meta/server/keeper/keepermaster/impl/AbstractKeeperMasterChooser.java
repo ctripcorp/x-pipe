@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -33,6 +34,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 
 	@Override
 	protected void work() {
+		String dcName = dcMetaCache.getPrimaryDc(clusterDbId, shardDbId);
 		Pair<String, Integer> keeperMaster = chooseKeeperMaster();
 		logger.debug("[doRun]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
 		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
@@ -41,7 +43,7 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 			return;
 		}
 		logger.debug("[doRun][set]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
-		currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, keeperMaster.getKey(), keeperMaster.getValue());
+		currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, keeperMaster.getKey(), keeperMaster.getValue(), dcName);
 	}
 
 	@Override
