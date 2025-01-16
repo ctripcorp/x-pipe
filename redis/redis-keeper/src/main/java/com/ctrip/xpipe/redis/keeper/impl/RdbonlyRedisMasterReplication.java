@@ -95,11 +95,12 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void masterDisconnected(Channel channel) {
 		if (state.equals(REPL_STATE.FAIL_FOR_NOT_CONTINUE)) {
-			logger.info("[retryOnceForRdbNotContinue][reconnect master]");
+			logger.info("[masterDisconnected][retryOnceForRdbNotContinue] {}", channel);
 			state = REPL_STATE.FRESH_SYNC;
 			if (replicationObserver != null) {
 				replicationObserver.onMasterDisconnected();
 			}
+			resetMasterChannel(channel);
 			scheduleReconnect(0);
 		} else {
 			super.masterDisconnected(channel);

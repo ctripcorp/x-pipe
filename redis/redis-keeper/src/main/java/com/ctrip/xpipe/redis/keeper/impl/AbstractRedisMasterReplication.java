@@ -335,9 +335,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
         });
     }
 
-    @Override
-    public void masterDisconnected(Channel channel) {
-
+    protected void resetMasterChannel(Channel channel) {
         if (channel.equals(this.masterChannel)) {
             logger.info("[masterDisconnected]{}", channel);
             this.masterChannel = null;
@@ -345,6 +343,12 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
             logger.info("[masterDisconnected][unexpected disconnected channel][{}][{}] ignore",
                     ChannelUtil.getDesc(masterChannel), ChannelUtil.getDesc(channel));
         }
+    }
+
+    @Override
+    public void masterDisconnected(Channel channel) {
+
+        resetMasterChannel(channel);
         dumpFail(new PsyncMasterDisconnectedException(channel));
     }
 
