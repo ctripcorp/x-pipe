@@ -52,10 +52,11 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     @Override
     public void removeKeeper(KeeperTransMeta keeperTransMeta) {
         try {
+            long clusterDbId = null == keeperTransMeta.getClusterDbId() ? 1:keeperTransMeta.getClusterDbId();
+            long shardDbId = null == keeperTransMeta.getShardDbId() ? 1:keeperTransMeta.getShardDbId();
             restTemplate.exchange("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}",
                     HttpMethod.DELETE, new HttpEntity<Object>(keeperTransMeta), Void.class,
-                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterDbId(),
-                    keeperTransMeta.getShardDbId());
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), clusterDbId, shardDbId);
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }

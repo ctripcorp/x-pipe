@@ -34,8 +34,8 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
-	private int addKeeperSuccessTimeoutMilli =    180000;
-	private int removeKeeperSuccessTimeoutMilli = 60000;
+	private int addKeeperSuccessTimeoutMilli =    10000;
+	private int removeKeeperSuccessTimeoutMilli = 10000;
 		
 	@Autowired
 	private KeeperContainerServiceFactory keeperContainerServiceFactory;
