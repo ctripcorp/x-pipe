@@ -95,7 +95,10 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 				currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId),
 				keyedObjectPool, 1000, 1, scheduled, executors);
 		try {
+			currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, newMaster.getKey(), newMaster.getValue());
+			// 必须先改 meta, 再修改 keepr, 不然可能被 KeeperStateAlignChecker reset 回去。
 			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);
+			logger.debug("[doRun][set]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newMaster);
 			executionLog.info("[makeKeepersOk]success");
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			logger.error("[makeKeepersOk]" + e.getMessage());
