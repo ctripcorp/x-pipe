@@ -53,6 +53,17 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
         Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
     }
 
+    @Test
+    public void testRemoveWithReplId() throws Exception {
+        this.webServer.enqueue(new MockResponse());
+        KeeperTransMeta meta = new KeeperTransMeta(1L, new KeeperMeta());
+        this.service.removeKeeper(meta);
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.DELETE.toString(), request.getMethod());
+        Assert.assertEquals("/keepers/clusters/1/shards/1", request.getPath());
+        Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
+    }
+
     private KeeperTransMeta mockKeeperMeta() {
         return new KeeperTransMeta(1L, 1L, new KeeperMeta());
     }
