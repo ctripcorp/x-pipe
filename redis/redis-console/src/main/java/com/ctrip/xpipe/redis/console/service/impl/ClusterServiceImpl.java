@@ -64,6 +64,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.APPLIER_PORT_DEFAULT;
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
@@ -723,12 +724,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         if (!StringUtil.isEmpty(clusterType)) {
             String oldClusterType = clusterTbl.getClusterType();
             if (!clusterType.equalsIgnoreCase(oldClusterType)) {
-                if (ClusterType.supportConvert(oldClusterType) && ClusterType.supportConvert(clusterType)) {
+				List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+				if(ClusterType.isSameClusterType (clusterType, HETERO) && (azGroupClusters == null || azGroupClusters.isEmpty())) {
+					throw new BadRequestException("To convert to HETERO, you need to upgrade to az group model first");
+				}
+
+                if (ClusterType.supportConvert(oldClusterType, clusterType)) {
                     needUpdate = true;
                     clusterTbl.setClusterType(clusterType.toUpperCase());
                 } else {
                     // 仅允许单向同步、异构集群之间互相转换
-                    throw new BadRequestException("Only ONE_WAY/HETERO cluster can be converted to each other");
+                    throw new BadRequestException("Only (ONE_WAY, SINGLE_DC)/HETERO cluster can be converted to each other");
                 }
             }
         }
