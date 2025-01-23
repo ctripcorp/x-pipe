@@ -179,4 +179,9 @@ public class AbstractClientConfigMonitor extends AbstractIntervalAction {
         return result;
     }
 
+    @Override
+    protected long getIntervalMilli() {
+        return consoleConfig.getCRedisClusterCacheRefreshIntervalMilli();
+    }
+
 }

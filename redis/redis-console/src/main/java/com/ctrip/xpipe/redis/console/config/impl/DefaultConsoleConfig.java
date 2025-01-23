@@ -588,6 +588,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getCRedisClusterCacheRefreshIntervalMilli() {
+        return checkConfigBean.getCRedisClusterRefreshIntervalMilli();
+    }
+
+    @Override
     public boolean getShouldDoAfterNettyClientConnected() {
         return dataCenterConfigBean.getDoAfterNettyClientConnected();
     }
@@ -623,10 +628,10 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
 
     protected String getProperty(String key) {
         for(AbstractConfigBean configBean : configBeans) {
-           String val = configBean.getProperty(key);
-           if(val != null) {
-               return val;
-           }
+            String val = configBean.getProperty(key);
+            if(val != null) {
+                return val;
+            }
         }
         return null;
     }
