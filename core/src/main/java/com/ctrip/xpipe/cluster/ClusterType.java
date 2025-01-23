@@ -107,6 +107,20 @@ public enum ClusterType {
         return isSameClusterType(type, ONE_WAY) || isSameClusterType(type, HETERO);
     }
 
+    public static boolean supportConvert(String oldType, String newType) {
+        if(StringUtil.isEmpty(oldType) || StringUtil.isEmpty(newType)) {
+            return false;
+        }
+        if(isSameClusterType(oldType, HETERO) &&
+                (isSameClusterType(newType, ONE_WAY) || isSameClusterType(newType, SINGLE_DC))) {
+            return true;
+        }
+        if((isSameClusterType(oldType, ONE_WAY) || isSameClusterType(oldType, SINGLE_DC)) && isSameClusterType(newType, HETERO)) {
+            return true;
+        }
+        return false;
+    }
+
     public static ClusterType lookup(String name) {
         if (StringUtil.isEmpty(name)) throw new IllegalArgumentException("no ClusterType for name " + name);
         return valueOf(name.toUpperCase());
