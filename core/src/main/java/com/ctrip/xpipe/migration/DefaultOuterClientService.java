@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
@@ -18,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultOuterClientService extends AbstractOuterClientService {
 
 	private Map<HostPort, Boolean> instanceStatus = new ConcurrentHashMap<>();
+
+	private Map<String, Integer> cntMap = new ConcurrentHashMap<>();
 
 	@Override
 	public void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
@@ -131,6 +134,7 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		for (HostPortDcStatus hostPortDcStatus : markInstanceRequest.getHostPortDcStatuses()) {
 			instanceStatus.put(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()), hostPortDcStatus.isCanRead());
 		}
+		this.cntMap = markInstanceRequest.getInstanceCnt();
 	}
 
 	@Override
@@ -139,5 +143,9 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		resp.setSuccess(true);
 		resp.setResult(Collections.emptyList());
 		return resp;
+	}
+
+	public Map<String, Integer> getCntMap() {
+		return cntMap;
 	}
 }

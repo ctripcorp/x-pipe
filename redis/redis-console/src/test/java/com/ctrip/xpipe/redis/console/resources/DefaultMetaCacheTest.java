@@ -356,6 +356,14 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         }
     }
 
+    @Test
+    public void testClusterDnCnt() {
+        Map<String, Integer> cntMap = metaCache.getClusterCntMap("cluster1");
+        Assert.assertEquals(cntMap.size(), 2);
+        Assert.assertEquals(cntMap.get("jq").intValue(), 3);
+        Assert.assertEquals(cntMap.get("oy").intValue(), 2);
+    }
+
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }
