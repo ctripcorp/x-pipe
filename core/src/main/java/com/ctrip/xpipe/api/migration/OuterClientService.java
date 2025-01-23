@@ -732,13 +732,17 @@ public interface OuterClientService extends Ordered{
 		private String clusterName;
 		private String activeDc;
 
+		private Map<String, Integer> instanceCnt;
+
 		public MarkInstanceRequest() {
 		}
 
-		public MarkInstanceRequest(Set<HostPortDcStatus> hostPortDcStatuses, String clusterName, String activeDc) {
+		public MarkInstanceRequest(Set<HostPortDcStatus> hostPortDcStatuses, String clusterName,
+								   String activeDc, Map<String, Integer> instanceCnt) {
 			this.hostPortDcStatuses = hostPortDcStatuses;
 			this.clusterName = clusterName;
 			this.activeDc = activeDc;
+			this.instanceCnt = instanceCnt;
 		}
 
 		public Set<HostPortDcStatus> getHostPortDcStatuses() {
@@ -763,6 +767,14 @@ public interface OuterClientService extends Ordered{
 
 		public void setActiveDc(String activeDc) {
 			this.activeDc = activeDc;
+		}
+
+		public Map<String, Integer> getInstanceCnt() {
+			return instanceCnt;
+		}
+
+		public void setInstanceCnt(Map<String, Integer> instanceCnt) {
+			this.instanceCnt = instanceCnt;
 		}
 
 		@Override

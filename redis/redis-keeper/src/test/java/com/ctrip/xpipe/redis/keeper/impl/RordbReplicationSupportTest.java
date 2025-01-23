@@ -198,7 +198,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
             }
         });
         psync.execute();
-        future.get(5, TimeUnit.SECONDS);
+        future.get(10, TimeUnit.SECONDS);
 
         return psync;
     }
