@@ -190,17 +190,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     public void updateCluster() {
         String clusterName = "cluster-name";
 
-        ClusterTbl clusterTbl = new ClusterTbl()
-            .setClusterName(clusterName)
-            .setClusterType(ClusterType.ONE_WAY.toString())
-            .setClusterDescription("")
-            .setActivedcId(1)
-            .setIsXpipeInterested(true)
-            .setStatus("normal")
-            .setClusterDesignatedRouteIds("")
-            .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString())
-            .setTag("");
-        clusterDao.createCluster(clusterTbl);
+        this.createCluster(clusterName, "ONE_WAY", Arrays.asList("jq", "oy"), null);
 
         long orgId = 5L;
         String desc = "update desc", adminEmails = "test@ctrip.com";
@@ -209,6 +199,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         clusterInfo.setClusterType(ClusterType.HETERO.toString());
         clusterInfo.setDesc(desc);
 
+        clusterController.upgradeAzGroup(clusterName);
         RetMessage retMessage = clusterController.updateCluster(clusterInfo);
         logger.info("{}", retMessage.getMessage());
         Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
@@ -216,15 +207,15 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         ClusterTbl cluster = clusterDao.findClusterAndOrgByName(clusterName);
         Assert.assertEquals(ClusterType.HETERO.toString(), cluster.getClusterType());
         // 目前api接口不更新desc
-        Assert.assertEquals("", cluster.getClusterDescription());
-        Assert.assertEquals(0L, cluster.getClusterOrgId());
-        Assert.assertNull(cluster.getClusterAdminEmails());
+        Assert.assertEquals("desc", cluster.getClusterDescription());
+        Assert.assertEquals(1L, cluster.getClusterOrgId());
+        Assert.assertEquals("a@trip.com", cluster.getClusterAdminEmails());
 
         clusterInfo.setOrganizationId(orgId);
         clusterController.updateCluster(clusterInfo);
         cluster = clusterDao.findClusterAndOrgByName(clusterName);
         Assert.assertEquals(orgId, cluster.getOrganizationInfo().getOrgId());
-        Assert.assertNull(cluster.getClusterAdminEmails());
+        Assert.assertEquals("a@trip.com", cluster.getClusterAdminEmails());
 
         clusterInfo.setClusterAdminEmails(adminEmails);
         clusterController.updateCluster(clusterInfo);
