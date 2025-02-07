@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.config;
 
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
@@ -21,19 +20,19 @@ import java.util.Set;
 public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getServerMode();
-	
+
 	String getDatasource();
-	
+
 	int getConsoleNotifyRetryTimes();
-	
+
 	int getConsoleNotifyRetryInterval();
 
 	Map<String,String> getMetaservers();
-	
+
 	int getConsoleNotifyThreads();
 
 	Set<String> getConsoleUserAccessWhiteList();
-	
+
 	int getRedisReplicationHealthCheckInterval();
 
 	int getClusterHealthCheckInterval();
@@ -126,10 +125,10 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getCheckerAckTimeoutMilli();
 
-    long getMigrationTimeoutMilli();
+	long getMigrationTimeoutMilli();
 
 	long getServletMethodTimeoutMilli();
-	
+
 	boolean isRedisConfigCheckMonitorOpen();
 
 	String getRedisConfigCheckRules();
@@ -157,5 +156,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	String getConsoleNoDbDomain();
 
 	String getHttpAcceptEncoding();
+
+	int getCRedisClusterCacheRefreshIntervalMilli();
 
 }

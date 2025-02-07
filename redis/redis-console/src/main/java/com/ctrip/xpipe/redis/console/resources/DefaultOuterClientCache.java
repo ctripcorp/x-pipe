@@ -1,14 +1,15 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.cache.TimeBoundCache;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
@@ -26,7 +27,7 @@ import com.ctrip.xpipe.api.migration.OuterClientService.*;
  * only cache current dc active dc one-way clusters
  */
 @Component
-public class DefaultOuterClientCache extends AbstractLifecycle implements OuterClientCache, TopElement {
+public class DefaultOuterClientCache implements ConsoleLeaderAware, OuterClientCache {
 
     private OuterClientService outerClientService;
 
@@ -36,18 +37,22 @@ public class DefaultOuterClientCache extends AbstractLifecycle implements OuterC
 
     private TimeBoundCache<Map<String, ClusterInfo>> currentDcClustersCache;
 
-    private ScheduledExecutorService scheduled;
+    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+            XpipeThreadFactory.create("OuterClientCacheRefreshScheduled"));;
 
     private DynamicDelayPeriodTask refreshTask;
 
     private DynamicDelayPeriodTask refreshCurrentDcTask;
 
+    protected Logger logger = LoggerFactory.getLogger(getClass());
+
+
     public DefaultOuterClientCache(ConsoleConfig config) {
         this.outerClientService = OuterClientService.DEFAULT;
         this.config = config;
-        this.clustersCache = new TimeBoundCache<>(() -> 10000 + config.getRedisConfCheckIntervalMilli(),
+        this.clustersCache = new TimeBoundCache<>(() -> 10000 + getIntervalMilli(),
                 () -> loadClusters(FoundationService.DEFAULT.getDataCenter()));
-        this.currentDcClustersCache = new TimeBoundCache<>(() -> 10000 + config.getRedisConfCheckIntervalMilli(),
+        this.currentDcClustersCache = new TimeBoundCache<>(() -> 10000 + getIntervalMilli(),
                 () -> loadCurrentDcClusters(FoundationService.DEFAULT.getDataCenter()));
     }
 
@@ -152,38 +157,70 @@ public class DefaultOuterClientCache extends AbstractLifecycle implements OuterC
         return instance;
     }
 
-    @Override
-    protected void doInitialize() throws Exception {
-        super.doInitialize();
-        this.scheduled = Executors.newScheduledThreadPool(1,
-                XpipeThreadFactory.create("OuterClientCacheRefreshScheduled"));
-        this.refreshTask = new DynamicDelayPeriodTask("OuterClientCacheRefresh", clustersCache::refresh,
-                config::getRedisConfCheckIntervalMilli, scheduled);
-        this.refreshCurrentDcTask = new DynamicDelayPeriodTask("OuterClientCurrentDcCacheRefresh", currentDcClustersCache::refresh,
-                config::getRedisConfCheckIntervalMilli, scheduled);
+    private synchronized void stopLoadData() throws Exception {
+
+        logger.info("[refreshCurrentDcTask][stop]");
+        if(refreshCurrentDcTask != null){
+            refreshCurrentDcTask.stop();
+        }
+        refreshCurrentDcTask = null;
+        logger.info("[refreshTask][stop]");
+        if(refreshTask != null){
+            refreshTask.stop();
+        }
+        refreshTask = null;
+
     }
 
-    @Override
-    protected void doStart() throws Exception {
-        super.doStart();
-        this.refreshTask.start();
+    private synchronized void startLoadData() throws Exception {
+
+        if(refreshCurrentDcTask == null){
+            this.refreshCurrentDcTask = new DynamicDelayPeriodTask("OuterClientCurrentDcCacheRefresh", currentDcClustersCache::refresh,
+                    this::getIntervalMilli, scheduled);
+        }
+
         this.refreshCurrentDcTask.start();
+        logger.info("[refreshCurrentDcTask][start]");
+
+        if(refreshTask == null){
+            this.refreshTask = new DynamicDelayPeriodTask("OuterClientCacheRefresh", clustersCache::refresh,
+                    this::getIntervalMilli, scheduled);
+        }
+
+        this.refreshTask.start();
+
+        logger.info("[refreshTask][start]");
+    }
+
+    private void doStart() {
+        logger.info("[doStart]");
+        try {
+            startLoadData();
+        } catch (Throwable th) {
+            logger.error("[doStart]", th);
+        }
+    }
+
+    private void doStop() {
+        try {
+            stopLoadData();
+        } catch (Throwable th) {
+            logger.error("[doStop]", th);
+        }
     }
 
     @Override
-    protected void doStop() throws Exception {
-        super.doStop();
-        this.refreshTask.stop();
-        this.refreshCurrentDcTask.stop();
+    public void isleader() {
+        doStop();
+        doStart();
     }
 
     @Override
-    protected void doDispose() throws Exception {
-        super.doDispose();
-        this.scheduled.shutdown();
-        this.scheduled = null;
-        this.refreshTask = null;
-        this.refreshCurrentDcTask = null;
+    public void notLeader() {
+        doStop();
     }
 
+    private int getIntervalMilli() {
+        return config.getCRedisClusterCacheRefreshIntervalMilli();
+    }
 }

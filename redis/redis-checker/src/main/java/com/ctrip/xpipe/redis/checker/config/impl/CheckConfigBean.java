@@ -41,6 +41,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
 
+    public static final String KEY_CREDIS_CLUSTER_REFRESH_INTERVAL = "credis.cluster.refresh.interval";
+
     public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
 
     public static final String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
@@ -183,6 +185,10 @@ public class CheckConfigBean extends AbstractConfigBean {
                 KEY_REDIS_CONF_CHECK_INTERVAL,
                 Integer.parseInt(System.getProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "300000"))
         );
+    }
+
+    public int getCRedisClusterRefreshIntervalMilli() {
+        return getIntProperty(KEY_CREDIS_CLUSTER_REFRESH_INTERVAL, 60000);
     }
 
     public QuorumConfig getDefaultSentinelQuorumConfig() {
