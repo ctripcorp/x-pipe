@@ -41,7 +41,7 @@
         <spring-boot-maven-plugin.version>2.3.12.RELEASE</spring-boot-maven-plugin.version>
         <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
         <netty3.version>3.10.5.Final</netty3.version>
-        <ctrip-framework-foundation.version>1.8.18</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.8.26</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>3.6.13</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
