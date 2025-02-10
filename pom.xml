@@ -41,9 +41,9 @@
         <spring-boot-maven-plugin.version>2.3.12.RELEASE</spring-boot-maven-plugin.version>
         <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
         <netty3.version>3.10.5.Final</netty3.version>
-        <ctrip-framework-foundation.version>1.8.18</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.8.31</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
-        <cat.version>3.3.32</cat.version>
+        <cat.version>3.6.13</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
@@ -83,6 +83,7 @@
         <mysql-connector.version>5.1.48</mysql-connector.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
+        <guava-version>31.0.1-jre</guava-version>
     </properties>
 
     <modules>
@@ -691,6 +692,12 @@
                 <groupId>com.google.code.gson</groupId>
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava-version}</version>
             </dependency>
 
             <!-- unit test -->
