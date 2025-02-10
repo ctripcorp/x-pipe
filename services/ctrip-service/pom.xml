@@ -112,6 +112,10 @@
                     <groupId>com.ctrip.ops</groupId>
                     <artifactId>hickwall-sdk</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>qunar.tc.qconfig</groupId>
+                    <artifactId>qconfig-common</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
