@@ -1132,11 +1132,7 @@
             <groupId>com.ctrip.framework</groupId>
             <artifactId>framework-foundation</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.ctrip</groupId>
-            <artifactId>ctrip-super-rule</artifactId>
-            <type>pom</type>
-        </dependency>
+
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
