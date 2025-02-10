@@ -24,4 +24,7 @@ public interface TunnelManager extends Releasable, Observer {
     List<Tunnel> tunnels();
 
     Tunnel getById(String id);
+
+    void markAllUnRead();
+
 }
