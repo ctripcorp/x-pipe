@@ -141,5 +141,4 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         Assert.assertEquals("jq", status.getDc());
         Assert.assertTrue(status.isCanRead());
     }
-
 }

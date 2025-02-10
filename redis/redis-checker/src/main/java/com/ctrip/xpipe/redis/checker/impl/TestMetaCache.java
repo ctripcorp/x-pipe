@@ -227,4 +227,9 @@ public class TestMetaCache implements MetaCache {
         return Collections.emptySet();
     }
 
+    @Override
+    public Map<String, Integer> getClusterCntMap(String clusterName) {
+        return Collections.emptyMap();
+    }
+
 }
