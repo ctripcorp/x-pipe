@@ -686,6 +686,12 @@
                 <groupId>com.dianping.cat</groupId>
                 <artifactId>cat-client</artifactId>
                 <version>${cat.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.lz4</groupId>
+                        <artifactId>lz4-java</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
