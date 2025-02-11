@@ -52,6 +52,10 @@ for _Version in `ls qunar/tc/tcdev/`; do
 	mvn install:install-file -Dfile=qunar/tc/tcdev/$_Version/tcdev-$_Version.pom -DpomFile=qunar/tc/tcdev/$_Version/tcdev-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls qunar/common/qunar-suprule/`; do
+	mvn install:install-file -Dfile=qunar/common/qunar-suprule/$_Version/qunar-suprule-$_Version.pom -DpomFile=qunar/common/qunar-suprule/$_Version/qunar-suprule-$_Version.pom -Dpackaging=pom
+done
+
 
 for _Version in `ls qunar/common/qunar-supom/`; do
 	mvn install:install-file -Dfile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -DpomFile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -Dpackaging=pom

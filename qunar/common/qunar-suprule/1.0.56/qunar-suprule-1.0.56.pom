@@ -1,0 +1,85 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ctripgroup.scm</groupId>
+        <artifactId>super-rule</artifactId>
+        <version>1.0.24</version>
+    </parent>
+
+    <groupId>qunar.common</groupId>
+    <artifactId>qunar-suprule</artifactId>
+    <version>1.0.56</version>
+
+    <packaging>pom</packaging>
+
+    <name>Qunar Super Rule</name>
+    <description>Qunar 通用超级rule</description>
+
+    <properties>
+        <releases.repo>http://nexus.corp.qunar.com/nexus/content/repositories/releases</releases.repo>
+        <snapshots.repo>http://nexus.corp.qunar.com/nexus/content/repositories/snapshots</snapshots.repo>
+
+        <!--  properties for enforcer_custom_rules  -->
+        <enforcer.rule.logFormat>Qunar Enforcer Rules</enforcer.rule.logFormat>
+
+        <!--  enforcer规则失败,官方版本日志级别仍为warning,Qunar版基于1.3.1修改了日志输出级别  -->
+        <!--  <maven-enforcer-plugin_version>1.3.1.qunar-1</maven-enforcer-plugin_version>  -->
+
+        <!--  rule requireGroupId  -->
+        <enforcer.requireGroupId.prefix>com.qunar.|qunar.|com.ctrip.</enforcer.requireGroupId.prefix>
+
+        <!--  rule requireVersion  -->
+        <enforcer.requireVersion.releasePattern>([1-9][0-9]*|0)\.([1-9][0-9]*|0)\.([1-9][0-9]*|0)((\-PRE(\-[1-9][0-9]*)?)|(\-bugfix(\-[1-9][0-9]*)?))?</enforcer.requireVersion.releasePattern>
+        <enforcer.requireVersion.snapshotPattern>.+-SNAPSHOT</enforcer.requireVersion.snapshotPattern>
+
+        <!--rule qBanDuplicateClasses-->
+        <enforcer.qBanDuplicateClasses.checkScope>qunar</enforcer.qBanDuplicateClasses.checkScope>
+
+        <!-- rule distributionManagementRule  -->
+        <enforcer.distributionManagementRule.skip>true</enforcer.distributionManagementRule.skip>
+
+        <!-- rule customDependencyRules -->
+        <enforcer.customDependencyRules.checkScope>qunar</enforcer.customDependencyRules.checkScope>
+
+        <!-- rule requireBom -->
+        <enforcer.requireBom.skip>false</enforcer.requireBom.skip>
+
+        <mvn_version.update_pattern>0.0.*</mvn_version.update_pattern>
+
+        <shadow_maven_plugin_version>1.0.30</shadow_maven_plugin_version>
+
+        <qunar_dev_plugin_version>1.0.14</qunar_dev_plugin_version>
+
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.qunar.cm</groupId>
+                <artifactId>qcm-maven-plugin</artifactId>
+                <version>1.0.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
+            </plugin>
+
+            <plugin>
+                <groupId>qunar.tc.shadow</groupId>
+                <artifactId>shadow-maven-plugin</artifactId>
+                <version>${shadow_maven_plugin_version}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>com.qunar.cm</groupId>
+                <artifactId>qunar-dev-plugin</artifactId>
+                <version>${qunar_dev_plugin_version}</version>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
