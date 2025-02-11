@@ -68,10 +68,13 @@ for _Version in `ls org/springframework/boot/spring-boot-dependencies/`; do
 	mvn install:install-file -Dfile=org/springframework/boot/spring-boot-dependencies/$_Version/spring-boot-dependencies-$_Version.pom -DpomFile=org/springframework/boot/spring-boot-dependencies/$_Version/spring-boot-dependencies-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls com/dianping/cat/cat-exporter/`; do
+	mvn install:install-file -Dfile=com/dianping/cat/cat-exporter/$_Version/cat-exporter-$_Version.jar -DpomFile=com/dianping/cat/cat-exporter/$_Version/cat-exporter-$_Version.pom
+done
+
 for _Version in `ls com/dianping/cat/cat-client/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.jar -DpomFile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.pom
 done
-
 
 for _Version in `ls com/dianping/cat/parent/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/parent/$_Version/parent-$_Version.pom -DpomFile=com/dianping/cat/parent/$_Version/parent-$_Version.pom -Dpackaging=pom
