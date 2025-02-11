@@ -1216,7 +1216,6 @@
                         <version>${coveralls-maven-plugin.version}</version>
                     </plugin>
 
-
                 </plugins>
             </build>
             <repositories>
