@@ -1,0 +1,105 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>qunar-suprule</artifactId>
+        <groupId>qunar.common</groupId>
+        <version>RELEASE</version>
+    </parent>
+
+    <groupId>qunar.common</groupId>
+    <artifactId>qunar-supom</artifactId>
+    <version>2.0.1</version>
+    <packaging>pom</packaging>
+    <name>Qunar Super POM</name>
+    <description>Qunar 通用超级pom</description>
+
+    <modules>
+        <module>qunar-supom-generic</module>
+        <module>qunar-supom-qzz</module>
+    </modules>
+
+    <properties>
+        <!-- for maven compiler plugin -->
+        <maven_compiler_plugin_version>3.2</maven_compiler_plugin_version>
+        <java_source_version>1.7</java_source_version>
+        <java_target_version>1.7</java_target_version>
+        <file_encoding>UTF-8</file_encoding>
+        <maven_source_plugin_version>2.4</maven_source_plugin_version>
+        <maven_jar_plugin_version>2.5</maven_jar_plugin_version>
+        <maven_war_plugin_version>2.5</maven_war_plugin_version>
+        <maven_install_plugin_version>2.5.2</maven_install_plugin_version>
+        <maven_deploy_plugin_version>2.8.2</maven_deploy_plugin_version>
+        <checkDeployRelease_skip>false</checkDeployRelease_skip>
+        <maven_deploy_skip>false</maven_deploy_skip>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven_jar_plugin_version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>${maven_war_plugin_version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${maven_install_plugin_version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven_deploy_plugin_version}</version>
+                    <configuration>
+                        <skip>${maven_deploy_skip}</skip>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven_compiler_plugin_version}</version>
+                    <configuration>
+                        <source>${java_source_version}</source>
+                        <target>${java_target_version}</target>
+                        <encoding>${file_encoding}</encoding>
+                        <compilerArgs>
+                            <arg>-J-Duser.country=US</arg>
+                            <!--高版本18.2的idea编辑器,build project时会报错: "Error:java: invalid flag: -version"-->
+                            <!--<arg>-version</arg>-->
+                        </compilerArgs>
+                        <debug>true</debug>
+                        <fork>true</fork>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven_source_plugin_version}</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <attach>true</attach>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

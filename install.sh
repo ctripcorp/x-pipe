@@ -52,6 +52,11 @@ for _Version in `ls qunar/tc/tcdev/`; do
 	mvn install:install-file -Dfile=qunar/tc/tcdev/$_Version/tcdev-$_Version.pom -DpomFile=qunar/tc/tcdev/$_Version/tcdev-$_Version.pom -Dpackaging=pom
 done
 
+
+for _Version in `ls qunar/common/qunar-supom/`; do
+	mvn install:install-file -Dfile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -DpomFile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -Dpackaging=pom
+done
+
 for _Version in `ls com/dianping/cat/cat-client/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.jar -DpomFile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.pom
 done
