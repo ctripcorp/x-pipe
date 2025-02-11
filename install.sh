@@ -60,9 +60,12 @@ for _Version in `ls qunar/common/qunar-suprule/`; do
 	mvn install:install-file -Dfile=qunar/common/qunar-suprule/$_Version/qunar-suprule-$_Version.pom -DpomFile=qunar/common/qunar-suprule/$_Version/qunar-suprule-$_Version.pom -Dpackaging=pom
 done
 
-
 for _Version in `ls qunar/common/qunar-supom/`; do
 	mvn install:install-file -Dfile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -DpomFile=qunar/common/qunar-supom/$_Version/qunar-supom-$_Version.pom -Dpackaging=pom
+done
+
+for _Version in `ls org/springframework/boot/spring-boot-dependencies/`; do
+	mvn install:install-file -Dfile=org/springframework/boot/spring-boot-dependencies/$_Version/spring-boot-dependencies-$_Version.pom -DpomFile=org/springframework/boot/spring-boot-dependencies/$_Version/spring-boot-dependencies-$_Version.pom -Dpackaging=pom
 done
 
 for _Version in `ls com/dianping/cat/cat-client/`; do
