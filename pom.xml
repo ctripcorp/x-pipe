@@ -354,8 +354,6 @@
                 <groupId>com.ctrip</groupId>
                 <artifactId>ctrip-super-rule</artifactId>
                 <version>${ctrip-super-rule.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
 
             <dependency>
