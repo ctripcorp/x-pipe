@@ -6,6 +6,7 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
 import credis.java.client.AsyncCacheProvider;
+import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
 import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisSessionLocator;
@@ -41,7 +42,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final String subenv;
 
-    final AsyncCacheProviderImpl asyncProvider;
+    final AsyncApplierCacheProvider asyncProvider;
 
     final Codec codec;
 
@@ -58,10 +59,10 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     // simple fix locator parallel
     private final Object locatorLock = new Object();
 
-    public CRedisAsyncClient(String clusterName, String subenv, AsyncCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware, HashStrategyFactory hashStrategyFactory) {
+    public CRedisAsyncClient(String clusterName, String subenv, AsyncApplierCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware, HashStrategyFactory hashStrategyFactory) {
         this.clusterName = clusterName;
         this.subenv = subenv;
-        this.asyncProvider = (AsyncCacheProviderImpl) asyncProvider;
+        this.asyncProvider = asyncProvider;
         this.txnProvider = txnProvider;
         this.configFrozenAware = configFrozenAware;
         this.hashStrategyFactory = hashStrategyFactory;
@@ -231,7 +232,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
     }
 
     private CRedisSessionLocator locator() {
-        return asyncProvider.asyncClient.cRedisSessionLocator;
+        return asyncProvider.getCRedisAsyncClient().getSessionLocator();
     }
 
     private <T> CommandFuture<T> resultFuture(T result) {
