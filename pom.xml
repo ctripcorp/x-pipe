@@ -136,6 +136,8 @@
                 <groupId>qunar.common</groupId>
                 <artifactId>qunar-suprule</artifactId>
                 <version>${qunar.suprule.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>qunar.common</groupId>
