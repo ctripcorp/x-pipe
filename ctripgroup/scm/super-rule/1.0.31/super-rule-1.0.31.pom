@@ -1,0 +1,335 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ctripgroup.scm</groupId>
+    <artifactId>super-rule</artifactId>
+    <version>1.0.31</version>
+
+    <packaging>pom</packaging>
+
+    <name>Ctrip Group Super Rule</name>
+    <description>Ctrip Group通用超级rule</description>
+
+    <properties>
+        <maven-enforcer-plugin_version>1.3.1.qunar-1</maven-enforcer-plugin_version>
+        <extra-enforcer-rules_version>1.0-beta-3</extra-enforcer-rules_version>
+        <enforcer-custom-rules_version>1.0.27</enforcer-custom-rules_version>
+        <qcm-maven-plugin_version>1.0.0</qcm-maven-plugin_version>
+
+        <!-- properties for enforcer_custom_rules -->
+        <enforcer.rule.logFormat>Ctrip Group Enforcer Rules</enforcer.rule.logFormat>
+
+        <!-- rule requireGroupId -->
+        <enforcer.requireGroupId.skip>false</enforcer.requireGroupId.skip>
+        <enforcer.requireGroupId.prefix>com.qunar.|qunar.|com.ctrip.|ctripgroup.</enforcer.requireGroupId.prefix>
+
+        <!-- rule requireReleaseTag -->
+        <enforcer.requireReleaseTag.skip>true</enforcer.requireReleaseTag.skip>
+        
+        <!-- rule requireVersion -->
+        <enforcer.requireVersion.skip>false</enforcer.requireVersion.skip>
+        <enforcer.requireVersion.releasePattern>([1-9][0-9]*|0)\.([1-9][0-9]*|0)\.([1-9][0-9]*|0)</enforcer.requireVersion.releasePattern>
+        <enforcer.requireVersion.snapshotPattern>([1-9][0-9]*|0)\.([1-9][0-9]*|0)\.([1-9][0-9]*|0)-SNAPSHOT</enforcer.requireVersion.snapshotPattern>
+
+        <!-- rule requireSameVersion -->
+        <enforcer.requireSameVersion.skip>false</enforcer.requireSameVersion.skip>
+
+        <!-- rule requireDistributionManagement -->
+        <enforcer.requireDistributionManagement.skip>false</enforcer.requireDistributionManagement.skip>
+
+        <!--rule requirePlugins-->
+        <enforcer.requirePlugins.skip>false</enforcer.requirePlugins.skip>
+
+        <!--rule checkDeployRelease-->
+        <enforcer.checkDeployRelease.skip>false</enforcer.checkDeployRelease.skip>
+
+        <!--rule qBanDuplicateClasses-->
+        <enforcer.qBanDuplicateClasses.skip>false</enforcer.qBanDuplicateClasses.skip>
+        <enforcer.qBanDuplicateClasses.onerror.fail>true</enforcer.qBanDuplicateClasses.onerror.fail>
+        <enforcer.qBanDuplicateClasses.checkScope>all</enforcer.qBanDuplicateClasses.checkScope>
+
+        <!--rule distributionManagementRule -->
+        <enforcer.distributionManagementRule.skip>false</enforcer.distributionManagementRule.skip>
+        <enforcer.distributionManagementRule.onerror.fail>true</enforcer.distributionManagementRule.onerror.fail>
+
+        <!--rule customDependencyRules-->
+        <enforcer.customDependencyRules.skip>false</enforcer.customDependencyRules.skip>
+        <enforcer.customDependencyRules.checkScope>ctripgroup</enforcer.customDependencyRules.checkScope>
+        <enforcer.customDependencyRules.noSnapshotOnline>true</enforcer.customDependencyRules.noSnapshotOnline>
+
+        <!--rule requireBom -->
+        <enforcer.requireBom.skip>true</enforcer.requireBom.skip>
+        <enforcer.requireBom.level>warning</enforcer.requireBom.level>
+        <enforcer.requireBom.bomGroupId>qunar.tc</enforcer.requireBom.bomGroupId>
+        <enforcer.requireBom.bomArtifactId>tcdev</enforcer.requireBom.bomArtifactId>
+        <enforcer.requireBom.baseDepGroupId>qunar.common</enforcer.requireBom.baseDepGroupId>
+        <enforcer.requireBom.baseDepArtifactId>common-core</enforcer.requireBom.baseDepArtifactId>
+        <enforcer.requireBom.nexusUrl>http://nexus.corp.qunar.com/nexus/content/repositories/releases</enforcer.requireBom.nexusUrl>
+        <enforcer.requireBom.supomGroupId>qunar.common</enforcer.requireBom.supomGroupId>
+        <enforcer.requireBom.supomArtifactId>qunar-supom-generic</enforcer.requireBom.supomArtifactId>
+        <enforcer.requireBom.wikiUrl>http://wiki.corp.qunar.com/confluence/pages/viewpage.action?pageId=114438300</enforcer.requireBom.wikiUrl>
+        <enforcer.requireBom.recordBomVersion>false</enforcer.requireBom.recordBomVersion>
+
+        <!-- api地址及降级策略 -->
+        <enforcer.custom.api.url>http://cmapi.corp.qunar.com</enforcer.custom.api.url>
+        <enforcer.custom.api.timeout>30</enforcer.custom.api.timeout>
+        <enforcer.custom.api.onerror.fail>true</enforcer.custom.api.onerror.fail>
+
+        <!--vi check whiteList -->
+        <enforcer.checkViPlugin.whiteList>vi-core.ignite,vi.ignite,ctrip.env.check,qunarcommon.ignite,arch.qconfig,fx.credis.ignite,fx.dal.ignite,fx.qmq.meta,fx.soa.ignite,coreinfo.client.ignite,ibu.shark,di.data.abtest.client.ignite,fx.cdubbo.ignite,fx.cdubbo.mesh.ignite,com.ctrip.corp.foundation.common.plus.appgray.GrayLaunchWarmUp,com.ctrip.corp.foundation.common.util.XmlParseWarmUp,flt.foundation.dal.extension,ibu.cargo.ignite,framework.date,flight.backendservice.migration.cache.ignite,flight.backendservice.migration.ucscontrol.localidc.ignite,igt.component.basic.data.BasicDataIgnite,fx.ignite.asf,fx.clogging.ignite,redis.client.ignite,hotel.order.middleware.ignite,cache.ignite,ibu.hotel.multi.lang.sdk,com.ctrip.framework.ares.agent.i18n.init,com.ctrip.gs.dest.common.ignite,foundation-cache.ignite,LoggerIgnite.ignite,roc.localcache.ignite,roc.spring.ignite,roc.service.ignite,com.ctirp.hotel.checkVersion.ares,gs.bestpractise.ignite,com.ctrip.vitest,com.ctrip.hermes.producer,com.ctrip.corp.foundation.common.cache.CommonCacheWarmUp,vendor.cache.local,vendor.cache.config,vendor.cache.env,basebiz.trip.transfer.sdk,flt.intl.flight.resource.data.client,flight.exchange.intl.cache.update.ignite,TraceLoggerIgnite.ignite,app.ignite,car.osd.spring.ignite,corp.configsdk.converter.ignite,basebiz.codec.kms.ignite,cache.config,cache.env,flight.backendservice.settlement.ignite,car.osd.cache.ignite,cache.local,fx.flight.framework.cache.local.ignite,{MergedName},ruleEngine.ignite,basebiz.account.collector.ignite,com.ctrip.flight.backendservice.flowblock.common.plugins.arex.ignite,ai.eagle.monitor.client.ignite,bizData.ignite,search.cache.config,flight.exchange.intl.cache.add.ignite,com.trip.ibu.flight.component.ignite,flt.agg.cache.ignite,search.cache.dao,ubt.ignite,com.ctrip.flight.backendservice.flowblock.common.plugins.fltorderdbshardstatus.ignite,soa.ignite,com.ctrip.flight.backendservice.flowblock.dal.ignite.block.orderdbshardstrategy.ignite,search.cache.env,dsc.CaffeineIgnite,after.framework.abtest.ignite,qconfig.read.ignite,grayscaleConfigIgntie,com.ctrip.flight.backendservice.issue.common.plugins.ArexIgnite,dsc.AbTestIgnite,fx.soa.plugins.locale.ignite,com.ctrip.car.cjetcacheignite,jettyvi.ignite,basebiz.account.region.route.ignite,AppIgnite,base.ignite,com.ctirp.hotel.ares,arex.ignite,igt.component.basic.data.VIStatusChangeIgnite,com.ctrip.corp.user.corpcacheignite,config.ignite,corp.agg.hotel.logger.ignite,flight.backendservice.flightchange.soa.CacheInitializeIgnite,search.cache.job,mit.cache.ignite,TrnBookingOrderCMSDBIgInit,com.ctrip.corp.order.database.sdk.TableConfigVerify,search.infotracker,search.preheat.visitself,CacheKeyConfigCheck,abTesting.ignite,kms.ignite,preprocess.ignite,db.cache.env,db.cache.config,db.cache.manager,credis.client.ignite,default.text.ignite,engine.bundle.ignite,com.ctrip.hotel.redis,engine.event.merge.ignite,com.ctrip.flight.intl.exchange.shopping.adapter.common.cacheAddIgnite,corp.bi.ignite,executor.ignite,ibu.ignite.sharkjs,com.ctrip.corp.order.database.sdk.TableNewFieldVerify,my.ignite,com.ctrip.hotel.credis,coresearch-business.ignite,localcache.ignite,TrnBookingCMSDBIgInit,interface.ignite,l3grid-business.ignite,model.ignite,com.ctrip.frt.shopping.ignite,spring.ignite,com.ctrip.hotel.baijiclient,flt.prohibit.cache.ignite,com.ctrip.hotel.data.listener.SOAIgnitePlugin,rsk.ruleengine.ws.ignite,com.ctrip.flight.backendservice.offlinetool.distribute.svc.ignite,com.ctrip.hotel.vicomponent,com.ctrip.corp.user.corpuserignite,risk.counter-ws.ignite,corp.common.redis.ignite,flight.pricing.ignite,order.ignite.redis,dispatcher.service.ignite,finance.cfsoa.ignite,bbz.aichat.soa.ignite,flight.exchange.intl.qmq.add.ignite,dispatcher.dubbo.ignite,flt.prohibit.ignite,commonService.ignite,corp.common.config.ignite,com.ctrip.hotel.localcache,account.tripcloud.initconfig,flt.igniteScan,threadpool.ignite,mobile.visual.config.ignite,hotel.staycation.dataservice.ignite,core.cache.ignite,ShoppingService.ignite,com.ctrip.hotel.feature.item.ignite.SoaIgnite,com.ctrip.hotel.ai.feature.ignite.SoaIgnite,flight.exchange.dom.xproduct.cache.add.ignite,search.cache,ibu.hotel.search,dispatcher.cache.ignite,tour.insurance.ignite,features.ignite,com.ctrip.flight.backendservice.refunds.common.plugins.ArexIgnite,cargo.ignite,hbase.ignite,ottd.search.global.activity.ignite,com.ctrip.hotel.infokeeper.soa.ignite,com.ctrip.corp.bicorp.soa.mlservice.ignite,ibu.hotel.offline,com.ctrip.hotel.officialsite.registerfont,com.ctrip.ttd.soa.warmup,IgniteConfig,alliance.directsearchservice.ignite,tour.product.index.service.ignite,hmi.ignite,com.ctrip.hotel.manta.masterhotel.soa.ignite,KMSCache.init,service.config,dal.ignite,account.site.ignite,search.domestic.job,com.ctrip.corp.order.PaymentCenterServiceInitializer,keycache.local,fullgc.guard,search.config,arex.agent.ignite,com.ctrip.ibu.flit.boot.config.FlitIgnite,ibu.hotel.data,com.ctrip.corp.order.foundation.center.web.initialize.impl.BeanCopyInitializeImpl,com.ctrip.tour.tripservice.complaintplatform.config.baseserviceIgnite,rateLimiter.ignite,com.ctrip.ibu.flight.searchapi.ignite.SoaContentFormatterIgnite,search.hotel.schedule,spring.bean.ignite,dp.init.app,com.ctrip.gs.cranking.rankingmaker.ignite.QmqConsumerStarter,fx.fireman.ignite,search.env,qmqsender.ignite,basbiz.ignite.weixin.message.sdk,account.soa.client.config,bbz.deviceprofile.ignite,app.botwav.hotelai.ignite,search.hotel.env,hotel.data.soa.IBUHtlRank,cacheInitPlugin,after.framework.MobileAbTestIgnite.ignite,basebiz.im.impub.abexpwarmuppp,tour.ai.recommend.ignite,fx.app.CacheIgnite,arch.titan.plugin.ignite,search.qmq.init,com.ctrip.corp.foundation.stateful.InitializeStateful,dispatcher.configCache.ignite,register.font.ignite,tour.ttd.product.basic.service.ignite,com.ctrip.hotel.popularity.rank.model.service.ignition.SoaIgnitePlugin,jit.trigger,corp.intlflight.basedata.ignite,ctrip.bus.cache.ignite,com.ctrip.hotel.data.poihtlrank.ignition.SOAIgnitePlugin,increment.ignite,bbzws.baseservice.abtest.load,ai.protocol.ignite,search.hotel.config,hotel.mall.cache.ignite,flight.afterservice.insurancetrace.service.ignite,com.ctrip.gs.hotsale.ignite,gs.poidata.globalpoi.ignite,frt.tangram-service.soa.ignite,fx.ignite.redis,com.ctrip.ibu.flight.common.ignite.asynccontextignite,com.ctrip.flight.exchange.xproductresourceservice.service.soa.ignite,dsc.KmsIgnite,com.ctrip.hotel.data.roomstructure.soa.ignite.SOAIgnite,gs.destination.business.soa.ignite,tour.ai.100035367.ignite,tour.tour-im-service.soa.ignite,home.web.global.city.ignite,vendorContract,com.ctrip.flight.xapi.fltproductbasedataservice.ignite,dcs.commonloggerservice.esindex,com.ctrip.hotel.bi.data.service.soa.SOAIgnite,com.ctrip.gs.tripdest.core.ignite,flight.intl.penalty.compute.cache.init,flight.intl.resource.blob.service.ignite,com.ctrip.hotel.voice.itn.service.ignite.AppIgnite,com.ctrip.hotel.profile.policyinfo.service.soa.ignite,home.web.service.ignite,com.ctrip.corp.foundation.demo.ignite,ottd.search.global.activity.job.ignite,tour.ai.odt.rank.service.ignite,com.ctrip.gs.hotsale.rank.xinyouquan.city,flight.exchange.airlinedom.qmq.add.ignite,com.ctrip.flight.xapi.flightanysearchservice.ignite,htl.ad.advertising.HotelListIgnite,com.ctrip.train.tieyouflightdragon.noncoreservice.ignite,com.ctrip.flight.ibu.shopping.api.service.ignite.SoaContentFormatterIgnite,corp.agg.direct.hotelpolicy.ignite,search.intl.job,hotel.data.soa.OverseaIndividualHtlRank,flight.fftnext.ignite,bbz.lbs,ibu.hotel.meta,com.ctrip.corp.order.flight.OrderBookingServiceInitializer,com.ctrip.gs.hotsale.rank.ignite,basebiz.orderindex.java.soa.ignite,com.hotel.data.riskprice.soa.ignite,com.ctrip.hotel.roomservice.service.basicService,ibu.talos,com.ctrip.corp.order.fulfillmentprocess.web.init.BasicInit,frt.product-aggregation.soa.ignite,ibu.bi.data.api.soa.ignite,gs.photogallery.service.soa.ignite,bbzws.homepage.cdubbo.client.ignite.plugin,petrel.vad.hotelai.ignite,com.ctrip.flight.exchange.faredownloader.ignite,ignite.segmenter.dictionary,com.ctrip.di.data.ticketx.soa.SOAListener,authorityconfig.ignite,com.ctrip.ibu.globalcontent.articles.ignite.cache,HotelWSInitializer,gs.hotsale.infoflow.bosstab.ignite,com.ctrip.hotel.data.ignite.CacheIgnite,tour.ai.100038965.ignite,service.ignite,petrel.asr.hotelai.ignite,tour.product.index.search.ignite,arch.qconfig.fakeserver,mkt.proxy.cache.agodaUserInfo,com.ctrip.corp.agg.train,tour.ai.diy.rank.service.ignite,dcs.location.highway.tollfee.cache,com.ctrip.gs.dest.pocketbook.ignite,com.ctrip.flight.dom.trade.member.soa.web.ignite,com.ctrip.flight.order.orderquery.v1.orderquery.ignite,com.ctrip.flight.xapi.fltxsearchservice.service.ignite,search.soa.ignite,com.ctrip.train.triptrain.poisearchservice.initialization.cache,com.ctrip.ibu.flight.searchapi.ignite.asynccontextignite,flight.exchange.api.dist.core.pnrinfo.cache.ignite,com.ctrip.di.data.htlrank.listener.SOAIgnite,com.ctrip.hotelmarketing.eventsale.ignite.WebServiceIgnite,ServicesInitializer,com.ctrip.ibu.flight.component.qinclient.ignite,tour.ai.pkg.sight.rec.service.ignite,flight.intl.resource.atpco.data.block.service.ignite,bbz.accountsservice.ignite,tour.pkgrankv7.ignite,com.ctrip.fares.cache.service.cache.add.ignite,com.ctrip.corp.pub.settlement.vcc.ignite,dcs.price.Ignite,dir.ignite,itinerary.business.ignite,tour.homesearch-gateway-service.soa.ignite,HTL.soa.phone.ignite,Ares.agent.ignite,corp.flight.bindRule.ignite,flight.exchange.intl.amadeus.reservation.service.qmq.ignite,hotel.staycation.app.ignite,com.ctrip.ibu.content.nlp.seo.api.soa.config.IgnitePluginPlugin,com.ctrip.flight.backendservice.flowblock.service.ignite.cache.ownedautoticket.ignite,preload.ignite,basebiz.credentialmanagement.ignite.plugin,frt.image-service.soa.ignite,com.ctrip.flight.coupon.service.cache.add.ignite,com.ctrip.flight.intlresource.core.cache.ignite,tour.one.service.ignite,frt.tangram-openservice.soa.ignite,com.ctrip.ottd.restful.service.igniteConfig,app.kmsforuid.ignite,com.ctrip.corp.order.RefundRebookServiceInitializer,tour.ai.100035477.ignite,com.ctrip.flight.ibu.shopping.asynccontextignite,com.ctrip.hotel.hotelai.licheng.mono.consumer.soa.app.App2Ignite,corp.sz.online.api.dashboard.web,itinerary.com.ctrip.ibu.itinerary.ignite,com.ctrip.hotel.bi.rule.ranking.soa.soa.SoaIgnite,flight.intl.penalty.search.transfer.init,dcs.qunar.guide.thread.ignite,com.ctrip.corp.order.foundation.warmup.IssueControlWarmUP,tour.suggest.ignite,bbzws.homeservice.abtest.load,com.ctrip.hotel.bi.contract.service.ignite,com.ctrip.corp.mkt.membercard.idgen.ignite,ttd.order.purchase.scheduleinit,qconfig.ignite,ibu.seo.sitemap,com.ctrip.ai.eagle.htl.origin.recall.core.ignite.SOAIgnitePlugin,secretkey.ignite,HTL.soa.ignite,com.ctrip.basebiz.advertisement.soa.ignite,train.ai.trip.service.ignite,midactivityapi.ignite,flt.backendservice.refund.payment.soa.ignite,Script.compiler.ignite,com.ctrip.ibu.content.nlp.corenlp.api.soa.config.IgnitePluginPlugin,ibu.hotel.multi.lang.config,com.ctrip.hotel.product.input.infokeeper.multi.ignite,bbz.passenger.ignite,com.ctrip.ibu.flit.FlitGeneralIgnite,com.ctrip.corp.order.OrderCarBookingServiceInitializer,com.ctrip.hotel.htl.bi.room.rank.soa.ServiceIgnite,tour.ai.100035026.ignite,com.ctrip.ibu.flight.intlbooking.service.ignite.SoaContentFormatterIgnite,29823AppFireProcess,ibu.bi.index.search.soa.ignite,hoteladsortservice.filterignate,com.ctrip.flight.resourceplatformsystem.web.ignite,com.ctrip.corp.ofc.groundtransport.preprocess.start.init.BasicInit,frt.product-basic-service.soa.ignite,intl.location.cache.ignite,corp.sz.offline.gateway.web,tour.suggesting.ignite,ctrip.tour.ai.LabelmiddleStage.ignite,mobile.cache.tagcache.ignite,com.ctrip.ai.recall.service.ClientFactory.ignite,com.ctrip.corp.car.taginfo.ignite,com.ctrip.corp.com.ctrip.corp.bi.riskcontrol.ignite,flight.exchange.airline.dom.cache.add.ignite,multilingual.loadtxt,com.ctrip.hotel.order.esckservice.SoaIgnitePlugin,ibu.cargo.server.api.ignite,flight.sh.contentmgr,com.ctrip.car.commoditylist.isd.vbk.init.localcache,com.ctrip.hotel.alliance.dbooking.web.ignite,ai.pb.ignite,tour.contractplatform.service.refundignite,bbzws.ipplus.service.ignite,com.ctrip.market.activity.zzl.ignite,com.ctrip.tour.tripservice.vtmsystemservice.host.VtmSystemServiceIgnite,mkt.dsp.bloom,com.ctrip.basebiz.roomrecommendation.service.ServiceIgniter,com.ctrip.corp.order.flight.OrderDataSync,corp.flight.search.ignite,com.ctrip.hotel.eagle.rerank.service.core.plugin.SOAIgnitePlugin,priceInfo.cache.ignite,htl.com.ctrip.hotel.cancelpolicy.service.ignite,tour.product-gateway-service.soa.ignite,ttd.shoppingservice.ignite,com.ctrip.hotel.data.ignite.CRedisIgnite,com.ctrip.corp.carorder.fulfillmentprocess.web.init.BasicInit,com.ctrip.tour.tripservice.vtmappservice.host.VtmAppServiceIgnite,com.ctrip.flight.trade.lowprice.web.ignite,tour.ai.pkg.rank.service.ignite,com.ctrip.tour.tripservice.crm.backedservice.host.CrmBackedServiceIgnite,seagod.database.ignite,com.ctrip.di.data.listener.SoaIgnitePlugin,basebiz.order.view.soa.ignite,flt.backendservice.refund.fee.soa.ignite,self.cache.ignite,com.ctrip.hotel.data.roughrank.ignition.ModelEngineIgnitePlugin,com.ctrip.frt.priceengine.service.api.soa.plugins.ignite,di.cdp.bulabelmapping.ignite,tour.search.job.ignite,tour.ai.im.answer.ignite,tour.ai.100037490.ignite,com.ctrip.corp.agg.basedata,com.ctrip.train.soa.ignite,ignite.100032184.gc,tour.ai.search.correct.ignite,train.aitrans.rank.service.ignite,alliance.staticinfoservice.ignite,alliance.bookingpciservice.ignite,com.ctrip.tour.recommendservice.AppIgnite,ttd.resourceservice.job.ignite,tour.ai.100037728.ignite,com.ctrip.cruise.shopping.ignite,coreinfo.decrypt.service.ignite.plugin,com.ctrip.di.data.htlranksimulation.ignition.SOAIgnitePlugin,com.ctrip.hotel.hotelai.text.overseamail.service.SOA2Ignite,com.ctrip.car.osdpmsservice.localcacheIgnite,rsk.flowtable4j.ws.ignite,idata.common.ai.ignite,com.ctrip.basebiz.data.aiinfofeeds.ignite,alliance.bookingservice.ignite,com.trip.hotel.store.soa.productservice.ignite,tour.searching.support.ignite,fx.flight.mobile.added.flightinfo.service.ignite,coreinfo.cipher.service.ignite.plugin,ttd.search.activity.ignite,com.ctrip.ibu.flight.ignite.asynccontextignite,com.ctrip.tour.tripservice.vtmjob.host.VtmJobIgnite,com.ctrip.flight.xapi.flightbasedataawsservice.ignite,com.ctrip.ai.rerank.vi.SOAIgnitePlugin,home.web.nearby.city.ignite,bbz.mobil.service.config.ignite,igt.marketingservice.port.memorycache.MemoryCacheIgnite,coreinfo.exchange.service.ignite.plugin,com.ctrip.hotel.data.hotelai.hotelreservationmetaslu.soa2.Ignite,com.ctrip.hotel.hot.products.rank.service.soa.SOAIgnite,com.ctrip.flight.backendservice.offlinetool.monitor.ignite,com.ctrip.hotelmarketing.hotelmarketact.common.web.fireup.AreasIgnitor,bbz.mobil.service.config.abtest.load,com.ctrip.corp.bi.crossrecommendation.ignite,100037886-AppIgniter,adx.preheat.ignite,com.ctrip.flight.intl.gds.shopping.data.business.cache.add.ignite,com.ctrip.hotel.infokeeper.soa.intl.ignite,com.ctrip.hotel.facilityinfo.service.ignite,com.ctrip.frt.marketing.ignite,bsebiz.membersinfositelauncher.soa.ignite,ibu.hotel.meta.job,tour.cruise.product.basic.service.ignite,search.cache.redis,100034254-AppIgniter,tour.marketing.agg.soa.ignite,com.ctrip.framework.artemis-service,tour.ai.act.other.rank.service.ignite,com.ctrip.tour.tripservice.crmstore.service.host.CrmStoreServiceIgnite,com.ctrip.hotel.data.personalizedcontent.hbu.plugin.SOAIgnitePlugin,dmp.basedata,flight.exchange.basedata.add.ignite,OfflineGatewayInitializer,com.ctrip.corp.order.OrderManagementFlightServiceInitializer,com.ctrip.hotel.hotelai.chat.hotel.reservation.dm.service.soa2.Ignite,ibu.bi.mmirror.soa.ignite,com.ctrip.flight.intl.exchange.penalty.search.control.cache.add.ignite,com.ctrip.ibu.flight.service.excluded.ignite.AsyncContextIgnite,recall.cache.ignite,com.ctrip.ai.eagle.prepare.htl.ssbc.service.initIgnitePlugin,ttd.activity.resource.nonecore.service.ignite,flight.intlpolicy.penalty.search.redisinit,gs.poidata.poiessearch.ignite,FlightIntlOnline.ignite,tour.product.inputservice.ignite,rs.grid.ignite,flight.intl.exchange.compare.front.cachemanager,rsk.dataservice.ws.ignite,com.ctrip.corp.train.ws.init.BasicInit,ibu.hotel.meta.fileupload,com.ctrip.ai.recall.hotel.words.plugin.SOAIgnitePlugin,rsk.counter.query.ignite,flight.afterservice.delivery.service.ignite,flight.afterservice.change.service.ignite,basebiz.accounts.password.ignite.plugin,tour.ai.kg.platform-service.ignite,corp.sync.config.ignite,com.ctrip.corp.flight.flightpreprocessservice.web.config.BasicInit,com.ctrip.flight.backendservice.crawltool.taskrouting.impl.startup,ttd.activity.resource.core.service.ignite,hotelService.ignite,mall-product-list.ignite,com.ctrip.corp.order.managementcenter.hotel.service.web.init.ServiceInitializer,fx.soa.corp.agg.train.control.ignite,dcs.price.thread.Ignite,com.ctrip.ibu.platform.hulk.hotel,com.ctrip.flight.backendservice.messageintegration.messageConfig.ignite,com.ctrip.finacialservice.crm.plugin,com.ctrip.train.tieyouflightdragon.recommendservice.ignite,com.ctrip.flight.common.translate.service.ignite,ibu.itinerary.database,tour.search.ignite,hotel.alliance.booking.alliancename.ignite,com.ctrip.flight.backendservice.flowblock.orderpolicy.web.ignite.intlexchangecache,tour.kbqa-client.ignite,tour.ai.user-profile.ignite,com.ctrip.flight.backendservice.crawltool.flow.svc.ignite,alliance.meetingservice.ignite,hotel.dlt.staticinfo.service.ignite,100036681-AppIgniter,tour.ai.ticket.rank.service.ignite,com.ctrip.flight.backendservice.flowblock.orderpolicy.web.ignite.CurrencyConversionIgnitePlugin,com.ctrip.hotel.cancelpolicy.idgen.ignite,tour.searching.ignite,com.ctrip.risk.credit.ignite.creditdalignite,search.fullgc.guard,flight.backendservice.backofficetool.ivr.cache.ignite,search.hermes.init,adx.service.ignite,bbz.passportservice.ignite,frt.tangram-productservice.soa.ignite,tour.product.search.index.job.ignite,tour.ai.100037545.ignite,com.ctrip.hotel.product.input.infokeeper.cancelpolicy.ignite,com.ctrip.financialservice.forex.webapp,flt.backendservice.refund.refundprocess.soa.ignite,dcs.order.es.index,ibu.seo.job.hotel.cache,tour.ai.ivr.dm.ignite,com.ctrip.train.tieyouflightdragon.service.ignite,ibu.itinerary.task.ignite,tour.search.card,com.ctrip.corp.agg.car.xcommon.query,fx.ignite.idgen,com.ctrip.train.crossgroovy.init,tour.im.monitor.ignite,job.cache.ignite,car.vc.openapi,com.ctrip.flight.resource.quickapi.soa.web.ignite,mom-init,com.ctrip.hotel.data.lineage.ignite.SOAIgnite,ttd.order.purchase.serviceinit,tour.riskwarning.searchengine,epush.ignite,flight.exchange.intl.gordian.ignite,com.ctrip.flight.backendservice.reimbursement.messenger.processor.ignite,com.ctrip.ibu.flight.component.webservice.ComponentBasicDataIgnite,ibu.megrez.openapi.ignite,hotel.marketrule.cache,tour.product.productmetaservice.ignite,bbz.credentialmanagement.ignite,com.ctrip.hotel.infokeeper.fullfresh.ignite,ibu.ottd.openapi.ignite,fx.soa.flight.xprocess.ignite,com.ctrip.corp.flight.order.best.profit.ignite,newuser_redis_vi_plugin,com.ctrip.hotel.data.hotelai.ivr.main.service.soa2.ignite,flight.exchange.eterm.refund.add.ignite,di.cdp.labelauth.ignite,tour.support.ignite.WarmUpIgnite,com.ctrip.ibu.langs.init.ignite,com.ctrip.train.ordercentre.bigdata.coreignite,tour.contractplatform.festivalignite,tour.ai.analysis.ignite,com.ctrip.hotel.ebk.order.aresmodule,alliance.ceqfiltersearchoffline.ignite,visa.soa.ignite,htl.job.knowledgegraph,com.ctrip.tour.tripservice.crm.host.CrmJobIgnite,com.ctrip.hotel.hotelproductdynamicinfoservice,ibu.passport.ocr.ignite,mid.salespromotion.ignite,hotel.htlibukeywordsearchservice,QmqTransponderInitializer,tour.ai.100022855.ignite,flight.backendservice.flightchange.soa.ServiceWarmUpIgnite,rsk.internal.data.c,trn.zxcommon.recommendflagcache.ignite,hotel.info,com.ctrip.hotel.cache.client.ignite,fuzzy.web.service.ignite,htl.content.search.portal,flight.booking.query.ignite,dmp.tags,com.ctrip.ibu.flight.intlbooking.service.ignite.asynccontextignite,com.ctrip.tour.vdata.magic.mirror.service.soa.ignite,com.ctrip.corp.order.ReimbursementServiceInitializer,flt.backendservice.refund.reschedule.soa.ignite,ttd.resourceservice.ignite,apollo.ignite,com.ctrip.ai.recall.vac.feeds,adplatform.dco.ignite,arc.idempotent.check.ignite,com.ctrip.ibu.flight.packagebooking.service.asynccontextignite,com.ctrip.data.htlseqbid.ws.listener.SOAIgnitePlugin,tour.product.daily.ignite,com.ctrip.hotel.mark.soa.ignite,com.ctrip.corp.foundation.demo.simple.ignite,basebiz.im.imrobot.abexpwarmup,flt.agg.flow.control.ignite,com.ctrip.hotel.manta.subhotel.soa.ignite,com.ctrip.gs.dest.core.ignite,com.ctrip.flight.intl.exchange.amadeusadapter.cache.add.ignite,ottd.background.MyIgnitePlugin,com.ctrip.corp.hotel.priceweight.ignite,com.ctrip.hotel.areas,24295AppFireProcess,com.ctrip.corp.pub.settlement.bill.ignite,businessrule.category,WarmUpVerifier,com.ctrip.basebiz.ignite.SOAIgnite,com.ctrip.car.openchannelcallback.ignite,com.ctrip.corp.bi.online.report.personal.web.h5.ares.ignite,local.data.ignite,tour.ai.ticket.rank.activity.service.ignite,com.ctrip.car.commoditylist.isd.api.init.localcache,ad.hotelai.ignite,flight.backendservice.flightchange.messagecenter.ServiceWarmUpIgnite,com.ctrip.di.roomrecommendation.service.ServiceIgniter,com.ctrip.ticket.restful.ignite,accountapi.kms.ignite,nse.config.cache.ignite,passenger.site.ignite,corp.agg.hotel.roomavail.application.ignite,abtest.ignite,flight.exchange.tsk.cache.add.ignite,ibu.faba.geo,hotel.marketrule.ares,coreinfo.encrypt.service.ignite.plugin,tour.ai.100034084.ignite,alliance.orderservice.ignite,ibu.sharkjs.ignite,com.ctrip.corp.order.transponder.car.web.init.BasicInit,rsk.bwlist.platform.ignite,fx.soa.auto.ignite,flight.exchange.intl.itinerary.downloading,train.zhixing.qconfighelper,ibu.redis.ignite,hotel.rd.web.park.ares,hotel.data.soa.HtlPersonalizedRecommendationImpl,gr.hotelai.ignite,com.ctrip.flight.ibu.shopping.api.service.ignite.AbTestAlternativeIgnite,com.ctrip.flight.intl.exchange.shopping.control.cache.add.ignite,search.job.cache,com.ctrip.corp.order.HotelServiceFeeIgnite,datamove.ignite,flight.afterservice.coffeebeansearch.service.ignite,rsCommon.ignite,com.ctrip.hotel.manta.picture.soa.ignite,flt.intl.flightdata.receiverignite,com.ctrip.flight.intlresource.noncore.soa.web.ignite,tour.ai.tripview.rank.service.ignite,application.ignite,flight.devops.plugin.api,flight.afterservice.detail.service.ignite,init-car-stock-local-cache,mid.job.ignite,ttd.search.autocomplete.ignite,ibu.saas.sequence.ignite,com.ctrip.corp.order.OrderManagementCarServiceInitializer,alliance.job.ignite,com.ctrip.tour.tourservice.homepagerecommend.ignite,flt.backendservice.refund.orderdirectquery.soa.ignite,cache.dao,Main.ignite,com.ctrip.gs.poibiz.information.ignite,dispatcher.config.ignite,hotelService.engine.ignite,griffin-cache.ignite,com.ctrip.corp.order.hotel.issue.web.init.BasicInit,tour.distribution.searching.ignite,search.ignite,ibu.bi.index.compute.soa.ignite,basebiz.accountsquery.ignite.plugin,com.ctrip.corp.frontend.commom.encrypt,train.zx.flight.ts.simu.mu.ignite.AppIgnite,com.ctrip.flight.resource.noncore.quickapi.soa.web.ignite,com.ctrip.tour.tripservice.vtmjob.apphost.VtmAppJobIgnite,com.ctrip.corp.order.index.web.initialize.impl.BeanCopyInitializeHandler,com.flight.exchange.intl.cache.ignite,corp.agg.direct.sync.base.info.ignite,com.ctrip.flight.exchange.tsk.farequery.ignite,frt.price-engine-service.soa.ignite,alliance.bwlservice.ignite,com.ctrip.hotel.eagle.router.hotelwords.recall.plugin.SOAIgnitePlugin,ttd.promotionsservice.ignite,com.ctrip.corp.pub.user.crm.api.ignite,bbz.thirdpartyauthenticateservice.ignite,com.ctrip.corp.order.trainorderdetail.ignite,mid.promotion.ignite,corp.bi.localcache.ignite,com.ctrip.hotel.hotelai.img.log.soa.soa.SOA2Ignition,segment.hotelai.ignite,hotel.data.soa.UserInfoService,flight.exchange.intl.cache.add.travelport.ignite,PreProcessInitializer,com.ctrip.basebiz.ai.eagle.router.local.rerank.vi.SOAIgnitePlugin,htl.soa.knowledgegraph,dcs.es.index,hotel.wechatqrcode.redis.ignitor,tour.ai.100039681.ignite,bbzws.internalmessage.server.id,com.ctrip.framework.ares.agent.init,flight.exchange.intl.cache.add.TF.ignite,di.cdp.bumapping.ignite,baiji.client.ignite,com.ctrip.hotel.manta.basicroomtype.soa.ignite,corp.flight.basedata.ignite,elf.ignite,com.ctrip.basebiz.ignite.CRedisIgnite,refresh.airline,modelHolder.ignite,com.ctrip.corp.agg.ground.control,rule.engine.ignite,com.ctrip.financialservices.shopping.service,web.ignite.redis,100035997-AppIgniter,com.ctrip.flight.backendservice.crawltool.butler.svc.ignite,hotel.alliance.bookingpci.alliancename.ignite,com.ctrip.flight.xapi.flightproductffpcardservice.ignite,fx.bat.metric.consumer.ignite,gate.application.service,com.ctrip.hotel.data.soaservice.SOAListener,com.ctrip.corp.order.common.data.service.start.init.BeanCopyWarmUp,com.ctrip.ibu.flight.common.ignite,com.ctrip.flight.afterservice.orderdetail.web.ignite,cache,com.ctrip.hotel.data.ignite.SOAIgnite,ignite.100032184.redis.client,ibu.hotel.assist,arex.optional.ignite,membersinfo.site.ignite,template.ignite,com.ctrip.ibu.gargle.service.config.GargleIgnite,com.ctrip.corp.agg.xsale.infrastructure.commondata,com.ctrip.flight.intl.resource.penalty.order.service.soa.dbinit,com.ctrip.hotel.data.roughrank.ignition.SoaIgnitePlugin,basebiz.userauthorization.ignite.plugin,flt.orderdb.shard.strategy.service,ibu.hotel.order.process,com.ctrip.flight.onex.fltxproductresourceservice.service.ignite,Monitor.ignite,com.ctrip.flight.ibu.shopping.cacheignite,deraemon.new.Ignite,mid.promotion.ignite,mid.job.ignite</enforcer.checkViPlugin.whiteList>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin_version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>ctripgroup.scm</groupId>
+                            <artifactId>enforcer-custom-rules</artifactId>
+                            <version>${enforcer-custom-rules_version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>extra-enforcer-rules</artifactId>
+                            <version>${extra-enforcer-rules_version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.qunar.cm</groupId>
+                    <artifactId>qcm-maven-plugin</artifactId>
+                    <version>${qcm-maven-plugin_version}</version>
+                    <executions>
+                        <execution>
+                            <id>generateDeployInfo</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>generateDeployInfo</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ctrip-group-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <evaluateBeanshell>
+                            <condition>print("[INFO] [${enforcer.rule.logFormat}] super-rule ");1==1</condition>
+                        </evaluateBeanshell>
+
+                        <!-- Standard Rules: http://maven.apache.org/enforcer/enforcer-rules -->
+                        <bannedDependencies>
+                            <searchTransitive>true</searchTransitive>
+                            <excludes>
+                                <exclude>commons-logging</exclude>
+                                <exclude>org.slf4j:*:(,1.6)</exclude>
+                            </excludes>
+                        </bannedDependencies>
+                        <dependencyConvergence/>
+
+                        <!-- extra-enforcer-rules: http://www.mojohaus.org/extra-enforcer-rules -->
+                        <banDuplicateClasses>
+                            <!--为了跳过banDuplicateClasses这个规则,已在QBanDuplicateClasses重写-->
+                            <scopes></scopes>
+                            <findAllDuplicates>true</findAllDuplicates>
+                            <ignoreClasses>
+                                <ignoreClass>junit.*</ignoreClass>
+                                <ignoreClass>org.junit.*</ignoreClass>
+                                <ignoreClass>org.w3c.dom.*</ignoreClass>
+                                <ignoreClass>javax.xml.namespace.*</ignoreClass>
+                                <ignoreClass>org.apache.axis2.*</ignoreClass>
+                            </ignoreClasses>
+                            <message>
+                                [ERROR] [${enforcer.rule.logFormat}] find DuplicateClasses
+                            </message>
+                        </banDuplicateClasses>
+
+                        <!-- Ctrip Group Custom Rules -->
+                        <requireGroupId implementation="ctripgroup.scm.rule.RequireGroupId">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireGroupId.skip}</shouldIskip>
+                            <groupIdPrefix>${enforcer.requireGroupId.prefix}</groupIdPrefix>
+                        </requireGroupId>
+
+                        <requireVersion implementation="ctripgroup.scm.rule.RequireVersion">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireVersion.skip}</shouldIskip>
+                            <releaseVersionPattern>${enforcer.requireVersion.releasePattern}</releaseVersionPattern>
+                            <snapshotVersionPattern>${enforcer.requireVersion.snapshotPattern}</snapshotVersionPattern>
+                        </requireVersion>
+
+                        <requireSameVersion implementation="ctripgroup.scm.rule.RequireSameVersion">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireSameVersion.skip}</shouldIskip>
+                        </requireSameVersion>
+
+                        <requireDistributionManagement implementation="ctripgroup.scm.rule.RequireDistributionManagement">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireSameVersion.skip}</shouldIskip>
+                            <repositoryId>releases</repositoryId>
+                            <snapshotRepositoryId>snapshots</snapshotRepositoryId>
+                        </requireDistributionManagement>
+
+                        <requirePlugins implementation="ctripgroup.scm.rule.RequirePlugins">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requirePlugins.skip}</shouldIskip>
+                            <artifactIds>
+                                <artifactId>maven-source-plugin</artifactId>
+                            </artifactIds>
+                        </requirePlugins>
+
+                        <checkDeployRelease implementation="ctripgroup.scm.rule.CheckDeployRelease">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.checkDeployRelease.skip}</shouldIskip>
+                        </checkDeployRelease>
+
+                        <qBanDuplicateClasses implementation="ctripgroup.scm.rule.QBanDuplicateClasses">
+                            <findAllDuplicates>true</findAllDuplicates>
+                            <ignoreClasses>
+                                <ignoreClass>junit.*</ignoreClass>
+                                <ignoreClass>org.junit.*</ignoreClass>
+                                <ignoreClass>org.w3c.dom.*</ignoreClass>
+                                <ignoreClass>javax.xml.namespace.*</ignoreClass>
+                                <ignoreClass>org.apache.axis2.*</ignoreClass>
+                                <ignoreClass>*.package-info</ignoreClass>
+                                <ignoreClass>org.apache.spark.unused.UnusedStubClass</ignoreClass>
+                                <ignoreClass>*module-info</ignoreClass><!--JDK 9新特性Java Platform Module System使用的文件-->
+                            </ignoreClasses>
+                            <scopes>
+                                <scope>compile</scope>
+                                <scope>runtime</scope>
+                                <!--<scope>provided</scope>-->
+                            </scopes>
+                            <message>[${enforcer.rule.logFormat}] find DuplicateClasses</message>
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.qBanDuplicateClasses.skip}</shouldIskip>
+                            <duplicatesFailOnError>${enforcer.qBanDuplicateClasses.onerror.fail}</duplicatesFailOnError>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <checkScope>${enforcer.qBanDuplicateClasses.checkScope}</checkScope>
+                        </qBanDuplicateClasses>
+                        
+                        <requireReleaseTag implementation="ctripgroup.scm.rule.RequireReleaseTag">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireReleaseTag.skip}</shouldIskip>
+                        </requireReleaseTag>
+                        
+                        <distributionManagementRule implementation="ctripgroup.scm.rule.DistributionManagementRule">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.distributionManagementRule.skip}</shouldIskip>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <failOnError>${enforcer.distributionManagementRule.onerror.fail}</failOnError>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                        </distributionManagementRule>
+
+                        <customDependencyRules implementation="ctripgroup.scm.rule.CustomDependencyRules">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.customDependencyRules.skip}</shouldIskip>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <checkScope>${enforcer.customDependencyRules.checkScope}</checkScope>
+                            <noSnapshotDepsOnline>${enforcer.customDependencyRules.noSnapshotOnline}</noSnapshotDepsOnline>
+                        </customDependencyRules>
+
+                        <requireBom implementation="ctripgroup.scm.rule.RequireBom">
+                            <shouldIskip>${enforcer.requireBom.skip}</shouldIskip>
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <level>${enforcer.requireBom.level}</level>
+                            <bomGroupId>${enforcer.requireBom.bomGroupId}</bomGroupId>
+                            <bomArtifactId>${enforcer.requireBom.bomArtifactId}</bomArtifactId>
+                            <baseDepGroupId>${enforcer.requireBom.baseDepGroupId}</baseDepGroupId>
+                            <baseDepArtifactId>${enforcer.requireBom.baseDepGroupId}</baseDepArtifactId>
+                            <nexusUrl>${enforcer.requireBom.nexusUrl}</nexusUrl>
+                            <supomGroupId>${enforcer.requireBom.supomGroupId}</supomGroupId>
+                            <supomArtifactId>${enforcer.requireBom.supomArtifactId}</supomArtifactId>
+                            <wikiUrl>${enforcer.requireBom.wikiUrl}</wikiUrl>
+                            <recordBomVersion>${enforcer.requireBom.recordBomVersion}</recordBomVersion>
+                        </requireBom>
+                        
+                        <checkViPlugin implementation="ctripgroup.scm.rule.CheckViPlugin">
+                            <shouldIskip>${enforcer.checkViPlugin.skip}</shouldIskip>
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <whiteList>${enforcer.checkViPlugin.whiteList}</whiteList>
+                            <whiteListExt>${enforcer.checkViPlugin.whiteList.ext}</whiteListExt>
+                        </checkViPlugin>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>java21-enforcer</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <properties>
+                <maven-enforcer-plugin_version>3.4.1</maven-enforcer-plugin_version>
+                <enforcer.requireBom.level>WARN</enforcer.requireBom.level>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ctrip-group-check</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <dependencyConvergence>
+                                            <excludedScopes/>
+                                        </dependencyConvergence>
+                                    </rules>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+    <!-- To be able to deploy, there are 3 ways of providing repository information -->
+    <!-- 1. Specifying releases.repo and snapshots.repo properties in child pom -->
+    <!-- 2. Specifying releases.repo and snapshots.repo properties in settings.xml -->
+    <!-- 3. Passing them as -D system property when executing deploy action -->
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>${releases.repo}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>${snapshots.repo}</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>
