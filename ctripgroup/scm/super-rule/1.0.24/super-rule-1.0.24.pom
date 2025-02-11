@@ -1,0 +1,288 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ctripgroup.scm</groupId>
+    <artifactId>super-rule</artifactId>
+    <version>1.0.24</version>
+
+    <packaging>pom</packaging>
+
+    <name>Ctrip Group Super Rule</name>
+    <description>Ctrip Group通用超级rule</description>
+
+    <properties>
+        <maven-enforcer-plugin_version>1.3.1.qunar-1</maven-enforcer-plugin_version>
+        <extra-enforcer-rules_version>1.0-beta-3</extra-enforcer-rules_version>
+        <enforcer-custom-rules_version>1.0.22</enforcer-custom-rules_version>
+        <qcm-maven-plugin_version>1.0.0</qcm-maven-plugin_version>
+
+        <!-- properties for enforcer_custom_rules -->
+        <enforcer.rule.logFormat>Ctrip Group Enforcer Rules</enforcer.rule.logFormat>
+
+        <!-- rule requireGroupId -->
+        <enforcer.requireGroupId.skip>false</enforcer.requireGroupId.skip>
+        <enforcer.requireGroupId.prefix>com.qunar.|qunar.|com.ctrip.|ctripgroup.</enforcer.requireGroupId.prefix>
+
+        <!-- rule requireReleaseTag -->
+        <enforcer.requireReleaseTag.skip>true</enforcer.requireReleaseTag.skip>
+        
+        <!-- rule requireVersion -->
+        <enforcer.requireVersion.skip>false</enforcer.requireVersion.skip>
+        <enforcer.requireVersion.releasePattern>([1-9][0-9]*|0)\.([1-9][0-9]*|0)\.([1-9][0-9]*|0)</enforcer.requireVersion.releasePattern>
+        <enforcer.requireVersion.snapshotPattern>([1-9][0-9]*|0)\.([1-9][0-9]*|0)\.([1-9][0-9]*|0)-SNAPSHOT</enforcer.requireVersion.snapshotPattern>
+
+        <!-- rule requireSameVersion -->
+        <enforcer.requireSameVersion.skip>false</enforcer.requireSameVersion.skip>
+
+        <!-- rule requireDistributionManagement -->
+        <enforcer.requireDistributionManagement.skip>false</enforcer.requireDistributionManagement.skip>
+
+        <!--rule requirePlugins-->
+        <enforcer.requirePlugins.skip>false</enforcer.requirePlugins.skip>
+
+        <!--rule checkDeployRelease-->
+        <enforcer.checkDeployRelease.skip>false</enforcer.checkDeployRelease.skip>
+
+        <!--rule qBanDuplicateClasses-->
+        <enforcer.qBanDuplicateClasses.skip>false</enforcer.qBanDuplicateClasses.skip>
+        <enforcer.qBanDuplicateClasses.onerror.fail>true</enforcer.qBanDuplicateClasses.onerror.fail>
+        <enforcer.qBanDuplicateClasses.checkScope>all</enforcer.qBanDuplicateClasses.checkScope>
+
+        <!--rule distributionManagementRule -->
+        <enforcer.distributionManagementRule.skip>false</enforcer.distributionManagementRule.skip>
+        <enforcer.distributionManagementRule.onerror.fail>true</enforcer.distributionManagementRule.onerror.fail>
+
+        <!--rule customDependencyRules-->
+        <enforcer.customDependencyRules.skip>false</enforcer.customDependencyRules.skip>
+        <enforcer.customDependencyRules.checkScope>ctripgroup</enforcer.customDependencyRules.checkScope>
+        <enforcer.customDependencyRules.noSnapshotOnline>true</enforcer.customDependencyRules.noSnapshotOnline>
+
+        <!--rule requireBom -->
+        <enforcer.requireBom.skip>true</enforcer.requireBom.skip>
+        <enforcer.requireBom.level>warning</enforcer.requireBom.level>
+        <enforcer.requireBom.bomGroupId>qunar.tc</enforcer.requireBom.bomGroupId>
+        <enforcer.requireBom.bomArtifactId>tcdev</enforcer.requireBom.bomArtifactId>
+        <enforcer.requireBom.baseDepGroupId>qunar.common</enforcer.requireBom.baseDepGroupId>
+        <enforcer.requireBom.baseDepArtifactId>common-core</enforcer.requireBom.baseDepArtifactId>
+        <enforcer.requireBom.nexusUrl>http://nexus.corp.qunar.com/nexus/content/repositories/releases</enforcer.requireBom.nexusUrl>
+        <enforcer.requireBom.supomGroupId>qunar.common</enforcer.requireBom.supomGroupId>
+        <enforcer.requireBom.supomArtifactId>qunar-supom-generic</enforcer.requireBom.supomArtifactId>
+        <enforcer.requireBom.wikiUrl>http://wiki.corp.qunar.com/confluence/pages/viewpage.action?pageId=114438300</enforcer.requireBom.wikiUrl>
+        <enforcer.requireBom.recordBomVersion>false</enforcer.requireBom.recordBomVersion>
+
+        <!-- api地址及降级策略 -->
+        <enforcer.custom.api.url>http://cmapi.corp.qunar.com</enforcer.custom.api.url>
+        <enforcer.custom.api.timeout>30</enforcer.custom.api.timeout>
+        <enforcer.custom.api.onerror.fail>true</enforcer.custom.api.onerror.fail>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin_version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>ctripgroup.scm</groupId>
+                            <artifactId>enforcer-custom-rules</artifactId>
+                            <version>${enforcer-custom-rules_version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>extra-enforcer-rules</artifactId>
+                            <version>${extra-enforcer-rules_version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+
+                <plugin>
+                    <groupId>com.qunar.cm</groupId>
+                    <artifactId>qcm-maven-plugin</artifactId>
+                    <version>${qcm-maven-plugin_version}</version>
+                    <executions>
+                        <execution>
+                            <id>generateDeployInfo</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>generateDeployInfo</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ctrip-group-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <evaluateBeanshell>
+                            <condition>print("[INFO] [${enforcer.rule.logFormat}] super-rule ");1==1</condition>
+                        </evaluateBeanshell>
+
+                        <!-- Standard Rules: http://maven.apache.org/enforcer/enforcer-rules -->
+                        <bannedDependencies>
+                            <searchTransitive>true</searchTransitive>
+                            <excludes>
+                                <exclude>commons-logging</exclude>
+                                <exclude>org.slf4j:*:(,1.6)</exclude>
+                            </excludes>
+                        </bannedDependencies>
+                        <dependencyConvergence/>
+
+                        <!-- extra-enforcer-rules: http://www.mojohaus.org/extra-enforcer-rules -->
+                        <banDuplicateClasses>
+                            <!--为了跳过banDuplicateClasses这个规则,已在QBanDuplicateClasses重写-->
+                            <scopes></scopes>
+                            <findAllDuplicates>true</findAllDuplicates>
+                            <ignoreClasses>
+                                <ignoreClass>junit.*</ignoreClass>
+                                <ignoreClass>org.junit.*</ignoreClass>
+                                <ignoreClass>org.w3c.dom.*</ignoreClass>
+                                <ignoreClass>javax.xml.namespace.*</ignoreClass>
+                                <ignoreClass>org.apache.axis2.*</ignoreClass>
+                            </ignoreClasses>
+                            <message>
+                                [ERROR] [${enforcer.rule.logFormat}] find DuplicateClasses
+                            </message>
+                        </banDuplicateClasses>
+
+                        <!-- Ctrip Group Custom Rules -->
+                        <requireGroupId implementation="ctripgroup.scm.rule.RequireGroupId">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireGroupId.skip}</shouldIskip>
+                            <groupIdPrefix>${enforcer.requireGroupId.prefix}</groupIdPrefix>
+                        </requireGroupId>
+
+                        <requireVersion implementation="ctripgroup.scm.rule.RequireVersion">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireVersion.skip}</shouldIskip>
+                            <releaseVersionPattern>${enforcer.requireVersion.releasePattern}</releaseVersionPattern>
+                            <snapshotVersionPattern>${enforcer.requireVersion.snapshotPattern}</snapshotVersionPattern>
+                        </requireVersion>
+
+                        <requireSameVersion implementation="ctripgroup.scm.rule.RequireSameVersion">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireSameVersion.skip}</shouldIskip>
+                        </requireSameVersion>
+
+                        <requireDistributionManagement implementation="ctripgroup.scm.rule.RequireDistributionManagement">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireSameVersion.skip}</shouldIskip>
+                            <repositoryId>releases</repositoryId>
+                            <snapshotRepositoryId>snapshots</snapshotRepositoryId>
+                        </requireDistributionManagement>
+
+                        <requirePlugins implementation="ctripgroup.scm.rule.RequirePlugins">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requirePlugins.skip}</shouldIskip>
+                            <artifactIds>
+                                <artifactId>maven-source-plugin</artifactId>
+                            </artifactIds>
+                        </requirePlugins>
+
+                        <checkDeployRelease implementation="ctripgroup.scm.rule.CheckDeployRelease">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.checkDeployRelease.skip}</shouldIskip>
+                        </checkDeployRelease>
+
+                        <qBanDuplicateClasses implementation="ctripgroup.scm.rule.QBanDuplicateClasses">
+                            <findAllDuplicates>true</findAllDuplicates>
+                            <ignoreClasses>
+                                <ignoreClass>junit.*</ignoreClass>
+                                <ignoreClass>org.junit.*</ignoreClass>
+                                <ignoreClass>org.w3c.dom.*</ignoreClass>
+                                <ignoreClass>javax.xml.namespace.*</ignoreClass>
+                                <ignoreClass>org.apache.axis2.*</ignoreClass>
+                                <ignoreClass>*.package-info</ignoreClass>
+                                <ignoreClass>org.apache.spark.unused.UnusedStubClass</ignoreClass>
+                                <ignoreClass>*module-info</ignoreClass><!--JDK 9新特性Java Platform Module System使用的文件-->
+                            </ignoreClasses>
+                            <scopes>
+                                <scope>compile</scope>
+                                <scope>runtime</scope>
+                                <!--<scope>provided</scope>-->
+                            </scopes>
+                            <message>[${enforcer.rule.logFormat}] find DuplicateClasses</message>
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.qBanDuplicateClasses.skip}</shouldIskip>
+                            <duplicatesFailOnError>${enforcer.qBanDuplicateClasses.onerror.fail}</duplicatesFailOnError>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <checkScope>${enforcer.qBanDuplicateClasses.checkScope}</checkScope>
+                        </qBanDuplicateClasses>
+                        
+                        <requireReleaseTag implementation="ctripgroup.scm.rule.RequireReleaseTag">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.requireReleaseTag.skip}</shouldIskip>
+                        </requireReleaseTag>
+                        
+                        <distributionManagementRule implementation="ctripgroup.scm.rule.DistributionManagementRule">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.distributionManagementRule.skip}</shouldIskip>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <failOnError>${enforcer.distributionManagementRule.onerror.fail}</failOnError>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                        </distributionManagementRule>
+
+                        <customDependencyRules implementation="ctripgroup.scm.rule.CustomDependencyRules">
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <shouldIskip>${enforcer.customDependencyRules.skip}</shouldIskip>
+                            <apiUrl>${enforcer.custom.api.url}</apiUrl>
+                            <apiTimeout>${enforcer.custom.api.timeout}</apiTimeout>
+                            <apiFailOnError>${enforcer.custom.api.onerror.fail}</apiFailOnError>
+                            <checkScope>${enforcer.customDependencyRules.checkScope}</checkScope>
+                            <noSnapshotDepsOnline>${enforcer.customDependencyRules.noSnapshotOnline}</noSnapshotDepsOnline>
+                        </customDependencyRules>
+
+                        <requireBom implementation="ctripgroup.scm.rule.RequireBom">
+                            <shouldIskip>${enforcer.requireBom.skip}</shouldIskip>
+                            <logFormat>${enforcer.rule.logFormat}</logFormat>
+                            <level>${enforcer.requireBom.level}</level>
+                            <bomGroupId>${enforcer.requireBom.bomGroupId}</bomGroupId>
+                            <bomArtifactId>${enforcer.requireBom.bomArtifactId}</bomArtifactId>
+                            <baseDepGroupId>${enforcer.requireBom.baseDepGroupId}</baseDepGroupId>
+                            <baseDepArtifactId>${enforcer.requireBom.baseDepGroupId}</baseDepArtifactId>
+                            <nexusUrl>${enforcer.requireBom.nexusUrl}</nexusUrl>
+                            <supomGroupId>${enforcer.requireBom.supomGroupId}</supomGroupId>
+                            <supomArtifactId>${enforcer.requireBom.supomArtifactId}</supomArtifactId>
+                            <wikiUrl>${enforcer.requireBom.wikiUrl}</wikiUrl>
+                            <recordBomVersion>${enforcer.requireBom.recordBomVersion}</recordBomVersion>
+                        </requireBom>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <!-- To be able to deploy, there are 3 ways of providing repository information -->
+    <!-- 1. Specifying releases.repo and snapshots.repo properties in child pom -->
+    <!-- 2. Specifying releases.repo and snapshots.repo properties in settings.xml -->
+    <!-- 3. Passing them as -D system property when executing deploy action -->
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>${releases.repo}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>${snapshots.repo}</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>
