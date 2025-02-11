@@ -98,4 +98,6 @@ public interface MetaCache {
     boolean isAsymmetricCluster(String clusterName);
 
     Set<String> getAllShardNamesByClusterName(String clusterName);
+
+    Map<String, Integer> getClusterCntMap(String clusterName);
 }

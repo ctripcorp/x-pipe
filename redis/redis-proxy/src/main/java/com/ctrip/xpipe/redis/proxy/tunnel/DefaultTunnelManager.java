@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -176,6 +177,16 @@ public class DefaultTunnelManager implements TunnelManager {
             }
         }
         return null;
+    }
+
+    @Override
+    public void markAllUnRead() {
+        for(Tunnel tunnel : tunnels()) {
+            FrontendSession frontendSession = tunnel.frontend();
+            if(frontendSession != null) {
+                frontendSession.markUnReadable();
+            }
+        }
     }
 
     @Override
