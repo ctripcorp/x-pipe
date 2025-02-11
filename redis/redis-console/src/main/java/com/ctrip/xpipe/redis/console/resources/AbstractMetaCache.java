@@ -703,6 +703,23 @@ public abstract class AbstractMetaCache implements MetaCache {
         return shards;
     }
 
+    @Override
+    public Map<String, Integer> getClusterCntMap(String clusterName) {
+        Map<String, Integer> clusterCntMap = new HashMap<>();
+        for (DcMeta dcMeta : meta.getKey().getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+            if(clusterMeta == null) {
+                continue;
+            }
+            int cnt = 0;
+            for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                cnt += shardMeta.getRedises().size();
+            }
+            clusterCntMap.put(dcMeta.getId(), cnt);
+        }
+        return clusterCntMap;
+    }
+
     @VisibleForTesting
     public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
@@ -714,4 +731,5 @@ public abstract class AbstractMetaCache implements MetaCache {
         this.monitor2ClusterShard = monitorMap;
         return this;
     }
+
 }

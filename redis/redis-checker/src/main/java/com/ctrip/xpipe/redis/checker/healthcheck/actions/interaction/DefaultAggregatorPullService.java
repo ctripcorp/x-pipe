@@ -12,13 +12,17 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -87,7 +91,8 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     @Override
     public void doMarkInstances(String clusterName, String activeDc, Set<HostPortDcStatus> instances) throws OuterClientException {
         alertMarkInstance(clusterName, instances);
-        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc);
+        Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
+        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt);
         outerClientService.batchMarkInstance(markInstanceRequest);
     }
 
@@ -168,6 +173,11 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     @VisibleForTesting
     protected void setExecutors(Executor executors) {
         this.executors = executors;
+    }
+
+    @VisibleForTesting
+    protected void setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
     }
 
 }
