@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ctrip</groupId>
+        <artifactId>super-pom</artifactId>
+        <version>1.0.4</version>
+    </parent>
+
+    <groupId>com.ctrip.arch</groupId>
+    <artifactId>arch-bom</artifactId>
+    <version>2.1.302.1</version>
+    <packaging>pom</packaging>
+    <name>Ctrip ApplicationArchitecture Bom</name>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+
+    <properties>
+        <!-- framework -->
+        <jredis.version>2.8.1.5-ctrip</jredis.version>
+        <credis.version>4.3.99</credis.version>
+        <hermes.version>1.0.4</hermes.version>
+        <apollo.version>0.6.7</apollo.version>
+        <vi.version>0.11.64</vi.version>
+        <session-client.version>1.0.5</session-client.version>
+        <jobapi.version>1.2.6</jobapi.version>
+        <distlock-client.version>1.1.7</distlock-client.version>
+        <idempotent-checker.version>2.1.12</idempotent-checker.version>
+        <coreinfo-service-client.version>1.0.29</coreinfo-service-client.version>
+        <!-- qschedule -->
+        <qschedule.version>1.0.137</qschedule.version>
+        <!-- qconfig -->
+        <qconfig.version>1.100.65-ctrip</qconfig.version>
+        <!--hickwall-->
+        <hickwall.version>0.1.16</hickwall.version>
+        <!--ES-->
+        <elasticsearch6.version>6.8.23-6</elasticsearch6.version>
+        <elasticsearch7.version>7.17.5-6</elasticsearch7.version>
+        <!--qmq-->
+        <qmq.version>6.3.9-ctrip</qmq.version>
+        <!-- qunar tc -->
+        <qunar-tcdev.version>3.1.74</qunar-tcdev.version>
+        <!-- qunar wrapper -->
+        <qunar-dubbo-wrapper.version>2.0.0</qunar-dubbo-wrapper.version>
+        <!--Cscmws2-Client-->
+        <com-ctrip-arch-cscmws.version>1.0.3</com-ctrip-arch-cscmws.version>
+        <!-- Maven Release Repository URL -->
+        <releases.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/arcrelease</releases.repo>
+        <!-- Maven Snapshot Repository URL -->
+        <snapshots.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/arcsnapshot</snapshots.repo>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Credis -->
+            <dependency>
+                <groupId>com.ctrip.credis</groupId>
+                <artifactId>credis</artifactId>
+                <version>${credis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jredis.version}</version>
+            </dependency>
+            
+           <!-- qconfig  -->
+           <dependency>
+                <groupId>qunar.tc.qconfig</groupId>
+                <artifactId>qconfig-common</artifactId>
+                <version>${qconfig.version}</version>
+           </dependency>
+           <dependency>
+                 <groupId>qunar.tc.qconfig</groupId>
+                 <artifactId>qconfig-client</artifactId>
+                  <version>${qconfig.version}</version>
+           </dependency>
+       
+           
+           <!--hickwall-->
+           <dependency>
+                  <groupId>com.ctrip.ops</groupId>
+                  <artifactId>hickwall-sdk</artifactId>
+                  <version>${hickwall.version}</version>
+           </dependency>
+         
+           <!--ES-->
+           <dependency>
+                  <groupId>com.ctrip.sysdev.elasticsearch6</groupId>
+                  <artifactId>rest-high-level-client</artifactId>
+                  <version>${elasticsearch6.version}</version>
+           </dependency>
+           <dependency>
+                  <groupId>com.ctrip.sysdev.elasticsearch7</groupId>
+                  <artifactId>rest-high-level-client</artifactId>
+                  <version>${elasticsearch7.version}</version>
+           </dependency>
+
+            <!-- qschedule  -->
+            <dependency>
+                <groupId>qunar.tc.qschedule</groupId>
+                <artifactId>qschedule-client</artifactId>
+                <version>${qschedule.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qschedule</groupId>
+                <artifactId>qschedule-executor</artifactId>
+                <version>${qschedule.version}</version>
+            </dependency>
+
+            <!--QMQ-->
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-api</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-client</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-common</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-dal</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+
+            <!-- Hermes -->
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-producer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-consumer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-kafka</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-env</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>ctrip-hermes-env</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-core</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <!-- Apollo -->
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-client</artifactId>
+                <version>${apollo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-core</artifactId>
+                <version>${apollo.version}</version>
+            </dependency>
+            <!-- VI -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>vi</artifactId>
+                <version>${vi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>vi-core</artifactId>
+                <version>${vi.version}</version>
+            </dependency>
+            <!-- Session Client -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>session-client</artifactId>
+                <version>${session-client.version}</version>
+            </dependency>
+            <!-- Job API -->
+            <dependency>
+                <groupId>com.ctrip.framework.job</groupId>
+                <artifactId>jobapi</artifactId>
+                <version>${jobapi.version}</version>
+            </dependency>
+            <!-- Qunar TC -->
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>tcdev</artifactId>
+                <version>${qunar-tcdev.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- distlock -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>distlock-client</artifactId>
+                <version>${distlock-client.version}</version>
+            </dependency>
+            <!-- Idempotent -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>idempotent-checker</artifactId>
+                <version>${idempotent-checker.version}</version>
+            </dependency>
+        
+            <!-- coreinfo-service-client -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>coreinfo-service-client</artifactId>
+                <version>${coreinfo-service-client.version}</version>
+            </dependency>
+            <!-- for qunar.tc -->
+            <dependency>
+                <groupId>qunar.tc.dubbo-wrapper</groupId>
+                <artifactId>dubbo-wrapper</artifactId>
+                <version>${qunar-dubbo-wrapper.version}</version>
+            </dependency>
+
+
+
+
+            <dependency>
+                <groupId>com.ctrip.arch.cscmws</groupId>
+                <artifactId>service-java-cscmws2-client</artifactId>
+                <version>${com-ctrip-arch-cscmws.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

@@ -44,6 +44,10 @@ for _Version in `ls io/grpc/grpc-bom/`; do
 	mvn install:install-file -Dfile=io/grpc/grpc-bom/$_Version/grpc-bom-$_Version.pom -DpomFile=io/grpc/grpc-bom/$_Version/grpc-bom-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls com/ctrip/arch/arch-bom/`; do
+	mvn install:install-file -Dfile=com/ctrip/arch/arch-bom/$_Version/arch-bom-$_Version.pom -DpomFile=com/ctrip/arch/arch-bom/$_Version/arch-bom-$_Version.pom -Dpackaging=pom
+done
+
 for _Version in `ls com/dianping/cat/cat-client/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.jar -DpomFile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.pom
 done
