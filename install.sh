@@ -36,6 +36,10 @@ for _Version in `ls com/ctrip/ctrip-super-rule/`; do
 	mvn install:install-file -Dfile=com/ctrip/ctrip-super-rule/$_Version/ctrip-super-rule-$_Version.pom -DpomFile=com/ctrip/ctrip-super-rule/$_Version/ctrip-super-rule-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls com/ctrip/thirdparty/ctrip-thirdparty-bom/`; do
+	mvn install:install-file -Dfile=com/ctrip/thirdparty/ctrip-thirdparty-bom/$_Version/ctrip-thirdparty-bom-$_Version.pom -DpomFile=com/ctrip/thirdparty/ctrip-thirdparty-bom/$_Version/ctrip-thirdparty-bom-$_Version.pom -Dpackaging=pom
+done
+
 for _Version in `ls com/dianping/cat/cat-client/`; do
 	mvn install:install-file -Dfile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.jar -DpomFile=com/dianping/cat/cat-client/$_Version/cat-client-$_Version.pom
 done

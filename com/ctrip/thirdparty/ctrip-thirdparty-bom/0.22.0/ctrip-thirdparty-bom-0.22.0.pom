@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ctrip</groupId>
+    <artifactId>super-pom</artifactId>
+    <version>1.0.4</version>
+  </parent>
+
+  <groupId>com.ctrip.thirdparty</groupId>
+  <artifactId>ctrip-thirdparty-bom</artifactId>
+  <version>0.22.0</version>
+
+  <packaging>pom</packaging>
+  <name>Ctrip 3rd-party BOM</name>
+  <description>List ctrip common 3rd party dependencies</description>
+  <organization>
+    <name>Ctrip, Inc.</name>
+    <url>http://www.ctrip.com</url>
+  </organization>
+  <properties>
+    <asm.version>5.2</asm.version>
+    <async-http-client.version>1.9.39</async-http-client.version>
+    <async-http-client2.version>2.12.1</async-http-client2.version>
+    <avro.version>1.7.7</avro.version>
+    <classmate.version>1.3.1</classmate.version>
+    <common-config.version>2.0.0</common-config.version>
+    <common-utils.version>2.0.0</common-utils.version>
+    <commons-beanutils.version>1.9.3</commons-beanutils.version>
+    <commons-cli.version>1.3.1</commons-cli.version>
+    <commons-codec.version>1.10</commons-codec.version>
+    <commons-collections.version>3.2.2</commons-collections.version>
+    <commons-io.version>2.4</commons-io.version>
+    <commons-lang.version>2.6</commons-lang.version>
+    <commons-lang3.version>3.3.2</commons-lang3.version>
+    <compress-lzf.version>1.0.3</compress-lzf.version>
+    <concurrent-trees.version>1.0.0</concurrent-trees.version>
+    <curator.version>4.3.0</curator.version>
+    <disruptor.version>3.3.2</disruptor.version>
+    <fastjson.version>1.2.83</fastjson.version>
+    <gson.version>2.8.0</gson.version>
+    <guava.version>31.0.1-jre</guava.version>
+    <error_prone_annotations.version>2.9.0</error_prone_annotations.version>
+    <hessian.version>4.0.38</hessian.version>
+    <hibernate-validator.version>5.3.3.Final</hibernate-validator.version>
+    <httpasyncclient.version>4.1.2</httpasyncclient.version>
+    <httpclient.version>4.5.6</httpclient.version>
+    <httpcore.version>4.4.10</httpcore.version>
+    <jackson2.version>2.10.3</jackson2.version>
+    <jackson-core-asl.version>1.9.13</jackson-core-asl.version>
+    <javassist.version>3.18.1-GA</javassist.version>
+    <jboss-logging.version>3.3.0.Final</jboss-logging.version>
+    <jline.version>0.9.94</jline.version>
+    <joda-time.version>2.9</joda-time.version>
+    <jopt-simple.version>5.0.2</jopt-simple.version>
+    <kafka-avro-serializer.version>2.0.0</kafka-avro-serializer.version>
+    <kafka-clients.version>2.5.1</kafka-clients.version>
+    <kafka-schema-registry-client.version>2.0.0</kafka-schema-registry-client.version>
+    <libphonenumber.version>7.1.1</libphonenumber.version>
+    <libthrift.version>0.9.3</libthrift.version>
+    <lz4.version>1.3.0</lz4.version>
+    <netty4.version>4.1.68.Final</netty4.version>
+    <netty3.version>3.10.5.Final</netty3.version>
+    <paranamer.version>2.6</paranamer.version>
+    <protobuf-java.version>3.17.2</protobuf-java.version>
+    <protoparser.version>4.0.3</protoparser.version>
+    <grpc-bom.version>1.40.1-ctrip.1</grpc-bom.version>
+    <snakeyaml.version>1.12</snakeyaml.version>
+    <snappy-java.version>1.1.2.6</snappy-java.version>
+    <validation-api.version>1.1.0.Final</validation-api.version>
+    <xbean-reflect.version>4.5</xbean-reflect.version>
+    <xz.version>1.0</xz.version>
+    <zkclient.version>0.10</zkclient.version>
+    <zookeeper.version>3.4.6</zookeeper.version>
+
+    <!-- ctrip 3rd party bom repository path, only used for ctrip 3rd party bom deployment -->
+    <!-- Maven Release Repository URL -->
+    <releases.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/releases/</releases.repo>
+    <!-- Maven Snapshot Repository URL -->
+    <snapshots.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/snapshots/</snapshots.repo>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- json -->
+      <dependency>
+        <groupId>com.alibaba</groupId>
+        <artifactId>fastjson</artifactId>
+        <version>${fastjson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson2.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-core-asl</artifactId>
+        <version>${jackson-core-asl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>${jackson-core-asl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
+      </dependency>
+
+      <!-- guava -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+
+      <!-- error_prone_annotations -->
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${error_prone_annotations.version}</version>
+      </dependency>
+
+      <!-- commons -->
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${commons-beanutils.version}</version>
+        <exclusions>
+          <!-- commons-logging is banned -->
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${commons-codec.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${commons-lang.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-cli</groupId>
+        <artifactId>commons-cli</artifactId>
+        <version>${commons-cli.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3.version}</version>
+      </dependency>
+
+      <!-- validator -->
+      <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>${validation-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>${hibernate-validator.version}</version>
+      </dependency>
+
+      <!-- httpclient -->
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${httpclient.version}</version>
+        <exclusions>
+          <!-- commons-logging is banned -->
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>${httpcore.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore-nio</artifactId>
+        <version>${httpcore.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpasyncclient</artifactId>
+        <version>${httpasyncclient.version}</version>
+        <exclusions>
+          <!-- commons-logging is banned -->
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- zk -->
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-client</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-framework</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.curator</groupId>
+        <artifactId>curator-recipes</artifactId>
+        <version>${curator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.101tec</groupId>
+        <artifactId>zkclient</artifactId>
+        <version>${zkclient.version}</version>
+        <exclusions>
+          <!-- follow log standard, please visit http://conf.ctripcorp.com/pages/viewpage.action?pageId=126139959 for more information -->
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>${zookeeper.version}</version>
+        <exclusions>
+          <!-- follow log standard, please visit http://conf.ctripcorp.com/pages/viewpage.action?pageId=126139959 for more information -->
+          <exclusion>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- kafka -->
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-avro-serializer</artifactId>
+        <version>${kafka-avro-serializer.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${kafka-clients.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-schema-registry-client</artifactId>
+        <version>${kafka-schema-registry-client.version}</version>
+        <exclusions>
+          <!-- follow log standard, please visit http://conf.ctripcorp.com/pages/viewpage.action?pageId=126139959 for more information -->
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- netty -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>${netty4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>${netty3.version}</version>
+      </dependency>
+
+      <!-- compression -->
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>${snappy-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.ning</groupId>
+        <artifactId>compress-lzf</artifactId>
+        <version>${compress-lzf.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.jpountz.lz4</groupId>
+        <artifactId>lz4</artifactId>
+        <version>${lz4.version}</version>
+      </dependency>
+
+      <!-- serialization -->
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${avro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.caucho</groupId>
+        <artifactId>hessian</artifactId>
+        <version>${hessian.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${protobuf-java.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${grpc-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+
+      <!-- asm -->
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>${asm.version}</version>
+      </dependency>
+
+      <!-- others -->
+      <dependency>
+        <groupId>com.ning</groupId>
+        <artifactId>async-http-client</artifactId>
+        <version>${async-http-client.version}</version>
+      </dependency>
+        <dependency>
+        <groupId>org.asynchttpclient</groupId>
+        <artifactId>async-http-client</artifactId>
+        <version>${async-http-client2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml</groupId>
+        <artifactId>classmate</artifactId>
+        <version>${classmate.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>common-config</artifactId>
+        <version>${common-config.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>common-utils</artifactId>
+        <version>${common-utils.version}</version>
+        <exclusions>
+          <!-- follow log standard, please visit http://conf.ctripcorp.com/pages/viewpage.action?pageId=126139959 for more information -->
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.concurrent-trees</groupId>
+        <artifactId>concurrent-trees</artifactId>
+        <version>${concurrent-trees.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.lmax</groupId>
+        <artifactId>disruptor</artifactId>
+        <version>${disruptor.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${javassist.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss-logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jline</groupId>
+        <artifactId>jline</artifactId>
+        <version>${jline.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${joda-time.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.sf.jopt-simple</groupId>
+        <artifactId>jopt-simple</artifactId>
+        <version>${jopt-simple.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.libphonenumber</groupId>
+        <artifactId>libphonenumber</artifactId>
+        <version>${libphonenumber.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.thoughtworks.paranamer</groupId>
+        <artifactId>paranamer</artifactId>
+        <version>${paranamer.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup</groupId>
+        <artifactId>protoparser</artifactId>
+        <version>${protoparser.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${snakeyaml.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.xbean</groupId>
+        <artifactId>xbean-reflect</artifactId>
+        <version>${xbean-reflect.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.tukaani</groupId>
+        <artifactId>xz</artifactId>
+        <version>${xz.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
