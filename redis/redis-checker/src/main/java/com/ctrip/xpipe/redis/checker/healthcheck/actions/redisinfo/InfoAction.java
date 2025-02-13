@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
@@ -24,7 +25,7 @@ public class InfoAction extends AbstractHealthCheckAction<RedisHealthCheckInstan
 
     @Override
     protected void doTask() {
-        instance.getRedisSession().info("replication", new Callbackable<String>() {
+        CommandFuture<String> info = instance.getRedisSession().info("", new Callbackable<String>() {
             @Override
             public void success(String message) {
                 notifyListeners(new RawInfoActionContext(instance, message));

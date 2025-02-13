@@ -80,6 +80,19 @@ public class KeeperContainerUsedInfoModel {
         this.diskType = model.getDiskType();
     }
 
+    public void addModel(KeeperContainerUsedInfoModel model) {
+        if (!Objects.equals(model.keeperIp, keeperIp) || !Objects.equals(model.dcName, dcName) || !Objects.equals(model.org, org) || !Objects.equals(model.az, az)) {
+            return;
+        }
+        activeInputFlow += model.activeInputFlow;
+        totalInputFlow += model.totalInputFlow;
+        activeRedisUsedMemory += model.activeRedisUsedMemory;
+        totalRedisUsedMemory += model.totalRedisUsedMemory;
+        activeKeeperCount += model.activeKeeperCount;
+        totalKeeperCount += model.totalKeeperCount;
+        detailInfo.putAll(model.detailInfo);
+    }
+
     public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
         KeeperContainerUsedInfoModel newModel = new KeeperContainerUsedInfoModel();
         newModel.setKeeperIp(model.getKeeperIp());

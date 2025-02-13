@@ -7,12 +7,13 @@ import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class CheckerHealthController {
     private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
 
     @Autowired
-    private RedisUsedMemoryCollector redisUsedMemoryCollector;
+    private RedisMsgCollector redisMsgCollector;
 
     @Autowired
     private KeeperFlowCollector keeperFlowCollector;
@@ -172,9 +173,9 @@ public class CheckerHealthController {
         return keeperFlowCollector.getHostPort2InputFlow();
     }
 
-    @GetMapping("/health/redis/used-memory/all")
-    public ConcurrentMap<DcClusterShard, Long> getAllDclusterShardUsedMemory() {
-        return redisUsedMemoryCollector.getDcClusterShardUsedMemory();
+    @GetMapping("/health/redis/msg/all")
+    public Map<String, Map<HostPort, RedisMsg>> getAllRedisMsg() {
+        return redisMsgCollector.getRedisMsgMap();
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

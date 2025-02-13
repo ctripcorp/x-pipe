@@ -131,11 +131,11 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
 
-            if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
-                Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
-                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, currentDcAllMeta.getCurrentDcAllMeta());
-                keeperContainerDetailInfoMap.values().forEach(this::generateHealthCheckInstances);
-            }
+//            if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
+//                Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
+//                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, currentDcAllMeta.getCurrentDcAllMeta());
+//                keeperContainerDetailInfoMap.values().forEach(this::generateHealthCheckInstances);
+//            }
 
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 try {
