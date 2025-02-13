@@ -8,8 +8,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
-import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getMonitorRedisMeta;
+import java.util.stream.Collectors;
 
 /**
  * @author marsqing
@@ -27,11 +26,6 @@ public class DefaultRedisSessionManager extends AbstractInstanceSessionManager i
 		if(dcMetas.isEmpty())	return null;
 		for (DcMeta dcMeta : dcMetas) {
 			if(dcMeta == null)	break;
-
-			if (dcMeta.getId().equalsIgnoreCase(currentDcId)) {
-				redisInUse.addAll(getSessionsForKeeper(dcMeta, currentDcAllMeta.getCurrentDcAllMeta()));
-			}
-
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					for (RedisMeta redisMeta : shardMeta.getRedises()) {
@@ -43,9 +37,5 @@ public class DefaultRedisSessionManager extends AbstractInstanceSessionManager i
 		return redisInUse;
 	}
 
-	@Override
-	protected HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper) {
-		RedisMeta monitorRedisMeta = getMonitorRedisMeta(redises);
-		return monitorRedisMeta == null ? null : new HostPort(monitorRedisMeta.getIp(), monitorRedisMeta.getPort());
-	}
+
 }

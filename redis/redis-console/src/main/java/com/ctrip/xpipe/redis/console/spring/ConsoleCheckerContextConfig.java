@@ -16,13 +16,11 @@ import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
-import com.ctrip.xpipe.redis.console.resources.CheckerCurrentDcAllMeta;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultRedisInfoService;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.boot.web.servlet.ServletComponentScan;
@@ -80,11 +78,6 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public AllCheckerLeaderElector allCheckerLeaderElector(FoundationService foundationService) {
         return new AllCheckerLeaderElector(foundationService.getDataCenter());
-    }
-
-    @Bean
-    public CurrentDcAllMeta currentDcAllMeta() {
-        return new CheckerCurrentDcAllMeta();
     }
 
     @Bean

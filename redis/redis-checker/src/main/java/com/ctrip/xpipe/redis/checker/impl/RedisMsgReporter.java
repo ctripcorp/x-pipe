@@ -1,21 +1,11 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
@@ -24,12 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -37,33 +22,23 @@ public class RedisMsgReporter implements GroupCheckerLeaderAware {
 
     private RedisMsgCollector redisMsgCollector;
 
-    private KeeperFlowCollector keeperFlowCollector;
-
     private ScheduledExecutorService scheduled;
 
     private DynamicDelayPeriodTask keeperContainerInfoReportTask;
 
     private CheckerConsoleService checkerConsoleService;
 
-    private KeeperContainerCheckerService keeperContainerService;
-
     private CheckerConfig config;
 
-    private MetaCache metaCache;
-
-    private static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
 
     public RedisMsgReporter(RedisMsgCollector redisMsgCollector, CheckerConsoleService
-            checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerCheckerService keeperContainerService, MetaCache metaCache) {
+            checkerConsoleService, CheckerConfig config) {
         this.redisMsgCollector = redisMsgCollector;
-        this.keeperFlowCollector = keeperFlowCollector;
         this.checkerConsoleService = checkerConsoleService;
         this.config = config;
-        this.keeperContainerService = keeperContainerService;
-        this.metaCache = metaCache;
     }
 
     @PostConstruct
