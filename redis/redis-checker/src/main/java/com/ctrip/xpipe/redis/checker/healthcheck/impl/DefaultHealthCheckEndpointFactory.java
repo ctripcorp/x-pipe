@@ -163,12 +163,6 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     }
 
     @Override
-    public Endpoint getOrCreateEndpoint(KeeperMeta keeperMeta) {
-        HostPort hostPort = new HostPort(keeperMeta.getIp(), keeperMeta.getPort());
-        return getOrCreateEndpoint(hostPort);
-    }
-
-    @Override
     public void remove(HostPort hostPort) {
         logger.info("[ProxyRegistry] unregisterProxy {}:{}", hostPort.getHost(),hostPort.getPort());
         map.remove(hostPort);

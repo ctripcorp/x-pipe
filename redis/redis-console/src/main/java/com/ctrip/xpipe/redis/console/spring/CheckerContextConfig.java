@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck;
@@ -34,7 +33,6 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -77,11 +75,6 @@ public class CheckerContextConfig {
     @Bean
     public CheckerAllMetaCache checkerAllMetaCache() {
         return new CheckerAllMetaCache();
-    }
-
-    @Bean
-    public CurrentDcAllMeta currentDcAllMeta() {
-        return new CheckerCurrentDcAllMeta();
     }
 
     @Bean
@@ -200,8 +193,8 @@ public class CheckerContextConfig {
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public RedisMsgReporter keeperContainerInfoReporter(RedisMsgCollector redisMsgCollector,
-                                                        CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerCheckerService keeperContainerService, MetaCache metaCache) {
-        return new RedisMsgReporter(redisMsgCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService, metaCache);
+                                                        CheckerConsoleService checkerConsoleService, CheckerConfig config) {
+        return new RedisMsgReporter(redisMsgCollector, checkerConsoleService, config);
     }
     
     @Bean(name = "ALLCHECKER")

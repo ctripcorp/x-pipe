@@ -14,8 +14,6 @@ public interface HealthCheckEndpointFactory {
 
     Endpoint getOrCreateEndpoint(RedisMeta redisMeta);
 
-    Endpoint getOrCreateEndpoint(KeeperMeta keeperMeta);
-
     Endpoint getOrCreateEndpoint(HostPort hostPort);
 
     void updateRoutes();

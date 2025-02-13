@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -47,9 +46,6 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
 
     @Mock
     private CheckerConfig checkerConfig;
-
-    @Mock
-    private CurrentDcAllMeta currentDcAllMeta;
 
     @Before
     public void setupDefaultHealthCheckerMockTest() throws IOException, SAXException {

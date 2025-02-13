@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.junit.BeforeClass;
 
@@ -121,25 +120,6 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
 
-        return instance;
-    }
-
-    protected KeeperHealthCheckInstance newRandomKeeperHealthCheckInstance(String ip, int port) throws Exception {
-        KeeperMeta keeperMeta = newRandomFakeKeeperMeta(ip, port);
-        DefaultKeeperInstanceInfo info = new DefaultKeeperInstanceInfo(((ClusterMeta) keeperMeta.parent().parent()).parent().getId(),
-                ((ClusterMeta) keeperMeta.parent().parent()).getId(), keeperMeta.parent().getId(),
-                new HostPort(keeperMeta.getIp(), keeperMeta.getPort()),
-                keeperMeta.parent().getActiveDc(), ClusterType.ONE_WAY);
-
-        return newRandomRedisHealthCheckInstance(info);
-    }
-
-    protected KeeperHealthCheckInstance newRandomRedisHealthCheckInstance(KeeperInstanceInfo info) throws Exception {
-        DefaultKeeperHealthCheckInstance instance = new DefaultKeeperHealthCheckInstance();
-        instance.setInstanceInfo(info);
-        instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
-        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(), buildCheckerConfig()));
         return instance;
     }
 

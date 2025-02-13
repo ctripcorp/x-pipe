@@ -59,11 +59,6 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         MockitoAnnotations.initMocks(this);
         DefaultRedisSessionManager.checkUnusedRedisDelaySeconds = 2;
 
-        // mock datas
-        when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
-        logger.info("[xpipeMeta] {}", getXpipeMeta());
-        when(metaCache.getCurrentDcConsoleRoutes()).thenReturn(null);
-
         // random port to avoid port conflict
         port = randomPort();
         server = startServer(port, new Callable<String>() {

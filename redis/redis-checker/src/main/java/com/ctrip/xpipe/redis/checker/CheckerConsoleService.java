@@ -25,8 +25,6 @@ public interface CheckerConsoleService {
 
     XpipeMeta getXpipeAllMeta(String console) throws SAXException, IOException;
 
-    XpipeMeta getXpipeDcAllMeta(String console, String dcName) throws SAXException, IOException;
-    
     List<ProxyTunnelInfo> getProxyTunnelInfos(String console);
 
     void ack(String console, CheckerStatus checkerStatus);

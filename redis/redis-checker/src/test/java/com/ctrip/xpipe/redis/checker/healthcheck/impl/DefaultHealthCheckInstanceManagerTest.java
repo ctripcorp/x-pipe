@@ -4,10 +4,8 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,16 +38,10 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
     private CheckerConfig checkerConfig;
 
     @Mock
-    private CurrentDcAllMeta currentDcAllMeta;
-
-    @Mock
     private HealthCheckInstanceFactory instanceFactory;
 
     @Mock
     private RedisHealthCheckInstance mockCheckInstance;
-
-    @Mock
-    private KeeperHealthCheckInstance mockKeeperInstance;
 
     @Mock
     private ClusterHealthCheckInstance mockClusterInstance;
@@ -57,14 +49,10 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
     @Before
     public void setupDefaultHealthCheckInstanceManagerTest() {
         Mockito.when(instanceFactory.create(Mockito.any(RedisMeta.class))).thenReturn(mockCheckInstance);
-        Mockito.when(instanceFactory.create(Mockito.any(KeeperMeta.class))).thenReturn(mockKeeperInstance);
         Mockito.when(instanceFactory.create(Mockito.any(ClusterMeta.class))).thenReturn(mockClusterInstance);
-        Mockito.when(instanceFactory.createRedisInstanceForAssignedAction(Mockito.any())).thenReturn(mockCheckInstance);
         Mockito.when(instanceFactory.getOrCreateRedisInstanceForPsubPingAction(Mockito.any())).thenReturn(mockCheckInstance);
 
         Mockito.when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
-
-        Mockito.when(currentDcAllMeta.getCurrentDcAllMeta()).thenReturn(getXpipeMeta().findDc(FoundationService.DEFAULT.getDataCenter()));
 
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.doAnswer(inv -> {

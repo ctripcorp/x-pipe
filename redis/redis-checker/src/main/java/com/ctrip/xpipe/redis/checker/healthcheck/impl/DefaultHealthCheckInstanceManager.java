@@ -32,10 +32,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<String, ClusterHealthCheckInstance> clusterHealthCheckerInstances = Maps.newConcurrentMap();
 
-    private ConcurrentMap<HostPort, KeeperHealthCheckInstance> keeperInstances = Maps.newConcurrentMap();
-
-    private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForAssignedAction = Maps.newConcurrentMap();
-
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForPingAction = Maps.newConcurrentMap();
 
     private static final String ALERT_TYPE = "HealthCheckInstance";
@@ -55,18 +51,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceForAssignedAction(RedisMeta redis) {
-        try {
-            HostPort key = new HostPort(redis.getIp(), redis.getPort());
-            return MapUtils.getOrCreate(redisInstanceForAssignedAction, key,
-                    () -> instanceFactory.createRedisInstanceForAssignedAction(redis));
-        } catch (Throwable th) {
-            logger.error("getOrCreate health check redis instance:{}:{}", redis.getIp(), redis.getPort(), th);
-        }
-        return null;
-    }
-
-    @Override
     public RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis) {
         try {
             HostPort key = new HostPort(redis.getIp(), redis.getPort());
@@ -74,17 +58,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
                     () -> instanceFactory.getOrCreateRedisInstanceForPsubPingAction(redis));
         } catch (Throwable th) {
             logger.error("getOrCreate ping action health check redis instance:{}:{}", redis.getIp(), redis.getPort(), th);
-        }
-        return null;
-    }
-
-    @Override
-    public KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper) {
-        try {
-            HostPort key = new HostPort(keeper.getIp(), keeper.getPort());
-            return MapUtils.getOrCreate(keeperInstances, key, () -> instanceFactory.create(keeper));
-        } catch (Throwable th) {
-            logger.error("getOrCreate health check keeper instance:{}:{}", keeper.getIp(), keeper.getPort(), th);
         }
         return null;
     }
@@ -106,18 +79,8 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance findRedisInstanceForAssignedAction(HostPort hostPort) {
-        return redisInstanceForAssignedAction.get(hostPort);
-    }
-
-    @Override
     public RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort) {
         return redisInstanceForPingAction.get(hostPort);
-    }
-
-    @Override
-    public KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort) {
-        return keeperInstances.get(hostPort);
     }
 
     @Override
@@ -129,20 +92,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public RedisHealthCheckInstance remove(HostPort hostPort) {
         RedisHealthCheckInstance instance = instances.remove(hostPort);
-        if (null != instance) instanceFactory.remove(instance);
-        return instance;
-    }
-
-    @Override
-    public KeeperHealthCheckInstance removeKeeper(HostPort hostPort) {
-        KeeperHealthCheckInstance instance = keeperInstances.remove(hostPort);
-        if (null != instance) instanceFactory.remove(instance);
-        return instance;
-    }
-
-    @Override
-    public RedisHealthCheckInstance removeRedisInstanceForAssignedAction(HostPort hostPort) {
-        RedisHealthCheckInstance instance = redisInstanceForAssignedAction.remove(hostPort);
         if (null != instance) instanceFactory.remove(instance);
         return instance;
     }
@@ -165,16 +114,6 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public List<RedisHealthCheckInstance> getAllRedisInstance() {
         return Lists.newLinkedList(instances.values());
-    }
-
-    @Override
-    public List<KeeperHealthCheckInstance> getAllKeeperInstance() {
-        return Lists.newLinkedList(keeperInstances.values());
-    }
-
-    @Override
-    public List<RedisHealthCheckInstance> getAllRedisInstanceForAssignedAction() {
-        return Lists.newLinkedList(redisInstanceForAssignedAction.values());
     }
 
     @Override

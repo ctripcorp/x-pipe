@@ -18,7 +18,6 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -65,15 +64,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     public XpipeMeta getXpipeAllMeta(String console) throws  SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_META)
                 .queryParam("format", "xml").build();
-
-        String raw = restTemplate.getForObject(comp.toString(), String.class);
-        if (StringUtil.isEmpty(raw)) return null;
-        return DefaultSaxParser.parse(raw);
-    }
-
-    public XpipeMeta getXpipeDcAllMeta(String console, String dcName) throws  SAXException, IOException {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_DC_ALL_META)
-                .queryParam("format", "xml").buildAndExpand(dcName);
 
         String raw = restTemplate.getForObject(comp.toString(), String.class);
         if (StringUtil.isEmpty(raw)) return null;
