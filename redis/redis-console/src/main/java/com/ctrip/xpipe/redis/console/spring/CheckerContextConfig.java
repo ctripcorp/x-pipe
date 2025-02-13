@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisUsedMemoryCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.infoStats.KeeperFlowCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -199,9 +199,9 @@ public class CheckerContextConfig {
 
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public KeeperContainerInfoReporter keeperContainerInfoReporter(RedisUsedMemoryCollector redisUsedMemoryCollector,
-                                                                   CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerCheckerService keeperContainerService, MetaCache metaCache) {
-        return new KeeperContainerInfoReporter(redisUsedMemoryCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService, metaCache);
+    public RedisMsgReporter keeperContainerInfoReporter(RedisMsgCollector redisMsgCollector,
+                                                        CheckerConsoleService checkerConsoleService, KeeperFlowCollector keeperFlowCollector, CheckerConfig config, KeeperContainerCheckerService keeperContainerService, MetaCache metaCache) {
+        return new RedisMsgReporter(redisMsgCollector, checkerConsoleService, keeperFlowCollector, config, keeperContainerService, metaCache);
     }
     
     @Bean(name = "ALLCHECKER")

@@ -3,12 +3,10 @@ package com.ctrip.xpipe.redis.checker;
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
-import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,7 +33,7 @@ public interface CheckerConsoleService {
 
     void report(String console, HealthCheckResult result);
 
-    void reportKeeperContainerInfo(String console, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels, int index);
+    void reportKeeperContainerInfo(String console, Map<String, Map<HostPort, RedisMsg>> redisMsgMap, int index);
     
     boolean isClusterOnMigration(String console, String clusterId);
 

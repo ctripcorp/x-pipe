@@ -13,14 +13,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+//@Component
 public class RedisInfoActionFactory extends AbstractRedisWithAssignedLeaderAwareHealthCheckActionFactory
         implements KeeperSupport, OneWaySupport {
 
-    @Autowired
+//    @Autowired
     private List<RedisInfoActionListener> listeners;
 
-    @Autowired
+//    @Autowired
     private CheckerDbConfig checkerDbConfig;
 
     @Override

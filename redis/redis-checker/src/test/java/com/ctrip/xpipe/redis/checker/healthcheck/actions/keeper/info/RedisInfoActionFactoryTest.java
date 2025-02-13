@@ -14,17 +14,17 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 2023/8/29
  */
 public class RedisInfoActionFactoryTest extends AbstractCheckerIntegrationTest {
-    @Autowired
-    RedisInfoActionFactory factory;
+//    @Autowired
+//    RedisInfoActionFactory factory;
 
-    @Test
-    public void testCreate() throws Exception {
-        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.ONE_WAY, 6379);
-        RedisInfoAction action =  factory.create(instance);
-        action.doStart();
-
-        Assert.assertTrue(factory.support().isInstance(action));
-        Assert.assertEquals(1, action.getListeners().size());
-        Assert.assertTrue(action.getListeners().stream().allMatch(listener -> listener instanceof KeeperSupport));
-    }
+//    @Test
+//    public void testCreate() throws Exception {
+//        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.ONE_WAY, 6379);
+//        RedisInfoAction action =  factory.create(instance);
+//        action.doStart();
+//
+//        Assert.assertTrue(factory.support().isInstance(action));
+//        Assert.assertEquals(1, action.getListeners().size());
+//        Assert.assertTrue(action.getListeners().stream().allMatch(listener -> listener instanceof KeeperSupport));
+//    }
 }
