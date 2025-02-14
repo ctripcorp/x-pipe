@@ -22,19 +22,21 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
@@ -251,6 +253,61 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		mockReplication.connectWithMaster();
 		Thread.sleep(1000);
 		Assert.assertEquals(1, server.getConnected());
+	}
+
+	@Test
+	@Ignore
+	public void testConcurrentResetAndDisconnect() throws Exception {
+		Server server = startEmptyServer();
+		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", server.getPort()));
+
+		DefaultRedisMasterReplication mockReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+				scheduled, proxyResourceManager) {
+			@Override
+			protected void doInitialize() throws Exception {
+			}
+
+			@Override
+			protected void doStart() throws Exception {
+			}
+		};
+
+		Channel channel = Mockito.mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
+
+		CyclicBarrier barrier = new CyclicBarrier(2);
+		CountDownLatch latch = new CountDownLatch(2);
+		AtomicReference<Throwable> err = new AtomicReference<>(null);
+		new Thread(() -> {
+			try {
+				barrier.await();
+				for (int i = 0; i < 100000; i++) {
+					mockReplication.masterChannel = channel;
+					mockReplication.resetMasterChannel(channel);
+				}
+			} catch (Throwable th) {
+				logger.info("[reset][fail]", th);
+				err.set(th);
+			} finally {
+				latch.countDown();
+			}
+		}).start();
+		new Thread(() -> {
+			try {
+				barrier.await();
+				for (int i = 0; i < 100000; i++) {
+					mockReplication.disconnectWithMaster();
+				}
+			} catch (Throwable th) {
+				logger.info("[disconnect][fail]", th);
+				err.set(th);
+			} finally {
+				latch.countDown();
+			}
+		}).start();
+
+		Assert.assertTrue(latch.await(30, TimeUnit.SECONDS));
+		Assert.assertNull(err.get());
 	}
 
 	@After
