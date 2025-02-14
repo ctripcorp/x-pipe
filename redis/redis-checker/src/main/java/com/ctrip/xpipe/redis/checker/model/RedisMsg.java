@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.model;
 
+import java.util.Objects;
+
 public class RedisMsg {
 
     private long inPutFlow;
@@ -39,5 +41,26 @@ public class RedisMsg {
 
     public void setOffset(long offset) {
         this.offset = offset;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof RedisMsg)) return false;
+        RedisMsg redisMsg = (RedisMsg) o;
+        return getInPutFlow() == redisMsg.getInPutFlow() && getUsedMemory() == redisMsg.getUsedMemory() && getOffset() == redisMsg.getOffset();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getInPutFlow(), getUsedMemory(), getOffset());
+    }
+
+    @Override
+    public String toString() {
+        return "RedisMsg{" +
+                "inPutFlow=" + inPutFlow +
+                ", usedMemory=" + usedMemory +
+                ", offset=" + offset +
+                '}';
     }
 }
