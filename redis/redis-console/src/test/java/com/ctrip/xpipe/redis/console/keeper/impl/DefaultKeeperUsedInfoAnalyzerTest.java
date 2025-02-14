@@ -84,7 +84,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
         migrationAnalyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
-        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Mockito.when(config.getKeeperContainerDiskOverLoadFactor()).thenReturn(0.8);
         KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();

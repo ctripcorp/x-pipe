@@ -4,7 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;

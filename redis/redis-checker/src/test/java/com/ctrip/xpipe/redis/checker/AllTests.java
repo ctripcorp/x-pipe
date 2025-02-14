@@ -35,6 +35,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCh
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionTest;
@@ -202,7 +203,9 @@ import org.junit.runners.Suite;
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,
-        DefaultAggregatorPullServiceTest.class
+        DefaultAggregatorPullServiceTest.class,
+        RedisMsgCollectorTest.class,
+        RedisMsgReporterTest.class
 
 })
 public class AllTests {
