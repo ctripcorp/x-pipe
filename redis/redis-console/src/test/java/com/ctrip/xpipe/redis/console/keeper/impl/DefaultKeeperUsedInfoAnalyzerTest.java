@@ -84,13 +84,11 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
         Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
         migrationAnalyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
-        Mockito.when(config.getClusterDividedParts()).thenReturn(2);
         Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(expireTime);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Mockito.when(config.getKeeperContainerDiskOverLoadFactor()).thenReturn(0.8);
         KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl();
         keepercontainerTbl.setKeepercontainerActive(true);
-        Mockito.doNothing().when(executor).execute(Mockito.any());
     }
 
     public KeeperContainerUsedInfoModel createKeeperContainer(Map<String, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory){
@@ -111,7 +109,6 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     @Test
     public void testUpdateKeeperContainerUsedInfo() {
         //To prevent a second updateKeeperContainerUsedInfo() data when expired
-        Mockito.when(config.getKeeperCheckerIntervalMilli()).thenReturn(1000000);
         Map<String, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
         createKeeperContainer(models1, IP1, 14, 14)
                 .createKeeper(Cluster1, Shard1, true, 2, 2)
