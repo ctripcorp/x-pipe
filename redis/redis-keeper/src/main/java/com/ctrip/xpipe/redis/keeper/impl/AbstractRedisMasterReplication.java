@@ -142,8 +142,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     public void startReplication() {
 
-        if (this.masterChannel != null && this.masterChannel.isOpen()) {
-            logger.warn("[startReplication][channel alive, don't do replication]{}", this.masterChannel);
+        Channel localMasterChannel = this.masterChannel;
+        if (localMasterChannel != null && localMasterChannel.isOpen()) {
+            logger.warn("[startReplication][channel alive, don't do replication]{}", localMasterChannel);
             return;
         }
         logger.info("[startReplication]{}", redisMaster.masterEndPoint());
@@ -452,9 +453,10 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     }
 
     protected void disconnectWithMaster() {
-        if (masterChannel != null && masterChannel.isOpen()) {
-            logger.info("[disconnectWithMaster]{}", masterChannel);
-            masterChannel.close();
+        Channel localMasterChannel = masterChannel;
+        if (localMasterChannel != null && localMasterChannel.isOpen()) {
+            logger.info("[disconnectWithMaster]{}", localMasterChannel);
+            localMasterChannel.close();
         }
     }
 
