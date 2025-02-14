@@ -265,22 +265,22 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             }
         });
 
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*3\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6379, "$545\r\n" +
+                "# Replication\r\n" +
+                "role:master\r\n" +
+                "connected_slaves:3\r\n" +
+                "slave0:ip=127.0.0.1,port=6380,state=online,offset=148954935,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=8000,state=online,offset=148955111,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=6381,state=online,offset=148955111,lag=1\r\n" +
+                "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                "master_repl_offset:148955111\r\n" +
+                "second_repl_offset:120548767\r\n" +
+                "repl_backlog_active:1\r\n" +
+                "repl_backlog_size:104857600\r\n" +
+                "repl_backlog_first_byte_offset:120501034\r\n" +
+                "repl_backlog_histlen:28454078\r\n\r\n");
+
 
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
@@ -427,22 +427,21 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             }
         });
 
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*3\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6379, "$545\r\n" +
+                "# Replication\r\n" +
+                "role:master\r\n" +
+                "connected_slaves:3\r\n" +
+                "slave0:ip=127.0.0.1,port=6380,state=online,offset=148954935,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=8000,state=online,offset=148955111,lag=1\r\n" +
+                "slave2:ip=127.0.0.1,port=6381,state=online,offset=148955111,lag=1\r\n" +
+                "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                "master_repl_offset:148955111\r\n" +
+                "second_repl_offset:120548767\r\n" +
+                "repl_backlog_active:1\r\n" +
+                "repl_backlog_size:104857600\r\n" +
+                "repl_backlog_first_byte_offset:120501034\r\n" +
+                "repl_backlog_histlen:28454078\r\n\r\n");
 
         when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
 
@@ -710,18 +709,20 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         });
 
         //master lost slave 6381
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*2\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6379, "$480\r\n" +
+                "# Replication\r\n" +
+                "role:master\r\n" +
+                "connected_slaves:2\r\n" +
+                "slave0:ip=127.0.0.1,port=6380,state=online,offset=148954935,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=8000,state=online,offset=148955111,lag=1\r\n" +
+                "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                "master_repl_offset:148955111\r\n" +
+                "second_repl_offset:120548767\r\n" +
+                "repl_backlog_active:1\r\n" +
+                "repl_backlog_size:104857600\r\n" +
+                "repl_backlog_first_byte_offset:120501034\r\n" +
+                "repl_backlog_histlen:28454078\r\n\r\n");
 
         resetSentinels.setContext(new SentinelHelloCollectContext().setToCheckReset(Sets.newHashSet(hello5000, hello5001, hello5002, hello5003, hello5004)).setSentinelMonitorName("cluster+shard+activeDc").setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6379), new ArrayList<>()))
                 .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 6381))));
@@ -856,7 +857,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.fail();
         } catch (Throwable th) {
             Assert.assertTrue(th.getCause().getCause() instanceof SentinelsException);
-            Assert.assertTrue(th.getCause().getCause().getMessage().contains("role master"));
+            Assert.assertTrue(th.getCause().getCause().getMessage().contains("info replication master"));
         }
 
         verify(metaCache, times(5)).getAllKeepers();
@@ -973,23 +974,21 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         });
 
         //not in master
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*3\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n");
-
+        Server master = startServer(6379, "$545\r\n" +
+                "# Replication\r\n" +
+                "role:master\r\n" +
+                "connected_slaves:3\r\n" +
+                "slave0:ip=127.0.0.1,port=6380,state=online,offset=148954935,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=8000,state=online,offset=148955111,lag=1\r\n" +
+                "slave2:ip=127.0.0.1,port=6381,state=online,offset=148955111,lag=1\r\n" +
+                "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                "master_repl_offset:148955111\r\n" +
+                "second_repl_offset:120548767\r\n" +
+                "repl_backlog_active:1\r\n" +
+                "repl_backlog_size:104857600\r\n" +
+                "repl_backlog_first_byte_offset:120501034\r\n" +
+                "repl_backlog_histlen:28454078\r\n\r\n");
         when(sentinelManager.reset(any(), any())).thenReturn(new AbstractCommand<Long>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -1131,26 +1130,22 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         resetSentinels.setContext(new SentinelHelloCollectContext().setToCheckReset(Sets.newHashSet(hello5000, hello5001, hello5002, hello5003, hello5004)).setSentinelMonitorName("cluster+shard+activeDc").setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6382), new ArrayList<>()))
                 .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6382), new HostPort(LOCAL_HOST, 6380))));
 
-        Server master = startServer(6382, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*4\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8001\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6382, "$614\r\n"+
+                "# Replication\r\n"+
+                "role:master\r\n"+
+                "connected_slaves:4\r\n"+
+                "slave0:ip=127.0.0.1,port=8000,state=online,offset=4939687459,lag=0\r\n"+
+                "slave1:ip=127.0.0.1,port=6380,state=online,offset=4939687671,lag=0\r\n"+
+                "slave2:ip=127.0.0.1,port=6381,state=online,offset=4939687376,lag=1\r\n"+
+                "slave3:ip=127.0.0.1,port=8001,state=online,offset=4939687459,lag=0\r\n"+
+                "master_replid:7b394e1ec33430dd5a272411c77b136106befb86\r\n"+
+                "master_replid2:0000000000000000000000000000000000000000\r\n"+
+                "master_repl_offset:4939687965\r\n"+
+                "second_repl_offset:-1\r\n"+
+                "repl_backlog_active:1\r\n"+
+                "repl_backlog_size:536870912\r\n"+
+                "repl_backlog_first_byte_offset:4402817054\r\n"+
+                "repl_backlog_histlen:536870912\r\n\r\n");
 
         try {
             resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
@@ -1292,22 +1287,21 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380))));
 
         //not in master
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*3\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6379, "$545\r\n" +
+                "# Replication\r\n" +
+                "role:master\r\n" +
+                "connected_slaves:3\r\n" +
+                "slave0:ip=127.0.0.1,port=6380,state=online,offset=148954935,lag=1\r\n" +
+                "slave1:ip=127.0.0.1,port=8000,state=online,offset=148955111,lag=1\r\n" +
+                "slave2:ip=127.0.0.1,port=6381,state=online,offset=148955111,lag=1\r\n" +
+                "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                "master_repl_offset:148955111\r\n" +
+                "second_repl_offset:120548767\r\n" +
+                "repl_backlog_active:1\r\n" +
+                "repl_backlog_size:104857600\r\n" +
+                "repl_backlog_first_byte_offset:120501034\r\n" +
+                "repl_backlog_histlen:28454078\r\n\r\n");
 
         try {
             resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
@@ -1432,26 +1426,24 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         resetSentinels.setContext(new SentinelHelloCollectContext().setToCheckReset(Sets.newHashSet(hello5000, hello5001, hello5002, hello5003, hello5004)).setSentinelMonitorName("cluster+shard+activeDc").setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(new HostPort(LOCAL_HOST, 6379), new ArrayList<>()))
                 .setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 6379), new HostPort(LOCAL_HOST, 6380))));
 
-        Server master = startServer(6379, "*3\r\n"
-                + "$6\r\nmaster\r\n"
-                + ":43\r\n"
-                + "*4\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6380\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n8000\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6381\r\n"
-                + "$1\r\n0\r\n"
-                + "*3\r\n"
-                + "$9\r\n127.0.0.1\r\n"
-                + "$4\r\n6382\r\n"
-                + "$1\r\n0\r\n");
+        Server master = startServer(6379, "$614\r\n"+
+                "# Replication\r\n"+
+                "role:master\r\n"+
+                "connected_slaves:4\r\n"+
+                "slave0:ip=127.0.0.1,port=8000,state=online,offset=4939687459,lag=0\r\n"+
+                "slave1:ip=127.0.0.1,port=6380,state=online,offset=4939687671,lag=0\r\n"+
+                "slave2:ip=127.0.0.1,port=6381,state=online,offset=4939687376,lag=1\r\n"+
+                "slave3:ip=127.0.0.1,port=6382,state=online,offset=4939687459,lag=0\r\n"+
+                "master_replid:7b394e1ec33430dd5a272411c77b136106befb86\r\n"+
+                "master_replid2:0000000000000000000000000000000000000000\r\n"+
+                "master_repl_offset:4939687965\r\n"+
+                "second_repl_offset:-1\r\n"+
+                "repl_backlog_active:1\r\n"+
+                "repl_backlog_size:536870912\r\n"+
+                "repl_backlog_first_byte_offset:4402817054\r\n"+
+                "repl_backlog_histlen:536870912\r\n\r\n");
+
+
 
         try {
             resetSentinels.checkResetCommands().execute().get(50000, TimeUnit.MILLISECONDS);

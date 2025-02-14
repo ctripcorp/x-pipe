@@ -13,10 +13,12 @@ import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvalidSlaves;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
@@ -151,13 +153,13 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
                     future().setSuccess();
                 else {
                     HostPort master = context.getTrueMasterInfo().getKey();
-                    RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
-                    roleCommand.execute().addListener(roleFuture -> {
-                        if (roleFuture.isSuccess()) {
-                            Role role = roleFuture.get();
-                            if (role instanceof MasterRole) {
-                                MasterRole masterRole = (MasterRole) roleFuture.get();
-                                masterSlaves.addAll(masterRole.getSlaveHostPorts());
+                    CheckMasterRoleAndSlaves checkMasterRoleAndSlaves = new CheckMasterRoleAndSlaves(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
+                    checkMasterRoleAndSlaves.execute().addListener(innerFuture -> {
+                        if (innerFuture.isSuccess()) {
+                            RedisInfo redisInfo = innerFuture.get();
+                            if (redisInfo instanceof MasterSlavesInfo) {
+                                MasterSlavesInfo masterSlavesInfo = (MasterSlavesInfo) innerFuture.get();
+                                masterSlaves.addAll(masterSlavesInfo.getSlaves());
 
                                 if (masterHasAllSlaves())
                                     future().setSuccess();
@@ -165,13 +167,13 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
                                     future().setFailure(new SentinelsException(String.format("master: %s of %s lost slaves", master, context.getSentinelMonitorName())));
 
                             } else {
-                                String errMsg = String.format("unexpected master role:%s, master:%s, shard:%s", role.getServerRole().name(), master, context.getSentinelMonitorName());
+                                String errMsg = String.format("unexpected master info:%s, master:%s, shard:%s", redisInfo.getRole().name(), master, context.getSentinelMonitorName());
                                 logger.warn("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), errMsg);
                                 future().setFailure(new SentinelsException(errMsg));
                             }
                         } else {
-                            String errMsg = String.format("role master %s of %s failed", master, context.getSentinelMonitorName());
-                            logger.warn("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), errMsg, roleFuture.cause());
+                            String errMsg = String.format("info replication master %s of %s failed", master, context.getSentinelMonitorName());
+                            logger.warn("[{}-{}][reset]{}", LOG_TITLE, context.getSentinelMonitorName(), errMsg, innerFuture.cause());
                             future().setFailure(new SentinelsException(errMsg));
                         }
                     });
