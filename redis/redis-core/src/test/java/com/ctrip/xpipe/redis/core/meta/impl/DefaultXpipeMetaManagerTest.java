@@ -121,8 +121,8 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	@Test
 	public void testActiveDc() {
 
-		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1));
-		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1));
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1, shardId));
+		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1, shardId));
 	}
 
 	@Test
@@ -135,18 +135,18 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	@Test
 	public void testChangePrimaryDc() {
 
-		String primaryDc = metaManager.getActiveDc(clusterId1);
+		String primaryDc = metaManager.getActiveDc(clusterId1, shardId);
 		Set<String> backupDcs = metaManager.getBackupDcs(clusterId1, shardId);
 
 		metaManager.primaryDcChanged(dc, clusterId1, shardId, primaryDc);
 
-		Assert.assertEquals(primaryDc, metaManager.getActiveDc(clusterId1));
+		Assert.assertEquals(primaryDc, metaManager.getActiveDc(clusterId1, shardId));
 
 		String newPrimary = backupDcs.iterator().next();
 
 		metaManager.primaryDcChanged(dc, clusterId1, shardId, newPrimary);
 
-		Assert.assertEquals(newPrimary, metaManager.getActiveDc(clusterId1));
+		Assert.assertEquals(newPrimary, metaManager.getActiveDc(clusterId1, shardId));
 
 		Assert.assertTrue(metaManager.getBackupDcs(clusterId1, shardId).contains(primaryDc));
 

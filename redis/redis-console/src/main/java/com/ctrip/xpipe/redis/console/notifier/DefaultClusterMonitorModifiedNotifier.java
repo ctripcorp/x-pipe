@@ -70,14 +70,16 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
         ClusterType clusterType = metaCache.getClusterType(clusterName);
         Set<String> supportZones = config.getBeaconSupportZones();
         if (clusterType.supportSingleActiveDC() && !supportZones.isEmpty()) {
-            String activeDc = metaCache.getActiveDc(clusterName);
-            if (supportZones.stream().noneMatch(zone -> metaCache.isDcInRegion(activeDc, zone))) {
-                logger.info("[notifyClusterUpdate][{}] active dc {} not in {}", clusterName, activeDc, supportZones);
-                return false;
-            }
+            Set<String> activeDc = metaCache.getActiveDc(clusterName);
+            return activeDc.stream().anyMatch(dc -> dcInSupportZone(dc));
         }
 
         return true;
+    }
+
+    private boolean dcInSupportZone(String dcName) {
+        Set<String> supportZones = config.getBeaconSupportZones();
+        return supportZones.stream().anyMatch(zone -> metaCache.isDcInRegion(dcName, zone));
     }
 
     @Override

@@ -79,7 +79,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
     @Override
     public long getShardDelay(String clusterId, String shardId, Long shardDbId) {
-        String dcId = metaCache.getActiveDc(clusterId);
+        String dcId = metaCache.getActiveDc(clusterId, shardId);
 
         if (StringUtil.isEmpty(dcId)) {
             return -1L;

@@ -66,8 +66,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 	
 	@Override
-	public String doGetActiveDc(String clusterId){
-		
+	public Set<String> doGetActiveDc(String clusterId){
+
+		Set<String> activeDcs = new HashSet<>();
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
 			if(clusterMeta == null){
@@ -81,9 +82,31 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
 				throw new MetaException(String.format("cluster exist but active dc == null %s", clusterMeta));
 			}
-			return activeDc.trim().toLowerCase();
+			activeDcs.add(activeDc);
 		}
-		throw new MetaException("clusterId " + clusterId + " not found!");
+		if(activeDcs.size() == 0) {
+			throw new MetaException("clusterId " + clusterId + " not found!");
+		}
+		return activeDcs;
+	}
+
+	@Override
+	public String doGetActiveDc(String clusterId, String shardId){
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+			if(clusterMeta.getShards().containsKey(shardId)) {
+				ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+				if(shardMeta == null){
+					continue;
+				}
+				String activeDc = shardMeta.getActiveDc();
+				return activeDc;
+			}
+		}
+		throw new MetaException("clusterId: " + clusterId + " shardId: " + shardId + " not found!");
 	}
 	
 	@Override
@@ -550,7 +573,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public boolean doUpdateRedisMaster(String dc, String clusterId, String shardId, RedisMeta redisMaster) throws MetaException {
 		
-		String activeDc = getActiveDc(clusterId);
+		String activeDc = getActiveDc(clusterId, shardId);
 		if(!activeDc.equals(dc)){
 			throw new MetaException("active dc:" + activeDc + ", but given:" + dc + ", clusterID:" + clusterId);
 		}

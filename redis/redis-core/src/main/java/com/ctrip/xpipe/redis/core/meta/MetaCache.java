@@ -79,8 +79,8 @@ public interface MetaCache {
     // get all redis from dc whose health status is visible to activeDc
     List<HostPort> getAllActiveRedisOfDc(String activeDc, String dcId);
 
-    String getActiveDc(String clusterId);
-
+    Set<String> getActiveDc(String clusterId);
+    String getActiveDc(String clusterId, String shardId);
     String getActiveDc(HostPort hostPort);
 
     ClusterType getAzGroupType(HostPort hostPort);

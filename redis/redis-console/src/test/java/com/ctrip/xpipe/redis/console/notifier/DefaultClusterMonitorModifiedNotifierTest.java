@@ -17,7 +17,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * @author lishanglin
@@ -51,7 +53,7 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
         Mockito.when(beaconMetaService.buildCurrentBeaconGroups(Mockito.anyString())).thenReturn(Collections.singleton(new MonitorGroupMeta()));
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
         Mockito.when(metaCache.getClusterType(Mockito.anyString())).thenReturn(ClusterType.ONE_WAY);
-        Mockito.when(metaCache.getActiveDc(Mockito.anyString())).thenReturn("jq");
+        Mockito.when(metaCache.getActiveDc(Mockito.anyString())).thenReturn(new HashSet<>(Arrays.asList("jq")));
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
     }
 

@@ -444,7 +444,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
-        String activeDc = xpipeMetaManager.getActiveDc(clusterId);
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
         return xpipeMetaManager.getSentinelMonitorName(activeDc, clusterId, shardId);
     }
 
@@ -453,7 +453,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
-        String activeDc = xpipeMetaManager.getActiveDc(clusterId);
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
         SentinelMeta sentinel = xpipeMetaManager.getSentinel(activeDc, clusterId, shardId);
 
         return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
@@ -598,9 +598,15 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public String getActiveDc(String clusterId){
+    public Set<String> getActiveDc(String clusterId){
         XpipeMetaManager xpipeMetaManager  =  meta.getValue();
         return xpipeMetaManager.getActiveDc(clusterId);
+    }
+
+    @Override
+    public String getActiveDc(String clusterId, String shardId){
+        XpipeMetaManager xpipeMetaManager  =  meta.getValue();
+        return xpipeMetaManager.doGetActiveDc(clusterId, shardId);
     }
 
     @Override

@@ -233,7 +233,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public String getActiveDc(String clusterId, String shardId) {
-		return metaManager.getActiveDc(clusterId);
+		return metaManager.getActiveDc(clusterId, shardId);
 	}
 
 	@Override
@@ -316,6 +316,14 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		return clusterSummary.name;
 	}
 
+	public String clusterShardId2Name(Long clusterDbId, Long clusterShardId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary) {
+			throw new IllegalArgumentException("unknown clusterDbId " + clusterDbId);
+		}
+		return clusterSummary.shards.get(clusterShardId);
+	}
+
 	@Override
 	public Pair<String, String> clusterShardDbId2Name(Long clusterDbId, Long shardDbId) {
 		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
@@ -371,7 +379,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public String getActiveDc(Long clusterDbId, Long shardDbId) {
-		return getActiveDc(clusterDbId2Name(clusterDbId), null);
+		return getActiveDc(clusterDbId2Name(clusterDbId), clusterShardId2Name(clusterDbId, shardDbId));
 	}
 
 	@Override

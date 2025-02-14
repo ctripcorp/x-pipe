@@ -145,7 +145,12 @@ public class TestMetaCache implements MetaCache {
         return null;
     }
 
-    public String getActiveDc(String clusterId){return null;}
+    public Set<String> getActiveDc(String clusterId){return null;}
+
+    @Override
+    public String getActiveDc(String clusterId, String shardId) {
+        return "";
+    }
 
     @Override
     public boolean isDcInRegion(String dc, String zone) {
