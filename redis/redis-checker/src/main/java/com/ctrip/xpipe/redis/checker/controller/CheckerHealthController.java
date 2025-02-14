@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info.RedisMsgCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;

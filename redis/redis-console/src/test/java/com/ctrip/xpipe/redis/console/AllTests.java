@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
+import com.ctrip.xpipe.redis.console.keeper.impl.*;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
@@ -40,10 +41,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfi
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
 import com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerActionTest;
-import com.ctrip.xpipe.redis.console.keeper.impl.AbstractKeeperCommandTest;
-import com.ctrip.xpipe.redis.console.keeper.impl.CheckerKeeperActiveCommandTest;
-import com.ctrip.xpipe.redis.console.keeper.impl.DefaultKeeperUsedInfoAnalyzerTest;
-import com.ctrip.xpipe.redis.console.keeper.impl.GetAllDcCommandTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
@@ -244,7 +241,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisControllerTest.class,
         DcRelationsServiceTest.class,
         DefaultMigrationProcessReporterTest.class,
-        ShardModelServiceTest.class
+        ShardModelServiceTest.class,
+        KeeperContainerUsedInfoMsgCollectorTest.class
 })
 public class AllTests {
 

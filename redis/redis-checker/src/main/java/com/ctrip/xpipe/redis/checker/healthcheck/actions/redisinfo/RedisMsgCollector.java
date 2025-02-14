@@ -1,11 +1,9 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeper.info;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RawInfoActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;

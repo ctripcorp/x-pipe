@@ -72,7 +72,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     private DynamicDelayPeriodTask keeperContainerUsedInfoMsgCollectorTask;
 
-    private Map<String, Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>>> redisMsgCache = new HashMap<>();
+    protected Map<String, Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>>> redisMsgCache = new HashMap<>();
 
     private Map<String, CheckerReportSituation> dcCheckerReportSituationMap = new HashMap<>();
 
@@ -107,7 +107,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    private void getAllCurrentDcRedisMsgAndCalculate() {
+    protected void getAllCurrentDcRedisMsgAndCalculate() {
         Map<HostPort, RedisMsg> allRedisMsg = new HashMap<>();
         for (Map.Entry<String, String> entry : consoleConfig.getConsoleDomains().entrySet()) {
             DcCheckerReportMsg dcRedisMsg = null;
@@ -158,7 +158,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    private Map<String, KeeperContainerUsedInfoModel> redisMsgMap2KeeperContainerUsedInfoModelsUtil(Map<HostPort, RedisMsg> redisMsgMap) {
+    protected Map<String, KeeperContainerUsedInfoModel> redisMsgMap2KeeperContainerUsedInfoModelsUtil(Map<HostPort, RedisMsg> redisMsgMap) {
         Map<String, KeeperContainerUsedInfoModel> result = new HashMap<>();
         for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
             if (!currentDc.equals(dcMeta.getId())) continue;
@@ -253,7 +253,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    private void reportKeeperData(KeeperContainerUsedInfoModel model, String type, boolean active) {
+    protected void reportKeeperData(KeeperContainerUsedInfoModel model, String type, boolean active) {
         MetricData data = new MetricData(type);
         if (DATA_TYPE.equals(type)) {
             if (active) {
