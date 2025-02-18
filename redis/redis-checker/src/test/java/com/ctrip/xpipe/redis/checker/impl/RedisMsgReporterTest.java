@@ -51,7 +51,7 @@ public class RedisMsgReporterTest {
     @Test
     public void testReportKeeperContainerInfo() {
         Map<String, Map<HostPort, RedisMsg>> redisMsgMap = new HashMap<>();
-        Mockito.when(redisMsgCollector.getRedisMsgMap()).thenReturn(redisMsgMap);
+//        Mockito.when(redisMsgCollector.getRedisMasterMsgMap()).thenReturn(redisMsgMap);
 
         redisMsgReporter.reportKeeperContainerInfo();
     }

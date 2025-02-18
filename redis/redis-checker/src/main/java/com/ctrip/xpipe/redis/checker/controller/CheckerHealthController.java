@@ -142,8 +142,8 @@ public class CheckerHealthController {
     }
 
     @GetMapping("/health/redis/msg/all")
-    public Map<String, Map<HostPort, RedisMsg>> getAllRedisMsg() {
-        return redisMsgCollector.getRedisMsgMap();
+    public Map<HostPort, RedisMsg> getAllRedisMsg() {
+        return redisMsgCollector.getRedisMasterMsgMap();
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

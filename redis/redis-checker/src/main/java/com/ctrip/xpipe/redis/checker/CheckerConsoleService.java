@@ -31,7 +31,7 @@ public interface CheckerConsoleService {
 
     void report(String console, HealthCheckResult result);
 
-    void reportKeeperContainerInfo(String console, Map<String, Map<HostPort, RedisMsg>> redisMsgMap, int index);
+    void reportKeeperContainerInfo(String console, Map<HostPort, RedisMsg> redisMsgMap, int index);
     
     boolean isClusterOnMigration(String console, String clusterId);
 

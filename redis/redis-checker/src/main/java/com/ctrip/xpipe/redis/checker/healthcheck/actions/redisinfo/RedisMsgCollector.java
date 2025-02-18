@@ -23,7 +23,7 @@ public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected Map<String, Map<HostPort, RedisMsg>> redisMsgMap = new ConcurrentHashMap<>();
+    protected Map<HostPort, RedisMsg> redisMasterMsgMap = new ConcurrentHashMap<>();
 
     public static final String ROR_DB_VERSION = "1.3";
 
@@ -32,19 +32,16 @@ public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
         try {
             InfoResultExtractor extractor = new InfoResultExtractor(context.getResult());
             RedisInstanceInfo info = context.instance().getCheckInfo();
-            if (info.getClusterType() != ONE_WAY) return;
+            if (!info.isMaster() || info.getClusterType() != ONE_WAY) return;
             long usedMemory = getUsedMemory(extractor);
-            if (!redisMsgMap.containsKey(info.getDcId())) {
-                redisMsgMap.put(info.getDcId(), new ConcurrentHashMap<>());
-            }
-            RedisMsg redisMsg = redisMsgMap.get(info.getDcId()).get(info.getHostPort());
+            RedisMsg redisMsg = redisMasterMsgMap.get(info.getHostPort());
             if (redisMsg == null) {
                 redisMsg = new RedisMsg(0, usedMemory, extractor.getMasterReplOffset());
             }
             int checkIntervalSec = context.instance().getHealthCheckConfig().checkIntervalMilli()/ 1000;
             long inPutFlow = (extractor.getMasterReplOffset() - redisMsg.getOffset())/1024/1024/checkIntervalSec;
             redisMsg = new RedisMsg(inPutFlow, usedMemory, extractor.getMasterReplOffset());
-            redisMsgMap.get(info.getDcId()).put(info.getHostPort(), redisMsg);
+            redisMasterMsgMap.put(info.getHostPort(), redisMsg);
         } catch (Throwable throwable) {
             logger.error("get msg of redis:{} error: ", context.instance().getCheckInfo().getHostPort(), throwable);
         }
@@ -67,15 +64,11 @@ public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
     public void stopWatch(HealthCheckAction action) {
         DefaultRedisInstanceInfo info = (DefaultRedisInstanceInfo) action.getActionInstance().getCheckInfo();
         logger.debug("[stopWatch] DcClusterShard: {}", new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()));
-        Map<HostPort, RedisMsg> hostPortRedisMsgMap = redisMsgMap.get(info.getDcId());
-        if (hostPortRedisMsgMap == null) {
-            return;
-        }
-        hostPortRedisMsgMap.remove(info.getHostPort());
+        redisMasterMsgMap.remove(info.getHostPort());
     }
 
-    public Map<String, Map<HostPort, RedisMsg>> getRedisMsgMap() {
-        return redisMsgMap;
+    public Map<HostPort, RedisMsg> getRedisMasterMsgMap() {
+        return redisMasterMsgMap;
     }
 
 }

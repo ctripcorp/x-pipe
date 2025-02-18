@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
@@ -33,15 +32,8 @@ public class CheckerRedisInfoManager implements RedisInfoManager, InfoActionList
     public Map<HostPort, InfoActionContext> getAllInfos() {
         return hostPort2Info;
     }
-
-    private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
-
     @Override
     public void onAction(RawInfoActionContext rawInfoActionContext) {
-        String dcId = rawInfoActionContext.instance().getCheckInfo().getDcId();
-        if (!currentDc.equalsIgnoreCase(dcId)) {
-            return;
-        }
         hostPort2Info.put(rawInfoActionContext.instance().getCheckInfo().getHostPort(), ()->rawInfoActionContext);
     }
 

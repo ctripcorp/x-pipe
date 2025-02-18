@@ -152,9 +152,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
-    public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody Map<String, Map<HostPort, RedisMsg>> redisMsgMap) {
+    public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody Map<HostPort, RedisMsg> masterDcRedisMsgMap) {
         if (checkerDbConfig.isKeeperBalanceInfoCollectOn()) {
-            keeperContainerUsedInfoMsgCollector.saveMsg(index, redisMsgMap);
+            keeperContainerUsedInfoMsgCollector.saveMsg(index, masterDcRedisMsgMap);
         }
     }
 
