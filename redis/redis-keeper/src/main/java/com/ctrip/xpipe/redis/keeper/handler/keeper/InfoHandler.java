@@ -292,6 +292,20 @@ public class InfoHandler extends AbstractCommandHandler {
 				sb.append("error_message:" + ex.getMessage() + RedisProtocol.CRLF);
 				logger.info("Cannot calculate end offset", ex);
 			}
+
+			ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
+
+			sb.append("rordb_file_size:" + meta.getRordbFileSize() + RedisProtocol.CRLF);
+			sb.append("rdb_file_size:" + meta.getRdbFileSize() + RedisProtocol.CRLF);
+			long rordbLastOffset = (meta.getRordbLastOffset() == null)?  0 : meta.getRordbLastOffset();
+			sb.append("rordb_last_offset:" + rordbLastOffset + RedisProtocol.CRLF);
+			long rdbLastOffset = (meta.getRdbLastOffset() == null) ?  0 : meta.getRdbLastOffset();
+			sb.append("rdb_last_offset:" + rdbLastOffset + RedisProtocol.CRLF);
+			String rorGtid = (meta.getRordbGtidSet() == null) ? "" : meta.getRordbGtidSet();
+			sb.append("rordb_gtid_set:" + rorGtid + RedisProtocol.CRLF);
+			String gtidSetStr = (meta.getRdbGtidSet() == null) ? "" : meta.getRdbGtidSet();
+			sb.append("rdb_gtid_set:" + gtidSetStr + RedisProtocol.CRLF);
+
 			return sb.toString();
 		}
 
