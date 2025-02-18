@@ -19,7 +19,6 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     private TimeBoundCache<Set<String>> migratingClusterListCache;
     private TimeBoundCache<Boolean> isSentinelAutoProcessCache;
     private TimeBoundCache<Boolean> isAlertSystemOnCache;
-    private TimeBoundCache<Boolean> isKeeperBalanceInfoCollectOnCache;
     private TimeBoundCache<Map<String, Date>> allClusterCreateTimeCache;
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -29,7 +28,6 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     abstract Set<String> doGetMigratingClusterList();
     abstract boolean doIsSentinelAutoProcess();
     abstract boolean doIsAlertSystemOn();
-    abstract boolean doIsKeeperBalanceInfoCollectOn();
     abstract Map<String, Date> doLoadAllClusterCreateTime();
     public AbstractPersistenceCache(CheckerConfig config) {
         initWithConfig(config);
@@ -66,11 +64,6 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     }
 
     @Override
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return isKeeperBalanceInfoCollectOnCache.getData(false);
-    }
-
-    @Override
     public Date getClusterCreateTime(String clusterId) {
         Map<String, Date> dates = allClusterCreateTimeCache.getData(false);
         return dates.get(clusterId);
@@ -89,7 +82,6 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
         this.migratingClusterListCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doGetMigratingClusterList);
         this.isSentinelAutoProcessCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doIsSentinelAutoProcess);
         this.isAlertSystemOnCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doIsAlertSystemOn);
-        this.isKeeperBalanceInfoCollectOnCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doIsKeeperBalanceInfoCollectOn);
         this.allClusterCreateTimeCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doLoadAllClusterCreateTime);
     }
     

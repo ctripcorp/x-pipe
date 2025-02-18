@@ -17,8 +17,6 @@ public interface ConfigService {
 
     String KEY_ALERT_SYSTEM_ON = "alert.system.on";
 
-    String KEY_KEEPER_BALANCE_INFO_COLLECT = "keeper.balance.info.collect";
-
     String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
 
     String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
@@ -42,10 +40,6 @@ public interface ConfigService {
     void startSentinelAutoProcess(ConfigModel config) throws DalException;
 
     void stopSentinelAutoProcess(ConfigModel config, int hours) throws DalException;
-
-    void startKeeperBalanceInfoCollect(ConfigModel config, int hours) throws DalException;
-
-    void stopKeeperBalanceInfoCollect(ConfigModel config) throws DalException;
 
     void startClusterAlert(ConfigModel config) throws DalException;
 
@@ -71,13 +65,9 @@ public interface ConfigService {
 
     boolean isSentinelAutoProcess();
 
-    boolean isKeeperBalanceInfoCollectOn();
-
     Date getAlertSystemRecoverTime();
 
     Date getSentinelAutoProcessRecoverTime();
-
-    Date getKeeperBalanceInfoCollectRecoverTime();
 
     boolean ignoreMigrationSystemAvailability();
 

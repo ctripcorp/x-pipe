@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerUsedInfoMsgCollector;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
@@ -152,10 +151,8 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
-    public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody Map<HostPort, RedisMsg> masterDcRedisMsgMap) {
-        if (checkerDbConfig.isKeeperBalanceInfoCollectOn()) {
-            keeperContainerUsedInfoMsgCollector.saveMsg(index, masterDcRedisMsgMap);
-        }
+    public void updateKeeperContainerUsedInfo(@PathVariable int index, @RequestBody Map<HostPort, RedisMsg> masterDcRedisMsgMap) {
+        keeperContainerUsedInfoMsgCollector.saveMsg(index, masterDcRedisMsgMap);
     }
 
 
@@ -205,11 +202,6 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, method = RequestMethod.GET)
     public boolean isAlertSystemOn() {
         return persistenceCache.isAlertSystemOn();
-    }
-
-    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON, method = RequestMethod.GET)
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return persistenceCache.isKeeperBalanceInfoCollectOn();
     }
 
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME, method = RequestMethod.GET)
