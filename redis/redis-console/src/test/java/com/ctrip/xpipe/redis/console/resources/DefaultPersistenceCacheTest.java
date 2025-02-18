@@ -76,15 +76,6 @@ public class DefaultPersistenceCacheTest extends AbstractConsoleIntegrationTest 
         waitConditionUntilTimeOut(() -> persistenceCache.isSentinelAutoProcess(), 10, 1);
     }
 
-    @Test
-    public void testKeeperBalanceInfoCollect() throws Exception {
-        Assert.assertFalse(persistenceCache.isKeeperBalanceInfoCollectOn()); // no data in db
-        configService.stopKeeperBalanceInfoCollect(new ConfigModel());
-        Assert.assertFalse(persistenceCache.isKeeperBalanceInfoCollectOn());
-        configService.startKeeperBalanceInfoCollect(new ConfigModel(), 1);
-        waitConditionUntilTimeOut(() -> persistenceCache.isKeeperBalanceInfoCollectOn(), 10, 1);
-    }
-
 
     @Test
     public void testGetClusterCreateTime() {

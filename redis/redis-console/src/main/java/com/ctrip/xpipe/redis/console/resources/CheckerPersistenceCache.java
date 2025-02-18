@@ -96,19 +96,6 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     }
 
     @Override
-    boolean doIsKeeperBalanceInfoCollectOn() {
-        try {
-            return service.isKeeperBalanceInfoCollectOn(getConsoleAddress());
-        } catch (RestClientException e) {
-            logger.warn("[doIsKeeperBalanceInfoCollectOn] rest fail, {}", e.getMessage());
-        } catch (Throwable th) {
-            logger.warn("[doIsKeeperBalanceInfoCollectOn] fail", th);
-        }
-
-        return false;
-    }
-
-    @Override
     public Map<String, Date> doLoadAllClusterCreateTime() {
         try {
             return service.loadAllClusterCreateTime(getConsoleAddress());

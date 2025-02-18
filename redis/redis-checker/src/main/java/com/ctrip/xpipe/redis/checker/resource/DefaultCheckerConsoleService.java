@@ -156,15 +156,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public boolean isKeeperBalanceInfoCollectOn(String console) {
-        Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON, Boolean.class);
-        if (result == null) {
-            throw new XpipeRuntimeException("result of isKeeperBalanceInfoCollectOn is null");
-        }
-        return result;
-    }
-
-    @Override
     public Date getClusterCreateTime(String console, String clusterId) {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME)
                 .buildAndExpand(clusterId);

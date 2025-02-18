@@ -100,8 +100,8 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Test
     public void testTooManyClusterNeedExcluded() {
-        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
 
+        Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
         Set<String> oneWayNeedExcludeClusters = Sets.newHashSet("clusterx", "clustery");
         Set<String> biNeedExcludeClusters = Sets.newHashSet("bi-clusterx", "bi-clustery");
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("clusterx", "clustery"));

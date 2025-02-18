@@ -1,16 +1,19 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -20,6 +23,9 @@ import static com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
 
 @Component
 public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
+
+    @Autowired
+    private ConsoleCommonConfig consoleCommonConfig;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -65,6 +71,11 @@ public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
         DefaultRedisInstanceInfo info = (DefaultRedisInstanceInfo) action.getActionInstance().getCheckInfo();
         logger.debug("[stopWatch] DcClusterShard: {}", new DcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()));
         redisMasterMsgMap.remove(info.getHostPort());
+    }
+
+    @Override
+    public boolean worksfor(ActionContext t) {
+        return consoleCommonConfig.isKeeperMsgCollectOn();
     }
 
     public Map<HostPort, RedisMsg> getRedisMasterMsgMap() {

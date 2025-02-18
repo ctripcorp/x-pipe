@@ -62,20 +62,6 @@ public class ChangeConfig extends AbstractConsoleController{
         configService.stopAlertSystem(config, consoleConfig.getConfigDefaultRestoreHours());
     }
 
-    @RequestMapping(value = "/config/keeper_balance_info_collect/start", method = RequestMethod.POST)
-    public void startKeeperBalanceInfoCollect(HttpServletRequest request,
-                                         @RequestBody(required = false) ConfigModel configModel) throws DalException {
-        ConfigModel config = configModel(request, configModel);
-        configService.startKeeperBalanceInfoCollect(config, consoleConfig.getConfigDefaultRestoreHours());
-    }
-
-    @RequestMapping(value = "/config/keeper_balance_info_collect/stop", method = RequestMethod.POST)
-    public void stopKeeperBalanceInfoCollect(HttpServletRequest request,
-                                        @RequestBody(required = false) ConfigModel configModel) throws DalException {
-        ConfigModel config = configModel(request, configModel);
-        configService.stopKeeperBalanceInfoCollect(config);
-    }
-
     @RequestMapping(value = "/config/alert_system/stop/{hours}", method = RequestMethod.POST)
     public void stopAlertSystem(HttpServletRequest request, @PathVariable int hours,
                                 @RequestBody(required = false) ConfigModel configModel) throws DalException {

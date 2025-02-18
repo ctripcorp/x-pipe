@@ -47,8 +47,6 @@ public interface CheckerConsoleService {
 
     boolean isAlertSystemOn(String console);
 
-    boolean isKeeperBalanceInfoCollectOn(String console);
-
     Date getClusterCreateTime(String console, String clusterId);
     
     Map<String, Date> loadAllClusterCreateTime(String console);

@@ -21,4 +21,9 @@ public class TestCommonConfig implements ConsoleCommonConfig {
         return 10;
     }
 
+    @Override
+    public boolean isKeeperMsgCollectOn() {
+        return true;
+    }
+
 }

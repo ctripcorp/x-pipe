@@ -169,11 +169,6 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     }
 
     @Override
-    boolean doIsKeeperBalanceInfoCollectOn() {
-        return isConfigOnOrExpired(KEY_KEEPER_BALANCE_INFO_COLLECT, false);
-    }
-
-    @Override
     Map<String, Date> doLoadAllClusterCreateTime() {
         Map<String, Date> clusterCreateTimes = new HashMap<>();
         List<ClusterTbl> clusterTbls = clusterDao.findAllClustersWithCreateTime();
