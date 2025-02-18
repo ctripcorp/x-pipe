@@ -87,7 +87,7 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public void reportKeeperContainerInfo(String console, Map<String, Map<HostPort, RedisMsg>> redisMsgMap, int index) {
+    public void reportKeeperContainerInfo(String console, Map<HostPort, RedisMsg> redisMsgMap, int index) {
         try {
             restTemplate.postForEntity(console + ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT,
                     redisMsgMap, RetMessage.class, index);

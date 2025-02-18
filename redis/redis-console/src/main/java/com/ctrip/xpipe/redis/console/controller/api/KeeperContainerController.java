@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.entity.DcCheckerReportMsg;
@@ -15,7 +13,6 @@ import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
-import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,9 +49,9 @@ public class KeeperContainerController extends AbstractConsoleController{
         return analyzer.getCurrentDcKeeperContainerUsedInfoModelsList();
     }
 
-    @RequestMapping(value = "/keepercontainer/redis/msg/{dc}", method = RequestMethod.GET)
-    public DcCheckerReportMsg getAllDcRedisMsg(@PathVariable String dc) {
-        return keeperContainerUsedInfoMsgCollector.getDcRedisMsg(dc);
+    @RequestMapping(value = "/keepercontainer/redis/msg", method = RequestMethod.GET)
+    public DcCheckerReportMsg getAllDcRedisMsg() {
+        return keeperContainerUsedInfoMsgCollector.getRedisMasterMsg();
     }
 
     @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.POST)

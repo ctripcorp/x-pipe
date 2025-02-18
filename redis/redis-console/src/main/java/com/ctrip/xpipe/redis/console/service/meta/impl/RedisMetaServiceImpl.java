@@ -60,6 +60,7 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 			keeperMeta.setId(redisInfo.getRunId());
 			keeperMeta.setIp(redisInfo.getRedisIp());
 			keeperMeta.setPort(redisInfo.getRedisPort());
+			keeperMeta.setActive(redisInfo.isKeeperActive());
 			keeperMeta.setKeeperContainerId(redisInfo.getKeepercontainerId());
 		}
 		

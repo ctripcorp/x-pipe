@@ -82,8 +82,8 @@ public class RedisMsgReporter implements GroupCheckerLeaderAware {
     @VisibleForTesting
     public void reportKeeperContainerInfo() {
         try {
-            Map<String, Map<HostPort, RedisMsg>> redisMsgMap = redisMsgCollector.getRedisMsgMap();
-            checkerConsoleService.reportKeeperContainerInfo(config.getConsoleAddress(), redisMsgMap, config.getClustersPartIndex());
+            Map<HostPort, RedisMsg> redisMasterMsgMap = redisMsgCollector.getRedisMasterMsgMap();
+            checkerConsoleService.reportKeeperContainerInfo(config.getConsoleAddress(), redisMasterMsgMap, config.getClustersPartIndex());
         } catch (Throwable th) {
             logger.error("[reportKeeperContainerInfo] fail", th);
         }

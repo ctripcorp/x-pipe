@@ -32,10 +32,14 @@ public class InfoActionFactory implements RedisHealthCheckActionFactory<InfoActi
     @Autowired
     private List<InfoActionListener> listeners;
 
+    @Autowired
+    private List<InfoActionController> controllers;
+
     @Override
     public InfoAction create(RedisHealthCheckInstance instance) {
         InfoAction action = new InfoAction(scheduled, instance, executors);
         action.addListeners(listeners);
+        action.addControllers(controllers);
         return action;
     }
 }

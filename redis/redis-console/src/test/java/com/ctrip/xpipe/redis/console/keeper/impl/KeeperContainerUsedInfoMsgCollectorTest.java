@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.keeper.entity.CheckerReportSituation;
 import com.ctrip.xpipe.redis.console.keeper.entity.DcCheckerReportMsg;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.impl.RedisServiceImpl;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -61,7 +60,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
     }
 
     @Test
-    public void testGetDcRedisMsg() {
+    public void testGetRedisMasterMsg() {
         when(config.getKeeperCheckerIntervalMilli()).thenReturn(3000);
         Map<String, Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>>> redisMsgCache = new HashMap<>();
         Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>> dcCache = new HashMap<>();
@@ -69,9 +68,9 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
         msgMap.put(new HostPort("127.0.0.1", 6379), new RedisMsg(100, 200, 300));
         dcCache.put(1, new Pair<>(msgMap, new Date()));
         redisMsgCache.put("dc1", dcCache);
-        collector.redisMsgCache = redisMsgCache;
+//        collector.redisMasterMsgCache = redisMsgCache;
 
-        DcCheckerReportMsg result = collector.getDcRedisMsg("dc1");
+        DcCheckerReportMsg result = collector.getRedisMasterMsg();
 
         assertEquals(1, result.getRedisMsg().size());
         assertEquals(1, result.getCheckerReportSituation().getReportedIndex().size());
@@ -79,7 +78,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
     }
 
     @Test
-    public void testRedisMsgMap2KeeperContainerUsedInfoModelsUtil() throws ResourceNotFoundException {
+    public void testGenerateKeeperContainerUsedInfoModels() throws ResourceNotFoundException {
         // Setup
         Map<HostPort, RedisMsg> redisMsgMap = new HashMap<>();
         redisMsgMap.put(new HostPort("127.0.0.1", 6379), new RedisMsg(1024, 2048, 0));
@@ -92,7 +91,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
         DcMeta dc2 = Mockito.mock(DcMeta.class);
 
         // Test
-        Map<String, KeeperContainerUsedInfoModel> result = collector.redisMsgMap2KeeperContainerUsedInfoModelsUtil(redisMsgMap);
+        Map<String, KeeperContainerUsedInfoModel> result = collector.generateKeeperContainerUsedInfoModels(redisMsgMap);
 
         // Verify
         assertNotNull(result);
