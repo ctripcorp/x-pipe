@@ -60,7 +60,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
     }
 
     @Test
-    public void testGetRedisMasterMsg() {
+    public void testGetCurrentDcRedisMasterMsg() {
         when(config.getKeeperCheckerIntervalMilli()).thenReturn(3000);
         Map<String, Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>>> redisMsgCache = new HashMap<>();
         Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>> dcCache = new HashMap<>();
@@ -70,7 +70,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
         redisMsgCache.put("dc1", dcCache);
 //        collector.redisMasterMsgCache = redisMsgCache;
 
-        DcCheckerReportMsg result = collector.getRedisMasterMsg();
+        DcCheckerReportMsg result = collector.getCurrentDcRedisMasterMsg();
 
         assertEquals(1, result.getRedisMsg().size());
         assertEquals(1, result.getCheckerReportSituation().getReportedIndex().size());

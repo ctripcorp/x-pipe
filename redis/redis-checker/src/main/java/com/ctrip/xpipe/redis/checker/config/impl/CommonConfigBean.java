@@ -52,6 +52,8 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_META_SYNC_EXTERNAL_DC = "meta.sync.external.dc";
 
+    public static final String KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS = "keeper.disk.info.collect.interval";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     public CommonConfigBean() {
@@ -82,6 +84,10 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public String getClusterExcludedRegex() {
         return getProperty(KEY_ALERT_CLUSTER_EXCLUDED_REGEX, "");
+    }
+
+    public long getKeeperContainerDiskInfoCollectIntervalMilli() {
+        return getLongProperty(KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS, 10 * 60 * 1000L);
     }
 
     public String getDBAEmails() {

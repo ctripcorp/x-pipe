@@ -50,8 +50,8 @@ public class KeeperContainerController extends AbstractConsoleController{
     }
 
     @RequestMapping(value = "/keepercontainer/redis/msg", method = RequestMethod.GET)
-    public DcCheckerReportMsg getAllDcRedisMsg() {
-        return keeperContainerUsedInfoMsgCollector.getRedisMasterMsg();
+    public DcCheckerReportMsg getCurrentDcRedisMsg() {
+        return keeperContainerUsedInfoMsgCollector.getCurrentDcRedisMasterMsg();
     }
 
     @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.POST)
