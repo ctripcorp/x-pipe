@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public synchronized void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap) {
-        modelMap.values().forEach(model -> model.setUpdateTime(new Date(System.currentTimeMillis() + 8 * 60 * 60 * 1000)));
+        modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsDate()));
         currentDcAllKeeperContainerUsedInfoModelMap = modelMap;
         if (currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) return;
         logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");

@@ -23,6 +23,10 @@ public class DateTimeUtils {
 		return FastDateFormat.getInstance(currentFormat).format(new Date());
 	}
 
+	public static Date currentTimeAsDate() {
+		return DateUtils.truncate(new Date(), Calendar.DATE);
+	}
+
 	public static String timeAsString(Date date) {
 		return FastDateFormat.getInstance(format).format(date);
 	}

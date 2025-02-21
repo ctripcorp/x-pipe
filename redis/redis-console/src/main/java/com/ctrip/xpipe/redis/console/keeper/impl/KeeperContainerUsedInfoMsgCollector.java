@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
@@ -66,6 +67,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     @Autowired
     private KeeperContainerUsedInfoAnalyzer keeperContainerUsedInfoAnalyzer;
 
+    @Autowired
+    private KeeperContainerDiskInfoCollector keeperContainerDiskInfoCollector;
+
     private ScheduledExecutorService scheduled;
 
     private DynamicDelayPeriodTask keeperContainerUsedInfoMsgCollectorTask;
@@ -88,7 +92,6 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     @PostConstruct
     public void init() {
-        logger.debug("[postConstruct] start");
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("KeeperContainerUsedInfoMsgCollector"));
         this.keeperContainerUsedInfoMsgCollectorTask = new DynamicDelayPeriodTask("getAllCurrentDcRedisMsg",
                 this::getAllCurrentDcRedisMsgAndCalculate, () -> config.getKeeperCheckerIntervalMilli(), scheduled);
@@ -102,10 +105,11 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     protected void getAllCurrentDcRedisMsgAndCalculate() {
         long startTime = System.currentTimeMillis();
         Map<HostPort, RedisMsg> allRedisMasterMsg = new HashMap<>();
+        Map<String, CheckerReportSituation> tmpDcCheckerReportSituationMap = new HashMap<>();
         for (Map.Entry<String, String> entry : consoleConfig.getConsoleDomains().entrySet()) {
             DcCheckerReportMsg dcRedisMsg = null;
             if (currentDc.equals(entry.getKey())) {
-                dcRedisMsg = getRedisMasterMsg();
+                dcRedisMsg = getCurrentDcRedisMasterMsg();
             } else {
                 ResponseEntity<DcCheckerReportMsg> response = restTemplate.exchange(entry.getValue() + "/api/keepercontainer/redis/msg", HttpMethod.GET, null, DcCheckerReportMsg.class);
                 if (response.getBody() != null) {
@@ -114,9 +118,10 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             }
             if (dcRedisMsg != null) {
                 allRedisMasterMsg.putAll(dcRedisMsg.getRedisMsg());
-                dcCheckerReportSituationMap.put(entry.getKey(), dcRedisMsg.getCheckerReportSituation());
+                tmpDcCheckerReportSituationMap.put(entry.getKey(), dcRedisMsg.getCheckerReportSituation());
             }
         }
+        dcCheckerReportSituationMap = tmpDcCheckerReportSituationMap;
         if (allRedisMasterMsg.isEmpty()) return;
 
         long time1 = System.currentTimeMillis();
@@ -128,7 +133,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(modelMap);
     }
 
-    public DcCheckerReportMsg getRedisMasterMsg() {
+    public DcCheckerReportMsg getCurrentDcRedisMasterMsg() {
         removeExpireData();
         Map<HostPort, RedisMsg> allRedisMsg = new HashMap<>();
         List<Integer> indexList = new ArrayList<>();
@@ -239,7 +244,10 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             model.setOrg(organizationTbl.getOrgName());
         }
         try {
-            KeeperDiskInfo keeperDiskInfo = keeperContainerCheckerService.getKeeperDiskInfo(ip);
+            KeeperDiskInfo keeperDiskInfo = keeperContainerDiskInfoCollector.getKeeperDiskInfo(ip);
+            if (keeperDiskInfo == null) {
+                keeperDiskInfo = keeperContainerCheckerService.getKeeperDiskInfo(ip);
+            }
             if  (keeperDiskInfo != null && keeperDiskInfo.available && keeperDiskInfo.spaceUsageInfo != null) {
                 model.setDiskAvailable(true)
                         .setDiskSize(keeperDiskInfo.spaceUsageInfo.size)
@@ -247,8 +255,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             } else {
                 model.setDiskAvailable(false).setKeeperContainerHealth(false);
             }
-        } catch (Throwable e){
-            logger.error("[redisMsgMap2KeeperContainerUsedInfoModelsUtil] getKeeperDiskInfo error, keeperIp: {}", ip, e);
+        } catch (Throwable th){
+            logger.error("[KeeperContainerUsedInfoModel] getKeeperDiskInfo error, keeperIp: {}", ip, th);
         }
         model.setDetailInfo(new HashMap<>())
                 .setActiveKeeperCount(0)
@@ -285,9 +293,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             }
         }
         data.addTag("dc", model.getDcName());
-        data.addTag("org", model.getOrg() == null ? "" : model.getOrg());
+        data.addTag("org", model.getOrg() == null ? "common" : model.getOrg());
         data.addTag("ip", model.getKeeperIp());
-        data.addTag("active", active ? "true" : "false");
+        data.addTag("active", active ? "1" : "0");
         data.setTimestampMilli(System.currentTimeMillis());
         try {
             metricProxy.writeBinMultiDataPoint(data);
@@ -299,7 +307,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     protected void reportCheckerReport(int index) {
         MetricData data = new MetricData(CHECKER_REPORT_TYPE);
         data.addTag("dc", currentDc);
-        data.setValue(index);
+        data.addTag("index", String.valueOf(index));
+        data.setValue(1);
         data.setTimestampMilli(System.currentTimeMillis());
         try {
             metricProxy.writeBinMultiDataPoint(data);
