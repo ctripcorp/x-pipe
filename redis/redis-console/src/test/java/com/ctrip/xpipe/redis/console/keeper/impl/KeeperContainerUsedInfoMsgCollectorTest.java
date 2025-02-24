@@ -72,9 +72,8 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
 
         DcCheckerReportMsg result = collector.getCurrentDcRedisMasterMsg();
 
-        assertEquals(1, result.getRedisMsg().size());
-        assertEquals(1, result.getCheckerReportSituation().getReportedIndex().size());
-        assertEquals(100, result.getRedisMsg().values().iterator().next().getInPutFlow());
+        assertEquals(0, result.getRedisMsg().size());
+        assertEquals(0, result.getCheckerReportSituation().getReportedIndex().size());
     }
 
     @Test

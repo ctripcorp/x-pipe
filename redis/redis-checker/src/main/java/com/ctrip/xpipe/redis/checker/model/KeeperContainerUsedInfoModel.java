@@ -14,7 +14,7 @@ public class KeeperContainerUsedInfoModel {
 
     private String az;
 
-    private Date updateTime;
+    private String updateTime;
 
     private long activeInputFlow;
 
@@ -166,11 +166,11 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public Date getUpdateTime() {
+    public String getUpdateTime() {
         return updateTime;
     }
 
-    public KeeperContainerUsedInfoModel setUpdateTime(Date updateTime) {
+    public KeeperContainerUsedInfoModel setUpdateTime(String updateTime) {
         this.updateTime = updateTime;
         return this;
     }

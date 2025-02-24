@@ -49,13 +49,8 @@ public class RedisMsgCollectorTest {
         RedisHealthCheckInstance actionInstance =  Mockito.mock(RedisHealthCheckInstance.class);
         HealthCheckConfig healthCheckConfig = Mockito.mock(HealthCheckConfig.class);
 
-        Mockito.when(actionInstance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
-        Mockito.when(healthCheckConfig.checkIntervalMilli()).thenReturn(2000);
         Mockito.when(context.instance()).thenReturn(actionInstance);
         Mockito.when(actionInstance.getCheckInfo()).thenReturn(info);
-        Mockito.when(info.getDcId()).thenReturn(dcClusterShard.getDcId());
-        Mockito.when(info.getHostPort()).thenReturn(hostPort);
-        Mockito.when(info.getClusterType()).thenReturn(ONE_WAY);
 
         redisMsgCollector.onAction(context);
 

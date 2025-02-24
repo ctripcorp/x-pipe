@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -80,6 +81,10 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     protected MetricProxy metricProxy = MetricProxy.DEFAULT;
 
+    private static final String CLUSTER_TRAFFIC_TYPE = "cluster.traffic";
+
+    private static final String CLUSTER_DATA_TYPE = "cluster.data";
+
     private static final String TRAFFIC_TYPE = "keepercontainer.traffic";
 
     private static final String DATA_TYPE = "keepercontainer.data";
@@ -103,7 +108,6 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     }
 
     protected void getAllCurrentDcRedisMsgAndCalculate() {
-        long startTime = System.currentTimeMillis();
         Map<HostPort, RedisMsg> allRedisMasterMsg = new HashMap<>();
         Map<String, CheckerReportSituation> tmpDcCheckerReportSituationMap = new HashMap<>();
         for (Map.Entry<String, String> entry : consoleConfig.getConsoleDomains().entrySet()) {
@@ -124,11 +128,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         dcCheckerReportSituationMap = tmpDcCheckerReportSituationMap;
         if (allRedisMasterMsg.isEmpty()) return;
 
-        long time1 = System.currentTimeMillis();
-        logger.info("[getAllCurrentDcRedisMsgAndCalculate] time1 use:{}ms", (time1 - startTime));
         Map<String, KeeperContainerUsedInfoModel> modelMap = generateKeeperContainerUsedInfoModels(allRedisMasterMsg);
-        long time2 = System.currentTimeMillis();
-        logger.info("[getAllCurrentDcRedisMsgAndCalculate] time2 use:{}ms", (time2 - time1));
         reportKeeperData(modelMap);
         keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(modelMap);
     }
@@ -164,6 +164,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         Map<String, Object> checkedCluster = new HashMap<>();
         for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                RedisMsg clusterAllRedisMsg = new RedisMsg();
                 if (checkedCluster.containsKey(clusterMeta.getId())
                         || (!ClusterType.isSameClusterType(clusterMeta.getType(), ONE_WAY) && !ClusterType.isSameClusterType(clusterMeta.getType(), HETERO))) {
                     continue;
@@ -179,12 +180,14 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                         if(redisMeta.isMaster()){
                             RedisMsg redisMsg = redisMsgMap.get(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
                             if (redisMsg != null) {
+                                clusterAllRedisMsg.addRedisMsg(redisMsg);
                                 ShardMeta currentDcShardMeta = currentDcMeta.findShard(shardMeta.getId());
                                 generateKeeperMsg(currentDc, clusterMeta.getId(), currentDcShardMeta.getId(), currentDcShardMeta.getKeepers(), result, redisMsg);
                             }
                         }
                     }
                 }
+                reportClusterData(clusterMeta.getId(), clusterAllRedisMsg);
             }
             if (currentDc.equals(dcMeta.getId())) {
                 dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
@@ -214,7 +217,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             model.setTotalKeeperCount(model.getTotalKeeperCount() + 1)
                     .setTotalInputFlow(model.getTotalInputFlow() + redisMsg.getInPutFlow())
                     .setTotalRedisUsedMemory(model.getTotalRedisUsedMemory() + redisMsg.getUsedMemory())
-                    .setUpdateTime(new Date());
+                    .setUpdateTime(DateTimeUtils.currentTimeAsString());
 
         }
     }
@@ -266,6 +269,22 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                 .setTotalInputFlow(0)
                 .setTotalRedisUsedMemory(0);
         return model;
+    }
+
+    public void reportClusterData(String clusterName, RedisMsg clusterAllRedisMsg) {
+        reportClusterData(clusterName, CLUSTER_DATA_TYPE, clusterAllRedisMsg.getUsedMemory());
+        reportClusterData(clusterName, CLUSTER_TRAFFIC_TYPE, clusterAllRedisMsg.getInPutFlow());
+    }
+
+    public void reportClusterData(String clusterName, String type, long value) {
+        MetricData data = new MetricData(type, currentDc, clusterName, null);
+        data.setValue(value);
+        data.setTimestampMilli(System.currentTimeMillis());
+        try {
+            metricProxy.writeBinMultiDataPoint(data);
+        } catch (Exception e) {
+            logger.error("Error report keeper data to metric", e);
+        }
     }
 
     public void reportKeeperData(Map<String, KeeperContainerUsedInfoModel> modelMap) {

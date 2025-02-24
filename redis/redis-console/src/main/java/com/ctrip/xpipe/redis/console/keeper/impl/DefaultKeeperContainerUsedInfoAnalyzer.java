@@ -56,8 +56,8 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @Override
-    public synchronized void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap) {
-        modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsDate()));
+    public void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap) {
+        modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsString()));
         currentDcAllKeeperContainerUsedInfoModelMap = modelMap;
         if (currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) return;
         logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");
