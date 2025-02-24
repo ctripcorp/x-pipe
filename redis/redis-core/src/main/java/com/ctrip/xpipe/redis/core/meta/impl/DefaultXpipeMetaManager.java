@@ -67,7 +67,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	
 	@Override
 	public String doGetActiveDc(String clusterId){
-		
+		boolean noOneWayInHetero = false;
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
 			if(clusterMeta == null){
@@ -76,12 +76,21 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
 				throw new IllegalArgumentException("cluster " + clusterId +" support multi active dc");
 			}
+			String azGroupType = clusterMeta.getAzGroupType();
+			if(!StringUtil.isEmpty(azGroupType) && ClusterType.lookup(clusterMeta.getAzGroupType()) != ClusterType.ONE_WAY) {
+				// 异构类型需要避免拿到单机房缓存作为主机房信息
+				noOneWayInHetero = noOneWayInHetero || true;
+				continue;
+			}
 			String activeDc = clusterMeta.getActiveDc();
 			if(activeDc == null){
 				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
 				throw new MetaException(String.format("cluster exist but active dc == null %s", clusterMeta));
 			}
 			return activeDc.trim().toLowerCase();
+		}
+		if(noOneWayInHetero) {
+			throw new MetaException("clusterId " + clusterId + " does not hava one_way, therefore retrieving the active DC is not allowed.");
 		}
 		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
