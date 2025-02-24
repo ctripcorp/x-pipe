@@ -65,7 +65,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testGetSpecificActiveDcClusters() {
 
 		List<ClusterMeta> specificActiveDcClusters1 = metaManager.getSpecificActiveDcClusters(dcBak2, dc);
-		Assert.assertEquals(3, specificActiveDcClusters1.size());
+		Assert.assertEquals(4, specificActiveDcClusters1.size());
 		Assert.assertEquals(clusterId1, specificActiveDcClusters1.get(0).getId());
 		Assert.assertEquals(clusterId2, specificActiveDcClusters1.get(1).getId());
 
@@ -123,6 +123,20 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1));
 		Assert.assertEquals(dc, metaManager.getActiveDc(clusterId1));
+	}
+
+	@Test
+	public void testActiveDcForHetero() {
+		Assert.assertEquals("jq", metaManager.getActiveDc("cluster-hetero2"));
+		moveDcMetaToLast("jq");
+		moveDcMetaToLast("fq");
+		Assert.assertEquals("jq", metaManager.getActiveDc("cluster-hetero2"));
+	}
+
+	private void moveDcMetaToLast(String dc) {
+		DcMeta dcMeta =	metaManager.xpipeMeta.getDcs().get(dc);
+		metaManager.xpipeMeta.getDcs().remove(dc);
+		metaManager.xpipeMeta.getDcs().put(dc, dcMeta);
 	}
 
 	@Test
