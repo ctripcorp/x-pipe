@@ -39,40 +39,33 @@ public class KeeperContainerDiskInfoCollector implements ConsoleLeaderAware {
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
-    private TimeBoundCache<Map<String, KeeperDiskInfo>> keeperContainerDiskInfoCache;
+    private Map<String, KeeperDiskInfo> keeperContainerDiskInfoCache;
 
     private static final Logger logger = LoggerFactory.getLogger(KeeperContainerDiskInfoCollector.class);
 
     @PostConstruct
     public void init() {
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("KeeperContainerDiskInfoCollector"));
-        this.keeperContainerDiskInfoCache = new TimeBoundCache<>(config::getKeeperCheckerIntervalMilli, this::getCurrentDcAllKeeperContainerDiskInfo);
-        this.refreshTask = new DynamicDelayPeriodTask("KeeperContainerDiskInfoCacheRefresh", keeperContainerDiskInfoCache::refresh,
+        this.keeperContainerDiskInfoCache = new HashMap<>();
+        this.refreshTask = new DynamicDelayPeriodTask("KeeperContainerDiskInfoCacheRefresh", this::refresh,
                 config::getKeeperCheckerIntervalMilli, scheduled);
     }
 
-    private Map<String, KeeperDiskInfo> getCurrentDcAllKeeperContainerDiskInfo() {
+    private void refresh() {
         Map<String, KeeperDiskInfo> result = new HashMap<>();
         for (KeeperContainerMeta keeperContainer : metaCache.getXpipeMeta().findDc(currentDc).getKeeperContainers()) {
             try {
                 result.put(keeperContainer.getIp(), keeperContainerCheckerService.getKeeperDiskInfo(keeperContainer.getIp()));
             } catch (Throwable th) {
+                result.put(keeperContainer.getIp(), new KeeperDiskInfo());
                 logger.error("[getCurrentDcAllKeeperContainerDiskInfo] getKeeperDiskInfo error, keeperIp: {}", keeperContainer.getIp(), th);
             }
         }
-        return result;
+        keeperContainerDiskInfoCache = result;
     }
 
     public KeeperDiskInfo getKeeperDiskInfo(String ip) {
-        Map<String, KeeperDiskInfo> data = keeperContainerDiskInfoCache.getData(false);
-        if (data == null) {
-            keeperContainerDiskInfoCache.refresh();
-            data = keeperContainerDiskInfoCache.getData(false);
-            if (data == null) {
-                return null;
-            }
-        }
-        return data.get(ip);
+        return keeperContainerDiskInfoCache.get(ip);
     }
 
     @Override

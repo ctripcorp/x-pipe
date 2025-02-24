@@ -43,6 +43,11 @@ public class RedisMsg {
         this.offset = offset;
     }
 
+    public void addRedisMsg(RedisMsg redisMsg) {
+        this.inPutFlow += redisMsg.getInPutFlow();
+        this.usedMemory += redisMsg.getUsedMemory();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RedisMsg)) return false;

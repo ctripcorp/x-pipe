@@ -67,6 +67,8 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
             totalClusters = nonMigrateClustersNum;
         }
 
+        if (totalClusters == 0) return;
+
         model.setObjectCount((int)totalClusters).setProcess((int)((100 * (totalClusters - nonMigrateClustersNum) / totalClusters)));
 
         model.setService(DEFAULT_SERVICE).setTimestamp(DateTimeUtils.currentTimeAsString(DEFAULT_TIME_FORMAT)).setOperator(DEFAULT_OPERATOR);
