@@ -14,7 +14,7 @@ public class KeeperContainerUsedInfoModel {
 
     private String az;
 
-    private Date updateTime;
+    private String updateTime;
 
     private long activeInputFlow;
 
@@ -78,6 +78,19 @@ public class KeeperContainerUsedInfoModel {
         this.diskSize = model.getDiskSize();
         this.diskUsed = model.getDiskUsed();
         this.diskType = model.getDiskType();
+    }
+
+    public void addModel(KeeperContainerUsedInfoModel model) {
+        if (!Objects.equals(model.keeperIp, keeperIp) || !Objects.equals(model.dcName, dcName) || !Objects.equals(model.org, org) || !Objects.equals(model.az, az)) {
+            return;
+        }
+        activeInputFlow += model.activeInputFlow;
+        totalInputFlow += model.totalInputFlow;
+        activeRedisUsedMemory += model.activeRedisUsedMemory;
+        totalRedisUsedMemory += model.totalRedisUsedMemory;
+        activeKeeperCount += model.activeKeeperCount;
+        totalKeeperCount += model.totalKeeperCount;
+        detailInfo.putAll(model.detailInfo);
     }
 
     public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
@@ -153,11 +166,11 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
-    public Date getUpdateTime() {
+    public String getUpdateTime() {
         return updateTime;
     }
 
-    public KeeperContainerUsedInfoModel setUpdateTime(Date updateTime) {
+    public KeeperContainerUsedInfoModel setUpdateTime(String updateTime) {
         this.updateTime = updateTime;
         return this;
     }

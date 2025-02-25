@@ -32,7 +32,6 @@ public class CheckerRedisInfoManager implements RedisInfoManager, InfoActionList
     public Map<HostPort, InfoActionContext> getAllInfos() {
         return hostPort2Info;
     }
-
     @Override
     public void onAction(RawInfoActionContext rawInfoActionContext) {
         hostPort2Info.put(rawInfoActionContext.instance().getCheckInfo().getHostPort(), ()->rawInfoActionContext);

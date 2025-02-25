@@ -11,4 +11,6 @@ public interface ConsoleCommonConfig {
     // Beacon
     Set<String> getBeaconSupportZones();
     int monitorUnregisterProtectCount();
+
+    boolean isKeeperMsgCollectOn();
 }

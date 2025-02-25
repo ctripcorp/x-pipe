@@ -159,4 +159,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getCRedisClusterCacheRefreshIntervalMilli();
 
+	long getKeeperContainerDiskInfoCollectIntervalMilli();
+
 }

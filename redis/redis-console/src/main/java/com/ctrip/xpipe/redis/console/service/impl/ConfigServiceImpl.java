@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.KeeperBalanceInfoCollectOnChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
@@ -53,9 +52,6 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Autowired
     private AutoMigrationOffChecker autoMigrationOffChecker;
-
-    @Autowired
-    private KeeperBalanceInfoCollectOnChecker keeperBalanceInfoCollectOnChecker;
 
     private String crossDcLeaderLeaseName;
 
@@ -148,26 +144,6 @@ public class ConfigServiceImpl implements ConfigService {
             sentinelAutoProcessChecker.startAlert();
         }
 
-    }
-
-    @Override
-    public void startKeeperBalanceInfoCollect(ConfigModel config, int hours) throws DalException {
-        logger.info("[startKeeperBalanceInfoCollect] start keeper balance info collect, config: {}", config);
-        Date date = DateTimeUtils.getHoursLaterDate(hours);
-        boolean previousStateOff = !isKeeperBalanceInfoCollectOn();
-
-        config.setKey(KEY_KEEPER_BALANCE_INFO_COLLECT).setVal(String.valueOf(true));
-        setConfigAndUntil(config, date);
-        if(previousStateOff) {
-            keeperBalanceInfoCollectOnChecker.startAlert();
-        }
-    }
-
-    @Override
-    public void stopKeeperBalanceInfoCollect(ConfigModel config) throws DalException {
-        logger.info("[stopKeeperBalanceInfoCollect] stop keeper balance info collect, config: {}", config);
-        config.setKey(KEY_KEEPER_BALANCE_INFO_COLLECT).setVal(String.valueOf(false));
-        setConfig(config);
     }
 
     @Override
@@ -293,11 +269,6 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return getAndResetFalseIfExpired(KEY_KEEPER_BALANCE_INFO_COLLECT);
-    }
-
-    @Override
     public Date getAlertSystemRecoverTime() {
         try {
             return getConfigByKey(KEY_ALERT_SYSTEM_ON).getUntil();
@@ -313,16 +284,6 @@ public class ConfigServiceImpl implements ConfigService {
             return getConfigByKey(KEY_SENTINEL_AUTO_PROCESS).getUntil();
         } catch (DalException e) {
             logger.error("[getSentinelAutoProcessRecoverTime]", e);
-            return null;
-        }
-    }
-
-    @Override
-    public Date getKeeperBalanceInfoCollectRecoverTime() {
-        try {
-            return getConfigByKey(KEY_KEEPER_BALANCE_INFO_COLLECT).getUntil();
-        } catch (DalException e) {
-            logger.error("[getKeeperBalanceInfoCollectRecoverTime]", e);
             return null;
         }
     }

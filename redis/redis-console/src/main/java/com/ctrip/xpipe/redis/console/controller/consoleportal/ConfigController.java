@@ -13,9 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 
-import java.util.Date;
-import java.util.List;
-
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
 /**
@@ -63,15 +60,6 @@ public class ConfigController extends AbstractConsoleController{
         }
     }
 
-    @RequestMapping(value = "/config/keeper_balance_info_collect", method = RequestMethod.GET)
-    public RetMessage isKeeperBalanceInfoCollectOn() {
-        if(configService.isKeeperBalanceInfoCollectOn()) {
-            return RetMessage.createSuccessMessage();
-        } else {
-            return RetMessage.createFailMessage("closed");
-        }
-    }
-
     private RetMessage changeConfig(final String key, final String val, final String uri) {
         UserInfo user = UserInfoHolder.DEFAULT.getUser();
         String userId = user.getUserId();
@@ -93,13 +81,7 @@ public class ConfigController extends AbstractConsoleController{
                 } else {
                     configService.stopSentinelAutoProcess(configModel, consoleConfig.getConfigDefaultRestoreHours());
                 }
-            } else if(KEY_KEEPER_BALANCE_INFO_COLLECT.equalsIgnoreCase(key)) {
-                if(target) {
-                    configService.startKeeperBalanceInfoCollect(configModel, consoleConfig.getConfigDefaultRestoreHours());
-                } else {
-                    configService.stopKeeperBalanceInfoCollect(configModel);
-                }
-            }else {
+            } else {
                 return RetMessage.createFailMessage("Unknown config key: " + key);
             }
             return RetMessage.createSuccessMessage();

@@ -5,16 +5,19 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.command.AbstractGetAllDcCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.MigrationKeeperContainerDetailInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
@@ -38,11 +41,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Map<Integer, Pair<List<KeeperContainerUsedInfoModel>, Date>> keeperContainerUsedInfoModelIndexMap = new HashMap<>();
-
     private Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap = new HashMap<>();
 
-    private List<MigrationKeeperContainerDetailModel> currentDcKeeperContainerMigrationResult = new ArrayList<>();
+    private List<MigrationKeeperContainerDetailModel> keeperContainerMigrationResult = new ArrayList<>();
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
@@ -55,21 +56,11 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @Override
-    public synchronized void updateKeeperContainerUsedInfo(int index, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
-        if (keeperContainerUsedInfoModels != null && !keeperContainerUsedInfoModels.isEmpty()){
-            keeperContainerUsedInfoModelIndexMap.put(index, new Pair<>(keeperContainerUsedInfoModels, new Date()));
-        }
-        removeExpireData();
-        logger.info("[analyzeKeeperContainerUsedInfo] current index {}", keeperContainerUsedInfoModelIndexMap.keySet());
-        if (keeperContainerUsedInfoModelIndexMap.size() != config.getClusterDividedParts()) return;
-
-        currentDcAllKeeperContainerUsedInfoModelMap.clear();
-        keeperContainerUsedInfoModelIndexMap.values().forEach(list -> list.getKey().forEach(infoModel -> currentDcAllKeeperContainerUsedInfoModelMap.put(infoModel.getKeeperIp(),
-                infoModel.setUpdateTime(new Date(System.currentTimeMillis() + 8 * 60 * 60 * 1000)))));
-
-        keeperContainerUsedInfoModelIndexMap.clear();
-        logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");
+    public void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap) {
+        modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsString()));
+        currentDcAllKeeperContainerUsedInfoModelMap = modelMap;
         if (currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) return;
+        logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");
         executors.execute(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
@@ -77,7 +68,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 transaction.logTransactionSwallowException("keeperContainer.analyze", currentDc, new Task() {
                     @Override
                     public void go() throws Exception {
-                        currentDcKeeperContainerMigrationResult = migrationAnalyzer.getMigrationPlans(currentDcAllKeeperContainerUsedInfoModelMap);
+                        keeperContainerMigrationResult = migrationAnalyzer.getMigrationPlans(currentDcAllKeeperContainerUsedInfoModelMap);
                     }
 
                     @Override
@@ -107,7 +98,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<MigrationKeeperContainerDetailModel> getCurrentDcReadyToMigrationKeeperContainers() {
-        return currentDcKeeperContainerMigrationResult;
+        return keeperContainerMigrationResult;
     }
 
     @Override
@@ -141,24 +132,6 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         }
 
         return result;
-    }
-
-    private void removeExpireData() {
-        List<Integer> expireIndex = new ArrayList<>();
-        for (Map.Entry<Integer, Pair<List<KeeperContainerUsedInfoModel>, Date>> entry : keeperContainerUsedInfoModelIndexMap.entrySet()) {
-            if (new Date().getTime() - entry.getValue().getValue().getTime() > config.getKeeperCheckerIntervalMilli() * 2L) {
-                expireIndex.add(entry.getKey());
-            }
-        }
-        for (int index : expireIndex) {
-            logger.debug("[removeExpireData] remove expire index:{} time:{}, expire time:{}", index, keeperContainerUsedInfoModelIndexMap.get(index).getValue(), config.getKeeperCheckerIntervalMilli() * 2L);
-            keeperContainerUsedInfoModelIndexMap.remove(index);
-        }
-    }
-
-    @VisibleForTesting
-    int getCheckerIndexesSize() {
-        return keeperContainerUsedInfoModelIndexMap.size();
     }
 
     @VisibleForTesting

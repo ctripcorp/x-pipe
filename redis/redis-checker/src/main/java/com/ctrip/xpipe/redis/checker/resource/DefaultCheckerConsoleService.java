@@ -3,16 +3,14 @@ package com.ctrip.xpipe.redis.checker.resource;
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
-import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -20,7 +18,6 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -73,15 +70,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
         return DefaultSaxParser.parse(raw);
     }
 
-    public XpipeMeta getXpipeDcAllMeta(String console, String dcName) throws  SAXException, IOException {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_DC_ALL_META)
-                .queryParam("format", "xml").buildAndExpand(dcName);
-
-        String raw = restTemplate.getForObject(comp.toString(), String.class);
-        if (StringUtil.isEmpty(raw)) return null;
-        return DefaultSaxParser.parse(raw);
-    }
-
     public List<ProxyTunnelInfo> getProxyTunnelInfos(String console) {
         ResponseEntity<List<ProxyTunnelInfo>> resp = restTemplate.exchange(console + ConsoleCheckerPath.PATH_GET_PROXY_CHAINS,
                 HttpMethod.GET, null, proxyTunnelInfosTypeDef);
@@ -99,10 +87,10 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public void reportKeeperContainerInfo(String console, List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels, int index) {
+    public void reportKeeperContainerInfo(String console, Map<HostPort, RedisMsg> redisMsgMap, int index) {
         try {
             restTemplate.postForEntity(console + ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT,
-                    keeperContainerUsedInfoModels, RetMessage.class, index);
+                    redisMsgMap, RetMessage.class, index);
 
         } catch (Throwable th) {
             logger.error("report keeper used info fail : {}", index, th);
@@ -163,15 +151,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
         Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, Boolean.class);
         if (result == null) {
             throw new XpipeRuntimeException("result of isAlertSystemOn is null");
-        }
-        return result;
-    }
-
-    @Override
-    public boolean isKeeperBalanceInfoCollectOn(String console) {
-        Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON, Boolean.class);
-        if (result == null) {
-            throw new XpipeRuntimeException("result of isKeeperBalanceInfoCollectOn is null");
         }
         return result;
     }

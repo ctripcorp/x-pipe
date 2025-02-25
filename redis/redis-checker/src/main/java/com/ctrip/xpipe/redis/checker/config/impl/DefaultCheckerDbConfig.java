@@ -33,11 +33,6 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig, AlertDbConfig {
     }
 
     @Override
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return persistenceCache.isKeeperBalanceInfoCollectOn();
-    }
-
-    @Override
     public boolean shouldSentinelCheck(String cluster) {
         if (StringUtil.isEmpty(cluster)) return false;
 

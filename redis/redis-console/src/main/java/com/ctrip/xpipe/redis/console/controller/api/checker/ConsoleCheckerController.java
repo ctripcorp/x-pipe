@@ -2,33 +2,27 @@ package com.ctrip.xpipe.redis.console.controller.api.checker;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.OuterClientCache;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.ProxyManager;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.*;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
-import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
+import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerUsedInfoMsgCollector;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,10 +76,10 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     private OuterClientCache outerClientCache;
 
     @Autowired
-    private KeeperContainerUsedInfoAnalyzer keeperContainerUsedInfoAnalyzer;
+    private CheckerDbConfig checkerDbConfig;
 
     @Autowired
-    private CheckerDbConfig checkerDbConfig;
+    private KeeperContainerUsedInfoMsgCollector keeperContainerUsedInfoMsgCollector;
 
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
     @Autowired
@@ -157,17 +151,14 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)
-    public void updateKeeperContainerUsedInfo(HttpServletRequest request, @PathVariable int index, @RequestBody List<KeeperContainerUsedInfoModel> keeperContainerUsedInfoModels) {
-        logger.debug("[updateKeeperContainerUsedInfo][{}] {}", request.getRemoteAddr(), keeperContainerUsedInfoModels);
-        if (checkerDbConfig.isKeeperBalanceInfoCollectOn()) {
-            keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(index, keeperContainerUsedInfoModels);
-        }
+    public void updateKeeperContainerUsedInfo(@PathVariable int index, @RequestBody Map<HostPort, RedisMsg> masterDcRedisMsgMap) {
+        keeperContainerUsedInfoMsgCollector.saveMsg(index, masterDcRedisMsgMap);
     }
 
 
     @Resource
     PersistenceCache persistenceCache;
-    
+
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION, method = RequestMethod.GET)
     public boolean isClusterOnMigration(@PathVariable String clusterName) {
         return persistenceCache.isClusterOnMigration(clusterName);
@@ -211,11 +202,6 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, method = RequestMethod.GET)
     public boolean isAlertSystemOn() {
         return persistenceCache.isAlertSystemOn();
-    }
-
-    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON, method = RequestMethod.GET)
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return persistenceCache.isKeeperBalanceInfoCollectOn();
     }
 
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME, method = RequestMethod.GET)

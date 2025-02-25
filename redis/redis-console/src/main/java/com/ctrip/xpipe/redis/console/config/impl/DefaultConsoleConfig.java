@@ -593,6 +593,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getKeeperContainerDiskInfoCollectIntervalMilli() {
+        return commonConfigBean.getKeeperContainerDiskInfoCollectIntervalMilli();
+    }
+
+    @Override
     public boolean getShouldDoAfterNettyClientConnected() {
         return dataCenterConfigBean.getDoAfterNettyClientConnected();
     }

@@ -4,14 +4,11 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
-import com.ctrip.xpipe.redis.core.meta.KeeperContainerDetailInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -22,11 +19,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.ctrip.xpipe.redis.core.meta.comparator.KeeperContainerMetaComparator.getAllKeeperContainerDetailInfoFromDcMeta;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
@@ -50,14 +45,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     @Autowired
     private CheckerConfig checkerConfig;
 
-    @Autowired
-    private CheckerConsoleService checkerConsoleService;
-
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
-
-    @Resource
-    private CurrentDcAllMeta currentDcAllMeta;
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -131,12 +120,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
 
-            if (currentDcId.equalsIgnoreCase(dcMeta.getId())) {
-                Map<Long, KeeperContainerDetailInfo> keeperContainerDetailInfoMap
-                        = getAllKeeperContainerDetailInfoFromDcMeta(dcMeta, currentDcAllMeta.getCurrentDcAllMeta());
-                keeperContainerDetailInfoMap.values().forEach(this::generateHealthCheckInstances);
-            }
-
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 try {
                     ClusterType clusterType = ClusterType.lookup(cluster.getType());
@@ -160,15 +143,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 }
 
             }
-        }
-    }
-
-    private void generateHealthCheckInstances(KeeperContainerDetailInfo keeperContainerDetailInfo) {
-        for (KeeperMeta keeperMeta : keeperContainerDetailInfo.getKeeperInstances()) {
-            instanceManager.getOrCreate(keeperMeta);
-        }
-        for (RedisMeta redisMeta : keeperContainerDetailInfo.getRedisInstances()) {
-            instanceManager.getOrCreateRedisInstanceForAssignedAction(redisMeta);
         }
     }
 
@@ -204,7 +178,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
         return false;
     }
-
 
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);

@@ -4,7 +4,9 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
+import com.ctrip.xpipe.redis.console.keeper.entity.CheckerReportSituation;
 import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
+import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerUsedInfoMsgCollector;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeeperMsgModel;
@@ -31,6 +33,9 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @Autowired
     KeeperContainerMigrationService keeperContainerMigrationService;
+
+    @Autowired
+    KeeperContainerUsedInfoMsgCollector keeperContainerUsedInfoMsgCollector;
 
     @Autowired
     ConfigService configService;
@@ -114,6 +119,11 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
     @RequestMapping(value = "/keepercontainer/overload/info/lasted", method = RequestMethod.GET)
     public List<KeeperContainerUsedInfoModel>  getLastedAllReadyMigrateKeeperContainers() {
         return analyzer.getAllDcKeeperContainerUsedInfoModelsList();
+    }
+
+    @RequestMapping(value = "/keepercontainer/check/report/situation", method = RequestMethod.GET)
+    public List<CheckerReportSituation>  getCheckerReportSituation() {
+        return new ArrayList<>(keeperContainerUsedInfoMsgCollector.getDcCheckerReportSituationMap().values());
     }
 
     @RequestMapping(value = "/keepercontainer/diskType", method = RequestMethod.GET)
