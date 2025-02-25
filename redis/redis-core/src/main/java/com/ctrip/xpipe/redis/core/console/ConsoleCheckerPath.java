@@ -42,8 +42,6 @@ public class ConsoleCheckerPath {
 
     public static final String PATH_GET_IS_ALERT_SYSTEM_ON = PATH_PERSISTENCE + "isAlertSystemOn";
 
-    public static final String PATH_GET_IS_KEEPER_BALANCE_INFO_COLLECT_ON = PATH_PERSISTENCE + "isKeeperBalanceInfoCollectOn";
-
     public static final String PATH_GET_CLUSTER_CREATE_TIME = PATH_PERSISTENCE + "clusterCreateTime/{clusterId}";
 
     public static final String PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME = PATH_PERSISTENCE + "loadAllClusterCreateTime";

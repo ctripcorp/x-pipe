@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -73,11 +72,6 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         @Bean
         public MetaCache metaCache() {
             return new TestMetaCache();
-        }
-
-        @Bean
-        public CurrentDcAllMeta testCurrentDcAllMeta() {
-            return new TestCurrentDcAllMetaCache();
         }
 
 

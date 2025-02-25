@@ -29,10 +29,6 @@ function IndexCtl($rootScope, $scope, $window, UserService, ConfigService, AppUt
         .then(function (result) {
             $rootScope.isSentinelAutoProcOn = (result.state === 0);
         });
-    ConfigService.isKeeperBalanceInfoCollectOn()
-        .then(function (result) {
-            $rootScope.isKeeperBalanceInfoCollectOn = (result.state === 0);
-        });
 
     function preChangeConfig(key, value) {
         $rootScope.configChangeKey = key;
@@ -60,10 +56,6 @@ function IndexCtl($rootScope, $scope, $window, UserService, ConfigService, AppUt
         ConfigService.isSentinelAutoProcessOn()
             .then(function (result) {
                 $rootScope.isSentinelAutoProcOn = (result.state === 0);
-            });
-        ConfigService.isKeeperBalanceInfoCollectOn()
-            .then(function (result) {
-                $rootScope.isKeeperBalanceInfoCollectOn = (result.state === 0);
             });
         $window.location.reload();
     }

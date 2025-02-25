@@ -8,8 +8,6 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.CurrentDcAllMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -19,12 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_SESSION_NETTY_CLIENT_POOL;
@@ -43,9 +39,6 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     @Autowired
     protected MetaCache metaCache;
-
-    @Resource
-    protected CurrentDcAllMeta currentDcAllMeta;
 
     @Autowired
     protected CheckerConsoleService checkerConsoleService;
@@ -156,27 +149,6 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     protected abstract Set<HostPort> getInUseInstances();
 
-    @VisibleForTesting
-    protected Set<HostPort> getSessionsForKeeper(DcMeta dcMeta, DcMeta dcAllMeta) {
-        Set<HostPort> instanceInUse = new HashSet<>();
-        Set<Long> keeperContainerSet = dcMeta.getKeeperContainers().stream().map(KeeperContainerMeta::getId).collect(Collectors.toSet());
-        if (dcAllMeta == null || dcAllMeta.getClusters() == null) return instanceInUse;
-
-        dcAllMeta.getClusters().values().forEach(clusterMeta -> {
-            for (ShardMeta shardMeta : clusterMeta.getAllShards().values()){
-                if (shardMeta.getKeepers() == null || shardMeta.getKeepers().isEmpty()) continue;
-                shardMeta.getKeepers().forEach(keeperMeta -> {
-                    if (keeperContainerSet.contains(keeperMeta.getKeeperContainerId())) {
-                        HostPort monitorInstance = getMonitorInstance(shardMeta.getRedises(), keeperMeta);
-                        if (monitorInstance != null) instanceInUse.add(monitorInstance);
-                    }
-                });
-            }
-        });
-        return instanceInUse;
-    }
-
-    protected abstract HostPort getMonitorInstance(List<RedisMeta> redises, KeeperMeta keeper);
 
     protected void closeAllConnections() {
         try {

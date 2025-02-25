@@ -43,11 +43,6 @@ public class DefaultConsoleDbConfig implements ConsoleDbConfig, AlertDbConfig {
     }
 
     @Override
-    public boolean isKeeperBalanceInfoCollectOn() {
-        return configService.isKeeperBalanceInfoCollectOn();
-    }
-
-    @Override
     public boolean isAlertSystemOn() {
         return configService.isAlertSystemOn();
     }

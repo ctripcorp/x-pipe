@@ -470,27 +470,6 @@ public enum ALERT_TYPE {
             return ALERT_LEVEL.HIGH;
         }
     },
-    KEEPER_BALANCE_INFO_COLLECT_ON("keeper balance info collect is turning on", EMAIL_XPIPE_ADMIN) {
-        @Override
-        public boolean urgent() {
-            return true;
-        }
-
-        @Override
-        public boolean reportRecovery() {
-            return false;
-        }
-
-        @Override
-        public DetailDesc detailDesc() {
-            return new DetailDesc("自动匀keeper信息收集打开", "");
-        }
-
-        @Override
-        public ALERT_LEVEL getAlertLevel() {
-            return ALERT_LEVEL.HIGH;
-        }
-    },
     AUTO_MIGRATION_NOT_ALLOW("auto migration not allow",  EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
