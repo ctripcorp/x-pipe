@@ -61,7 +61,6 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
 
     @Test
     public void testGetCurrentDcRedisMasterMsg() {
-        when(config.getKeeperCheckerIntervalMilli()).thenReturn(3000);
         Map<String, Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>>> redisMsgCache = new HashMap<>();
         Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>> dcCache = new HashMap<>();
         Map<HostPort, RedisMsg> msgMap = new HashMap<>();

@@ -187,7 +187,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                         }
                     }
                 }
-                reportClusterData(clusterMeta.getId(), clusterAllRedisMsg);
+//                reportClusterData(clusterMeta.getId(), clusterAllRedisMsg);
             }
             if (currentDc.equals(dcMeta.getId())) {
                 dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
