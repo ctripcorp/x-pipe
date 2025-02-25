@@ -144,6 +144,18 @@ public abstract class AbstractMetaStore implements MetaStore{
 			}
 		}
 	}
+
+	@Override
+	public void setRordbFileSize(long rordbFileSize) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			if(metaDup.getRordbFileSize() != rordbFileSize){
+				metaDup.setRordbFileSize(rordbFileSize);
+				saveMeta(metaDup);
+			}
+		}
+	}
 	
 	
 	private void setKeeperState(KeeperState keeperState) throws IOException {
