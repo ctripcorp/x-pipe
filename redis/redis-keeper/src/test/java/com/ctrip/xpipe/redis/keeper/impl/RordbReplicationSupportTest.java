@@ -105,6 +105,8 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
+
+        Assert.assertEquals(redisKeeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRordbFileSize(), psync.getRdb().length);
     }
 
     @Test

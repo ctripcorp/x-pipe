@@ -64,6 +64,8 @@ public interface MetaStore {
 
 	void setRdbFileSize(long rdbFileSize) throws IOException;
 
+	void setRordbFileSize(long rordbFileSize) throws IOException;
+
 	@Deprecated
 	void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException;
 

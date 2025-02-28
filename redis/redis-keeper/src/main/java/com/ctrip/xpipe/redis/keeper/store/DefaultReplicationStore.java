@@ -529,7 +529,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		public void onEndRdb() {
 			try {
 				getLogger().info("[onEndRdb]{}, {}", rdbStore, DefaultReplicationStore.this);
-				metaStore.setRdbFileSize(rdbStore.rdbFileLength());
+				if(RdbStore.Type.NORMAL.equals(rdbStore.getRdbType())) {
+					metaStore.setRdbFileSize(rdbStore.rdbFileLength());
+				} else {
+					metaStore.setRordbFileSize(rdbStore.rdbFileLength());
+				}
 			} catch (Exception e) {
 				getLogger().error("[onEndRdb]", e);
 			}
