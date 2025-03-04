@@ -62,15 +62,15 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
         this.delayDownAfterMilli = () -> {
             DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
-            return delayConfig.getClusterLevelDelayDownAfterMilli() > 0 ? delayConfig.getClusterLevelDelayDownAfterMilli() : delayConfig.getDcLevelDelayDownAfterMilli();};
+            return delayConfig.getClusterLevelDelayDownAfterMilli();};
         this.healthyDelayMilli = () -> {
             DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(instance.getCheckInfo().getClusterId(), currentDcId, instance.getCheckInfo().getDcId());
-            return delayConfig.getClusterLevelHealthyDelayMilli() > 0 ? delayConfig.getClusterLevelHealthyDelayMilli() : delayConfig.getDcLevelHealthyDelayMilli();};
+            return delayConfig.getClusterLevelHealthyDelayMilli();};
         checkParam();
     }
 
     private void checkParam() {
-        if(this.delayDownAfterMilli.getAsInt() < this.pingDownAfterMilli.getAsInt()) {
+        if(this.delayDownAfterMilli.getAsInt() > 0 && this.delayDownAfterMilli.getAsInt() < this.pingDownAfterMilli.getAsInt()) {
             logger.error("Ping-Down-After-Milli must smaller than Delay-Down-After-Milli");
         }
     }
@@ -151,7 +151,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         lastHealthDelayTime.compareAndSet(UNSET_TIME, System.currentTimeMillis());
 
         delayLogger.debug("{}, {}", instance.getCheckInfo().getHostPort(), delayMilli);
-        if(delayMilli >= 0 && delayMilli <= healthyDelayMilli.getAsInt()){
+        if (delayMilli >= 0 && (delayMilli <= healthyDelayMilli.getAsInt() || healthyDelayMilli.getAsInt() < 0)) {
             lastHealthDelayTime.set(System.currentTimeMillis());
             setDelayUp();
         }
@@ -181,7 +181,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         final int delayDownAfter = delayDownAfterMilli.getAsInt();
         final int instanceLongDelay = instanceLongDelayMilli.getAsInt();
 
-        if ( delayDownTime > delayDownAfter) {
+        if (delayDownAfter < 0) {
+            // skip for negative distance
+        } else if ( delayDownTime > delayDownAfter) {
             setDelayDown();
         }else if(delayDownTime >= instanceLongDelay){
             setDelayHalfDown();
