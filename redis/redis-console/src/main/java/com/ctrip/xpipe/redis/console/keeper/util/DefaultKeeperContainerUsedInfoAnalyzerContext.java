@@ -131,6 +131,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
             KeeperContainerUsedInfoModel target = queue.poll();
             if ((Objects.equals(srcKeeper.getOrg(), target.getOrg()))
                     && (Objects.equals(srcKeeper.getAz(), target.getAz()))
+                    && (Objects.equals(srcKeeper.getTag(), target.getTag()))
                     && !Objects.equals(target.getKeeperIp(), srcKeeperPair.getKeeperIp())
                     && ((!isMigrateShardBackUp && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this))
                     || (isMigrateShardBackUp && !filterChain.isMigrateKeeperPairOverload(dcClusterShard, srcKeeperPair, target, this)))) {

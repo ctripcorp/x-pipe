@@ -20,7 +20,7 @@ insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) v
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(2,2,'127.0.0.1:17170,127.0.0.1:17171,127.0.0.1:17172','setinel no.2');
 insert into SETINEL_TBL (setinel_id,dc_id,setinel_address,setinel_description) values(3,3,'127.0.0.1:32222,127.0.0.1:32223','setinel no.3');
 
-insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (1,1,'127.0.0.1',7080,1);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, tag) values (1,1,'127.0.0.1',7080,1, 'tag-1');
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (2,1,'127.0.0.1',7081,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (3,1,'127.0.0.1',7082,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (4,2,'127.0.0.1',7180,1);

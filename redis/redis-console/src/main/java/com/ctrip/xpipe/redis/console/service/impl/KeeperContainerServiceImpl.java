@@ -147,41 +147,44 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
      * 3. BU don't have its own kc, find in the normal kc pool(org id is 0L)
      */
     long clusterOrgId;
+    String clusterTag;
     if (clusterName != null) {
       ClusterTbl clusterTbl = clusterService.find(clusterName);
       clusterOrgId = clusterTbl == null ? XPipeConsoleConstant.DEFAULT_ORG_ID : clusterTbl.getClusterOrgId();
+      clusterTag = clusterTbl == null ? "" : clusterTbl.getTag();
     } else {
       clusterOrgId = XPipeConsoleConstant.DEFAULT_ORG_ID;
+      clusterTag = "";
     }
-    logger.info("cluster org id: {}", clusterOrgId);
+    logger.info("cluster org id: {}, tag: {}", clusterOrgId, clusterTag);
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
         // find all keepers, both in used and unused
         List<KeepercontainerTbl> allDcKeeperContainers = dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
-        List<KeepercontainerTbl> allDcOrgKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId).collect(Collectors.toList());
+        List<KeepercontainerTbl> allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId && Objects.equals(keepercontainer.getTag(), clusterTag)).collect(Collectors.toList());
 
-        List<KeepercontainerTbl> dcOrgKeeperContainersInUsed;
-        if (allDcOrgKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
+        List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed;
+        if (allDcOrgTagKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
           logger.info("cluster {} with org id {} is going to find keepercontainers in normal pool",
                   clusterName, clusterOrgId);
-          allDcOrgKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID).collect(Collectors.toList());
+          allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID && Objects.equals(keepercontainer.getTag(), clusterTag)).collect(Collectors.toList());
 
           // find keepers in used in normal org
-          dcOrgKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
+          dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID, clusterTag,
                   KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         } else {
           // find keepers in used in cluster org
-          dcOrgKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, clusterOrgId,
+          dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, clusterOrgId, clusterTag,
                   KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
 
-        setCountAndSortForAllKeeperContainers(allDcOrgKeeperContainers,  dcOrgKeeperContainersInUsed);
+        setCountAndSortForAllKeeperContainers(allDcOrgTagKeeperContainers,  dcOrgTagKeeperContainersInUsed);
         if (!skipAzFilter) {
-          allDcOrgKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgKeeperContainers, dcName);
+          allDcOrgTagKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgTagKeeperContainers, dcName);
         }
-        logger.info("find keeper containers: {}", allDcOrgKeeperContainers);
-        return allDcOrgKeeperContainers;
+        logger.info("find keeper containers: {}", allDcOrgTagKeeperContainers);
+        return allDcOrgTagKeeperContainers;
       }
     });
   }
@@ -288,6 +291,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
             .setKeepercontainerOrgId(org.getId())
+            .setTag(createInfo.getTag() == null ? "" : createInfo.getTag())
             .setKeepercontainerActive(createInfo.isActive())
             .setKeepercontainerDiskType(createInfo.getDiskType() == null ? KeeperContainerDiskType.DEFAULT.getDesc() : createInfo.getDiskType().toUpperCase());
 
@@ -314,6 +318,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                 .setDcName(dc).setActive(input.isKeepercontainerActive())
                 .setKeepercontainerIp(input.getKeepercontainerIp())
                 .setKeepercontainerPort(input.getKeepercontainerPort())
+                .setTag(input.getTag())
                 .setDiskType(input.getKeepercontainerDiskType());
         if (org != null) {
           info.setKeepercontainerOrgId(org.getOrgId()).setOrgName(org.getOrgName());
@@ -357,7 +362,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
-
+    keepercontainerTbl.setTag(createInfo.getTag() == null ? "" : createInfo.getTag());
     keepercontainerTbl.setKeepercontainerDiskType(createInfo.getDiskType());
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
@@ -425,7 +430,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(keeperContainerInfoModel.getAddr().getHost())
             .setKeepercontainerPort(keeperContainerInfoModel.getAddr().getPort())
-            .setKeepercontainerActive(keeperContainerInfoModel.isActive());
+            .setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType())
+            .setKeepercontainerActive(keeperContainerInfoModel.isActive())
+            .setTag(keeperContainerInfoModel.getTag() == null ? "" : keeperContainerInfoModel.getTag());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override
@@ -464,7 +471,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
-
+    proto.setTag(keeperContainerInfoModel.getTag() == null ? "" : keeperContainerInfoModel.getTag());
     proto.setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType());
 
     queryHandler.handleQuery(new DalQuery<Integer>() {
@@ -561,6 +568,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
       model.setDcName(baseInfo.getDcInfo().getDcName());
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
+      model.setTag(baseInfo.getTag());
       model.setDiskType(baseInfo.getKeepercontainerDiskType());
 
       if (baseInfo.getAzId() != 0) {
@@ -599,6 +607,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     keeperContainerInfoModel.setAzName(azNameMap.get(keepercontainerTbl.getAzId()));
     keeperContainerInfoModel.setAddr(new HostPort(keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
     keeperContainerInfoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
+    keeperContainerInfoModel.setTag(keepercontainerTbl.getTag());
 
     OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
     if (organizationTbl != null) {
@@ -609,9 +618,10 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzAndOrg(String dcName, String azName, String orgName) {
+  public List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag(String dcName, String azName, String orgName, String tag) {
     long azId = 0;
     long orgId = 0;
+    String keeperTag = tag == null ? "" : tag;
 
     if (!StringUtil.isEmpty(azName)) {
       AzTbl azTbl = azService.getAvailableZoneTblByAzName(azName);
@@ -630,6 +640,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         continue;
       }
       if (orgId != keepercontainer.getKeepercontainerOrgId()) {
+        continue;
+      }
+      if (!keeperTag.equalsIgnoreCase(keepercontainer.getTag())) {
         continue;
       }
 

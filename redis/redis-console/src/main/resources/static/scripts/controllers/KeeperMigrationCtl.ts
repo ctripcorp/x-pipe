@@ -34,8 +34,8 @@ function KeeperMigrationCtl($rootScope, $scope, $window, $stateParams, KeeperCon
 	    KeeperContainerService.findKeepercontainerById($scope.keepercontainerId)
 	        .then(function (result) {
 	            $scope.srcKeepercontainer = result;
-                KeeperContainerService.findAvailableKeepersByDcAzAndOrg($scope.srcKeepercontainer.dcName,
-                                                    $scope.srcKeepercontainer.azName, $scope.srcKeepercontainer.orgName)
+                KeeperContainerService.findAvailableKeepersByDcAzOrgAndTag($scope.srcKeepercontainer.dcName,
+                                                    $scope.srcKeepercontainer.azName, $scope.srcKeepercontainer.orgName, $scope.srcKeepercontainer.tag)
                     .then(function (result) {
                         $scope.availableKeeperContainers = result.filter(keepercontainer => keepercontainer.id != $scope.srcKeepercontainer.id);
                     });

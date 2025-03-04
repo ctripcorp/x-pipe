@@ -777,6 +777,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
+		proto.setTag(cluster.getClusterTbl().getTag() == null ? "" : cluster.getClusterTbl().getTag());
 
 		clusterDao.updateCluster(proto);
 	}

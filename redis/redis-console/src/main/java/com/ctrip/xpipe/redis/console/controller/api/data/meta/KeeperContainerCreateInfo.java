@@ -22,6 +22,8 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
     @Nullable
     private String orgName;
 
+    private String tag;
+
     private boolean active;
 
     private String azName;
@@ -101,6 +103,7 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
                 ", keepercontainerPort=" + keepercontainerPort +
                 ", keepercontainerOrgId=" + keepercontainerOrgId +
                 ", orgName='" + orgName + '\'' +
+                ", tag='" + tag + '\'' +
                 ", active=" + active +
                 ", azName='" + azName + '\'' +
                 ", diskType='" + diskType + '\'' +
@@ -113,6 +116,15 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     public KeeperContainerCreateInfo setOrgName(String orgName) {
         this.orgName = orgName;
+        return this;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public KeeperContainerCreateInfo setTag(String tag) {
+        this.tag = tag;
         return this;
     }
 

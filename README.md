@@ -114,7 +114,6 @@ Redis 也可能会挂，Redis 本身提供哨兵 (Sentinel) 机制保证集群�
 - 【有任何疑问，请阅读】[XPipe Wiki](https://github.com/ctripcorp/x-pipe/wiki) 
 - 【目前用户的问题整理】[XPipe Q&A](https://github.com/ctripcorp/x-pipe/wiki/XPipe-Q&A)
 - 【文章】[携程Redis多数据中心解决方案-XPipe](https://mp.weixin.qq.com/s/Q3bt0-5nv8uNMdHuls-Exw?)
-- 【文章】[携程Redis海外机房数据同步实践](https://mp.weixin.qq.com/s/LeSSdT6bOEFzZyN26PRVzg)
 - 【PPT】[携程内XPipe使用介绍](https://docs.c-ctrip.com/files/6/portal/0AS2w12000947w1mw6A59.pptx)
 
 <a name="技术交流"></a>
