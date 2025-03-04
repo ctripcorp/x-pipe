@@ -246,6 +246,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         if (organizationTbl != null) {
             model.setOrg(organizationTbl.getOrgName());
         }
+        model.setTag(keepercontainerTbl.getTag());
         try {
             KeeperDiskInfo keeperDiskInfo = keeperContainerDiskInfoCollector.getKeeperDiskInfo(ip);
             if (keeperDiskInfo == null) {

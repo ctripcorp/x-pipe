@@ -23,6 +23,7 @@
                 <td data-title="'active'" filter="{ active: 'text'}">{{info.active}}</td>
                 <td data-title="'diskType'" filter="{ diskType: 'text'}">{{info.diskType}}</td>
                 <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
+                <td data-title="'tag'" filter="{ tag: 'text'}" sortable="'tag'">{{info.tag}}</td>
                 <td data-title="'keeper'" sortable="'keeperCount'">{{info.keeperCount}}</td>
                 <td data-title="'cluster'" sortable="'clusterCount'">
                     <a ui-sref="cluster_list({ keepercontainer: info.id })">{{info.clusterCount}}</a>

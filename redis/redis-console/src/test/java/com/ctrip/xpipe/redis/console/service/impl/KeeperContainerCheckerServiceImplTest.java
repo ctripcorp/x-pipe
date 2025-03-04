@@ -8,27 +8,18 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
 
@@ -283,6 +274,7 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
 
         keeper.setAzName(null);
         keeper.setOrgName("org-1");
+        keeper.setTag("tag-1");
         keeper.setActive(false);
         keeper.setDcName("jq");
         keeper.setDiskType("AWS_1T");
@@ -295,6 +287,7 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
         Assert.assertEquals(7033, keeper1.getAddr().getPort());
         Assert.assertEquals(false, keeper1.isActive());
         Assert.assertEquals("org-1", keeper1.getOrgName());
+        Assert.assertEquals("tag-1", keeper1.getTag());
         Assert.assertEquals(null, keeper1.getAzName());
         Assert.assertEquals("AWS_1T", keeper1.getDiskType());
 
@@ -371,17 +364,17 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
 
     @Test
     public void testFindKeeperContainerByDcAzAndOrg() {
-        List<KeeperContainerInfoModel> keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("fra", "A", "org-1");
+        List<KeeperContainerInfoModel> keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag("fra", "A", "org-1", "");
         Assert.assertEquals(0, keeperContainers.size());
 
-        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("fra", "A", "");
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag("fra", "A", "", "");
         Assert.assertEquals(2, keeperContainers.size());
 
-        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("jq", "", "org-1");
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag("jq", "", "org-1", "");
         Assert.assertEquals(2, keeperContainers.size());
 
-        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg("jq", "", "");
-        Assert.assertEquals(3, keeperContainers.size());
+        keeperContainers = keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag("jq", "", "", "");
+        Assert.assertEquals(2, keeperContainers.size());
     }
 
     @Test

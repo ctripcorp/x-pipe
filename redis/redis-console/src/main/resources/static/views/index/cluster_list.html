@@ -61,6 +61,7 @@
                 <td ng-if="showDetails" data-title="'描述'" ng-bind="cluster.clusterDescription"></td>
                 <td ng-if="true" data-title="'组织'" filter="{clusterOrgName: 'select'}" filter-data="organizationNames" ng-bind="cluster.clusterOrgName" ></td>
                 <td ng-if="showDetails" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails"></td>
+                <td ng-if="showDetails" data-title="'Tag'" filter="{ tag : 'text' }"  ng-bind="cluster.tag"></td>
                 <td data-title="'操作'">
                 	<a ng-if="showAll" href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=retrieve" class="btn btn-info btn-xs">Cluster</a>&nbsp;

@@ -39,6 +39,7 @@
     <attribute name="port" value-type="int" />
     <attribute name="az_id" value-type="long" />
     <attribute name="disk_type" value-type="String" />
+    <attribute name="tag" value-type="String" />
   </entity>
   <entity name="applierContainer">
     <attribute name="id" value-type="int" />

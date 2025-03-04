@@ -148,7 +148,7 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
-    public List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzAndOrg(String dcName, String azName, String orgName) {
+    public List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag(String dcName, String azName, String orgName, String tag) {
         throw new UnsupportedOperationException();
     }
 
