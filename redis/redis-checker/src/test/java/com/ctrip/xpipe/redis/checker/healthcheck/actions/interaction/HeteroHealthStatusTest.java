@@ -41,8 +41,8 @@ public class HeteroHealthStatusTest extends AbstractRedisTest {
         config = mock(HealthCheckConfig.class);
         when(config.getDelayConfig(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(
                 new DelayConfig("test", "test", "test").
-                        setDcLevelHealthyDelayMilli(2000).setClusterLevelHealthyDelayMilli(-2000).
-                        setDcLevelDelayDownAfterMilli(2000 * 8).setClusterLevelDelayDownAfterMilli(-2000 * 8));
+                        setDcLevelHealthyDelayMilli(2000).setClusterLevelHealthyDelayMilli(2000).
+                        setDcLevelDelayDownAfterMilli(2000 * 8).setClusterLevelDelayDownAfterMilli(2000 * 8));
         when(instance.getHealthCheckConfig()).thenReturn(config);
         healthStatus = new HeteroHealthStatus(instance, scheduled);
 
@@ -65,7 +65,8 @@ public class HeteroHealthStatusTest extends AbstractRedisTest {
     @Test
     public void testInstanceLongDelay() throws InterruptedException, TimeoutException {
         when(config.getDelayConfig(Mockito.any(),Mockito.any(),Mockito.any())).thenReturn(
-                new DelayConfig("test","test","test").setDcLevelHealthyDelayMilli(200));
+                new DelayConfig("test","test","test")
+                        .setDcLevelHealthyDelayMilli(200).setClusterLevelHealthyDelayMilli(200));
         when(config.instanceLongDelayMilli()).thenReturn(300);
         when(config.checkIntervalMilli()).thenReturn(100);
 
