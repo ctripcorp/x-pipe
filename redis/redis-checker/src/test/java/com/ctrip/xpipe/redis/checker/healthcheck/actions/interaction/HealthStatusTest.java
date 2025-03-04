@@ -524,6 +524,47 @@ public class HealthStatusTest extends AbstractRedisTest {
         assertEquals(HEALTHY, healthStatus.getState());
     }
 
+    @Test
+    public void testPingDownWithNegativeDistance() {
+        when(config.pingDownAfterMilli()).thenReturn(40);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(-20).setClusterLevelDelayDownAfterMilli(-40));
+
+        healthStatus.pongInit();
+        sleep(40 * 2 + 5);
+        healthStatus.healthStatusUpdate();
+        Assert.assertSame(healthStatus.getState(), HEALTH_STATE.DOWN);
+    }
+
+    @Test
+    public void testDelayDown() {
+        when(config.pingDownAfterMilli()).thenReturn(1000);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(20).setClusterLevelDelayDownAfterMilli(40));
+
+        healthStatus.pong();
+        healthStatus.delay(1);
+        sleep(40 * 2 + 5);
+        healthStatus.healthStatusUpdate();
+        Assert.assertSame(HEALTH_STATE.SICK, healthStatus.getState());
+    }
+
+    @Test
+    public void testDelayDownWithNegativeDistance() {
+        when(config.pingDownAfterMilli()).thenReturn(1000);
+        when(config.getDelayConfig(any(),any(),any())).thenReturn(
+                new DelayConfig("test","test","test")
+                        .setClusterLevelHealthyDelayMilli(-20).setClusterLevelDelayDownAfterMilli(-40));
+
+        healthStatus.pong();
+        healthStatus.delay(1);
+        sleep(40 * 2 + 5);
+        healthStatus.healthStatusUpdate();
+        Assert.assertSame(HEALTHY, healthStatus.getState());
+    }
+
     private void markup() {
         healthStatus.pong();
         healthStatus.delay(config.getDelayConfig("test","test","test").getClusterLevelHealthyDelayMilli()/2);
