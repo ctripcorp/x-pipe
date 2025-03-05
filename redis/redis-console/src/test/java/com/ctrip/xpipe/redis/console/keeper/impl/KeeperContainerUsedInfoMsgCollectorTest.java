@@ -89,7 +89,7 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
         DcMeta dc2 = Mockito.mock(DcMeta.class);
 
         // Test
-        Map<String, KeeperContainerUsedInfoModel> result = collector.generateKeeperContainerUsedInfoModels(redisMsgMap);
+        Map<String, KeeperContainerUsedInfoModel> result = collector.generateKeeperContainerUsedInfoModels(redisMsgMap, "jq");
 
         // Verify
         assertNotNull(result);
