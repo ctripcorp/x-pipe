@@ -10,7 +10,7 @@ import java.util.Map;
 
 public interface KeeperContainerUsedInfoAnalyzer {
 
-    void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap);
+    void updateKeeperContainerUsedInfo(String dcName, Map<String, KeeperContainerUsedInfoModel> modelMap);
 
     List<MigrationKeeperContainerDetailModel> getAllDcReadyToMigrationKeeperContainers();
 

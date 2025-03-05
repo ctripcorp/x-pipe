@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.command.AbstractGetAllDcCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.KeeperContainerInfoGetCommand;
@@ -16,7 +15,6 @@ import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -25,12 +23,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 
-public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService implements KeeperContainerUsedInfoAnalyzer {
+public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService implements KeeperContainerUsedInfoAnalyzer, CrossDcLeaderAware {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzer.class);
 
@@ -41,9 +40,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Map<String, KeeperContainerUsedInfoModel> currentDcAllKeeperContainerUsedInfoModelMap = new HashMap<>();
+    private Map<String, Map<String, KeeperContainerUsedInfoModel>> dcKeeperContainerUsedInfoMap = new ConcurrentHashMap<>();
 
-    private List<MigrationKeeperContainerDetailModel> keeperContainerMigrationResult = new ArrayList<>();
+    private Map<String, List<MigrationKeeperContainerDetailModel>> dcKeeperContainerMigrationResultMap = new ConcurrentHashMap<>();
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
@@ -56,10 +55,10 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @Override
-    public void updateKeeperContainerUsedInfo(Map<String, KeeperContainerUsedInfoModel> modelMap) {
+    public void updateKeeperContainerUsedInfo(String dcName, Map<String, KeeperContainerUsedInfoModel> modelMap) {
         modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsString()));
-        currentDcAllKeeperContainerUsedInfoModelMap = modelMap;
-        if (currentDcAllKeeperContainerUsedInfoModelMap.isEmpty()) return;
+        dcKeeperContainerUsedInfoMap.put(dcName, modelMap);
+        if (modelMap.isEmpty()) return;
         logger.info("[analyzeKeeperContainerUsedInfo] start analyze allKeeperContainerUsedInfoModelsList");
         executors.execute(new AbstractExceptionLogTask() {
             @Override
@@ -68,13 +67,14 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
                 transaction.logTransactionSwallowException("keeperContainer.analyze", currentDc, new Task() {
                     @Override
                     public void go() throws Exception {
-                        keeperContainerMigrationResult = migrationAnalyzer.getMigrationPlans(currentDcAllKeeperContainerUsedInfoModelMap);
+                        List<MigrationKeeperContainerDetailModel> migrationPlans = migrationAnalyzer.getMigrationPlans(dcKeeperContainerUsedInfoMap.get(dcName));
+                        dcKeeperContainerMigrationResultMap.put(dcName, migrationPlans);
                     }
 
                     @Override
                     public Map<String, Object> getData() {
                         Map<String, Object> transactionData = new HashMap<>();
-                        transactionData.put("keeperContainerSize", currentDcAllKeeperContainerUsedInfoModelMap.size());
+                        transactionData.put("keeperContainerSize", dcKeeperContainerUsedInfoMap.size());
                         return transactionData;
                     }
                 });
@@ -98,12 +98,16 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
 
     @Override
     public List<MigrationKeeperContainerDetailModel> getCurrentDcReadyToMigrationKeeperContainers() {
-        return keeperContainerMigrationResult;
+        List<MigrationKeeperContainerDetailModel> result = new ArrayList<>();
+        dcKeeperContainerMigrationResultMap.values().forEach(result::addAll);
+        return result;
     }
 
     @Override
     public List<KeeperContainerUsedInfoModel> getCurrentDcKeeperContainerUsedInfoModelsList() {
-        return new ArrayList<>(currentDcAllKeeperContainerUsedInfoModelMap.values());
+        List<KeeperContainerUsedInfoModel> result = new ArrayList<>();
+        dcKeeperContainerUsedInfoMap.values().forEach(map -> result.addAll(map.values()));
+        return result;
     }
 
     public <T> List<T> getAllDcResult(Supplier<List<T>> localDcResultSupplier, AbstractGetAllDcCommand<List<T>> command, List<T> result) {
@@ -139,4 +143,14 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
         this.executors = executors;
     }
 
+    @Override
+    public void isCrossDcLeader() {
+        //do nothing
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+        dcKeeperContainerUsedInfoMap.keySet().removeIf(dc -> !currentDc.equalsIgnoreCase(dc));
+        dcKeeperContainerMigrationResultMap.keySet().removeIf(dc -> !currentDc.equalsIgnoreCase(dc));
+    }
 }

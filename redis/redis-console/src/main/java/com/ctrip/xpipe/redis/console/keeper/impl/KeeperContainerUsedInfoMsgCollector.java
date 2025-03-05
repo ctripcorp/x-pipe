@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
@@ -45,7 +45,7 @@ import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
 import static com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
 
 @Component
-public class KeeperContainerUsedInfoMsgCollector extends AbstractService implements ConsoleLeaderAware {
+public class KeeperContainerUsedInfoMsgCollector extends AbstractService implements ConsoleLeaderAware, CrossDcLeaderAware {
 
     @Autowired
     private MetaCache metaCache;
@@ -75,6 +75,10 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     private DynamicDelayPeriodTask keeperContainerUsedInfoMsgCollectorTask;
 
+    private ScheduledExecutorService extraSyncDCScheduled;
+
+    private DynamicDelayPeriodTask extraSyncDCKeeperContainerUsedInfoMsgCollectorTask;
+
     protected Map<Integer, Pair<Map<HostPort, RedisMsg>, Date>> redisMasterMsgCache = new ConcurrentHashMap<>();
 
     private Map<String, CheckerReportSituation> dcCheckerReportSituationMap = new HashMap<>();
@@ -98,8 +102,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     @PostConstruct
     public void init() {
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("KeeperContainerUsedInfoMsgCollector"));
-        this.keeperContainerUsedInfoMsgCollectorTask = new DynamicDelayPeriodTask("getAllCurrentDcRedisMsg",
-                this::getAllCurrentDcRedisMsgAndCalculate, () -> config.getKeeperCheckerIntervalMilli(), scheduled);
+        this.keeperContainerUsedInfoMsgCollectorTask = new DynamicDelayPeriodTask("getAllCurrentDcRedisMsg", () -> getDcRedisMsgAndCalculate(currentDc), () -> config.getKeeperCheckerIntervalMilli(), scheduled);
+        this.extraSyncDCScheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("ExtraSyncDCKeeperContainerUsedInfoMsgCollector"));
+        this.extraSyncDCKeeperContainerUsedInfoMsgCollectorTask = new DynamicDelayPeriodTask("getExtraSyncDCRedisMsg", () -> consoleConfig.getExtraSyncDC().forEach(this::getDcRedisMsgAndCalculate), () -> config.getKeeperCheckerIntervalMilli(), extraSyncDCScheduled);
     }
 
     public void saveMsg(int index, Map<HostPort, RedisMsg> redisMsgMap) {
@@ -107,7 +112,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         redisMasterMsgCache.put(index, new Pair<>(redisMsgMap, new Date()));
     }
 
-    protected void getAllCurrentDcRedisMsgAndCalculate() {
+    protected void getDcRedisMsgAndCalculate(String dcName) {
         Map<HostPort, RedisMsg> allRedisMasterMsg = new HashMap<>();
         Map<String, CheckerReportSituation> tmpDcCheckerReportSituationMap = new HashMap<>();
         for (Map.Entry<String, String> entry : consoleConfig.getConsoleDomains().entrySet()) {
@@ -128,9 +133,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         dcCheckerReportSituationMap = tmpDcCheckerReportSituationMap;
         if (allRedisMasterMsg.isEmpty()) return;
 
-        Map<String, KeeperContainerUsedInfoModel> modelMap = generateKeeperContainerUsedInfoModels(allRedisMasterMsg);
+        Map<String, KeeperContainerUsedInfoModel> modelMap = generateKeeperContainerUsedInfoModels(allRedisMasterMsg, dcName);
         reportKeeperData(modelMap);
-        keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(modelMap);
+        keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(dcName, modelMap);
     }
 
     public DcCheckerReportMsg getCurrentDcRedisMasterMsg() {
@@ -159,7 +164,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    protected Map<String, KeeperContainerUsedInfoModel> generateKeeperContainerUsedInfoModels(Map<HostPort, RedisMsg> redisMsgMap) {
+    protected Map<String, KeeperContainerUsedInfoModel> generateKeeperContainerUsedInfoModels(Map<HostPort, RedisMsg> redisMsgMap, String selectedDcName) {
         Map<String, KeeperContainerUsedInfoModel> result = new HashMap<>();
         Map<String, Object> checkedCluster = new HashMap<>();
         for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
@@ -170,8 +175,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                     continue;
                 }
                 checkedCluster.put(clusterMeta.getId(), null);
-                ClusterMeta currentDcMeta = getCurrentDcMeta(clusterMeta);
-                if (currentDcMeta == null) {
+                ClusterMeta selectedDcMeta = getDcMeta(clusterMeta, selectedDcName);
+                if (selectedDcMeta == null) {
                     continue;
                 }
                 ClusterMeta masterDcMeta = dcMeta.getId().equals(clusterMeta.getActiveDc()) ? clusterMeta : metaCache.getXpipeMeta().findDc(clusterMeta.getActiveDc()).findCluster(clusterMeta.getId());
@@ -181,15 +186,15 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                             RedisMsg redisMsg = redisMsgMap.get(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
                             if (redisMsg != null) {
                                 clusterAllRedisMsg.addRedisMsg(redisMsg);
-                                ShardMeta currentDcShardMeta = currentDcMeta.findShard(shardMeta.getId());
-                                generateKeeperMsg(currentDc, clusterMeta.getId(), currentDcShardMeta.getId(), currentDcShardMeta.getKeepers(), result, redisMsg);
+                                ShardMeta currentDcShardMeta = selectedDcMeta.findShard(shardMeta.getId());
+                                generateKeeperMsg(selectedDcName, clusterMeta.getId(), currentDcShardMeta.getId(), currentDcShardMeta.getKeepers(), result, redisMsg);
                             }
                         }
                     }
                 }
-//                reportClusterData(clusterMeta.getId(), clusterAllRedisMsg);
+                reportClusterData(clusterMeta.getId(), clusterAllRedisMsg, selectedDcName);
             }
-            if (currentDc.equals(dcMeta.getId())) {
+            if (selectedDcName.equals(dcMeta.getId())) {
                 dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
                     if (!result.containsKey(keeperContainerMeta.getIp())) {
                         result.put(keeperContainerMeta.getIp(),  getKeeperBasicModel(keeperContainerMeta.getIp(), dcMeta.getId()));
@@ -222,17 +227,17 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    protected ClusterMeta getCurrentDcMeta(ClusterMeta clusterMeta) {
-        if (Objects.equals(clusterMeta.getActiveDc(), currentDc)) {
-            return metaCache.getXpipeMeta().findDc(currentDc).findCluster(clusterMeta.getId());
+    protected ClusterMeta getDcMeta(ClusterMeta clusterMeta, String dcName) {
+        if (Objects.equals(clusterMeta.getActiveDc(), dcName)) {
+            return metaCache.getXpipeMeta().findDc(dcName).findCluster(clusterMeta.getId());
         }
         if (clusterMeta.getBackupDcs() == null || clusterMeta.getBackupDcs().isEmpty()) {
             return null;
         }
         String[] split = clusterMeta.getBackupDcs().split(",");
         for (String dc : split) {
-            if (Objects.equals(dc, currentDc)) {
-                return metaCache.getXpipeMeta().findDc(currentDc).findCluster(clusterMeta.getId());
+            if (Objects.equals(dc, dcName)) {
+                return metaCache.getXpipeMeta().findDc(dcName).findCluster(clusterMeta.getId());
             }
         }
         return null;
@@ -272,13 +277,13 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         return model;
     }
 
-    public void reportClusterData(String clusterName, RedisMsg clusterAllRedisMsg) {
-        reportClusterData(clusterName, CLUSTER_DATA_TYPE, clusterAllRedisMsg.getUsedMemory());
-        reportClusterData(clusterName, CLUSTER_TRAFFIC_TYPE, clusterAllRedisMsg.getInPutFlow());
+    public void reportClusterData(String clusterName, RedisMsg clusterAllRedisMsg, String dcName) {
+        reportClusterData(clusterName, CLUSTER_DATA_TYPE, clusterAllRedisMsg.getUsedMemory(), dcName);
+        reportClusterData(clusterName, CLUSTER_TRAFFIC_TYPE, clusterAllRedisMsg.getInPutFlow(), dcName);
     }
 
-    public void reportClusterData(String clusterName, String type, long value) {
-        MetricData data = new MetricData(type, currentDc, clusterName, null);
+    public void reportClusterData(String clusterName, String type, long value, String dcName) {
+        MetricData data = new MetricData(type, dcName, clusterName, null);
         data.setValue(value);
         data.setTimestampMilli(System.currentTimeMillis());
         try {
@@ -346,6 +351,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         try {
             keeperContainerUsedInfoMsgCollectorTask.stop();
             this.scheduled.shutdownNow();
+            extraSyncDCKeeperContainerUsedInfoMsgCollectorTask.stop();
+            this.extraSyncDCScheduled.shutdownNow();
         } catch (Throwable th) {
             logger.info("[preDestroy] keeperContainerUsedInfoMsgCollectorTask destroy fail", th);
         }
@@ -355,7 +362,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
     public void isleader() {
         try {
             logger.debug("[isleader] become leader");
-            keeperContainerUsedInfoMsgCollectorTask.start();
+            if (!consoleConfig.getExtraSyncDC().contains(currentDc.toUpperCase())) {
+                keeperContainerUsedInfoMsgCollectorTask.start();
+            }
         } catch (Throwable th) {
             logger.info("[isleader] keeperContainerUsedInfoMsgCollectorTask start fail", th);
         }
@@ -368,6 +377,26 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             keeperContainerUsedInfoMsgCollectorTask.stop();
         } catch (Throwable th) {
             logger.info("[notLeader] keeperContainerUsedInfoMsgCollectorTask stop fail", th);
+        }
+    }
+
+    @Override
+    public void isCrossDcLeader() {
+        try {
+            logger.debug("[isCrossDcLeader] become cross dc leader");
+            extraSyncDCKeeperContainerUsedInfoMsgCollectorTask.start();
+        } catch (Throwable th) {
+            logger.info("[isCrossDcLeader] extraSyncDCKeeperContainerUsedInfoMsgCollectorTask start fail", th);
+        }
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+        try {
+            logger.debug("[isCrossDcLeader] loss cross dc leader");
+            extraSyncDCKeeperContainerUsedInfoMsgCollectorTask.stop();
+        } catch (Throwable th) {
+            logger.info("[isCrossDcLeader] extraSyncDCKeeperContainerUsedInfoMsgCollectorTask stop fail", th);
         }
     }
 }
