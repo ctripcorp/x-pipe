@@ -12,6 +12,8 @@ public class KeeperContainerUsedInfoModel {
 
     private String org;
 
+    private String tag;
+
     private String az;
 
     private String updateTime;
@@ -62,6 +64,7 @@ public class KeeperContainerUsedInfoModel {
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
         this.org = model.getOrg();
+        this.tag = model.getTag();
         this.az = model.getAz();
         this.activeInputFlow = model.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow();
         this.totalInputFlow = model.getTotalInputFlow() + dcClusterShard.getValue().getInputFlow();
@@ -78,19 +81,6 @@ public class KeeperContainerUsedInfoModel {
         this.diskSize = model.getDiskSize();
         this.diskUsed = model.getDiskUsed();
         this.diskType = model.getDiskType();
-    }
-
-    public void addModel(KeeperContainerUsedInfoModel model) {
-        if (!Objects.equals(model.keeperIp, keeperIp) || !Objects.equals(model.dcName, dcName) || !Objects.equals(model.org, org) || !Objects.equals(model.az, az)) {
-            return;
-        }
-        activeInputFlow += model.activeInputFlow;
-        totalInputFlow += model.totalInputFlow;
-        activeRedisUsedMemory += model.activeRedisUsedMemory;
-        totalRedisUsedMemory += model.totalRedisUsedMemory;
-        activeKeeperCount += model.activeKeeperCount;
-        totalKeeperCount += model.totalKeeperCount;
-        detailInfo.putAll(model.detailInfo);
     }
 
     public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
@@ -154,6 +144,15 @@ public class KeeperContainerUsedInfoModel {
 
     public KeeperContainerUsedInfoModel setOrg(String org) {
         this.org = org;
+        return this;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public KeeperContainerUsedInfoModel setTag(String tag) {
+        this.tag = tag;
         return this;
     }
 
@@ -323,8 +322,9 @@ public class KeeperContainerUsedInfoModel {
                 "keeperIp='" + keeperIp + '\'' +
                 ", dcName='" + dcName + '\'' +
                 ", org='" + org + '\'' +
+                ", tag='" + tag + '\'' +
                 ", az='" + az + '\'' +
-                ", updateTime=" + updateTime +
+                ", updateTime='" + updateTime + '\'' +
                 ", activeInputFlow=" + activeInputFlow +
                 ", totalInputFlow=" + totalInputFlow +
                 ", inputFlowStandard=" + inputFlowStandard +

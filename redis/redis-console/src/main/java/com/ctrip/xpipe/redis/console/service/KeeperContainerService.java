@@ -26,7 +26,7 @@ public interface KeeperContainerService {
 
 	List<KeeperContainerInfoModel> findAllInfos();
 	KeeperContainerInfoModel findKeeperContainerInfoModelById(long id);
-	List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzAndOrg(String dcName, String azName, String orgName);
+	List<KeeperContainerInfoModel> findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag(String dcName, String azName, String orgName, String tag);
 
 	void addKeeperContainer(KeeperContainerCreateInfo createInfo);
 

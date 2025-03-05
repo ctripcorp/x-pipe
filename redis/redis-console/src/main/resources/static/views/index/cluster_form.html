@@ -111,6 +111,16 @@
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> Tag </label>
+                    <div class="col-sm-6">
+                        <textarea rows="1" style="width: 330px;"
+                                  ng-model="cluster.tag">
+
+                        </textarea>
+                    </div>
+                </div>
+
                 <addshard xpipe-pre-create-shard="preCreateShard" xpipe-create-shard="createShard"
                           ng-show="operateType == 'create' && !isHeteroCluster" />
 
@@ -181,6 +191,14 @@
 
                     <div class="col-sm-7">
                         <label ng-bind="cluster.clusterAdminEmails"></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> Tag </label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="cluster.tag"></label>
                     </div>
                 </div>
 

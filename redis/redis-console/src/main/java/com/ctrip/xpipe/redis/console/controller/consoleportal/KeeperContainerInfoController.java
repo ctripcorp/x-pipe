@@ -74,14 +74,13 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = {"/keepercontainers/dc/{dcName}/az/{azName}/org/{orgName}",
-                            "/keepercontainers/dc/{dcName}/az/{azName}/org",
-                            "/keepercontainers/dc/{dcName}/az/org/{orgName}",
-                            "/keepercontainers/dc/{dcName}/az/org"},
-                    method = RequestMethod.GET)
-    public List<KeeperContainerInfoModel> getAvailableKeeperContainersByDcAzAndOrg(@PathVariable String dcName,
-                        @PathVariable(required = false) String azName, @PathVariable(required = false) String orgName) {
-        return keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzAndOrg(dcName, azName, orgName);
+    @RequestMapping(value = "/keepercontainers", method = RequestMethod.GET)
+    public List<KeeperContainerInfoModel> getAvailableKeeperContainersByDcAzAndOrg(
+            @RequestParam String dcName,
+            @RequestParam(required = false) String azName,
+            @RequestParam(required = false) String orgName,
+            @RequestParam(required = false) String tag) {
+        return keeperContainerService.findAvailableKeeperContainerInfoModelsByDcAzOrgAndTag(dcName, azName, orgName, tag);
     }
 
     @RequestMapping(value = "/keepercontainers/overload/all", method = RequestMethod.GET)
