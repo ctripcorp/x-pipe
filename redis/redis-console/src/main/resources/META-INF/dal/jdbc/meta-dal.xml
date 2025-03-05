@@ -1703,12 +1703,16 @@
 			<readset name="DISK_TYPE">
 				<member name="keepercontainer_disk_type" />
 			</readset>
+			<readset name="TAG">
+				<member name="tag" />
+			</readset>
 
 			<readset name="BASE_INFO">
 				<readset-ref name="CONTAINER_ADDRESS" />
 				<readset-ref name="CONTAINER_ACTIVE"/>
 				<readset-ref name="AZ_INFO"/>
 				<readset-ref name="DISK_TYPE"/>
+				<readset-ref name="TAG"/>
 				<readset-ref name="NAME" relation-name="org-info" />
 				<readset-ref name="NAME" relation-name="dc-info" />
 			</readset>
@@ -1780,6 +1784,7 @@
 			<query name="find-keeper-container-by-cluster" type="SELECT" multiple="true">
 				<param name="dc-name"/>
 				<param name="org-id" />
+				<param name="tag" />
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
@@ -1789,6 +1794,7 @@
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
 					AND <FIELD name='keepercontainer-org-id'/> = ${org-id}
+					AND <FIELD name='tag'/> = ${tag}
 					AND kit.redis_role = 'keeper'
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count

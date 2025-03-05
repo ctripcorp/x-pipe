@@ -19,7 +19,13 @@ angular
         },
         find_available_keepers_by_dc_az_and_org: {
             method: 'GET',
-            url: '/console/keepercontainers/dc/:dcName/az/:azName/org/:orgName',
+            url: '/console/keepercontainers',
+            params: {
+                dcName: '@dcName',
+                azName: '@azName',
+                orgName: '@orgName',
+                tag: '@tag'
+            },
             isArray : true
         },
         get_all_infos: {
@@ -131,12 +137,13 @@ angular
         return d.promise;
     }
 
-    function findAvailableKeepersByDcAzAndOrg(dcName, azName, orgName) {
+    function findAvailableKeepersByDcAzOrgAndTag(dcName, azName, orgName, tag) {
         var d = $q.defer();
         resource.find_available_keepers_by_dc_az_and_org({
                             dcName: dcName,
                             azName: azName,
-                            orgName: orgName
+                            orgName: orgName,
+                            tag: tag
                         },
                         function (result) {
                             d.resolve(result);
@@ -206,7 +213,7 @@ angular
         return d.promise;
     }
 
-    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType) {
+    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag) {
         var d = $q.defer();
         resource.add_keepercontainer({}, {
                     addr : addr,
@@ -214,7 +221,8 @@ angular
                     orgName : orgName,
                     azName : azName,
                     active :active,
-                    diskType : diskType
+                    diskType : diskType,
+                    tag : tag,
                 },
                 function(result) {
                 d.resolve(result);
@@ -224,7 +232,7 @@ angular
         return d.promise;
     }
 
-    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType) {
+    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
                     addr : addr,
@@ -232,7 +240,8 @@ angular
                     orgName : orgName,
                     azName : azName,
                     active :active,
-                    diskType : diskType
+                    diskType : diskType,
+                    tag : tag
                 },
                 function(result) {
                 d.resolve(result);
@@ -346,7 +355,7 @@ angular
         findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
         findKeepercontainerById : findKeepercontainerById,
         getAllAvailableZoneInfoModelsByDc : getAllAvailableZoneInfoModelsByDc,
-        findAvailableKeepersByDcAzAndOrg : findAvailableKeepersByDcAzAndOrg,
+        findAvailableKeepersByDcAzOrgAndTag : findAvailableKeepersByDcAzOrgAndTag,
         getAllInfos: getAllInfos,
         getAllOrganizations: getAllOrganizations,
         getAllDiskTypes: getAllDiskTypes,
