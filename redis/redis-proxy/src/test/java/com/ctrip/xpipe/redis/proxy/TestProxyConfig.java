@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
 import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
+import com.ctrip.xpipe.redis.proxy.ssl.GenerateCertificates;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -106,29 +107,45 @@ public class TestProxyConfig implements ProxyConfig {
         return new ZstdEncoder();
     }
 
+    String certDir = System.getProperty("java.io.tmpdir");
+
+    static {
+        try {
+            GenerateCertificates.generateFile();
+        } catch (Exception e) {
+        }
+    }
+
+    static {
+        try {
+            GenerateCertificates.generateFile();
+        } catch (Exception e) {
+        }
+    }
+
     @Override
     public String getServerCertChainFilePath() {
-        return "src/test/resources/cert/server.crt";
+        return certDir + "/server.crt";
     }
 
     @Override
     public String getClientCertChainFilePath() {
-        return "src/test/resources/cert/client.crt";
+        return certDir + "/client.crt";
     }
 
     @Override
     public String getServerKeyFilePath() {
-        return "src/test/resources/cert/pkcs8_server.key";
+        return certDir + "/pkcs8_server.key";
     }
 
     @Override
     public String getClientKeyFilePath() {
-        return "src/test/resources/cert/pkcs8_client.key";
+        return certDir + "/pkcs8_client.key";
     }
 
     @Override
     public String getRootFilePath() {
-        return "src/test/resources/cert/ca.crt";
+        return certDir + "/ca.crt";
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
