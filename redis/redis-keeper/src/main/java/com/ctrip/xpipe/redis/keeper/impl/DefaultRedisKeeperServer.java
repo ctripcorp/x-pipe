@@ -422,6 +422,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 		this.leaderElector.dispose();
+		masterConfigEventLoopGroup.shutdownGracefully();
 		masterEventLoopGroup.shutdownGracefully();
 		rdbOnlyEventLoopGroup.shutdownGracefully();
 		bossGroup.shutdownGracefully();
