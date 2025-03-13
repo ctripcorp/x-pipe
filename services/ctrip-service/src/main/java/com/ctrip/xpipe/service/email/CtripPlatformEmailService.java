@@ -94,8 +94,14 @@ public class CtripPlatformEmailService implements EmailService {
         try {
             String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
             List<String> emailIDList = decodeListString(emailIDListStr);
+            Calendar current = Calendar.getInstance();
+            Calendar oneHourAgo = Calendar.getInstance();
+            oneHourAgo.add(Calendar.HOUR, -1);
+
+            List<Integer> brands = Arrays.asList(1);
+
             GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT));
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT, oneHourAgo, current,brands));
 
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
@@ -122,12 +128,10 @@ public class CtripPlatformEmailService implements EmailService {
         request.setRecipient(email.getRecipients());
         request.setCc(email.getCCers());
         request.setSubject(email.getSubject());
-        request.setCharset(email.getCharset());
         request.setBodyContent(email.getBodyContent());
 
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR, 1);
-        request.setExpiredTime(calendar);
         return request;
     }
 
