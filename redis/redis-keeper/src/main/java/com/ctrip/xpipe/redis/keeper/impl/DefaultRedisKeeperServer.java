@@ -264,6 +264,28 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	}
 
+	@Override
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+		return getCurrentReplicationStore().locateContinueGtidSet(gtidSet);
+	}
+
+	@Override
+	public void updateGtidSet(GtidSet gtidSet) {
+		this.getCurrentReplicationStore().updateGtidSet(gtidSet);
+	}
+
+	@Override
+	public void switchToPSync(String replId, long offset) {
+		getCurrentReplicationStore().switchToPSync(replId, offset);
+		closeSlaves("toPSync " + replId + ":" + offset);
+	}
+
+	@Override
+	public void switchToXSync(GtidSet gtidSet) {
+		getCurrentReplicationStore().switchToXSync(gtidSet);
+		closeSlaves("toXSync " + gtidSet);
+	}
+
 	private void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();

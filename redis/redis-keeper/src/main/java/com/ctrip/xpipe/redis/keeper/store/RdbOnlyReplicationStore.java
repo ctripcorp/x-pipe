@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
@@ -24,6 +25,31 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public RdbOnlyReplicationStore(DumpedRdbStore dumpedRdbStore) {
 		this.dumpedRdbStore = dumpedRdbStore;
 		metaStore = new MetaStore() {
+
+			@Override
+			public ReplStage getPreReplStage() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplStage getCurrentReplStage() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public GtidSet getLostGtidSet() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void switchProto(ReplStage newReplStage) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void updateLostGtidSet(GtidSet lost) {
+				throw new UnsupportedOperationException();
+			}
 
 			@Override
 			public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
@@ -144,6 +170,31 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 				throw new UnsupportedOperationException();
 			}
 		};
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void updateGtidSet(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void switchToPSync(String replId, long offset) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void switchToXSync(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Pair<GtidSet, GtidSet> getGtidSet() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

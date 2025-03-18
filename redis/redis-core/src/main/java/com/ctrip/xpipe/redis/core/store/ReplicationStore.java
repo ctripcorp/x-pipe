@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.store;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
@@ -17,6 +18,19 @@ import java.util.concurrent.ExecutorService;
 public interface ReplicationStore extends Closeable, Destroyable {
 
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
+
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet);
+
+	void updateGtidSet(GtidSet gtidSet);
+
+	void switchToPSync(String replId, long offset);
+
+	void switchToXSync(GtidSet gtidSet);
+
+	/**
+	 * @return pair of GtidSet.executed and GtidSet.lost
+	 */
+	Pair<GtidSet, GtidSet> getGtidSet();
 
 	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
 

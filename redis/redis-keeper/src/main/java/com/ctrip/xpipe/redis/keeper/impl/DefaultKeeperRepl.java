@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 
 import java.io.IOException;
 
@@ -12,6 +13,26 @@ import java.io.IOException;
  *         May 23, 2016
  */
 public class DefaultKeeperRepl implements KeeperRepl {
+
+	@Override
+	public ReplStage preStage() {
+		return replicationStore.getMetaStore().getPreReplStage();
+	}
+
+	@Override
+	public ReplStage currentStage() {
+		return replicationStore.getMetaStore().getCurrentReplStage();
+	}
+
+	@Override
+	public GtidSet getGtidSetExecuted() {
+		return replicationStore.getGtidSet().getKey();
+	}
+
+	@Override
+	public GtidSet getGtidSetLost() {
+		return replicationStore.getGtidSet().getValue();
+	}
 
 	private ReplicationStore replicationStore;
 

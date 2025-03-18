@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
@@ -16,8 +18,40 @@ import java.io.IOException;
  */
 public class DefaultMetaStore extends AbstractMetaStore{
 
+	private ReplStage preReplStage;
+
+	private ReplStage currentReplStage;
+
+	private GtidSet lost = new GtidSet("");
+
 	public DefaultMetaStore(File baseDir, String keeperRunid) {
 		super(baseDir, keeperRunid);
+	}
+
+	@Override
+	public ReplStage getPreReplStage() {
+		return preReplStage;
+	}
+
+	@Override
+	public ReplStage getCurrentReplStage() {
+		return currentReplStage;
+	}
+
+	@Override
+	public void updateLostGtidSet(GtidSet lost) {
+		this.lost = lost;
+	}
+
+	@Override
+	public GtidSet getLostGtidSet() {
+		return lost;
+	}
+
+	@Override
+	public void switchProto(ReplStage newReplStage) {
+		if (null != currentReplStage) this.preReplStage = currentReplStage;
+		this.currentReplStage = newReplStage;
 	}
 
 	@Override

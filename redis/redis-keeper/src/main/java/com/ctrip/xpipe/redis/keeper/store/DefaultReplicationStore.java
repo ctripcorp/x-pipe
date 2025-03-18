@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -117,6 +118,36 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		removeUnusedRdbFiles();
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+		// TODO: impl in cmdStore
+		return new XSyncContinue(gtidSet, gtidSet, cmdStore.totalLength());
+	}
+
+	@Override
+	public void updateGtidSet(GtidSet gtidSet) {
+		GtidSet executed = new GtidSet(""); // TODO: get from cmdStore
+		GtidSet lost = gtidSet.subtract(executed);
+		metaStore.updateLostGtidSet(lost);
+	}
+
+	@Override
+	public void switchToPSync(String replId, long offset) {
+		ReplStage newReplStage = new ReplStage(replId, offset, cmdStore.totalLength());
+		metaStore.switchProto(newReplStage);
+	}
+
+	@Override
+	public void switchToXSync(GtidSet gtidSet) {
+		ReplStage newReplStage = new ReplStage(gtidSet, cmdStore.totalLength());
+		metaStore.switchProto(newReplStage);
+	}
+
+	@Override
+	public Pair<GtidSet, GtidSet> getGtidSet() {
+		return Pair.of(new GtidSet(""), metaStore.getLostGtidSet());
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
