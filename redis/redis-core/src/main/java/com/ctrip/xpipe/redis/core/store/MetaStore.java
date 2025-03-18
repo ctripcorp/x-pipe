@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 import java.io.IOException;
@@ -17,6 +18,16 @@ public interface MetaStore {
 	public static final String METHOD_BECOME_ACTIVE = "becomeActive";
 	
 	public static final String METHOD_BECOME_BACKUP = "becomeBackup";
+
+	ReplStage getPreReplStage();
+
+	ReplStage getCurrentReplStage();
+
+	GtidSet getLostGtidSet();
+
+	void switchProto(ReplStage newReplStage);
+
+	void updateLostGtidSet(GtidSet lost);
 
 	String getReplId();
 	
