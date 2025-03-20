@@ -281,8 +281,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet) {
-		getCurrentReplicationStore().switchToXSync(gtidSet);
+	public void switchToXSync(GtidSet gtidSet, String masterUuid) {
+		getCurrentReplicationStore().switchToXSync(gtidSet, masterUuid);
 		closeSlaves("toXSync " + gtidSet);
 	}
 

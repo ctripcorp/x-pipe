@@ -188,7 +188,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet) {
+	public void switchToXSync(GtidSet gtidSet, String masterUuid) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -244,6 +244,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	
 	@Override
 	public long firstAvailableOffset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long backlogBeginOffset() {
 		throw new UnsupportedOperationException();
 	}
 

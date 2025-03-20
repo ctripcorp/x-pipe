@@ -769,4 +769,24 @@ public class GtidSetTest {
         Assert.assertEquals(new GtidSet("a1:5-10:15-25"), current.retainAll(other));
     }
 
+    @Test
+    public void testSymmetricDiff() {
+        GtidSet self = new GtidSet("A:1-10:15-25,B:1-100");
+        GtidSet other = new GtidSet("A:11-14,B:25-50,C:1-30:50-60");
+        Assert.assertEquals(new GtidSet("A:1-25,B:1-24:51-100,C:1-30:50-60"), self.symmetricDiff(other));
+        self = new GtidSet("A:1-100");
+        other = new GtidSet("B:1-25");
+        Assert.assertEquals(new GtidSet("A:1-100,B:1-25"), self.symmetricDiff(other));
+        self = new GtidSet("B:1-15");
+        other = new GtidSet("A:1-10,B:1-30,C:1-15");
+        Assert.assertEquals(new GtidSet("A:1-10,B:16-30,C:1-15"), self.symmetricDiff(other));
+        Assert.assertEquals(new GtidSet("A:1-10,B:16-30,C:1-15"), other.symmetricDiff(self));
+    }
+
+    @Test
+    public void testItemCnt() {
+        GtidSet gtidSet = new GtidSet("A:1-10:15-20:35-35,B:1-50,C:0");
+        Assert.assertEquals(67, gtidSet.itemCnt());
+    }
+
 }

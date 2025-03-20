@@ -25,7 +25,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void switchToPSync(String replId, long offset);
 
-	void switchToXSync(GtidSet gtidSet);
+	void switchToXSync(GtidSet gtidSet, String masterUuid);
 
 	/**
 	 * @return pair of GtidSet.executed and GtidSet.lost
@@ -67,6 +67,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long getEndOffset();
 	
 	long firstAvailableOffset();
+
+	long backlogBeginOffset();
 
 	GtidSet getBeginGtidSet() throws IOException;
 

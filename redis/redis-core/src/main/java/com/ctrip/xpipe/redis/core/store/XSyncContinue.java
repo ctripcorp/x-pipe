@@ -19,4 +19,15 @@ public class XSyncContinue {
         this.backlogOffset = backlogOffset;
     }
 
+    public GtidSet getContinueGtidSet() {
+        return continueGtidSet;
+    }
+
+    public GtidSet getBacklogGtidSet() {
+        return backlogGtidSet;
+    }
+
+    public long getBacklogOffset() {
+        return backlogOffset;
+    }
 }
