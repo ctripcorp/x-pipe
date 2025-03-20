@@ -9,30 +9,98 @@ public class ReplStage {
         XSYNC
     }
 
+    // common
     ReplProto proto;
 
-    // for PSYNC proto
     String replId;
 
-    long beginOffset;
+    long begOffsetBacklog;
+
+    long begOffsetRepl;
+
+    // for PSYNC proto
+    String replId2;
+
+    long secondReplOffset;
 
     // for XSYNC proto
+    String masterUuid;
+
     GtidSet beginGtidset;
 
-    // offset of cmd files
-    long backlogOffset;
+    public boolean shiftReplId(String replId, long replOffset) {
+        if (this.proto != ReplProto.PSYNC) {
+            return false;
+        }
 
-    public ReplStage(String replId, long beginOffset, long backlogOffset) {
+        this.replId2 = this.replId;
+        this.secondReplOffset = replOffset;
+        this.replId = replId;
+        return true;
+    }
+
+    public boolean shiftMasterUuid(String masterUuid) {
+        if (this.proto != ReplProto.XSYNC) {
+            return false;
+        }
+
+        this.masterUuid = masterUuid;
+        return true;
+    }
+
+    public ReplStage(String replId, long replOffset, long backlogOffset) {
         this.proto = ReplProto.PSYNC;
         this.replId = replId;
-        this.beginOffset = beginOffset;
-        this.backlogOffset = backlogOffset;
+        this.begOffsetRepl = replOffset;
+        this.begOffsetBacklog = backlogOffset;
     }
 
-    public ReplStage(GtidSet gtidSet, long backlogOffset){
+    public ReplStage(GtidSet gtidSet, String masterUuid, long backlogOffset){
         this.proto = ReplProto.XSYNC;
         this.beginGtidset = gtidSet;
-        this.backlogOffset = backlogOffset;
+        this.masterUuid = masterUuid;
+        this.begOffsetBacklog = backlogOffset;
     }
 
+    public long replOffset2BacklogOffset(long replOffset) {
+        if (this.proto != ReplProto.PSYNC || replOffset < this.begOffsetRepl) return -1L;
+        return replOffset - this.begOffsetRepl + this.begOffsetBacklog;
+    }
+
+    public long backlogOffset2ReplOffset(long backlogOffset) {
+        if (this.proto != ReplProto.XSYNC || backlogOffset < this.begOffsetBacklog) return -1L;
+        return backlogOffset - this.begOffsetBacklog + this.begOffsetRepl;
+    }
+
+    public ReplProto getProto() {
+        return proto;
+    }
+
+    public String getReplId() {
+        return replId;
+    }
+
+    public String getMasterUuid() {
+        return masterUuid;
+    }
+
+    public String getReplId2() {
+        return replId2;
+    }
+
+    public long getSecondReplOffset() {
+        return secondReplOffset;
+    }
+
+    public GtidSet getBeginGtidset() {
+        return beginGtidset;
+    }
+
+    public long getBegOffsetBacklog() {
+        return begOffsetBacklog;
+    }
+
+    public long getBegOffsetRepl() {
+        return begOffsetRepl;
+    }
 }

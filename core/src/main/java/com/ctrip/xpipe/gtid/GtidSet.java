@@ -64,6 +64,15 @@ public class GtidSet {
         }
     }
 
+    public int itemCnt() {
+        int cnt = 0;
+        for (UUIDSet uuidSet: map.values()) {
+            if (uuidSet.isZero()) continue;
+            cnt += uuidSet.itemCnt();
+        }
+        return cnt;
+    }
+
     public byte[] encode() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteHelper.writeUnsignedInt64LittleEndian(map.size(), out);
@@ -264,6 +273,16 @@ public class GtidSet {
         }
 
         return new GtidSet(clone.toString());  // transfer UUID:1-10:11-20 to UUID:1-20
+    }
+
+    public GtidSet symmetricDiff(GtidSet other) {
+        if (null == other || other.map.isEmpty()) {
+            return clone();
+        }
+
+        GtidSet union = union(other);
+        GtidSet inter = retainAll(other);
+        return union.subtract(inter);
     }
 
     private void removeInterval(UUIDSet uuidSet, Interval other) {
@@ -504,6 +523,15 @@ public class GtidSet {
             if (intervals.size() > 1) {
                 joinAdjacentIntervals(0);
             }
+        }
+
+        public int itemCnt() {
+            int cnt = 0;
+            for (Interval interval: intervals) {
+                cnt += interval.end + 1 - interval.start;
+            }
+
+            return cnt;
         }
 
         private boolean isZero() {
@@ -845,6 +873,11 @@ public class GtidSet {
                 sb.append(iter.next());
             }
             return sb.toString();
+        }
+
+        @Override
+        protected UUIDSet clone() {
+            return new UUIDSet();
         }
     }
 

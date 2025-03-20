@@ -42,6 +42,11 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
+	public long backlogBeginOffset() {
+		return replicationStore.backlogBeginOffset();
+	}
+
+	@Override
 	public long getBeginOffset() {
 		return replicationStore.firstAvailableOffset();
 	}

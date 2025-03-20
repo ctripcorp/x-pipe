@@ -35,7 +35,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 
 	void switchToPSync(String replId, long offset);
 
-	void switchToXSync(GtidSet gtidSet);
+	void switchToXSync(GtidSet gtidSet, String masterUuid);
 
 	void clientDisconnected(Channel channel);
 	

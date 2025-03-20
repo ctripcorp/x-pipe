@@ -25,7 +25,9 @@ public interface KeeperRepl {
 	String replId2();
 	
 	Long   secondReplIdOffset();
-	
+
+	long backlogBeginOffset();
+
 	long getBeginOffset();
 	
 	long getEndOffset();

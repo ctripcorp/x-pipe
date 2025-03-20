@@ -140,8 +140,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet) {
-		ReplStage newReplStage = new ReplStage(gtidSet, cmdStore.totalLength());
+	public void switchToXSync(GtidSet gtidSet, String masrerUuid) {
+		ReplStage newReplStage = new ReplStage(gtidSet, masrerUuid, cmdStore.totalLength());
 		metaStore.switchProto(newReplStage);
 	}
 
@@ -340,6 +340,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public long backlogBeginOffset() {
+		if (null == cmdStore) return -1;
+		else return cmdStore.lowestAvailableOffset();
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}
@@ -485,7 +491,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		makeSureOpen();
 
-		if (progress instanceof OffsetReplicationProgress) {
+		if (progress instanceof BacklogOffsetReplicationProgress) {
+			long realOffset = ((BacklogOffsetReplicationProgress) progress).getProgress();
+			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
+		} else if (progress instanceof OffsetReplicationProgress) {
 			long realOffset = ((OffsetReplicationProgress) progress).getProgress() - metaStore.beginOffset();
 			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
 		} else {
