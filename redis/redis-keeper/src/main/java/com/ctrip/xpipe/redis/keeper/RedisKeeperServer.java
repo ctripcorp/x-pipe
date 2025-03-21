@@ -29,7 +29,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	KeeperRepl getKeeperRepl();
 
-	XSyncContinue locateContinueGtidSet(GtidSet gtidSet);
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 
 	void updateGtidSet(GtidSet gtidSet);
 

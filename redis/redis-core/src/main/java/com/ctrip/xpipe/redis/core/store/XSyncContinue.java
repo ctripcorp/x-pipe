@@ -13,10 +13,13 @@ public class XSyncContinue {
     // offset of cmd files
     long backlogOffset;
 
-    public XSyncContinue(GtidSet continueGtidSet, GtidSet backlogGtidSet, long backlogOffset) {
+    String fileName;
+
+    public XSyncContinue(GtidSet continueGtidSet, GtidSet backlogGtidSet, String cmdFile, long backlogOffset) {
         this.continueGtidSet = continueGtidSet;
         this.backlogGtidSet = backlogGtidSet;
         this.backlogOffset = backlogOffset;
+        this.fileName = cmdFile;
     }
 
     public GtidSet getContinueGtidSet() {
@@ -29,5 +32,9 @@ public class XSyncContinue {
 
     public long getBacklogOffset() {
         return backlogOffset;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 }

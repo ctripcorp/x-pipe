@@ -504,6 +504,10 @@ public class GtidSet {
         return sb.substring(0, sb.length() - delimiter.length());
     }
 
+    public boolean contains(String uuid) {
+        return this.map.containsKey(uuid);
+    }
+
     /**
      * A range of GTIDs for a single server with a specific UUID.
      * @see GtidSet
@@ -837,6 +841,11 @@ public class GtidSet {
             }
 
             return intersection;
+        }
+
+        public long getLastGno() {
+             GtidSet.Interval lastInterval = getIntervals().get(getIntervals().size() - 1);
+             return lastInterval.end;
         }
 
         @Override
