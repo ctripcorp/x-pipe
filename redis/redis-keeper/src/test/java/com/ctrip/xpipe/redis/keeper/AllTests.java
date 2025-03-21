@@ -21,7 +21,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetStreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
@@ -83,7 +83,7 @@ import org.junit.runners.Suite.SuiteClasses;
         PsyncKeeperServerStateObserverTest.class,
 
         GtidCmdOneSegmentReaderTest.class,
-        GtidSetCommandReaderTest.class,
+        GtidSetStreamCommandReaderTest.class,
 
         DiskHealthCheckerTest.class,
 

@@ -19,7 +19,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
-	XSyncContinue locateContinueGtidSet(GtidSet gtidSet);
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 
 	void updateGtidSet(GtidSet gtidSet);
 

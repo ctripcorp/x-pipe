@@ -265,7 +265,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
 		return getCurrentReplicationStore().locateContinueGtidSet(gtidSet);
 	}
 

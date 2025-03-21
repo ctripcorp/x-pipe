@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.ContinuePoint;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -73,6 +75,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected SyncRateManager syncRateManager;
 
+	private IndexStore indexStore;
+
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
 		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager);
@@ -121,14 +125,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
 		// TODO: impl in cmdStore
-		return new XSyncContinue(gtidSet, gtidSet, cmdStore.totalLength());
+		ContinuePoint point = indexStore.locateContinueGtidSet(gtidSet);
+		return new XSyncContinue(gtidSet, gtidSet, point.getFileName(), point.getOffset());
 	}
 
 	@Override
 	public void updateGtidSet(GtidSet gtidSet) {
-		GtidSet executed = new GtidSet(""); // TODO: get from cmdStore
+		GtidSet executed = indexStore.getIndexGtidSet();
 		GtidSet lost = gtidSet.subtract(executed);
 		metaStore.updateLostGtidSet(lost);
 	}
@@ -147,7 +152,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
-		return Pair.of(new GtidSet(""), metaStore.getLostGtidSet());
+		return Pair.of(indexStore.getIndexGtidSet(), metaStore.getLostGtidSet());
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
