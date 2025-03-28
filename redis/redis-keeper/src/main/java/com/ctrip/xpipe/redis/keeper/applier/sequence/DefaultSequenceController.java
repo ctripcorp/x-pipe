@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
@@ -18,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +41,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @InstanceDependency
     public AtomicLong offsetRecorder;
+
+    @InstanceDependency
+    public AtomicReference<ApplierStatistic> applierStatisticRef;
 
     public MemoryThreshold memoryThreshold;
 
@@ -135,7 +141,13 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     private Command<?> wrapWithRetry(RedisOpCommand<?> command) {
-        return command.needGuaranteeSuccess() ? new StubbornCommand<>(command, workerThreads) : command;
+        if (command.needGuaranteeSuccess()) {
+            StubbornCommand<?> wrap = new StubbornCommand<>(command, workerThreads);
+            wrap.setStatistic(applierStatisticRef.get());
+            return wrap;
+        } else {
+            return command;
+        }
     }
 
     private void submitNoneKeyCommand(RedisOpCommand<?> command, long commandOffset) {

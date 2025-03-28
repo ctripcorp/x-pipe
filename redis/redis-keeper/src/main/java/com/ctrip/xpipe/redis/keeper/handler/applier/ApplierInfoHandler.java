@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 
 /**
@@ -23,6 +24,7 @@ public class ApplierInfoHandler extends AbstractCommandHandler {
     protected void doHandle(String[] args, RedisClient<?> redisClient) {
         ApplierServer applierServer = (ApplierServer) redisClient.getRedisServer();
         Endpoint upstreamEndpoint = applierServer.getUpstreamEndpoint();
+        ApplierStatistic statistic = applierServer.getStatistic();
 
         StringBuilder sb = new StringBuilder();
         sb.append("state:" + applierServer.getState() + RedisProtocol.CRLF);
@@ -30,6 +32,8 @@ public class ApplierInfoHandler extends AbstractCommandHandler {
             sb.append("master_host:" + upstreamEndpoint.getHost() + RedisProtocol.CRLF );
             sb.append("master_port:"  + upstreamEndpoint.getPort() +  RedisProtocol.CRLF );
             sb.append("master_repl_offset:" + applierServer.getEndOffset() + RedisProtocol.CRLF);
+            sb.append("drop_keys:" + statistic.getDroppedKeys() + RedisProtocol.CRLF);
+            sb.append("trans_keys:" + statistic.getTransKeys() + RedisProtocol.CRLF);
         }
 
         redisClient.sendMessage(new CommandBulkStringParser(sb.toString()).format());

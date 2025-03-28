@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierTransMeta;
@@ -12,13 +13,21 @@ import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author lishanglin
@@ -40,6 +49,37 @@ public class ApplierContainerService {
     private KeeperConfig keeperConfig;
 
     private Map<String, ApplierServer> applierServers = Maps.newConcurrentMap();
+
+    private ScheduledExecutorService scheduled;
+
+    private Logger logger = LoggerFactory.getLogger(ApplierContainerService.class);
+
+    @PostConstruct
+    public void postConstruct() {
+        scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("ApplierChecker"));
+        scheduled.scheduleAtFixedRate(() -> {
+            for (Map.Entry<String, ApplierServer> entry : applierServers.entrySet()) {
+                ApplierServer applierServer = entry.getValue();
+                ApplierServer.ApplierHealth health = applierServer.checkHealth();
+                if (!health.isHealthy()) {
+                    try {
+                        logger.info("[applier unhealthy][{}] remove {}", health.getCause(), entry.getKey());
+                        EventMonitor.DEFAULT.logEvent("ApplierUnhealthy", health.getCause());
+                        remove(entry.getKey());
+                    } catch (Throwable th) {
+                        logger.info("[remove unhealthy applier][fail]", th);
+                    }
+                }
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        this.scheduled.shutdown();
+    }
+
+
 
     public ApplierServer add(ApplierTransMeta applierTransMeta) {
         ApplierMeta applierMeta = applierTransMeta.getApplierMeta();
@@ -139,26 +179,29 @@ public class ApplierContainerService {
     }
 
     public void remove(ClusterId clusterId, ShardId shardId) {
-        String applierServerKey = assembleApplierServerKey(clusterId, shardId);
+        try {
+            String applierServerKey = assembleApplierServerKey(clusterId, shardId);
+            remove(applierServerKey);
+        } catch (Throwable ex) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Remove applier failed for cluster %s shard %s",
+                                    clusterId, shardId)), ex);
+        }
+    }
 
+    private void remove(String applierServerKey) throws Exception {
         ApplierServer applierServer = applierServers.get(applierServerKey);
 
         if (applierServer == null) {
             return;
         }
 
-        try {
-            deRegister(applierServer);
+        deRegister(applierServer);
 
-            ApplierServer removedApplierServer = applierServers.remove(applierServerKey);
-            if (removedApplierServer != null) {
-                containerResourceManager.releasePort(removedApplierServer.getListeningPort());
-            }
-        } catch (Throwable ex) {
-            throw new RedisKeeperRuntimeException(
-                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                            String.format("Remove applier failed for cluster %s shard %s",
-                                    clusterId, shardId)), ex);
+        ApplierServer removedApplierServer = applierServers.remove(applierServerKey);
+        if (removedApplierServer != null) {
+            containerResourceManager.releasePort(removedApplierServer.getListeningPort());
         }
     }
 

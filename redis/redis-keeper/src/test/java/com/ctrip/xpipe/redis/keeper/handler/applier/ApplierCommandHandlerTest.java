@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.handler.applier;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +29,15 @@ public class ApplierCommandHandlerTest extends AbstractTest {
          args = "setstate ACTIVE 127.0.0.1 6379 a1:1 PROTOCOL PSYNC PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2:80 TCP".split(" ");
         protocol = handler.getProxyProtocol(args, handler.findIndex(args, "PROXY"));
         Assert.assertEquals("PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2:80 TCP://127.0.0.1:6379", protocol.getContent());
+    }
+
+    @Test
+    public void parseConfigTest() {
+        String[] args = "setstate ACTIVE 127.0.0.1 6379 a1:1 PROTOCOL XSYNC DROP_KEYS_ALLOW 1000 DROP_KEYS_RATION_ALLOW 10 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2:80 TCP".split(" ");
+        ApplierConfig config = handler.parseConfig(args, 5);
+        Assert.assertTrue(config.getUseXsync());
+        Assert.assertEquals(1000, config.getDropAllowKeys());
+        Assert.assertEquals(10, config.getDropAllowRation());
     }
 
     @Test

@@ -34,6 +34,7 @@ import com.ctrip.xpipe.redis.keeper.netty.NettyApplierHandler;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -100,7 +101,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     public final ApplierMeta applierMeta;
 
-    private STATE state = STATE.NONE;
+    private volatile STATE state = STATE.NONE;
 
     /* utility */
 
@@ -121,6 +122,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @InstanceDependency
     public ExecutorService lwmThread;
+
+    @InstanceDependency
+    public AtomicReference<ApplierStatistic> applierStatisticRef;
+
+    @InstanceDependency
+    public AtomicReference<ApplierConfig> applierConfigRef;
 
     private long startTime;
 
@@ -186,6 +193,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE,
                 new NettyKeyedPoolClientFactory(new ApplierChannelHandlerFactory(keeperConfig.getApplierReadIdleSeconds()))));
+
+        applierConfigRef = new AtomicReference<>(new ApplierConfig());
+        applierStatisticRef = new AtomicReference<>(new ApplierStatistic());
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
@@ -246,11 +256,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     }
 
     @Override
-    public void setStateActive(Endpoint endpoint, GtidSet gtidSet, boolean useXsync) {
+    public void setStateActive(Endpoint endpoint, GtidSet gtidSet, ApplierConfig config) {
+        this.applierConfigRef.set(config);
+        this.applierStatisticRef.set(new ApplierStatistic());
         this.state = STATE.ACTIVE;
         replication.connect(endpoint, gtidSet);
     }
-
 
     @Override
     public void setStateBackup() {
@@ -356,6 +367,39 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         info += "run_id:" + applierMeta.getId() + RedisProtocol.CRLF;
         info += "uptime_in_seconds:" + (System.currentTimeMillis() - startTime) / 1000;
         return info;
+    }
+
+    @Override
+    public ApplierHealth checkHealth() {
+        if (state != STATE.ACTIVE) return ApplierHealth.healthy();
+
+        ApplierConfig config = applierConfigRef.get();
+        ApplierStatistic applierStatistic = applierStatisticRef.get();
+        long drop = applierStatistic.getDroppedKeys();
+        long trans = applierStatistic.getTransKeys();
+        long total = drop + trans;
+        if (total < 100) return ApplierHealth.healthy(); // avoid misjudgment in the case of a small sample size
+
+        long ration = drop * 100 / total;
+        if (config.getDropAllowKeys() > 0 && drop > config.getDropAllowKeys()) {
+            return ApplierHealth.unhealthy("DROP_KEYS");
+        } else if (config.getDropAllowRation() > 0 && ration > config.getDropAllowRation()) {
+            return ApplierHealth.unhealthy("DROP_RATION");
+        }
+
+        return ApplierHealth.healthy();
+    }
+
+    @Override
+    public ApplierStatistic getStatistic() {
+        return applierStatisticRef.get();
+    }
+
+    @VisibleForTesting
+    protected void setState(STATE state, ApplierConfig config, ApplierStatistic statistic) {
+        this.applierConfigRef.set(config);
+        this.applierStatisticRef.set(statistic);
+        this.state = state;
     }
 
     @Override

@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegrated;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
 import io.netty.buffer.ByteBuf;
@@ -90,7 +91,11 @@ public class GtidReplicationManualTest extends AbstractKeeperIntegrated implemen
         applierServer.initialize();
         applierServer.start();
 
-        applierServer.setStateActive(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"), true);
+        ApplierConfig config = new ApplierConfig();
+        config.setDropAllowRation(-1);
+        config.setDropAllowKeys(-1);
+        config.setUseXsync(true);
+        applierServer.setStateActive(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), new GtidSet(reqUuid + ":0"), config);
 
         waitForAnyKeyToExit();
     }

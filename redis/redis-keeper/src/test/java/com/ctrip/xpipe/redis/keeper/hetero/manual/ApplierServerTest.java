@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import com.ctrip.xpipe.redis.keeper.applier.DefaultApplierServer;
 import org.junit.Test;
 
@@ -55,7 +56,11 @@ public class ApplierServerTest extends AbstractRedisKeeperTest {
 
         //applier.setStateBackup();
 
-        applier.setStateActive(new DefaultEndPoint("127.0.0.1", 6000), new GtidSet("29097dd95625bc57c42bb0d8c887ec7bc847c05a:0"),true);
+        ApplierConfig config = new ApplierConfig();
+        config.setUseXsync(true);
+        config.setDropAllowRation(-1);
+        config.setDropAllowKeys(-1);
+        applier.setStateActive(new DefaultEndPoint("127.0.0.1", 6000), new GtidSet("29097dd95625bc57c42bb0d8c887ec7bc847c05a:0"),config);
 
         //applier.setStateBackup();
 
