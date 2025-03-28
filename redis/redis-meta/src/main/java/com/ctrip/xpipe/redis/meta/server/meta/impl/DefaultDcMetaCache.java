@@ -163,7 +163,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		dcMetaComparator.setShardMigrateSupport();
 		dcMetaComparator.compare();
 
-		if (dcMetaComparator.totalChangedCount() - drClusterNums(dcMetaComparator) > META_MODIFY_PROTECT_COUNT) {
+		if (dcMetaComparator.totalChangedCount() - drClusterNums(dcMetaComparator) - keeperMigrateOnlyNums(dcMetaComparator) > META_MODIFY_PROTECT_COUNT) {
 			logger.error("[run][modify count size too big]{}, {}, {}", META_MODIFY_PROTECT_COUNT,
 					dcMetaComparator.totalChangedCount(), dcMetaComparator);
 			EventMonitor.DEFAULT.logAlertEvent("remove too many:" + dcMetaComparator.totalChangedCount());
@@ -208,6 +208,28 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		}
 		logger.info("[DR Switched][cluster num] {}", result);
 		return result;
+	}
+
+	@VisibleForTesting
+	protected int keeperMigrateOnlyNums(DcMetaComparator comparator) {
+		int keeperMigOnlyCnt = 0;
+		ClusterCompare: for (MetaComparator metaComparator : comparator.getMofified()) {
+			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
+			if (clusterMetaComparator.isConfigChange() || clusterMetaComparator.getMofified().isEmpty()
+					|| !clusterMetaComparator.getAdded().isEmpty() || !clusterMetaComparator.getRemoved().isEmpty()) continue;
+
+			for (MetaComparator innerMetaComparator : clusterMetaComparator.getMofified()) {
+				ShardMetaComparator shardMetaComparator = (ShardMetaComparator) innerMetaComparator;
+				if (shardMetaComparator.isConfigChange() || !shardMetaComparator.getMofified().isEmpty()) continue ClusterCompare;
+				if (shardMetaComparator.getAdded().isEmpty() && shardMetaComparator.getRemoved().isEmpty()) continue ClusterCompare;
+				if (shardMetaComparator.getAdded().stream().anyMatch(node -> !(node instanceof KeeperMeta))) continue ClusterCompare;
+				if (shardMetaComparator.getRemoved().stream().anyMatch(node -> !(node instanceof KeeperMeta))) continue ClusterCompare;
+			}
+			EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, "KeeperMigrate");
+			keeperMigOnlyCnt++;
+		}
+		logger.info("[keeperMigrateOnlyNums] {}", keeperMigOnlyCnt);
+		return keeperMigOnlyCnt;
 	}
 
 	@VisibleForTesting

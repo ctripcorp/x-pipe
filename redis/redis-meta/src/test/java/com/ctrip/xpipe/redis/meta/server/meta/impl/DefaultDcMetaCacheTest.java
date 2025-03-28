@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -236,6 +237,22 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5), biClusterName2).getId(), jqRoute.getId());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9), biClusterName2).getId(), oyRoute.getId());
 
+    }
+
+    @Test
+    public void testKeeperMigrateOnlyNums() {
+        DcMeta current = (DcMeta) getXpipeMeta().getDcs().values().toArray()[0];
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+
+        future.getClusters().get("cluster1").getShards().get("shard1").addKeeper(new KeeperMeta());
+        future.getClusters().get("cluster-hetero1").getShards().get("shard-hetero1").getKeepers().clear();
+        future.getClusters().get("cluster2").getShards().get("cluster2-shard1").getKeepers().clear();
+        future.getClusters().get("cluster2").getShards().get("cluster2-shard2").getRedises().get(0).setIp("10.0.0.1");
+        DcMetaComparator comparator = new DcMetaComparator(current, future);
+        comparator.setShardMigrateSupport();
+        comparator.compare();
+
+        Assert.assertEquals(2, dcMetaCache.keeperMigrateOnlyNums(comparator));
     }
 
 }
