@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -61,8 +62,8 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
                 } else if (args.length >= 5 && args[1].equalsIgnoreCase(STATE_ACTIVE)) {
                     Endpoint upstreamEndpoint = getMasterAddress(args);
                     GtidSet gtidSet = new GtidSet(args[4]);
-                    boolean useXsync = useXsync(args);
-                    ((ApplierServer) redisClient.getRedisServer()).setStateActive(upstreamEndpoint, gtidSet, useXsync);
+                    ApplierConfig config = parseConfig(args, 5);
+                    ((ApplierServer) redisClient.getRedisServer()).setStateActive(upstreamEndpoint, gtidSet, config);
                     redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
                 } else {
                     throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
@@ -80,6 +81,35 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
                 throw new IllegalStateException("unknown command:" + args[0]);
             }
         }
+    }
+
+    protected ApplierConfig parseConfig(String[] args, int startPos) {
+        ApplierConfig config = new ApplierConfig();
+
+        int i = startPos;
+        while (i < args.length) {
+            String opt = args[i].toUpperCase();
+            if (opt.equals(SYNC_PROTOCOL)) {
+                boolean useXsync = args[i + 1].equalsIgnoreCase(Sync.XSYNC);
+                i += 2;
+                config.setUseXsync(useXsync);
+            } else if (opt.equals("DROP_KEYS_ALLOW")) {
+                int keys = Integer.parseInt(args[i + 1]);
+                i += 2;
+                config.setDropAllowKeys(keys);
+            } else if (opt.equals("DROP_KEYS_RATION_ALLOW")) {
+                int ration = Integer.parseInt(args[i + 1]);
+                i += 2;
+                config.setDropAllowRation(ration);
+            } else if (opt.equals("PROXY")) {
+                // PROXY OPT only in the end of args
+                break;
+            } else {
+                throw new IllegalStateException("unknown opt:" + args[i]);
+            }
+        }
+
+        return config;
     }
 
     protected Endpoint getMasterAddress(String[] args) {

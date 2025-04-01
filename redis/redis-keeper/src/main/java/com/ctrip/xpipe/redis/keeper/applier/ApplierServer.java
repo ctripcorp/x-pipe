@@ -19,7 +19,7 @@ public interface ApplierServer extends Lifecycle, RedisServer {
 
     ApplierInstanceMeta getApplierInstanceMeta();
 
-    void setStateActive(Endpoint endpoint, GtidSet gtidSet,boolean useXsync);
+    void setStateActive(Endpoint endpoint, GtidSet gtidSet,ApplierConfig config);
 
     void setStateBackup();
 
@@ -34,5 +34,37 @@ public interface ApplierServer extends Lifecycle, RedisServer {
     Endpoint getUpstreamEndpoint();
 
     long getEndOffset();
+
+    ApplierHealth checkHealth();
+
+    ApplierStatistic getStatistic();
+
+    class ApplierHealth {
+
+        boolean healthy;
+
+        String cause;
+
+        public ApplierHealth(boolean healthy, String cause) {
+            this.healthy = healthy;
+            this.cause = cause;
+        }
+
+        public static ApplierHealth healthy() {
+            return new ApplierHealth(true, "");
+        }
+
+        public static ApplierHealth unhealthy(String cause) {
+            return new ApplierHealth(false, cause);
+        }
+
+        public boolean isHealthy() {
+            return healthy;
+        }
+
+        public String getCause() {
+            return cause;
+        }
+    }
 
 }

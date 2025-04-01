@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +22,8 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
 
     private int retryTimes;
 
+    private ApplierStatistic statistic;
+
     public StubbornCommand(Command<V> inner, ScheduledExecutorService retryExecutor) {
         this(inner, retryExecutor, 180 /* 6 min */);
     }
@@ -29,6 +32,10 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
         this.inner = inner;
         this.retryExecutor = retryExecutor;
         this.retryTimes = retryTimes;
+    }
+
+    public void setStatistic(ApplierStatistic statistic) {
+        this.statistic = statistic;
     }
 
     @Override
@@ -42,6 +49,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
         future.addListener((f)->{
             if (f.isSuccess()) {
                 try {
+                    if (null != statistic) statistic.incrTrans();
                     future().setSuccess(f.get());
                 } catch (Exception unlikely) {
                     getLogger().error("UNLIKELY - setSuccess", unlikely);
@@ -51,6 +59,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
                 if (retryTimes < 0) {
                     getLogger().error("[{}] failed, retry too many times, stop retrying..", this, f.cause());
                     EventMonitor.DEFAULT.logAlertEvent("drop command: " + this);
+                    if (null != statistic) statistic.incrDropped();
 
                     try {
                         future().setSuccess(null);

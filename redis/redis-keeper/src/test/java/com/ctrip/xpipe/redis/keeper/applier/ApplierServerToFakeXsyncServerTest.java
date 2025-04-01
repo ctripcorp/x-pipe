@@ -58,7 +58,11 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         applier.initialize();
         applier.start();
 
-        applier.setStateActive(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"), true);
+        ApplierConfig config = new ApplierConfig();
+        config.setDropAllowKeys(-1);
+        config.setDropAllowRation(-1);
+        config.setUseXsync(true);
+        applier.setStateActive(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"), config);
     }
 
     @Test

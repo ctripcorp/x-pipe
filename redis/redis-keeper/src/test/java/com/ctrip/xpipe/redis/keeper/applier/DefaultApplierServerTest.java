@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sync.DefaultCommandDispatcher;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -68,5 +69,41 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         server.dispose();
 
         //server.client.close()
+    }
+
+    @Test
+    public void testHealthCheck() throws Exception {
+        applierMeta = new ApplierMeta().setPort(randomPort());
+        when(leaderElectorManager.createLeaderElector(any())).thenReturn(leaderElector);
+
+        DefaultApplierServer server = new DefaultApplierServer(
+                "ApplierTest", ClusterId.from(1L), ShardId.from(1L),
+                applierMeta, leaderElectorManager, parser, new TestKeeperConfig());
+
+        ApplierConfig config = new ApplierConfig();
+        config.setDropAllowKeys(1000);
+        config.setDropAllowRation(10);
+        ApplierStatistic statistic = new ApplierStatistic();
+        statistic.setDroppedKeys(5);
+        statistic.setTransKeys(20);
+        server.setState(ApplierServer.STATE.ACTIVE, config, statistic);
+        Assert.assertTrue(server.checkHealth().isHealthy());
+
+        statistic.setTransKeys(100);
+        Assert.assertTrue(server.checkHealth().isHealthy());
+
+        statistic.setDroppedKeys(100);
+        ApplierServer.ApplierHealth health = server.checkHealth();
+        Assert.assertFalse(health.isHealthy());
+        Assert.assertEquals("DROP_RATION", health.getCause());
+
+        statistic.setTransKeys(10000000);
+        statistic.setDroppedKeys(1001);
+        health = server.checkHealth();
+        Assert.assertFalse(health.isHealthy());
+        Assert.assertEquals("DROP_KEYS", health.getCause());
+
+        server.setState(ApplierServer.STATE.BACKUP, config, statistic);
+        Assert.assertTrue(server.checkHealth().isHealthy());
     }
 }
