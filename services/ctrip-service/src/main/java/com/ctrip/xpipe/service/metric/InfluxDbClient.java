@@ -35,18 +35,6 @@ public class InfluxDbClient implements Closeable {
         this.db = db;
     }
 
-    public InfluxDbClient(String host, String db, long connTimeoutMilli, long soTimeoutMilli) {
-        this.host = host;
-        this.db = db;
-
-        OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
-        httpClientBuilder.connectTimeout(Duration.ofMillis(connTimeoutMilli))
-                .writeTimeout(Duration.ofMillis(soTimeoutMilli))
-                .readTimeout(Duration.ofMillis(soTimeoutMilli));
-        this.influxDB = InfluxDBFactory.connect(host, httpClientBuilder);
-        this.influxDB.setDatabase(db);
-    }
-
     public String getHost() {
         return host;
     }

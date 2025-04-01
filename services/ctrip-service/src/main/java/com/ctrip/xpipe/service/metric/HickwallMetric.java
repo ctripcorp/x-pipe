@@ -66,7 +66,6 @@ public class HickwallMetric implements MetricProxy {
 
         ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
                 XpipeThreadFactory.create("HickwallSender", true));
-
         this.client = new InfluxDbClient(config.getHickwallAddress(), config.getHickwallDatabase());
 
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
