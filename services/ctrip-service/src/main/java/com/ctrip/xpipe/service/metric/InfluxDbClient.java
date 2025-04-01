@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public class InfluxDbClient implements Closeable {
 
-    private final InfluxDB influxDB;
+    private InfluxDB influxDB;
 
     private final String host;
 
@@ -33,20 +33,6 @@ public class InfluxDbClient implements Closeable {
     public InfluxDbClient(String host, String db) {
         this.host = host;
         this.db = db;
-        this.influxDB = InfluxDBFactory.connect(host);
-        this.influxDB.setDatabase(db);
-    }
-
-    public InfluxDbClient(String host, String db, long connTimeoutMilli, long soTimeoutMilli) {
-        this.host = host;
-        this.db = db;
-
-        OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
-        httpClientBuilder.connectTimeout(Duration.ofMillis(connTimeoutMilli))
-                .writeTimeout(Duration.ofMillis(soTimeoutMilli))
-                .readTimeout(Duration.ofMillis(soTimeoutMilli));
-        this.influxDB = InfluxDBFactory.connect(host, httpClientBuilder);
-        this.influxDB.setDatabase(db);
     }
 
     public String getHost() {
@@ -58,6 +44,10 @@ public class InfluxDbClient implements Closeable {
     }
 
     public org.influxdb.InfluxDB getInfluxDB() {
+        if(influxDB == null) {
+            this.influxDB = InfluxDBFactory.connect(host);
+            this.influxDB.setDatabase(db);
+        }
         return influxDB;
     }
 
@@ -65,7 +55,7 @@ public class InfluxDbClient implements Closeable {
     public void send(List<Point> points) {
         BatchPoints batchPoints = BatchPoints.database(db).build();
         points.forEach(batchPoints::point);
-        influxDB.write(batchPoints);
+        getInfluxDB().write(batchPoints);
     }
 
     public void sendWithMonitor(List<Point> points) throws Exception {
@@ -75,7 +65,7 @@ public class InfluxDbClient implements Closeable {
         TransactionMonitor.DEFAULT.logTransaction(TYPE, "send", new Task<Object>() {
             @Override
             public void go() {
-                influxDB.write(batchPoints);
+                getInfluxDB().write(batchPoints);
             }
 
             @Override
@@ -90,7 +80,7 @@ public class InfluxDbClient implements Closeable {
     }
 
     public void ping() {
-        influxDB.ping();
+        getInfluxDB().ping();
     }
 
     @Override
@@ -103,7 +93,9 @@ public class InfluxDbClient implements Closeable {
 
     @Override
     public void close() {
-        influxDB.close();
+        if(influxDB != null) {
+            influxDB.close();
+        }
         this.close = true;
     }
 

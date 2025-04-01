@@ -114,4 +114,10 @@ public class HickwallMetricTest extends AbstractServiceTest {
         return metricData;
     }
 
+    @Test
+    public void testInit() {
+        when(config.getHickwallAddress()).thenReturn("http://www.ctripxsstgsswdf.com");
+        hickwallMetric = new HickwallMetric(config);
+    }
+
 }
