@@ -49,7 +49,9 @@ public class IndexStoreTest {
 
         Path destinationPath = Paths.get(baseDir, "00000000");
         File tmpFile = new File(file1);
-        Files.copy(tmpFile.toPath(), destinationPath);
+        if(!Files.exists(destinationPath)) {
+            Files.copy(tmpFile.toPath(), destinationPath);
+        }
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
