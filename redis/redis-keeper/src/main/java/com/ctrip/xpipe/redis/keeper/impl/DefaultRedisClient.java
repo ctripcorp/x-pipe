@@ -176,6 +176,18 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	}
 
 	@Override
+	public GapAllowRedisSlave becomeGapAllowRedisSlave() {
+		if (clientRole != CLIENT_ROLE.NORMAL) {
+			logger.info("[becomeGapAllowRedisSlave][already slave] {}", this);
+			return null;
+		} else {
+			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this);
+			notifyObservers(redisSlave);
+			return redisSlave;
+		}
+	}
+
+	@Override
 	public void setClientEndpoint(Endpoint endpoint) {
 		this.endpoint = endpoint;
 	}

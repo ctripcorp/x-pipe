@@ -244,6 +244,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@Override
 	public void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress) {
+		// TODO: rdbProgress from?
 		getLogger().info("[beginWriteRdb]{}, {}", eofType, rdbProgress);
 		closeState.makeSureOpen();
 
@@ -262,6 +263,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		this.eofType = eofType;
 		if (rdbProgress instanceof OffsetReplicationProgress) {
 			this.progressAfterRdb = new OffsetReplicationProgress(((OffsetReplicationProgress) rdbProgress).getProgress() + 1);
+		} else if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
+			this.progressAfterRdb = new BacklogOffsetReplicationProgress(((BacklogOffsetReplicationProgress) rdbProgress).getProgress() + 1);
 		} else {
 			this.progressAfterRdb = rdbProgress;
 		}
@@ -518,6 +521,11 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	public RedisKeeperServer getRedisServer() {
 		return redisClient.getRedisServer();
+	}
+
+	@Override
+	public GapAllowRedisSlave becomeGapAllowRedisSlave() {
+		return redisClient.becomeGapAllowRedisSlave();
 	}
 
 	public void setSlaveListeningPort(int port) {

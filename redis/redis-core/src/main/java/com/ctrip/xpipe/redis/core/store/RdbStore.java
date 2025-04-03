@@ -25,6 +25,8 @@ public interface RdbStore extends Destroyable, Closeable{
 
 	String getReplId();
 
+	long getRdbBacklogOffset();
+
 	long getRdbOffset();
 
 	EofType getEofType();
