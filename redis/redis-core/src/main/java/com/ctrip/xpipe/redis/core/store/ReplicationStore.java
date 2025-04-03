@@ -70,6 +70,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	long backlogBeginOffset();
 
+	long backlogEndOffset();
+
 	GtidSet getBeginGtidSet() throws IOException;
 
 	GtidSet getEndGtidSet();

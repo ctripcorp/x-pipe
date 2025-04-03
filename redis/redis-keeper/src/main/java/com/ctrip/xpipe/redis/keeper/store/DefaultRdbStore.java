@@ -52,6 +52,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected long rdbOffset;
 
+	protected long rdbBacklogOffset;
+
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
 	protected List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
@@ -76,6 +78,15 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			writeFile = new RandomAccessFile(file, "rw");
 			channel = writeFile.getChannel();
 		}
+	}
+
+	@Override
+	public long getRdbBacklogOffset() {
+		return rdbBacklogOffset;
+	}
+
+	public void setRdbBacklogOffset(long rdbBacklogOffset) {
+		this.rdbBacklogOffset = rdbBacklogOffset;
 	}
 
 	@Override

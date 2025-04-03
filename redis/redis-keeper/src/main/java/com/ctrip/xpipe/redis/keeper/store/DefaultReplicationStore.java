@@ -351,6 +351,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public long backlogEndOffset() {
+		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		return cmdStore.lowestAvailableOffset() + cmdStore.totalLength();
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}
@@ -409,9 +415,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		rdbStore.incrementRefCount();
-		long rdbOffset = rdbStore.rdbOffset();
-		long minOffset = firstAvailableOffset();
-		long maxOffset = getEndOffset();
+		long rdbOffset = rdbStore.getRdbBacklogOffset();
+		long minOffset = backlogBeginOffset();
+		long maxOffset = backlogEndOffset();
 
 		/**
 		 * rdb and cmd is continuous AND not so much cmd after rdb
@@ -475,6 +481,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected FULLSYNC_FAIL_CAUSE tryDoFullSync(FullSyncContext ctx, FullSyncListener fullSyncListener) throws IOException {
 		RdbStore rdbStore = ctx.getRdbStore();
+		// TODO: Guarantee use backlog offset
 		if (null != cmdStore && !cmdStore.retainCommands(
 				new DefaultCommandsGuarantee(fullSyncListener, beginOffset(), rdbStore.rdbOffset() + 1, commandsRetainTimeoutMilli))) {
 			getLogger().info("[fullSyncToSlave][{}][cmd file deleted and terminate]{}", rdbStore.getRdbType().name(), fullSyncListener);
