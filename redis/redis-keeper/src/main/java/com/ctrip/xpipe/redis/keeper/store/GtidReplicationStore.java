@@ -37,7 +37,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
         super(baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor, syncRateManager);
+                keeperMonitor, syncRateManager, redisOpParser);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
-                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor);
+                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor, this.redisOpParser);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {

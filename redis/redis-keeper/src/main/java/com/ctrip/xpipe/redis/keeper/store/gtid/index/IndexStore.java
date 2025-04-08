@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -23,16 +24,19 @@ public class IndexStore implements StreamCommandListener{
 
     private RedisOpParser opParser;
 
-    public IndexStore(String baseDir, String currentCmdFileName, long cmdFileOffset, RedisOpParser redisOpParser, GtidSet startGtidSet) {
+    private GtidSet startGtidSet;
+
+    public IndexStore(String baseDir, RedisOpParser redisOpParser, GtidSet startGtidSet) {
         this.baseDir = baseDir;
-        this.currentCmdFileName = currentCmdFileName;
         this.opParser = redisOpParser;
-        this.streamCommandReader = new StreamCommandReader(cmdFileOffset, redisOpParser);
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet);
+        this.startGtidSet = startGtidSet;
     }
 
 
-    public void init() throws IOException {
+    public void initialize(CommandWriter cmdWriter) throws IOException {
+        this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
+        this.streamCommandReader = new StreamCommandReader(cmdWriter.getFileContext().getChannel().size(), this.opParser);
+        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet);
         this.streamCommandReader.addListener(this);
         this.indexWriter.init();
     }

@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
@@ -80,6 +82,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
     private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
+
+    private IndexStore indexStore;
     
     public abstract Logger getLogger();
 
@@ -87,7 +91,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
-                               KeeperMonitor keeperMonitor) throws IOException {
+                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
@@ -105,6 +109,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, new GtidSet(""));
     }
 
     @Override
@@ -112,6 +117,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+            indexStore.initialize(cmdWriter);
         }
     }
 
@@ -583,4 +589,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return true;
     }
 
+    @Override
+    public long locateContinueGtidSet(GtidSet gtidSet) {
+        // todo
+        try {
+            return indexStore.locateContinueGtidSet(gtidSet).getOffset();
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    @Override
+    public GtidSet getIndexGtidSet() {
+        return indexStore.getIndexGtidSet();
+    }
 }

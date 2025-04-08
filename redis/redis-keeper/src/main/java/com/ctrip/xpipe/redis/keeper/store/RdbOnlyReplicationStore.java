@@ -253,6 +253,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public long backlogEndOffset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}

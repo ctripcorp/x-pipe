@@ -5,6 +5,11 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -32,10 +37,15 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 	private File baseDir;
 	
-	private DefaultReplicationStore store; 
+	private DefaultReplicationStore store;
+
+	private RedisOpParser redisOpParser;
 
 	@Before
 	public void beforeDefaultReplicationStoreTest() throws IOException{
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
 		baseDir = new File(getTestFileDir());
 	}
 
@@ -52,28 +62,28 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 		String keeperRunid = randomKeeperRunid();
 		int dataLen = 100;
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		RdbStore rdbStore = beginRdb(store, dataLen);
 
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
 
 		Thread.currentThread().interrupt();
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 
 
 		//clear interrupt
 		Thread.interrupted();
 
 		store.appendCommands(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 
 	}
 	
 	@Test
 	public void testReadWhileDestroy() throws Exception{
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
@@ -179,7 +189,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testReadWrite() throws Exception {
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 
@@ -205,7 +215,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testGcNotContinueRdb() throws Exception {
 		TestKeeperConfig config = new TestKeeperConfig(100, 1, 1024, 0);
-		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 100;
