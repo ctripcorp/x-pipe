@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -25,17 +26,17 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor);
+	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor) throws IOException {
+										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {

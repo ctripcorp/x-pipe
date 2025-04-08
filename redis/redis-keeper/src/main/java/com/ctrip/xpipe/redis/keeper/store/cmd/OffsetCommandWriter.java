@@ -102,6 +102,11 @@ public class OffsetCommandWriter implements CommandWriter {
     }
 
     @Override
+    public CommandFileContext getFileContext() {
+        return cmdFileCtxRef.get();
+    }
+
+    @Override
     public void close() throws IOException {
         CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
         if (null != cmdFileCtx) {
@@ -121,5 +126,6 @@ public class OffsetCommandWriter implements CommandWriter {
     protected int getMaxFileSize() {
         return maxFileSize;
     }
+
 
 }

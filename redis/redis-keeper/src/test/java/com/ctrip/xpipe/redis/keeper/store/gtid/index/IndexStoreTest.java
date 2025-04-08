@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
+import com.ctrip.xpipe.redis.core.store.CommandFile;
+import com.ctrip.xpipe.redis.core.store.CommandFileContext;
+import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -15,15 +18,21 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class IndexStoreTest {
 
     String tempDir = System.getProperty("java.io.tmpdir");
@@ -40,6 +49,18 @@ public class IndexStoreTest {
 
     private IndexStore indexStore;
 
+    @Mock
+    CommandWriter writer;
+
+    @Mock
+    CommandFileContext commandFileContext;
+
+    @Mock
+    FileChannel channel;
+
+    @Mock
+    CommandFile commandFile;
+
     @Before
     public void setUp() throws IOException {
         File dir = new File(baseDir);
@@ -53,11 +74,20 @@ public class IndexStoreTest {
             Files.copy(tmpFile.toPath(), destinationPath);
         }
 
+        when(channel.size()).thenReturn(0l);
+
+        when(commandFileContext.getChannel()).thenReturn(channel);
+
+        when(commandFile.getFile()).thenReturn(new File("00000000"));
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, "00000000", 0, opParser, new GtidSet(""));
-        indexStore.init();
+        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore.initialize(writer);
 
 
     }
@@ -147,8 +177,8 @@ public class IndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, "00000000", 0, opParser, new GtidSet(""));
-        indexStore.init();
+        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore.initialize(writer);
         for(int i = 800000; i < 800004; i++) {
             ContinuePoint point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
             ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getOffset());
@@ -163,8 +193,8 @@ public class IndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, "00000000", 0, opParser, new GtidSet(""));
-        indexStore.init();
+        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore.initialize(writer);
         write(file2);
         for(int i = 800000; i < 800004; i++) {
             ContinuePoint point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
@@ -190,15 +220,17 @@ public class IndexStoreTest {
     @Test
     public void testBuildIndex() throws Exception {
         String cmdFile = "00000000";
-        indexStore.buildIndexFromCmdFile(cmdFile, 0);
         long pre = System.currentTimeMillis();
+        indexStore.buildIndexFromCmdFile(cmdFile, 0);
+        long now = System.currentTimeMillis();
+        System.out.println("build index " + (now - pre));
         for(int i = 633744; i < 800004; i++) {
             ContinuePoint point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
             ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getOffset());
             RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
             Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
             if (i % 1000 == 0) {
-                long now = System.currentTimeMillis();
+                now = System.currentTimeMillis();
                 System.out.println("build index success " + i + "  " + (now - pre));
                 pre = System.currentTimeMillis();
             }

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
@@ -75,22 +76,24 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected SyncRateManager syncRateManager;
 
-	private IndexStore indexStore;
+	protected RedisOpParser redisOpParser;
 
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
-		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager);
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
+		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
 	}
 
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
+	) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
 		this.syncRateManager = syncRateManager;
+		this.redisOpParser = redisOp;
 
 		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -126,14 +129,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
-		// TODO: impl in cmdStore
-		ContinuePoint point = indexStore.locateContinueGtidSet(gtidSet);
-		return new XSyncContinue(gtidSet, gtidSet, point.getFileName(), point.getOffset());
+		long offset = cmdStore.locateContinueGtidSet(gtidSet);
+		return new XSyncContinue(gtidSet, gtidSet, offset);
 	}
 
 	@Override
 	public void updateGtidSet(GtidSet gtidSet) {
-		GtidSet executed = indexStore.getIndexGtidSet();
+		GtidSet executed = cmdStore.getIndexGtidSet();
 		GtidSet lost = gtidSet.subtract(executed);
 		metaStore.updateLostGtidSet(lost);
 	}
@@ -152,7 +154,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
-		return Pair.of(indexStore.getIndexGtidSet(), metaStore.getLostGtidSet());
+		return Pair.of(cmdStore.getIndexGtidSet(), metaStore.getLostGtidSet());
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
@@ -272,7 +274,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				cmdReaderWriterFactory, keeperMonitor);
+				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
 			cmdStore.initialize();

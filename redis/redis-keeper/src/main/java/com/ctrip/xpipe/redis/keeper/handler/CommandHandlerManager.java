@@ -28,7 +28,7 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 	protected void initCommands() {
 		
 		putHandler(new ReplconfHandler());
-		putHandler(new PsyncHandler());
+		// putHandler(new PsyncHandler());
 		putHandler(new XsyncHandler());
 		putHandler(new PingCommandHandler());
 		putHandler(new LFHandler());
@@ -42,6 +42,8 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		putHandler(new RoleCommandHandler());
 		putHandler(new ProxyCommandHandler());
 		putHandler(new ConfigHandler());
+		putHandler(new GapAllowPSyncHandler());
+		putHandler(new GapAllowXSyncHandler());
 	}
 
 	protected void putHandler(CommandHandler handler) {

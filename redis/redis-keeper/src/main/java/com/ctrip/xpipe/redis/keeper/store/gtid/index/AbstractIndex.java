@@ -50,7 +50,7 @@ public abstract class AbstractIndex {
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
         }
-        File[] files = directory.listFiles((dir, name) -> name.matches("index_\\d+"));
+        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
         if (files == null || files.length == 0) {
             return null;
         }
