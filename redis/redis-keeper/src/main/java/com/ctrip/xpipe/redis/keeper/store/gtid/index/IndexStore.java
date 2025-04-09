@@ -8,11 +8,12 @@ import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class IndexStore implements StreamCommandListener{
+public class IndexStore implements StreamCommandListener, Closeable {
 
     private IndexWriter indexWriter;
 
@@ -117,5 +118,10 @@ public class IndexStore implements StreamCommandListener{
             ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
             this.write(byteBuf);
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.indexWriter.close();
     }
 }

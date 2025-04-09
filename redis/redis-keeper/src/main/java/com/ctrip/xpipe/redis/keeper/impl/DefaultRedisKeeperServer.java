@@ -275,13 +275,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void switchToPSync(String replId, long offset) {
+	public void switchToPSync(String replId, long offset) throws IOException {
 		getCurrentReplicationStore().switchToPSync(replId, offset);
 		closeSlaves("toPSync " + replId + ":" + offset);
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet, String masterUuid) {
+	public void switchToXSync(GtidSet gtidSet, String masterUuid) throws IOException {
 		getCurrentReplicationStore().switchToXSync(gtidSet, masterUuid);
 		closeSlaves("toXSync " + gtidSet);
 	}

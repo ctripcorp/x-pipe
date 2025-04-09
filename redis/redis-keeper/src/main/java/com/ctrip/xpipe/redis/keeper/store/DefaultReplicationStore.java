@@ -141,15 +141,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public void switchToPSync(String replId, long offset) {
+	public void switchToPSync(String replId, long offset) throws IOException {
 		ReplStage newReplStage = new ReplStage(replId, offset, cmdStore.totalLength());
 		metaStore.switchProto(newReplStage);
+		cmdStore.switchToPsync(replId, offset);
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet, String masrerUuid) {
+	public void switchToXSync(GtidSet gtidSet, String masrerUuid) throws IOException {
 		ReplStage newReplStage = new ReplStage(gtidSet, masrerUuid, cmdStore.totalLength());
 		metaStore.switchProto(newReplStage);
+		cmdStore.switchToXSync(gtidSet);
 	}
 
 	@Override

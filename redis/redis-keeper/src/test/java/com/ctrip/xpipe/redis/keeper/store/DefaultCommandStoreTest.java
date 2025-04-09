@@ -571,9 +571,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		System.out.println("end");
-		Thread.sleep(1000000);
 	}
 
 }
