@@ -72,7 +72,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     }
 
 
-    private void finishBlock() throws Exception {
+    private void finishBlock() throws IOException {
         if(blockWriter != null) {
             blockWriter.close();
         }
@@ -91,7 +91,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
         this.createNewBlock(uuid, gno, commandOffset);
     }
 
-    public void finish() throws Exception {
+    public void finish() throws IOException {
         this.finishBlock();
     }
 

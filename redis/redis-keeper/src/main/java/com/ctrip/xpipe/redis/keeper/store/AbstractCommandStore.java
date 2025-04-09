@@ -252,7 +252,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         makeSureOpen();
 
-        cmdWriter.rotateFileIfNecessary();
+        ByteBuf duplicate = byteBuf.copy();
+
+        boolean rotateFile = cmdWriter.rotateFileIfNecessary();
 
         SyncRateLimiter rateLimiter = rateLimiterRef.get();
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
@@ -265,6 +267,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         commandStoreDelay.endWrite(offset);
 
         offsetNotifier.offsetIncreased(offset);
+
+        if(rotateFile) {
+            indexStore.switchCmdFile(cmdWriter);
+        }
+        indexStore.write(duplicate);
 
         return wrote;
     }
