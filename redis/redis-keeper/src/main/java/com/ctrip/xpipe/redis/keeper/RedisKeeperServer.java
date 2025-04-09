@@ -33,9 +33,9 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 
 	void updateGtidSet(GtidSet gtidSet);
 
-	void switchToPSync(String replId, long offset);
+	void switchToPSync(String replId, long offset) throws IOException;
 
-	void switchToXSync(GtidSet gtidSet, String masterUuid);
+	void switchToXSync(GtidSet gtidSet, String masterUuid) throws IOException;
 
 	void clientDisconnected(Channel channel);
 	

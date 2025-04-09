@@ -84,6 +84,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 
     private IndexStore indexStore;
+
+    private RedisOpParser redisOpParser;
+
+    private boolean buildIndex = true;
     
     public abstract Logger getLogger();
 
@@ -102,6 +106,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
+        this.redisOpParser = redisOpParser;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -252,7 +257,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         makeSureOpen();
 
-        ByteBuf duplicate = byteBuf.copy();
+        ByteBuf duplicate = null;
+        if(buildIndex){
+            duplicate = byteBuf.copy();
+        }
 
         boolean rotateFile = cmdWriter.rotateFileIfNecessary();
 
@@ -268,10 +276,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         offsetNotifier.offsetIncreased(offset);
 
-        if(rotateFile) {
-            indexStore.switchCmdFile(cmdWriter);
+        if(buildIndex) {
+            if(rotateFile) {
+                indexStore.switchCmdFile(cmdWriter);
+            }
+            indexStore.write(duplicate);
         }
-        indexStore.write(duplicate);
 
         return wrote;
     }
@@ -609,5 +619,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public GtidSet getIndexGtidSet() {
         return indexStore.getIndexGtidSet();
+    }
+
+    @Override
+    public void switchToXSync(GtidSet gtidSet) throws IOException {
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, gtidSet);
+        indexStore.initialize(cmdWriter);
+        buildIndex = true;
+    }
+
+    @Override
+    public void switchToPsync(String replId, long offset) throws IOException {
+        indexStore.close();
+        buildIndex = false;
     }
 }

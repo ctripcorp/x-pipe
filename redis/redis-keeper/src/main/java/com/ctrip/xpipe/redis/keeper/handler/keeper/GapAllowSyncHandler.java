@@ -53,7 +53,12 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     return;
                 }
 
-                SyncAction action = anaRequest(request, redisKeeperServer, redisSlave);
+                SyncAction action = null;
+                try {
+                    action = anaRequest(request, redisKeeperServer, redisSlave);
+                } catch (Exception e) {
+                    action = SyncAction.full("anaRequest fail");
+                }
                 if (null == action) {
                     logger.warn("[doHandle] request analyze fail");
                     return;
@@ -66,7 +71,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     protected abstract SyncRequest parseRequest(final String[] args, RedisSlave redisSlave);
 
-    protected SyncAction anaRequest(SyncRequest request, RedisKeeperServer redisKeeperServer, RedisSlave slave) {
+    protected SyncAction anaRequest(SyncRequest request, RedisKeeperServer redisKeeperServer, RedisSlave slave) throws Exception {
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
         ReplStage preStage = keeperRepl.preStage();
         ReplStage curStage = keeperRepl.currentStage();
@@ -83,11 +88,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return anaPSync(request, curStage, keeperRepl);
             } else {
                 XSyncContinue xsyncCont = null;
-                try {
-                    xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
                 return anaXSync(request, curStage, keeperRepl, xsyncCont);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
@@ -97,11 +98,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 reqBacklogOffset = preStage.replOffset2BacklogOffset(request.offset);
             } else {
-                try {
-                    xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
                 reqBacklogOffset = xsyncCont.getBacklogOffset();
             }
 

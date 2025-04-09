@@ -71,4 +71,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	long locateContinueGtidSet(GtidSet gtidSet);
 
 	GtidSet getIndexGtidSet();
+
+	void switchToXSync(GtidSet gtidSet) throws IOException;
+
+	void switchToPsync(String replId, long offset) throws IOException;
 }
