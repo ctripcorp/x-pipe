@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.google.common.util.concurrent.SettableFuture;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.junit.After;
@@ -19,7 +20,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -537,6 +541,39 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@After
 	public void afterDefaultCommandStoreTest() throws IOException {
 		commandStore.close();
+	}
+
+	@Test
+	public void testIndex() throws Exception {
+		String testDir = getTestFileDir();
+		commandTemplate = new File(testDir, getTestName());
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		opParser = new GeneralRedisOpParser(redisOpParserManager);
+		commandStore = new DefaultCommandStore(commandTemplate, 18067200, commandReaderWriterFactory, createkeeperMonitor(), opParser);
+		commandStore.initialize();
+
+		String filePath = "src/test/resources/GtidTest/appendonly.aof";
+		int length = 1024 * 8;
+		try (FileInputStream fis = new FileInputStream(filePath);
+			 FileChannel fileChannel = fis.getChannel()) {
+			fileChannel.position(0);
+			while ((int)fileChannel.size() -(int)fileChannel.position() > 0) {
+				length = Math.min(1024, (int)fileChannel.size() -(int)fileChannel.position());
+				ByteBuffer buffer = ByteBuffer.allocate((int)length);
+				int bytesRead = fileChannel.read(buffer);
+				buffer.flip();
+				if (bytesRead != -1) {
+					ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
+					commandStore.appendCommands(byteBuf);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("end");
+		Thread.sleep(1000000);
 	}
 
 }

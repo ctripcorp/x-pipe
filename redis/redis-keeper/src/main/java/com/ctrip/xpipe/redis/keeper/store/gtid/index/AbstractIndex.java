@@ -5,6 +5,7 @@ import com.ctrip.xpipe.utils.DefaultControllableFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -30,11 +31,11 @@ public abstract class AbstractIndex {
     public abstract void init() throws IOException ;
 
     String generateBlockName() {
-        return baseDir + BLOCK + fileName;
+        return Paths.get(baseDir ,BLOCK + fileName).toString();
     }
 
     String generateIndexName() {
-        return baseDir + INDEX + fileName;
+        return Paths.get(baseDir ,INDEX + fileName).toString();
     }
 
     protected File getFile(String filePath) throws IOException {

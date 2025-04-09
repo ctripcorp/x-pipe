@@ -46,9 +46,14 @@ public class IndexStore implements StreamCommandListener{
 
     }
 
-    public void switchCmdFile(String cmdFileName) throws Exception {
+    public void switchCmdFile(CommandWriter cmdWriter) throws IOException {
+        String fileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
+        switchCmdFile(fileName);
+    }
+
+    public void switchCmdFile(String cmdFileName) throws IOException {
         this.indexWriter.finish();
-        GtidSet continueGtidSet =  this.indexWriter.getGtidSet();
+        GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
         this.indexWriter.close();
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet);
