@@ -114,7 +114,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, new GtidSet(""));
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
     }
 
     @Override
@@ -623,7 +623,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public void switchToXSync(GtidSet gtidSet) throws IOException {
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, gtidSet);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
     }
