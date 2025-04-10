@@ -608,9 +608,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public long locateContinueGtidSet(GtidSet gtidSet) {
-        // todo
         try {
-            return indexStore.locateContinueGtidSet(gtidSet).getOffset();
+            return indexStore.locateContinueGtidSet(gtidSet);
         } catch (Exception e) {
             return -1;
         }
