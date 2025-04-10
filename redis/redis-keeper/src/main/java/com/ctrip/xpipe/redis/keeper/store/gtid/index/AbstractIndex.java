@@ -100,4 +100,8 @@ public abstract class AbstractIndex {
     public String getFileName() {
         return fileName;
     }
+
+    public long getStartOffset() {
+        return extractOffset(fileName);
+    }
 }

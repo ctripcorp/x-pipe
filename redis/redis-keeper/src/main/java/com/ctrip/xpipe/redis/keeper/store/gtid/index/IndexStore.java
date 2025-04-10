@@ -78,10 +78,10 @@ public class IndexStore implements StreamCommandListener, Closeable {
         }
     }
 
-    public ContinuePoint locateContinueGtidSet(GtidSet request) throws Exception {
+    public long locateContinueGtidSet(GtidSet request) throws Exception {
         this.indexWriter.saveIndexEntry();
         long offset = -1;
-        String fileName = null;
+        long baseOffset = 0l;
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
             offset = indexReader.seek(request);
@@ -92,10 +92,10 @@ public class IndexStore implements StreamCommandListener, Closeable {
                 }
                 offset = indexReader.seek(request);
             }
-            fileName = indexReader.getFileName();
+            baseOffset = indexReader.getStartOffset();
         }
         offset = Math.max(offset, 0);
-        return new ContinuePoint(fileName, offset);
+        return baseOffset + offset;
     }
 
     public GtidSet getIndexGtidSet() {
