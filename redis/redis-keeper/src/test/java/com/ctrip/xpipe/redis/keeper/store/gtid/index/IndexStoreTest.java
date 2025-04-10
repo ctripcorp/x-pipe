@@ -86,7 +86,7 @@ public class IndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore = new IndexStore(baseDir, opParser);
         indexStore.initialize(writer);
 
 
@@ -177,7 +177,7 @@ public class IndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore = new IndexStore(baseDir, opParser);
         indexStore.initialize(writer);
         for(int i = 800000; i < 800004; i++) {
             ContinuePoint point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
@@ -193,7 +193,7 @@ public class IndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        indexStore = new IndexStore(baseDir, opParser, new GtidSet(""));
+        indexStore = new IndexStore(baseDir, opParser);
         indexStore.initialize(writer);
         write(file2);
         for(int i = 800000; i < 800004; i++) {

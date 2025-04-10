@@ -27,10 +27,10 @@ public class IndexStore implements StreamCommandListener, Closeable {
 
     private GtidSet startGtidSet;
 
-    public IndexStore(String baseDir, RedisOpParser redisOpParser, GtidSet startGtidSet) {
+    public IndexStore(String baseDir, RedisOpParser redisOpParser) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
-        this.startGtidSet = startGtidSet;
+        this.startGtidSet = new GtidSet("");
     }
 
 
