@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -23,19 +24,17 @@ import java.util.Set;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyable{
+public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, Destroyable{
 	
 	int getListeningPort();
 	
 	KeeperRepl getKeeperRepl();
 
-	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
-
-	void updateGtidSet(GtidSet gtidSet);
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;//TODO throw?
 
 	void switchToPSync(String replId, long offset) throws IOException;
 
-	void switchToXSync(GtidSet gtidSet, String masterUuid) throws IOException;
+	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidSet) throws IOException;
 
 	void clientDisconnected(Channel channel);
 	
@@ -58,6 +57,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState);
 	
 	RedisKeeperServerState getRedisKeeperServerState();
+
+	boolean gapAllowSyncEnabled();
 	
 	KeeperMeta getCurrentKeeperMeta();
 	

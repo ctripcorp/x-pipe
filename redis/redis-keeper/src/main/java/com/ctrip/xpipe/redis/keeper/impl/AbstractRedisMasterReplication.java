@@ -534,6 +534,41 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     protected abstract void doOnContinue();
 
+    @Override
+    public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        doOnXFullSync(replId, replOff, masterUuid, gtidLost);
+    }
+
+    protected abstract void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost);
+
+    @Override
+    public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+        doOnXContinue(replId, replOff, masterUuid, gtidCont);
+    }
+
+    protected abstract void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidLost);
+
+    @Override
+    public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
+        doOnSwitchToXsync(replId, replOff, masterUuid);
+    }
+
+    protected abstract void doOnSwitchToXsync(String replId, long replOff, String masterUuid);
+
+    @Override
+    public void onSwitchToPsync(String replId, long replOff) {
+        doOnSwitchToPsync(replId, replOff);
+    }
+
+    protected abstract void doOnSwitchToPsync(String replId, long replOff);
+
+    @Override
+    public void onUpdateXsync() {
+        doOnUpdateXsync();
+    }
+
+    protected abstract void doOnUpdateXsync();
+
     protected void dumpFinished() {
         logger.info("[dumpFinished]{}", this);
         RdbDumper dumper = rdbDumper.get();
@@ -579,5 +614,4 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     protected int commandTimeoutMilli() {
         return commandTimeoutMilli;
     }
-
 }

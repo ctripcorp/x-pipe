@@ -18,7 +18,7 @@ import java.io.IOException;
  */
 public class DefaultMetaStore extends AbstractMetaStore{
 
-	private ReplStage preReplStage;
+	private ReplStage preReplStage; // move to ReplicationStoreMeta?
 
 	private ReplStage currentReplStage;
 
@@ -46,6 +46,12 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	@Override
 	public GtidSet getLostGtidSet() {
 		return lost;
+	}
+
+	@Override
+	public void resetProto(ReplStage newReplStage) {
+		this.preReplStage = null;
+		this.currentReplStage = newReplStage;
 	}
 
 	@Override
@@ -196,6 +202,22 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			metaDup.setReplId2(currentReplId);
 			metaDup.setSecondReplIdOffset(currentOffset + 1);
 			
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta resetReplicationId(String replId, Long replOff) throws IOException {
+
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setReplId(replId);
+			metaDup.setBeginOffset(replOff);
+			metaDup.setReplId2(ReplicationStoreMeta.EMPTY_REPL_ID);
+			metaDup.setSecondReplIdOffset(ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET);
+
 			saveMeta(metaDup);
 			return metaDup;
 		}

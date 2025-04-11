@@ -25,9 +25,12 @@ public interface MetaStore {
 
 	GtidSet getLostGtidSet();
 
+	void resetProto(ReplStage newReplStage);
+
 	void switchProto(ReplStage newReplStage);
 
 	void updateLostGtidSet(GtidSet lost);
+
 
 	String getReplId();
 	
@@ -36,7 +39,8 @@ public interface MetaStore {
 	Long getSecondReplIdOffset();
 	
 	ReplicationStoreMeta shiftReplicationId(String newReplId, Long currentOffset) throws IOException;
-	
+
+	ReplicationStoreMeta resetReplicationId(String replId, Long replOff) throws IOException;
 	/**
 	 * the first byte offset,
 	 * 

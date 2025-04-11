@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
@@ -189,9 +190,17 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
         Psync psync;
         if (redisKeeperServer.getRedisKeeperServerState().keeperState().isBackup()) {
-            psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            if (redisKeeperServer.gapAllowSyncEnabled()) {
+                psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            } else {
+                psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            }
         } else {
-            psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            if (redisKeeperServer.gapAllowSyncEnabled()) {
+                psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            } else {
+                psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            }
         }
 
         psync.addPsyncObserver(this);
@@ -230,20 +239,23 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
     }
 
-    @Override
-    protected void doOnContinue() {
-
-        logger.info("[doOnContinue]{}", this);
+    private void doOnContinue0(String logPrefix) {
+        logger.info("[{}]{}", logPrefix, this);
         redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
         try {
             redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
         } catch (IOException e) {
-            logger.error("[doOnContinue]" + this, e);
+            logger.error("[" + logPrefix + "]" + this, e);
         }
 
         scheduleReplconf();
         partialState = PARTIAL_STATE.PARTIAL;
         redisKeeperServer.getRedisKeeperServerState().initPromotionState();
+    }
+
+    @Override
+    protected void doOnContinue() {
+        doOnContinue0("doOnContinue");
     }
 
     @Override
@@ -265,6 +277,30 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
         }
     }
 
+    @Override
+    protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        doOnFullSync(replOff);
+    }
+
+    @Override
+    protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        doOnContinue0("doOnXContinue");
+    }
+
+    @Override
+    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid) {
+        doOnContinue0("doOnSwitchToXsync");
+    }
+
+    @Override
+    protected void doOnSwitchToPsync(String replId, long replOff) {
+        doOnContinue0("doOnSwitchToPsync");
+    }
+
+    @Override
+    protected void doOnUpdateXsync() {
+
+    }
     @Override
     protected String getSimpleName() {
         return "DefRep";

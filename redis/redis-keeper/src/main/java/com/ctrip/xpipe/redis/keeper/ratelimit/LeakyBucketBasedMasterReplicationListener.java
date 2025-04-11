@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -237,4 +238,27 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(null);
     }
 
+    @Override
+    public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        setPsyncSucceed();
+    }
+
+    @Override
+    public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+        doOnContinue();
+    }
+
+    @Override
+    public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
+        doOnContinue();
+    }
+
+    @Override
+    public void onSwitchToPsync(String replId, long replOff) {
+        doOnContinue();
+    }
+
+    @Override
+    public void onUpdateXsync() {
+    }
 }
