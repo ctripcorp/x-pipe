@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.exception.replication.KeeperReplicationStoreRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -131,30 +132,115 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return new XSyncContinue(gtidSet, gtidSet, offset);
 	}
 
-	@Override
-	public void updateGtidSet(GtidSet gtidSet) {
-		GtidSet executed = cmdStore.getIndexGtidSet();
-		GtidSet lost = gtidSet.subtract(executed);
-		metaStore.updateLostGtidSet(lost);
+	private long getBacklogEndOffset() {
+		if (cmdStore == null) {
+			return -1;
+		} else {
+			return cmdStore.totalLength()-1;
+		}
 	}
 
 	@Override
-	public void switchToPSync(String replId, long offset) throws IOException {
-		ReplStage newReplStage = new ReplStage(replId, offset, cmdStore.totalLength());
-		metaStore.switchProto(newReplStage);
-		cmdStore.switchToPsync(replId, offset);
+	public String getRepStageReplId() {
+		return metaStore.getCurrentReplStage().getReplId();
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet, String masrerUuid) throws IOException {
-		ReplStage newReplStage = new ReplStage(gtidSet, masrerUuid, cmdStore.totalLength());
+	public long getReplStageEndReplOff() {
+		ReplStage curStage = metaStore.getCurrentReplStage();
+		long totalLength = cmdStore == null ? 0 : cmdStore.totalLength();
+		return  curStage.getBegOffsetRepl() + (totalLength - 1) - curStage.getBegOffsetBacklog();
+	}
+
+	@Override
+	public void resetToPSync(String replId, long replOff) {
+		// currently resetToPsync deliberatly doing half of what should be done:
+		// - replStage, gtidLost related: done here
+		// - replId, ... : done by continueFromOffset or confirmRdb
+		getLogger().info("[resetToPSync] replId:{}, replOff:{}", replId, replOff);
+		ReplStage newReplStage = new ReplStage(replId, replOff, getBacklogEndOffset());
+		metaStore.updateLostGtidSet(null);
+		metaStore.resetProto(newReplStage);
+	}
+
+	@Override
+	public void psyncContinue(String newReplId) throws IOException {
+		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
+		if (newReplId == null) return;
+		shiftReplicationId(newReplId);
+		metaStore.getCurrentReplStage().shiftReplId(newReplId, getEndOffset());
+	}
+
+	@Override
+	public void switchToPSync(String replId, long replOff) throws IOException {
+		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
+		String originMasterUuid = metaStore.getCurrentReplStage().getMasterUuid();
+		metaStore.getCurrentReplStage().xsyncUpdate(replId, replOff, originMasterUuid);
+		// metaStore.resetReplicationId(replId, replOff);
+		ReplStage newReplStage = new ReplStage(replId, replOff, getBacklogEndOffset());
 		metaStore.switchProto(newReplStage);
-		cmdStore.switchToXSync(gtidSet);
+		cmdStore.switchToPsync(replId, replOff);
+	}
+
+	public void resetToXSync(String replId, long replOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) {
+		// currently resetToXsync deliberatly doing half of what should be done:
+		// - replStage, gtidLost related: done here
+		// - replId, ... : done by continueFromOffset or confirmRdb
+		getLogger().info("[resetToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidLost:{}, gtidExecuted:{}", replId, replOff, masterUuid, gtidLost, gtidExecuted);
+		ReplStage newReplStage = new ReplStage(gtidExecuted, masterUuid, getBacklogEndOffset());
+		newReplStage.xsyncUpdate(replId, replOff, masterUuid);
+		metaStore.resetProto(newReplStage);
+		metaStore.updateLostGtidSet(gtidLost);
+	}
+
+	@Override
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
+		Pair<GtidSet, GtidSet> pair = getGtidSet();
+		GtidSet executed = pair.getKey(), lost = pair.getValue();
+		GtidSet gtidSet = executed.union(lost);
+		if (!gtidSet.equals(gtidCont)) {
+			getLogger().warn("[switchToXsync] gtidCont:{} not euqal to gtidset:{}", gtidCont, gtidSet);
+		}
+
+		ReplStage newReplStage = new ReplStage(executed, masterUuid, getBacklogEndOffset());
+		newReplStage.xsyncUpdate(replId, replOff, masterUuid);
+		metaStore.switchProto(newReplStage);
+		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+	}
+
+	private boolean updateGtidSet(GtidSet newGtidSet) {
+		Pair<GtidSet, GtidSet> pair = getGtidSet();
+		GtidSet executed = pair.getKey(), lost = pair.getValue();
+		GtidSet gtidSet = executed.union(lost);
+		GtidSet delta = newGtidSet.subtract(gtidSet);
+		GtidSet newLost = lost.union(delta);
+		metaStore.updateLostGtidSet(newLost);
+		return delta.isEmpty();
+	}
+
+	@Override
+	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
+		boolean gtidLostUpdated = updateGtidSet(gtidCont);
+		long adjustedBegOffsetRepl =  replOff - getEndOffset() + metaStore.getCurrentReplStage().getBegOffsetRepl();
+		boolean replStageUpdated = metaStore.getCurrentReplStage().xsyncUpdate(replId, adjustedBegOffsetRepl, masterUuid);
+		return gtidLostUpdated || replStageUpdated;
 	}
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
-		return Pair.of(cmdStore.getIndexGtidSet(), metaStore.getLostGtidSet());
+		GtidSet beginGtidSet;
+		if (metaStore.getCurrentReplStage() != null &&
+				metaStore.getCurrentReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
+			beginGtidSet = metaStore.getCurrentReplStage().getBeginGtidset();
+		} else if (metaStore.getPreReplStage() != null &&
+				metaStore.getPreReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
+			beginGtidSet = metaStore.getPreReplStage().getBeginGtidset();
+		} else {
+			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+		}
+		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), metaStore.getLostGtidSet());
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {

@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
@@ -136,9 +139,17 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 
 		if (state.equals(REPL_STATE.FRESH_SYNC)) {
-			psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
+			if (redisKeeperServer.gapAllowSyncEnabled()) {
+				psync = new FreshRdbOnlyGapAllowedSync(clientPool, replicationStore, scheduled);
+			} else {
+				psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
+			}
 		} else {
-			psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
+			if (redisKeeperServer.gapAllowSyncEnabled()) {
+				psync = new RdbOnlyGapAllowedSync(clientPool, replicationStore, scheduled);
+			} else {
+				psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
+			}
 		}
 
 		psync.addPsyncObserver(this);
@@ -232,6 +243,31 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 
 		super.dumpFail(th);
+	}
+
+	protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+		//TODO succeed iff firstAvaliableGtidSet+gtidLost > gtidSet+gtidLost
+		throw new IllegalStateException("to be implemented");
+	}
+
+	@Override
+	protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnSwitchToPsync(String replId, long replOff) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnUpdateXsync() {
+		throw new IllegalStateException("impossible to be here");
 	}
 
 	@Override

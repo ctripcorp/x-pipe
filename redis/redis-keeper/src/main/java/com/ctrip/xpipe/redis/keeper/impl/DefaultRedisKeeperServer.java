@@ -270,19 +270,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void updateGtidSet(GtidSet gtidSet) {
-		this.getCurrentReplicationStore().updateGtidSet(gtidSet);
-	}
-
-	@Override
 	public void switchToPSync(String replId, long offset) throws IOException {
 		getCurrentReplicationStore().switchToPSync(replId, offset);
 		closeSlaves("toPSync " + replId + ":" + offset);
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet, String masterUuid) throws IOException {
-		getCurrentReplicationStore().switchToXSync(gtidSet, masterUuid);
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidSet) throws IOException {
+		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidSet);
 		closeSlaves("toXSync " + gtidSet);
 	}
 
@@ -780,6 +775,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public boolean gapAllowSyncEnabled() {
+		//TODO enable by config
+		return true;
+	}
+
+	@Override
 	public RedisMaster getRedisMaster() {
 		return keeperRedisMaster;
 	}
@@ -1036,6 +1037,36 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	public int getRdbDumpTryCount() {
 		return rdbDumpTryCount.get();
+	}
+
+	@Override
+	public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+		//alert full sync
+		// TODO confirm event name
+		String alert = String.format("XFULL(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
+	}
+
+	@Override
+	public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+
+	}
+
+	@Override
+	public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
+		//TODO publish CAT event ?
+		closeSlaves("switch2xsync");
+	}
+
+	@Override
+	public void onSwitchToPsync(String replId, long replOff) {
+		//TODO publish CAT event ?
+		closeSlaves("switch2psync");
+	}
+
+	@Override
+	public void onUpdateXsync() {
+		closeSlaves("updateXsync");
 	}
 
 	public class ReplicationStoreManagerListener implements Observer{

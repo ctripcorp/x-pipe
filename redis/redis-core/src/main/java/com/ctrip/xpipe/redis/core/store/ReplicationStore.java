@@ -21,11 +21,14 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 
-	void updateGtidSet(GtidSet gtidSet);
-
+	void resetToPSync(String replId, long offset) throws IOException;
 	void switchToPSync(String replId, long offset) throws IOException;
-
-	void switchToXSync(GtidSet gtidSet, String masterUuid) throws IOException;
+	void psyncContinue(String replId) throws IOException;
+	void resetToXSync(String replId, long replOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) throws IOException;
+	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
+	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
+	String getRepStageReplId();
+	long getReplStageEndReplOff();
 
 	/**
 	 * @return pair of GtidSet.executed and GtidSet.lost
@@ -40,7 +43,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void confirmRdb(RdbStore rdbStore) throws IOException;
 
 	void continueFromOffset(String replId, long continueOffset) throws IOException;
-	
+
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
 	void checkReplIdAndUpdateRdb(RdbStore rdbStore) throws IOException;

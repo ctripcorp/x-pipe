@@ -48,6 +48,26 @@ public class ReplStage {
         return true;
     }
 
+    public boolean xsyncUpdate(String replId, long begOffsetRepl, String masterUuid) {
+        boolean updated = false;
+        if (this.proto != ReplProto.XSYNC) {
+            return false;
+        }
+        if (this.replId != replId) {
+            this.replId = replId;
+            updated = true;
+        }
+        if (this.begOffsetRepl != begOffsetRepl) {
+            this.begOffsetRepl = begOffsetRepl;
+            updated = true;
+        }
+        if (this.masterUuid != masterUuid) {
+            this.masterUuid = masterUuid;
+            updated = true;
+        }
+        return updated;
+    }
+
     public ReplStage(String replId, long replOffset, long backlogOffset) {
         this.proto = ReplProto.PSYNC;
         this.replId = replId;

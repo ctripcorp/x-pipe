@@ -8,6 +8,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -38,6 +39,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public GtidSet getLostGtidSet() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void resetProto(ReplStage newReplStage) {
 				throw new UnsupportedOperationException();
 			}
 
@@ -90,6 +96,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			
 			@Override
 			public ReplicationStoreMeta shiftReplicationId(String newReplId, Long currentOffset) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta resetReplicationId(String replId, Long replOff) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -178,7 +189,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void updateGtidSet(GtidSet gtidSet) {
+	public void resetToPSync(String replId, long offset) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -188,7 +199,32 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void switchToXSync(GtidSet gtidSet, String masterUuid) {
+	public void psyncContinue(String replId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void resetToXSync(String replId, long replOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidSet) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public String getRepStageReplId() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long getReplStageEndReplOff() {
 		throw new UnsupportedOperationException();
 	}
 
