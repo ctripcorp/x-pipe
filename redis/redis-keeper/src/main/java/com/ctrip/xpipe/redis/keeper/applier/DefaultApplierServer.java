@@ -178,7 +178,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
-        workerThreads = Executors.newScheduledThreadPool(1,
+        workerThreads = Executors.newScheduledThreadPool(8,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         /* TODO: dispose client when applier closed */
