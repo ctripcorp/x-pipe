@@ -5,6 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.google.common.collect.Lists;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -15,6 +18,8 @@ import java.util.concurrent.Executor;
  * Jan 31, 2022 1:06 PM
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
+
+    private static final Logger logger = LoggerFactory.getLogger(SequenceCommand.class);
 
     private final Collection<SequenceCommand<?>> pasts;
 
@@ -49,12 +54,12 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                     try {
                         future().setSuccess(f.get());
                     } catch (Exception unlikely) {
-                        getLogger().warn("UNLIKELY - setSuccess", unlikely);
+                        logger.warn("UNLIKELY - setSuccess", unlikely);
                     }
                 });
             } else {
                 if (inner instanceof StubbornCommand) {
-                    getLogger().warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
+                    logger.warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
                 }
                 stateThread.execute(() -> {
                     future().setFailure(f.cause());
@@ -74,7 +79,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                         executeSelf();
                     }
                 } else {
-                    getLogger().warn("[nextAfter] yet UNLIKELY - stubborn command will retry util success.");
+                    logger.warn("[nextAfter] yet UNLIKELY - stubborn command will retry util success.");
                     future().setFailure(f.cause());
                 }
             });

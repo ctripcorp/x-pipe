@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
  * Feb 26, 2022 3:13 PM
  */
 public class DefaultDataCommand extends AbstractCommand<Boolean> implements RedisOpDataCommand<Boolean> {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultDataCommand.class);
 
     public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
@@ -45,8 +49,8 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
-        if (getLogger().isDebugEnabled()) {
-            getLogger().debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
+        if (logger.isDebugEnabled()) {
+            logger.debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
         }
 
         long startTime = System.nanoTime();
@@ -54,8 +58,8 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
         client
                 .write(rc, dbNumber, rawArgs)
                 .addListener(f -> {
-                    if (getLogger().isDebugEnabled()) {
-                        getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
                     }
                     if (f.isSuccess()) {
                         future().setSuccess(true);

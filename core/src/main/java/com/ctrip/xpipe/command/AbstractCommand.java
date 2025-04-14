@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractCommand<V> implements Command<V>{
 
-	private Logger logger;
+	private static Logger logger = LoggerFactory.getLogger(AbstractCommand.class);
 
 	protected AtomicReference<CommandFuture<V>> future = new AtomicReference<CommandFuture<V>>(new DefaultCommandFuture<>(this));
 
@@ -32,8 +32,8 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	
 	@Override
 	public CommandFuture<V> execute(){
-		
-		getLogger().debug("[execute]{}", this);
+
+		logger.debug("[execute]{}", this);
 		return execute(MoreExecutors.directExecutor());
 	}
 
@@ -64,7 +64,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 					if(!future().isDone()){
 						future().setFailure(th);
 					}else {
-						getLogger().error("[execute][done, but exception]" + this, th);
+						logger.error("[execute][done, but exception]" + this, th);
 					}
 				}
 			}
@@ -73,7 +73,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 
 	protected void doExecuteWhenCommandDone() {
-		getLogger().info("[execute][already done, reset]{}, {}", this, future().getNow());
+		logger.info("[execute][already done, reset]{}, {}", this, future().getNow());
 		reset();
 	}
 	
@@ -94,12 +94,12 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	public void reset(){
 		
 		if(!future().isDone()){
-			getLogger().info("[reset][not done]{}", this);
+			logger.info("[reset][not done]{}", this);
 			future().cancel(true);
 		}
 
 		future.set(new DefaultCommandFuture<>(this));
-		getLogger().info("[reset]{}", this);
+		logger.info("[reset]{}", this);
 		doReset();
 	}
 	
