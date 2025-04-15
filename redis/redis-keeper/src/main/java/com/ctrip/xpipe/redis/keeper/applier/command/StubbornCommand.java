@@ -75,7 +75,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
 
                 logger.warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
-                retryExecutor.schedule(this::executeTilSuccess, 2000, TimeUnit.MILLISECONDS);
+                retryExecutor.schedule(this::executeTilSuccess, 100, TimeUnit.MILLISECONDS);
             }
         });
     }
