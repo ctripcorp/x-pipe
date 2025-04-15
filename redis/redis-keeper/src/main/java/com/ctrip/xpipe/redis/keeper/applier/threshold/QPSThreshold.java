@@ -24,7 +24,7 @@ public class QPSThreshold extends AbstractThreshold {
 
     public QPSThreshold(long qps, ScheduledExecutorService scheduled, boolean printable) {
         super(qps);
-        scheduled.scheduleAtFixedRate(super::reset, 1, 1, TimeUnit.SECONDS);
+        scheduled.scheduleAtFixedRate(this::reset, 1, 1, TimeUnit.SECONDS);
         this.printable = printable;
     }
 
