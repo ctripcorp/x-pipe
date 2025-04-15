@@ -52,7 +52,7 @@ public abstract class AbstractThreshold {
         }
     }
 
-    private void checkOpenGate(long current){
+    protected void checkOpenGate(long current){
 
         if(!gate.isOpen() && (current <= (limit >> 2))){
             logger.debug("[checkOpenGate][open gate]{}, {} / {}", gate, accumulated, limit);

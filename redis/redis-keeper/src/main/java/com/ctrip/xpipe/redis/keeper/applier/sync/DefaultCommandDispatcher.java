@@ -18,14 +18,19 @@ import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import org.apache.zookeeper.common.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,6 +61,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
 
+    public ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
+            XpipeThreadFactory.create("dispatcher-"));
+
     @InstanceDependency
     public AtomicLong offsetRecorder;
 
@@ -69,6 +77,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @VisibleForTesting
     GtidSet gtid_received;
 
+    QPSThreshold qpsThreshold;
+
+
+
     private GtidSet rdbGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 
     // in order to aggregate the entire transaction into one command
@@ -80,6 +92,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.rdbParser = createRdbParser();
 
         this.receivedSids = new HashSet<>();
+
+        this.qpsThreshold = new QPSThreshold(10000000, scheduled, true);
 
         this.transactionCommand = new AtomicReference<>();
     }
@@ -302,6 +316,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
+        qpsThreshold.tryPass();
 
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
