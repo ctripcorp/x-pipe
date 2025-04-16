@@ -1,28 +1,19 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestLwmManager;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMSetCommand;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestMultiDataCommandWrapper;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSetCommand;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
-import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Slight
@@ -42,6 +33,7 @@ public class DefaultSequenceControllerTest extends AbstractTest {
                 ClusterShardAwareThreadFactory.create("test-cluster", "test-shard", "worker-test-thread"));
         controller.scheduled = scheduled;
         controller.offsetRecorder = new AtomicLong(0);
+        controller.applierStatisticRef = new AtomicReference<>();
         controller.initialize();
     }
 
