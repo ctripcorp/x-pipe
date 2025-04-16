@@ -108,16 +108,16 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         }
 
         long bytes = command.redisOp().estimatedSize();
-        memoryThreshold.tryPass(bytes);
-        concurrencyThreshold.tryPass();
-
-        if (bytesPerSecondThreshold != null) {
-            bytesPerSecondThreshold.tryPass(bytes);
-        }
-
-        if (qpsThreshold != null) {
-            qpsThreshold.tryPass();
-        }
+//        memoryThreshold.tryPass(bytes);
+//        concurrencyThreshold.tryPass();
+//
+//        if (bytesPerSecondThreshold != null) {
+//            bytesPerSecondThreshold.tryPass(bytes);
+//        }
+//
+//        if (qpsThreshold != null) {
+//            qpsThreshold.tryPass();
+//        }
 
         stateThread.execute(() -> {
             if (logger.isDebugEnabled()) {
