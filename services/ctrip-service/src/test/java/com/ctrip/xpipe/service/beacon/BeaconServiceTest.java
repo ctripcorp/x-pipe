@@ -104,8 +104,8 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test
     public void testUpdateBeaconHost() throws Exception {
         MockWebServer mockWebServer = new MockWebServer();
-        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
+        mockWebServer.start(InetAddress.getByName("localhost"), randomPort());
+        beaconService.updateHost("http://localhost:" + mockWebServer.getPort());
         mockWebServer.enqueue(new MockResponse().setBody("{\n" +
                         "    \"code\": 0,\n" +
                         "    \"msg\": \"success\"" +
@@ -114,7 +114,7 @@ public class BeaconServiceTest extends AbstractServiceTest {
         beaconService.unregisterCluster(system, "cluster1");
 
         RecordedRequest request = mockWebServer.takeRequest();
-        Assert.assertEquals("127.0.0.2", request.getRequestUrl().host());
+        Assert.assertEquals("localhost", request.getRequestUrl().host());
     }
 
     @Test
