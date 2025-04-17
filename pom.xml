@@ -57,7 +57,7 @@
         <influxdb.version>2.7</influxdb.version>
         <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
         <clogging.version>4.9.0</clogging.version>
-        <credis.version>4.4.10-SNAPSHOT</credis.version>
+        <credis.version>4.4.13-SNAPSHOT</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
         <qunar.suprule.version>1.0.56</qunar.suprule.version>

@@ -170,7 +170,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             public void onFailure(Throwable t) {
                 commandFuture.setFailure(t);
             }
-        }, 10, TimeUnit.SECONDS, credisNotifyThread);
+        }, 1, TimeUnit.SECONDS, credisNotifyThread);
         return commandFuture;
     }
 

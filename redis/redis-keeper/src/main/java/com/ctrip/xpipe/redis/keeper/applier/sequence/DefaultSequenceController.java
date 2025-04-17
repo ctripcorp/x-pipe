@@ -108,6 +108,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         }
 
         long bytes = command.redisOp().estimatedSize();
+        //@CatFish 注释掉上游限制
 //        memoryThreshold.tryPass(bytes);
 //        concurrencyThreshold.tryPass();
 //
