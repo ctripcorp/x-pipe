@@ -178,7 +178,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         stateThread = Executors.newFixedThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
-        workerThreads = Executors.newScheduledThreadPool(8,
+        workerThreads = Executors.newScheduledThreadPool(1,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         /* TODO: dispose client when applier closed */
@@ -209,6 +209,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     protected void doInitialize() throws Exception {
+        //@CatFish 此时才注入
         super.doInitialize();
         String threadPoolName = makeApplierThreadName();
         bossGroup = new NioEventLoopGroup(DEFAULT_NTEEY_BOSS_THREADS_SIZE,

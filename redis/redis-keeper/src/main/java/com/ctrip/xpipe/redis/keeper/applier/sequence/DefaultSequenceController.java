@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
@@ -51,6 +48,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public QPSThreshold qpsThreshold;
 
+    public QPSThreshold successThreshold;
+
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
@@ -86,7 +85,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @Override
     protected void doInitialize() throws Exception {
-        qpsThreshold = new QPSThreshold(qpsThresholdValue, scheduled);
+        //@CatFish 打印执行和成功的qps
+        qpsThreshold = new QPSThreshold(1000000, scheduled, true, "send");
+        successThreshold = new QPSThreshold(1000000,scheduled,true, "success");
         bytesPerSecondThreshold = new BytesPerSecondThreshold(bytesPerSecondThresholdValue, scheduled);
     }
 
@@ -243,6 +244,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* make command */
 
         SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
+        ((DefaultDataCommand) command).setQpsThreshold(qpsThreshold);
 
         /* make self a dependency */
 
@@ -282,6 +284,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         sequenceCommand.future().addListener((f) -> {
             concurrencyThreshold.release();
             memoryThreshold.release(memory);
+            //@CatFish 在成功时记录
+            successThreshold.tryPass();
         });
     }
 

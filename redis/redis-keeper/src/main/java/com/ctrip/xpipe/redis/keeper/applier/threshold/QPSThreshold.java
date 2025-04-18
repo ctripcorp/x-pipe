@@ -17,21 +17,24 @@ public class QPSThreshold extends AbstractThreshold {
 
     private boolean printable = false;
 
+    private String name = null;
+
     public QPSThreshold(long qps, ScheduledExecutorService scheduled) {
         super(qps);
         scheduled.scheduleAtFixedRate(super::reset, 1, 1, TimeUnit.SECONDS);
     }
 
-    public QPSThreshold(long qps, ScheduledExecutorService scheduled, boolean printable) {
+    public QPSThreshold(long qps, ScheduledExecutorService scheduled, boolean printable, String name) {
         super(qps);
         scheduled.scheduleAtFixedRate(this::reset, 1, 1, TimeUnit.SECONDS);
         this.printable = printable;
+        this.name = name;
     }
 
     @Override
     protected void reset() {
         if (printable) {
-            logger.info("reset qps: " + accumulated.get());
+            logger.info("reset qps - " + (name == null ? "" : name) + " : " + accumulated.get());
         }
 
         accumulated.set(0);

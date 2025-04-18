@@ -93,7 +93,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         this.receivedSids = new HashSet<>();
 
-        this.qpsThreshold = new QPSThreshold(10000000, scheduled, true);
+        this.qpsThreshold = new QPSThreshold(10000000, scheduled, true, "dispatcher");
 
         this.transactionCommand = new AtomicReference<>();
     }
