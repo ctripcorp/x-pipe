@@ -121,6 +121,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 //            qpsThreshold.tryPass();
 //        }
 
+        ((DefaultDataCommand) command).setQpsThreshold(qpsThreshold);
         stateThread.execute(() -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
@@ -244,7 +245,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* make command */
 
         SequenceCommand<?> current = new SequenceCommand<>(dependencies, wrapWithRetry(command), stateThread, workerThreads);
-        ((DefaultDataCommand) command).setQpsThreshold(qpsThreshold);
 
         /* make self a dependency */
 
