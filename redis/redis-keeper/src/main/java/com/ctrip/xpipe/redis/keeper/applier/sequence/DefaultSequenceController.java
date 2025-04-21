@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
-import com.ctrip.xpipe.redis.keeper.applier.ApplierConfig;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
