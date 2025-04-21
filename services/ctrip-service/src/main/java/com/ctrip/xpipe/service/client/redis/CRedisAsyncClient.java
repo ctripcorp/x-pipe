@@ -160,7 +160,6 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         }
         CRedisAsyncRequest<Object> request = CRedisAsyncRequest.from(new ValueResult<>(), dbNumber);
         DefaultCommandFuture<Object> commandFuture = new DefaultCommandFuture<>();
-        //@CatFish 下游
         channel.dispatch(request, command).addListener(new FutureCallback<Object>() {
             @Override
             public void onSuccess(@Nullable Object result) {

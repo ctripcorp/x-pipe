@@ -2,17 +2,11 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
-import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Slight
@@ -33,8 +27,6 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
     final int dbNumber;
 
-    private QPSThreshold qpsThreshold;
-
     public DefaultDataCommand(AsyncRedisClient client, RedisOp redisOp, int dbNumber) {
         this(client, null, redisOp, dbNumber);
     }
@@ -47,17 +39,8 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
         this.dbNumber = dbNumber;
     }
 
-    public void setQpsThreshold(QPSThreshold qpsThreshold) {
-        this.qpsThreshold = qpsThreshold;
-    }
-
     @Override
     protected void doExecute() throws Throwable {
-        //@CatFish 记录worker发出的命令
-        if (qpsThreshold != null) {
-            qpsThreshold.tryPass();
-        }
-
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
         if (logger.isDebugEnabled()) {

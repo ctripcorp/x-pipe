@@ -152,11 +152,13 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig) throws Exception {
-        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, null, null, null, null, null);
+        this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, 1, 1,
+                null, null, null, null, null);
     }
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig,
+                                int stateThreadNum, int workerThreadNum,
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.dispatcher = new DefaultCommandDispatcher();
@@ -175,10 +177,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         this.shardId = shardId;
         this.applierMeta = applierMeta;
 
-        stateThread = Executors.newFixedThreadPool(1,
+        stateThread = Executors.newFixedThreadPool(stateThreadNum,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "state-" + makeApplierThreadName()));
 
-        workerThreads = Executors.newScheduledThreadPool(1,
+        workerThreads = Executors.newScheduledThreadPool(workerThreadNum,
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "worker-" + makeApplierThreadName()));
 
         /* TODO: dispose client when applier closed */
@@ -209,7 +211,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     @Override
     protected void doInitialize() throws Exception {
-        //@CatFish 此时才注入
         super.doInitialize();
         String threadPoolName = makeApplierThreadName();
         bossGroup = new NioEventLoopGroup(DEFAULT_NTEEY_BOSS_THREADS_SIZE,

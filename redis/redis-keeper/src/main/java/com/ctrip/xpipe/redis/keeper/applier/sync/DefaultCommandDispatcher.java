@@ -61,9 +61,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
 
-    public ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
-            XpipeThreadFactory.create("dispatcher-"));
-
     @InstanceDependency
     public AtomicLong offsetRecorder;
 
@@ -77,10 +74,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @VisibleForTesting
     GtidSet gtid_received;
 
-    QPSThreshold qpsThreshold;
-
-
-
     private GtidSet rdbGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 
     // in order to aggregate the entire transaction into one command
@@ -92,8 +85,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.rdbParser = createRdbParser();
 
         this.receivedSids = new HashSet<>();
-
-        this.qpsThreshold = new QPSThreshold(10000000, scheduled, true, "dispatcher");
 
         this.transactionCommand = new AtomicReference<>();
     }
@@ -316,7 +307,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
-        qpsThreshold.tryPass();
 
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);

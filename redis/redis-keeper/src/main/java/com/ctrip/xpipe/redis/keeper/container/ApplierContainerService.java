@@ -225,6 +225,7 @@ public class ApplierContainerService {
         ApplierServer applierServer = new DefaultApplierServer(applierTransMeta.getClusterName(),
                 ClusterId.from(applierTransMeta.getClusterDbId()), ShardId.from(applierTransMeta.getShardDbId()),
                 applierTransMeta.getApplierMeta(), leaderElectorManager, redisOpParser, keeperConfig,
+                applierTransMeta.getStateThreadNum(), applierTransMeta.getWorkerThreadNum(),
                 applierTransMeta.getQpsThreshold(), applierTransMeta.getBytesPerSecondThreshold(),
                 applierTransMeta.getMemoryThreshold(), applierTransMeta.getConcurrencyThreshold(),
                 applierTransMeta.getSubenv());

@@ -34,7 +34,7 @@ public class QPSThreshold extends AbstractThreshold {
     @Override
     protected void reset() {
         if (printable) {
-            logger.info("reset qps - " + (name == null ? "" : name) + " : " + accumulated.get());
+            logger.info("[QPSThreshold][{}]current qps - {}", (name == null ? "" : name), accumulated.get());
         }
 
         accumulated.set(0);

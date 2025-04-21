@@ -25,6 +25,10 @@ public class ApplierTransMeta {
 
     private Long concurrencyThreshold;
 
+    private Integer stateThreadNum = 1;
+
+    private Integer workerThreadNum = 1;
+
     private String subenv;
 
     //for json conversion
@@ -45,72 +49,99 @@ public class ApplierTransMeta {
         return applierMeta;
     }
 
-    public void setApplierMeta(ApplierMeta applierMeta) {
+    public ApplierTransMeta setApplierMeta(ApplierMeta applierMeta) {
         this.applierMeta = applierMeta;
+        return this;
     }
 
     public Long getClusterDbId() {
         return clusterDbId;
     }
 
-    public void setClusterDbId(Long clusterDbId) {
+    public ApplierTransMeta setClusterDbId(Long clusterDbId) {
         this.clusterDbId = clusterDbId;
+        return this;
     }
 
     public Long getShardDbId() {
         return shardDbId;
     }
 
-    public void setShardDbId(Long shardDbId) {
+    public ApplierTransMeta setShardDbId(Long shardDbId) {
         this.shardDbId = shardDbId;
+        return this;
     }
 
     public String getClusterName() {
         return clusterName;
     }
 
-    public void setClusterName(String clusterName) {
+    public ApplierTransMeta setClusterName(String clusterName) {
         this.clusterName = clusterName;
+        return this;
     }
 
     public Long getQpsThreshold() {
         return qpsThreshold;
     }
 
-    public void setQpsThreshold(Long qpsThreshold) {
+    public ApplierTransMeta setQpsThreshold(Long qpsThreshold) {
         this.qpsThreshold = qpsThreshold;
+        return this;
     }
 
     public Long getBytesPerSecondThreshold() {
         return bytesPerSecondThreshold;
     }
 
-    public void setBytesPerSecondThreshold(Long bytesPerSecondThreshold) {
+    public ApplierTransMeta setBytesPerSecondThreshold(Long bytesPerSecondThreshold) {
         this.bytesPerSecondThreshold = bytesPerSecondThreshold;
+        return this;
     }
 
     public Long getMemoryThreshold() {
         return memoryThreshold;
     }
 
-    public void setMemoryThreshold(Long memoryThreshold) {
+    public ApplierTransMeta setMemoryThreshold(Long memoryThreshold) {
         this.memoryThreshold = memoryThreshold;
+        return this;
     }
 
     public Long getConcurrencyThreshold() {
         return concurrencyThreshold;
     }
 
-    public void setConcurrencyThreshold(Long concurrencyThreshold) {
+    public ApplierTransMeta setConcurrencyThreshold(Long concurrencyThreshold) {
         this.concurrencyThreshold = concurrencyThreshold;
+        return this;
+    }
+
+    public Integer getStateThreadNum() {
+        return stateThreadNum;
+    }
+
+    public ApplierTransMeta setStateThreadNum(Integer stateThreadNum) {
+        this.stateThreadNum = stateThreadNum;
+        return this;
+    }
+
+    public Integer getWorkerThreadNum() {
+        return workerThreadNum;
+    }
+
+    public ApplierTransMeta setWorkerThreadNum(Integer workerThreadNum) {
+        this.workerThreadNum = workerThreadNum;
+        return this;
     }
 
     public String getSubenv() {
         return subenv;
     }
 
-    public void setSubenv(String subenv) {
+    public ApplierTransMeta setSubenv(String subenv) {
         this.subenv = subenv;
+        return this;
     }
 
     @Override

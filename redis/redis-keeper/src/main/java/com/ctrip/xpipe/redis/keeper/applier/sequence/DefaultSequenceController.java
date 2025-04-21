@@ -47,8 +47,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public QPSThreshold qpsThreshold;
 
-    public QPSThreshold successThreshold;
-
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
@@ -84,9 +82,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @Override
     protected void doInitialize() throws Exception {
-        //@CatFish 打印执行和成功的qps
-        qpsThreshold = new QPSThreshold(1000000, scheduled, true, "send");
-        successThreshold = new QPSThreshold(1000000,scheduled,true, "success");
+        qpsThreshold = new QPSThreshold(qpsThresholdValue, scheduled, true, "DefaultSequenceController");
         bytesPerSecondThreshold = new BytesPerSecondThreshold(bytesPerSecondThresholdValue, scheduled);
     }
 
@@ -108,19 +104,17 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         }
 
         long bytes = command.redisOp().estimatedSize();
-        //@CatFish 注释掉上游限制
-//        memoryThreshold.tryPass(bytes);
-//        concurrencyThreshold.tryPass();
-//
-//        if (bytesPerSecondThreshold != null) {
-//            bytesPerSecondThreshold.tryPass(bytes);
-//        }
-//
-//        if (qpsThreshold != null) {
-//            qpsThreshold.tryPass();
-//        }
+        memoryThreshold.tryPass(bytes);
+        concurrencyThreshold.tryPass();
 
-        ((DefaultDataCommand) command).setQpsThreshold(qpsThreshold);
+        if (bytesPerSecondThreshold != null) {
+            bytesPerSecondThreshold.tryPass(bytes);
+        }
+
+        if (qpsThreshold != null) {
+            qpsThreshold.tryPass();
+        }
+
         stateThread.execute(() -> {
             if (logger.isDebugEnabled()) {
                 logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
@@ -283,8 +277,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         sequenceCommand.future().addListener((f) -> {
             concurrencyThreshold.release();
             memoryThreshold.release(memory);
-            //@CatFish 在成功时记录
-            successThreshold.tryPass();
         });
     }
 
