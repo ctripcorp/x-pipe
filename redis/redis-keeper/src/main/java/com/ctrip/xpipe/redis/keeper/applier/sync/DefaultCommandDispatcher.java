@@ -9,8 +9,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeEnd;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMergeStart;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
@@ -18,19 +16,13 @@ import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
-import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
-import org.apache.zookeeper.common.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
