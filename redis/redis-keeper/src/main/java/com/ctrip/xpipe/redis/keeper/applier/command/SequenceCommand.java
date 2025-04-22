@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private static Logger staticLogger;
+    private static final Logger staticLogger = LoggerFactory.getLogger(SequenceCommand.class);;
 
     private final Collection<SequenceCommand<?>> pasts;
 
@@ -108,9 +108,6 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
 
     @Override
     protected Logger getLogger() {
-        if(staticLogger == null) {
-            staticLogger = LoggerFactory.getLogger(getClass());
-        }
         return staticLogger;
     }
 }

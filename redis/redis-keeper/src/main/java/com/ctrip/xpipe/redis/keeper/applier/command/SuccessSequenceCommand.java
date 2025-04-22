@@ -14,7 +14,7 @@ import java.util.concurrent.Executor;
  */
 public class SuccessSequenceCommand extends SequenceCommand<Boolean> {
 
-    private static Logger staticLogger;
+    private static final Logger staticLogger = LoggerFactory.getLogger(SuccessSequenceCommand.class);
 
     private static class SuccessCommand extends AbstractCommand<Boolean> {
 
@@ -40,9 +40,6 @@ public class SuccessSequenceCommand extends SequenceCommand<Boolean> {
 
     @Override
     protected Logger getLogger() {
-        if(staticLogger == null) {
-            staticLogger = LoggerFactory.getLogger(getClass());
-        }
         return staticLogger;
     }
 }

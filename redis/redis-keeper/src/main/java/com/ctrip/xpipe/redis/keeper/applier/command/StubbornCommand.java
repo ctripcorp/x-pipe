@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private static Logger staticLogger;
+    private static final Logger staticLogger = LoggerFactory.getLogger(StubbornCommand.class);;
 
     private final Command<V> inner;
 
@@ -92,9 +92,6 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
 
     @Override
     protected Logger getLogger() {
-        if(staticLogger == null) {
-            staticLogger = LoggerFactory.getLogger(getClass());
-        }
         return staticLogger;
     }
 }

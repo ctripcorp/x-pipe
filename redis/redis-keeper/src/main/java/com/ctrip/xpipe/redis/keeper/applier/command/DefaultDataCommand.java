@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultDataCommand extends AbstractCommand<Boolean> implements RedisOpDataCommand<Boolean> {
 
-    private static Logger staticLogger;
+    private static final Logger staticLogger = LoggerFactory.getLogger(DefaultDataCommand.class);;
 
     public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
@@ -79,9 +79,6 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
     @Override
     protected Logger getLogger() {
-        if(staticLogger == null) {
-            staticLogger = LoggerFactory.getLogger(getClass());
-        }
         return staticLogger;
     }
 }
