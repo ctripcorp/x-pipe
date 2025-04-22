@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sync.DefaultCommandDispatcher;
+import com.ctrip.xpipe.redis.keeper.applier.threshold.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,6 +16,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
+import java.util.concurrent.ThreadPoolExecutor;
+
+import static com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -56,10 +61,33 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
 
         assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
-
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
 
+        //default 1
+        assertEquals(1, ((ThreadPoolExecutor) server.stateThread).getCorePoolSize());
+        assertEquals(1, ((ThreadPoolExecutor) server.workerThreads).getCorePoolSize());
         assertEquals(server.scheduled, ((DefaultSequenceController) server.sequenceController).scheduled);
+
+        Field qpsThresholdField = DefaultSequenceController.class.getDeclaredField("qpsThreshold");
+        Field concurrencyThresholdField = DefaultSequenceController.class.getDeclaredField("concurrencyThreshold");
+        Field bytesPerSecondThresholdField = DefaultSequenceController.class.getDeclaredField("bytesPerSecondThreshold");
+        Field memoryThresholdField = DefaultSequenceController.class.getDeclaredField("memoryThreshold");
+        qpsThresholdField.setAccessible(true);
+        concurrencyThresholdField.setAccessible(true);
+        bytesPerSecondThresholdField.setAccessible(true);
+        memoryThresholdField.setAccessible(true);
+
+        QPSThreshold qpsThreshold = (QPSThreshold) qpsThresholdField.get(server.sequenceController);
+        ConcurrencyThreshold concurrencyThreshold = (ConcurrencyThreshold) concurrencyThresholdField.get(server.sequenceController);
+        BytesPerSecondThreshold bytesPerSecondThreshold = (BytesPerSecondThreshold) bytesPerSecondThresholdField.get(server.sequenceController);
+        MemoryThreshold memoryThreshold = (MemoryThreshold) memoryThresholdField.get(server.sequenceController);
+
+        Field limitField = AbstractThreshold.class.getDeclaredField("limit");
+        limitField.setAccessible(true);
+        assertEquals(DEFAULT_QPS_THRESHOLD, limitField.get(qpsThreshold));
+        assertEquals(DEFAULT_CONCURRENCY_THRESHOLD, limitField.get(concurrencyThreshold));
+        assertEquals(DEFAULT_BYTES_PER_SECOND_THRESHOLD, limitField.get(bytesPerSecondThreshold));
+        assertEquals(DEFAULT_MEMORY_THRESHOLD, limitField.get(memoryThreshold));
 
         assertEquals(server.gtidDistanceThreshold, ((DefaultCommandDispatcher) server.dispatcher).gtidDistanceThreshold);
 
@@ -70,6 +98,69 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
 
         //server.client.close()
     }
+
+    @Test
+    public void testParam() throws Exception {
+        applierMeta = new ApplierMeta().setPort(randomPort());
+        when(leaderElectorManager.createLeaderElector(any())).thenReturn(leaderElector);
+
+        DefaultApplierServer server = new DefaultApplierServer(
+                "ApplierTestParam", ClusterId.from(1L), ShardId.from(1L),
+                applierMeta, leaderElectorManager, parser, new TestKeeperConfig(),
+                1,8,
+                50000L, 50000L,50000L,50000L,null);
+        server.initialize();
+
+        assertTrue(server.sequenceController.getLifecycleState().isInitialized());
+
+        assertNotNull(server.client);
+        assertNotNull(server.parser);
+
+        assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
+        assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
+
+        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+
+        assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
+        assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
+
+        //default 1
+        assertEquals(1, ((ThreadPoolExecutor) server.stateThread).getCorePoolSize());
+        assertEquals(8, ((ThreadPoolExecutor) server.workerThreads).getCorePoolSize());
+        assertEquals(server.scheduled, ((DefaultSequenceController) server.sequenceController).scheduled);
+
+        Field qpsThresholdField = DefaultSequenceController.class.getDeclaredField("qpsThreshold");
+        Field concurrencyThresholdField = DefaultSequenceController.class.getDeclaredField("concurrencyThreshold");
+        Field bytesPerSecondThresholdField = DefaultSequenceController.class.getDeclaredField("bytesPerSecondThreshold");
+        Field memoryThresholdField = DefaultSequenceController.class.getDeclaredField("memoryThreshold");
+        qpsThresholdField.setAccessible(true);
+        concurrencyThresholdField.setAccessible(true);
+        bytesPerSecondThresholdField.setAccessible(true);
+        memoryThresholdField.setAccessible(true);
+
+        QPSThreshold qpsThreshold = (QPSThreshold) qpsThresholdField.get(server.sequenceController);
+        ConcurrencyThreshold concurrencyThreshold = (ConcurrencyThreshold) concurrencyThresholdField.get(server.sequenceController);
+        BytesPerSecondThreshold bytesPerSecondThreshold = (BytesPerSecondThreshold) bytesPerSecondThresholdField.get(server.sequenceController);
+        MemoryThreshold memoryThreshold = (MemoryThreshold) memoryThresholdField.get(server.sequenceController);
+
+        Field limitField = AbstractThreshold.class.getDeclaredField("limit");
+        limitField.setAccessible(true);
+        assertEquals(50000L, limitField.get(qpsThreshold));
+        assertEquals(50000L, limitField.get(concurrencyThreshold));
+        assertEquals(50000L, limitField.get(bytesPerSecondThreshold));
+        assertEquals(50000L, limitField.get(memoryThreshold));
+
+
+        assertEquals(server.gtidDistanceThreshold, ((DefaultCommandDispatcher) server.dispatcher).gtidDistanceThreshold);
+
+        assertEquals(server.offsetRecorder, ((DefaultCommandDispatcher) server.dispatcher).offsetRecorder);
+        assertEquals(server.offsetRecorder, ((DefaultSequenceController) server.sequenceController).offsetRecorder);
+
+        server.dispose();
+
+        //server.client.close()
+    }
+
 
     @Test
     public void testHealthCheck() throws Exception {

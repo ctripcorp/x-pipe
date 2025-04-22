@@ -5,10 +5,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
@@ -85,7 +82,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @Override
     protected void doInitialize() throws Exception {
-        qpsThreshold = new QPSThreshold(qpsThresholdValue, scheduled);
+        qpsThreshold = new QPSThreshold(qpsThresholdValue, scheduled, true, "DefaultSequenceController");
         bytesPerSecondThreshold = new BytesPerSecondThreshold(bytesPerSecondThresholdValue, scheduled);
     }
 

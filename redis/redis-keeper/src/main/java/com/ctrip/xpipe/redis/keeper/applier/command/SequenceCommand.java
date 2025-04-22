@@ -5,6 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.google.common.collect.Lists;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -15,6 +18,8 @@ import java.util.concurrent.Executor;
  * Jan 31, 2022 1:06 PM
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
+
+    private static final Logger staticLogger = LoggerFactory.getLogger(SequenceCommand.class);;
 
     private final Collection<SequenceCommand<?>> pasts;
 
@@ -99,5 +104,10 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
     @Override
     protected void doReset() {
         inner.reset();
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return staticLogger;
     }
 }

@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +17,8 @@ import java.util.concurrent.TimeUnit;
  * Feb 07, 2022 9:50 PM
  */
 public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V> {
+
+    private static final Logger staticLogger = LoggerFactory.getLogger(StubbornCommand.class);;
 
     private final Command<V> inner;
 
@@ -71,7 +75,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
 
                 getLogger().warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
-                retryExecutor.schedule(this::executeTilSuccess, 2000, TimeUnit.MILLISECONDS);
+                retryExecutor.schedule(this::executeTilSuccess, 100, TimeUnit.MILLISECONDS);
             }
         });
     }
@@ -84,5 +88,10 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
     @Override
     protected void doReset() {
 
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return staticLogger;
     }
 }

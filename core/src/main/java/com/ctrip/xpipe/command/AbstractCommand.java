@@ -32,7 +32,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	
 	@Override
 	public CommandFuture<V> execute(){
-		
+
 		getLogger().debug("[execute]{}", this);
 		return execute(MoreExecutors.directExecutor());
 	}

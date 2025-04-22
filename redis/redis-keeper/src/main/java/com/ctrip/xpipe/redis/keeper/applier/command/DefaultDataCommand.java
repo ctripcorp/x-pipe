@@ -2,14 +2,11 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
-import com.google.common.collect.Lists;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Slight
@@ -17,6 +14,8 @@ import java.util.stream.Collectors;
  * Feb 26, 2022 3:13 PM
  */
 public class DefaultDataCommand extends AbstractCommand<Boolean> implements RedisOpDataCommand<Boolean> {
+
+    private static final Logger staticLogger = LoggerFactory.getLogger(DefaultDataCommand.class);;
 
     public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
@@ -42,7 +41,6 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
 
     @Override
     protected void doExecute() throws Throwable {
-
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
         if (getLogger().isDebugEnabled()) {
@@ -77,5 +75,10 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     @Override
     public RedisOp redisOp() {
         return redisOp;
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return staticLogger;
     }
 }
