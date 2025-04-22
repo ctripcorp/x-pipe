@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SequenceCommand.class);
+    private static Logger staticLogger;
 
     private final Collection<SequenceCommand<?>> pasts;
 
@@ -54,12 +54,12 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                     try {
                         future().setSuccess(f.get());
                     } catch (Exception unlikely) {
-                        logger.warn("UNLIKELY - setSuccess", unlikely);
+                        getLogger().warn("UNLIKELY - setSuccess", unlikely);
                     }
                 });
             } else {
                 if (inner instanceof StubbornCommand) {
-                    logger.warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
+                    getLogger().warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
                 }
                 stateThread.execute(() -> {
                     future().setFailure(f.cause());
@@ -79,7 +79,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                         executeSelf();
                     }
                 } else {
-                    logger.warn("[nextAfter] yet UNLIKELY - stubborn command will retry util success.");
+                    getLogger().warn("[nextAfter] yet UNLIKELY - stubborn command will retry util success.");
                     future().setFailure(f.cause());
                 }
             });
@@ -104,5 +104,13 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
     @Override
     protected void doReset() {
         inner.reset();
+    }
+
+    @Override
+    protected Logger getLogger() {
+        if(staticLogger == null) {
+            staticLogger = LoggerFactory.getLogger(getClass());
+        }
+        return staticLogger;
     }
 }

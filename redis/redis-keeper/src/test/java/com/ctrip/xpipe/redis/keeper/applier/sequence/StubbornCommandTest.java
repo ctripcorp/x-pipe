@@ -7,13 +7,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * @author Slight
@@ -75,5 +76,17 @@ public class StubbornCommandTest {
     public void stubbornFailTwice() throws ExecutionException, InterruptedException {
         Integer result = new StubbornCommand<>(failTwice, scheduledExecutorService).execute().get();
         assertEquals((Integer) 2, result);
+    }
+
+    @Test
+    public void stubbornLogger() throws ExecutionException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+        StubbornCommand<Integer> command = new StubbornCommand<>(failTwice, scheduledExecutorService);
+        Integer result = command.execute().get();
+        assertEquals((Integer) 2, result);
+        Field staticLoggerField = command.getClass().getDeclaredField("staticLogger");
+        staticLoggerField.setAccessible(true);
+        Logger staticLogger = (Logger)staticLoggerField.get(command);
+        assertNotNull(staticLogger);
+        assertEquals(staticLogger.getName(), StubbornCommand.class.getName());
     }
 }

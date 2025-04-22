@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultDataCommand extends AbstractCommand<Boolean> implements RedisOpDataCommand<Boolean> {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultDataCommand.class);
+    private static Logger staticLogger;
 
     public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtid command is executed";
 
@@ -43,8 +43,8 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     protected void doExecute() throws Throwable {
         Object rc = resource != null ? resource : client.select(key().get());
         Object[] rawArgs = redisOp.buildRawOpArgs();
-        if (logger.isDebugEnabled()) {
-            logger.debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
+        if (getLogger().isDebugEnabled()) {
+            getLogger().debug("[command] write key {} start", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"));
         }
 
         long startTime = System.nanoTime();
@@ -52,8 +52,8 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
         client
                 .write(rc, dbNumber, rawArgs)
                 .addListener(f -> {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
+                    if (getLogger().isDebugEnabled()) {
+                        getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
                     }
                     if (f.isSuccess()) {
                         future().setSuccess(true);
@@ -75,5 +75,13 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     @Override
     public RedisOp redisOp() {
         return redisOp;
+    }
+
+    @Override
+    protected Logger getLogger() {
+        if(staticLogger == null) {
+            staticLogger = LoggerFactory.getLogger(getClass());
+        }
+        return staticLogger;
     }
 }

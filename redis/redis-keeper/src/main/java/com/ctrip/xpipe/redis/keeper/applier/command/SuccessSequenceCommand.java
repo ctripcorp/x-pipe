@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.command.AbstractCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -11,6 +13,8 @@ import java.util.concurrent.Executor;
  * Jun 01, 2022 12:30
  */
 public class SuccessSequenceCommand extends SequenceCommand<Boolean> {
+
+    private static Logger staticLogger;
 
     private static class SuccessCommand extends AbstractCommand<Boolean> {
 
@@ -32,5 +36,13 @@ public class SuccessSequenceCommand extends SequenceCommand<Boolean> {
 
     public SuccessSequenceCommand(List<SequenceCommand<?>> pasts, Executor stateThread, Executor workerThreads) {
         super(pasts, new SuccessCommand(), stateThread, workerThreads);
+    }
+
+    @Override
+    protected Logger getLogger() {
+        if(staticLogger == null) {
+            staticLogger = LoggerFactory.getLogger(getClass());
+        }
+        return staticLogger;
     }
 }

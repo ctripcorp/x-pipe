@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private static final Logger logger = LoggerFactory.getLogger(StubbornCommand.class);
+    private static Logger staticLogger;
 
     private final Command<V> inner;
 
@@ -56,24 +56,24 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
                     if (null != statistic) statistic.incrTrans();
                     future().setSuccess(f.get());
                 } catch (Exception unlikely) {
-                    logger.error("UNLIKELY - setSuccess", unlikely);
+                    getLogger().error("UNLIKELY - setSuccess", unlikely);
                 }
             } else {
                 retryTimes --;
                 if (retryTimes < 0) {
-                    logger.error("[{}] failed, retry too many times, stop retrying..", this, f.cause());
+                    getLogger().error("[{}] failed, retry too many times, stop retrying..", this, f.cause());
                     EventMonitor.DEFAULT.logAlertEvent("drop command: " + this);
                     if (null != statistic) statistic.incrDropped();
 
                     try {
                         future().setSuccess(null);
                     } catch (Exception unlikely) {
-                        logger.error("UNLIKELY - setSuccess", unlikely);
+                        getLogger().error("UNLIKELY - setSuccess", unlikely);
                     }
                     return;
                 }
 
-                logger.warn("[{}] failed, retry", this, f.cause());
+                getLogger().warn("[{}] failed, retry", this, f.cause());
                 inner.reset();
                 retryExecutor.schedule(this::executeTilSuccess, 100, TimeUnit.MILLISECONDS);
             }
@@ -88,5 +88,13 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
     @Override
     protected void doReset() {
 
+    }
+
+    @Override
+    protected Logger getLogger() {
+        if(staticLogger == null) {
+            staticLogger = LoggerFactory.getLogger(getClass());
+        }
+        return staticLogger;
     }
 }
