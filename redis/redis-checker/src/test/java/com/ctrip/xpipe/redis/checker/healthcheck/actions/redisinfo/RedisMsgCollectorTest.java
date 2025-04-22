@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
+import static com.ctrip.xpipe.cluster.ClusterType.SINGLE_DC;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RedisMsgCollectorTest {
@@ -53,6 +54,13 @@ public class RedisMsgCollectorTest {
         Mockito.when(actionInstance.getCheckInfo()).thenReturn(info);
 
         redisMsgCollector.onAction(context);
+
+        Mockito.when(info.isMaster()).thenReturn(true);
+        Mockito.when(info.getClusterType()).thenReturn(ONE_WAY);
+        Mockito.when(actionInstance.getCheckInfo()).thenReturn(info);
+        Mockito.when(context.getResult()).thenReturn(null);
+        redisMsgCollector.onAction(context);
+
 
 //        Map<HostPort, RedisMsg> updatedRedisMsgMap = redisMsgCollector.getRedisMasterMsgMap().get(dcClusterShard.getDcId());
 //        Assert.assertNotNull(updatedRedisMsgMap);

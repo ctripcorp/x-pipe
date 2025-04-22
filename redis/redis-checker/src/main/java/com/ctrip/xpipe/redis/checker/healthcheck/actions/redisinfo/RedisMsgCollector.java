@@ -36,6 +36,11 @@ public class RedisMsgCollector implements InfoActionListener, OneWaySupport {
     @Override
     public void onAction(RawInfoActionContext context) {
         try {
+            if(StringUtil.isEmpty(context.getResult())) {
+                // has exception
+                logger.error("fail get info", context.getCause());
+                return;
+            }
             InfoResultExtractor extractor = new InfoResultExtractor(context.getResult());
             RedisInstanceInfo info = context.instance().getCheckInfo();
             if (!info.isMaster() || info.getClusterType() != ONE_WAY) return;
