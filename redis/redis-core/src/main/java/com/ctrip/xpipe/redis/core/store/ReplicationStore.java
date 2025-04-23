@@ -16,19 +16,18 @@ import java.util.concurrent.ExecutorService;
  *         2016年4月19日 下午3:43:56
  */
 public interface ReplicationStore extends Closeable, Destroyable {
-
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 
-	void resetToPSync(String replId, long offset) throws IOException;
+	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid) throws IOException;
+	void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException;
+	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException;
 	void switchToPSync(String replId, long offset) throws IOException;
 	void psyncContinue(String replId) throws IOException;
-	void resetToXSync(String replId, long replOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) throws IOException;
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
-	String getRepStageReplId();
-	long getReplStageEndReplOff();
+	long getCurReplStageReplOff();
 
 	/**
 	 * @return pair of GtidSet.executed and GtidSet.lost

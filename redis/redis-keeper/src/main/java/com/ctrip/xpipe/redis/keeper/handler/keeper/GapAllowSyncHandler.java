@@ -133,7 +133,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         long reqBacklogOffset = psyncStage.replOffset2BacklogOffset(request.offset);
         String keeperReplId = psyncStage.getReplId();
         String keeperReplId2 = psyncStage.getReplId2();
-        long keeperOffset2 = psyncStage.getSecondReplOffset();
+        long keeperOffset2 = psyncStage.getSecondReplIdOffset();
         long backlogBeginOffset = keeperRepl.backlogBeginOffset();
 
         if (request.replId.equalsIgnoreCase(keeperReplId) || (request.replId.equalsIgnoreCase(keeperReplId2) && request.offset <= keeperOffset2)) {

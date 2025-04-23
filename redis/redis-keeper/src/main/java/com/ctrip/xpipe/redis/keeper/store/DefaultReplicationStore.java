@@ -101,7 +101,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStoreRef.set(createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta)));
+				ReplStage replStage = meta.getCurReplStage();
+				ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
+				GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
+				String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
+
+				rdbStoreRef.set(createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta), replProto, gtidLost, masterUuid));
 				rdbStoreRef.get().updateRdbType(RdbStore.Type.NORMAL);
 				rdbStoreRef.get().updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -109,7 +114,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRordbFile() != null) {
 			File rordb = new File(baseDir, meta.getRordbFile());
 			if (rordb.isFile()) {
-				rordbStoreRef.set(createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta)));
+				ReplStage replStage = meta.getCurReplStage();
+				ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
+				GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
+				String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
+
+				rordbStoreRef.set(createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta), replProto, gtidLost, masterUuid));
 				rordbStoreRef.get().updateRdbType(RdbStore.Type.RORDB);
 				rordbStoreRef.get().updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -132,115 +142,56 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return new XSyncContinue(gtidSet, gtidSet, offset);
 	}
 
-	private long getBacklogEndOffset() {
-		if (cmdStore == null) {
-			return -1;
-		} else {
-			return cmdStore.totalLength()-1;
-		}
-	}
-
 	@Override
-	public String getRepStageReplId() {
-		return metaStore.getCurrentReplStage().getReplId();
-	}
-
-	@Override
-	public long getReplStageEndReplOff() {
+	public long getCurReplStageReplOff() {
 		ReplStage curStage = metaStore.getCurrentReplStage();
 		long totalLength = cmdStore == null ? 0 : cmdStore.totalLength();
 		return  curStage.getBegOffsetRepl() + (totalLength - 1) - curStage.getBegOffsetBacklog();
 	}
 
 	@Override
-	public void resetToPSync(String replId, long replOff) {
-		// currently resetToPsync deliberatly doing half of what should be done:
-		// - replStage, gtidLost related: done here
-		// - replId, ... : done by continueFromOffset or confirmRdb
-		getLogger().info("[resetToPSync] replId:{}, replOff:{}", replId, replOff);
-		ReplStage newReplStage = new ReplStage(replId, replOff, getBacklogEndOffset());
-		metaStore.updateLostGtidSet(null);
-		metaStore.resetProto(newReplStage);
-	}
-
-	@Override
 	public void psyncContinue(String newReplId) throws IOException {
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
-		shiftReplicationId(newReplId);
-		metaStore.getCurrentReplStage().shiftReplId(newReplId, getEndOffset());
+		metaStore.psyncContinue(newReplId, backlogEndOffset());
 	}
 
 	@Override
 	public void switchToPSync(String replId, long replOff) throws IOException {
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
-		String originMasterUuid = metaStore.getCurrentReplStage().getMasterUuid();
-		metaStore.getCurrentReplStage().xsyncUpdate(replId, replOff, originMasterUuid);
-		// metaStore.resetReplicationId(replId, replOff);
-		ReplStage newReplStage = new ReplStage(replId, replOff, getBacklogEndOffset());
-		metaStore.switchProto(newReplStage);
+		metaStore.switchToPsync(replId, replOff+1, backlogEndOffset());
 		cmdStore.switchToPsync(replId, replOff);
-	}
-
-	public void resetToXSync(String replId, long replOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) {
-		// currently resetToXsync deliberatly doing half of what should be done:
-		// - replStage, gtidLost related: done here
-		// - replId, ... : done by continueFromOffset or confirmRdb
-		getLogger().info("[resetToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidLost:{}, gtidExecuted:{}", replId, replOff, masterUuid, gtidLost, gtidExecuted);
-		ReplStage newReplStage = new ReplStage(gtidExecuted, masterUuid, getBacklogEndOffset());
-		newReplStage.xsyncUpdate(replId, replOff, masterUuid);
-		metaStore.resetProto(newReplStage);
-		metaStore.updateLostGtidSet(gtidLost);
 	}
 
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
 		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
-		Pair<GtidSet, GtidSet> pair = getGtidSet();
-		GtidSet executed = pair.getKey(), lost = pair.getValue();
-		GtidSet gtidSet = executed.union(lost);
-		if (!gtidSet.equals(gtidCont)) {
-			getLogger().warn("[switchToXsync] gtidCont:{} not euqal to gtidset:{}", gtidCont, gtidSet);
-		}
-
-		ReplStage newReplStage = new ReplStage(executed, masterUuid, getBacklogEndOffset());
-		newReplStage.xsyncUpdate(replId, replOff, masterUuid);
-		metaStore.switchProto(newReplStage);
+		metaStore.switchToXsync(replId, replOff+1, backlogEndOffset(), masterUuid, gtidCont);
 		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
-	}
-
-	private boolean updateGtidSet(GtidSet newGtidSet) {
-		Pair<GtidSet, GtidSet> pair = getGtidSet();
-		GtidSet executed = pair.getKey(), lost = pair.getValue();
-		GtidSet gtidSet = executed.union(lost);
-		GtidSet delta = newGtidSet.subtract(gtidSet);
-		GtidSet newLost = lost.union(delta);
-		metaStore.updateLostGtidSet(newLost);
-		return delta.isEmpty();
 	}
 
 	@Override
 	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
 		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
-		boolean gtidLostUpdated = updateGtidSet(gtidCont);
-		long adjustedBegOffsetRepl =  replOff - getEndOffset() + metaStore.getCurrentReplStage().getBegOffsetRepl();
-		boolean replStageUpdated = metaStore.getCurrentReplStage().xsyncUpdate(replId, adjustedBegOffsetRepl, masterUuid);
-		return gtidLostUpdated || replStageUpdated;
+		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
 	}
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
-		GtidSet beginGtidSet;
+		GtidSet beginGtidSet, lostGtidSet;
 		if (metaStore.getCurrentReplStage() != null &&
 				metaStore.getCurrentReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
 			beginGtidSet = metaStore.getCurrentReplStage().getBeginGtidset();
+			lostGtidSet = metaStore.getCurrentReplStage().getGtidLost();
 		} else if (metaStore.getPreReplStage() != null &&
 				metaStore.getPreReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
 			beginGtidSet = metaStore.getPreReplStage().getBeginGtidset();
+			lostGtidSet = metaStore.getPreReplStage().getGtidLost();
 		} else {
 			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+			lostGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		}
-		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), metaStore.getLostGtidSet());
+		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
@@ -270,6 +221,18 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			getLogger().info("[removeUnusedRdbFile] {}", rdbFile);
 			rdbFile.delete();
 		}
+	}
+
+	@Override
+	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
+							   GtidSet gtidLost, String masterUuid) throws IOException {
+		makeSureOpen();
+		baseDir.mkdirs();
+
+		getLogger().info("[makeRdb] replId:{}, rdbOffset:{}, eof:{}, proto:{}, gtidLost:{}, masterUuid:{}",
+				replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
+		String rdbFile = newRdbFileName();
+		return createRdbStore(new File(baseDir, rdbFile), replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
 	}
 
 	@Override
@@ -305,6 +268,115 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		storeRef.set(rdbStore);
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 		cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
+	}
+
+	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
+		makeSureOpen();
+
+		getLogger().info("[confirmRdbGapAllowed] type:{}, replId:{}, rdbOffset:{}, eof:{}, gtid-repl-mode:{}, gtid-executed:{} gtid-lost:{}",
+				rdbStore.getRdbType(), rdbStore.getReplId(), rdbStore.getRdbOffset(), rdbStore.getEofType(),
+				rdbStore.getReplProto(), rdbStore.getGtidSet(), rdbStore.getGtidLost());
+		AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbStore.getRdbType()) ? rdbStoreRef : rordbStoreRef;
+
+		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
+
+		ReplicationStoreMeta newMeta;
+
+		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
+			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, backlogEndOffset(),
+					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
+					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
+
+		} else {
+			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, backlogEndOffset(),
+					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
+
+		}
+
+		rdbStore.addListener(createRdbStoreListener(rdbStore));
+		storeRef.set(rdbStore);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
+			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+		} else {
+			cmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
+		}
+		//TODO why should be set base index??
+		// cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
+	}
+
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException {
+		makeSureOpen();
+
+		synchronized (lock) {
+			rdbUpdateCount.incrementAndGet();
+
+			File dumpedRdbFile = rdbStore.getRdbFile();
+			if (!baseDir.equals(dumpedRdbFile.getParentFile())) {
+				throw new IllegalStateException("update rdb error, filePath:" + dumpedRdbFile.getAbsolutePath()
+						+ ", baseDir:" + baseDir.getAbsolutePath());
+			}
+
+			ReplStage.ReplProto replProto = rdbStore.getReplProto();
+			EofType eofType = rdbStore.getEofType();
+			long rdbOffset = rdbStore.rdbOffset();
+			RdbStore.Type rdbType = rdbStore.getRdbType();
+			AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbType) ? rdbStoreRef : rordbStoreRef;
+
+			UPDATE_RDB_RESULT result;
+			if (replProto == ReplStage.ReplProto.PSYNC) {
+				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
+						rdbType, eofType, rdbOffset, backlogBeginOffset(), backlogEndOffset(), rdbStore.getReplId());
+			} else {
+				long rdbOffsetBacklog;
+				String gtidExecutedRepr = rdbStore.getGtidSet();
+				String gtidLostRepr = rdbStore.getGtidLost();
+
+				try {
+
+					GtidSet rdbGtidExecuted = new GtidSet(gtidExecutedRepr);
+					GtidSet rdbGtidLost = new GtidSet(gtidLostRepr);
+					GtidSet rdbGtidSet = rdbGtidExecuted.union(rdbGtidLost);
+
+					Pair<GtidSet, GtidSet> pair = getGtidSet();
+					GtidSet gtidSet = pair.getKey().union(pair.getValue());
+
+					// TODO make cmdstore locate gtidset thread-safe
+					XSyncContinue cont = locateContinueGtidSet(rdbGtidSet);
+					rdbOffsetBacklog = cont.getBacklogOffset();
+
+					GtidSet gtidCont = gtidSet.subtract(cont.getBacklogGtidSet());
+
+					if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) {
+						return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
+					}
+
+					if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) {
+						return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+					}
+				} catch (Exception e) {
+					throw new KeeperReplicationStoreRuntimeException(e.toString());
+				}
+
+				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
+						rdbType, eofType, rdbOffset, rdbOffsetBacklog, backlogBeginOffset(), backlogEndOffset(),
+						gtidExecutedRepr, rdbStore.getReplId(), rdbStore.getMasterUuid());
+			}
+			if (result != UPDATE_RDB_RESULT.OK) {
+				return result;
+			}
+
+			rdbStore.addListener(createRdbStoreListener(rdbStore));
+
+			getLogger().info("[checkReplIdAndUpdateRdbGapAllowed] new file:{}, type:{} eofType:{}, rdbOffset:{}", dumpedRdbFile, rdbType, eofType, rdbOffset);
+			RdbStore oldRdbStore = storeRef.get();
+			storeRef.set(rdbStore);
+			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+			// cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (metaDup.getBeginOffset() - 1));
+			return UPDATE_RDB_RESULT.OK;
+		}
 	}
 
 	@Override
@@ -373,6 +445,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
+		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
+		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
+		return rdbStore;
+	}
+
+	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
+									  GtidSet gtidLost, String masterUuid) throws IOException {
 		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;

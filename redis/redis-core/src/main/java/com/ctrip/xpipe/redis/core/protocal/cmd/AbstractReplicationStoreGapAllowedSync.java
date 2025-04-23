@@ -47,8 +47,8 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			return full;
 		} else if (proto != ReplStage.ReplProto.XSYNC) {
 			PsyncRequest psync = new PsyncRequest();
-			psync.setReplId(currentReplicationStore.getRepStageReplId());
-			psync.setReplOff(currentReplicationStore.getReplStageEndReplOff() + 1);
+			psync.setReplId(currentReplicationStore.getMetaStore().getCurReplStageReplId());
+			psync.setReplOff(currentReplicationStore.getCurReplStageReplOff() + 1);
 			return psync;
 		} else {
 			XsyncRequest xsync = new XsyncRequest();
@@ -56,6 +56,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
 			xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
 			xsync.setGtidSet(gtidSet);
+			xsync.setMaxGap(10000); //TODO specify maxgap?
 			return xsync;
 		}
 	}
@@ -85,7 +86,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 				throw new IllegalStateException("keeper-continue to non fresh repl store");
 			}
 			currentReplicationStore.continueFromOffset(replId, beginOffset);
-			currentReplicationStore.resetToPSync(replId, beginOffset);
+			// TODO currentReplicationStore.resetToPSync(replId, beginOffset);
 			super.doOnKeeperContinue(replId, beginOffset);
 		} catch (IOException e) {
 			getLogger().error("[doOnKeeperContinue]" + replId + ":" + beginOffset, e);
@@ -120,8 +121,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 	@Override
 	protected void doOnSwitchToXsync() throws IOException {
 		XContinueReply reply = (XContinueReply) syncReply;
-		currentReplicationStore.switchToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(),
-				reply.getGtidCont());
+		currentReplicationStore.switchToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
 		super.doOnSwitchToXsync();
 	}
 
@@ -137,9 +137,12 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 	protected void beginReadRdb(EofType eofType) {
 		try {
 			if (syncReply instanceof FullresyncReply) {
-				rdbStore = currentReplicationStore.prepareRdb(syncReply.getReplId(), syncReply.getReplOff(), eofType);
+				rdbStore = currentReplicationStore.prepareRdb(syncReply.getReplId(), syncReply.getReplOff(), eofType,
+						ReplStage.ReplProto.PSYNC, null, null);
 			} else if (syncReply instanceof XFullresyncReply) {
-				rdbStore = currentReplicationStore.prepareRdb(syncReply.getReplId(), syncReply.getReplOff(), eofType);
+				XFullresyncReply reply = (XFullresyncReply) syncReply;
+				rdbStore = currentReplicationStore.prepareRdb(syncReply.getReplId(), syncReply.getReplOff(), eofType,
+						ReplStage.ReplProto.XSYNC, reply.getGtidLost(), reply.getMasterUuid());
 			} else {
 				//TODO TEST
 				throw new IllegalStateException("unexpected syncReply type:{}" + syncReply);
@@ -178,24 +181,6 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 
 	@Override
 	public void onAuxFinish(Map<String, String> auxMap) {
-		// TODO confirm should we move it to confirmRdb?
-		try {
-			String replStage = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_REPL_MODE, "psync");
-			if (replStage.equalsIgnoreCase(ReplStage.ReplProto.XSYNC.name())) {
-				XFullresyncReply reply = (XFullresyncReply) syncReply;
-				String gtidRepr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED,GtidSet.EMPTY_GTIDSET);
-				GtidSet gtidExecuted = new GtidSet(gtidRepr);
-				currentReplicationStore.resetToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(),
-						reply.getGtidLost(), gtidExecuted);
-			} else {
-				currentReplicationStore.resetToPSync(syncReply.getReplId(), syncReply.getReplOff());
-			}
-		} catch (IOException ex) {
-			//TODO confirm how to properly deal with ioe?
-			getLogger().error("[onAuxFinish] setup replStage failed {}", ex);
-			throw new RuntimeException(ex);
-		}
-
 		getLogger().info("[onAuxFinish] aux is finish");
 		notifyReadAuxEnd(rdbStore, auxMap);
 	}

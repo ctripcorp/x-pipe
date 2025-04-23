@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.io.IOException;
 public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
 
     public DumpedGtidRdbStore(File file) throws IOException {
-        super(file, null, -1, null, null);
+        super(file, null, -1, null, null, null ,null, null);
     }
 
     @Override
@@ -35,6 +36,21 @@ public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
     @Override
     public void setRdbOffset(long rdbOffset){
         this.rdbOffset = rdbOffset;
+    }
+
+    @Override
+    public void setReplProto(ReplStage.ReplProto replProto) {
+        this.replProto = replProto;
+    }
+
+    @Override
+    public void setMasterUuid(String masterUuid) {
+        this.masterUuid = masterUuid;
+    }
+
+    @Override
+    public void setGtidLost(String gtidLost) {
+        this.gtidLost.set(gtidLost);
     }
 
 }

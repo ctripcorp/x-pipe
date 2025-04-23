@@ -480,9 +480,15 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     @Override
     public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
-        String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
-        logger.info("[readAuxEnd][gtid] {}", gtidSet);
-        rdbStore.updateRdbGtidSet(gtidSet);
+        String gtidExecuted = auxMap.get(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED);
+        if (gtidExecuted != null) {
+            logger.info("[readAuxEnd][gtid-executed] {}", gtidExecuted);
+            rdbStore.updateRdbGtidSet(gtidExecuted);
+        } else {
+            String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
+            logger.info("[readAuxEnd][gtid] {}", gtidSet);
+            rdbStore.updateRdbGtidSet(gtidSet);
+        }
 
         RdbStore.Type rdbType = auxMap.containsKey(RdbConstant.REDIS_RDB_AUX_KEY_RORDB) ? RdbStore.Type.RORDB : RdbStore.Type.NORMAL;
         logger.info("[readAuxEnd][rdb] {}", rdbType);
@@ -497,7 +503,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     protected void doRdbTypeConfirm(RdbStore rdbStore) {
         try {
-            redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
+            if (rdbStore.isGapAllowed()) {
+                redisMaster.getCurrentReplicationStore().confirmRdbGapAllowed(rdbStore);
+            } else {
+                redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
+            }
         } catch (Throwable th) {
             dumpFail(th);
         }

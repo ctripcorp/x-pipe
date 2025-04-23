@@ -5,9 +5,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
@@ -167,6 +165,111 @@ public abstract class AbstractMetaStore implements MetaStore{
 			saveMeta(metaDup);
 		}
 	}
+
+	private UPDATE_RDB_RESULT checkBeforeUpdateRdbInfo(
+			String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, long rdbOffsetBacklog,
+			long backlogBeginOffset, long backlogEndOffset, ReplStage.ReplProto expectedProto,
+			String expectedReplId, String expectedMasterUuid) {
+		ReplStage curReplStage = getCurrentReplStage();
+
+		if (!Objects.equals(expectedProto, curReplStage.getProto())) {
+			logger.info("update rdb fail, proto:{}, rdbProto:{}", curReplStage.getProto(), expectedProto);
+			return UPDATE_RDB_RESULT.REPLSTAGE_NOT_MATCH;
+		}
+
+		if (!Objects.equals(expectedReplId, curReplStage.getReplId())) {
+			logger.info("update rdb fail, replid:{}, rdbReplId:{}", curReplStage.getReplId(), expectedReplId);
+			return UPDATE_RDB_RESULT.REPLSTAGE_NOT_MATCH;
+		}
+
+		if (!Objects.equals(expectedMasterUuid, curReplStage.getMasterUuid())) {
+			logger.info("update rdb fail, masterUuid:{}, rdbMasterUuid:{}", curReplStage.getMasterUuid(), expectedMasterUuid);
+			return UPDATE_RDB_RESULT.MASTER_UUID_NOT_MATCH;
+		}
+
+		if (rdbOffset + 1 < curReplStage.getBegOffsetRepl()) {
+			logger.info("update rdb fail: rdb offset not in range. beginOffsetRepl:{}, rdbOffset:{}", curReplStage.getBegOffsetRepl(), rdbOffset);
+			return UPDATE_RDB_RESULT.REPLOFF_OUT_RANGE;
+		}
+
+		if (rdbOffsetBacklog < backlogBeginOffset) {
+			logger.info("update rdb fail: lack backlog. backlogBeginOffset:{}, rdbOffsetBacklog:{}", backlogBeginOffset, rdbOffsetBacklog);
+			return UPDATE_RDB_RESULT.LACK_BACKLOG;
+		}
+
+		if (rdbOffsetBacklog > backlogEndOffset) {
+			logger.info("update rdb fail: rdb more recent. backlogEndOffset:{}, rdbOffsetBacklog:{}", backlogEndOffset, rdbOffsetBacklog);
+			return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+		}
+
+		return UPDATE_RDB_RESULT.OK;
+	}
+
+	private void updateRdbInfo(ReplicationStoreMeta metaDup,
+							   String rdbFile, RdbStore.Type type, EofType eofType,
+							   long rdbBacklogOffset, String gtidSet) {
+		if (RdbStore.Type.NORMAL.equals(type)) {
+			logger.info("[rdbUpdated] update rdbBacklogOffset to {}", rdbBacklogOffset);
+			metaDup.setRdbFile(rdbFile);
+			setRdbFileInfo(metaDup, eofType);
+			metaDup.setRdbBacklogOffset(rdbBacklogOffset);
+			metaDup.setRdbGtidSet(gtidSet);
+		} else if (RdbStore.Type.RORDB.equals(type)) {
+			logger.info("[rordbUpdated] update rdbBacklogOffset to {}", rdbBacklogOffset);
+			metaDup.setRordbFile(rdbFile);
+			setRordbFileInfo(metaDup, eofType);
+			metaDup.setRordbBacklogOffset(rdbBacklogOffset);
+			metaDup.setRordbGtidSet(gtidSet);
+		} else {
+			throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
+		}
+	}
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(
+			String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, long backlogBeginOffset,
+			long backlogEndOffset, String expectedReplId) throws IOException {
+		synchronized (metaRef) {
+
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = getCurrentReplStage();
+			long rdbOffsetBacklog =  rdbOffset + 1 - curReplStage.getBegOffsetRepl() + curReplStage.getBegOffsetBacklog();
+
+			UPDATE_RDB_RESULT result = checkBeforeUpdateRdbInfo(rdbFile, type, eofType, rdbOffset, rdbOffsetBacklog,
+					backlogBeginOffset, backlogEndOffset, ReplStage.ReplProto.PSYNC, expectedReplId, null);
+
+			if (result == UPDATE_RDB_RESULT.OK) {
+				updateRdbInfo(metaDup, rdbFile, type, eofType, rdbOffsetBacklog, null);
+				saveMeta(metaDup);
+			}
+
+			return result;
+		}
+	}
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(
+			String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, long rdbOffsetBacklog,
+			long backlogBeginOffset, long backlogEndOffset, String gtidSet, String expectedReplId,
+			String expectedMasterUuid) throws IOException {
+		synchronized (metaRef) {
+
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			UPDATE_RDB_RESULT result =  checkBeforeUpdateRdbInfo(rdbFile, type, eofType, rdbOffset, rdbOffsetBacklog,
+					backlogBeginOffset, backlogEndOffset, ReplStage.ReplProto.XSYNC, expectedReplId, expectedMasterUuid);
+
+			if (result != UPDATE_RDB_RESULT.OK) {
+				updateRdbInfo(metaDup, rdbFile, type, eofType, rdbOffsetBacklog, gtidSet);
+				saveMeta(metaDup);
+			}
+
+			return result;
+		}
+	}
+
+
 
 	@Override
 	public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, RdbStore.Type type, EofType eofType,

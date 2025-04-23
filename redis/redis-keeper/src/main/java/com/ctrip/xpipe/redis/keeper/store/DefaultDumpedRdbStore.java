@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,5 +33,20 @@ public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbS
 	@Override
 	public void setRdbOffset(long rdbOffset){
 		this.rdbOffset = rdbOffset;
+	}
+
+	@Override
+	public void setReplProto(ReplStage.ReplProto replProto) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setMasterUuid(String masterUuid) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void setGtidLost(String gtidLost) {
+		throw new UnsupportedOperationException();
 	}
 }

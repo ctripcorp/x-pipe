@@ -91,8 +91,13 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     protected void startRdbOnlyReplication() throws Exception {
-        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
-                nioEventLoopGroup, scheduled, this, resourceManager);
+        if (redisKeeperServer.gapAllowSyncEnabled()) {
+            rdbonlyRedisMasterReplication = new GapAllowedRdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
+                    nioEventLoopGroup, scheduled, this, resourceManager);
+        } else {
+            rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
+                    nioEventLoopGroup, scheduled, this, resourceManager);
+        }
 
         rdbonlyRedisMasterReplication.initialize();
         rdbonlyRedisMasterReplication.start();

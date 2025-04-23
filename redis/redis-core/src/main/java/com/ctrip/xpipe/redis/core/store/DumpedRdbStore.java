@@ -15,4 +15,7 @@ public interface DumpedRdbStore extends RdbStore{
 
 	void setRdbOffset(long rdbLastOffset);
 
+	void setReplProto(ReplStage.ReplProto replProto);
+	void setMasterUuid(String masterUuid);
+	void setGtidLost(String gtidLost);
 }

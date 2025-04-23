@@ -8,10 +8,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
@@ -61,7 +58,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	private AtomicReference<Type> typeRef;
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
-	
+
+	//TODO assign rdbBacklogOffset
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
 
 		this.replId = replId;
@@ -115,6 +113,29 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public Type getRdbType() {
 		return typeRef.get();
+	}
+
+	public void updateReplProto(ReplStage.ReplProto replProto) {
+		//just ignore
+	}
+
+	@Override
+	public String getGtidLost() {
+		return null;
+	}
+
+	@Override
+	public String getMasterUuid() {
+		return null;
+	}
+
+	@Override
+	public boolean isGapAllowed() {
+		return false;
+	}
+
+	public ReplStage.ReplProto getReplProto() {
+		return null;
 	}
 
 	@Override

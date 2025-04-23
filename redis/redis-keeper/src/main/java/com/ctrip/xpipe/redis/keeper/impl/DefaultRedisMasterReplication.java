@@ -263,23 +263,26 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
         redisKeeperServer.getRedisKeeperServerState().initPromotionState();
     }
 
-    @Override
-    protected void doOnFullSync(long masterRdbOffset) {
-
+    private void doOnFullSync0(String logPrefix) {
         try {
-            logger.info("[doOnFullSync]{}", this);
+            logger.info("[{}]{}", logPrefix, this);
             RdbDumper rdbDumper = new RedisMasterReplicationRdbDumper(this, redisKeeperServer, resourceManager);
             setRdbDumper(rdbDumper);
             redisKeeperServer.setRdbDumper(rdbDumper, true);
         } catch (SetRdbDumperException e) {
             //impossible to happen
-            logger.error("[doOnFullSync][impossible to happen]", e);
+            logger.error("[doOnFullSync0][impossible to happen]", e);
         }
     }
 
     @Override
+    protected void doOnFullSync(long masterRdbOffset) {
+        doOnFullSync0("doOnFullSync");
+    }
+
+    @Override
     protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
-        doOnFullSync(replOff);
+        doOnFullSync0("doOnXFullSync");
     }
 
     @Override
