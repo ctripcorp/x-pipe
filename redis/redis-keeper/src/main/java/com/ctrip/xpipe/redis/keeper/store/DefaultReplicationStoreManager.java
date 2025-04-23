@@ -292,7 +292,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         // gc current ReplicationStore
         ReplicationStore replicationStore = getCurrent();
         if (replicationStore != null) {
-            replicationStore.gc();
+            // replicationStore.gc();
         }
     }
 

@@ -210,12 +210,12 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	private void clearGapAllowObseleteFields(ReplicationStoreMeta meta) {
-		meta.setBeginOffset(null);
-		meta.setReplId(null);
-		meta.setReplId2(null);
-		meta.setSecondReplIdOffset(null);
-		meta.setRdbLastOffset(null);
-		meta.setRordbLastOffset(null);
+		// meta.setBeginOffset(null);
+		// meta.setReplId(null);
+		// meta.setReplId2(null);
+		// meta.setSecondReplIdOffset(null);
+		// meta.setRdbLastOffset(null);
+		// meta.setRordbLastOffset(null);
 	}
 
 	@Override
