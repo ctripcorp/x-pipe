@@ -21,65 +21,88 @@ public class ReplStage {
     // for PSYNC proto
     String replId2;
 
-    long secondReplOffset;
+    long secondReplIdOffset;
 
     // for XSYNC proto
     String masterUuid;
 
     GtidSet beginGtidset;
+    GtidSet gtidLost;
 
-    public boolean shiftReplId(String replId, long replOffset) {
-        if (this.proto != ReplProto.PSYNC) {
-            return false;
-        }
-
-        this.replId2 = this.replId;
-        this.secondReplOffset = replOffset;
-        this.replId = replId;
-        return true;
+    public void setReplId2(String replId2) {
+        this.replId2 = replId2;
     }
 
-    public boolean shiftMasterUuid(String masterUuid) {
-        if (this.proto != ReplProto.XSYNC) {
-            return false;
-        }
-
-        this.masterUuid = masterUuid;
-        return true;
+    public void setSecondReplIdOffset(long secondReplIdOffset) {
+        this.secondReplIdOffset = secondReplIdOffset;
     }
 
-    public boolean xsyncUpdate(String replId, long begOffsetRepl, String masterUuid) {
-        boolean updated = false;
-        if (this.proto != ReplProto.XSYNC) {
-            return false;
-        }
+    public boolean updateReplId(String replId) {
         if (this.replId != replId) {
             this.replId = replId;
-            updated = true;
+            return true;
+        } else {
+            return false;
         }
+    }
+
+    public boolean updateBegOffsetRepl(long begOffsetRepl) {
         if (this.begOffsetRepl != begOffsetRepl) {
             this.begOffsetRepl = begOffsetRepl;
-            updated = true;
+            return true;
+        } else {
+            return false;
         }
-        if (this.masterUuid != masterUuid) {
-            this.masterUuid = masterUuid;
-            updated = true;
-        }
-        return updated;
     }
 
-    public ReplStage(String replId, long replOffset, long backlogOffset) {
+    public boolean adjustBegOffsetRepl(long replOff, long backlogOff) {
+        // reploff - newBegOffsetRepl == backlogOff - begOffsetBacklog
+        long newBegOffsetRepl = replOff - backlogOff + begOffsetBacklog;
+        if (this.begOffsetRepl != newBegOffsetRepl) {
+            this.begOffsetRepl = newBegOffsetRepl;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean updateMasterUuid(String masterUuid) {
+        if (!this.masterUuid.equals(masterUuid)) {
+            this.masterUuid = masterUuid;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public GtidSet getGtidLost() {
+        return this.gtidLost;
+    }
+
+    public void setGtidLost(GtidSet gtidLost) {
+        this.gtidLost = gtidLost;
+    }
+
+    public ReplStage(String replId, long beginReplOffset, long backlogOffset) {
         this.proto = ReplProto.PSYNC;
         this.replId = replId;
-        this.begOffsetRepl = replOffset;
+        this.begOffsetRepl = beginReplOffset;
         this.begOffsetBacklog = backlogOffset;
+        this.replId2 = ReplicationStoreMeta.EMPTY_REPL_ID;
+        this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }
 
-    public ReplStage(GtidSet gtidSet, String masterUuid, long backlogOffset){
+    public ReplStage(String replId, long beginOffsetRepl, long backlogOffset,
+                     String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) {
         this.proto = ReplProto.XSYNC;
-        this.beginGtidset = gtidSet;
-        this.masterUuid = masterUuid;
+        this.replId = replId;
+        this.begOffsetRepl = beginOffsetRepl;
         this.begOffsetBacklog = backlogOffset;
+        this.masterUuid = masterUuid;
+        this.beginGtidset = gtidExecuted;
+        this.gtidLost = gtidLost;
+        this.replId2 = null;
+        this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }
 
     public long replOffset2BacklogOffset(long replOffset) {
@@ -108,8 +131,8 @@ public class ReplStage {
         return replId2;
     }
 
-    public long getSecondReplOffset() {
-        return secondReplOffset;
+    public long getSecondReplIdOffset() {
+        return secondReplIdOffset;
     }
 
     public GtidSet getBeginGtidset() {

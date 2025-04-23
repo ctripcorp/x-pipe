@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +89,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
         ByteBuf format();
     }
 
-    class PsyncRequest implements SyncRequest {
+    static class PsyncRequest implements SyncRequest {
         String replId;
         long replOff = -1;
 
@@ -120,7 +121,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
         }
     }
 
-    class XsyncRequest implements SyncRequest {
+    static class XsyncRequest implements SyncRequest {
         String uuidIntrested;
         GtidSet gtidSet;
         long maxGap = 0;
@@ -164,7 +165,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
         this.syncRequest = getSyncRequest();
         ByteBuf request = getSyncRequest().format();
         if (getLogger().isDebugEnabled()) {
-            getLogger().debug("[doRequest]{}, {}", this, request.toString()); //TODO TEST
+            getLogger().debug("[doRequest]{}, {}", this, request.toString(Charset.defaultCharset()));
         }
         return request;
     }
@@ -229,7 +230,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
         }
     }
 
-    interface SyncReply {
+    public interface SyncReply {
         String XSYNC_REPLY_OPT_REPLID = "replid";
         String XSYNC_REPLY_OPT_REPLOFF = "reploff";
         String XSYNC_REPLY_OPT_MASTER_UUID = "master.uuid";
@@ -267,12 +268,14 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
     class ContinueReply extends AbstractSyncReply {
         public SyncReply parse(String[] split) {
-            if (split.length < 2) {
+            if (split.length < 1) {
                 throw new RedisRuntimeException("invalid continue reply");
             }
-            replId = split[1];
-            if (split.length >= 3 && StringUtils.isNumeric(split[2])) {
-                replOff = Long.parseLong(split[2]);
+            if (split.length >= 2) {
+                replId = split[1];
+                if (split.length >= 3 && StringUtils.isNumeric(split[2])) {
+                    replOff = Long.parseLong(split[2]);
+                }
             }
             return this;
         }
@@ -382,7 +385,6 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
         }
     }
 
-    //TODO TEST
     SyncReply parseSyncReply(String reply) {
         String[] split = splitSpace(reply);
 

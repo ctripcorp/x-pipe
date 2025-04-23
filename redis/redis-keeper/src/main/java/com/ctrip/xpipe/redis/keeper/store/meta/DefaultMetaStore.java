@@ -17,47 +17,18 @@ import java.io.IOException;
  * Dec 4, 2016
  */
 public class DefaultMetaStore extends AbstractMetaStore{
-
-	private ReplStage preReplStage; // move to ReplicationStoreMeta?
-
-	private ReplStage currentReplStage;
-
-	private GtidSet lost = new GtidSet("");
-
 	public DefaultMetaStore(File baseDir, String keeperRunid) {
 		super(baseDir, keeperRunid);
 	}
 
 	@Override
 	public ReplStage getPreReplStage() {
-		return preReplStage;
+		return getMeta().getPrevReplStage();
 	}
 
 	@Override
 	public ReplStage getCurrentReplStage() {
-		return currentReplStage;
-	}
-
-	@Override
-	public void updateLostGtidSet(GtidSet lost) {
-		this.lost = lost;
-	}
-
-	@Override
-	public GtidSet getLostGtidSet() {
-		return lost;
-	}
-
-	@Override
-	public void resetProto(ReplStage newReplStage) {
-		this.preReplStage = null;
-		this.currentReplStage = newReplStage;
-	}
-
-	@Override
-	public void switchProto(ReplStage newReplStage) {
-		if (null != currentReplStage) this.preReplStage = currentReplStage;
-		this.currentReplStage = newReplStage;
+		return getMeta().getCurReplStage();
 	}
 
 	@Override
@@ -88,6 +59,16 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	@Override
 	public DefaultEndPoint getMasterAddress() {
 		return getMeta().getMasterAddress();
+	}
+
+	@Override
+	public String getCurReplStageReplId() {
+		ReplStage curReplStage = getMeta().getCurReplStage();
+		if (curReplStage != null) {
+			return curReplStage.getReplId();
+		} else {
+			return null;
+		}
 	}
 
 	@Override
@@ -208,22 +189,6 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta resetReplicationId(String replId, Long replOff) throws IOException {
-
-		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
-
-			metaDup.setReplId(replId);
-			metaDup.setBeginOffset(replOff);
-			metaDup.setReplId2(ReplicationStoreMeta.EMPTY_REPL_ID);
-			metaDup.setSecondReplIdOffset(ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET);
-
-			saveMeta(metaDup);
-			return metaDup;
-		}
-	}
-
-	@Override
 	public void releaseRdbFile(String rdbFile) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta currentMeta = metaRef.get();
@@ -241,6 +206,186 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			} else {
 				logger.info("[releaseRdbFile][{}] currentRdb:{} currentRordb:{}, skip", rdbFile, currentRdbFile, currentRordbFile);
 			}
+		}
+	}
+
+	private void clearGapAllowObseleteFields(ReplicationStoreMeta meta) {
+		meta.setBeginOffset(null);
+		meta.setReplId(null);
+		meta.setReplId2(null);
+		meta.setSecondReplIdOffset(null);
+		meta.setRdbLastOffset(null);
+		meta.setRordbLastOffset(null);
+	}
+
+	@Override
+	public ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
+												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setPrevReplStage(null);
+			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff));
+
+			if (RdbStore.Type.NORMAL.equals(type)) {
+				metaDup.setRdbFile(rdbFile);
+				setRdbFileInfo(metaDup, eofType);
+				metaDup.setRdbGtidSet(null);
+				metaDup.setRdbBacklogOffset(backlogOff);
+			} else if (RdbStore.Type.RORDB.equals(type)) {
+				metaDup.setRordbFile(rdbFile);
+				setRordbFileInfo(metaDup, eofType);
+				metaDup.setRordbGtidSet(null);
+				metaDup.setRordbBacklogOffset(backlogOff);
+			} else {
+				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
+			}
+
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+
+			clearGapAllowObseleteFields(metaDup);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
+				throw new IllegalStateException("continue in xsync replstage");
+			}
+
+			String currentReplId = curReplStage.getReplId();
+			// backlogOff - curReplStage.beginOffsetBacklog == secondReplidOffset - replStage.beginOffsetRepl
+			long secondReplidOffset = curReplStage.getBegOffsetRepl() + backlogOff - curReplStage.getBegOffsetBacklog();
+
+			curReplStage.setReplId2(currentReplId);
+			curReplStage.setSecondReplIdOffset(secondReplidOffset);
+			curReplStage.updateReplId(newReplId);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
+				throw new IllegalStateException("switchtopsync in psync replstage");
+			}
+
+			// TODO should we update xsync replid/off when switch to psync?
+			// curReplStage.updateReplId(replId);
+			// curReplStage.adjustBegOffsetRepl(beginReplOffset, backlogOff);
+
+			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff);
+
+			metaDup.setPrevReplStage(curReplStage);
+			metaDup.setCurReplStage(newReplStage);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+												GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile,
+												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setPrevReplStage(null);
+			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff, masterUuid, gtidLost, gtidExecuted));
+
+			if (RdbStore.Type.NORMAL.equals(type)) {
+				metaDup.setRdbFile(rdbFile);
+				setRdbFileInfo(metaDup, eofType);
+				metaDup.setRdbGtidSet(gtidExecuted.toString());
+				metaDup.setRdbBacklogOffset(backlogOff);
+			} else if (RdbStore.Type.RORDB.equals(type)) {
+				metaDup.setRordbFile(rdbFile);
+				setRordbFileInfo(metaDup, eofType);
+				metaDup.setRordbGtidSet(gtidExecuted.toString());
+				metaDup.setRordbBacklogOffset(backlogOff);
+			} else {
+				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
+			}
+
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+
+			clearGapAllowObseleteFields(metaDup);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
+	public boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+											  GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
+		boolean	updated = false;
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
+				throw new IllegalStateException("xcontinue in psync replstage");
+			}
+
+			if (curReplStage.updateReplId(replId)) {
+				updated = true;
+			}
+
+			if (curReplStage.adjustBegOffsetRepl(beginReplOffset, backlogOff)) {
+				updated = true;
+			}
+
+			if (curReplStage.updateMasterUuid(masterUuid)) {
+				updated = true;
+			}
+
+			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset());
+			GtidSet gtidLost = gtidCont.subtract(gtidSet);
+
+			if (!gtidLost.equals(curReplStage.getGtidLost())) {
+				curReplStage.setGtidLost(gtidLost);
+				updated = true;
+			}
+
+			saveMeta(metaDup);
+		}
+		return updated;
+	}
+
+	@Override
+	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+											  GtidSet gtidCont) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
+				throw new IllegalStateException("switchtoxsync in xsync replstage");
+			}
+
+			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff, masterUuid,
+					new GtidSet(GtidSet.EMPTY_GTIDSET), gtidCont);
+
+			metaDup.setPrevReplStage(curReplStage);
+			metaDup.setCurReplStage(newReplStage);
+
+			saveMeta(metaDup);
+			return metaDup;
 		}
 	}
 

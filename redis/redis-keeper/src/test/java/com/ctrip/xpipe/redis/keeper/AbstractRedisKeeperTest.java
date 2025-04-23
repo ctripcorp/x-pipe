@@ -10,6 +10,11 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -24,6 +29,7 @@ import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,7 +43,6 @@ import java.util.concurrent.TimeUnit;
  *         Jun 12, 2016
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
-
 	@BeforeClass
 	public static void beforeAbstractCheckerTest(){
 		System.setProperty("DisableLoadProxyAgentJar", "true");
@@ -106,8 +111,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
-		
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser());
+
 		replicationStoreManager.addObserver(new Observer() {
 			
 			@Override
@@ -126,7 +131,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		});
 		return replicationStoreManager;
 	}
-	
+
+	protected RedisOpParser createRedisOpParser() {
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		return new GeneralRedisOpParser(redisOpParserManager);
+	}
+
 	protected KeepersMonitorManager createkeepersMonitorManager(){
 		return new NoneKeepersMonitorManager();
 	}

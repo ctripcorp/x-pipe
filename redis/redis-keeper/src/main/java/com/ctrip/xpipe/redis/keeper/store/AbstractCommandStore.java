@@ -378,6 +378,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return new CommandFileSegment(startIndex, endIndex);
     }
 
+    //TODO not compactible with obselete gtidset
     @Override
     public GtidSet getBeginGtidSet() throws IOException {
         CommandFileOffsetGtidIndex baseIndex = getBaseIndex();

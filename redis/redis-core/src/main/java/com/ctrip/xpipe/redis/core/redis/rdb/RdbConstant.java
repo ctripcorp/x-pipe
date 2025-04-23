@@ -68,6 +68,7 @@ public class RdbConstant {
     public static final String REDIS_RDB_AUX_KEY_GTID = "gtid";
     public static final String REDIS_RDB_AUX_KEY_RORDB = "rordb";
 
-    public static final String REDIS_RDB_AUX_KEY_GTID_EXECUTED = "gtid-executed";
     public static final String REDIS_RDB_AUX_KEY_REPL_MODE = "gtid-repl-mode";
+    public static final String REDIS_RDB_AUX_KEY_GTID_EXECUTED = "gtid-executed";
+    public static final String REDIS_RDB_AUX_KEY_GTID_LOST = "gtid-lost";
 }

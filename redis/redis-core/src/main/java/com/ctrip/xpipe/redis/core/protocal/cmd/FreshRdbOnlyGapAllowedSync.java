@@ -17,7 +17,6 @@ public class FreshRdbOnlyGapAllowedSync extends RdbOnlyGapAllowedSync {
 
     @Override
     public SyncRequest getSyncRequest() {
-        //TODO confirm how to force freshrdb sync
         PsyncRequest psync = new PsyncRequest();
         psync.setReplId("?");
         psync.setReplOff(KEEPER_FRESH_RDB_SYNC_OFFSET);

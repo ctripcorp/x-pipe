@@ -50,6 +50,12 @@ public class ReplicationStoreMeta implements Serializable{
 	private KeeperState keeperState;
 	private String keeperRunid;
 
+	private ReplStage prevReplStage;
+	private ReplStage curReplStage;
+
+	private Long rdbBacklogOffset;
+	private Long rordbBacklogOffset;
+
 	public ReplicationStoreMeta() {
 
 	}
@@ -77,6 +83,11 @@ public class ReplicationStoreMeta implements Serializable{
 		this.cmdFilePrefix = proto.cmdFilePrefix;
 		this.keeperState = proto.keeperState;
 		this.keeperRunid = proto.keeperRunid;
+
+		this.prevReplStage = proto.prevReplStage;
+		this.curReplStage = proto.curReplStage;
+		this.rdbBacklogOffset = proto.rdbBacklogOffset;
+		this.rordbBacklogOffset = proto.rordbBacklogOffset;
 	}
 	
 	public long getRdbFileSize() {
@@ -223,6 +234,38 @@ public class ReplicationStoreMeta implements Serializable{
 		this.rordbGtidSet = rordbGtidSet;
 	}
 
+	public ReplStage getCurReplStage() {
+		return curReplStage;
+	}
+
+	public void setPrevReplStage(ReplStage prevReplStage) {
+		this.prevReplStage = prevReplStage;
+	}
+
+	public ReplStage getPrevReplStage() {
+		return prevReplStage;
+	}
+
+	public void setCurReplStage(ReplStage curReplStage) {
+		this.curReplStage = curReplStage;
+	}
+
+	public Long getRdbBacklogOffset() {
+		return this.rdbBacklogOffset;
+	}
+
+	public void setRdbBacklogOffset(Long rdbBacklogOffset) {
+		this.rdbBacklogOffset = rdbBacklogOffset;
+	}
+
+	public Long getRordbBacklogOffset() {
+		return this.rordbBacklogOffset;
+	}
+
+	public void setRordbBacklogOffset(Long rordbBacklogOffset) {
+		this.rordbBacklogOffset = rordbBacklogOffset;
+	}
+
 	@Override
 	public String toString() {
 		return "ReplicationStoreMeta{" +
@@ -236,14 +279,18 @@ public class ReplicationStoreMeta implements Serializable{
 				", rdbFileSize=" + rdbFileSize +
 				", rdbEofMark='" + rdbEofMark + '\'' +
 				", rdbGtidSet='" + rdbGtidSet + '\'' +
+				", rdbBacklogOffset=" + rdbBacklogOffset +
 				", rordbFile='" + rordbFile + '\'' +
 				", rordbLastOffset=" + rordbLastOffset +
 				", rordbFileSize=" + rordbFileSize +
 				", rordbEofMark='" + rordbEofMark + '\'' +
 				", rordbGtidSet='" + rordbGtidSet + '\'' +
+				", rordbBacklogOffset=" + rordbBacklogOffset +
 				", cmdFilePrefix='" + cmdFilePrefix + '\'' +
 				", keeperState=" + keeperState +
 				", keeperRunid='" + keeperRunid + '\'' +
+				", curReplStage=" + curReplStage +
+				", prevReplStage=" + prevReplStage +
 				'}';
 	}
 

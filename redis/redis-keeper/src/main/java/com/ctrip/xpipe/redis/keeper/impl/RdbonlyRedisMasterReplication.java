@@ -3,9 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
@@ -38,7 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplication{
 
-	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
+	protected RdbOnlyReplicationStore rdbOnlyReplicationStore;
 
 	@VisibleForTesting DumpedRdbStore dumpedRdbStore;
 
@@ -51,9 +49,9 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		FAIL
 	}
 
-	private REPL_STATE state;
+	protected REPL_STATE state;
 
-	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
+	protected AtomicReference<Psync> currentPsync = new AtomicReference<>();
 
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
 										 boolean tryRordb, boolean freshRdbNeeded,
@@ -138,23 +136,23 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			throw new PsyncRuntimeException("prepare ReplicationStore fail", th);
 		}
 
-		if (state.equals(REPL_STATE.FRESH_SYNC)) {
-			if (redisKeeperServer.gapAllowSyncEnabled()) {
-				psync = new FreshRdbOnlyGapAllowedSync(clientPool, replicationStore, scheduled);
-			} else {
-				psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
-			}
-		} else {
-			if (redisKeeperServer.gapAllowSyncEnabled()) {
-				psync = new RdbOnlyGapAllowedSync(clientPool, replicationStore, scheduled);
-			} else {
-				psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
-			}
-		}
+		psync = doCreatePsync(replicationStore);
 
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer.createPsyncObserverForRdbOnlyRepl());
 		currentPsync.set(psync);
+		return psync;
+	}
+
+	protected Psync doCreatePsync(RdbOnlyReplicationStore rdbOnlyReplicationStore) {
+		Psync psync;
+
+		if (state.equals(REPL_STATE.FRESH_SYNC)) {
+			psync = new FreshRdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
+		} else {
+			psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
+		}
+
 		return psync;
 	}
 
@@ -217,7 +215,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 	}
 
-	private synchronized void resetReplicationStore() {
+	protected synchronized void resetReplicationStore() {
 		dumpedRdbStore = null;
 		rdbOnlyReplicationStore = null;
 	}
@@ -246,8 +244,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
-		//TODO succeed iff firstAvaliableGtidSet+gtidLost > gtidSet+gtidLost
-		throw new IllegalStateException("to be implemented");
+		throw new UnsupportedOperationException("xfullresync not supported");
 	}
 
 	@Override
