@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.gtid;
 
 import com.ctrip.xpipe.tuple.Pair;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +43,7 @@ public class GtidSet {
     /**
      * @param gtidSet gtid set comprised of closed intervals (like MySQL's executed_gtid_set).
      */
+    @JsonCreator
     public GtidSet(String gtidSet) {
         String[] uuidSets = (gtidSet == null || gtidSet.isEmpty()) ? new String[0] :
                 gtidSet.replace("\n", "").split(",");
@@ -485,6 +488,7 @@ public class GtidSet {
     }
 
     @Override
+    @JsonValue
     public String toString() {
         List<String> gtids = new ArrayList<String>();
         for (UUIDSet uuidSet : map.values()) {

@@ -1,12 +1,31 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Locale;
 
 public class ReplStage {
 
     public enum ReplProto {
         PSYNC,
-        XSYNC
+        XSYNC;
+
+        public String asString() {
+            return this.name();
+        }
+
+        public static ReplProto fromString(String name) {
+            if (name == null) {
+                return null;
+            }
+            try {
+                return ReplProto.valueOf(name.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
     }
 
     // common
@@ -103,6 +122,29 @@ public class ReplStage {
         this.gtidLost = gtidLost;
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
+    }
+
+    @JsonCreator
+    public ReplStage(
+            @JsonProperty("proto") String proto,
+            @JsonProperty("replId") String replId,
+            @JsonProperty("begOffsetRepl") long begOffsetRepl,
+            @JsonProperty("begOffsetBacklog") long begOffsetBacklog,
+            @JsonProperty("replId2") String replId2,
+            @JsonProperty("secondReplIdOffset") long secondReplIdOffset,
+            @JsonProperty("masterUuid") String masterUuid,
+            @JsonProperty("gtidLost") String gtidLost,
+            @JsonProperty("beginGtidset") String beginGtidset) {
+
+        this.proto = ReplProto.fromString(proto);
+        this.replId = replId;
+        this.begOffsetRepl = begOffsetRepl;
+        this.begOffsetBacklog = begOffsetBacklog;
+        this.masterUuid = masterUuid;
+        this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? null : new GtidSet(beginGtidset);
+        this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? null : new GtidSet(gtidLost);
+        this.replId2 =  replId2;
+        this.secondReplIdOffset = secondReplIdOffset;
     }
 
     public long replOffset2BacklogOffset(long replOffset) {
