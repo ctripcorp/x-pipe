@@ -259,7 +259,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         ByteBuf duplicate = null;
         if(buildIndex){
-            duplicate = byteBuf.copy();
+            duplicate = byteBuf.duplicate();
         }
 
         boolean rotateFile = cmdWriter.rotateFileIfNecessary();
