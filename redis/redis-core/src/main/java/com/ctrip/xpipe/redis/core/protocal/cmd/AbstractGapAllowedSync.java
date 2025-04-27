@@ -163,7 +163,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
     @Override
     public ByteBuf getRequest() {
         this.syncRequest = getSyncRequest();
-        ByteBuf request = getSyncRequest().format();
+        ByteBuf request = this.syncRequest.format();
         if (getLogger().isDebugEnabled()) {
             getLogger().debug("[doRequest]{}, {}", this, request.toString(Charset.defaultCharset()));
         }

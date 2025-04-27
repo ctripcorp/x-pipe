@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.BacklogOffsetReplicationProgress;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -10,10 +12,31 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.XFULL_SYNC;
+
 public class GapAllowRedisSlave extends DefaultRedisSlave {
 
     public GapAllowRedisSlave(RedisClient<RedisKeeperServer> redisClient) {
         super(redisClient);
+    }
+
+    @Override
+    public void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress) {
+        // TODO: init end backlog offset in other proper place
+        if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
+            long backlogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
+            KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
+            ReplStage curStage = keeperRepl.currentStage();
+            ReplStage preStage = keeperRepl.preStage();
+
+            if (backlogOffset + 1 >= curStage.getBegOffsetBacklog()) {
+                // do nothing
+            } else if (null != preStage && backlogOffset + 1 >= preStage.getBegOffsetBacklog()) {
+                ((BacklogOffsetReplicationProgress) rdbProgress).setEndBacklogOffset(curStage.getBegOffsetBacklog() - 1);
+            }
+        }
+
+        super.beginWriteRdb(eofType, rdbProgress);
     }
 
     @Override
@@ -24,17 +47,15 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 
-            if (backlogOffset > curStage.getBegOffsetBacklog()) {
+            if (backlogOffset + 1 >= curStage.getBegOffsetBacklog()) {
                 return buildRespWithReplStage(backlogOffset, curStage);
-            } else if (null != preStage && backlogOffset > preStage.getBegOffsetBacklog()) {
+            } else if (null != preStage && backlogOffset + 1 >= preStage.getBegOffsetBacklog()) {
                 return buildRespWithReplStage(backlogOffset, preStage);
             } else {
-                // TODO: specified exception, handle ancient rdb
-                throw new XpipeRuntimeException("");
+                throw new UnsupportedOperationException("Rdb start from replStage before last is not allowed!");
             }
-
         } else {
-            return super.buildMarkBeforeFsync(rdbProgress);
+            throw new UnsupportedOperationException("Progress not supported: " + rdbProgress);
         }
     }
 
@@ -45,10 +66,16 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
         } else {
             RedisKeeperServer keeperServer = getRedisServer();
             KeeperRepl keeperRepl = keeperServer.getKeeperRepl();
-            return StringUtil.join(" ", "XFULLRESYNC", keeperRepl.getGtidSetLost(),
+            GtidSet lost = keeperRepl.getGtidSetLost();
+            return StringUtil.join(" ", XFULL_SYNC, "GTID.LOST", lost.isEmpty() ? "\"\"" : lost,
                     "MASTER.UUID", replStage.getMasterUuid(), "REPLID", replStage.getReplId(),
                     "REPLOFF", replStage.backlogOffset2ReplOffset(backlogOffset));
         }
+    }
+
+    @Override
+    public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+        return clazz.equals(BacklogOffsetReplicationProgress.class) || super.supportProgress(clazz);
     }
 
 }

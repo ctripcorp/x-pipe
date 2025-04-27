@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.stable;
 
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -85,11 +85,16 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 					@Override
 					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 
-						String result = readFileChannelInfoMessageAsString((ReferenceFileRegion) cmd);
+						String result = readFileChannelInfoMessageAsString((DefaultReferenceFileRegion) cmd);
 						if (!comparator.compare(readIndex, result)) {
 							future.setFailure(new Exception("not equals:" + result));
 						}
 						return null;
+					}
+
+					@Override
+					public void onCommandEnd() {
+
 					}
 
 					@Override

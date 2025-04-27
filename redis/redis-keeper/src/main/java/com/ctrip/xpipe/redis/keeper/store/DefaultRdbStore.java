@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.FileSize;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
@@ -47,7 +47,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected long rdbOffset;
 
-	protected long rdbBacklogOffset;
+	protected long rdbBacklogOffset = -1;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
@@ -276,10 +276,13 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
-		if (!rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
+		if (rdbFileListener.supportProgress(BacklogOffsetReplicationProgress.class) && rdbBacklogOffset >= 0) {
+			rdbFileListener.setRdbFileInfo(eofType, new BacklogOffsetReplicationProgress(rdbBacklogOffset));
+		} else if (rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
+			rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
+		} else {
 			throw new UnsupportedOperationException("offset progress not support");
 		}
-		rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
 	}
 
 	protected void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
@@ -288,7 +291,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
 			int limitBytes = rdbFileListener.getLimitBytesPerSecond();
-			ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
+			DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
 
 			if (limitBytes > 0 && referenceFileRegion.count() > 0) {
 				if (((int)rateLimiter.getRate()) != limitBytes) rateLimiter.setRate(limitBytes);

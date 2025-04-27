@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
@@ -39,7 +41,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
 	}
 
-	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
+	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
 
 		makeSureOpen();
 
@@ -52,7 +54,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	@Override
 	public void addCommandsListener(ReplicationProgress<?> progress, final CommandsListener listener) throws IOException {
 
-		if (!(progress instanceof OffsetReplicationProgress)) {
+		if (!(progress instanceof OffsetReplicationProgress) && !(progress instanceof BacklogOffsetReplicationProgress)) {
 			throw new UnsupportedOperationException("unsupported progress " + progress);
 		}
 
@@ -61,6 +63,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 		CommandReader<ReferenceFileRegion> cmdReader = null;
 		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
+		ChannelFuture lastWriteFuture = null;
 
 		try {
 			cmdReader = beginRead((OffsetReplicationProgress) progress, listener);
@@ -76,6 +79,18 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 				final ReferenceFileRegion referenceFileRegion = cmdReader.read(1000);
 				if (null == referenceFileRegion) continue;
+				if (ReferenceFileRegion.EOF == referenceFileRegion) {
+					logger.info("[addCommandsListener][read end] {}", progress);
+					if (null != lastWriteFuture) {
+						try {
+							lastWriteFuture.get(30, TimeUnit.SECONDS);
+						} catch (Throwable th) {
+							logger.info("[addCommandsListener][read end][wait flush fail]", th);
+						}
+					}
+					listener.onCommandEnd();
+					break;
+				}
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 				getCommandStoreDelay().endRead(listener, referenceFileRegion.getTotalPos());
@@ -108,6 +123,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							}
 						}
 					});
+					lastWriteFuture = future;
 				}
 
 				if (referenceFileRegion.count() <= 0) {

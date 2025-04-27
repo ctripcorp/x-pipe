@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
@@ -22,17 +23,23 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
     }
 
     @Override
-    public CommandReader<ReferenceFileRegion> createCmdReader(OffsetReplicationProgress replProgress,
+    public CommandReader<ReferenceFileRegion> createCmdReader(ReplicationProgress<Long> replProgress,
                                                               CommandStore cmdStore, OffsetNotifier offsetNotifier,
                                                               ReplDelayConfig replDelayConfig, long commandReaderFlyingThreshold) throws IOException {
         long currentOffset = replProgress.getProgress();
+        long endOffset = -1;
+        if (replProgress instanceof BacklogOffsetReplicationProgress) {
+            endOffset = ((BacklogOffsetReplicationProgress) replProgress).getEndProgress();
+            if (endOffset > 0 && endOffset < currentOffset)
+                throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffset + ":" + currentOffset);
+        }
         cmdStore.rotateFileIfNecessary();
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
         if (null == commandFile) {
             throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");
         }
 
-        return new OffsetCommandReader(commandFile, currentOffset, currentOffset - commandFile.getStartOffset(),
+        return new OffsetCommandReader(commandFile, currentOffset, endOffset, currentOffset - commandFile.getStartOffset(),
                 cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
     }
 

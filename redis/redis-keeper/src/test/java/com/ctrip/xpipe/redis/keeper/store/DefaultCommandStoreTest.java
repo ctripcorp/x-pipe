@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -211,9 +211,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					@Override
 					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
 
-						sb.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
+						sb.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
 						semaphore.release();
 						return null;
+					}
+
+					@Override
+					public void onCommandEnd() {
+
 					}
 
 					@Override
@@ -351,9 +356,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
-							result.append(readFileChannelInfoMessageAsString((ReferenceFileRegion)referenceFileRegion));
-							semaphore.release((int) ((ReferenceFileRegion)referenceFileRegion).count());
+							result.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
+							semaphore.release((int) ((DefaultReferenceFileRegion)referenceFileRegion).count());
 							return null;
+						}
+
+						@Override
+						public void onCommandEnd() {
+
 						}
 
 						@Override
@@ -514,6 +524,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			@Override
 			public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 				return null;
+			}
+
+			@Override
+			public void onCommandEnd() {
+
 			}
 
 			@Override

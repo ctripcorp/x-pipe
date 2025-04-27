@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
@@ -23,6 +24,8 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private long curPosition;
 
+    private long endPosition;
+
     private ReferenceFileChannel referenceFileChannel;
 
     private CommandStore commandStore;
@@ -33,7 +36,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
-    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long filePosition, CommandStore commandStore,
+    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long endPosition, long filePosition, CommandStore commandStore,
                                OffsetNotifier offsetNotifier, ReplDelayConfig replDelayConfig, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);
@@ -41,18 +44,16 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         this.offsetNotifier = offsetNotifier;
         this.curCmdFile = commandFile;
         this.replDelayConfig = replDelayConfig;
-        curPosition = globalPosition;
+        this.curPosition = globalPosition;
+        this.endPosition = endPosition;
         referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()), filePosition);
     }
 
     @Override
     public ReferenceFileRegion doRead(long milliSeconds) throws IOException {
         try {
-            if (milliSeconds >= 0) {
-                offsetNotifier.await(curPosition, milliSeconds);
-            } else {
-                offsetNotifier.await(curPosition);
-            }
+            if (milliSeconds < 0) offsetNotifier.await(curPosition);
+            else offsetNotifier.await(curPosition, milliSeconds);
             readNextFileIfNecessary();
         } catch (InterruptedException e) {
             logger.info("[read]", e);
@@ -61,7 +62,14 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         }
 
         if (!referenceFileChannel.hasAnythingToRead()) return null;
-        ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(replDelayConfig.getLimitBytesPerSecond());
+        long limitBytes = replDelayConfig.getLimitBytesPerSecond();
+        if (endPosition > 0) {
+            if (endPosition == curPosition) return ReferenceFileRegion.EOF;
+            long bytesToEnd = endPosition - curPosition;
+            if (limitBytes < 0 || bytesToEnd < limitBytes) limitBytes = bytesToEnd;
+        }
+
+        ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
 
         curPosition += referenceFileRegion.count();
 

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -185,7 +185,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
 				if (referenceFileRegion == null) {
 					latch.countDown();
 					return;
@@ -251,7 +251,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
+							byte [] message = readFileChannelInfoMessageAsBytes((DefaultReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
 							logger.error("[onCommand]" + cmd, e);
@@ -259,6 +259,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 						return null;
 					}
 
+					@Override
+					public void onCommandEnd() {
+
+					}
 				});
 			}
 		}.start();
@@ -284,7 +288,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(baous.toByteArray());
 	}
 
-	protected byte[] readFileChannelInfoMessageAsBytes(ReferenceFileRegion referenceFileRegion) {
+	protected byte[] readFileChannelInfoMessageAsBytes(DefaultReferenceFileRegion referenceFileRegion) {
 
 		try {
 			ByteArrayWritableByteChannel bach = new ByteArrayWritableByteChannel(); 
@@ -295,7 +299,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		}
 	}
 
-	protected String readFileChannelInfoMessageAsString(ReferenceFileRegion referenceFileRegion) {
+	protected String readFileChannelInfoMessageAsString(DefaultReferenceFileRegion referenceFileRegion) {
 
 		return new String(readFileChannelInfoMessageAsBytes(referenceFileRegion), Codec.defaultCharset);
 	}
