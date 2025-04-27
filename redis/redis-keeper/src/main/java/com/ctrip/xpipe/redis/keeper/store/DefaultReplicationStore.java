@@ -520,7 +520,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long backlogEndOffset() {
 		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
-		return cmdStore.lowestAvailableOffset() + cmdStore.totalLength();
+		return cmdStore.totalLength();
 	}
 
 	@Override
@@ -624,11 +624,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean tryRordb) throws IOException {
 		makeSureOpen();
 
-		if (!fullSyncListener.supportProgress(OffsetReplicationProgress.class)) {
-		    return FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
+		if (fullSyncListener.supportProgress(BacklogOffsetReplicationProgress.class)
+				|| fullSyncListener.supportProgress(OffsetReplicationProgress.class)) {
+			return doFullSyncIfPossible(fullSyncListener, tryRordb);
+		} else {
+			return FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
 		}
-
-		return doFullSyncIfPossible(fullSyncListener, tryRordb);
 	}
 
 	protected FULLSYNC_FAIL_CAUSE doFullSyncIfPossible(FullSyncListener fullSyncListener, boolean tryRordb) throws IOException {
@@ -670,10 +671,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		makeSureOpen();
 
-		if (progress instanceof BacklogOffsetReplicationProgress) {
-			long realOffset = ((BacklogOffsetReplicationProgress) progress).getProgress();
-			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
-		} else if (progress instanceof OffsetReplicationProgress) {
+		if (progress instanceof OffsetReplicationProgress) {
 			long realOffset = ((OffsetReplicationProgress) progress).getProgress() - metaStore.beginOffset();
 			cmdStore.addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
 		} else {

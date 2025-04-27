@@ -5,14 +5,13 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
-import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -21,7 +20,6 @@ import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -30,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -208,12 +204,12 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion) {
+	public ChannelFuture writeFile(DefaultReferenceFileRegion referenceFileRegion) {
 		
 		return doWriteFile(referenceFileRegion);
 	}
 
-	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
+	private ChannelFuture doWriteFile(DefaultReferenceFileRegion referenceFileRegion) {
 
 		closeState.makeSureNotClosed();
 
@@ -264,7 +260,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		if (rdbProgress instanceof OffsetReplicationProgress) {
 			this.progressAfterRdb = new OffsetReplicationProgress(((OffsetReplicationProgress) rdbProgress).getProgress() + 1);
 		} else if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
-			this.progressAfterRdb = new BacklogOffsetReplicationProgress(((BacklogOffsetReplicationProgress) rdbProgress).getProgress() + 1);
+			this.progressAfterRdb = new BacklogOffsetReplicationProgress(((BacklogOffsetReplicationProgress) rdbProgress).getProgress() + 1,
+					((BacklogOffsetReplicationProgress) rdbProgress).getEndProgress());
 		} else {
 			this.progressAfterRdb = rdbProgress;
 		}
@@ -370,6 +367,12 @@ public class DefaultRedisSlave implements RedisSlave {
 		ChannelFuture future = channel().writeAndFlush(command);
 		future.addListener(writeExceptionListener);
 		return future;
+	}
+
+	public void onCommandEnd() {
+		closeState.makeSureOpen();
+		getLogger().debug("[onCommandEnd]{}", this);
+		close();
 	}
 
 	@Override

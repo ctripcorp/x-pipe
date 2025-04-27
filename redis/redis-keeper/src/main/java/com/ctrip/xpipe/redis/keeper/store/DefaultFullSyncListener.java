@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -38,7 +37,7 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public void onFileData(ReferenceFileRegion referenceFileRegion) {
+	public void onFileData(DefaultReferenceFileRegion referenceFileRegion) {
 		
 		if (referenceFileRegion == null) {
 
@@ -88,6 +87,11 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	@Override
 	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 		return redisSlave.onCommand(currentFile, filePosition, cmd);
+	}
+
+	@Override
+	public void onCommandEnd() {
+		redisSlave.onCommandEnd();
 	}
 
 	@Override

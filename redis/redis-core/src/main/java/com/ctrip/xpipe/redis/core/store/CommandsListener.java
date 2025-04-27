@@ -14,6 +14,8 @@ public interface CommandsListener extends ReplDelayConfig {
 
 	//CommandsListener.onCommand() support ByteBuf, FileRegion, RedisOp as input
 	ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd);
+
+	void onCommandEnd();
 	
 	void beforeCommand();
 

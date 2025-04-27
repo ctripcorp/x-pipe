@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 
@@ -22,7 +22,7 @@ public interface RdbFileListener extends ReplDelayConfig {
 	 * @param len  when len == -1, that means file has ended
 	 * @throws IOException 
 	 */
-	void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException;
+	void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException;
 	
 	/**
 	 * @return

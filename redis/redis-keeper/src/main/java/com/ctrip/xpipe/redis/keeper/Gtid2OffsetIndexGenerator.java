@@ -92,6 +92,11 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
         return channel.newSucceededFuture();
     }
 
+    @Override
+    public void onCommandEnd() {
+        // do nothing
+    }
+
     private void rotateIndexFileIfNecessary(CommandFile comingFile) throws IOException {
 
         if (comingFile.equals(currentFile)) {

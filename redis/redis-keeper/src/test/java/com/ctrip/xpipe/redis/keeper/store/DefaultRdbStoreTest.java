@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
@@ -87,7 +87,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
 							
 							if(referenceFileRegion != null){
 								logger.info("[onFileData]{}", referenceFileRegion);

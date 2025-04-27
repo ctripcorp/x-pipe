@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
-import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;

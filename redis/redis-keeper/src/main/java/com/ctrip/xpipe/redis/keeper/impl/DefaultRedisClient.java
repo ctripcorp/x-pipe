@@ -181,6 +181,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 			logger.info("[becomeGapAllowRedisSlave][already slave] {}", this);
 			return null;
 		} else {
+			this.clientRole = CLIENT_ROLE.SLAVE;
 			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this);
 			notifyObservers(redisSlave);
 			return redisSlave;

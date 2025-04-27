@@ -42,7 +42,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 	@Test
 	public void testCloseAfterRelease() throws IOException {
 
-		ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+		DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 
 		referenceFileRegion.deallocate();
 		Assert.assertFalse(referenceFileChannel.isFileChannelClosed());
@@ -55,7 +55,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 	@Test
 	public void testCloseFirst() throws IOException {
 
-		ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+		DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 		referenceFileChannel.close();
 
 		Assert.assertFalse(referenceFileChannel.isFileChannelClosed());
@@ -68,7 +68,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 	public void testConcurrentRead() throws InterruptedException, IOException {
 
 		int concurrentCount = 10;
-		final LinkedBlockingQueue<ReferenceFileRegion> fileRegions = new LinkedBlockingQueue<>();
+		final LinkedBlockingQueue<DefaultReferenceFileRegion> fileRegions = new LinkedBlockingQueue<>();
 		final CountDownLatch latch = new CountDownLatch(concurrentCount);
 		
 
@@ -84,7 +84,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 						while (true) {
 							
 							count++;
-							ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(1);
+							DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.read(1);
 							fileRegions.offer(referenceFileRegion);
 							if(count > totalFileLen){
 								logger.info("{}", referenceFileRegion);
@@ -112,7 +112,7 @@ public class ReferenceFileChannelTest extends AbstractTest {
 		Set<Long> starts = new HashSet<>();
 		while (true) {
 			
-			ReferenceFileRegion referenceFileRegion = fileRegions.poll(100, TimeUnit.MILLISECONDS);
+			DefaultReferenceFileRegion referenceFileRegion = fileRegions.poll(100, TimeUnit.MILLISECONDS);
 			if(referenceFileRegion == null){
 				break;
 			}

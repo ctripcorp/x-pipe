@@ -46,7 +46,7 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 		tryCloseChannel();
 	}
 
-	public ReferenceFileRegion read(int maxBytes) throws IOException {
+	public DefaultReferenceFileRegion read(long maxBytes) throws IOException {
 
 		while(true){
 			
@@ -64,12 +64,12 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 				if(end - previousPos < 0){
 					logger.warn("[readTilEnd]pre:{}, end:{}, filelen:{}", previousPos, end, fileEnd);
 				}
-				return new ReferenceFileRegion(file.getFileChannel(), previousPos, end - previousPos, this);
+				return new DefaultReferenceFileRegion(file.getFileChannel(), previousPos, end - previousPos, this);
 			}
 		}
 	}
 
-	public ReferenceFileRegion readTilEnd() throws IOException {
+	public DefaultReferenceFileRegion readTilEnd() throws IOException {
 		return read(-1);
 	}
 
