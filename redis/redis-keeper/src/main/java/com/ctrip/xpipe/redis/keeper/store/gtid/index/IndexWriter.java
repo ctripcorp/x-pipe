@@ -77,6 +77,9 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             blockWriter.close();
         }
         saveIndexEntry();
+        if(indexEntry != null) {
+            gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
+        }
     }
 
 
@@ -106,7 +109,10 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     }
 
     public GtidSet getGtidSet() {
-        return this.gtidSetWrapper.getGtidSet();
+        if(indexEntry != null) {
+            gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
+        }
+        return gtidSetWrapper.getGtidSet();
     }
 
     public void saveIndexEntry() throws IOException {

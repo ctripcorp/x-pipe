@@ -78,6 +78,10 @@ public class GtidSetWrapper {
         return indexEntry;
     }
 
+    public void compensate(String uuid, long startGno, long endGno) {
+        gtidSet.compensate(uuid, startGno, endGno);
+    }
+
     private static long readLong(FileChannel channel) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         channel.read(buffer);
