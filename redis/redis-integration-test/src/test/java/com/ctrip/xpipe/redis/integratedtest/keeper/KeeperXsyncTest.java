@@ -28,6 +28,9 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
     @Test
     public void testKeeperXsync() throws Exception {
         setRedisToGtidEnabled();
+        for(int i = 0; i < 100; i++) {
+            setKey("key_" + i);
+        }
         initKeepers();
         int redisPort = randomPort();
         System.out.println("random port: " + redisPort);
@@ -42,7 +45,7 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
         // 注入数据
 
-        for(int i = 0; i < 100; i++) {
+        for(int i = 100; i < 200; i++) {
             setKey("key_" + i);
         }
 
@@ -57,7 +60,7 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
         slaveOfOnOne("127.0.0.1", redisPort);
 
-        for(int i = 100; i < 200; i++) {
+        for(int i = 200; i < 300; i++) {
             setKey("key_" + i);
         }
         slaveOfKeeper("127.0.0.1", redisPort);
@@ -70,7 +73,7 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
         for (RedisKeeperServer redisKeeperServer : redisKeeperServers) {
             redisKeeperServer.stop();
         }
-        for(int i = 200; i < 300; i++) {
+        for(int i = 300; i < 400; i++) {
             setKey("key_" + i);
         }
         for (RedisKeeperServer redisKeeperServer : redisKeeperServers) {

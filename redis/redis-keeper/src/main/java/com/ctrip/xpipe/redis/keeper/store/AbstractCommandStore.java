@@ -631,7 +631,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public void switchToPsync(String replId, long offset) throws IOException {
-        indexStore.close();
         buildIndex = false;
+        indexStore.closeWithDeleteIndexFiles();
     }
 }

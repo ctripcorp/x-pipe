@@ -133,4 +133,20 @@ public class IndexStore implements StreamCommandListener, Closeable {
     public void close() throws IOException {
         this.indexWriter.close();
     }
+
+    public void closeWithDeleteIndexFiles() throws IOException {
+        this.close();
+        File directory = new File(baseDir);
+
+        if (!directory.exists() || !directory.isDirectory()) {
+            return;
+        }
+        File[] files = directory.listFiles((dir, name) -> name.startsWith(AbstractIndex.INDEX) || name.startsWith(AbstractIndex.BLOCK));
+        if (files == null) {
+            return;
+        }
+        for (File file : files) {
+            file.delete();
+        }
+    }
 }

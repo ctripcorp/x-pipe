@@ -138,6 +138,15 @@ public class IndexStoreTest {
     }
 
     @Test
+    public void testClose() throws Exception {
+        write(filePath);
+        File directory = new File(baseDir);
+        Assert.assertEquals(directory.list().length, 3);
+        indexStore.closeWithDeleteIndexFiles();
+        Assert.assertEquals(directory.list().length, 1);
+    }
+
+    @Test
     public void testFileChange() throws Exception {
         write(file1);
         GtidSet gtidSet = indexStore.getIndexGtidSet();
