@@ -138,8 +138,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
-		long offset = cmdStore.locateContinueGtidSet(gtidSet);
-		return new XSyncContinue(gtidSet, gtidSet, offset);
+		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
+		return new XSyncContinue(continuePoint.getValue(), gtidSet, continuePoint.getKey());
 	}
 
 	@Override
@@ -190,6 +190,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 			lostGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+		}
+		if(beginGtidSet == null) {
+			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		}
 		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
 	}
@@ -346,7 +349,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 					// TODO make cmdstore locate gtidset thread-safe
 					XSyncContinue cont = locateContinueGtidSet(rdbGtidSet);
 					rdbOffsetBacklog = cont.getBacklogOffset();
-
+                    // lost + continue
 					GtidSet gtidCont = gtidSet.subtract(cont.getBacklogGtidSet());
 
 					if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) {
@@ -363,6 +366,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbOffsetBacklog, backlogBeginOffset(), backlogEndOffset(),
 						gtidExecutedRepr, rdbStore.getReplId(), rdbStore.getMasterUuid());
+				rdbStore.setRdbBacklogOffset(rdbOffsetBacklog);
 			}
 			if (result != UPDATE_RDB_RESULT.OK) {
 				return result;

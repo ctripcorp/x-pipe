@@ -169,9 +169,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
-									KeeperResourceManager resourceManager, SyncRateManager syncRateManager){
+									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, null, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, null);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,

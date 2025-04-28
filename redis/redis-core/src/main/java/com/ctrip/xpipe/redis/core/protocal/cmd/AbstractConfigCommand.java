@@ -31,6 +31,7 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 		DISKLESS_SYNC("repl-diskless-sync"),
 		DISKLESS_SYNC_DELAY("repl-diskless-sync-delay"),
 		SLAVE_READONLY("slave-read-only"),
+		GTID_ENABLED("gtid-enabled"),
 
 		SLAVE_REPL_ALL("slave-repl-all"), //extend for xredis
 		RORDB_SYNC("swap-repl-rordb-sync") // extend for ror

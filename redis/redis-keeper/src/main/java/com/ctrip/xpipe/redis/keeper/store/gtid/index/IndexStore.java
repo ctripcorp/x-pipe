@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -78,24 +79,32 @@ public class IndexStore implements StreamCommandListener, Closeable {
         }
     }
 
-    public long locateContinueGtidSet(GtidSet request) throws Exception {
+    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws Exception {
         this.indexWriter.saveIndexEntry();
         long offset = -1;
         long baseOffset = 0l;
+        GtidSet continueGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
-            offset = indexReader.seek(request);
-            while (offset < 0) {
+            Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
+            while (continuePoint.getKey() < 0) {
                 boolean success = indexReader.changeToPre();
                 if(!success) {
                     break;
                 }
-                offset = indexReader.seek(request);
+                continuePoint = indexReader.seek(request);
             }
             baseOffset = indexReader.getStartOffset();
+
+            if(continuePoint.getKey() >= 0) {
+                continueGtidSet = continuePoint.getValue();
+                offset = continuePoint.getKey();
+            }
         }
         offset = Math.max(offset, 0);
-        return baseOffset + offset;
+
+
+        return new Pair<>(baseOffset + offset, continueGtidSet);
     }
 
     public GtidSet getIndexGtidSet() {

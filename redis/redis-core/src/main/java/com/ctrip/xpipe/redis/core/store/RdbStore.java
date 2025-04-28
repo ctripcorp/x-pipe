@@ -83,5 +83,7 @@ public interface RdbStore extends Destroyable, Closeable{
 	String getMasterUuid();
 	boolean isGapAllowed();
 
+	void setRdbBacklogOffset(long rdbBacklogOffset);
+
 
 }

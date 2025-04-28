@@ -260,7 +260,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		if (rdbProgress instanceof OffsetReplicationProgress) {
 			this.progressAfterRdb = new OffsetReplicationProgress(((OffsetReplicationProgress) rdbProgress).getProgress() + 1);
 		} else if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
-			this.progressAfterRdb = new BacklogOffsetReplicationProgress(((BacklogOffsetReplicationProgress) rdbProgress).getProgress() + 1,
+			this.progressAfterRdb = new BacklogOffsetReplicationProgress(((BacklogOffsetReplicationProgress) rdbProgress).getProgress(),
 					((BacklogOffsetReplicationProgress) rdbProgress).getEndProgress());
 		} else {
 			this.progressAfterRdb = rdbProgress;

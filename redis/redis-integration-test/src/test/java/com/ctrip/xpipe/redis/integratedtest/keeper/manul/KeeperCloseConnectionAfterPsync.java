@@ -38,7 +38,7 @@ public class KeeperCloseConnectionAfterPsync extends AbstractKeeperIntegratedSin
 														SyncRateManager syncRateManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-				keeperMonitorManager, resourceManager, syncRateManager){
+				keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser()){
 
 			@Override
 			protected void becomeSlave(Channel channel, RedisSlave redisSlave) {

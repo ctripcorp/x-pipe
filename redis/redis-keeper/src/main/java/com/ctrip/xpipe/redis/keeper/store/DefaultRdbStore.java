@@ -47,7 +47,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected long rdbOffset;
 
-	protected long rdbBacklogOffset = -1;
+	protected long rdbBacklogOffset = 0;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
@@ -81,6 +81,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		return rdbBacklogOffset;
 	}
 
+	@Override
 	public void setRdbBacklogOffset(long rdbBacklogOffset) {
 		this.rdbBacklogOffset = rdbBacklogOffset;
 	}

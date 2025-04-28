@@ -66,7 +66,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		ChannelFuture lastWriteFuture = null;
 
 		try {
-			cmdReader = beginRead((OffsetReplicationProgress) progress, listener);
+			cmdReader = beginRead((ReplicationProgress<Long>)progress, listener);
 		} finally {
 			// ensure beforeCommand() is always called
 			listener.beforeCommand();
