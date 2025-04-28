@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.io.Closeable;
@@ -14,16 +15,23 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
     private List<IndexEntry> indexItemList;
 
+    private GtidSet startGtidSet;
+
     public IndexReader(String baseDir, String indexFile) {
         super(baseDir, indexFile);
     }
+
+    public GtidSet getStartGtidSet() {
+        return startGtidSet;
+    }
+
 
 
     public void init() throws IOException {
         super.initIndexFile();
         // skip gtid set
         indexItemList = new ArrayList<>();
-        GtidSetWrapper.skipGtidSet(indexFile.getFileChannel());
+        startGtidSet =  GtidSetWrapper.readGtidSet(indexFile.getFileChannel());
         IndexEntry item = IndexEntry.readFromFile(indexFile.getFileChannel());
         while (item != null) {
             indexItemList.add(item);
@@ -60,8 +68,8 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
     }
 
-    public long seek(GtidSet request) throws IOException {
-        // 如果没有匹配到 返回是第一个
+    public Pair<Long, GtidSet> seek(GtidSet request) throws IOException {
+
         for (int i = indexItemList.size() - 1; i >= 0; i--) {
             IndexEntry indexEntry = indexItemList.get(i);
             if(indexEntry.getBlockEndOffset() == -1) {
@@ -70,6 +78,7 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
             }
             GtidSet.UUIDSet uuidSet = request.getUUIDSet(indexEntry.getUuid());
+
             if(uuidSet != null) {
                 long gno = uuidSet.getLastGno();
                 if(gno > indexEntry.getEndGno()) {
@@ -77,19 +86,31 @@ public class IndexReader extends AbstractIndex implements Closeable {
                     try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
                             new File(generateBlockName()))) {
                         long index  = indexEntry.getEndGno() - indexEntry.getStartGno();
-                        return blockReader.seek((int)index) + + indexEntry.getCmdStartOffset();
+                        return new Pair<>(blockReader.seek((int)index) + indexEntry.getCmdStartOffset(), calculateGtidSet(i, indexEntry.getEndGno()));
                     }
                 } else if (gno >= indexEntry.getStartGno() && gno <= indexEntry.getEndGno()) {
                     // 读block 获取
                     try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
                             new File(generateBlockName()))) {
                         long index = gno - indexEntry.getStartGno();
-                        return blockReader.seek((int) index) + + indexEntry.getCmdStartOffset();
+                        return new Pair<>(blockReader.seek((int) index) + indexEntry.getCmdStartOffset(), calculateGtidSet(i, gno));
                     }
                 }
             }
         }
-        return -1;
+        return new Pair<>(-1l, startGtidSet);
+    }
+
+    //caculate continue gtid set
+    private GtidSet calculateGtidSet(int index, long gno) {
+        GtidSet result = new GtidSet(getStartGtidSet().toString());
+        for(int i = 0; i < index; i++) {
+            IndexEntry indexEntry = indexItemList.get(i);
+            result.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
+        }
+        IndexEntry indexEntry = indexItemList.get(index);
+        result.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), gno);
+        return result;
     }
 
     @Override

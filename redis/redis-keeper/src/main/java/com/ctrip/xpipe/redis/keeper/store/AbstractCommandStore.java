@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
@@ -608,11 +609,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public long locateContinueGtidSet(GtidSet gtidSet) {
+    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) {
         try {
             return indexStore.locateContinueGtidSet(gtidSet);
         } catch (Exception e) {
-            return -1;
+            return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
         }
     }
 

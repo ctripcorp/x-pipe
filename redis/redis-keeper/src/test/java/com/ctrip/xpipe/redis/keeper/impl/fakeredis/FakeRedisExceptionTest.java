@@ -2,6 +2,11 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
@@ -54,10 +59,14 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	
 	protected RedisKeeperServer createRedisKeeperServer(Long replId,  KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
-		
+
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
 				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class),
-				Mockito.mock(SyncRateManager.class)){
+				Mockito.mock(SyncRateManager.class), opParser){
 		
 			@Override
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {

@@ -96,6 +96,33 @@ public abstract class ConfigSetCommand<T> extends AbstractConfigCommand<T>{
 		}
 	}
 
+	public static class ConfigSetGtidEnabled extends ConfigSetCommand<Boolean> {
+
+		private boolean gtidEnabled = false;
+
+		public ConfigSetGtidEnabled(boolean enabled, SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+			this.gtidEnabled = enabled;
+		}
+
+		@Override
+		protected String getValue() {
+			return RedisProtocol.booleanToString(gtidEnabled);
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.GTID_ENABLED.getConfigName();
+		}
+
+		@Override
+		protected Boolean format(Object payload) {
+			String response = payloadToString(payload);
+			return RedisProtocol.OK.equalsIgnoreCase(response);
+		}
+	}
+
+
 	public static class ConfigSetReplAll extends ConfigSetCommand<Boolean>{
 
 		private boolean replall = false;

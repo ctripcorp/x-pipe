@@ -197,7 +197,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager);
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser());
+	}
+
+	public static RedisOpParser generateRedisOpParser() {
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+		return opParser;
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {

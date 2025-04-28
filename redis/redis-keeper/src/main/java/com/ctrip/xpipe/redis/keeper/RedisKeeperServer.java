@@ -82,6 +82,7 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	}
 
 	default void fullSyncToSlave(RedisSlave redisSlave) throws IOException {
+		getKeeperMonitor().getKeeperStats().increaseFullSync();
 		fullSyncToSlave(redisSlave, false);
 	}
 
