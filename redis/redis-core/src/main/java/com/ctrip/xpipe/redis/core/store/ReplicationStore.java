@@ -22,9 +22,11 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid) throws IOException;
 	void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException;
+	void psyncContinueFrom(String replId, long replOff) throws IOException;
 	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException;
 	void switchToPSync(String replId, long offset) throws IOException;
 	void psyncContinue(String replId) throws IOException;
+	void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();

@@ -59,10 +59,6 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
         return this.replProto;
     }
 
-    public void updateReplProto(ReplStage.ReplProto replProto) {
-        this.replProto = replProto;
-    }
-
     @Override
     public String getGtidLost() {
         return this.gtidLost.get();

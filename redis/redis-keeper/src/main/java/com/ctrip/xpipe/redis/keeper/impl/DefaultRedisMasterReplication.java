@@ -191,13 +191,13 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
         Psync psync;
         if (redisKeeperServer.getRedisKeeperServerState().keeperState().isBackup()) {
             if (redisKeeperServer.gapAllowSyncEnabled()) {
-                psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+                psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
             } else {
                 psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
             }
         } else {
             if (redisKeeperServer.gapAllowSyncEnabled()) {
-                psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+                psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
             } else {
                 psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
             }
@@ -271,7 +271,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
             redisKeeperServer.setRdbDumper(rdbDumper, true);
         } catch (SetRdbDumperException e) {
             //impossible to happen
-            logger.error("[doOnFullSync0][impossible to happen]", e);
+            logger.error("[{}][impossible to happen]", logPrefix, e);
         }
     }
 
@@ -286,12 +286,12 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
     }
 
     @Override
-    protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+    protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
         doOnContinue0("doOnXContinue");
     }
 
     @Override
-    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid) {
+    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
         doOnContinue0("doOnSwitchToXsync");
     }
 

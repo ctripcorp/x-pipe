@@ -325,16 +325,16 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
                 }
             }
             if (replId == null) {
-                throw new RedisRuntimeException("replid reply: replid unset");
+                throw new RedisRuntimeException("invalid xfullresync reply: replid unset");
             }
             if (replOff == REPLOFF_UNSET) {
-                throw new RedisRuntimeException("replid reply: reploff unset");
+                throw new RedisRuntimeException("invalid xfullresync reply: reploff unset");
             }
             if (masterUuid == null) {
-                throw new RedisRuntimeException("replid reply: master.uuid unset");
+                throw new RedisRuntimeException("invalid xfullresync reply: master.uuid unset");
             }
             if (gtidLost == null) {
-                throw new RedisRuntimeException("replid reply: gtid.lost unset");
+                throw new RedisRuntimeException("invalid xfullresync reply: gtid.lost unset");
             }
             return this;
         }
@@ -413,7 +413,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
         SyncReply parsedReply = parseSyncReply(reply);
         if (getLogger().isDebugEnabled()) {
-            getLogger().debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, parsedReply);
+            getLogger().debug("[readRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, parsedReply);
         }
         this.syncReply = parsedReply;
 
@@ -560,12 +560,12 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
     private void notifySwitchToXsync() {
         XContinueReply reply = (XContinueReply) syncReply;
-        getLogger().debug("[notifySwitchToXsync] replid:{}, replOff:{}, masterUuid:{}", reply.getReplId(),
-                reply.getReplOff(), reply.getMasterUuid());
+        getLogger().debug("[notifySwitchToXsync] replid:{}, replOff:{}, masterUuid:{}, gtidCont:{}", reply.getReplId(),
+                reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
         for (PsyncObserver observer : observers) {
             if (observer instanceof GapAllowedSyncObserver) {
                 ((GapAllowedSyncObserver) observer).onSwitchToXsync(reply.getReplId(),
-                        reply.getReplOff(), reply.getMasterUuid());
+                        reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
             }
         }
     }

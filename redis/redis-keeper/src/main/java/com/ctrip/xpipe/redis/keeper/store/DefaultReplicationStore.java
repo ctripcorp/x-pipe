@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,9 +49,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private File baseDir;
 
-	private AtomicReference<RdbStore> rdbStoreRef = new AtomicReference<>();
+	protected AtomicReference<RdbStore> rdbStoreRef = new AtomicReference<>();
 
-	private AtomicReference<RdbStore> rordbStoreRef = new AtomicReference<>();
+	protected AtomicReference<RdbStore> rordbStoreRef = new AtomicReference<>();
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
@@ -82,7 +84,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
 	}
 
-	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+	protected DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
 	) throws IOException {
@@ -98,32 +100,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
-		if (meta != null && meta.getRdbFile() != null) {
-			File rdb = new File(baseDir, meta.getRdbFile());
-			if (rdb.isFile()) {
-				ReplStage replStage = meta.getCurReplStage();
-				ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
-				GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
-				String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
-
-				rdbStoreRef.set(createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta), replProto, gtidLost, masterUuid));
-				rdbStoreRef.get().updateRdbType(RdbStore.Type.NORMAL);
-				rdbStoreRef.get().updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
-			}
+		Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
+		if (rdbStores.getKey() != null) {
+			this.rdbStoreRef.set(rdbStores.getKey());
 		}
-		if (meta != null && meta.getRordbFile() != null) {
-			File rordb = new File(baseDir, meta.getRordbFile());
-			if (rordb.isFile()) {
-				ReplStage replStage = meta.getCurReplStage();
-				ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
-				GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
-				String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
-
-				rordbStoreRef.set(createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta), replProto, gtidLost, masterUuid));
-				rordbStoreRef.get().updateRdbType(RdbStore.Type.RORDB);
-				rordbStoreRef.get().updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
-			}
+		if (rdbStores.getValue() != null) {
+			this.rdbStoreRef.set(rdbStores.getValue());
 		}
+
 		if (null != meta && null != meta.getCmdFilePrefix()) {
 			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 			if (meta.getRdbLastOffset() != null) {
@@ -136,6 +120,29 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		removeUnusedRdbFiles();
 	}
 
+	protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
+		RdbStore rdbStore = null, rordbStore = null;
+
+		if (meta != null && meta.getRdbFile() != null) {
+			File rdb = new File(baseDir, meta.getRdbFile());
+			if (rdb.isFile()) {
+				rdbStore = createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta));
+				rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+				rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
+			}
+		}
+
+		if (meta != null && meta.getRordbFile() != null) {
+			File rordb = new File(baseDir, meta.getRordbFile());
+			if (rordb.isFile()) {
+				rordbStore = createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta));
+				rordbStore.updateRdbType(RdbStore.Type.RORDB);
+				rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
+			}
+		}
+		return new Pair<>(rdbStore,rordbStore);
+	}
+
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
 		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
@@ -145,8 +152,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long getCurReplStageReplOff() {
 		ReplStage curStage = metaStore.getCurrentReplStage();
-		long totalLength = cmdStore == null ? 0 : cmdStore.totalLength();
-		return  curStage.getBegOffsetRepl() + (totalLength - 1) - curStage.getBegOffsetBacklog();
+		getLogger().info("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset(), curStage.getBegOffsetBacklog());
+		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset() - curStage.getBegOffsetBacklog();
 	}
 
 	@Override
@@ -161,6 +168,23 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
 		metaStore.switchToPsync(replId, replOff+1, backlogEndOffset());
 		cmdStore.switchToPsync(replId, replOff);
+	}
+
+	@Override
+	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		makeSureOpen();
+
+		getLogger().info("[xsyncContinueFrom] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
+		baseDir.mkdirs();
+
+		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
+
+		GtidSet gtidEmpty = new GtidSet(GtidSet.EMPTY_GTIDSET);
+		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),masterUuid,gtidEmpty,gtidCont,cmdFilePrefix);
+
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+
+		cmdStore.switchToXSync(gtidEmpty);
 	}
 
 	@Override
@@ -229,13 +253,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
 							   GtidSet gtidLost, String masterUuid) throws IOException {
-		makeSureOpen();
-		baseDir.mkdirs();
-
-		getLogger().info("[makeRdb] replId:{}, rdbOffset:{}, eof:{}, proto:{}, gtidLost:{}, masterUuid:{}",
-				replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
-		String rdbFile = newRdbFileName();
-		return createRdbStore(new File(baseDir, rdbFile), replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -276,7 +294,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
 		makeSureOpen();
 
-		getLogger().info("[confirmRdbGapAllowed] type:{}, replId:{}, rdbOffset:{}, eof:{}, gtid-repl-mode:{}, gtid-executed:{} gtid-lost:{}",
+		getLogger().info("[confirmRdbGapAllowed] type:{}, replId:{}, rdbOffset:{}, eof:{}, repl-proto:{}, gtid-executed:{} gtid-lost:{}",
 				rdbStore.getRdbType(), rdbStore.getReplId(), rdbStore.getRdbOffset(), rdbStore.getEofType(),
 				rdbStore.getReplProto(), rdbStore.getGtidSet(), rdbStore.getGtidLost());
 		AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbStore.getRdbType()) ? rdbStoreRef : rordbStoreRef;
@@ -304,8 +322,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			cmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
 		}
-		//TODO why should be set base index??
-		// cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
 	}
 
 
@@ -326,51 +342,34 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			EofType eofType = rdbStore.getEofType();
 			long rdbOffset = rdbStore.rdbOffset();
 			RdbStore.Type rdbType = rdbStore.getRdbType();
+			String rdbReplId = rdbStore.getReplId();
 			AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbType) ? rdbStoreRef : rordbStoreRef;
 
 			UPDATE_RDB_RESULT result;
 			if (replProto == ReplStage.ReplProto.PSYNC) {
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
-						rdbType, eofType, rdbOffset, backlogBeginOffset(), backlogEndOffset(), rdbStore.getReplId());
+						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEndOffset());
 			} else {
-				long rdbOffsetBacklog;
 				String gtidExecutedRepr = rdbStore.getGtidSet();
 				String gtidLostRepr = rdbStore.getGtidLost();
 
+				GtidSet rdbGtidExecuted = new GtidSet(gtidExecutedRepr);
+				GtidSet rdbGtidLost = new GtidSet(gtidLostRepr);
+				GtidSet rdbGtidSet = rdbGtidExecuted.union(rdbGtidLost);
+
+				XSyncContinue cont;
 				try {
-
-					GtidSet rdbGtidExecuted = new GtidSet(gtidExecutedRepr);
-					GtidSet rdbGtidLost = new GtidSet(gtidLostRepr);
-					GtidSet rdbGtidSet = rdbGtidExecuted.union(rdbGtidLost);
-
-					Pair<GtidSet, GtidSet> pair = getGtidSet();
-					GtidSet gtidSet = pair.getKey().union(pair.getValue());
-
-					// TODO make cmdstore locate gtidset thread-safe
-					XSyncContinue cont = locateContinueGtidSet(rdbGtidSet);
-					rdbOffsetBacklog = cont.getBacklogOffset();
-                    // lost + continue
-					GtidSet gtidCont = gtidSet.subtract(cont.getBacklogGtidSet());
-
-					if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) {
-						return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
-					}
-
-					if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) {
-						return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
-					}
+					cont = locateContinueGtidSet(rdbGtidSet);
 				} catch (Exception e) {
 					throw new KeeperReplicationStoreRuntimeException(e.toString());
 				}
 
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
-						rdbType, eofType, rdbOffset, rdbOffsetBacklog, backlogBeginOffset(), backlogEndOffset(),
-						gtidExecutedRepr, rdbStore.getReplId(), rdbStore.getMasterUuid());
-				rdbStore.setRdbBacklogOffset(rdbOffsetBacklog);
+						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
+						backlogBeginOffset(), backlogEndOffset(), cont.getBacklogOffset(), cont.getContinueGtidSet());
+				rdbStore.setRdbBacklogOffset(cont.getBacklogOffset());
 			}
-			if (result != UPDATE_RDB_RESULT.OK) {
-				return result;
-			}
+			if (result != UPDATE_RDB_RESULT.OK) return result;
 
 			rdbStore.addListener(createRdbStoreListener(rdbStore));
 
@@ -378,7 +377,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			RdbStore oldRdbStore = storeRef.get();
 			storeRef.set(rdbStore);
 			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
-			// cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (metaDup.getBeginOffset() - 1));
 			return UPDATE_RDB_RESULT.OK;
 		}
 	}
@@ -428,6 +426,19 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 	}
 
+	@Override
+	public void psyncContinueFrom(String replId, long replOff) throws IOException{
+		makeSureOpen();
+
+		getLogger().info("[psyncContinueFrom] {}:{}", replId, replOff);
+		baseDir.mkdirs();
+
+		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
+		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff+1, backlogEndOffset(), cmdFilePrefix);
+
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+	}
+
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor) throws IOException {
@@ -456,9 +467,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
 									  GtidSet gtidLost, String masterUuid) throws IOException {
-		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
-		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
-		return rdbStore;
+		throw new UnsupportedOperationException();
 	}
 
 	protected RdbStoreListener createRdbStoreListener(RdbStore rdbStore) {

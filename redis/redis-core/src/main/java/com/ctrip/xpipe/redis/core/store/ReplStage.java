@@ -74,9 +74,9 @@ public class ReplStage {
         }
     }
 
-    public boolean adjustBegOffsetRepl(long replOff, long backlogOff) {
-        // reploff - newBegOffsetRepl == backlogOff - begOffsetBacklog
-        long newBegOffsetRepl = replOff - backlogOff + begOffsetBacklog;
+    public boolean adjustBegOffsetRepl(long begOffsetRepl, long begOffsetBacklog) {
+        // begOffsetRepl - newBegOffsetRepl == begOffsetBacklog - this.begOffsetBacklog
+        long newBegOffsetRepl = begOffsetRepl - begOffsetBacklog + this.begOffsetBacklog;
         if (this.begOffsetRepl != newBegOffsetRepl) {
             this.begOffsetRepl = newBegOffsetRepl;
             return true;
@@ -102,24 +102,24 @@ public class ReplStage {
         this.gtidLost = gtidLost;
     }
 
-    public ReplStage(String replId, long beginReplOffset, long backlogOffset) {
+    public ReplStage(String replId, long beginReplOffset, long begOffsetBacklog) {
         this.proto = ReplProto.PSYNC;
         this.replId = replId;
         this.begOffsetRepl = beginReplOffset;
-        this.begOffsetBacklog = backlogOffset;
+        this.begOffsetBacklog = begOffsetBacklog;
         this.replId2 = ReplicationStoreMeta.EMPTY_REPL_ID;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }
 
-    public ReplStage(String replId, long beginOffsetRepl, long backlogOffset,
+    public ReplStage(String replId, long begOffsetRepl, long begOffsetBacklog,
                      String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) {
         this.proto = ReplProto.XSYNC;
         this.replId = replId;
-        this.begOffsetRepl = beginOffsetRepl;
-        this.begOffsetBacklog = backlogOffset;
+        this.begOffsetRepl = begOffsetRepl;
+        this.begOffsetBacklog = begOffsetBacklog;
         this.masterUuid = masterUuid;
-        this.beginGtidset = gtidExecuted;
-        this.gtidLost = gtidLost;
+        this.beginGtidset = gtidExecuted == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidExecuted;
+        this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost;
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }

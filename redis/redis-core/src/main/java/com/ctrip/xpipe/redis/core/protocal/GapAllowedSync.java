@@ -8,5 +8,6 @@ public interface GapAllowedSync extends Psync {
 	String UUID_INSTRESTED_DEFAULT = "*";
 	String UUID_INSTRESTED_FULL = "?";
 	String XSYNC_OPT_MAXGAP = "MAXGAP";
+	int DEFAULT_XSYNC_MAXGAP = 10000;
 
 }

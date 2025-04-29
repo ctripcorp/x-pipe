@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReasonTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultMasterStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStatsTest;
+import com.ctrip.xpipe.redis.keeper.protocal.cmd.GapAllowedSyncTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
@@ -39,6 +40,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRedisKeeperServerConnectToFakeRedisTest.class,
         FakeRedisHalfRdbServerFail.class,
         PsyncTest.class,
+        GapAllowedSyncTest.class,
         DefaultRedisClientTest.class,
         CommandHandlerManagerTest.class,
         RedisKeeperServerStateBackupTest.class,
@@ -46,12 +48,14 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisKeeperServerStateUnknownTest.class,
         DefaultRedisMasterReplicationTest.class,
         RdbonlyRedisMasterReplicationTest.class,
+        GapAllowedRdbonlyRedisMasterReplicationTest.class,
         RedisMasterNewRdbDumperTest.class,
         StateBackupDeadlockTest.class,
         KeeperContainerServiceTest.class,
         DefaultReplicationStoreManagerTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultReplicationStoreTest.class,
+        GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,

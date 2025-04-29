@@ -249,7 +249,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
-    public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
+    public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
         doOnContinue();
     }
 

@@ -6,10 +6,12 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.core.store.UPDATE_RDB_RESULT;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * @author wenchao.meng
@@ -251,6 +253,26 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setPrevReplStage(null);
+			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff));
+
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+
+			clearGapAllowObseleteFields(metaDup);
+
+			clearRdb(metaDup);
+			clearRordb(metaDup);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
 	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
@@ -283,10 +305,6 @@ public class DefaultMetaStore extends AbstractMetaStore{
 				throw new IllegalStateException("switchtopsync in psync replstage");
 			}
 
-			// TODO should we update xsync replid/off when switch to psync?
-			// curReplStage.updateReplId(replId);
-			// curReplStage.adjustBegOffsetRepl(beginReplOffset, backlogOff);
-
 			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff);
 
 			metaDup.setPrevReplStage(curReplStage);
@@ -298,25 +316,25 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+	public ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
 												GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile,
 												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
 			metaDup.setPrevReplStage(null);
-			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff, masterUuid, gtidLost, gtidExecuted));
+			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, beginOffsetBacklog, masterUuid, gtidLost, gtidExecuted));
 
 			if (RdbStore.Type.NORMAL.equals(type)) {
 				metaDup.setRdbFile(rdbFile);
 				setRdbFileInfo(metaDup, eofType);
 				metaDup.setRdbGtidSet(gtidExecuted.toString());
-				metaDup.setRdbBacklogOffset(backlogOff);
+				metaDup.setRdbBacklogOffset(beginOffsetBacklog);
 			} else if (RdbStore.Type.RORDB.equals(type)) {
 				metaDup.setRordbFile(rdbFile);
 				setRordbFileInfo(metaDup, eofType);
 				metaDup.setRordbGtidSet(gtidExecuted.toString());
-				metaDup.setRordbBacklogOffset(backlogOff);
+				metaDup.setRordbBacklogOffset(beginOffsetBacklog);
 			} else {
 				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
 			}
@@ -331,8 +349,8 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
-	public boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid,
-											  GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
+	public boolean xsyncContinue(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+								 GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
 		boolean	updated = false;
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
@@ -346,7 +364,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 				updated = true;
 			}
 
-			if (curReplStage.adjustBegOffsetRepl(beginReplOffset, backlogOff)) {
+			if (curReplStage.adjustBegOffsetRepl(beginReplOffset, beginOffsetBacklog)) {
 				updated = true;
 			}
 
@@ -368,6 +386,28 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+											  GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setPrevReplStage(null);
+			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, beginOffsetBacklog, masterUuid, gtidLost, gtidExecuted));
+
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+
+			clearGapAllowObseleteFields(metaDup);
+
+			clearRdb(metaDup);
+			clearRordb(metaDup);
+
+			saveMeta(metaDup);
+
+			return metaDup;
+		}
+	}
+
+	@Override
 	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
 											  GtidSet gtidCont) throws IOException {
 		synchronized (metaRef) {
@@ -386,6 +426,117 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			saveMeta(metaDup);
 			return metaDup;
+		}
+	}
+
+	private UPDATE_RDB_RESULT checkBeforeUpdateRdbInfo(
+			long rdbOffset, long rdbOffsetBacklog,
+			long backlogBeginOffset, long backlogEndOffset, ReplStage.ReplProto expectedProto,
+			String expectedReplId, String expectedMasterUuid) {
+		ReplStage curReplStage = getCurrentReplStage();
+
+		if (!Objects.equals(expectedProto, curReplStage.getProto())) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail, proto:{}, rdbProto:{}", curReplStage.getProto(), expectedProto);
+			return UPDATE_RDB_RESULT.REPLSTAGE_NOT_MATCH;
+		}
+
+		if (!Objects.equals(expectedReplId, curReplStage.getReplId())) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail, replid:{}, rdbReplId:{}", curReplStage.getReplId(), expectedReplId);
+			return UPDATE_RDB_RESULT.REPLID_NOT_MATCH;
+		}
+
+		if (!Objects.equals(expectedMasterUuid, curReplStage.getMasterUuid())) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail, masterUuid:{}, rdbMasterUuid:{}", curReplStage.getMasterUuid(), expectedMasterUuid);
+			return UPDATE_RDB_RESULT.MASTER_UUID_NOT_MATCH;
+		}
+
+		if (rdbOffset + 1 < curReplStage.getBegOffsetRepl()) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail: rdb offset not in range. beginOffsetRepl:{}, rdbOffset:{}", curReplStage.getBegOffsetRepl(), rdbOffset);
+			return UPDATE_RDB_RESULT.REPLOFF_OUT_RANGE;
+		}
+
+		if (rdbOffsetBacklog < backlogBeginOffset) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail: lack backlog. backlogBeginOffset:{}, rdbOffsetBacklog:{}", backlogBeginOffset, rdbOffsetBacklog);
+			return UPDATE_RDB_RESULT.LACK_BACKLOG;
+		}
+
+		if (rdbOffsetBacklog > backlogEndOffset) {
+			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail: rdb more recent. backlogEndOffset:{}, rdbOffsetBacklog:{}", backlogEndOffset, rdbOffsetBacklog);
+			return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+		}
+
+		return UPDATE_RDB_RESULT.OK;
+	}
+
+	private void updateRdbInfo(ReplicationStoreMeta metaDup,
+							   String rdbFile, RdbStore.Type type, EofType eofType,
+							   long rdbBacklogOffset, String rdbGtidExecuted) {
+		if (RdbStore.Type.NORMAL.equals(type)) {
+			logger.info("[rdbUpdated] update rdbBacklogOffset to {}", rdbBacklogOffset);
+			metaDup.setRdbFile(rdbFile);
+			setRdbFileInfo(metaDup, eofType);
+			metaDup.setRdbBacklogOffset(rdbBacklogOffset);
+			metaDup.setRdbGtidSet(rdbGtidExecuted);
+		} else if (RdbStore.Type.RORDB.equals(type)) {
+			logger.info("[rordbUpdated] update rdbBacklogOffset to {}", rdbBacklogOffset);
+			metaDup.setRordbFile(rdbFile);
+			setRordbFileInfo(metaDup, eofType);
+			metaDup.setRordbBacklogOffset(rdbBacklogOffset);
+			metaDup.setRordbGtidSet(rdbGtidExecuted);
+		} else {
+			throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
+		}
+	}
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(
+			String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId,
+			long backlogBeginOffset, long backlogEndOffset) throws IOException {
+		synchronized (metaRef) {
+
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = getCurrentReplStage();
+			long rdbOffsetBacklog =  rdbOffset + 1 - curReplStage.getBegOffsetRepl() + curReplStage.getBegOffsetBacklog();
+
+			UPDATE_RDB_RESULT result = checkBeforeUpdateRdbInfo(rdbOffset, rdbOffsetBacklog,
+					backlogBeginOffset, backlogEndOffset, ReplStage.ReplProto.PSYNC, rdbReplId, null);
+
+			if (result != UPDATE_RDB_RESULT.OK) return result;
+
+			updateRdbInfo(metaDup, rdbFile, type, eofType, rdbOffsetBacklog, null);
+			saveMeta(metaDup);
+
+			return result;
+		}
+	}
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(
+			String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, String rdbMasterUuid,
+			GtidSet rdbGtidExecuted, GtidSet rdbGtidLost,
+			long backlogBeginOffset, long backlogEndOffset, long indexedOffsetBacklog, GtidSet indexedGtidSet) throws IOException {
+		synchronized (metaRef) {
+
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			UPDATE_RDB_RESULT result =  checkBeforeUpdateRdbInfo(rdbOffset, indexedOffsetBacklog,
+					backlogBeginOffset, backlogEndOffset, ReplStage.ReplProto.XSYNC, rdbReplId, rdbMasterUuid);
+
+			if (result != UPDATE_RDB_RESULT.OK) return result;
+
+			GtidSet beginGtidSet = getCurrentReplStage().getBeginGtidset();
+			GtidSet gtidLost = getCurrentReplStage().getGtidLost();
+			GtidSet gtidCont = beginGtidSet.union(indexedGtidSet).union(gtidLost);
+
+			GtidSet rdbGtidSet = rdbGtidExecuted.union(rdbGtidLost);
+			if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
+			if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+
+			updateRdbInfo(metaDup, rdbFile, type, eofType, indexedOffsetBacklog, rdbGtidExecuted.toString());
+			saveMeta(metaDup);
+
+			return result;
 		}
 	}
 
