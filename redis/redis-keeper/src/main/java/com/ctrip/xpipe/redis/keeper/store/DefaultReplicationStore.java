@@ -303,16 +303,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		ReplicationStoreMeta newMeta;
 
+		long rdbBacklogOffset = backlogEndOffset();
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
-			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, backlogEndOffset(),
+			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbBacklogOffset,
 					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
 
 		} else {
-			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, backlogEndOffset(),
+			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbBacklogOffset,
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
-
 		}
+		rdbStore.setRdbBacklogOffset(rdbBacklogOffset);
 
 		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		storeRef.set(rdbStore);
@@ -364,10 +365,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 					throw new KeeperReplicationStoreRuntimeException(e.toString());
 				}
 
+				long rdbBacklogOffset = cont.getBacklogOffset();
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
-						backlogBeginOffset(), backlogEndOffset(), cont.getBacklogOffset(), cont.getContinueGtidSet());
-				rdbStore.setRdbBacklogOffset(cont.getBacklogOffset());
+						backlogBeginOffset(), backlogEndOffset(), rdbBacklogOffset, cont.getContinueGtidSet());
+				rdbStore.setRdbBacklogOffset(rdbBacklogOffset);
 			}
 			if (result != UPDATE_RDB_RESULT.OK) return result;
 
