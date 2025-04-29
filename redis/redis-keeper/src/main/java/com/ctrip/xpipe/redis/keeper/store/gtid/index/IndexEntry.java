@@ -43,6 +43,10 @@ public class IndexEntry {
         return startGno + size - 1;
     }
 
+    public int getSize() {
+        return size;
+    }
+
     public IndexEntry(String uuid, long startGno, long cmdStartOffset, long blockStartOffset) {
         this.uuid = uuid;
         this.startGno = startGno;

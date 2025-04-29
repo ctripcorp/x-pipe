@@ -78,8 +78,17 @@ public class GtidSetWrapper {
         return indexEntry;
     }
 
+    public void compensate(IndexEntry indexEntry) {
+        if(indexEntry != null && indexEntry.getSize() > 0) {
+            gtidSet.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
+        }
+    }
+
     public void compensate(String uuid, long startGno, long endGno) {
-        gtidSet.compensate(uuid, startGno, endGno);
+        if(endGno >= startGno) {
+            gtidSet.compensate(uuid, startGno, endGno);
+        }
+
     }
 
     private static long readLong(FileChannel channel) throws IOException {
