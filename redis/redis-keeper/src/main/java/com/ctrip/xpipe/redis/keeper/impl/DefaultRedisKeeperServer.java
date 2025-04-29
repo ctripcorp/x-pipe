@@ -276,9 +276,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidSet) throws IOException {
-		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidSet);
-		closeSlaves("toXSync " + gtidSet);
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont);
+		closeSlaves("toXSync " + gtidCont);
 	}
 
 	private void resetReplAfterLongTimeDown() {
@@ -1042,7 +1042,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
 		//alert full sync
-		// TODO confirm event name
 		String alert = String.format("XFULL(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
 		EventMonitor.DEFAULT.logAlertEvent(alert);
 	}
@@ -1053,14 +1052,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
-		//TODO publish CAT event ?
+	public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+		String alert = String.format("SWITCH2XSYNC(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
 		closeSlaves("switch2xsync");
 	}
 
 	@Override
 	public void onSwitchToPsync(String replId, long replOff) {
-		//TODO publish CAT event ?
+		String alert = String.format("SWITCH2PSYNC(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
 		closeSlaves("switch2psync");
 	}
 

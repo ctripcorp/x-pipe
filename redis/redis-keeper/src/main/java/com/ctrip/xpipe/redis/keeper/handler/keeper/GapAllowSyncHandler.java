@@ -57,7 +57,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 try {
                     action = anaRequest(request, redisKeeperServer, redisSlave);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    action = SyncAction.full("anaRequest fail");
                 }
                 if (null == action) {
                     logger.warn("[doHandle] request analyze fail");

@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import java.util.Collections;
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
+
 /**
  * @author wenchao.meng
  *
@@ -281,5 +283,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean tryRorRdb() {
 		return true;
+	}
+
+	@Override
+	public int getXsyncMaxGap() {
+		return DEFAULT_XSYNC_MAXGAP;
 	}
 }

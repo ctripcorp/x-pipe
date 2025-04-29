@@ -1,24 +1,10 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.netty.NettyPoolUtil;
-import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
-import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,14 +13,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
-import static org.mockito.Mockito.*;
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
@@ -50,7 +32,7 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 	@Before
 	public void beforeDefaultPsyncTest() throws Exception{
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
-		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled);
+		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
 	}
 
 	@Test

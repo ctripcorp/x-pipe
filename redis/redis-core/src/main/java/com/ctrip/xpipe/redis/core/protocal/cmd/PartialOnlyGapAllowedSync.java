@@ -12,6 +12,7 @@ import com.ctrip.xpipe.tuple.Pair;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.IntSupplier;
 
 public class PartialOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowedSync {
 
@@ -20,8 +21,8 @@ public class PartialOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowe
     private Endpoint masterEndPoint;
 
     public PartialOnlyGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
-                                     Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
-        super(clientPool, true, scheduled);
+                                     Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, IntSupplier maxGap) {
+        super(clientPool, true, scheduled, maxGap);
         this.masterEndPoint = masterEndPoint;
         this.replicationStoreManager = replicationStoreManager;
         this.currentReplicationStore = getCurrentReplicationStore();
@@ -44,39 +45,30 @@ public class PartialOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowe
             partial.setReplId("?");
             partial.setReplOff(KEEPER_PARTIAL_SYNC_OFFSET);
             return partial;
-        }
-
-        if (currentReplicationStore.getMetaStore().getCurrentReplStage().getProto() != ReplStage.ReplProto.XSYNC) {
-            PsyncRequest psync = new PsyncRequest();
-            psync.setReplId(currentReplicationStore.getMetaStore().getReplId());
-            psync.setReplOff(currentReplicationStore.getEndOffset() + 1);
-            return psync;
         } else {
-            XsyncRequest xsync = new XsyncRequest();
-            Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
-            GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
-            xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
-            xsync.setGtidSet(gtidSet);
-            return xsync;
+            return getReplicationStoreSyncRequest();
         }
     }
 
-    @Override
-    protected void doOnFullSync() throws IOException {
-        if(currentReplicationStore != null && !currentReplicationStore.isFresh()) {
+    private void doOnFullSync0(String logPrefix) throws IOException {
+        if (currentReplicationStore != null && !currentReplicationStore.isFresh()) {
             try {
-                getLogger().info("[refullsync][reset store]{}, {}", this, currentReplicationStore);
+                getLogger().info("[{}][refullsync][reset store]{}, {}", logPrefix, this, currentReplicationStore);
                 replicationStoreManager.create();
             } catch (Throwable th) {
-                getLogger().error("[refullsync]{}", currentReplicationStore, th);
+                getLogger().error("[{}][refullsync]{}", logPrefix, currentReplicationStore, th);
             }
             notifyReFullSync();
         }
-        getLogger().info("[doOnFullSync][terminate and try later]{}", this);
+        getLogger().info("[{}][terminate and try later]{}", logPrefix, this);
         throw new XpipeRuntimeException("only partial sync allow");
     }
+    @Override
+    protected void doOnFullSync() throws IOException {
+        doOnFullSync0("doOnFullSync");
+    }
     protected void doOnXFullSync() throws IOException {
-        doOnFullSync();
+        doOnFullSync0("doOnXFullSync");
     }
 
     @Override
@@ -86,7 +78,7 @@ public class PartialOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowe
 
     @Override
     public String toString() {
-        return "keeperpsync->"  + masterEndPoint;
+        return "gakeeperpsync->"  + masterEndPoint;
     }
 
 }

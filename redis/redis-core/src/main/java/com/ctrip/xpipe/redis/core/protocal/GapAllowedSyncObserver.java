@@ -5,7 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 public interface GapAllowedSyncObserver extends PsyncObserver {
 	void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost);
 	void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont);
-	void onSwitchToXsync(String replId, long replOff, String masterUuid);
+	void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont);
 	void onSwitchToPsync(String replId, long replOff);
 	void onUpdateXsync();
 }

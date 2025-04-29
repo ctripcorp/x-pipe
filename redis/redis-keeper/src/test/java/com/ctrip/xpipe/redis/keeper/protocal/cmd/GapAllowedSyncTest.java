@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED;
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_REPL_MODE;
 
@@ -106,7 +107,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		}
 
 		@Override
-		public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
+		public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
 			switchToXsync++;
 		}
 
@@ -185,7 +186,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		replicationStore = replicationStoreManager.create();
 
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
-		gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled);
+		gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
 		gasync.future().addListener(new CommandFutureListener<Object>() {
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -503,6 +504,59 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 	}
 
 	@Test
+	public void testPsyncContinueFromOffsetSucc() throws XpipeException, IOException, InterruptedException {
+		//	==psyncContinueFromOffset(C)==> fail
+
+		long reploffC = 300000000;
+		String reply = "+" + GapAllowedSync.PARTIAL_SYNC + " " + replIdC + " " + reploffC + "\r\n";
+
+		gasync.getRequest();
+
+		runData(new byte[][]{
+				reply.getBytes(),
+				generateVanillaCommands(1000),
+		});
+
+		Assert.assertFalse(gasync.future().isDone());
+
+		Assert.assertEquals(gasyncStatObserver.getKeeperContinue(), 1);
+
+		replicationStore = replicationStoreManager.getCurrent();
+
+		MetaStore metaStore = replicationStore.getMetaStore();
+		metaStoreAssertGapAllowed(metaStore);
+
+		ReplStage curReplStage = metaStore.getCurrentReplStage();
+		Assert.assertEquals(curReplStage.getProto(), ReplStage.ReplProto.PSYNC);
+		Assert.assertEquals(curReplStage.getReplId(), replIdC);
+		Assert.assertEquals(curReplStage.getBegOffsetRepl(), reploffC+1);
+	}
+
+	@Test
+	public void testStoreNotFresh_psyncContinueFromOffsetFail() throws XpipeException, IOException, InterruptedException {
+		//	X(A), P(B) ==psyncContinueFromOffset(C)==> fail
+
+		long replOffP = 200000000;
+		int cmdLenP = 1000;
+
+		setupReplicationStoreXP(uuidA, replIdA, 100000000, 1, 100,
+				uuidB, replIdB, replOffP, 1, 100, cmdLenP);
+
+		long reploffC = 300000000;
+		String reply = "+" + GapAllowedSync.PARTIAL_SYNC + " " + replIdC + " " + reploffC + "\r\n";
+
+		gasync.getRequest();
+
+		runData(new byte[][]{
+				reply.getBytes(),
+				generateVanillaCommands(1000),
+		});
+
+		Assert.assertTrue(gasync.future().isDone() && !gasync.future().isSuccess());
+		Assert.assertTrue(gasync.future().cause() instanceof IllegalStateException);
+	}
+
+	@Test
 	public void testSwitchToPsync() throws XpipeException, IOException, InterruptedException {
 		//	P(A), X(B) ==switchToPsync(C)==> X(B), P(C)
 
@@ -595,6 +649,53 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(curReplStage.getMasterUuid(), uuidB);
 		Assert.assertEquals(curReplStage.getBeginGtidset().toString(), gtidExecutedRepr);
 		Assert.assertEquals(curReplStage.getGtidLost().toString(), gtidLostRepr);
+	}
+
+	@Test
+	public void testXsyncContineFrom() throws XpipeException, IOException, InterruptedException {
+		//	==XContinue(C)==> X(C)
+
+		int gnoBaseX = 1, gnoCountX = 100;
+
+		long replOffC = 300000000;
+		String gtidBaseRepr = uuidB + ":" + gnoBaseX + "-" + (gnoBaseX+2*gnoCountX-1);
+		String gtidLostRepr = uuidC + ":" + gnoBaseX + "-" + (gnoBaseX+gnoCountX-1);
+		String gtidContRepr = gtidBaseRepr + "," + gtidLostRepr;
+
+		String reply = "+" + GapAllowedSync.XPARTIAL_SYNC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLID + " " + replIdC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLOFF + " " + replOffC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_MASTER_UUID + " " + uuidC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_GTID_SET + " " + gtidContRepr + " " +
+				"\r\n";
+
+		gasync.getRequest();
+
+		byte[] rawCmds = generateGtidCommands(uuidC, gnoBaseX+gnoCountX, gnoCountX);
+		runData(new byte[][]{
+				reply.getBytes(),
+				rawCmds
+		});
+
+		Assert.assertEquals(gasyncStatObserver.getSwitchToXsync(), 1);
+
+		replicationStore = replicationStoreManager.getCurrent();
+
+		MetaStore metaStore = replicationStore.getMetaStore();
+		metaStoreAssertGapAllowed(metaStore);
+
+		ReplicationStoreMeta metaDup = metaStore.dupReplicationStoreMeta();
+		Assert.assertNull(metaDup.getRdbFile());
+
+		ReplStage curReplStage = metaStore.getCurrentReplStage();
+		replStageAssertXsync(curReplStage);
+		Assert.assertEquals(curReplStage.getReplId(), replIdC);
+		Assert.assertEquals(curReplStage.getBegOffsetRepl(), replOffC+1);
+		Assert.assertEquals(curReplStage.getBegOffsetBacklog(), 0);
+		Assert.assertEquals(curReplStage.getBeginGtidset().toString(), gtidContRepr);
+		Assert.assertEquals(curReplStage.getGtidLost().toString(), GtidSet.EMPTY_GTIDSET);
+
+		Assert.assertNull(metaStore.getPreReplStage());
 	}
 
 	@Test

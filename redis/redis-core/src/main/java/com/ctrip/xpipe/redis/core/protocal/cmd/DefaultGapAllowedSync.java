@@ -9,12 +9,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.IntSupplier;
 
-/**
- * @author wenchao.meng
- *
- * 2016年3月24日 下午2:24:38
- */
 public class DefaultGapAllowedSync extends AbstractReplicationStoreGapAllowedSync{
 
 	private ReplicationStoreManager replicationStoreManager;
@@ -22,8 +18,8 @@ public class DefaultGapAllowedSync extends AbstractReplicationStoreGapAllowedSyn
 	private Endpoint masterEndPoint;
 
 	public DefaultGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
-                                 Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
-		super(clientPool, true, scheduled);
+								 Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, IntSupplier maxGap) {
+		super(clientPool, true, scheduled, maxGap);
 		this.masterEndPoint = masterEndPoint;
 		this.replicationStoreManager = replicationStoreManager;
 		currentReplicationStore = getCurrentReplicationStore();

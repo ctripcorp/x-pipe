@@ -6,7 +6,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseListener;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.AuxOnlyRdbParser;
@@ -19,6 +18,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.IntSupplier;
 
 public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGapAllowedSync implements RdbParseListener {
 
@@ -28,11 +28,32 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 
 	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;
 
-	public AbstractReplicationStoreGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
+	private final IntSupplier maxGap;
+
+	public AbstractReplicationStoreGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled, IntSupplier maxGap) {
 		super(clientPool, saveCommands, scheduled);
+		this.maxGap = maxGap;
 	}
 
 	protected abstract ReplicationStore getCurrentReplicationStore();
+
+	protected  SyncRequest getReplicationStoreSyncRequest() {
+		ReplStage.ReplProto proto = currentReplicationStore.getMetaStore().getCurrentReplStage().getProto();
+		if (proto != ReplStage.ReplProto.XSYNC) {
+			PsyncRequest psync = new PsyncRequest();
+			psync.setReplId(currentReplicationStore.getMetaStore().getCurReplStageReplId());
+			psync.setReplOff(currentReplicationStore.getCurReplStageReplOff() + 1);
+			return psync;
+		} else {
+			XsyncRequest xsync = new XsyncRequest();
+			Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
+			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
+			xsync.setGtidSet(gtidSet);
+			xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
+			xsync.setMaxGap(maxGap == null ? DEFAULT_XSYNC_MAXGAP : maxGap.getAsInt());
+			return xsync;
+		}
+	}
 
 	public SyncRequest getSyncRequest() {
 		ReplStage.ReplProto proto = null;
@@ -45,19 +66,8 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			full.setReplId("?");
 			full.setReplOff(-1);
 			return full;
-		} else if (proto != ReplStage.ReplProto.XSYNC) {
-			PsyncRequest psync = new PsyncRequest();
-			psync.setReplId(currentReplicationStore.getMetaStore().getCurReplStageReplId());
-			psync.setReplOff(currentReplicationStore.getCurReplStageReplOff() + 1);
-			return psync;
 		} else {
-			XsyncRequest xsync = new XsyncRequest();
-			Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
-			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
-			xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
-			xsync.setGtidSet(gtidSet);
-			xsync.setMaxGap(10000); //TODO specify maxgap?
-			return xsync;
+			return getReplicationStoreSyncRequest();
 		}
 	}
 
@@ -78,15 +88,13 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 		super.doOnContinue(newReplId);
 	}
 
-	//TODO confirm keeper continue usecase (currently it means reset backlog history)
 	@Override
 	protected void doOnKeeperContinue(String replId, long beginOffset) throws IOException {
 		try {
 			if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
 				throw new IllegalStateException("keeper-continue to non fresh repl store");
 			}
-			currentReplicationStore.continueFromOffset(replId, beginOffset);
-			// TODO currentReplicationStore.resetToPSync(replId, beginOffset);
+			currentReplicationStore.psyncContinueFrom(replId, beginOffset);
 			super.doOnKeeperContinue(replId, beginOffset);
 		} catch (IOException e) {
 			getLogger().error("[doOnKeeperContinue]" + replId + ":" + beginOffset, e);
@@ -105,7 +113,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 	protected void doOnXContinue() throws IOException {
 		XContinueReply reply = (XContinueReply) syncReply;
 		boolean updated = currentReplicationStore.xsyncContinue(reply.getReplId(), reply.getReplOff(),
-				reply.getMasterUuid(), reply.getGtidCont());
+					reply.getMasterUuid(), reply.getGtidCont());
 		super.doOnXContinue();
 		if (updated) {
 			super.notifyXsyncUpdated();
@@ -121,7 +129,13 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 	@Override
 	protected void doOnSwitchToXsync() throws IOException {
 		XContinueReply reply = (XContinueReply) syncReply;
-		currentReplicationStore.switchToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
+
+		if (currentReplicationStore.isFresh()) {
+			currentReplicationStore.xsyncContinueFrom(reply.getReplId(), reply.getReplOff(),
+					reply.getMasterUuid(), reply.getGtidCont());
+		} else {
+			currentReplicationStore.switchToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
+		}
 		super.doOnSwitchToXsync();
 	}
 
@@ -144,7 +158,6 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 				rdbStore = currentReplicationStore.prepareRdb(syncReply.getReplId(), syncReply.getReplOff(), eofType,
 						ReplStage.ReplProto.XSYNC, reply.getGtidLost(), reply.getMasterUuid());
 			} else {
-				//TODO TEST
 				throw new IllegalStateException("unexpected syncReply type:{}" + syncReply);
 			}
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);

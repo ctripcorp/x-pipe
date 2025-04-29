@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,40 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         super(baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser);
+    }
+
+    @Override
+    protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
+        RdbStore rdbStore = null, rordbStore = null;
+
+        if (meta != null && meta.getRdbFile() != null) {
+            File rdb = new File(baseDir, meta.getRdbFile());
+            if (rdb.isFile()) {
+                ReplStage replStage = meta.getCurReplStage();
+                ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
+                GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
+                String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
+
+                rdbStore = createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta), replProto, gtidLost, masterUuid);
+                rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+                rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
+            }
+        }
+
+        if (meta != null && meta.getRordbFile() != null) {
+            File rordb = new File(baseDir, meta.getRordbFile());
+            if (rordb.isFile()) {
+                ReplStage replStage = meta.getCurReplStage();
+                ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
+                GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
+                String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
+
+                rordbStore = createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta), replProto, gtidLost, masterUuid);
+                rordbStore.updateRdbType(RdbStore.Type.RORDB);
+                rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
+            }
+        }
+        return new Pair<>(rdbStore,rordbStore);
     }
 
     @Override

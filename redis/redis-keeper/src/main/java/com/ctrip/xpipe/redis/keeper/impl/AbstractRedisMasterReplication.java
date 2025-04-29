@@ -556,14 +556,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
         doOnXContinue(replId, replOff, masterUuid, gtidCont);
     }
 
-    protected abstract void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidLost);
+    protected abstract void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont);
 
     @Override
-    public void onSwitchToXsync(String replId, long replOff, String masterUuid) {
-        doOnSwitchToXsync(replId, replOff, masterUuid);
+    public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+        doOnSwitchToXsync(replId, replOff, masterUuid, gtidCont);
     }
 
-    protected abstract void doOnSwitchToXsync(String replId, long replOff, String masterUuid);
+    protected abstract void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont);
 
     @Override
     public void onSwitchToPsync(String replId, long replOff) {

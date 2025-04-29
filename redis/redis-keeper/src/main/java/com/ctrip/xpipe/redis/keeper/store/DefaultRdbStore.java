@@ -59,7 +59,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 
-	//TODO assign rdbBacklogOffset
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
 
 		this.replId = replId;
@@ -114,10 +113,6 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public Type getRdbType() {
 		return typeRef.get();
-	}
-
-	public void updateReplProto(ReplStage.ReplProto replProto) {
-		//just ignore
 	}
 
 	@Override

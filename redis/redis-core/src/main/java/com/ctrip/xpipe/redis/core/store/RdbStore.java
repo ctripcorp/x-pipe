@@ -78,7 +78,6 @@ public interface RdbStore extends Destroyable, Closeable{
 	void attachRateLimiter(SyncRateLimiter rateLimiter);
 
 	ReplStage.ReplProto getReplProto();
-	void updateReplProto(ReplStage.ReplProto proto);
 	String getGtidLost();
 	String getMasterUuid();
 	boolean isGapAllowed();

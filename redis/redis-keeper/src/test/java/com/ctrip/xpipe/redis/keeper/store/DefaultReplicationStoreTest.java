@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.buffer.ByteBuf;
@@ -32,6 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
@@ -244,5 +247,5 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertNull(store.getRdbStore());
 		Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getRdbFile());
 	}
-	
+
 }
