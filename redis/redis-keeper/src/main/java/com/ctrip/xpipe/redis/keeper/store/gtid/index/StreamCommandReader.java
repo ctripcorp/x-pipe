@@ -58,10 +58,10 @@ public class StreamCommandReader {
             }
 
             Object[] payload = protocol.getPayload();
-            RedisOp redisOp = opParser.parse(payload);
-            if (!StringUtil.isEmpty(redisOp.getOpGtid())) {
+            String gtid = readGtid(payload);
+            if (!StringUtil.isEmpty(gtid)) {
                 for(StreamCommandListener listener : listeners) {
-                    listener.onCommand(redisOp.getOpGtid(), this.currentOffset);
+                    listener.onCommand(gtid, this.currentOffset);
                 }
             }
             // todo记录结束的 offset 吧
@@ -75,6 +75,18 @@ public class StreamCommandReader {
         if(this.remainingBuf != null && this.remainingBuf.readableBytes() > 0) {
             this.currentOffset -= remainingBuf.readableBytes();
         }
+    }
+
+    private String readGtid(Object[] payload) {
+        if(payload == null || payload.length <= 2) {
+            return null;
+        }
+        if(StringUtil.trimEquals("GTID", payload[0].toString())) {
+            return payload[1].toString();
+        } else {
+            return null;
+        }
+
     }
 
 

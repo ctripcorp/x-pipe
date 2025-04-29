@@ -63,7 +63,6 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             }
         }
         this.blockWriter.append(uuid, gno, commandOffset);
-        gtidSetWrapper.addGtid(uuid + ":" + gno);
     }
 
 
@@ -77,9 +76,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             blockWriter.close();
         }
         saveIndexEntry();
-        if(indexEntry != null) {
-            gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
-        }
+        gtidSetWrapper.compensate(indexEntry);
     }
 
 
@@ -109,9 +106,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     }
 
     public GtidSet getGtidSet() {
-        if(indexEntry != null) {
-            gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
-        }
+        gtidSetWrapper.compensate(indexEntry);
         return gtidSetWrapper.getGtidSet();
     }
 
