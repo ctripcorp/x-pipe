@@ -57,6 +57,8 @@ public class StreamCommandReader {
                 break;
             }
 
+            this.currentOffset += mergeBuf.readerIndex() - pre;
+
             Object[] payload = protocol.getPayload();
             String gtid = readGtid(payload);
             if (!StringUtil.isEmpty(gtid)) {
@@ -64,8 +66,6 @@ public class StreamCommandReader {
                     listener.onCommand(gtid, this.currentOffset);
                 }
             }
-            // todo记录结束的 offset 吧
-            this.currentOffset += mergeBuf.readerIndex() - pre;
             this.protocolParser.reset();
         }
     }
