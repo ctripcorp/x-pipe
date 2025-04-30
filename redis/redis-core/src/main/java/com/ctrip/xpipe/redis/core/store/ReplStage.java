@@ -188,4 +188,19 @@ public class ReplStage {
     public long getBegOffsetRepl() {
         return begOffsetRepl;
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+                "\"proto\":\"" + (proto != null ? proto.asString() : null) + "\"," +
+                "\"replId\":\"" + replId + "\"," +
+                "\"begOffsetRepl\":" + begOffsetRepl + "," +
+                "\"begOffsetBacklog\":" + begOffsetBacklog + "," +
+                "\"replId2\":\"" + replId2 + "\"," +
+                "\"secondReplIdOffset\":" + secondReplIdOffset + "," +
+                "\"masterUuid\":\"" + masterUuid + "\"," +
+                "\"gtidLost\":\"" + (gtidLost != null ? gtidLost.toString() : null) + "\"," +
+                "\"beginGtidset\":\"" + (beginGtidset != null ? beginGtidset.toString() : null) + "\"" +
+                "}";
+    }
 }
