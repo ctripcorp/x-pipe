@@ -200,6 +200,13 @@ public class IndexStoreTest {
     }
 
     @Test
+    public void testGtidSet() throws Exception {
+        write(file1);
+        GtidSet gtidSet = indexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+    }
+
+    @Test
     public void testRecover2() throws Exception {
         write(file1);
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
