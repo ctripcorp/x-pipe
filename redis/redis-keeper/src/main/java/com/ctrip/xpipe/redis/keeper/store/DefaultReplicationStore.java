@@ -105,7 +105,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			this.rdbStoreRef.set(rdbStores.getKey());
 		}
 		if (rdbStores.getValue() != null) {
-			this.rdbStoreRef.set(rdbStores.getValue());
+			this.rordbStoreRef.set(rdbStores.getValue());
 		}
 
 		if (null != meta && null != meta.getCmdFilePrefix()) {
@@ -214,9 +214,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 			lostGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
-		}
-		if(beginGtidSet == null) {
-			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		}
 		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
 	}
