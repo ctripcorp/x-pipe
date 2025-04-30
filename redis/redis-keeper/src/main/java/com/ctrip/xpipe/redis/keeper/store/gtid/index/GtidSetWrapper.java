@@ -84,6 +84,13 @@ public class GtidSetWrapper {
         }
     }
 
+    public void compensate(IndexEntry unSavedindexEntry, BlockWriter blockWriter) {
+        if(unSavedindexEntry != null && blockWriter != null && blockWriter.getSize() > 0) {
+            unSavedindexEntry.setSize(blockWriter.getSize());
+            compensate(unSavedindexEntry);
+        }
+    }
+
     public void compensate(String uuid, long startGno, long endGno) {
         if(endGno >= startGno) {
             gtidSet.compensate(uuid, startGno, endGno);
