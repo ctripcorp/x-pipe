@@ -106,7 +106,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     }
 
     public GtidSet getGtidSet() {
-        gtidSetWrapper.compensate(indexEntry);
+        gtidSetWrapper.compensate(indexEntry, blockWriter);
         return gtidSetWrapper.getGtidSet();
     }
 
