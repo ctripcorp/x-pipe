@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +38,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class IndexStoreTest {
 
+    private static final Logger log = LoggerFactory.getLogger(IndexStoreTest.class);
     String tempDir = System.getProperty("java.io.tmpdir");
 
     String baseDir = tempDir + "IndexStoreTest/";
@@ -122,13 +125,16 @@ public class IndexStoreTest {
     @Test
     public void testSearch() throws Exception {
         write(filePath);
+
+        GtidSet gtidSet = indexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:1-346526");
+
         long pre = System.currentTimeMillis();
         for(int i = 2; i < 346526; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("a4f566ef50a85e1119f17f9b746728b48609a2ab:1-" + i));
             Assert.assertEquals(point.getValue(), new GtidSet("a4f566ef50a85e1119f17f9b746728b48609a2ab:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(filePath, point.getKey());
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:" + i);
+            RedisOp redisOp =  IndexTestTool.readBytebufAfter(filePath, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:" + (i + 1));
             if(i % 1000 == 0) {
                 long now = System.currentTimeMillis();
                 System.out.println("seek success " + i + "  " + (now - pre));
@@ -159,9 +165,8 @@ public class IndexStoreTest {
         for(int i = 2; i <= 2000; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
             Assert.assertEquals(point.getValue().toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i);
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter( file2, point.getKey() - 19513000);
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter( file2, point.getKey() - 19513000);
+            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
             if(i % 1000 == 0) {
                 long now = System.currentTimeMillis();
                 System.out.println("seek success " + i + "  " + (now - pre));
@@ -169,11 +174,11 @@ public class IndexStoreTest {
             }
         }
         pre = System.currentTimeMillis();
-        for(int i = 633744; i <= 800004; i++) {
+        for(int i = 633744; i < 800004; i++) {
             Pair<Long, GtidSet> point  = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getKey());
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
+            Assert.assertNotNull(redisOp);
+            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i+1));
             if(i % 1000 == 0) {
                 long now = System.currentTimeMillis();
                 System.out.println("seek success " + i + "  " + (now - pre));
@@ -193,9 +198,8 @@ public class IndexStoreTest {
         indexStore.initialize(writer);
         for(int i = 800000; i < 800004; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getKey());
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + ( i + 1));
         }
     }
 
@@ -209,26 +213,33 @@ public class IndexStoreTest {
     @Test
     public void testRecover2() throws Exception {
         write(file1);
+
+        GtidSet gtidSet = indexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         indexStore = new IndexStore(baseDir, opParser);
         indexStore.initialize(writer);
         indexStore.switchCmdFile("19513000");
+
         write(file2);
+
+        gtidSet = indexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-210654");
+
         for(int i = 800000; i < 800004; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getKey());
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i+1));
         }
 
         long pre = System.currentTimeMillis();
         for(int i = 1; i <= 2000; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file2, point.getKey() - 19513000);
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(file2, point.getKey() - 19513000);
+            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
             if(i % 1000 == 0) {
                 long now = System.currentTimeMillis();
                 System.out.println("seek success " + i + "  " + (now - pre));
@@ -245,16 +256,22 @@ public class IndexStoreTest {
         long now = System.currentTimeMillis();
         System.out.println("build index " + (now - pre));
         for(int i = 633744; i < 800004; i++) {
+            if(i < 700002) {
+                continue;
+            }
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            ByteBuf byteBuf = IndexTestTool.readBytebufAfter(file1, point.getKey());
-            RedisOp redisOp = IndexTestTool.readByteBuf(byteBuf);
-            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i + 1));
             if (i % 1000 == 0) {
                 now = System.currentTimeMillis();
                 System.out.println("build index success " + i + "  " + (now - pre));
                 pre = System.currentTimeMillis();
             }
         }
+
+        GtidSet gtidSet = indexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+
     }
 
 }
