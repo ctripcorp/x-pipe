@@ -221,4 +221,14 @@ public class DefaultMetaStoreTest extends AbstractTest {
         Assert.assertEquals(metaStore.getPreReplStage().getProto(), ReplStage.ReplProto.XSYNC);
         Assert.assertEquals(metaStore.getPreReplStage().getReplId(), replidA);
     }
+
+    @Test
+    public void testXSyncProtoSaveAndLoad() throws IOException {
+        metaStore.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
+                new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
+                rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
+        Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
+    }
+
 }
