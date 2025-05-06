@@ -546,6 +546,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRdbFileSize(0);
 		metaDup.setRdbLastOffset(null);
 		metaDup.setRdbGtidSet(null);
+		metaDup.setRdbBacklogOffset(null);
 	}
 
 	private void clearRordb(ReplicationStoreMeta metaDup) {
@@ -554,6 +555,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRordbFileSize(0);
 		metaDup.setRordbLastOffset(null);
 		metaDup.setRordbGtidSet(null);
+		metaDup.setRordbBacklogOffset(null);
 	}
 
 }

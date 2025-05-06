@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Locale;
+import java.util.Objects;
 
 public class ReplStage {
 
@@ -141,8 +142,8 @@ public class ReplStage {
         this.begOffsetRepl = begOffsetRepl;
         this.begOffsetBacklog = begOffsetBacklog;
         this.masterUuid = masterUuid;
-        this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? null : new GtidSet(beginGtidset);
-        this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? null : new GtidSet(gtidLost);
+        this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? new GtidSet("") : new GtidSet(beginGtidset);
+        this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? new GtidSet("") : new GtidSet(gtidLost);
         this.replId2 =  replId2;
         this.secondReplIdOffset = secondReplIdOffset;
     }
@@ -202,5 +203,26 @@ public class ReplStage {
                 "\"gtidLost\":\"" + (gtidLost != null ? gtidLost.toString() : null) + "\"," +
                 "\"beginGtidset\":\"" + (beginGtidset != null ? beginGtidset.toString() : null) + "\"" +
                 "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReplStage replStage = (ReplStage) o;
+        return begOffsetBacklog == replStage.begOffsetBacklog &&
+                begOffsetRepl == replStage.begOffsetRepl &&
+                secondReplIdOffset == replStage.secondReplIdOffset &&
+                proto == replStage.proto &&
+                replId.equals(replStage.replId) &&
+                Objects.equals(replId2, replStage.replId2) &&
+                Objects.equals(masterUuid, replStage.masterUuid) &&
+                Objects.equals(beginGtidset, replStage.beginGtidset) &&
+                Objects.equals(gtidLost, replStage.gtidLost);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(proto, replId, begOffsetBacklog, begOffsetRepl, replId2, secondReplIdOffset, masterUuid, beginGtidset, gtidLost);
     }
 }
