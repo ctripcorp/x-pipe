@@ -27,49 +27,69 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
     @Test
     public void testKeeperXsync() throws Exception {
-        setRedisToGtidEnabled();
+
+        setRedisToGtidEnabled(redisMaster.getIp(), redisMaster.getPort());
+
+        logger.info("config set gtid-enabled yes to master");
+
         for(int i = 0; i < 100; i++) {
             setKey("key_" + i);
         }
+
+        logger.info("set link start");
+
         initKeepers();
+
+        int fullSyncContInit = getFullCount();
         int redisPort = randomPort();
-        System.out.println("random port: " + redisPort);
+        logger.info("redis random port: " + redisPort);
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(redisPort);
         super.startRedis(redisMeta);
         slaveOfKeeper("127.0.0.1", redisPort);
 
-        System.out.println("gtid : ------" + getInfo("127.0.0.1", redisPort, "gtid"));
-
-
-        // Assert.assertEquals(getFullCount(), 1);
+        logger.info("set link finish redis -> keep");
 
         // 注入数据
-
+        logger.info("send request to redis master " + fullSyncContInit);
         for(int i = 100; i < 200; i++) {
             setKey("key_" + i);
         }
 
         Thread.sleep(1000);
+
+        int fullSyncConnected = getFullCount();
+
+        // redis init, full sync
+        Assert.assertEquals(fullSyncContInit + 1, fullSyncConnected);
+
+
         String masterGtid = getGtidSet(redisMaster.getIp(), redisMaster.getPort());
         String slaveGtid = getGtidSet("127.0.0.1",  redisPort);
 
+        // gtid set (master == slave)
         Assert.assertEquals(masterGtid, slaveGtid);
 
+        int cnt1 = getFullCount();
 
-        // 增量同步
+        redisKeeperServers.get(0).closeSlaves("test");
 
-        slaveOfOnOne("127.0.0.1", redisPort);
-
+        Thread.sleep(10200);
         for(int i = 200; i < 300; i++) {
             setKey("key_" + i);
         }
-        slaveOfKeeper("127.0.0.1", redisPort);
-        Thread.sleep(3000);
+
+        int cnt2 = getFullCount();
+
+        // continue sync, will not full sync
+        Assert.assertEquals(cnt2, cnt1);
+
+
         masterGtid = getGtidSet(redisMaster.getIp(), redisMaster.getPort());
         slaveGtid = getGtidSet("127.0.0.1",  redisPort);
         Assert.assertEquals(masterGtid, slaveGtid);
 
         // 断keeper
+        int cnt3 = getFullCount();
         for (RedisKeeperServer redisKeeperServer : redisKeeperServers) {
             redisKeeperServer.stop();
         }
@@ -84,7 +104,29 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
         masterGtid = getGtidSet(redisMaster.getIp(), redisMaster.getPort());
         slaveGtid = getGtidSet("127.0.0.1",  redisPort);
         Assert.assertEquals(masterGtid, slaveGtid);
+        int cnt4 = getFullCount();
 
+        Assert.assertEquals(cnt4, cnt3);
+
+        // restart redis slave will not full sync
+        stopServerListeningPort(redisPort);
+
+        for(int i = 400; i < 500; i++) {
+            setKey("key_" + i);
+        }
+
+        super.startRedis(redisMeta);
+        setRedisToGtidEnabled(redisMeta.getIp(), redisMeta.getPort());
+
+        slaveOfKeeper("127.0.0.1", redisPort);
+
+        Thread.sleep(1000);
+        masterGtid = getGtidSet(redisMaster.getIp(), redisMaster.getPort());
+        slaveGtid = getGtidSet("127.0.0.1",  redisPort);
+        Assert.assertEquals(masterGtid, slaveGtid);
+
+        int cnt5 = getFullCount();
+        Assert.assertEquals(cnt4, cnt5);
     }
 
     private String getGtidSet(String ip, int port) throws Exception {
@@ -107,11 +149,6 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
         new SlaveOfCommand(keyPool, activeKeeper.getIp(), activeKeeper.getPort(), scheduled).execute().get();
     }
 
-    private void slaveOfOnOne(String ip, int port) throws Exception {
-        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
-        new SlaveOfCommand(keyPool, null, activeKeeper.getPort(), scheduled).execute().get();
-    }
-
     private String getInfo(String ip, int port, String infokey) throws Exception {
         SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
         return new InfoCommand(keyPool, infokey, scheduled).execute().get();
@@ -122,14 +159,12 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
     }
 
-    private void setRedisToGtidEnabled() throws Exception {
-        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redisMaster.getIp(), redisMaster.getPort()));
+    private void setRedisToGtidEnabled(String ip, Integer port) throws Exception {
+        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
         ConfigSetCommand.ConfigSetGtidEnabled configSetGtidEnabled = new ConfigSetCommand.ConfigSetGtidEnabled(true, keyPool, scheduled);
         String gtid =  configSetGtidEnabled.execute().get().toString();
         System.out.println(gtid);
     }
-
-
 
     private void initKeepers() throws Exception {
 
