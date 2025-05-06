@@ -96,8 +96,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
 
-		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
-
+		metaStore = recoverMetaStore(baseDir, keeperRunid);
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
 		Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
@@ -119,6 +118,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		removeUnusedRdbFiles();
+	}
+
+	protected MetaStore recoverMetaStore(File baseDir, String keeperRunid) throws IOException {
+		return new DefaultMetaStore(baseDir, keeperRunid);
 	}
 
 	protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
