@@ -110,6 +110,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (null != meta && null != meta.getCmdFilePrefix()) {
 			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+			//TODO remove obselete gtid feature
 			if (meta.getRdbLastOffset() != null) {
 				cmdStore.setBaseIndex(meta.getRdbGtidSet(), meta.getRdbLastOffset() - (meta.getBeginOffset() - 1));
 			} else if (meta.getRordbLastOffset() != null) {
@@ -126,7 +127,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStore = createRdbStore(rdb, meta.getReplId(), meta.getRdbLastOffset(), initRdbEofType(meta));
+				rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta));
 				rdbStore.updateRdbType(RdbStore.Type.NORMAL);
 				rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -135,7 +136,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRordbFile() != null) {
 			File rordb = new File(baseDir, meta.getRordbFile());
 			if (rordb.isFile()) {
-				rordbStore = createRdbStore(rordb, meta.getReplId(), meta.getRordbLastOffset(), initRordbEofType(meta));
+				rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta));
 				rordbStore.updateRdbType(RdbStore.Type.RORDB);
 				rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -265,7 +266,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void checkReplId(String expectReplId) {
-		String currentReplId = metaStore.getReplId();
+		String currentReplId = metaStore.getCurReplStageReplId();
 		if (!Objects.equals(expectReplId, currentReplId)) {
 			throw new UnexpectedReplIdException(expectReplId, currentReplId);
 		}
@@ -458,6 +459,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return cmdStore;
 	}
 
+	//TODO remove rdbOffset
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
 		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
