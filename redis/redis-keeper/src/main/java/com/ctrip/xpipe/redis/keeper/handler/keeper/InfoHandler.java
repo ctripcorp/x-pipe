@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
@@ -33,6 +34,7 @@ public class InfoHandler extends AbstractCommandHandler {
 		register(new InfoReplication());
 		register(new InfoStats());
 		register(new InfoKeeper());
+		register(new InfoGtid());
 	}
 
 	private void register(InfoSection section) {
@@ -312,6 +314,25 @@ public class InfoHandler extends AbstractCommandHandler {
 		@Override
 		public String name() {
 			return "Replication";
+		}
+	}
+
+	private class InfoGtid extends AbstractInfoSection {
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			StringBuilder sb = new StringBuilder();
+			ReplStage curStage = keeperServer.getReplicationStore().getMetaStore().getCurrentReplStage();
+			sb.append("gtid_master_uuid:" + curStage.getMasterUuid() + RedisProtocol.CRLF);
+			sb.append("gtid_lost:" + curStage.getGtidLost() + RedisProtocol.CRLF);
+			sb.append("begin_gtid_set" + curStage.getBeginGtidset() + RedisProtocol.CRLF);
+			sb.append("gtid_set" + keeperServer.getReplicationStore().getGtidSet() + RedisProtocol.CRLF);
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "Gtid";
 		}
 	}
 
