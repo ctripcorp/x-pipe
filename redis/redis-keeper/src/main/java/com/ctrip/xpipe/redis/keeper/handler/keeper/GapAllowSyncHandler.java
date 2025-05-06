@@ -148,12 +148,12 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         }
     }
 
-    private SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, KeeperRepl keeperRepl, XSyncContinue xsyncCont) {
+    protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, KeeperRepl keeperRepl, XSyncContinue xsyncCont) {
         GtidSet lost = keeperRepl.getGtidSetLost();
         GtidSet cont = xsyncCont.getContinueGtidSet();
         GtidSet req = request.slaveGtidSet;
 
-        if (request.replId.equalsIgnoreCase(xsyncStage.getReplId())) {
+        if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
             GtidSet gap = masterGtidSet.symmetricDiff(req);
             GtidSet masterLost = req.subtract(masterGtidSet);
@@ -172,6 +172,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     private void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) {
         if (action.isFull()) {
             try {
+                logger.info("[runAction] {}", action.fullCause);
                 keeperServer.fullSyncToSlave(slave);
             } catch (IOException ioException) {
                 try {

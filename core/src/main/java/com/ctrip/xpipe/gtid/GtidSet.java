@@ -45,7 +45,7 @@ public class GtidSet {
      */
     @JsonCreator
     public GtidSet(String gtidSet) {
-        String[] uuidSets = (gtidSet == null || gtidSet.isEmpty()) ? new String[0] :
+        String[] uuidSets = (gtidSet == null || gtidSet.isEmpty() || gtidSet.equals("\"\"")) ? new String[0] :
                 gtidSet.replace("\n", "").split(",");
         for (String uuidSet : uuidSets) {
             int uuidSeparatorIndex = uuidSet.indexOf(":");
@@ -490,6 +490,8 @@ public class GtidSet {
     @Override
     @JsonValue
     public String toString() {
+        if (isEmpty()) return "\"\"";
+
         List<String> gtids = new ArrayList<String>();
         for (UUIDSet uuidSet : map.values()) {
             gtids.add(uuidSet.getUUID() + ":" + join(uuidSet.intervals, ":"));
