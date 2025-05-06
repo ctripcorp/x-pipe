@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
@@ -231,4 +232,28 @@ public class DefaultMetaStoreTest extends AbstractTest {
         Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
     }
 
+    @Test
+    public void testUpgradeFromPsyncToGtid() throws Exception {
+        metaStore.rdbConfirm(replidA, 10000, "", rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+        metaStore.shiftReplicationId(replidB, 20000L);
+        metaStore.upgradeFromPsyncToGtid();
+        ReplicationStoreMeta metaDup = metaStore.dupReplicationStoreMeta();
+
+        ReplStage replStage = metaDup.getCurReplStage();
+
+        Assert.assertNull(metaStore.getReplId());
+        Assert.assertNull(metaStore.getReplId2());
+        Assert.assertNull(metaStore.beginOffset());
+        Assert.assertNull(metaStore.getSecondReplIdOffset());
+        Assert.assertNull(metaDup.getRdbLastOffset());
+
+        Assert.assertEquals(metaStore.getCurReplStageReplId(), replidB);
+        Assert.assertEquals(metaDup.getRdbBacklogOffset(), (Long)0L);
+
+        Assert.assertEquals(replStage.getProto(), ReplStage.ReplProto.PSYNC);
+        Assert.assertEquals(replStage.getReplId(), replidB);
+        Assert.assertEquals(replStage.getBegOffsetRepl(), 10000);
+        Assert.assertEquals(replStage.getReplId2(), replidA);
+        Assert.assertEquals(replStage.getSecondReplIdOffset(), 20001);
+    }
 }

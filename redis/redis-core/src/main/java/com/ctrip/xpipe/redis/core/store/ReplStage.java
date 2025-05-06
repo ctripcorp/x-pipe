@@ -58,7 +58,7 @@ public class ReplStage {
     }
 
     public boolean updateReplId(String replId) {
-        if (this.replId != replId) {
+        if (this.replId.equals(replId)) {
             this.replId = replId;
             return true;
         } else {

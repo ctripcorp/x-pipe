@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,12 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         super(baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser);
+    }
+
+    protected MetaStore recoverMetaStore(File baseDir, String keeperRunid) throws IOException {
+        MetaStore metaStore = super.recoverMetaStore(baseDir, keeperRunid);
+        metaStore.upgradeFromPsyncToGtid();
+        return metaStore;
     }
 
     @Override

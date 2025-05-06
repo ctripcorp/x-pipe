@@ -131,7 +131,7 @@ public class ReplicationStoreMeta implements Serializable{
 	}
 
 	public Long getBeginOffset() {
-		return beginOffset == null ? curReplStage.getBegOffsetRepl() : beginOffset;
+		return beginOffset;
 	}
 
 	public void setBeginOffset(Long beginOffset) {

@@ -86,6 +86,8 @@ public interface MetaStore {
 
 	String getCurReplStageReplId();
 
+	ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException;
+
 	ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
 
 	ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException;
