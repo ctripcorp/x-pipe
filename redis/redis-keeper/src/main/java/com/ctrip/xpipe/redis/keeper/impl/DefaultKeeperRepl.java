@@ -58,7 +58,9 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public String replId() {
-		return replicationStore.getMetaStore().getReplId();
+		//TODO remove
+		if (replicationStore.getMetaStore().getCurReplStageReplId() == null) return replicationStore.getMetaStore().getReplId();
+		return replicationStore.getMetaStore().getCurReplStageReplId();
 	}
 
 	@Override
