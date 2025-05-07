@@ -515,7 +515,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
         try {
             gcLock.lock();
-            long needCmdOffset = commandsGuarantee.getNeededCommandOffset();
+            long needCmdOffset = commandsGuarantee.getBacklogOffset();
             long minOffset = lowestAvailableOffset();
             if (minOffset <= needCmdOffset) {
                 this.commandsGuarantees.add(commandsGuarantee);
@@ -541,7 +541,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private long minGuaranteeOffset() {
         long minOffset = Long.MAX_VALUE;
         for (CommandsGuarantee commandsGuarantee : commandsGuarantees) {
-            long offset = commandsGuarantee.getNeededCommandOffset();
+            long offset = commandsGuarantee.getBacklogOffset();
             minOffset = Long.min(offset, minOffset);
         }
 

@@ -108,7 +108,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 					}
 
 					@Override
-					public Long processedOffset() {
+					public Long processedBacklogOffset() {
 						return null;
 					}
 				});

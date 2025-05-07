@@ -232,7 +232,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					}
 
 					@Override
-					public Long processedOffset() {
+					public Long processedBacklogOffset() {
 						return null;
 					}
 				});
@@ -377,7 +377,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 						}
 
 						@Override
-						public Long processedOffset() {
+						public Long processedBacklogOffset() {
 							return null;
 						}
 					});
@@ -460,7 +460,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
-		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> true, () -> 0));
+		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> true, () -> 0));
 		appendCommandsToStore(1, 100);
 		commandStore.gc();
 		Assert.assertEquals(0, commandStore.lowestAvailableOffset());
@@ -475,7 +475,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
-		commandStore.retainCommands(buildCommandGuarantee(0, 0, 1, () -> true, () -> 0));
+		commandStore.retainCommands(buildCommandGuarantee(0, 1, () -> true, () -> 0));
 		sleep(10);
 		appendCommandsToStore(1, 100);
 		commandStore.gc();
@@ -491,7 +491,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
-		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> false, () -> 0));
+		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> false, () -> 0));
 		sleep(10);
 		appendCommandsToStore(1, 100);
 		commandStore.gc();
@@ -507,14 +507,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
-		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> true, () -> 10));
+		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> true, () -> 10));
 		sleep(10);
 		appendCommandsToStore(1, 100);
 		commandStore.gc();
 		Assert.assertEquals(100, commandStore.lowestAvailableOffset());
 	}
 
-	private CommandsGuarantee buildCommandGuarantee(long beginOffset, long offset, long timeoutMilli, BooleanSupplier isOpen, LongSupplier processedOffset) {
+	private CommandsGuarantee buildCommandGuarantee(long backlogOffset, long timeoutMilli, BooleanSupplier isOpen, LongSupplier processedOffset) {
 		return new DefaultCommandsGuarantee(new CommandsListener() {
 			@Override
 			public boolean isOpen() {
@@ -537,10 +537,10 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public Long processedOffset() {
+			public Long processedBacklogOffset() {
 				return processedOffset.getAsLong();
 			}
-		}, beginOffset, offset, timeoutMilli);
+		}, backlogOffset, timeoutMilli);
 	}
 
 	private void appendCommandsToStore(int batch, int batchSize) {

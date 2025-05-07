@@ -15,9 +15,7 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
 
     private final CommandsListener commandsListener;
 
-    private final long beginOffset;
-
-    private final long offset;
+    private final long backlogOffset;
 
     private final long startAt;
 
@@ -25,24 +23,23 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultCommandsGuarantee.class);
 
-    public DefaultCommandsGuarantee(CommandsListener commandsListener, long beginOffset, long offset, long timeoutMill) {
+    public DefaultCommandsGuarantee(CommandsListener commandsListener, long backlogOffset, long timeoutMill) {
         this.commandsListener = commandsListener;
-        this.beginOffset = beginOffset;
-        this.offset = offset;
+        this.backlogOffset = backlogOffset;
         this.startAt = System.currentTimeMillis();
         this.timeoutAt = startAt + timeoutMill;
     }
 
     @Override
-    public long getNeededCommandOffset() {
-        return offset - beginOffset;
+    public long getBacklogOffset() {
+        return backlogOffset;
     }
 
     @Override
     public boolean isFinish() {
-        Long ackOffset = commandsListener.processedOffset();
-        if (null != ackOffset && ackOffset > beginOffset) {
-            logger.info("[finish][{}] ack {}", this, ackOffset);
+        Long ackBacklogOffset = commandsListener.processedBacklogOffset();
+        if (null != ackBacklogOffset && ackBacklogOffset > backlogOffset) {
+            logger.info("[finish][{}] ack backlog offset {}", this, ackBacklogOffset);
             return true;
         }
         return false;
@@ -69,7 +66,7 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
     public String toString() {
         return "DefaultCommandsGuarantee{" +
                 "commandsListener=" + commandsListener +
-                ", offset=" + offset +
+                ", backlogOffset=" + backlogOffset +
                 '}';
     }
 
@@ -78,12 +75,12 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DefaultCommandsGuarantee that = (DefaultCommandsGuarantee) o;
-        return offset == that.offset &&
+        return backlogOffset == that.backlogOffset &&
                 commandsListener.equals(that.commandsListener);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(commandsListener, offset);
+        return Objects.hash(commandsListener, backlogOffset);
     }
 }

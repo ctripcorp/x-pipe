@@ -175,7 +175,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public Long processedOffset() {
+						public Long processedBacklogOffset() {
 							return null;
 						}
 					});
