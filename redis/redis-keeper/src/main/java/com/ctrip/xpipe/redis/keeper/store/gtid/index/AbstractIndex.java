@@ -38,6 +38,10 @@ public abstract class AbstractIndex {
         return Paths.get(baseDir ,INDEX + fileName).toString();
     }
 
+    String generateCmdFileName() {
+        return Paths.get(baseDir ,fileName).toString();
+    }
+
     protected File getFile(String filePath) throws IOException {
         File file = new File(filePath);
         if (!file.exists()) {

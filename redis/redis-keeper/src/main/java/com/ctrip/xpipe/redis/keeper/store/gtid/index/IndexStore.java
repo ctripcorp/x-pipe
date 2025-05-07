@@ -38,7 +38,7 @@ public class IndexStore implements StreamCommandListener, Closeable {
     public void initialize(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(cmdWriter.getFileContext().getChannel().size(), this.opParser);
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet);
+        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.streamCommandReader.addListener(this);
         this.indexWriter.init();
     }
@@ -58,7 +58,7 @@ public class IndexStore implements StreamCommandListener, Closeable {
         GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
         this.indexWriter.close();
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet);
+        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
         this.indexWriter.init();
         this.streamCommandReader.resetOffset();
     }
@@ -111,14 +111,14 @@ public class IndexStore implements StreamCommandListener, Closeable {
         return indexWriter.getGtidSet();
     }
 
-    public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws Exception {
-        switchCmdFile(cmdFileName);
+    public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
+
         this.streamCommandReader = new StreamCommandReader(cmdFileOffset, this.opParser);
         this.streamCommandReader.addListener(this);
 
         File f = new File(baseDir + cmdFileName);
         ControllableFile controllableFile = new DefaultControllableFile(f);
-        controllableFile.getFileChannel().position(0);
+        controllableFile.getFileChannel().position(cmdFileOffset);
         while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
             int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
             ByteBuffer buffer = ByteBuffer.allocate(size);

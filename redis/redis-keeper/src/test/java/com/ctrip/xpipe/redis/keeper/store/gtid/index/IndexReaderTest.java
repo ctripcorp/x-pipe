@@ -43,7 +43,7 @@ public class IndexReaderTest {
     @Test
     public void testSeek() throws Exception {
 
-        IndexWriter indexWriter = new IndexWriter( tempDir, TEST_INDEX_FILE, new GtidSet(""));
+        IndexWriter indexWriter = new IndexWriter( tempDir, TEST_INDEX_FILE, new GtidSet(""), null);
         indexWriter.init();
 
         String uuid1 = "";
@@ -75,7 +75,7 @@ public class IndexReaderTest {
     @Test
     public void testSeekMany() throws Exception {
 
-        IndexWriter indexWriter = new IndexWriter(tempDir, TEST_INDEX_FILE, new GtidSet(""));
+        IndexWriter indexWriter = new IndexWriter(tempDir, TEST_INDEX_FILE, new GtidSet(""), null);
         indexWriter.init();
 
         String uuid1 = "";

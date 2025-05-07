@@ -94,6 +94,10 @@ public class BlockWriter implements AutoCloseable {
         return this.size;
     }
 
+    public int getCmdOffset() {
+        return this.cmdOffset;
+    }
+
     @Override
     public void close() throws IOException {
         this.controllableFile.close();
