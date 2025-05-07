@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -14,17 +15,17 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.core.store.ReplId;
+
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -41,9 +42,9 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	@Before
 	public void beforeAbstractFakeRedisTest() throws Exception{
 		fakeRedisServer = startFakeRedisServer();
-		
+
 		allCommandsSize = fakeRedisServer.getCommandsLength();
-		commandFileSize = fakeRedisServer.getSendBatchSize();
+		commandFileSize = fakeRedisServer.getSendBatchSize() * 1024 * 1024;
 	}
 	
 	
@@ -246,5 +247,21 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 		chain.execute();
 		return psync;
+	}
+
+	protected RedisKeeperServer restartKeeperServer(RedisKeeperServer keeperServer, long replKeepSecondsAfterDown, long waitSecondsAfterDown) throws Exception {
+		int keeperPort = keeperServer.getListeningPort();
+		String keeperRunId = keeperServer.getKeeperRunid();
+
+		LifecycleHelper.stopIfPossible(keeperServer);
+		LifecycleHelper.disposeIfPossible(keeperServer);
+
+		KeeperConfig keeperConfig = newTestKeeperConfig();
+		((TestKeeperConfig)keeperConfig).setReplKeepSecondsAfterDown(replKeepSecondsAfterDown);
+		KeeperMeta keeperMeta = createKeeperMeta(keeperPort, keeperRunId);
+		ReplId replId = getReplId();
+		TimeUnit.SECONDS.sleep(waitSecondsAfterDown);
+
+		return startRedisKeeperServer(replId.id(), keeperConfig, keeperMeta);
 	}
 }
