@@ -16,10 +16,6 @@ public interface KeeperRepl {
 
 	ReplStage currentStage();
 
-	GtidSet getGtidSetExecuted();
-
-	GtidSet getGtidSetLost();
-
 	String replId();
 	
 	String replId2();

@@ -95,6 +95,9 @@ import org.junit.runners.Suite.SuiteClasses;
 
         FixSyncRateManagerTest.class,
 
+        GapAllowSyncHandlerTest.class,
+        GapAllowXSyncHandlerTest.class,
+
         AllApplierTests.class,
 })
 public class AllTests {

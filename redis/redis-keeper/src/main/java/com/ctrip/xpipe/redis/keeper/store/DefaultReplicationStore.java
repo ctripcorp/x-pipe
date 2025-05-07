@@ -150,7 +150,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
 		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
-		return new XSyncContinue(continuePoint.getValue(), gtidSet, continuePoint.getKey());
+		return new XSyncContinue(continuePoint.getValue(), continuePoint.getKey());
 	}
 
 	@Override
@@ -158,6 +158,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ReplStage curStage = metaStore.getCurrentReplStage();
 		getLogger().info("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset(), curStage.getBegOffsetBacklog());
 		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset() - curStage.getBegOffsetBacklog();
+	}
+
+	@Override
+	public boolean increaseLost(GtidSet lost) throws IOException {
+		getLogger().info("[increaseLost] {}", lost);
+		return metaStore.increaseLost(lost);
 	}
 
 	@Override

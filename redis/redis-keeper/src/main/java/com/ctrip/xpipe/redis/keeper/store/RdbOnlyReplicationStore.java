@@ -205,6 +205,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public boolean increaseLost(GtidSet lost) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -268,6 +273,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean increaseLost(GtidSet lost) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

@@ -36,6 +36,8 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 
+	boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException;
+
 	void clientDisconnected(Channel channel);
 	
 	String getKeeperRunid();

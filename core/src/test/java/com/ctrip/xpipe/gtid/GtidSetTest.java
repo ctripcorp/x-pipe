@@ -287,7 +287,8 @@ public class GtidSetTest {
 
     @Test
     public void testEmptySet() throws Exception {
-        Assert.assertEquals(new GtidSet("").toString(), "");
+        Assert.assertEquals(new GtidSet("\"\"").toString(), "\"\"");
+        Assert.assertEquals(new GtidSet("").toString(), "\"\"");
     }
 
     @Test

@@ -281,6 +281,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		closeSlaves("toXSync " + gtidCont);
 	}
 
+	@Override
+	public boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException {
+		if (getCurrentReplicationStore().increaseLost(lost)) {
+			logger.info("[increaseLost] resync with master & slaves");
+			keeperRedisMaster.reconnect();
+			closeSlavesExcept("increaseLost", from);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	private void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
@@ -692,7 +704,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void closeSlaves(String reason) {
 		
-		for(RedisSlave redisSlave : slaves()){
+		closeSlavesExcept(reason, null);
+	}
+
+	private void closeSlavesExcept(String reason, RedisSlave slave) {
+		for (RedisSlave redisSlave : slaves()) {
+			if (redisSlave.equals(slave)) continue;
 			try {
 				logger.info("[{}][close slave]{}", reason, redisSlave);
 				redisSlave.close();
