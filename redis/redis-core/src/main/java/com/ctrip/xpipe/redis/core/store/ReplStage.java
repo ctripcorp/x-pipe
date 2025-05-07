@@ -192,17 +192,11 @@ public class ReplStage {
 
     @Override
     public String toString() {
-        return "{" +
-                "\"proto\":\"" + (proto != null ? proto.asString() : null) + "\"," +
-                "\"replId\":\"" + replId + "\"," +
-                "\"begOffsetRepl\":" + begOffsetRepl + "," +
-                "\"begOffsetBacklog\":" + begOffsetBacklog + "," +
-                "\"replId2\":\"" + replId2 + "\"," +
-                "\"secondReplIdOffset\":" + secondReplIdOffset + "," +
-                "\"masterUuid\":\"" + masterUuid + "\"," +
-                "\"gtidLost\":\"" + (gtidLost != null ? gtidLost.toString() : null) + "\"," +
-                "\"beginGtidset\":\"" + (beginGtidset != null ? beginGtidset.toString() : null) + "\"" +
-                "}";
+        if (proto.equals(ReplProto.XSYNC)) {
+            return String.format("XSYNC|%s-%d:%d@%s", beginGtidset, begOffsetBacklog, begOffsetRepl, masterUuid);
+        } else {
+            return String.format("PSYNC|%s:%d:%d-%s:%d", replId, begOffsetBacklog, begOffsetRepl, replId2, secondReplIdOffset);
+        }
     }
 
     @Override
