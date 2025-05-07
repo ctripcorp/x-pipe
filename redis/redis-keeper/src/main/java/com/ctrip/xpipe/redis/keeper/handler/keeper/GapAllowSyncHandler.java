@@ -89,7 +89,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             } else {
                 XSyncContinue xsyncCont = null;
                 xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
-                return anaXSync(request, curStage, keeperRepl, xsyncCont);
+                return anaXSync(request, curStage, xsyncCont);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
             // 先判断临界点
@@ -113,7 +113,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 return anaPSync(request, preStage, keeperRepl);
             } else {
-                return anaXSync(request, preStage, keeperRepl, xsyncCont);
+                return anaXSync(request, preStage, xsyncCont);
             }
         }
 
@@ -148,8 +148,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         }
     }
 
-    protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, KeeperRepl keeperRepl, XSyncContinue xsyncCont) {
-        GtidSet lost = keeperRepl.getGtidSetLost();
+    protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, XSyncContinue xsyncCont) {
+        GtidSet lost = xsyncStage.getGtidLost();
         GtidSet cont = xsyncCont.getContinueGtidSet();
         GtidSet req = request.slaveGtidSet;
 
@@ -169,7 +169,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         }
     }
 
-    private void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) {
+    protected void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) {
         if (action.isFull()) {
             try {
                 logger.info("[runAction] {}", action.fullCause);
@@ -182,8 +182,20 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
         } else {
-            SimpleStringParser resp = null;
+            if (null != action.masterLost && !action.masterLost.isEmpty()) {
+                try {
+                    keeperServer.increaseLost(action.masterLost, slave);
+                } catch (IOException e) {
+                    try {
+                        slave.close();
+                        return;
+                    } catch (Throwable th) {
+                        logger.info("[runAction][close fail]");
+                    }
+                }
+            }
 
+            SimpleStringParser resp = null;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
                 resp = new SimpleStringParser(String.format("%s %s", DefaultPsync.PARTIAL_SYNC, action.replId)
                         + (action.protoSwitch ? " " + action.replOffset : ""));
@@ -308,6 +320,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             return this.replId.equals("?");
         }
 
+        @Override
+        public String toString() {
+            if (proto.equals(ReplStage.ReplProto.PSYNC)) {
+                return String.format("%s %s %d", proto.name(), replId, offset);
+            } else {
+                return String.format("%s %s %s MAXGAP %d", proto.name(), replId, slaveGtidSet, maxGap);
+            }
+        }
     }
 
 }

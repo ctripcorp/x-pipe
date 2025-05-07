@@ -24,16 +24,6 @@ public class DefaultKeeperRepl implements KeeperRepl {
 		return replicationStore.getMetaStore().getCurrentReplStage();
 	}
 
-	@Override
-	public GtidSet getGtidSetExecuted() {
-		return replicationStore.getGtidSet().getKey();
-	}
-
-	@Override
-	public GtidSet getGtidSetLost() {
-		return replicationStore.getGtidSet().getValue();
-	}
-
 	private ReplicationStore replicationStore;
 
 	public DefaultKeeperRepl(ReplicationStore replicationStore) {

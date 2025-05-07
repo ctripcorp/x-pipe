@@ -155,7 +155,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		dumpedRdbStore = prepareNewRdb();
 		dumpedRdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
 		//TODO remove when commandstore ready
-		doReturn(new XSyncContinue(new GtidSet(GtidSet.EMPTY_GTIDSET),null,0)).when(store).locateContinueGtidSet(any());
+		doReturn(new XSyncContinue(new GtidSet(GtidSet.EMPTY_GTIDSET),0)).when(store).locateContinueGtidSet(any());
 		Assert.assertEquals(store.checkReplIdAndUpdateRdbGapAllowed(dumpedRdbStore), UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH);
 		dumpedRdbStore.close();
 
@@ -163,7 +163,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		dumpedRdbStore.updateRdbGtidSet(masterUuidA + ":1-201," + masterUuidB + ":1-100");
 		dumpedRdbStore.setGtidLost(masterUuidC + ":1-100");
 		//TODO remove when commandstore ready
-		doReturn(new XSyncContinue(new GtidSet(masterUuidA + ":101-200"),null,store.backlogEndOffset())).when(store).locateContinueGtidSet(any());
+		doReturn(new XSyncContinue(new GtidSet(masterUuidA + ":101-200"),store.backlogEndOffset())).when(store).locateContinueGtidSet(any());
 		Assert.assertEquals(store.checkReplIdAndUpdateRdbGapAllowed(dumpedRdbStore), UPDATE_RDB_RESULT.RDB_MORE_RECENT);
 		dumpedRdbStore.close();
 
@@ -171,7 +171,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		dumpedRdbStore.updateRdbGtidSet(masterUuidA + ":1-150," + masterUuidB + ":1-100");
 		dumpedRdbStore.setGtidLost(masterUuidC + ":1-100");
 		//TODO remove when commandstore ready
-		doReturn(new XSyncContinue(new GtidSet(masterUuidA + ":101-150"),null,store.backlogEndOffset() - 1000)).when(store).locateContinueGtidSet(any());
+		doReturn(new XSyncContinue(new GtidSet(masterUuidA + ":101-150"),store.backlogEndOffset() - 1000)).when(store).locateContinueGtidSet(any());
 		Assert.assertEquals(store.checkReplIdAndUpdateRdbGapAllowed(dumpedRdbStore), UPDATE_RDB_RESULT.OK);
 		ReplStage replStage = store.getMetaStore().getCurrentReplStage();
 		Assert.assertEquals(replStage.getBeginGtidset(), new GtidSet(masterUuidA + ":1-100,"+ masterUuidB + ":1-100"));

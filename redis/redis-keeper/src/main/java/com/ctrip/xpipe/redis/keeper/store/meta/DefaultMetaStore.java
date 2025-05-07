@@ -349,6 +349,28 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public boolean increaseLost(GtidSet lost) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
+				throw new IllegalStateException("xcontinue in psync replstage");
+			}
+
+			GtidSet oldLost = curReplStage.getGtidLost();
+			GtidSet newLost = oldLost.union(lost);
+			if (oldLost.equals(newLost)) {
+				return false;
+			}
+
+			curReplStage.setGtidLost(newLost);
+			saveMeta(metaDup);
+			return true;
+		}
+	}
+
+	@Override
 	public boolean xsyncContinue(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
 								 GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
 		boolean	updated = false;

@@ -30,6 +30,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();
+	boolean increaseLost(GtidSet lost) throws IOException;
 
 	/**
 	 * @return pair of GtidSet.executed and GtidSet.lost

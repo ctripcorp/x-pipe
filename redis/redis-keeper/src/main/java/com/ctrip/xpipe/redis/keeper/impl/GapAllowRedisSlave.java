@@ -64,9 +64,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
             return StringUtil.join(" ", DefaultPsync.FULL_SYNC, replStage.getReplId(),
                     replStage.backlogOffset2ReplOffset(backlogOffset));
         } else {
-            RedisKeeperServer keeperServer = getRedisServer();
-            KeeperRepl keeperRepl = keeperServer.getKeeperRepl();
-            GtidSet lost = keeperRepl.getGtidSetLost();
+            GtidSet lost = replStage.getGtidLost();
             return StringUtil.join(" ", XFULL_SYNC, "GTID.LOST", lost.isEmpty() ? "\"\"" : lost,
                     "MASTER.UUID", replStage.getMasterUuid(), "REPLID", replStage.getReplId(),
                     "REPLOFF", replStage.backlogOffset2ReplOffset(backlogOffset));

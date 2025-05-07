@@ -113,13 +113,13 @@ public class ReplStage {
     }
 
     public ReplStage(String replId, long begOffsetRepl, long begOffsetBacklog,
-                     String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted) {
+                     String masterUuid, GtidSet gtidLost, GtidSet gtidBegin) {
         this.proto = ReplProto.XSYNC;
         this.replId = replId;
         this.begOffsetRepl = begOffsetRepl;
         this.begOffsetBacklog = begOffsetBacklog;
         this.masterUuid = masterUuid;
-        this.beginGtidset = gtidExecuted == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidExecuted;
+        this.beginGtidset = gtidBegin == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidBegin;
         this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost;
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
