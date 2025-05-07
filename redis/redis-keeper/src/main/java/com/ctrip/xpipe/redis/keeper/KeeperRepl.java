@@ -24,6 +24,8 @@ public interface KeeperRepl {
 
 	long backlogBeginOffset();
 
+	long backlogEndOffset();
+
 	long getBeginOffset();
 	
 	long getEndOffset();
