@@ -17,4 +17,5 @@ public interface ControllableFile extends Closeable{
 
 	boolean isOpen();
 
+	void setLength(int size) throws IOException;
 }

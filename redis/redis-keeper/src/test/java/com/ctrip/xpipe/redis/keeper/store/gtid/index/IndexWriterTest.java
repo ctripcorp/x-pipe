@@ -32,7 +32,7 @@ public class IndexWriterTest {
     public void testWriter() throws Exception {
 
         tempFile = Files.createTempFile("indexWriter", ".tmp").toFile();
-        IndexWriter indexWriter = new IndexWriter(tempFile.getParent(), tempFile.getName(), new GtidSet(""));
+        IndexWriter indexWriter = new IndexWriter(tempFile.getParent(), tempFile.getName(), new GtidSet(""), null);
         System.out.println(tempFile.getAbsolutePath());
         indexWriter.init();
         String uuid1 ="uuid1";

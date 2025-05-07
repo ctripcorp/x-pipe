@@ -113,4 +113,10 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	public String toString() {
 		return FileUtils.shortPath(file.getPath());
 	}
+
+	@Override
+	public void setLength(int size) throws IOException {
+		tryOpen();
+		randomAccessFile.get().setLength(size);
+	}
 }

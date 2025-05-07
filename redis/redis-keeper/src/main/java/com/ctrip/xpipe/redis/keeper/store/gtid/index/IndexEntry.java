@@ -168,7 +168,19 @@ public class IndexEntry {
         ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_LENGTH);
         channel.read(buffer);
         IndexEntry indexEntry = fromBuffer(buffer);
+        indexEntry.setChannel(channel);
         return indexEntry;
+    }
+
+    public IndexEntry changeToPre() throws IOException {
+        long preIndex = position - SEGMENT_LENGTH;
+        if(preIndex <= 0) {
+            return null;
+        }
+        channel.position(preIndex);
+        IndexEntry result = IndexEntry.readFromFile(channel);
+        result.setPosition(preIndex);
+        return result;
     }
 
 }
