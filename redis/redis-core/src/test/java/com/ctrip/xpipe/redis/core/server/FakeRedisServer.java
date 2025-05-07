@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FakeRedisServer extends AbstractLifecycle{
 	
 	private int rdbSize = 100;
-	private int commandsLength = 1000;
-	private int sendBatchSize = 100;
+	private int commandsLength = 100;
+	private int sendBatchSize = 200;
 	private int sendBatchIntervalMilli = 10;
 	
 	private int port;
@@ -52,7 +52,11 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private boolean partialSyncFail = false;
 
 	public FakeRedisServer(int port){
-		this(port, 0);
+		this(port, 0, "psync");
+	}
+
+	public FakeRedisServer(int port, String proto){
+		this(port, 0, proto);
 	}
 
 	public FakeRedisServer(int port, int sleepBeforeSendRdb){
@@ -64,6 +68,19 @@ public class FakeRedisServer extends AbstractLifecycle{
 			@Override
 			public IoAction createIoAction(Socket socket) {
 				return new FakeRedisServerAction(FakeRedisServer.this, socket);
+			}
+		});
+	}
+
+	public FakeRedisServer(int port, int sleepBeforeSendRdb, String proto){
+
+		this.port = port;
+		this.sleepBeforeSendRdb = sleepBeforeSendRdb;
+		this.server = new Server(port, new IoActionFactory() {
+
+			@Override
+			public IoAction createIoAction(Socket socket) {
+				return new FakeRedisServerAction(FakeRedisServer.this, socket, proto);
 			}
 		});
 	}

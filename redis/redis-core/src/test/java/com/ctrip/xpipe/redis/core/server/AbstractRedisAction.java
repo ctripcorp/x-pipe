@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.server;
 
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.SocketAware;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +20,9 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 
 	private byte[] OK = "+OK\r\n".getBytes();
 	private byte[] ERR = "-ERR \r\n".getBytes();
+
+	public String proto = "psynx";
+
 	private String line;
 	
 	private boolean slaveof = false;
@@ -28,6 +32,10 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 
 	public AbstractRedisAction(Socket socket) {
 		super(socket);
+	}
+
+	public void setProto(String proto) {
+		this.proto = proto;
 	}
 
 	@Override
@@ -115,9 +123,22 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 		if(line.startsWith("psync")){
 			try {
 				writeToWrite = false;
-				handlePsync(ous, line);
+				if("psync".equals(proto)){
+					handlePsync(ous, line);
+				} else {
+					handleXsync(ous, line);
+				}
 			} catch (InterruptedException e) {
 				logger.error("[handlepsync]", e);
+			}
+		}
+
+		if(line.startsWith("xsync")){
+			writeToWrite = false;
+			try {
+				handleXsync(ous, line);
+			} catch (InterruptedException e) {
+				logger.error("[handlexsync]", e);
 			}
 		}
 
@@ -178,6 +199,12 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	protected void handlePsync(OutputStream ous, String line) throws IOException, InterruptedException {
 		
 	}
+
+	protected void handleXsync(OutputStream ous, String line) throws IOException, InterruptedException {
+
+	}
+
+
 
 	protected void slaveof(List<String> slaveOfCommands2) {
 		
