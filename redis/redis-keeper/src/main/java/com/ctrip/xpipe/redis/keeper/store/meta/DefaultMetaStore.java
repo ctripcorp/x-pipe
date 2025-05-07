@@ -74,6 +74,30 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public Long replOffsetToBacklogOffset(Long replOffset) {
+		Long backlogOffset;
+
+		ReplStage curReplStage = getMeta().getCurReplStage();
+		ReplStage prevReplStage = getMeta().getPrevReplStage();
+
+		if (replOffset != null && curReplStage != null && curReplStage.getBegOffsetRepl() <= replOffset+1) {
+			backlogOffset = replOffset+1 - curReplStage.getBegOffsetRepl() + curReplStage.getBegOffsetBacklog();
+			logger.debug("[replOffsetToBacklogOffset] [cur] backlogOffset:{} replOffset:{}, begOffsetRepl:{}, begOffsetBacklog:{}",
+					backlogOffset, replOffset, curReplStage.getBegOffsetRepl(), curReplStage.getBegOffsetBacklog());
+		} else if (replOffset != null && prevReplStage != null && prevReplStage.getBegOffsetRepl() <= replOffset+1) {
+			backlogOffset = replOffset+1 - prevReplStage.getBegOffsetRepl() + prevReplStage.getBegOffsetBacklog();
+			logger.debug("[replOffsetToBacklogOffset] [prev] backlogOffset:{} replOffset:{}, begOffsetRepl:{}, begOffsetBacklog:{}",
+					backlogOffset, replOffset, prevReplStage.getBegOffsetRepl(), prevReplStage.getBegOffsetBacklog());
+		} else {
+			backlogOffset = null;
+			logger.debug("[replOffsetToBacklogOffset] [none] backlogOffset:{} replOffset:{}", backlogOffset, replOffset);
+		}
+
+
+		return backlogOffset;
+	}
+
+	@Override
 	public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type,
 										 EofType eofType, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {

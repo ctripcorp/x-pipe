@@ -219,8 +219,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public Long processedOffset() {
-		return getAck();
+	public Long processedBacklogOffset() {
+		return getRedisServer().getReplicationStore().getMetaStore().replOffsetToBacklogOffset(getAck());
 	}
 
 	@Override

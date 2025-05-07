@@ -162,6 +162,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Long replOffsetToBacklogOffset(Long replOff) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException {throw new UnsupportedOperationException();}
 
 			@Override

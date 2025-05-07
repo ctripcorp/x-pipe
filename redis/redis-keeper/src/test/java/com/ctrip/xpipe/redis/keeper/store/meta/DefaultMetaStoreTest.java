@@ -256,4 +256,18 @@ public class DefaultMetaStoreTest extends AbstractTest {
         Assert.assertEquals(replStage.getReplId2(), replidA);
         Assert.assertEquals(replStage.getSecondReplIdOffset(), 20001);
     }
+
+    @Test
+    public void testReplOffsetToBacklogOffset() throws Exception {
+        metaStore.rdbConfirmPsync(replidA, 10001, 10000, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+        metaStore.switchToXsync(replidB, 20001,20000, masterUuidB, new GtidSet(GtidSet.EMPTY_GTIDSET));
+
+        Assert.assertNull(metaStore.replOffsetToBacklogOffset(null));
+        Assert.assertNull(metaStore.replOffsetToBacklogOffset(1L));
+        Assert.assertNull(metaStore.replOffsetToBacklogOffset(9999L));
+        Assert.assertEquals(metaStore.replOffsetToBacklogOffset(10000L), (Long)10000L);
+        Assert.assertEquals(metaStore.replOffsetToBacklogOffset(10086L), (Long)10086L);
+        Assert.assertEquals(metaStore.replOffsetToBacklogOffset(20000L), (Long)20000L);
+        Assert.assertEquals(metaStore.replOffsetToBacklogOffset(20086L), (Long)20086L);
+    }
 }

@@ -5,8 +5,8 @@ package com.ctrip.xpipe.redis.core.store;
  * date 2021/7/21
  */
 public interface CommandsGuarantee {
-
-    long getNeededCommandOffset();
+    // guarentee cmds within [backlogOffset, INF) would be reserved
+    long getBacklogOffset();
 
     boolean isFinish();
 

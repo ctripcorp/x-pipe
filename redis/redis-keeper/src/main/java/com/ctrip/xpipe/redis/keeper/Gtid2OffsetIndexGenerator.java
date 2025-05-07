@@ -151,7 +151,7 @@ public class Gtid2OffsetIndexGenerator implements CommandsListener {
     }
 
     @Override
-    public Long processedOffset() {
+    public Long processedBacklogOffset() {
         return Long.MAX_VALUE;
     }
 

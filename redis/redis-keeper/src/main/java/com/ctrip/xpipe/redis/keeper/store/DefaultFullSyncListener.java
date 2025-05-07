@@ -100,8 +100,8 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public Long processedOffset() {
-		return redisSlave.getAck();
+	public Long processedBacklogOffset() {
+		return redisSlave.processedBacklogOffset();
 	}
 
 	@Override

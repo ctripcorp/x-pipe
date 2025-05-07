@@ -19,6 +19,6 @@ public interface CommandsListener extends ReplDelayConfig {
 	
 	void beforeCommand();
 
-	Long processedOffset();
+	Long processedBacklogOffset();
 
 }

@@ -672,9 +672,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected FULLSYNC_FAIL_CAUSE tryDoFullSync(FullSyncContext ctx, FullSyncListener fullSyncListener) throws IOException {
 		RdbStore rdbStore = ctx.getRdbStore();
-		// TODO: Guarantee use backlog offset
 		if (null != cmdStore && !cmdStore.retainCommands(
-				new DefaultCommandsGuarantee(fullSyncListener, beginOffset(), rdbStore.rdbOffset() + 1, commandsRetainTimeoutMilli))) {
+				new DefaultCommandsGuarantee(fullSyncListener, rdbStore.getRdbBacklogOffset(), commandsRetainTimeoutMilli))) {
 			getLogger().info("[fullSyncToSlave][{}][cmd file deleted and terminate]{}", rdbStore.getRdbType().name(), fullSyncListener);
 			rdbStore.decrementRefCount();
 			return FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB;
@@ -825,7 +824,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	private void gcRdbIfNeeded(AtomicReference<RdbStore> rdbStoreRef) throws IOException {
 		RdbStore originRdbStore = rdbStoreRef.get();
 		if (null != originRdbStore && !originRdbStore.isWriting()
-				&& originRdbStore.rdbOffset() + 1 < firstAvailableOffset()
+				&& originRdbStore.getRdbBacklogOffset() < backlogBeginOffset()
 				&& rdbStoreRef.compareAndSet(originRdbStore, null)) {
 			getLogger().info("[gc][release rdb for cmd not continue] {}", originRdbStore);
 			previousRdbStores.put(originRdbStore, Boolean.TRUE);
