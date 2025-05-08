@@ -237,7 +237,7 @@ public class InfoHandler extends AbstractCommandHandler {
 		public String getInfo(RedisKeeperServer redisKeeperServer) {
 			StringBuilder sb = new StringBuilder();
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			long slaveReplOffset = replicationStore.getEndOffset();
+			long slaveReplOffset = replicationStore.getCurReplStageReplOff();
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 			sb.append(getHeader());
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
