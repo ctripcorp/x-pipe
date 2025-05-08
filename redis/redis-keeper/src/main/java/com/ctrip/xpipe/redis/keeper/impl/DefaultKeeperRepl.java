@@ -48,7 +48,7 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public long getEndOffset() {
-		return replicationStore.getEndOffset();
+		return replicationStore.getCurReplStageReplOff();
 	}
 
 	@Override

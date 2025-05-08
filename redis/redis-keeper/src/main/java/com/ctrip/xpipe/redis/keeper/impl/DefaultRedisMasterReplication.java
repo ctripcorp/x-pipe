@@ -175,7 +175,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
     protected Command<Object> createReplConf() {
 
-        return new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()));
+        return new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(redisMaster.getCurrentReplicationStore().getCurReplStageReplOff()));
     }
 
     @Override
