@@ -732,6 +732,48 @@ public class AbstractTest {
         return startServer(randomPort(), result);
     }
 
+    public interface ByteArrayProvider {
+        byte[][] get() throws Exception;
+    }
+
+    protected Server startServer(final ByteArrayProvider provider) throws Exception {
+        return startServer(randomPort(), provider);
+    }
+
+    protected Server startServer(int serverPort, final ByteArrayProvider provider) throws Exception {
+        IoActionFactory ioActionFactory = new IoActionFactory() {
+
+            @Override
+            public IoAction createIoAction(Socket socket) {
+                return new AbstractIoAction(socket) {
+
+                    @Override
+                    protected void doWrite(OutputStream ous, Object readResult) throws IOException {
+                        try {
+                            byte[][] result = provider.get();
+                            if (result != null) {
+                                for (int i = 0; i < result.length; i++) {
+                                    ous.write(result[i]);
+                                }
+                            }
+                        } catch (Exception e) {
+                            throw new IllegalStateException("[doWrite]", e);
+                        }
+                    }
+
+                    @Override
+                    protected Object doRead(InputStream ins) throws IOException {
+                        String line = readLine(ins);
+                        line = line == null ? null : line.trim();
+                        logger.info("[doRead]{}", line);
+                        return line;
+                    }
+                };
+            }
+        };
+        return startServer(serverPort, ioActionFactory);
+    }
+
     @After
     public void afterAbstractTest() throws Exception {
 

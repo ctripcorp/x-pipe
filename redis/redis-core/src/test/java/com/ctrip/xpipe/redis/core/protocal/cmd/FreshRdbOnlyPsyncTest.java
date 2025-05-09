@@ -54,7 +54,7 @@ public class FreshRdbOnlyPsyncTest extends AbstractRedisTest {
             @Override
             public String apply(String s) {
                 logger.info("[testFreshRdbOnlyPsync] {}", s);
-                if (s.trim().equals("psync ? -3")) {
+                if (s.trim().equalsIgnoreCase("psync ? -3")) {
                     return String.format("+FULLRESYNC %s %d\r\n", replId, offset);
                 } else {
                     return "+OK\r\n";
@@ -62,11 +62,11 @@ public class FreshRdbOnlyPsyncTest extends AbstractRedisTest {
             }
         });
         Endpoint redisEndpoint = new DefaultEndPoint("127.0.0.1", redisServer.getPort());
-        FreshRdbOnlyPsync psync = new FreshRdbOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
+        FreshRdbOnlyGapAllowedSync gasync = new FreshRdbOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger masetrOffset = new AtomicInteger(0);
-        psync.addPsyncObserver(new PsyncObserver() {
+        gasync.addPsyncObserver(new PsyncObserver() {
             @Override
             public void onFullSync(long masterRdbOffset) {
                 masetrOffset.set((int)masterRdbOffset);
@@ -91,7 +91,7 @@ public class FreshRdbOnlyPsyncTest extends AbstractRedisTest {
             public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
             }
         });
-        psync.execute().addListener(new CommandFutureListener<Object>() {
+        gasync.execute().addListener(new CommandFutureListener<Object>() {
 
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {

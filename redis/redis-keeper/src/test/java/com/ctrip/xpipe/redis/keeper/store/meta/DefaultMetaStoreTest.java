@@ -164,6 +164,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
 
         Assert.assertEquals(metaStore.getCurrentReplStage().getProto(), ReplStage.ReplProto.PSYNC);
         Assert.assertEquals(metaStore.getCurReplStageReplId(), replidB);
+        Assert.assertEquals(metaStore.getCurrentReplStage().getReplId2(), replidA);
         Assert.assertEquals(metaStore.getCurrentReplStage().getSecondReplIdOffset(), 1001);
     }
 

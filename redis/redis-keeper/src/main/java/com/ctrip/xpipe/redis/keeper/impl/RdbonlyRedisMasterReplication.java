@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -145,15 +143,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	protected Psync doCreatePsync(RdbOnlyReplicationStore rdbOnlyReplicationStore) {
-		Psync psync;
-
-		if (state.equals(REPL_STATE.FRESH_SYNC)) {
-			psync = new FreshRdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
-		} else {
-			psync = new RdbOnlyPsync(clientPool, rdbOnlyReplicationStore, scheduled);
-		}
-
-		return psync;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

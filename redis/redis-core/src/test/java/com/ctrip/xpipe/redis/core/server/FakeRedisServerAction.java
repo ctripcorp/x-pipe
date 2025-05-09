@@ -5,7 +5,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -18,6 +17,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
+import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
 /**
  * @author wenchao.meng
@@ -149,7 +151,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			return;
 		}
 
-		String info = String.format("+%s\r\n", AbstractPsync.PARTIAL_SYNC);
+		String info = String.format("+%s\r\n", PARTIAL_SYNC);
 		ous.write(info.getBytes());
 
 		fakeRedisServer.addCommandsListener(this);
@@ -219,7 +221,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		} catch (InterruptedException e) {
 		}
 
-		String info = String.format("+%s %s %d\r\n", AbstractPsync.FULL_SYNC, fakeRedisServer.getRunId(), fakeRedisServer.getRdbOffset());
+		String info = String.format("+%s %s %d\r\n", FULL_SYNC, fakeRedisServer.getRunId(), fakeRedisServer.getRdbOffset());
 		ous.write(info.getBytes());
 		ous.flush();
 		
