@@ -25,6 +25,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int maxPartialSyncKeepTokenRounds = 3;
 	private int partialSyncTrafficMonitorIntervalTimes = 10;
 	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
+	private int maxAllowedMaxGap = DEFAULT_XSYNC_MAXGAP;
 	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -287,6 +288,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public int getXsyncMaxGap() {
-		return DEFAULT_XSYNC_MAXGAP;
+		return maxAllowedMaxGap;
+	}
+
+	public void setMaxAllowedMaxGap(int maxGap) {
+		this.maxAllowedMaxGap = maxGap;
 	}
 }
