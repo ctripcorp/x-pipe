@@ -84,8 +84,8 @@ public class ReplicationStoreMeta implements Serializable{
 		this.keeperState = proto.keeperState;
 		this.keeperRunid = proto.keeperRunid;
 
-		this.prevReplStage = proto.prevReplStage;
-		this.curReplStage = proto.curReplStage;
+		this.prevReplStage = proto.prevReplStage == null ? null : new ReplStage(proto.prevReplStage);
+		this.curReplStage = proto.curReplStage == null ? null : new ReplStage(proto.curReplStage);
 		this.rdbBacklogOffset = proto.rdbBacklogOffset;
 		this.rordbBacklogOffset = proto.rordbBacklogOffset;
 	}
