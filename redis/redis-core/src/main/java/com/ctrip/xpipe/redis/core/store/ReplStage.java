@@ -58,7 +58,7 @@ public class ReplStage {
     }
 
     public boolean updateReplId(String replId) {
-        if (this.replId.equals(replId)) {
+        if (!this.replId.equals(replId)) {
             this.replId = replId;
             return true;
         } else {
@@ -123,6 +123,18 @@ public class ReplStage {
         this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost;
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
+    }
+
+    public ReplStage(ReplStage original) {
+        this.proto = original.proto;
+        this.replId = original.replId;
+        this.begOffsetBacklog = original.begOffsetBacklog;
+        this.begOffsetRepl = original.begOffsetRepl;
+        this.replId2 = original.replId2;
+        this.secondReplIdOffset = original.secondReplIdOffset;
+        this.masterUuid = original.masterUuid;
+        this.beginGtidset = original.beginGtidset == null ? null : original.beginGtidset.clone();
+        this.gtidLost = original.gtidLost == null ? null : original.gtidLost.clone();
     }
 
     @JsonCreator
