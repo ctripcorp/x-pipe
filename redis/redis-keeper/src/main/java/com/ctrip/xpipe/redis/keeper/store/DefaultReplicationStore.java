@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -150,7 +148,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
 		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
-		return new XSyncContinue(continuePoint.getValue(), continuePoint.getKey());
+        GtidSet begin = getBeginGtidSetAndLost().getKey();
+		GtidSet continueGtidSet = continuePoint.getValue().union(begin);
+		return new XSyncContinue(continueGtidSet, continuePoint.getKey());
 	}
 
 	@Override
@@ -212,6 +212,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
+		Pair<GtidSet, GtidSet> gtidSets = getBeginGtidSetAndLost();
+		GtidSet beginGtidSet = gtidSets.getKey();
+		GtidSet lostGtidSet = gtidSets.getValue();
+		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
+	}
+
+	private Pair<GtidSet, GtidSet> getBeginGtidSetAndLost() {
 		GtidSet beginGtidSet, lostGtidSet;
 		if (metaStore.getCurrentReplStage() != null &&
 				metaStore.getCurrentReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
@@ -225,7 +232,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 			lostGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		}
-		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
+		return new Pair<>(beginGtidSet, lostGtidSet);
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
