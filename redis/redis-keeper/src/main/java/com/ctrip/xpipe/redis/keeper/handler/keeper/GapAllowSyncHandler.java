@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
@@ -16,6 +15,8 @@ import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 
 import java.io.IOException;
 import java.util.Collections;
+
+import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
 public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
@@ -197,7 +198,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
             SimpleStringParser resp = null;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
-                resp = new SimpleStringParser(String.format("%s %s", DefaultPsync.PARTIAL_SYNC, action.replId)
+                resp = new SimpleStringParser(String.format("%s %s", PARTIAL_SYNC, action.replId)
                         + (action.protoSwitch ? " " + action.replOffset : ""));
             } else {
                 resp = new SimpleStringParser(String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",

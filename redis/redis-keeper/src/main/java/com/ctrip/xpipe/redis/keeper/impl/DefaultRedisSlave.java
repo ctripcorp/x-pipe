@@ -7,7 +7,6 @@ import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -32,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
 
 /**
  * @author wenchao.meng
@@ -234,7 +235,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
-		return StringUtil.join(" ", DefaultPsync.FULL_SYNC, getRedisServer().getKeeperRepl().replId(),
+		return StringUtil.join(" ", FULL_SYNC, getRedisServer().getKeeperRepl().replId(),
 				rdbProgress.getProgress().toString());
 	}
 	

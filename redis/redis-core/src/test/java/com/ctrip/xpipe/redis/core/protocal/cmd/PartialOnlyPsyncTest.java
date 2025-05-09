@@ -61,7 +61,7 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 			@Override
 			public String apply(String s) {
 				logger.info("[testKeeperPartialSync] {}", s);
-				if (s.trim().equals("psync ? -2")) {
+				if (s.trim().equalsIgnoreCase("psync ? -2")) {
 					return String.format("+CONTINUE %s %d\r\n", replId, offset);
 				} else {
 					return "+OK\r\n";
@@ -69,12 +69,12 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("127.0.0.1", redisServer.getPort());
-		PartialOnlyPsync psync = new PartialOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled);
+		PartialOnlyGapAllowedSync gasync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled, null);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 
 		CountDownLatch latch = new CountDownLatch(1);
-        psync.addPsyncObserver(new PsyncObserver() {
+        gasync.addPsyncObserver(new PsyncObserver() {
 			@Override
 			public void onFullSync(long masterRdbOffset) {
 			}
@@ -98,7 +98,7 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 			}
 		});
-        psync.execute().addListener(new CommandFutureListener<Object>() {
+        gasync.execute().addListener(new CommandFutureListener<Object>() {
 
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -109,7 +109,7 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 		});
 
 		latch.await(1000, TimeUnit.SECONDS);
-		verify(replicationStore, times(1)).continueFromOffset(replId, offset);
+		verify(replicationStore, times(1)).psyncContinueFrom(replId, offset);
     }
 
 }

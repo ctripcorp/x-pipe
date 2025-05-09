@@ -236,7 +236,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 							   GtidSet gtidLost, String masterUuid) throws IOException {
 		prepareRdb(replId, rdbOffset, eofType);
 		dumpedRdbStore.setReplProto(replProto);
-		dumpedRdbStore.setGtidLost(gtidLost.toString());
+		dumpedRdbStore.setGtidLost(gtidLost == null ? null : gtidLost.toString());
 		dumpedRdbStore.setMasterUuid(masterUuid);
 		return dumpedRdbStore;
 	}

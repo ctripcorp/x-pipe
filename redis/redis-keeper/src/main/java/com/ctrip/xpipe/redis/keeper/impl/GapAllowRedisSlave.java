@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.BacklogOffsetReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
@@ -13,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.XFULL_SYNC;
+import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
 
 public class GapAllowRedisSlave extends DefaultRedisSlave {
 
@@ -61,7 +60,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
 
     private String buildRespWithReplStage(long backlogOffset, ReplStage replStage) {
         if (replStage.getProto() == ReplStage.ReplProto.PSYNC) {
-            return StringUtil.join(" ", DefaultPsync.FULL_SYNC, replStage.getReplId(),
+            return StringUtil.join(" ", FULL_SYNC, replStage.getReplId(),
                     replStage.backlogOffset2ReplOffset(backlogOffset));
         } else {
             GtidSet lost = replStage.getGtidLost();

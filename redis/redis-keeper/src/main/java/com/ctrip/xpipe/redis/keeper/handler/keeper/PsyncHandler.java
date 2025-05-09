@@ -1,20 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 
 import java.io.IOException;
 
-import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_FRESH_RDB_SYNC_OFFSET;
-import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFSET;
+import static com.ctrip.xpipe.redis.core.protocal.Psync.*;
 
 /**
  * @author wenchao.meng
@@ -118,9 +116,9 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 		SimpleStringParser simpleStringParser = null;
 		
 		if(!redisSlave.capaOf(CAPA.PSYNC2)){
-			simpleStringParser = new SimpleStringParser(DefaultPsync.PARTIAL_SYNC);
+			simpleStringParser = new SimpleStringParser(PARTIAL_SYNC);
 		}else{
-			simpleStringParser = new SimpleStringParser(String.format("%s %s", DefaultPsync.PARTIAL_SYNC, replId));
+			simpleStringParser = new SimpleStringParser(String.format("%s %s", PARTIAL_SYNC, replId));
 		}
 		
 		redisSlave.sendMessage(simpleStringParser.format());
@@ -134,7 +132,7 @@ public class PsyncHandler extends AbstractSyncCommandHandler {
 
 	protected void doKeeperPartialSync(RedisSlave redisSlave, String replId, long continueOffset) {
 		SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %s %d",
-				DefaultPsync.PARTIAL_SYNC, replId, continueOffset));
+				PARTIAL_SYNC, replId, continueOffset));
 
 		redisSlave.sendMessage(simpleStringParser.format());
 		redisSlave.markPsyncProcessed();

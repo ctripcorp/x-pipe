@@ -190,17 +190,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
         Psync psync;
         if (redisKeeperServer.getRedisKeeperServerState().keeperState().isBackup()) {
-            if (redisKeeperServer.gapAllowSyncEnabled()) {
-                psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
-            } else {
-                psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
-            }
+            psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
         } else {
-            if (redisKeeperServer.gapAllowSyncEnabled()) {
-                psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
-            } else {
-                psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
-            }
+            psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
         }
 
         psync.addPsyncObserver(this);

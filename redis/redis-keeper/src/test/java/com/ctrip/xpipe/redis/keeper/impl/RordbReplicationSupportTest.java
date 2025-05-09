@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
@@ -59,7 +59,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     @Ignore
     public void testPsyncRordbFromMaster() throws Exception {
         redisServer.setSupportRordb(true);
-        InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisServer.getPort(), true);
+        InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisServer.getPort(), true);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
     }
@@ -68,8 +68,8 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     public void testSlaveCapaRordbMasterSupport() throws Exception {
         redisServer.setSupportRordb(true);
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
-        InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
-        Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
+        InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
+        Assert.assertArrayEquals(redisServer.getRordbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
     }
 
@@ -77,7 +77,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     public void testSlaveCapaRordbMasterNotSupport() throws Exception {
         redisServer.setSupportRordb(false);
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
-        InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
+        InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
     }
@@ -86,10 +86,10 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     public void testSlaveRordbThenRdb() throws Exception {
         redisServer.setSupportRordb(true);
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
-        InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
+        InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
-        psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
+        psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
     }
@@ -98,12 +98,12 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     public void testSlaveRdbThenRordb() throws Exception {
         redisServer.setSupportRordb(true);
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
-        InMemoryPsync psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
-        Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
+        InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
+        Assert.assertArrayEquals(redisServer.getNormalRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
         sleep(100); // wait last dump clean
-        psync = sendPsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
-        Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
+        psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
+        Assert.assertArrayEquals(redisServer.getRordbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
 
         Assert.assertEquals(redisKeeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRordbFileSize(), psync.getRdb().length);
@@ -115,10 +115,10 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
 
         redisServer.setSleepBeforeSendRdb(3000);
-        Pair<InMemoryPsync, InMemoryPsync> psyncs = sendPsyncOnDumpingAndWaitRdbDone("127.0.0.1",
+        Pair<InMemoryGapAllowedSync, InMemoryGapAllowedSync> psyncs = sendGAsyncOnDumpingAndWaitRdbDone("127.0.0.1",
                 redisKeeperServer.getListeningPort(), false, true);
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psyncs.getKey().getRdb()));
-        Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psyncs.getValue().getRdb()));
+        Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psyncs.getValue().getRdb()));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
 
         redisServer.setSleepBeforeSendRdb(3000);
-        Pair<InMemoryPsync, InMemoryPsync> psyncs = sendPsyncOnDumpingAndWaitRdbDone("127.0.0.1",
+        Pair<InMemoryGapAllowedSync, InMemoryGapAllowedSync> psyncs = sendGAsyncOnDumpingAndWaitRdbDone("127.0.0.1",
                 redisKeeperServer.getListeningPort(), true, false);
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psyncs.getKey().getRdb()));
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psyncs.getValue().getRdb()));
@@ -156,14 +156,14 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         return redisKeeperServer;
     }
 
-    private Pair<InMemoryPsync, InMemoryPsync> sendPsyncOnDumpingAndWaitRdbDone(String redisIp, int redisPort, boolean tryRordb1, boolean tryRordb2) throws Exception {
+    private Pair<InMemoryGapAllowedSync, InMemoryGapAllowedSync> sendGAsyncOnDumpingAndWaitRdbDone(String redisIp, int redisPort, boolean tryRordb1, boolean tryRordb2) throws Exception {
         XpipeNettyClientPool masterPool1 = singleConnectPool(redisIp, redisPort);
         XpipeNettyClientPool masterPool2 = singleConnectPool(redisIp, redisPort);
         replConfCapa(masterPool1, tryRordb1);
         replConfCapa(masterPool2, tryRordb2);
 
-        InMemoryPsync psync1 = new InMemoryPsync(masterPool1, "?", -1, scheduled);
-        InMemoryPsync psync2 = new InMemoryPsync(masterPool2, "?", -1, scheduled);
+        InMemoryGapAllowedSync psync1 = new InMemoryGapAllowedSync(masterPool1, "?", -1, scheduled);
+        InMemoryGapAllowedSync psync2 = new InMemoryGapAllowedSync(masterPool2, "?", -1, scheduled);
 
         CountDownLatch latch = new CountDownLatch(2);
         psync1.addPsyncObserver(new TestPsyncObserver() {
@@ -187,11 +187,11 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         return Pair.from(psync1, psync2);
     }
 
-    private InMemoryPsync sendPsyncAndWaitRdbDone(String redisIp, int redisPort, boolean tryRordb) throws Exception {
+    private InMemoryGapAllowedSync sendGAsyncAndWaitRdbDone(String redisIp, int redisPort, boolean tryRordb) throws Exception {
         XpipeNettyClientPool masterPool = singleConnectPool(redisIp, redisPort);
         replConfCapa(masterPool, tryRordb);
 
-        InMemoryPsync psync = new InMemoryPsync(masterPool, "?", -1, scheduled);
+        InMemoryGapAllowedSync psync = new InMemoryGapAllowedSync(masterPool, "?", -1, scheduled);
         CommandFuture future = new DefaultCommandFuture();
         psync.addPsyncObserver(new TestPsyncObserver() {
             @Override
