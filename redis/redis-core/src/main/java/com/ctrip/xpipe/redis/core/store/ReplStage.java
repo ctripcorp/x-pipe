@@ -161,12 +161,16 @@ public class ReplStage {
     }
 
     public long replOffset2BacklogOffset(long replOffset) {
-        if (this.proto != ReplProto.PSYNC || replOffset < this.begOffsetRepl) return -1L;
+        if (replOffset < this.begOffsetRepl) {
+            throw new IllegalArgumentException("unexpected replOffset " + replOffset + " while begin at " + this.begOffsetRepl);
+        }
         return replOffset - this.begOffsetRepl + this.begOffsetBacklog;
     }
 
     public long backlogOffset2ReplOffset(long backlogOffset) {
-        if (this.proto != ReplProto.XSYNC || backlogOffset < this.begOffsetBacklog) return -1L;
+        if (backlogOffset < this.begOffsetBacklog) {
+            throw new IllegalArgumentException("unexpected backlogOffset " + backlogOffset + " while begin at " + this.begOffsetBacklog);
+        }
         return backlogOffset - this.begOffsetBacklog + this.begOffsetRepl;
     }
 

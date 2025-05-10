@@ -39,7 +39,6 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     public String getGtidSet() {
         return gtidSet.get();
     }
-
     @Override
     public boolean isGtidSetInit() {
         return getGtidSet() != null;

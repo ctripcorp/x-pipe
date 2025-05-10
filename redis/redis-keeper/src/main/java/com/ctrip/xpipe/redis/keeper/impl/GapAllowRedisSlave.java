@@ -23,14 +23,14 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
     public void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress) {
         // TODO: init end backlog offset in other proper place
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
-            long backlogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
+            long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
             KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 
-            if (backlogOffset + 1 >= curStage.getBegOffsetBacklog()) {
+            if (rdbContBacklogOffset >= curStage.getBegOffsetBacklog()) {
                 // do nothing
-            } else if (null != preStage && backlogOffset + 1 >= preStage.getBegOffsetBacklog()) {
+            } else if (null != preStage && rdbContBacklogOffset >= preStage.getBegOffsetBacklog()) {
                 ((BacklogOffsetReplicationProgress) rdbProgress).setEndBacklogOffset(curStage.getBegOffsetBacklog() - 1);
             }
         }
@@ -41,15 +41,15 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
     @Override
     protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
-            long backlogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
+            long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
             KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 
-            if (backlogOffset + 1 >= curStage.getBegOffsetBacklog()) {
-                return buildRespWithReplStage(backlogOffset, curStage);
-            } else if (null != preStage && backlogOffset + 1 >= preStage.getBegOffsetBacklog()) {
-                return buildRespWithReplStage(backlogOffset, preStage);
+            if (rdbContBacklogOffset >= curStage.getBegOffsetBacklog()) {
+                return buildRespWithReplStage(rdbContBacklogOffset, curStage);
+            } else if (null != preStage && rdbContBacklogOffset >= preStage.getBegOffsetBacklog()) {
+                return buildRespWithReplStage(rdbContBacklogOffset, preStage);
             } else {
                 throw new UnsupportedOperationException("Rdb start from replStage before last is not allowed!");
             }
@@ -58,15 +58,15 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
         }
     }
 
-    private String buildRespWithReplStage(long backlogOffset, ReplStage replStage) {
+    private String buildRespWithReplStage(long rdbContBacklogOffset, ReplStage replStage) {
         if (replStage.getProto() == ReplStage.ReplProto.PSYNC) {
             return StringUtil.join(" ", FULL_SYNC, replStage.getReplId(),
-                    replStage.backlogOffset2ReplOffset(backlogOffset));
+                    replStage.backlogOffset2ReplOffset(rdbContBacklogOffset) - 1);
         } else {
             GtidSet lost = replStage.getGtidLost();
             return StringUtil.join(" ", XFULL_SYNC, "GTID.LOST", lost.isEmpty() ? "\"\"" : lost,
                     "MASTER.UUID", replStage.getMasterUuid(), "REPLID", replStage.getReplId(),
-                    "REPLOFF", replStage.backlogOffset2ReplOffset(backlogOffset));
+                    "REPLOFF", replStage.backlogOffset2ReplOffset(rdbContBacklogOffset) - 1);
         }
     }
 

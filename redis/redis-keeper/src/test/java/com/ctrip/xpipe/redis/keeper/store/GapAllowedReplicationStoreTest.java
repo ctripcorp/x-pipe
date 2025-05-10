@@ -178,7 +178,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(replStage.getGtidLost(), new GtidSet(masterUuidC + ":1-100"));
 		ReplicationStoreMeta metaDup = store.getMetaStore().dupReplicationStoreMeta();
 		Assert.assertEquals(metaDup.getRdbGtidSet(), masterUuidA + ":1-150," + masterUuidB + ":1-100");
-		Assert.assertEquals((long)metaDup.getRdbBacklogOffset(), store.backlogEndOffset() - 1000);
+		Assert.assertEquals((long)metaDup.getRdbContiguousBacklogOffset(), store.backlogEndOffset() - 1000);
 		dumpedRdbStore.close();
 
 	}

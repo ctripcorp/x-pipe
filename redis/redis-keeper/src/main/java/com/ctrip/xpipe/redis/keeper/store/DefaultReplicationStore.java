@@ -317,17 +317,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		ReplicationStoreMeta newMeta;
 
-		long rdbBacklogOffset = backlogEndOffset();
+		long rdbNextByte = backlogEndOffset();
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
-			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbBacklogOffset,
+			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
 
 		} else {
-			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbBacklogOffset,
+			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
 		}
-		rdbStore.setRdbBacklogOffset(rdbBacklogOffset);
+		rdbStore.setContiguousBacklogOffset(rdbNextByte);
 
 		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		storeRef.set(rdbStore);
@@ -379,11 +379,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 					throw new KeeperReplicationStoreRuntimeException(e.toString());
 				}
 
-				long rdbBacklogOffset = cont.getBacklogOffset();
+				long rdbContBacklogOffset = cont.getBacklogOffset();
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
-						backlogBeginOffset(), backlogEndOffset(), rdbBacklogOffset, cont.getContinueGtidSet());
-				rdbStore.setRdbBacklogOffset(rdbBacklogOffset);
+						backlogBeginOffset(), backlogEndOffset(), rdbContBacklogOffset, cont.getContinueGtidSet());
+				rdbStore.setContiguousBacklogOffset(rdbContBacklogOffset);
 			}
 			if (result != UPDATE_RDB_RESULT.OK) return result;
 
@@ -612,7 +612,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		rdbStore.incrementRefCount();
-		long rdbOffset = rdbStore.getRdbBacklogOffset();
+		long rdbNextByte = rdbStore.getContiguousBacklogOffset();
 		long minOffset = backlogBeginOffset();
 		long maxOffset = backlogEndOffset();
 
@@ -621,19 +621,19 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		 */
 		long cmdAfterRdbThreshold = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 		FullSyncContext context;
-		if (minOffset > rdbOffset + 1) {
+		if (minOffset > rdbNextByte) {
 			getLogger().info("minOffset > rdbOffset + 1");
-			getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} <= {} + 1", minOffset, rdbOffset);
+			getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} <= {}", minOffset, rdbNextByte);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB);
-		} else if (maxOffset - rdbOffset > cmdAfterRdbThreshold) {
-			getLogger().info("maxOffset - rdbOffset > cmdAfterRdbThreshold");
-			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} <= {}",
-					maxOffset, rdbOffset, cmdAfterRdbThreshold);
+		} else if (maxOffset - rdbNextByte >= cmdAfterRdbThreshold) {
+			getLogger().info("maxOffset - rdbNextByte >= cmdAfterRdbThreshold");
+			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} >= {}",
+					maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.TOO_MUCH_CMD_AFTER_RDB);
 		} else {
-			getLogger().info("minOffset <= rdbOffset + 1 && maxOffset - rdbOffset <= cmdAfterRdbThreshold");
-			getLogger().info("[isFullSyncPossible][true] {} <= {} + 1 && {} - {} <= {}",
-					minOffset, rdbOffset, maxOffset, rdbOffset, cmdAfterRdbThreshold);
+			getLogger().info("minOffset <= rdbNextByte && maxOffset - rdbNextByte < cmdAfterRdbThreshold");
+			getLogger().info("[isFullSyncPossible][true] {} <= {} && {} - {} < {}",
+					minOffset, rdbNextByte, maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(true, rdbStore);
 		}
 
@@ -680,7 +680,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected FULLSYNC_FAIL_CAUSE tryDoFullSync(FullSyncContext ctx, FullSyncListener fullSyncListener) throws IOException {
 		RdbStore rdbStore = ctx.getRdbStore();
 		if (null != cmdStore && !cmdStore.retainCommands(
-				new DefaultCommandsGuarantee(fullSyncListener, rdbStore.getRdbBacklogOffset(), commandsRetainTimeoutMilli))) {
+				new DefaultCommandsGuarantee(fullSyncListener, rdbStore.getContiguousBacklogOffset(), commandsRetainTimeoutMilli))) {
 			getLogger().info("[fullSyncToSlave][{}][cmd file deleted and terminate]{}", rdbStore.getRdbType().name(), fullSyncListener);
 			rdbStore.decrementRefCount();
 			return FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB;
@@ -831,7 +831,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	private void gcRdbIfNeeded(AtomicReference<RdbStore> rdbStoreRef) throws IOException {
 		RdbStore originRdbStore = rdbStoreRef.get();
 		if (null != originRdbStore && !originRdbStore.isWriting()
-				&& originRdbStore.getRdbBacklogOffset() < backlogBeginOffset()
+				&& originRdbStore.getContiguousBacklogOffset() < backlogBeginOffset()
 				&& rdbStoreRef.compareAndSet(originRdbStore, null)) {
 			getLogger().info("[gc][release rdb for cmd not continue] {}", originRdbStore);
 			previousRdbStores.put(originRdbStore, Boolean.TRUE);

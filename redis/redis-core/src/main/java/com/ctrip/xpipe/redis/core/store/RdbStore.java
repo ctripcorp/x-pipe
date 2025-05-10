@@ -25,8 +25,6 @@ public interface RdbStore extends Destroyable, Closeable{
 
 	String getReplId();
 
-	long getRdbBacklogOffset();
-
 	long getRdbOffset();
 
 	EofType getEofType();
@@ -82,7 +80,8 @@ public interface RdbStore extends Destroyable, Closeable{
 	String getMasterUuid();
 	boolean isGapAllowed();
 
-	void setRdbBacklogOffset(long rdbBacklogOffset);
+	long getContiguousBacklogOffset();
+	void setContiguousBacklogOffset(long contiguousBacklogOffset);
 
 
 }
