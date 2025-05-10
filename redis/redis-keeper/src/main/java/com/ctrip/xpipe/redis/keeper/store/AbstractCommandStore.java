@@ -560,8 +560,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             timeoutGuarantees();
             finishGuarantees();
 
+            long maxStartOffset = findMaxStartOffset();
             for (File cmdFile : allCmdFiles()) {
                 long fileStartOffset = extractStartOffset(cmdFile);
+                if (fileStartOffset >= maxStartOffset) {
+                    getLogger().info("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
+                    continue;
+                }
                 if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
                         cmdFile.lastModified())) {
                     getLogger().info("[GC] delete command file {}", cmdFile);
