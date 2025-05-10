@@ -53,8 +53,9 @@ public class ReplicationStoreMeta implements Serializable{
 	private ReplStage prevReplStage;
 	private ReplStage curReplStage;
 
-	private Long rdbBacklogOffset;
-	private Long rordbBacklogOffset;
+	// next byte after RDB
+	private Long rdbContiguousBacklogOffset;
+	private Long rordbContiguousBacklogOffset;
 
 	public ReplicationStoreMeta() {
 
@@ -86,8 +87,9 @@ public class ReplicationStoreMeta implements Serializable{
 
 		this.prevReplStage = proto.prevReplStage == null ? null : new ReplStage(proto.prevReplStage);
 		this.curReplStage = proto.curReplStage == null ? null : new ReplStage(proto.curReplStage);
-		this.rdbBacklogOffset = proto.rdbBacklogOffset;
-		this.rordbBacklogOffset = proto.rordbBacklogOffset;
+
+		this.rdbContiguousBacklogOffset = proto.rdbContiguousBacklogOffset;
+		this.rordbContiguousBacklogOffset = proto.rordbContiguousBacklogOffset;
 	}
 	
 	public long getRdbFileSize() {
@@ -250,20 +252,20 @@ public class ReplicationStoreMeta implements Serializable{
 		this.curReplStage = curReplStage;
 	}
 
-	public Long getRdbBacklogOffset() {
-		return this.rdbBacklogOffset;
+	public Long getRdbContiguousBacklogOffset() {
+		return rdbContiguousBacklogOffset;
 	}
 
-	public void setRdbBacklogOffset(Long rdbBacklogOffset) {
-		this.rdbBacklogOffset = rdbBacklogOffset;
+	public void setRdbContiguousBacklogOffset(Long rdbContiguousBacklogOffset) {
+		this.rdbContiguousBacklogOffset = rdbContiguousBacklogOffset;
 	}
 
-	public Long getRordbBacklogOffset() {
-		return this.rordbBacklogOffset;
+	public Long getRordbContiguousBacklogOffset() {
+		return rordbContiguousBacklogOffset;
 	}
 
-	public void setRordbBacklogOffset(Long rordbBacklogOffset) {
-		this.rordbBacklogOffset = rordbBacklogOffset;
+	public void setRordbContiguousBacklogOffset(Long rordbContiguousBacklogOffset) {
+		this.rordbContiguousBacklogOffset = rordbContiguousBacklogOffset;
 	}
 
 	@Override
@@ -279,13 +281,13 @@ public class ReplicationStoreMeta implements Serializable{
 				", rdbFileSize=" + rdbFileSize +
 				", rdbEofMark='" + rdbEofMark + '\'' +
 				", rdbGtidSet='" + rdbGtidSet + '\'' +
-				", rdbBacklogOffset=" + rdbBacklogOffset +
+				", rdbContiguousBacklogOffset=" + rdbContiguousBacklogOffset +
 				", rordbFile='" + rordbFile + '\'' +
 				", rordbLastOffset=" + rordbLastOffset +
 				", rordbFileSize=" + rordbFileSize +
 				", rordbEofMark='" + rordbEofMark + '\'' +
 				", rordbGtidSet='" + rordbGtidSet + '\'' +
-				", rordbBacklogOffset=" + rordbBacklogOffset +
+				", rordbContiguousBacklogOffset=" + rordbContiguousBacklogOffset +
 				", cmdFilePrefix='" + cmdFilePrefix + '\'' +
 				", keeperState=" + keeperState +
 				", keeperRunid='" + keeperRunid + '\'' +

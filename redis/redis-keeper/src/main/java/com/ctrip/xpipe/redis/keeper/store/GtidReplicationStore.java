@@ -61,7 +61,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
 
                 rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta), replProto, gtidLost, masterUuid);
-                rdbStore.setRdbBacklogOffset(meta.getRdbBacklogOffset());
+                rdbStore.setContiguousBacklogOffset(meta.getRdbContiguousBacklogOffset());
                 rdbStore.updateRdbType(RdbStore.Type.NORMAL);
                 rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
             }
@@ -76,7 +76,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 String masterUuid = replStage != null ? replStage.getMasterUuid() : null;
 
                 rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta), replProto, gtidLost, masterUuid);
-                rordbStore.setRdbBacklogOffset(meta.getRordbBacklogOffset());
+                rordbStore.setContiguousBacklogOffset(meta.getRordbContiguousBacklogOffset());
                 rordbStore.updateRdbType(RdbStore.Type.RORDB);
                 rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
             }

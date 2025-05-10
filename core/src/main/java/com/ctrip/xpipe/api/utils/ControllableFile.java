@@ -13,7 +13,7 @@ public interface ControllableFile extends Closeable{
 	
 	FileChannel getFileChannel() throws IOException;
 	
-	long size() ;
+	long size();
 
 	boolean isOpen();
 

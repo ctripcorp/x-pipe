@@ -249,7 +249,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         Assert.assertNull(metaDup.getRdbLastOffset());
 
         Assert.assertEquals(metaStore.getCurReplStageReplId(), replidB);
-        Assert.assertEquals(metaDup.getRdbBacklogOffset(), (Long)0L);
+        Assert.assertEquals(metaDup.getRdbContiguousBacklogOffset(), (Long)0L);
 
         Assert.assertEquals(replStage.getProto(), ReplStage.ReplProto.PSYNC);
         Assert.assertEquals(replStage.getReplId(), replidB);

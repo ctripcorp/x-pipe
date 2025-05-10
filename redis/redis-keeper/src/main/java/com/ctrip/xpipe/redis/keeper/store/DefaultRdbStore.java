@@ -47,7 +47,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected long rdbOffset;
 
-	protected long rdbBacklogOffset = 0;
+	protected long contiguousBacklogOffset = 0;
 
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
@@ -76,13 +76,13 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	@Override
-	public long getRdbBacklogOffset() {
-		return rdbBacklogOffset;
+	public long getContiguousBacklogOffset() {
+		return contiguousBacklogOffset;
 	}
 
 	@Override
-	public void setRdbBacklogOffset(long rdbBacklogOffset) {
-		this.rdbBacklogOffset = rdbBacklogOffset;
+	public void setContiguousBacklogOffset(long contiguousBacklogOffset) {
+		this.contiguousBacklogOffset = contiguousBacklogOffset;
 	}
 
 	@Override
@@ -272,8 +272,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
-		if (rdbFileListener.supportProgress(BacklogOffsetReplicationProgress.class) && rdbBacklogOffset >= 0) {
-			rdbFileListener.setRdbFileInfo(eofType, new BacklogOffsetReplicationProgress(rdbBacklogOffset));
+		if (rdbFileListener.supportProgress(BacklogOffsetReplicationProgress.class) && contiguousBacklogOffset >= 0) {
+			rdbFileListener.setRdbFileInfo(eofType, new BacklogOffsetReplicationProgress(contiguousBacklogOffset));
 		} else if (rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
 			rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
 		} else {
