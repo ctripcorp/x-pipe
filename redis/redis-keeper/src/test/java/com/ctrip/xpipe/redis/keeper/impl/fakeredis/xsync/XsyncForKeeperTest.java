@@ -101,8 +101,8 @@ public class XsyncForKeeperTest extends AbstractFakeRedisTest {
         Thread.sleep(1000);
 
 
-        System.out.println(newKeeperServer.getReplicationStore().getGtidSet().getValue().toString());
-        Assert.assertEquals(newKeeperServer.getReplicationStore().getGtidSet().getKey().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622009");
+        Assert.assertEquals(newKeeperServer.getReplicationStore().getGtidSet().getKey().toString(),
+                "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622009");
 
         Assert.assertEquals(newKeeperServer.getReplicationStore().getGtidSet().getValue().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:3-21,1777955e932bed5eb321a58fbc2132cba48f026f:1-2");
         Assert.assertEquals(length + 589, newKeeperServer.getReplicationStore().getCurReplStageReplOff());
