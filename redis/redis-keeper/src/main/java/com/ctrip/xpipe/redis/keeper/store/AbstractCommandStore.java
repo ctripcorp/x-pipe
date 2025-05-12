@@ -647,14 +647,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public void switchToXSync(GtidSet gtidSet) throws IOException {
+    public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
+        if(buildIndex)return;
         indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
     }
 
     @Override
-    public void switchToPsync(String replId, long offset) throws IOException {
+    public synchronized void switchToPsync(String replId, long offset) throws IOException {
+        if(!buildIndex)return;
         buildIndex = false;
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
