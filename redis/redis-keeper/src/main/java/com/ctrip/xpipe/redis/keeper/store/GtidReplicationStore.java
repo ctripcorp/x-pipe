@@ -87,7 +87,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
                                               KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
-                                              KeeperMonitor keeperMonitor, ReplStage.ReplProto proto) throws IOException {
+                                              KeeperMonitor keeperMonitor) throws IOException {
 
         String replRdbGtidSet = replMeta.getRdbGtidSet();
         logger.info("[createCommandStore], replRdbGtidSet={}", replRdbGtidSet);
@@ -95,9 +95,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
-                config.getCommandReaderFlyingThreshold(),
-                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, proto
-        );
+                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor, this.redisOpParser);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {
