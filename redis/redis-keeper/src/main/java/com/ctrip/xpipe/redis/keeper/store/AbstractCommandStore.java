@@ -29,6 +29,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
+
 /**
  * @author lishanglin
  * date 2022/5/24
@@ -239,6 +242,20 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             this.cmdIndexList = cmdIndexList.stream()
                     .filter(index -> !index.getCommandFile().getFile().equals(cmdFile))
                     .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
+        }
+
+        File indexFile = new File(baseDir, INDEX + cmdFile.getName());
+        if(indexFile.exists()) {
+            if(!indexFile.delete()) {
+                getLogger().warn("[delCmdFile][{}] del index file fail", indexFile);
+            }
+        }
+
+        File blockFile = new File(baseDir, BLOCK + cmdFile.getName());
+        if(blockFile.exists()) {
+            if(!blockFile.delete()) {
+                getLogger().warn("[delCmdFile][{}] del block file fail", indexFile);
+            }
         }
 
         return cmdFile.delete();
