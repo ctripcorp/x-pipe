@@ -39,7 +39,6 @@ public class InMemoryGapAllowedSync extends AbstractGapAllowedSync {
             @Override
             public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
                 log.info("[onXFullSync]{}, {}", replId, replOff);
-                log.info(gtidLost.toString());
                 replOffset = replOff;
                 fullSyncCnt++;
                 lostGtidSet = lostGtidSet.union(gtidLost);
@@ -48,11 +47,8 @@ public class InMemoryGapAllowedSync extends AbstractGapAllowedSync {
             @Override
             public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
                 log.info("[onXContinue]{}, {}", replId, replOff);
-                log.info(gtidCont.toString());
                 replOffset = replOff;
-                log.info("[onXContinue]{}, {}", replId, replOffset);
                 lostGtidSet = gtidCont.subtract(((XsyncRequest)request).getGtidSet());
-                log.info(((XsyncRequest)request).getGtidSet().toString());
             }
 
             @Override
