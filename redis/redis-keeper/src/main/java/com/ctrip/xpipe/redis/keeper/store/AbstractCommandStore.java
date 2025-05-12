@@ -99,7 +99,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
-                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser) throws IOException {
+                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser, ReplStage.ReplProto replProto) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
@@ -118,7 +118,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
+        if(replProto == ReplStage.ReplProto.XSYNC) {
+            indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
+            buildIndex = true;
+        } else {
+            buildIndex = false;
+        }
     }
 
     @Override
@@ -126,7 +131,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            indexStore.initialize(cmdWriter);
+            if(indexStore != null) {
+                indexStore.initialize(cmdWriter);
+            }
         }
     }
 
