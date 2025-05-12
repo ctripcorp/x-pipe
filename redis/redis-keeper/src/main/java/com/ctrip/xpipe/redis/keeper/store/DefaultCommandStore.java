@@ -29,16 +29,16 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
 	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, ReplStage.ReplProto.XSYNC);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
+										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, ReplStage.ReplProto proto) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, proto);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
