@@ -75,8 +75,7 @@ public class XsyncForKeeperSlaveTest extends AbstractFakeRedisTest {
         Assert.assertEquals(1, allowedSync.getFullSyncCnt());
 
         long replOff = allowedSync.getReplOffset();
-        Assert.assertEquals(replOff, dataLength + 1);
-
+        Assert.assertEquals(replOff, dataLength);
     }
 
     @Test
@@ -95,7 +94,7 @@ public class XsyncForKeeperSlaveTest extends AbstractFakeRedisTest {
 
         InMemoryGapAllowedSync allowedSync = new InMemoryGapAllowedSync("127.0.0.1", keeperServer.getListeningPort(),  true, scheduled);
 
-        allowedSync.setXsyncRequest(new GtidSet("7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622001"), () -> 10);
+        allowedSync.setXsyncRequest(new GtidSet("bca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622001"), () -> 10);
         allowedSync.future().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -111,8 +110,7 @@ public class XsyncForKeeperSlaveTest extends AbstractFakeRedisTest {
         Thread.sleep(3000);
         Assert.assertEquals(0, allowedSync.getFullSyncCnt());
 
-        long replOff = allowedSync.getReplOffset();
-        Assert.assertEquals(replOff, dataLength + 1);
+        Assert.assertEquals(allowedSync.getLostGtidSet().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2");
 
     }
 
@@ -149,7 +147,8 @@ public class XsyncForKeeperSlaveTest extends AbstractFakeRedisTest {
         Assert.assertEquals(1, allowedSync.getFullSyncCnt());
 
         long replOff = allowedSync.getReplOffset();
-        Assert.assertEquals(replOff, dataLength + 1);
+        Assert.assertEquals(replOff, dataLength);
+        Assert.assertEquals(allowedSync.getLostGtidSet().toString(), "\"\"");
 
     }
 
