@@ -647,6 +647,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public GtidSet getIndexGtidSet() {
+        if(indexStore == null) {
+            return new GtidSet("");
+        }
         return indexStore.getIndexGtidSet();
     }
 
