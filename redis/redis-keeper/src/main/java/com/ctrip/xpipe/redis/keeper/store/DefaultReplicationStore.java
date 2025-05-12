@@ -171,6 +171,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
 		metaStore.psyncContinue(newReplId, backlogEndOffset());
+		cmdStore.switchToPsync(newReplId, backlogEndOffset());
 	}
 
 	@Override
@@ -303,6 +304,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		storeRef.set(rdbStore);
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 		cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
+
+		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
+			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+		} else {
+			cmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
+		}
 	}
 
 	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
@@ -440,6 +447,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore.switchToPsync(replId, continueOffset);
 	}
 
 	@Override
@@ -453,6 +461,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff+1, backlogEndOffset(), cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore.switchToPsync(replId, replOff);
 	}
 
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
