@@ -199,10 +199,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             SimpleStringParser resp = null;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
                 resp = new SimpleStringParser(String.format("%s %s", PARTIAL_SYNC, action.replId)
-                        + (action.protoSwitch ? " " + action.replOffset : ""));
+                        + (action.protoSwitch ? " "+(action.replOffset - 1):""));
             } else {
                 resp = new SimpleStringParser(String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",
-                        action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset));
+                        action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1));
             }
 
             slave.sendMessage(resp.format());
