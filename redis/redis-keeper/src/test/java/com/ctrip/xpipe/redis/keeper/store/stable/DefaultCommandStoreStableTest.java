@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.junit.Before;
