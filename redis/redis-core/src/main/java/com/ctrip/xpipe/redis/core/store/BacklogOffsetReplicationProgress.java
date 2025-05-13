@@ -6,15 +6,15 @@ public class BacklogOffsetReplicationProgress implements ReplicationProgress<Lon
 
     private long backlogOffset;
 
-    private long endBacklogOffset;
+    private long endBacklogOffsetExcluded;
 
     public BacklogOffsetReplicationProgress(long backlogOffset) {
         this(backlogOffset, -1);
     }
 
-    public BacklogOffsetReplicationProgress(long backlogOffset, long endBacklogOffset) {
+    public BacklogOffsetReplicationProgress(long backlogOffset, long endBacklogOffsetExcluded) {
         this.backlogOffset = backlogOffset;
-        this.endBacklogOffset = endBacklogOffset;
+        this.endBacklogOffsetExcluded = endBacklogOffsetExcluded;
     }
 
     @Override
@@ -22,12 +22,12 @@ public class BacklogOffsetReplicationProgress implements ReplicationProgress<Lon
         return backlogOffset;
     }
 
-    public void setEndBacklogOffset(long endBacklogOffset) {
-        this.endBacklogOffset = endBacklogOffset;
+    public void setEndBacklogOffsetExcluded(long endBacklogOffsetExcluded) {
+        this.endBacklogOffsetExcluded = endBacklogOffsetExcluded;
     }
 
-    public Long getEndProgress() {
-        return endBacklogOffset;
+    public Long getEndProgressExcluded() {
+        return endBacklogOffsetExcluded;
     }
 
     @Override
@@ -45,6 +45,6 @@ public class BacklogOffsetReplicationProgress implements ReplicationProgress<Lon
 
     @Override
     public String toString() {
-        return String.format("backlog[%d:%d]", backlogOffset, endBacklogOffset);
+        return String.format("backlog[%d:%d]", backlogOffset, endBacklogOffsetExcluded);
     }
 }

@@ -27,11 +27,11 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
                                                               CommandStore cmdStore, OffsetNotifier offsetNotifier,
                                                               ReplDelayConfig replDelayConfig, long commandReaderFlyingThreshold) throws IOException {
         long currentOffset = replProgress.getProgress();
-        long endOffset = -1;
+        long endOffsetExcluded = -1;
         if (replProgress instanceof BacklogOffsetReplicationProgress) {
-            endOffset = ((BacklogOffsetReplicationProgress) replProgress).getEndProgress();
-            if (endOffset > 0 && endOffset < currentOffset)
-                throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffset + ":" + currentOffset);
+            endOffsetExcluded = ((BacklogOffsetReplicationProgress) replProgress).getEndProgressExcluded();
+            if (endOffsetExcluded >= 0 && endOffsetExcluded <= currentOffset)
+                throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffsetExcluded + ":" + currentOffset);
         }
         cmdStore.rotateFileIfNecessary();
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
@@ -39,7 +39,7 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
             throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");
         }
 
-        return new OffsetCommandReader(commandFile, currentOffset, endOffset, currentOffset - commandFile.getStartOffset(),
+        return new OffsetCommandReader(commandFile, currentOffset, endOffsetExcluded, currentOffset - commandFile.getStartOffset(),
                 cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
     }
 

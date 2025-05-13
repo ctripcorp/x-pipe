@@ -9,11 +9,15 @@ import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.XFULL_SYNC;
 import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
 
 public class GapAllowRedisSlave extends DefaultRedisSlave {
+
+    private final static Logger logger = LoggerFactory.getLogger(GapAllowRedisSlave.class);
 
     public GapAllowRedisSlave(RedisClient<RedisKeeperServer> redisClient) {
         super(redisClient);
@@ -31,7 +35,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
             if (rdbContBacklogOffset >= curStage.getBegOffsetBacklog()) {
                 // do nothing
             } else if (null != preStage && rdbContBacklogOffset >= preStage.getBegOffsetBacklog()) {
-                ((BacklogOffsetReplicationProgress) rdbProgress).setEndBacklogOffset(curStage.getBegOffsetBacklog() - 1);
+                ((BacklogOffsetReplicationProgress) rdbProgress).setEndBacklogOffsetExcluded(curStage.getBegOffsetBacklog());
             }
         }
 
@@ -51,6 +55,8 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
             } else if (null != preStage && rdbContBacklogOffset >= preStage.getBegOffsetBacklog()) {
                 return buildRespWithReplStage(rdbContBacklogOffset, preStage);
             } else {
+                getLogger().info("[buildMarkBeforeFsync][cur:{}][pre:{}]", curStage, preStage);
+                getLogger().warn("[buildMarkBeforeFsync][Rdb start from replStage before last] rdb:{}", rdbContBacklogOffset);
                 throw new UnsupportedOperationException("Rdb start from replStage before last is not allowed!");
             }
         } else {
@@ -73,6 +79,10 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
     @Override
     public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
         return clazz.equals(BacklogOffsetReplicationProgress.class) || super.supportProgress(clazz);
+    }
+
+    protected Logger getLogger() {
+        return logger;
     }
 
 }

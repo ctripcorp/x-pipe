@@ -331,6 +331,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff);
 
+			logger.info("[switchToXsync] {} -> {}", curReplStage, newReplStage);
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
@@ -467,6 +468,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff, masterUuid,
 					new GtidSet(GtidSet.EMPTY_GTIDSET), gtidCont);
 
+			logger.info("[switchToXsync] {} -> {}", curReplStage, newReplStage);
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
