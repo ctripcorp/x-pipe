@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.OffsetNotifier;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private long curPosition;
 
-    private long endPosition;
+    private long endPositionExcluded;
 
     private ReferenceFileChannel referenceFileChannel;
 
@@ -36,7 +37,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
-    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long endPosition, long filePosition, CommandStore commandStore,
+    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long endPositionExcluded, long filePosition, CommandStore commandStore,
                                OffsetNotifier offsetNotifier, ReplDelayConfig replDelayConfig, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);
@@ -45,7 +46,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         this.curCmdFile = commandFile;
         this.replDelayConfig = replDelayConfig;
         this.curPosition = globalPosition;
-        this.endPosition = endPosition;
+        this.endPositionExcluded = endPositionExcluded;
         referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()), filePosition);
     }
 
@@ -63,9 +64,9 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
         if (!referenceFileChannel.hasAnythingToRead()) return null;
         long limitBytes = replDelayConfig.getLimitBytesPerSecond();
-        if (endPosition > 0) {
-            if (endPosition == curPosition) return ReferenceFileRegion.EOF;
-            long bytesToEnd = endPosition - curPosition;
+        if (endPositionExcluded > 0) {
+            if (endPositionExcluded == curPosition) return ReferenceFileRegion.EOF;
+            long bytesToEnd = endPositionExcluded - curPosition;
             if (limitBytes < 0 || bytesToEnd < limitBytes) limitBytes = bytesToEnd;
         }
 
@@ -120,6 +121,11 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     @Override
     public String toString() {
         return "curFile:" + curCmdFile.getFile();
+    }
+
+    @VisibleForTesting
+    protected void setFileChannel(ReferenceFileChannel fileChannel) {
+        this.referenceFileChannel = fileChannel;
     }
 
 }

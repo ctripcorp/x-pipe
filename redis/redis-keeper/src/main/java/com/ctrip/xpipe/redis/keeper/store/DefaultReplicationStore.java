@@ -621,6 +621,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		rdbStore.incrementRefCount();
+		ReplStage beginStage = metaStore.getPreReplStage();
+		if (null == beginStage) beginStage = metaStore.getCurrentReplStage();
 		long rdbNextByte = rdbStore.getContiguousBacklogOffset();
 		long minOffset = backlogBeginOffset();
 		long maxOffset = backlogEndOffset();
@@ -639,6 +641,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} >= {}",
 					maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.TOO_MUCH_CMD_AFTER_RDB);
+		} else if (beginStage.getBegOffsetBacklog() > rdbNextByte) {
+			getLogger().info("beginStage.begOffsetBacklog > rdbNextByte");
+			getLogger().info("[isFullSyncPossible][false][rdb not continue with replStage] {} > {}", beginStage.getBeginGtidset(), rdbNextByte);
+			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_REPL_STAGE);
 		} else {
 			getLogger().info("minOffset <= rdbNextByte && maxOffset - rdbNextByte < cmdAfterRdbThreshold");
 			getLogger().info("[isFullSyncPossible][true] {} <= {} && {} - {} < {}",
@@ -839,8 +845,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private void gcRdbIfNeeded(AtomicReference<RdbStore> rdbStoreRef) throws IOException {
 		RdbStore originRdbStore = rdbStoreRef.get();
+		ReplStage beginStage = metaStore.getPreReplStage();
+		if (null == beginStage) beginStage = metaStore.getCurrentReplStage();
+
 		if (null != originRdbStore && !originRdbStore.isWriting()
-				&& originRdbStore.getContiguousBacklogOffset() < backlogBeginOffset()
+				&& (originRdbStore.getContiguousBacklogOffset() < backlogBeginOffset()
+					|| originRdbStore.getContiguousBacklogOffset() < beginStage.getBegOffsetBacklog())
 				&& rdbStoreRef.compareAndSet(originRdbStore, null)) {
 			getLogger().info("[gc][release rdb for cmd not continue] {}", originRdbStore);
 			previousRdbStores.put(originRdbStore, Boolean.TRUE);
