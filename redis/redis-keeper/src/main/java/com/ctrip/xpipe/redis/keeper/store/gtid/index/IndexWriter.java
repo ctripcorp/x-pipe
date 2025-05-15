@@ -86,6 +86,9 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             if(cmdFile != null) {
                 cmdFile.close();
             }
+            if(blockFile != null) {
+                blockFile.close();
+            }
         }
     }
 
