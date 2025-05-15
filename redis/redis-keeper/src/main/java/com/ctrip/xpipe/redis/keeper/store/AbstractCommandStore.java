@@ -476,6 +476,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(cmpAndSetClosed()){
             getLogger().info("[close]{}", this);
             cmdWriter.close();
+            if(indexStore != null) {
+                indexStore.close();
+            }
         }else{
             getLogger().warn("[close][already closed]{}", this);
         }
@@ -649,6 +652,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
         if(buildIndex)return;
+        indexStore.close();
         indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
