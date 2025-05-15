@@ -115,17 +115,23 @@ public class IndexStore implements StreamCommandListener, Closeable {
 
         this.streamCommandReader = new StreamCommandReader(cmdFileOffset, this.opParser);
         this.streamCommandReader.addListener(this);
-
-        File f = new File(baseDir + cmdFileName);
-        ControllableFile controllableFile = new DefaultControllableFile(f);
-        controllableFile.getFileChannel().position(cmdFileOffset);
-        while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
-            int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
-            ByteBuffer buffer = ByteBuffer.allocate(size);
-            controllableFile.getFileChannel().read(buffer);
-            buffer.flip();
-            ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
-            this.write(byteBuf);
+        ControllableFile controllableFile = null;
+        try {
+            File f = new File(baseDir + cmdFileName);
+            controllableFile = new DefaultControllableFile(f);
+            controllableFile.getFileChannel().position(cmdFileOffset);
+            while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
+                int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
+                ByteBuffer buffer = ByteBuffer.allocate(size);
+                controllableFile.getFileChannel().read(buffer);
+                buffer.flip();
+                ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
+                this.write(byteBuf);
+            }
+        } finally {
+            if(controllableFile != null) {
+                controllableFile.close();
+            }
         }
     }
 
