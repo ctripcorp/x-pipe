@@ -5,8 +5,8 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
-import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import org.junit.Assert;
@@ -58,9 +58,9 @@ public class ReplconfTest extends AbstractCommandTest {
 					}
 				});
 
-				Psync psync = new InMemoryPsync(clientPool, "?", -1L, scheduled);
+				GapAllowedSync gasync = new InMemoryGapAllowedSync(clientPool, "?", -1L, scheduled);
 				try {
-					psync.execute().get(100, TimeUnit.MILLISECONDS);
+					gasync.execute().get(100, TimeUnit.MILLISECONDS);
 					Assert.fail();
 				} catch (TimeoutException e) {
 				}

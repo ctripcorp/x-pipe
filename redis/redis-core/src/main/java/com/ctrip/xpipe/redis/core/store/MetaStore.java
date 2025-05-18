@@ -86,6 +86,8 @@ public interface MetaStore {
 
 	String getCurReplStageReplId();
 
+	Long backlogOffsetToReplOffset(Long backlogOffset);
+
 	Long replOffsetToBacklogOffset(Long replOff);
 
 	ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException;

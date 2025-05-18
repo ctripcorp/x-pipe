@@ -162,6 +162,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Long backlogOffsetToReplOffset(Long backlogOffset) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public Long replOffsetToBacklogOffset(Long replOff) {
 				throw new UnsupportedOperationException();
 			}

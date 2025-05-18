@@ -123,7 +123,7 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         sleep(1000);//wait for full commands
 
         int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
-        sendInmemoryPsync("127.0.0.1", redisKeeperServer.getListeningPort());
+        sendInmemoryGAsync("127.0.0.1", redisKeeperServer.getListeningPort());
         waitConditionUntilTimeOut(() -> { return ((DefaultReplicationStore) redisKeeperServer.getReplicationStore()).getRdbUpdateCount() > rdbDumpCount1;  });
         logger.info(remarkableMessage("begin wait for rdb dump finished"));
 

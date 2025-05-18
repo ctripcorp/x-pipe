@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FakeRedisServer extends AbstractLifecycle{
 	
 	private int rdbSize = 100;
-	private int commandsLength = 100;
-	private int sendBatchSize = 200;
+	private int commandsLength = 1000;
+	private int sendBatchSize = 100;
 	private int sendBatchIntervalMilli = 10;
 	
 	private int port;
