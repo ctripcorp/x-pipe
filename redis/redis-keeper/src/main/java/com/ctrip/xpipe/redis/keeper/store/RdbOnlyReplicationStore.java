@@ -267,7 +267,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

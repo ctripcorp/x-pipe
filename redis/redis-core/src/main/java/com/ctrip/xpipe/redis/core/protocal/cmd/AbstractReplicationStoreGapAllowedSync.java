@@ -132,7 +132,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 
 		if (currentReplicationStore.isFresh()) {
 			currentReplicationStore.xsyncContinueFrom(reply.getReplId(), reply.getReplOff(),
-					reply.getMasterUuid(), reply.getGtidCont());
+					reply.getMasterUuid(), reply.getGtidCont(), reply.getMasterLost());
 		} else {
 			currentReplicationStore.switchToXSync(reply.getReplId(), reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
 		}

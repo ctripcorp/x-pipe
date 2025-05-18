@@ -343,6 +343,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
     class XContinueReply extends AbstractSyncReply {
         String masterUuid;
         GtidSet gtidCont;
+        GtidSet masterLost;
 
         public GtidSet getGtidCont() {
             return gtidCont;
@@ -350,6 +351,10 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
         public String getMasterUuid() {
             return masterUuid;
+        }
+
+        public GtidSet getMasterLost() {
+            return masterLost;
         }
 
         public SyncReply parse(String[] split) {
@@ -365,6 +370,8 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
                     masterUuid = optval;
                 } else if (optkey.equalsIgnoreCase(XSYNC_REPLY_OPT_GTID_SET)) {
                     gtidCont = new GtidSet(StringUtil.unwrap(optval,'"'));
+                } else if (optkey.equalsIgnoreCase(XSYNC_REPLY_OPT_GTID_LOST)) {
+                    masterLost = new GtidSet(StringUtil.unwrap(optval,'"'));
                 } else {
                     getLogger().info("[parse] ignore unrecognized option {}:{}", optkey, optval);
                 }

@@ -25,7 +25,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
 
     @Override
     public void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress) {
-        // TODO: init end backlog offset in other proper place
+        // TODO: init end backlog offset in RdbStore on proto switch
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
             long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
             KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
