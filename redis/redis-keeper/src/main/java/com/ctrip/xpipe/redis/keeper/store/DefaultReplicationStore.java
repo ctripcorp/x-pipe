@@ -348,7 +348,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
-
 	@Override
 	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException {
 		makeSureOpen();
@@ -370,7 +369,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbType) ? rdbStoreRef : rordbStoreRef;
 
 			UPDATE_RDB_RESULT result;
+			long rdbContBacklogOffset;
 			if (replProto == ReplStage.ReplProto.PSYNC) {
+				rdbContBacklogOffset = getMetaStore().replOffsetToBacklogOffset(rdbOffset);
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEndOffset());
 			} else {
@@ -388,13 +389,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 					throw new KeeperReplicationStoreRuntimeException(e.toString());
 				}
 
-				long rdbContBacklogOffset = cont.getBacklogOffset();
+				rdbContBacklogOffset = cont.getBacklogOffset();
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
 						backlogBeginOffset(), backlogEndOffset(), rdbContBacklogOffset, cont.getContinueGtidSet());
-				rdbStore.setContiguousBacklogOffset(rdbContBacklogOffset);
 			}
 			if (result != UPDATE_RDB_RESULT.OK) return result;
+			rdbStore.setContiguousBacklogOffset(rdbContBacklogOffset);
 
 			rdbStore.addListener(createRdbStoreListener(rdbStore));
 
@@ -638,8 +639,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			getLogger().info("minOffset > rdbOffset + 1");
 			getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} <= {}", minOffset, rdbNextByte);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB);
-		} else if (maxOffset - rdbNextByte >= cmdAfterRdbThreshold) {
-			getLogger().info("maxOffset - rdbNextByte >= cmdAfterRdbThreshold");
+		} else if (maxOffset - rdbNextByte > cmdAfterRdbThreshold) {
+			getLogger().info("maxOffset - rdbNextByte > cmdAfterRdbThreshold");
 			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} >= {}",
 					maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.TOO_MUCH_CMD_AFTER_RDB);

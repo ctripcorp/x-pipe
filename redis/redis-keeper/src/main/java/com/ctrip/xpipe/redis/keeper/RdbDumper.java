@@ -26,7 +26,9 @@ public interface RdbDumper extends Command<Void>{
 	void dumpFinished();
 
 	void dumpFail(Throwable th);
-	
+
+	void waitRetry();
+
 	void exception(Throwable th);
 
 }

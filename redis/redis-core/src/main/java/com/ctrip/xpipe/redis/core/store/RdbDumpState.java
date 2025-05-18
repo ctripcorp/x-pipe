@@ -11,6 +11,7 @@ public enum RdbDumpState {
 	WAIT_DUMPPING,
 	AUX_PARSED,
 	DUMPING,
-	FAIL
+	FAIL,
+	WAIT_RETRY,
 
 }

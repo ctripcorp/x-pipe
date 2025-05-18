@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.utils.SimplePsyncObserver;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -12,7 +11,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -42,10 +40,10 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		waitConditionUntilTimeOut(() -> {return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
 
 		logger.info(remarkableMessage("[redisFailWhileSendingRdb]"));
-		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort());
+		InMemoryGapAllowedSync inMemoryGAsync = sendInmemoryGAsync("localhost", redisKeeperServer.getListeningPort());
 
 		sleep(3000);
-		assertPsyncResultEquals(inMemoryPsync);
+		assertGAsyncResultEquals(inMemoryGAsync);
 
 	}
 
@@ -65,13 +63,13 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		waitConditionUntilTimeOut(() -> {return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
 
 		SimplePsyncObserver simplePsyncObserver = new SimplePsyncObserver();
-		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort(), simplePsyncObserver);
+		InMemoryGapAllowedSync inMemoryGAsync = sendInmemoryGAsync("localhost", redisKeeperServer.getListeningPort(), simplePsyncObserver);
 		//wait
 		simplePsyncObserver.getOnline().get(8000, TimeUnit.MILLISECONDS);
 		//wait for commands
 		sleep(1000);
 
-		assertPsyncResultEquals(inMemoryPsync);
+		assertGAsyncResultEquals(inMemoryGAsync);
 		Assert.assertEquals(1,
 				redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplicationStoreCreateCount());
 	}

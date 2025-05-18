@@ -66,8 +66,9 @@ public class GapAllowedRdbonlyRedisMasterReplication extends RdbonlyRedisMasterR
 							logger.info("[retryOnceForRdbNotContinue][resetRdbStore]{}", dumpedRdbStore);
 							currentPsync.get().future().setFailure(new KeeperTolerantClosePsyncException(
 									new PsyncMasterRdbOffsetNotContinuousRuntimeException(0, 0)));
-							resetReplicationStore();
 							disconnectWithMaster();
+							resetReplicationStore();
+							getRdbDumper().waitRetry();
 						} catch (Exception e) {
 							logger.info("[doOnFullSync][retryForNotContinue] fail", e);
 							dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(0, 0));
