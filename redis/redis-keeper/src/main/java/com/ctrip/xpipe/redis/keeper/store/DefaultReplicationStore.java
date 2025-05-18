@@ -182,7 +182,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 		makeSureOpen();
 
 		getLogger().info("[xsyncContinueFrom] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
@@ -191,7 +191,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 
 		GtidSet gtidEmpty = new GtidSet(GtidSet.EMPTY_GTIDSET);
-		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),masterUuid,gtidEmpty,gtidCont,cmdFilePrefix);
+		GtidSet gtidExecuted = gtidCont.subtract(gtidLost);
+		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),
+				masterUuid,gtidLost,gtidExecuted,cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
 

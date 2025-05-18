@@ -82,7 +82,24 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             return null;
         }
 
-        if (request.requestFull()) return SyncAction.full("req fsync");
+        if (request.replId.equals("?")) {
+            if (request.offset == -2) {
+                SyncAction action;
+                if (curStage.getProto() == ReplStage.ReplProto.PSYNC) {
+                    long offset = keeperRepl.getEndOffset() + 1;
+                    action = SyncAction.Continue(curStage, curStage.getReplId(), offset).markKeeperPartial();
+                } else {
+                    XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSet(keeperRepl.getEndGtidSet());
+                    action = SyncAction.XContinue(curStage, xsyncCont.getContinueGtidSet().union(curStage.getGtidLost()),
+                            xsyncCont.getBacklogOffset(), null).markKeeperPartial().setKeeperLost(curStage.getGtidLost());
+                }
+                return action;
+            } else if (request.offset == -3) {
+                return SyncAction.full("req fresh rdb fsync", true);
+            } else {
+                return SyncAction.full("req fsync");
+            }
+        }
 
         if (null != curStage && curStage.getProto() == request.proto) {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
@@ -112,9 +129,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             }
 
             if (request.proto == ReplStage.ReplProto.PSYNC) {
-                return anaPSync(request, preStage, keeperRepl, curStage.getBegOffsetBacklog() - 1);
+                return anaPSync(request, preStage, keeperRepl, curStage.getBegOffsetBacklog());
             } else {
-                return anaXSync(request, preStage, xsyncCont, curStage.getBegOffsetBacklog() - 1);
+                return anaXSync(request, preStage, xsyncCont, curStage.getBegOffsetBacklog());
             }
         }
 
@@ -123,13 +140,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     private SyncAction switchProto(ReplStage replStage) {
         if (replStage.getProto() == ReplStage.ReplProto.PSYNC) {
-            return SyncAction.Continue(replStage, -1, true, replStage.getReplId(), replStage.getBegOffsetRepl());
+            return SyncAction.Continue(replStage, replStage.getReplId(), replStage.getBegOffsetRepl()).markProtoSwitch();
         } else {
-            return SyncAction.XContinue(replStage, -1, true, replStage.getBeginGtidset(), replStage.getBegOffsetBacklog(), null);
+            // TODO: sync gtid.lost with slave
+            return SyncAction.XContinue(replStage, replStage.getBeginGtidset(), replStage.getBegOffsetBacklog(), null).markProtoSwitch();
         }
     }
 
-    protected SyncAction anaPSync(SyncRequest request, ReplStage psyncStage, KeeperRepl keeperRepl, long stageEndBacklogOffset) {
+    protected SyncAction anaPSync(SyncRequest request, ReplStage psyncStage, KeeperRepl keeperRepl, long stageEndBacklogOffsetExcluded) {
         // 使用replId replOffset, replId2 replOffset2
         long reqBacklogOffset = psyncStage.replOffset2BacklogOffset(request.offset);
         String keeperReplId = psyncStage.getReplId();
@@ -142,7 +160,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return SyncAction.full(String.format("[request offset miss][req: %d, sup:%d]", reqBacklogOffset, backlogBeginOffset));
             } else {
                 // TODO: keeper wait, limit transform data
-                return SyncAction.Continue(psyncStage, stageEndBacklogOffset, false, keeperReplId, request.offset);
+                return SyncAction.Continue(psyncStage, keeperReplId, request.offset).setBacklogEndExcluded(stageEndBacklogOffsetExcluded);
             }
         } else {
             return SyncAction.full("replId mismatch");
@@ -163,7 +181,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.maxGap >= 0 && request.maxGap < gapCnt) {
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));
             } else {
-                return SyncAction.XContinue(xsyncStage, stageEndBacklogOffset, false, masterGtidSet, xsyncCont.getBacklogOffset(), masterLost);
+                return SyncAction.XContinue(xsyncStage, masterGtidSet, xsyncCont.getBacklogOffset(), masterLost).setBacklogEndExcluded(stageEndBacklogOffset);
             }
         } else {
             return SyncAction.full("replId mismatch");
@@ -174,7 +192,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         if (action.isFull()) {
             try {
                 logger.info("[runAction] {}", action.fullCause);
-                keeperServer.fullSyncToSlave(slave);
+                slave.markPsyncProcessed();
+                keeperServer.fullSyncToSlave(slave, action.freshRdb);
+                keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
             } catch (IOException ioException) {
                 try {
                     slave.close();
@@ -196,23 +216,31 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
 
-            SimpleStringParser resp = null;
+            SimpleStringParser resp;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
                 resp = new SimpleStringParser(String.format("%s %s", PARTIAL_SYNC, action.replId)
-                        + (action.protoSwitch ? " "+(action.replOffset - 1):""));
+                        + (action.protoSwitch || action.keeperPartial ? " "+(action.replOffset - 1):""));
             } else {
                 resp = new SimpleStringParser(String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",
-                        action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1));
+                        action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1)
+                        + (action.keeperPartial ? " GTID.LOST " + action.keeperLost:""));
             }
 
             slave.sendMessage(resp.format());
-            slave.beginWriteCommands(new BacklogOffsetReplicationProgress(action.backlogOffset, action.backlogEndOffset));
+            slave.markPsyncProcessed();
+            slave.beginWriteCommands(new BacklogOffsetReplicationProgress(action.backlogOffset, action.backlogEndOffsetExcluded));
+            slave.partialSync();
+            keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
         }
     }
 
     protected static class SyncAction {
 
         boolean full = false;
+
+        boolean freshRdb = false;
+
+        boolean keeperPartial = false;
 
         String fullCause;
 
@@ -224,7 +252,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
         long backlogOffset = -1;
 
-        long backlogEndOffset = -1;
+        long backlogEndOffsetExcluded = -1;
 
         ReplStage replStage;
 
@@ -232,31 +260,34 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
         GtidSet masterLost;
 
+        GtidSet keeperLost;
+
         public static SyncAction full(String fullCause) {
+            return full(fullCause, false);
+        }
+
+        public static SyncAction full(String fullCause, boolean freshRdb) {
             SyncAction action = new SyncAction();
             action.full = true;
+            action.freshRdb = freshRdb;
             action.fullCause = fullCause;
             return action;
         }
 
-        public static SyncAction XContinue(ReplStage replStage, long stageEndBacklogOffset, boolean protoSwitch, GtidSet contGtidSet, long backlogOffset, GtidSet masterLost) {
+        public static SyncAction XContinue(ReplStage replStage, GtidSet contGtidSet, long backlogOffset, GtidSet masterLost) {
             SyncAction action = new SyncAction();
             action.replStage = replStage;
-            action.protoSwitch = protoSwitch;
             action.gtidSet = contGtidSet;
             action.replId = replStage.getReplId();
             action.replOffset = replStage.backlogOffset2ReplOffset(backlogOffset);
             action.backlogOffset = backlogOffset;
-            action.backlogEndOffset = stageEndBacklogOffset;
             action.masterLost = masterLost;
             return action;
         }
 
-        public static SyncAction Continue(ReplStage replStage, long stageEndBacklogOffset, boolean protoSwitch, String replId, long offset) {
+        public static SyncAction Continue(ReplStage replStage, String replId, long offset) {
             SyncAction action = new SyncAction();
             action.replStage = replStage;
-            action.backlogEndOffset = stageEndBacklogOffset;
-            action.protoSwitch = protoSwitch;
             action.replId = replId;
             action.replOffset = offset;
             action.backlogOffset = replStage.replOffset2BacklogOffset(offset);
@@ -286,6 +317,27 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         public GtidSet getGtidSet() {
             return gtidSet;
         }
+
+        public SyncAction markProtoSwitch() {
+            this.protoSwitch = true;
+            return this;
+        }
+
+        public SyncAction markKeeperPartial() {
+            this.keeperPartial = true;
+            return this;
+        }
+
+        public SyncAction setBacklogEndExcluded(long backlogEndOffsetExcluded) {
+            this.backlogEndOffsetExcluded = backlogEndOffsetExcluded;
+            return this;
+        }
+
+        public SyncAction setKeeperLost(GtidSet lost) {
+            this.keeperLost = lost;
+            return this;
+        }
+
     }
 
     protected static class SyncRequest {
@@ -319,10 +371,6 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             request.slaveGtidSet = new GtidSet(gtidset);
             request.maxGap = maxGap;
             return request;
-        }
-
-        public boolean requestFull() {
-            return this.replId.equals("?");
         }
 
         @Override

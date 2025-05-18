@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,6 +21,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 
 @RunWith(MockitoJUnitRunner.class)
 public class GapAllowSyncHandlerTest extends AbstractTest {
@@ -38,14 +42,22 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     private RedisKeeperServer keeperServer;
 
     @Mock
+    private KeeperMonitor keeperMonitor;
+
+    @Mock
     private KeeperRepl keeperRepl;
 
     @Mock
     private RedisSlave slave;
 
+    private KeeperStats keeperStats;
+
     @Before
     public void setupGapAllowSyncHandlerTest() {
+        keeperStats = new DefaultKeeperStats("repl_1", scheduled);
         Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
+        Mockito.when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
     }
 
     @Test
@@ -60,7 +72,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals(ReplStage.ReplProto.XSYNC, action.replStage.getProto());
         Assert.assertEquals(new GtidSet("A:1-10,C:1-5"), action.gtidSet);
         Assert.assertEquals(cont.getBacklogOffset(), action.backlogOffset);
-        Assert.assertEquals(200, action.backlogEndOffset);
+        Assert.assertEquals(200, action.backlogEndOffsetExcluded);
         Assert.assertEquals(new GtidSet("B:1-15"), action.masterLost);
     }
 
@@ -85,7 +97,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals(250, action.backlogOffset);
         Assert.assertEquals("test-repl-id", action.replId);
         Assert.assertEquals(50, action.replOffset);
-        Assert.assertEquals(500, action.backlogEndOffset);
+        Assert.assertEquals(500, action.backlogEndOffsetExcluded);
     }
 
     @Test
@@ -101,13 +113,14 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     public void testSyncAction_full() throws Exception {
         GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.full("test");
         handler.runAction(action, keeperServer, slave);
-        Mockito.verify(keeperServer).fullSyncToSlave(any());
+        Mockito.verify(keeperServer).fullSyncToSlave(any(), anyBoolean());
     }
 
     @Test
     public void testXSyncAction_partial() throws Exception {
         ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet("C:1-5"), new GtidSet(""));
-        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.XContinue(replStage, 200, false, new GtidSet("A:1-10"), 100, new GtidSet("B:1-5"));
+        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.XContinue(replStage, new GtidSet("A:1-10"), 100, new GtidSet("B:1-5"))
+                .setBacklogEndExcluded(200);
         handler.runAction(action, keeperServer, slave);
         Mockito.verify(keeperServer).increaseLost(new GtidSet("B:1-5"), slave);
         Mockito.verify(slave).sendMessage(any(ByteBuf.class));
@@ -117,7 +130,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testPSyncAction_partial() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id", 1, 101);
-        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.Continue(replStage,  2000,false, "test-repl-id", 1000);
+        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.Continue(replStage, "test-repl-id", 1000).setBacklogEndExcluded(2000);
         handler.runAction(action, keeperServer, slave);
         Mockito.verify(keeperServer, Mockito.never()).increaseLost(any(), any());
         Mockito.verify(slave).sendMessage(any(ByteBuf.class));
@@ -137,12 +150,51 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals(new GtidSet("A:1-20"), action.getGtidSet());
         Assert.assertNull(action.masterLost);
         Assert.assertEquals(1001, action.backlogOffset);
-        Assert.assertEquals(-1, action.backlogEndOffset);
+        Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
     }
 
     @Test
     public void testAnaXSync2PSync() throws Exception {
 
+    }
+
+    @Test
+    public void testKeeperPartialSync_xcontinue() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 11, "C",
+                new GtidSet("A:1-10"), new GtidSet("B:1-5"));
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(keeperRepl.getEndGtidSet()).thenReturn(new GtidSet("C:1-15"));
+        Mockito.when(keeperServer.locateContinueGtidSet(new GtidSet("C:1-15")))
+                .thenReturn(new XSyncContinue(new GtidSet("B:1-5,C:1-15"), 1000));
+
+        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.psync("?", -2);
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(syncRequest, keeperServer, slave);
+
+        Assert.assertTrue(action.keeperPartial);
+        Assert.assertFalse(action.full);
+        Assert.assertEquals("test-repl-id1", action.replId);
+        Assert.assertEquals(new GtidSet("A:1-10,B:1-5,C:1-15"), action.getGtidSet());
+        Assert.assertEquals(new GtidSet("A:1-10"), action.keeperLost);
+        Assert.assertEquals(1000, action.backlogOffset);
+        Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
+        Assert.assertEquals(990, action.replOffset);
+    }
+
+    @Test
+    public void testKeeperPartialSync_continue() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 11);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(keeperRepl.getEndOffset()).thenReturn(1000L);
+
+        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.psync("?", -2);
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(syncRequest, keeperServer, slave);
+
+        Assert.assertFalse(action.full);
+        Assert.assertTrue(action.keeperPartial);
+        Assert.assertEquals("test-repl-id1", action.replId);
+        Assert.assertEquals(1001, action.replOffset);
+        Assert.assertEquals(1011, action.backlogOffset);
+        Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
     }
 
 }
