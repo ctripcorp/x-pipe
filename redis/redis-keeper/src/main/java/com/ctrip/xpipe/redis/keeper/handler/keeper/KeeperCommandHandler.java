@@ -52,28 +52,6 @@ public class KeeperCommandHandler extends AbstractCommandHandler {
 				}else{
 					throw new IllegalArgumentException("setstate argument error:" + StringUtil.join(" ", args));
 				}
-			}else if (args[0].equalsIgnoreCase(AbstractKeeperCommand.GET_INDEX)) {
-
-				KeeperIndexState indexState =
-						((RedisKeeperServer)redisClient.getRedisServer()).isStartIndexing()?
-								KeeperIndexState.ON : KeeperIndexState.OFF;
-
-				redisClient.sendMessage(new SimpleStringParser(indexState.name()).format());
-			}else if (args[0].equalsIgnoreCase(AbstractKeeperCommand.SET_INDEX)){
-
-				if (args.length >= 2) {
-					KeeperIndexState indexState = KeeperIndexState.valueOf(args[1]);
-					if (KeeperIndexState.ON.equals(indexState)) {
-						((RedisKeeperServer) redisClient.getRedisServer()).startIndexing();
-						redisClient.sendMessage(new SimpleStringParser(RedisProtocol.OK).format());
-					} else if (KeeperIndexState.OFF.equals(indexState)) {
-						throw new IllegalArgumentException("setstate OFF not supported");
-					} else {
-						throw new IllegalArgumentException("setindex argument error:" + StringUtil.join(" ", args));
-					}
-				} else {
-					throw new IllegalArgumentException("setindex argument error:" + StringUtil.join(" ", args));
-				}
 			}else{
 				throw new IllegalStateException("unknown command:" + args[0]);
 			}

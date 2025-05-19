@@ -1,25 +1,20 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
-import com.ctrip.xpipe.redis.keeper.Gtid2OffsetIndexGenerator;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * @author lishanglin
@@ -28,12 +23,6 @@ import java.util.concurrent.Future;
 public class GtidReplicationStore extends DefaultReplicationStore {
 
     private static final Logger logger = LoggerFactory.getLogger(GtidReplicationStore.class);
-
-    private volatile Gtid2OffsetIndexGenerator indexGenerator;
-
-    private volatile Future indexingFuture;
-
-    protected final Object indexingLock = new Object();
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
@@ -136,10 +125,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     public void close() throws IOException {
         super.close();
-        if (indexingFuture != null) {
-            indexingFuture.cancel(true);
-            indexingFuture = null;
-        }
     }
 
     @Override
@@ -177,74 +162,13 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     }
 
     @Override
-    public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
-
-        synchronized (indexingLock) {
-
-            if (indexingFuture != null) {
-                return null;
-            }
-
-            FullSyncContext ctx = lockAndCheckIfRdbFullSyncPossible();
-            if (ctx.isFullSyncPossible() && !ctx.getRdbStore().isGtidSetInit()) {
-                ctx.getRdbStore().decrementRefCount();
-                throw new IllegalStateException("unexpected rdb with gtid not init: " + ctx.getRdbStore());
-            }
-
-            if (ctx.isFullSyncPossible()) {
-                return tryCreateIndex(ctx, indexingExecutors);
-            } else {
-                return ctx.getCause();
-            }
-        }
-    }
-
-
-    protected FULLSYNC_FAIL_CAUSE tryCreateIndex(FullSyncContext ctx, ExecutorService indexingExecutors) {
-
-        RdbStore rdbStore = ctx.getRdbStore();
-        GtidSet fromGtidSet = new GtidSet(rdbStore.getGtidSet());
-        rdbStore.decrementRefCount();
-
-        CommandFileSegment lastSegment = cmdStore.findLastFileSegment();
-        if (lastSegment != null) {
-            fromGtidSet = fromGtidSet.union(lastSegment.getStartIdx().getExcludedGtidSet());
-        }
-
-        String gtidSetString = fromGtidSet.toString();
-
-        logger.info("[tryCreateIndex] indexing from {}", gtidSetString);
-
-        indexGenerator = new Gtid2OffsetIndexGenerator(cmdStore, new GtidSet(gtidSetString));
-
-        indexingFuture = indexingExecutors.submit(()->{
-
-            try {
-                addCommandsListener(new GtidSetReplicationProgress(new GtidSet(gtidSetString)), indexGenerator);
-            } catch (Throwable t) {
-                EventMonitor.DEFAULT.logAlertEvent("[tryCreateIndex] probably creating reader error: " + this);
-
-                logger.error("[tryCreateIndex] probably creating reader error - " + this);
-                logger.error("[tryCreateIndex]", t);
-            } finally {
-                indexingFuture = null;
-            }
-        });
-        return null;
-    }
-
-    @Override
     public GtidSet getBeginGtidSet() throws IOException {
         return cmdStore.getBeginGtidSet();
     }
 
     @Override
     public GtidSet getEndGtidSet() {
-        if (indexGenerator != null) {
-            return indexGenerator.getEndGtidSet();
-        } else {
-            return null;
-        }
+        return cmdStore.getIndexGtidSet();
     }
 
     @Override

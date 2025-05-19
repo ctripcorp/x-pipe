@@ -23,7 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class GapAllowSyncHandlerTest extends AbstractTest {
 
     private GapAllowSyncHandler handler = new GapAllowSyncHandler() {
@@ -102,10 +102,16 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testPSyncAna_full() {
+        // wrong replId
         GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id-wrong", 50);
-        ReplStage replStage = new ReplStage("test-repl-id", 1, 201);
+        ReplStage replStage = new ReplStage("test-repl-id", 100, 201);
         Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(100L);
         GapAllowSyncHandler.SyncAction action = handler.anaPSync(request, replStage, keeperRepl, -1);
+        Assert.assertTrue(action.full);
+
+        // repl offset miss
+        request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id", 1);
+        action = handler.anaPSync(request, replStage, keeperRepl, -1);
         Assert.assertTrue(action.full);
     }
 

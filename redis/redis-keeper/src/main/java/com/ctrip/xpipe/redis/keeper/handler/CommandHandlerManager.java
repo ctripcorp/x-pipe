@@ -29,7 +29,6 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		
 		putHandler(new ReplconfHandler());
 		// putHandler(new PsyncHandler());
-		putHandler(new XsyncHandler());
 		putHandler(new PingCommandHandler());
 		putHandler(new LFHandler());
 		putHandler(new InfoHandler());

@@ -89,10 +89,6 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	}
 
 	void fullSyncToSlave(RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException;
-
-	void startIndexing() throws IOException;
-
-	boolean isStartIndexing();
 	
 	KeeperInstanceMeta getKeeperInstanceMeta();
 	

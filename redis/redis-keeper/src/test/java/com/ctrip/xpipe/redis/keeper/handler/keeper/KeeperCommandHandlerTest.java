@@ -26,16 +26,6 @@ public class KeeperCommandHandlerTest {
     }
 
     @Test
-    public void testSetindexOn() throws Exception {
-        RedisKeeperServer server = mock(RedisKeeperServer.class);
-        RedisClient client = mock(RedisClient.class);
-        when(client.getRedisServer()).thenReturn(server);
-
-        handler.doHandle("setindex ON".split(WHITE_SPACE), client);
-        verify(server, times(1)).startIndexing();
-    }
-
-    @Test
     public void testSetindexOff() throws Exception {
 
         String message = null;

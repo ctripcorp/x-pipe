@@ -60,9 +60,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean masterSupportRordb) throws IOException;
 
-	//create index
-	FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors);
-
 	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 	// meta related
 	MetaStore getMetaStore();

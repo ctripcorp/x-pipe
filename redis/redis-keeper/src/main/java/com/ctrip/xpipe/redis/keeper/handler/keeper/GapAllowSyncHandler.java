@@ -148,7 +148,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     }
 
     protected SyncAction anaPSync(SyncRequest request, ReplStage psyncStage, KeeperRepl keeperRepl, long stageEndBacklogOffsetExcluded) {
-        // 使用replId replOffset, replId2 replOffset2
+        if (request.offset < psyncStage.getBegOffsetRepl()) {
+            return SyncAction.full(String.format("[request offset miss][repl][req: %d, sup:%d]", request.offset, psyncStage.getBegOffsetRepl()));
+        }
+
         long reqBacklogOffset = psyncStage.replOffset2BacklogOffset(request.offset);
         String keeperReplId = psyncStage.getReplId();
         String keeperReplId2 = psyncStage.getReplId2();
@@ -157,7 +160,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
         if (request.replId.equalsIgnoreCase(keeperReplId) || (request.replId.equalsIgnoreCase(keeperReplId2) && request.offset <= keeperOffset2)) {
             if (reqBacklogOffset < backlogBeginOffset) {
-                return SyncAction.full(String.format("[request offset miss][req: %d, sup:%d]", reqBacklogOffset, backlogBeginOffset));
+                return SyncAction.full(String.format("[request offset miss][backlog][req: %d, sup:%d]", reqBacklogOffset, backlogBeginOffset));
             } else {
                 // TODO: keeper wait, limit transform data
                 return SyncAction.Continue(psyncStage, keeperReplId, request.offset).setBacklogEndExcluded(stageEndBacklogOffsetExcluded);
