@@ -13,8 +13,10 @@ import java.io.IOException;
  */
 public interface MetaStore {
 
-	public static final String META_FILE = "meta.json";
-	
+	public static final String META_V1_FILE = "meta.json";
+
+	public static final String META_V2_FILE = "meta.v2.json";
+
 	public static final String METHOD_BECOME_ACTIVE = "becomeActive";
 	
 	public static final String METHOD_BECOME_BACKUP = "becomeBackup";
@@ -89,8 +91,6 @@ public interface MetaStore {
 	Long backlogOffsetToReplOffset(Long backlogOffset);
 
 	Long replOffsetToBacklogOffset(Long replOff);
-
-	ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException;
 
 	ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
 

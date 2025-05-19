@@ -3,21 +3,20 @@ package com.ctrip.xpipe.redis.keeper.store.meta;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaV1;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
-import java.nio.channels.FileChannel;
 
-import static org.junit.Assert.*;
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V1_FILE;
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
+import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV1;
+import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV2;
 
 /**
  * @author chen.zhu
@@ -29,34 +28,39 @@ public class TestAbstractMetaStoreTest extends AbstractTest {
     private AbstractMetaStore metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b");
 
     private final String TMP_META_STORE_DIR = "/tmp/xpipe/test/";
-    private final String TMP_META_JSON_FILE = TMP_META_STORE_DIR + "meta.json";
+    private final String TMP_META_V1_JSON_FILE = TMP_META_STORE_DIR + META_V1_FILE;
+    private final String TMP_META_V2_JSON_FILE = TMP_META_STORE_DIR + META_V2_FILE;
     private final String PERSIST_META_JSON_FILE = "src/test/resources/meta.json";
 
     @Before
     public void beforeTestAbstractMetaStoreTest() {
-        File file = new File(TMP_META_JSON_FILE, "rw");
-        file.delete();
+        File filev1 = new File(TMP_META_V1_JSON_FILE, "rw");
+        filev1.delete();
+        File filev2 = new File(TMP_META_V1_JSON_FILE, "rw");
+        filev2.delete();
     }
 
     @After
     public void afterTestAbstractMetaStoreTest() {
-        File file = new File(TMP_META_JSON_FILE, "rw");
-        file.delete();
+        File filev1 = new File(TMP_META_V1_JSON_FILE, "rw");
+        filev1.delete();
+        File filev2 = new File(TMP_META_V1_JSON_FILE, "rw");
+        filev2.delete();
     }
 
     @Test
     public void testSaveMetaToFile() throws Exception {
-        ReplicationStoreMeta meta = metaStore.deserializeFromString(readFileAsString(PERSIST_META_JSON_FILE));
-        metaStore.saveMetaToFile(new File(TMP_META_JSON_FILE), meta);
+        ReplicationStoreMeta meta = deserializeFromStringV2(readFileAsString(PERSIST_META_JSON_FILE));
+        metaStore.saveMetaToFileV2(new File(TMP_META_V2_JSON_FILE), meta);
         metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b");
         metaStore.loadMeta();
-        logger.info("[result] {}", readFileAsString(TMP_META_JSON_FILE));
+        logger.info("[result] {}", readFileAsString(TMP_META_V2_JSON_FILE));
         Assert.assertEquals(meta, metaStore.getMeta());
     }
 
     @Test
     public void testDeserializeFromString() {
-        ReplicationStoreMeta actual = metaStore.deserializeFromString(readFileAsString("src/test/resources/meta.json"));
+        ReplicationStoreMeta actual = deserializeFromStringV2(readFileAsString("src/test/resources/meta.json"));
         ReplicationStoreMeta expected = new ReplicationStoreMeta();
         expected.setBeginOffset(539004786L);
         expected.setCmdFilePrefix("cmd_9116b193-9063-46f4-a677-04bcfe450171_");
@@ -70,6 +74,14 @@ public class TestAbstractMetaStoreTest extends AbstractTest {
         expected.setRdbLastOffset(539004785L);
         expected.setRdbFileSize(178);
         Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testMetaTransformBetweenV1AndV2() {
+        ReplicationStoreMetaV1 v1Meta = deserializeFromStringV1(readFileAsString(PERSIST_META_JSON_FILE));
+        ReplicationStoreMeta v2Meta = new ReplicationStoreMeta().fromV1(v1Meta);
+        ReplicationStoreMetaV1 v1Meta2 = v2Meta.toV1();
+        Assert.assertEquals(v1Meta2, v1Meta);
     }
 
 //    @Test

@@ -1,55 +1,13 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
-/**
- * @author wenchao.meng
- *
- *         Jun 1, 2016
- */
+//TODO extend ReplicationStoreMetaCommon when V1 obselete
 @SuppressWarnings("serial")
-public class ReplicationStoreMeta implements Serializable{
-
-	public static final String EMPTY_REPL_ID = "0000000000000000000000000000000000000000";
-	public static final long DEFAULT_BEGIN_OFFSET = 1;
-	public static final long DEFAULT_END_OFFSET = DEFAULT_BEGIN_OFFSET - 1;
-	public static final long DEFAULT_SECOND_REPLID_OFFSET = -1;
-	
-	private transient Logger logger = LoggerFactory.getLogger(getClass());
-	
-	private DefaultEndPoint masterAddress;
-	private Long beginOffset = DEFAULT_BEGIN_OFFSET;
-	
-	private String replId;
-	private String replId2;
-	private Long secondReplIdOffset = DEFAULT_SECOND_REPLID_OFFSET;
-	
-	
-	private String rdbFile;
-	private Long rdbLastOffset;
-	private long rdbFileSize;
-	private String rdbEofMark;
-	private String rdbGtidSet;
-
-	private String rordbFile;
-	private Long rordbLastOffset;
-	private long rordbFileSize;
-	private String rordbEofMark;
-	private String rordbGtidSet;
-	
-	// last offset of rdb in keeper coordinate
-	private String cmdFilePrefix;
-
-	private KeeperState keeperState;
-	private String keeperRunid;
-
+public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Serializable{
 	private ReplStage prevReplStage;
 	private ReplStage curReplStage;
 
@@ -92,150 +50,6 @@ public class ReplicationStoreMeta implements Serializable{
 		this.rordbContiguousBacklogOffset = proto.rordbContiguousBacklogOffset;
 	}
 	
-	public long getRdbFileSize() {
-		return rdbFileSize;
-	}
-	
-	public String getRdbEofMark() {
-		return rdbEofMark;
-	}
-
-	public String getRdbGtidSet() {
-		return rdbGtidSet;
-	}
-
-	public void setRdbGtidSet(String rdbGtidSet) {
-		this.rdbGtidSet = rdbGtidSet;
-	}
-
-	public void setRdbFileSize(long rdbFileSize) {
-		this.rdbFileSize = rdbFileSize;
-	}
-	
-	public void setRdbEofMark(String rdbEofMark) {
-		this.rdbEofMark = rdbEofMark;
-	}
-
-	public String getRdbFile() {
-		return rdbFile;
-	}
-
-	public void setRdbFile(String rdbFile) {
-		this.rdbFile = rdbFile;
-	}
-
-	public DefaultEndPoint getMasterAddress() {
-		return masterAddress;
-	}
-
-	public void setMasterAddress(DefaultEndPoint masterAddress) {
-		this.masterAddress = masterAddress;
-	}
-
-	public Long getBeginOffset() {
-		return beginOffset;
-	}
-
-	public void setBeginOffset(Long beginOffset) {
-		this.beginOffset = beginOffset;
-	}
-
-
-	public String getKeeperRunid() {
-		return keeperRunid;
-	}
-
-	public void setKeeperRunid(String keeperRunid) {
-		this.keeperRunid = keeperRunid;
-	}
-
-	public String getCmdFilePrefix() {
-		return cmdFilePrefix;
-	}
-	public String getReplId() {
-		return replId;
-	}
-
-	public void setReplId(String replId) {
-		this.replId = replId;
-	}
-
-	public Long getRdbLastOffset() {
-		return rdbLastOffset;
-	}
-
-	public void setRdbLastOffset(Long rdbLastOffset) {
-		this.rdbLastOffset = rdbLastOffset;
-	}
-
-	public String getReplId2() {
-		return replId2;
-	}
-
-	public void setReplId2(String replId2) {
-		this.replId2 = replId2;
-	}
-
-	public Long getSecondReplIdOffset() {
-		return secondReplIdOffset;
-	}
-
-	public void setSecondReplIdOffset(Long secondReplIdOffset) {
-		this.secondReplIdOffset = secondReplIdOffset;
-	}
-
-	public void setCmdFilePrefix(String cmdFilePrefix) {
-		this.cmdFilePrefix = cmdFilePrefix;
-	}
-
-	public KeeperState getKeeperState() {
-		return keeperState;
-	}
-
-	public void setKeeperState(KeeperState keeperState) {
-		this.keeperState = keeperState;
-	}
-
-	public String getRordbFile() {
-		return rordbFile;
-	}
-
-	public void setRordbFile(String rordbFile) {
-		this.rordbFile = rordbFile;
-	}
-
-	public Long getRordbLastOffset() {
-		return rordbLastOffset;
-	}
-
-	public void setRordbLastOffset(Long rordbLastOffset) {
-		this.rordbLastOffset = rordbLastOffset;
-	}
-
-	public long getRordbFileSize() {
-		return rordbFileSize;
-	}
-
-	public void setRordbFileSize(long rordbFileSize) {
-		this.rordbFileSize = rordbFileSize;
-	}
-
-	public String getRordbEofMark() {
-		return rordbEofMark;
-	}
-
-	public void setRordbEofMark(String rordbEofMark) {
-		this.rordbEofMark = rordbEofMark;
-	}
-
-	public String getRordbGtidSet() {
-		return rordbGtidSet;
-	}
-
-	public void setRordbGtidSet(String rordbGtidSet) {
-		this.rordbGtidSet = rordbGtidSet;
-	}
-
 	public ReplStage getCurReplStage() {
 		return curReplStage;
 	}
@@ -266,6 +80,93 @@ public class ReplicationStoreMeta implements Serializable{
 
 	public void setRordbContiguousBacklogOffset(Long rordbContiguousBacklogOffset) {
 		this.rordbContiguousBacklogOffset = rordbContiguousBacklogOffset;
+	}
+
+	public ReplicationStoreMetaV1 toV1() {
+		if (this.prevReplStage == null && (this.curReplStage == null ||
+				(this.curReplStage != null && this.curReplStage.getProto() == ReplStage.ReplProto.PSYNC && this.curReplStage.getBegOffsetBacklog() == 0))
+		) {
+			ReplicationStoreMetaV1 v1Meta = new ReplicationStoreMetaV1();
+
+			v1Meta.setMasterAddress(this.masterAddress);
+			v1Meta.setRdbFile(this.rdbFile);
+			v1Meta.setRdbFileSize(this.rdbFileSize);
+			v1Meta.setRdbEofMark(this.rdbEofMark);
+			v1Meta.setRdbGtidSet(this.rdbGtidSet);
+			v1Meta.setRordbFile(this.rordbFile);
+			v1Meta.setRordbFileSize(this.rordbFileSize);
+			v1Meta.setRordbEofMark(this.rordbEofMark);
+			v1Meta.setRordbGtidSet(this.rordbGtidSet);
+			v1Meta.setCmdFilePrefix(this.cmdFilePrefix);
+			v1Meta.setKeeperState(this.keeperState);
+			v1Meta.setKeeperRunid(this.keeperRunid);
+
+			if (this.curReplStage != null) {
+				v1Meta.setBeginOffset(this.curReplStage.getBegOffsetRepl());
+				v1Meta.setReplId(this.curReplStage.getReplId());
+				v1Meta.setReplId2(this.curReplStage.getReplId2());
+				v1Meta.setSecondReplIdOffset(this.curReplStage.getSecondReplIdOffset());
+				Long rdbLastOffset = this.rdbContiguousBacklogOffset == null ? null : this.curReplStage.backlogOffset2ReplOffset(this.rdbContiguousBacklogOffset) - 1;
+				Long rordbLastOffset = this.rordbContiguousBacklogOffset == null ? null : this.curReplStage.backlogOffset2ReplOffset(this.rordbContiguousBacklogOffset) - 1;
+				v1Meta.setRdbLastOffset(rdbLastOffset);
+				v1Meta.setRordbLastOffset(rordbLastOffset);
+			} else {
+				//TODO remove when v1 obseletes
+				v1Meta.setBeginOffset(this.beginOffset);
+				v1Meta.setReplId(this.replId);
+				v1Meta.setReplId2(this.replId2);
+				v1Meta.setSecondReplIdOffset(this.secondReplIdOffset);
+				v1Meta.setRdbLastOffset(this.rdbLastOffset);
+				v1Meta.setRordbLastOffset(this.rordbLastOffset);
+			}
+
+			return v1Meta;
+		} else {
+			// Not compatible with v1 meta.
+			return null;
+		}
+	}
+
+	public ReplicationStoreMeta fromV1(ReplicationStoreMetaV1 v1Meta) {
+		this.masterAddress = v1Meta.getMasterAddress();
+
+		this.rdbFile = v1Meta.getRdbFile();
+		this.rdbFileSize = v1Meta.getRdbFileSize();
+		this.rdbEofMark = v1Meta.getRdbEofMark();
+		this.rdbGtidSet = v1Meta.getRdbGtidSet();
+
+		this.rordbFile = v1Meta.getRordbFile();
+		this.rordbFileSize = v1Meta.getRordbFileSize();
+		this.rordbEofMark = v1Meta.getRordbEofMark();
+		this.rordbGtidSet = v1Meta.getRordbGtidSet();
+
+		this.cmdFilePrefix = v1Meta.getCmdFilePrefix();
+		this.keeperState = v1Meta.getKeeperState();
+		this.keeperRunid = v1Meta.getKeeperRunid();
+
+		if (v1Meta.getRdbLastOffset() != null) {
+			this.rdbContiguousBacklogOffset = v1Meta.getRdbLastOffset() + 1 - v1Meta.getBeginOffset() + ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		}
+
+		if (v1Meta.getRordbLastOffset() != null) {
+			this.rordbContiguousBacklogOffset = v1Meta.getRordbLastOffset() + 1 - v1Meta.getBeginOffset() + ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		}
+
+		ReplStage replStage = new ReplStage(v1Meta.getReplId(), v1Meta.getBeginOffset(), ReplicationStoreMeta.DEFAULT_END_OFFSET);
+		replStage.setReplId2(v1Meta.getReplId2());
+		replStage.setSecondReplIdOffset(v1Meta.getSecondReplIdOffset());
+
+		this.prevReplStage = null;
+		this.curReplStage = replStage;
+
+		this.beginOffset = null;
+		this.replId = null;
+		this.replId2 = null;
+		this.secondReplIdOffset = null;
+		this.rdbLastOffset = null;
+		this.rordbLastOffset = null;
+
+		return this;
 	}
 
 	@Override
