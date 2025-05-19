@@ -56,6 +56,7 @@ public class IndexTestTool {
             fileChannel.position(offset); // 移动到指定的偏移量
             int bytesRead = fileChannel.read(buffer);
             buffer.flip();
+            System.out.println(new String(buffer.array()));
             ByteBuf byteBuf = null;
             if (bytesRead != -1) {
                 byteBuf = Unpooled.wrappedBuffer(buffer.array());
