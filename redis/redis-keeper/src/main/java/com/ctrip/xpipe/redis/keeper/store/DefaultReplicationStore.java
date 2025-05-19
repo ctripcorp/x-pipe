@@ -638,12 +638,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		long cmdAfterRdbThreshold = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 		FullSyncContext context;
 		if (minOffset > rdbNextByte) {
-			getLogger().info("minOffset > rdbOffset + 1");
-			getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} <= {}", minOffset, rdbNextByte);
+			getLogger().info("minOffset > rdbNextByte");
+			getLogger().info("[isFullSyncPossible][false][miss cmd after rdb] {} > {}", minOffset, rdbNextByte);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_CMD_AFTER_RDB);
 		} else if (maxOffset - rdbNextByte > cmdAfterRdbThreshold) {
 			getLogger().info("maxOffset - rdbNextByte > cmdAfterRdbThreshold");
-			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} >= {}",
+			getLogger().info("[isFullSyncPossible][false][too much cmd after rdb] {} - {} > {}",
 					maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.TOO_MUCH_CMD_AFTER_RDB);
 		} else if (beginStage.getBegOffsetBacklog() > rdbNextByte) {
@@ -652,7 +652,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_REPL_STAGE);
 		} else {
 			getLogger().info("minOffset <= rdbNextByte && maxOffset - rdbNextByte < cmdAfterRdbThreshold");
-			getLogger().info("[isFullSyncPossible][true] {} <= {} && {} - {} < {}",
+			getLogger().info("[isFullSyncPossible][true] {} <= {} && {} - {} <= {}",
 					minOffset, rdbNextByte, maxOffset, rdbNextByte, cmdAfterRdbThreshold);
 			context = new FullSyncContext(true, rdbStore);
 		}

@@ -48,25 +48,30 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         redisSlave.processPsyncSequentially(new Runnable() {
             @Override
             public void run() {
-                SyncRequest request = parseRequest(args, redisSlave);
-                if (null == request) {
-                    logger.warn("[doHandle] request parse fail");
-                    return;
-                }
-
-                SyncAction action = null;
                 try {
-                    action = anaRequest(request, redisKeeperServer, redisSlave);
-                } catch (Exception e) {
-                    logger.error("[doHandle]", e);
-                    action = SyncAction.full("anaRequest fail");
-                }
-                if (null == action) {
-                    logger.warn("[doHandle] request analyze fail");
-                    return;
-                }
+                    SyncRequest request = parseRequest(args, redisSlave);
+                    if (null == request) {
+                        logger.warn("[doHandle] request parse fail");
+                        return;
+                    }
 
-                runAction(action, redisKeeperServer, redisSlave);
+                    SyncAction action = anaRequest(request, redisKeeperServer, redisSlave);
+                    if (null == action) {
+                        logger.warn("[doHandle] request analyze fail");
+                        return;
+                    }
+
+                    runAction(action, redisKeeperServer, redisSlave);
+                } catch(Throwable th) {
+                    try {
+                        logger.error("[run]" + redisClient, th);
+                        if(redisSlave.isOpen()){
+                            redisSlave.close();
+                        }
+                    } catch (IOException e) {
+                        logger.error("[run][close]" + redisSlave, th);
+                    }
+                }
             }
         });
     }
