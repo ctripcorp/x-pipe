@@ -12,8 +12,11 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
 
 public class StreamCommandReader {
 
@@ -53,7 +56,22 @@ public class StreamCommandReader {
         int length = mergeBuf.readableBytes();
         while (mergeBuf.readableBytes() > 0) {
             int pre = mergeBuf.readerIndex();
-            RedisClientProtocol<Object[]> protocol = protocolParser.read(mergeBuf);
+            RedisClientProtocol<Object[]> protocol = null;
+            try {
+                protocol = protocolParser.read(mergeBuf);
+            } catch (RedisRuntimeException | NumberFormatException exception) {
+                log.error("[doRead]{}", exception.getMessage());
+                // skip dirty data
+                int starIndex = findFirstStar(mergeBuf, pre + 1);
+                if(starIndex != -1) {
+                    long afterOffset = this.currentOffset + starIndex - pre;
+                    log.info("[skip some data] before {} after {}", this.currentOffset, afterOffset);
+                    this.currentOffset = afterOffset;
+                    mergeBuf.readerIndex(starIndex);
+                    this.protocolParser.reset();
+                    continue;
+                }
+            }
             if (protocol == null) {
                 this.protocolParser.reset();
                 remainingBuf = mergeBuf.copy(pre, length - pre);
@@ -103,11 +121,14 @@ public class StreamCommandReader {
         return this.remainingBuf.readableBytes();
     }
 
-    public void skipRemainingBuf() {
-        if(this.remainingBuf != null) {
-            this.currentOffset += this.remainingBuf.readableBytes();
-            this.remainingBuf = null;
+    private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
+        for(int i = beginOffset; i < byteBuf.writerIndex(); i++) {
+            byte b = byteBuf.getByte(i);
+            if(b == ASTERISK_BYTE) {
+                return i;
+            }
         }
+        return -1;
     }
 
 }
