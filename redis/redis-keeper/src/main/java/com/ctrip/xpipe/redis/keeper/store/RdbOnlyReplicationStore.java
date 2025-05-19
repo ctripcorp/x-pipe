@@ -172,9 +172,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException {throw new UnsupportedOperationException();}
-
-			@Override
 			public ReplicationStoreMeta rdbConfirmPsync(String replId, long replOff, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
 				throw new UnsupportedOperationException();
 			}

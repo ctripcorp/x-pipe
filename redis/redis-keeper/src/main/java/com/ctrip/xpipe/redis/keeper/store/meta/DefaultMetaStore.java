@@ -612,47 +612,6 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		}
 	}
 
-	private boolean isValidPsyncMetaStore(ReplicationStoreMeta metaDup) {
-		return metaDup.getCurReplStage() == null &&
-				metaDup.getPrevReplStage() == null &&
-				metaDup.getBeginOffset() != null &&
-				metaDup.getReplId() != null;
-	}
-
-	public ReplicationStoreMeta upgradeFromPsyncToGtid() throws IOException {
-		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
-
-			if (isValidPsyncMetaStore(metaDup)) {
-
-				ReplStage replStage = new ReplStage(metaDup.getReplId(), metaDup.getBeginOffset(), ReplicationStoreMeta.DEFAULT_END_OFFSET);
-
-				replStage.setReplId2(metaDup.getReplId2());
-				replStage.setSecondReplIdOffset(metaDup.getSecondReplIdOffset());
-
-				if (metaDup.getRdbLastOffset() != null) {
-					long rdbContiguousBacklogOffset = metaDup.getRdbLastOffset() + 1 - metaDup.getBeginOffset() + ReplicationStoreMeta.DEFAULT_END_OFFSET;
-					metaDup.setRdbContiguousBacklogOffset(rdbContiguousBacklogOffset);
-				}
-
-				if (metaDup.getRordbLastOffset() != null) {
-					long rordbContiguousBacklogOffset = metaDup.getRordbLastOffset() + 1 - metaDup.getBeginOffset() + ReplicationStoreMeta.DEFAULT_END_OFFSET;
-					metaDup.setRordbContiguousBacklogOffset(rordbContiguousBacklogOffset);
-				}
-
-				metaDup.setCurReplStage(replStage);
-				metaDup.setPrevReplStage(null);
-
-				clearGapAllowObseleteFields(metaDup);
-
-				logger.info("[upgradeFromPsyncToGtid] meta upgrated from psync to gtid.");
-				saveMeta(metaDup);
-			}
-
-			return metaDup;
-		}
-	}
-
 	private void clearRdb(ReplicationStoreMeta metaDup) {
 		metaDup.setRdbFile(null);
 		metaDup.setRdbEofMark(null);

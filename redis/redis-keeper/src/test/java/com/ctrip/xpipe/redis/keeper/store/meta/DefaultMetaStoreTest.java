@@ -12,9 +12,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
-import java.util.UUID;
 
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V1_FILE;
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.EMPTY_REPL_ID;
 import static org.mockito.Mockito.*;
@@ -41,8 +41,11 @@ public class DefaultMetaStoreTest extends AbstractTest {
 
     @Before
     public void beforeDefaultMetaTest() throws IOException {
-        File metaFile = new File(baseDir, MetaStore.META_FILE);
+        File metaFile = new File(baseDir, META_V1_FILE);
         metaFile.delete();
+
+        File metaFileV2 = new File(baseDir, META_V2_FILE);
+        metaFileV2.delete();
 
         metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
     }
@@ -234,21 +237,26 @@ public class DefaultMetaStoreTest extends AbstractTest {
     }
 
     @Test
-    public void testUpgradeFromPsyncToGtid() throws Exception {
+    public void testRecoverFromV1() throws Exception {
         metaStore.rdbConfirm(replidA, 10000, "", rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
         metaStore.shiftReplicationId(replidB, 20000L);
-        metaStore.upgradeFromPsyncToGtid();
-        ReplicationStoreMeta metaDup = metaStore.dupReplicationStoreMeta();
+
+        File metaV2File = new File(baseDir, META_V2_FILE);
+        metaV2File.delete();
+
+        MetaStore recoveredMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
+
+        ReplicationStoreMeta metaDup = recoveredMetaStore.dupReplicationStoreMeta();
 
         ReplStage replStage = metaDup.getCurReplStage();
 
-        Assert.assertNull(metaStore.getReplId());
-        Assert.assertNull(metaStore.getReplId2());
-        Assert.assertNull(metaStore.beginOffset());
-        Assert.assertNull(metaStore.getSecondReplIdOffset());
+        Assert.assertNull(recoveredMetaStore.getReplId());
+        Assert.assertNull(recoveredMetaStore.getReplId2());
+        Assert.assertNull(recoveredMetaStore.beginOffset());
+        Assert.assertNull(recoveredMetaStore.getSecondReplIdOffset());
         Assert.assertNull(metaDup.getRdbLastOffset());
 
-        Assert.assertEquals(metaStore.getCurReplStageReplId(), replidB);
+        Assert.assertEquals(recoveredMetaStore.getCurReplStageReplId(), replidB);
         Assert.assertEquals(metaDup.getRdbContiguousBacklogOffset(), (Long)0L);
 
         Assert.assertEquals(replStage.getProto(), ReplStage.ReplProto.PSYNC);

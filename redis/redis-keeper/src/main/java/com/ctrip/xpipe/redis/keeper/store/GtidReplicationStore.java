@@ -31,12 +31,6 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 keeperMonitor, syncRateManager, redisOpParser);
     }
 
-    protected MetaStore recoverMetaStore(File baseDir, String keeperRunid) throws IOException {
-        MetaStore metaStore = super.recoverMetaStore(baseDir, keeperRunid);
-        metaStore.upgradeFromPsyncToGtid();
-        return metaStore;
-    }
-
     @Override
     protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
         RdbStore rdbStore = null, rordbStore = null;
