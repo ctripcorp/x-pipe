@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
@@ -50,6 +51,9 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Mock
     private RedisSlave slave;
 
+    @Mock
+    private KeeperConfig keeperConfig;
+
     private KeeperStats keeperStats;
 
     @Before
@@ -58,14 +62,16 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
         Mockito.when(keeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         Mockito.when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
+        Mockito.when(keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb()).thenReturn(1000L);
     }
 
     @Test
     public void testXSyncAna_gapPartial() {
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(200L);
         GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.xsync("*", "A:1-10,B:1-15", 100);
         ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet("C:1-5"), new GtidSet(""));
         XSyncContinue cont = new XSyncContinue(new GtidSet("A:1-10"), 100);
-        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, 200);
+        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, keeperRepl, keeperConfig, 200);
 
         Assert.assertFalse(action.isFull());
         Assert.assertFalse(action.protoSwitch);
@@ -78,10 +84,11 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testXSyncAna_gapFull() {
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(200L);
         GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.xsync("*", "A:1-10,B:1-15", 5);
         ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet("C:1-5"), new GtidSet(""));
         XSyncContinue cont = new XSyncContinue(new GtidSet("A:1-10"), 100);
-        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, -1);
+        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, keeperRepl, keeperConfig, -1);
         Assert.assertTrue(action.isFull());
     }
 
@@ -92,7 +99,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         replStage.setReplId2("test-repl-id2");
         replStage.setSecondReplIdOffset(100);
         Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(80L);
-        GapAllowSyncHandler.SyncAction action = handler.anaPSync(request, replStage, keeperRepl, 500);
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(600L);
+        GapAllowSyncHandler.SyncAction action = handler.anaPSync(request, replStage, keeperRepl, keeperConfig,500);
         Assert.assertFalse(action.full);
         Assert.assertEquals(250, action.backlogOffset);
         Assert.assertEquals("test-repl-id", action.replId);
@@ -102,17 +110,34 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testPSyncAna_full() {
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(300L);
         // wrong replId
         GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id-wrong", 50);
         ReplStage replStage = new ReplStage("test-repl-id", 100, 201);
         Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(100L);
-        GapAllowSyncHandler.SyncAction action = handler.anaPSync(request, replStage, keeperRepl, -1);
+        GapAllowSyncHandler.SyncAction action = handler.anaPSync(request, replStage, keeperRepl, keeperConfig, -1);
         Assert.assertTrue(action.full);
 
         // repl offset miss
         request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id", 1);
-        action = handler.anaPSync(request, replStage, keeperRepl, -1);
+        action = handler.anaPSync(request, replStage, keeperRepl, keeperConfig, -1);
         Assert.assertTrue(action.full);
+
+        // too much transfer
+        request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id", 100);
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(3000L);
+        action = handler.anaPSync(request, replStage, keeperRepl, keeperConfig, -1);
+        Assert.assertTrue(action.full);
+    }
+
+    @Test
+    public void testXSyncAna_full() {
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(3000L);
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.xsync("*", "A:1-10", 5);
+        ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet(""), new GtidSet(""));
+        XSyncContinue cont = new XSyncContinue(new GtidSet("A:1-10"), 100);
+        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, keeperRepl, keeperConfig, -1);
+        Assert.assertTrue(action.isFull());
     }
 
     @Test
