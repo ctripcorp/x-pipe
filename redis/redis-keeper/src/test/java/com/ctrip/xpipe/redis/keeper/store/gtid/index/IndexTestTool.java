@@ -56,7 +56,6 @@ public class IndexTestTool {
             fileChannel.position(offset); // 移动到指定的偏移量
             int bytesRead = fileChannel.read(buffer);
             buffer.flip();
-            System.out.println(new String(buffer.array()));
             ByteBuf byteBuf = null;
             if (bytesRead != -1) {
                 byteBuf = Unpooled.wrappedBuffer(buffer.array());
@@ -70,6 +69,20 @@ public class IndexTestTool {
             return result;
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String readBytebufAfter(String filePath, long offset, int length) {
+        try (FileInputStream fis = new FileInputStream(filePath);
+             FileChannel fileChannel = fis.getChannel()) {
+            ByteBuffer buffer = ByteBuffer.allocate((int) length);
+            fileChannel.position(offset); // 移动到指定的偏移量
+            int bytesRead = fileChannel.read(buffer);
+            buffer.flip();
+            System.out.println(new String(buffer.array()));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
