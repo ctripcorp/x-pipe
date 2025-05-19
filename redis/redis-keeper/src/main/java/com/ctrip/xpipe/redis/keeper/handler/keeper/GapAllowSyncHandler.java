@@ -110,7 +110,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return anaXSync(request, curStage, xsyncCont, -1);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
-            // 先判断临界点
+            logger.info("[anaRequest][usePreReplStage][pre:{}][cur:{}]", preStage, curStage);
             long reqBacklogOffset = -1;
             XSyncContinue xsyncCont = null;
             if (request.proto == ReplStage.ReplProto.PSYNC) {
@@ -191,7 +191,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     protected void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) {
         if (action.isFull()) {
             try {
-                logger.info("[runAction] {}", action.fullCause);
+                logger.info("[runAction][full] {}", action.fullCause);
                 slave.markPsyncProcessed();
                 keeperServer.fullSyncToSlave(slave, action.freshRdb);
                 keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
@@ -216,17 +216,18 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
 
-            SimpleStringParser resp;
+            String respStr;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
-                resp = new SimpleStringParser(String.format("%s %s", PARTIAL_SYNC, action.replId)
-                        + (action.protoSwitch || action.keeperPartial ? " "+(action.replOffset - 1):""));
+                respStr = String.format("%s %s", PARTIAL_SYNC, action.replId)
+                        + (action.protoSwitch || action.keeperPartial ? " "+(action.replOffset - 1):"");
             } else {
-                resp = new SimpleStringParser(String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",
+                respStr = String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",
                         action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1)
-                        + (action.keeperPartial ? " GTID.LOST " + action.keeperLost:""));
+                        + (action.keeperPartial ? " GTID.LOST " + action.keeperLost:"");
             }
 
-            slave.sendMessage(resp.format());
+            logger.info("[runAction][resp] {}", respStr);
+            slave.sendMessage(new SimpleStringParser(respStr).format());
             slave.markPsyncProcessed();
             slave.beginWriteCommands(new BacklogOffsetReplicationProgress(action.backlogOffset, action.backlogEndOffsetExcluded));
             slave.partialSync();
