@@ -272,9 +272,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
                     CAPA.EOF.toString(), CAPA.PSYNC2.toString());
         }
         chain.add(new FailSafeCommandWrapper<>(capa));
-
-        Replconf crdt = new Replconf(clientPool, ReplConfType.CRDT, scheduled, commandTimeoutMilli, REPL_CONF_CRDT_MARK);
-        chain.add(new FailSafeCommandWrapper<>(crdt));
         chain.add(new FailSafeCommandWrapper<>(keeperIdcCommand()));
 
         try {

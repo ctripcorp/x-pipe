@@ -156,7 +156,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long getCurReplStageReplOff() {
 		ReplStage curStage = metaStore.getCurrentReplStage();
-		getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset(), curStage.getBegOffsetBacklog());
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset(), curStage.getBegOffsetBacklog());
+		}
 		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset() - curStage.getBegOffsetBacklog();
 	}
 
@@ -724,11 +726,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			cmdStore.addCommandsListener(progress, commandsListener);
 		}
-	}
-
-	@Override
-	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

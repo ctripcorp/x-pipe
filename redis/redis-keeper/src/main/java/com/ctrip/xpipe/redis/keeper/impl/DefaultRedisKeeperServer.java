@@ -127,9 +127,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private String threadPoolName;
 
-	private volatile boolean isStartIndexing;
-	private volatile ExecutorService indexingExecutors; //also treated as a state
-
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
 
@@ -459,7 +456,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.dispose();
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
-		if (null != indexingExecutors) indexingExecutors.shutdown();
 		super.doDispose();
 	}
 
@@ -690,15 +686,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
-		String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
-		try {
-			if (isStartIndexing) {
-				EventMonitor.DEFAULT.logEvent("INDEX.START", replId + " - " + gtidSet);
-				startIndexing();
-			}
-		} catch (Throwable t) {
-			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + replId + " - " + gtidSet);
-		}
 	}
 
 	@Override
@@ -888,37 +875,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private synchronized void clearLoadingSlaves() {
 		loadingSlaves.clear();
-	}
-
-	@Override
-	public synchronized void startIndexing() throws IOException {
-
-		logger.info("[startIndexing]{}, {}", this, rdbDumper.get());
-
-		if (indexingExecutors == null) {
-			indexingExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "Indexing-" + threadPoolName));
-		}
-
-		isStartIndexing = true;
-
-		FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().createIndexIfPossible(indexingExecutors);
-
-		if(rdbDumper.get() == null) {
-
-			if (failCause != null) {
-				try {
-					dumpNewRdb(false);
-				} catch (Throwable t) {
-					logger.error("[startIndexing][dumpNewRdb] fail {}, {}", this, rdbDumper.get());
-					logger.error("[startIndexing][dumpNewRdb] fail", t);
-				}
-			}
-		}
-	}
-
-	@Override
-	public boolean isStartIndexing() {
-	    return isStartIndexing;
 	}
 
 	private RdbDumper dumpNewRdb(boolean tryRordb) throws CreateRdbDumperException, SetRdbDumperException {

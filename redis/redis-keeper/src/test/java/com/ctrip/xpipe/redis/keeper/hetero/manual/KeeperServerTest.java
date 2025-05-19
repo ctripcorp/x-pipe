@@ -25,21 +25,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class KeeperServerTest extends AbstractRedisKeeperContextTest {
 
     @Test
-    public void manual() throws Exception {
-        RedisKeeperServer redisKeeperServer = createRedisKeeperServer(getReplId().id(), createKeeperMeta(6000, "0"));
-        redisKeeperServer.initialize();
-        redisKeeperServer.start();
-
-        redisKeeperServer.getReplicationStore().getMetaStore().becomeActive();
-        redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 6479)));
-        redisKeeperServer.reconnectMaster();
-
-        redisKeeperServer.startIndexing();
-
-        waitForAnyKey();
-    }
-
-    @Test
     public void sendRandom() {
 
         RedisMeta redis = new RedisMeta();
