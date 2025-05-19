@@ -78,7 +78,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             }
             if(index != null) {
                 this.indexFile.setLength((int)index.getPosition());
-                this.blockWriter = null;
+                setBlockWriter(null);
                 this.indexEntry = null;
                 indexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
             }
@@ -111,11 +111,11 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
 
     private void finishBlock() throws IOException {
+        saveIndexEntry();
+        gtidSetWrapper.compensate(indexEntry);
         if(blockWriter != null) {
             blockWriter.close();
         }
-        saveIndexEntry();
-        gtidSetWrapper.compensate(indexEntry);
     }
 
 
@@ -153,6 +153,13 @@ public class IndexWriter extends AbstractIndex implements Closeable {
         if(indexEntry != null) {
             indexEntry.saveToDisk(blockWriter, indexFile.getFileChannel());
         }
+    }
+
+    private void setBlockWriter(BlockWriter blockWriter) throws IOException {
+        if(this.blockWriter != null) {
+            this.blockWriter.close();
+        }
+        this.blockWriter = blockWriter;
     }
 
 }

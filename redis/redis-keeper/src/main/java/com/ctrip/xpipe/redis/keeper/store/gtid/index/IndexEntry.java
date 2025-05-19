@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,6 +17,8 @@ public class IndexEntry {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
+
+    private static final Logger logger = LoggerFactory.getLogger(GtidCmdOneSegmentReader.class);
 
     private static final String SEPARATOR = RedisProtocol.CRLF;
 
@@ -127,11 +132,11 @@ public class IndexEntry {
         long blockEndOffset = buffer.getLong();
         int size = buffer.getInt();
 
-        byte[] separatorBytes = new byte[SEPARATOR.length()];
+        byte[] separatorBytes = new byte[SEPARATOR.getBytes().length];
         buffer.get(separatorBytes);
         String separator = new String(separatorBytes);
         if (!SEPARATOR.equals(separator)) {
-            throw new IllegalArgumentException("Invalid separator in buffer");
+            throw new IllegalArgumentException("Invalid separator in buffer, {}" + separator);
         }
         IndexEntry indexEntry = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
         indexEntry.setBlockEndOffset(blockEndOffset);

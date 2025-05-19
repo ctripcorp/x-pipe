@@ -70,7 +70,9 @@ public class GtidSetWrapper {
         while (fileRemainingLength(channel) >= IndexEntry.SEGMENT_LENGTH) {
             long pos = channel.position();
             IndexEntry item = IndexEntry.readFromFile(channel);
-            recoverGtidSet.compensate(item.getUuid(), item.getStartGno(), item.getEndGno());
+            if(item.getSize() > 0) {
+                recoverGtidSet.compensate(item.getUuid(), item.getStartGno(), item.getEndGno());
+            }
             item.setPosition(pos);
             indexEntry = item;
         }
