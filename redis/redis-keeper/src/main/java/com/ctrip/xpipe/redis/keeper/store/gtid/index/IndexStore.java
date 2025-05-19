@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
@@ -13,6 +14,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 
 public class IndexStore implements StreamCommandListener, Closeable {
 
@@ -38,6 +40,14 @@ public class IndexStore implements StreamCommandListener, Closeable {
     public void initialize(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(cmdWriter.getFileContext().getChannel().size(), this.opParser);
+        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+        this.streamCommandReader.addListener(this);
+        this.indexWriter.init();
+    }
+
+    public void initialize(CommandFile commandFile) throws IOException {
+        this.currentCmdFileName = commandFile.getFile().getName();
+        this.streamCommandReader = new StreamCommandReader(commandFile.getFile().length(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.streamCommandReader.addListener(this);
         this.indexWriter.init();
@@ -117,7 +127,7 @@ public class IndexStore implements StreamCommandListener, Closeable {
         this.streamCommandReader.addListener(this);
         ControllableFile controllableFile = null;
         try {
-            File f = new File(baseDir + cmdFileName);
+            File f = new File(Paths.get(baseDir, cmdFileName).toString());
             controllableFile = new DefaultControllableFile(f);
             controllableFile.getFileChannel().position(cmdFileOffset);
             while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
@@ -128,7 +138,16 @@ public class IndexStore implements StreamCommandListener, Closeable {
                 ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
                 this.write(byteBuf);
             }
-        } finally {
+            long remainBytes = this.streamCommandReader.getRemainLength();
+            if(remainBytes > 0) {
+                controllableFile.setLength((int)controllableFile.size() - (int) remainBytes);
+                this.streamCommandReader.relaseRemainBuf();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
             if(controllableFile != null) {
                 controllableFile.close();
             }
