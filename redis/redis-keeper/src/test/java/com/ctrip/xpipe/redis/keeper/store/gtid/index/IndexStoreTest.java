@@ -346,5 +346,18 @@ public class IndexStoreTest {
 
     }
 
+    @Test
+    public void parseDirty() throws Exception {
+        String path = "src/test/resources/GtidTest/dirty";
+        write(path);
+
+        for(int i = 633745; i < 633748; i++) {
+            Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
+            //RedisOp redisOp = IndexTestTool.readBytebufAfter(path, point.getKey());
+            System.out.println(point.getKey());
+            //Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + i);
+        }
+    }
+
 
 }
