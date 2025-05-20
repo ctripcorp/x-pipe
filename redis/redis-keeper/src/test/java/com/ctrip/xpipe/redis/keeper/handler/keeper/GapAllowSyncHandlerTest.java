@@ -141,6 +141,25 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     }
 
     @Test
+    public void testXSyncAnaBacklogContSmall() {
+        Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(90L);
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.xsync("*", "A:1-10", 5);
+        ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet(""), new GtidSet(""));
+        XSyncContinue cont = new XSyncContinue(new GtidSet("A:1-10"), 100);
+        GapAllowSyncHandler.SyncAction action = handler.anaXSync(request, replStage, cont, keeperRepl, keeperConfig, -1);
+        Assert.assertFalse(action.isFull());
+
+        ReplStage stage = new ReplStage("replid-test", 1, 101, "masterUuid-test", new GtidSet(""), new GtidSet(""));
+        action = handler.anaXSync(request, stage, cont, keeperRepl, keeperConfig, -1);
+        Assert.assertTrue(action.isFull());
+
+        Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(101L);
+        action = handler.anaXSync(request, replStage, cont, keeperRepl, keeperConfig, -1);
+        Assert.assertTrue(action.isFull());
+
+    }
+
+    @Test
     public void testSyncAction_full() throws Exception {
         GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.full("test");
         handler.runAction(action, keeperServer, slave);
