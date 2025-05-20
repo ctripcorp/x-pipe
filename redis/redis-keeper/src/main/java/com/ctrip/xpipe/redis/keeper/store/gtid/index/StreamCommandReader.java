@@ -12,7 +12,7 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +28,7 @@ public class StreamCommandReader {
     private ByteBuf remainingBuf;
 
     private List<StreamCommandListener> listeners;
+    private List<FinishParseDataListener> finishParseDataListeners;
 
     public StreamCommandReader(long offset, RedisOpParser opParser) {
         this.currentOffset = offset;
@@ -35,13 +36,18 @@ public class StreamCommandReader {
         this.opParser = opParser;
         this.remainingBuf = null;
         this.listeners = new ArrayList<>();
+        this.finishParseDataListeners = new ArrayList<>();
     }
 
     public void addListener(StreamCommandListener listener) {
         this.listeners.add(listener);
     }
 
-    public void doRead(ByteBuf byteBuf) {
+    public void addFinishParseDataListener(FinishParseDataListener listener) {
+        this.finishParseDataListeners.add(listener);
+    }
+
+    public void doRead(ByteBuf byteBuf) throws IOException {
 
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
@@ -53,7 +59,6 @@ public class StreamCommandReader {
             remainingBuf = null;
         }
         mergeBuf.addComponent(true, byteBuf);
-        int length = mergeBuf.readableBytes();
         while (mergeBuf.readableBytes() > 0) {
             int pre = mergeBuf.readerIndex();
             RedisClientProtocol<Object[]> protocol = null;
@@ -74,9 +79,11 @@ public class StreamCommandReader {
             }
             if (protocol == null) {
                 this.protocolParser.reset();
-                remainingBuf = mergeBuf.copy(pre, length - pre);
+                remainingBuf = mergeBuf.copy(pre, mergeBuf.writerIndex() - pre);
                 break;
             }
+
+            notifyFinishParseDataListener(mergeBuf.slice(pre, mergeBuf.writerIndex() - pre));
 
             this.currentOffset += mergeBuf.readerIndex() - pre;
 
@@ -88,6 +95,12 @@ public class StreamCommandReader {
                 }
             }
             this.protocolParser.reset();
+        }
+    }
+
+    private void notifyFinishParseDataListener(ByteBuf byteBuf) throws IOException {
+        for (FinishParseDataListener listener : finishParseDataListeners) {
+            listener.onFinishParse(byteBuf);
         }
     }
 
