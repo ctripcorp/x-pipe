@@ -106,6 +106,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals("test-repl-id", action.replId);
         Assert.assertEquals(50, action.replOffset);
         Assert.assertEquals(500, action.backlogEndOffsetExcluded);
+        Assert.assertEquals("test-repl-id2", action.syncReq.replId);
     }
 
     @Test
@@ -168,8 +169,9 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testXSyncAction_partial() throws Exception {
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.xsync("replid-test", "A:1-10,B:1-5", 1000);
         ReplStage replStage = new ReplStage("replid-test", 1, 1, "masterUuid-test", new GtidSet("C:1-5"), new GtidSet(""));
-        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.XContinue(replStage, new GtidSet("A:1-10"), 100, new GtidSet("B:1-5"))
+        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.XContinue(request, replStage, new GtidSet("A:1-10"), 100, new GtidSet("B:1-5"))
                 .setBacklogEndExcluded(200);
         handler.runAction(action, keeperServer, slave);
         Mockito.verify(keeperServer).increaseLost(new GtidSet("B:1-5"), slave);
@@ -179,8 +181,9 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testPSyncAction_partial() throws Exception {
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id", 1000);
         ReplStage replStage = new ReplStage("test-repl-id", 1, 101);
-        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.Continue(replStage, "test-repl-id", 1000).setBacklogEndExcluded(2000);
+        GapAllowSyncHandler.SyncAction action = GapAllowSyncHandler.SyncAction.Continue(request, replStage, "test-repl-id", 1000).setBacklogEndExcluded(2000);
         handler.runAction(action, keeperServer, slave);
         Mockito.verify(keeperServer, Mockito.never()).increaseLost(any(), any());
         Mockito.verify(slave).sendMessage(any(ByteBuf.class));
