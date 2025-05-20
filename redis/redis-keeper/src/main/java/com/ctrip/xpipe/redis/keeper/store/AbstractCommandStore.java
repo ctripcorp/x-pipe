@@ -118,7 +118,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this);
     }
 
     @Override
@@ -275,16 +275,22 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         makeSureOpen();
 
-        ByteBuf duplicate = null;
-        if(buildIndex){
-            duplicate = byteBuf.duplicate();
-        }
 
         boolean rotateFile = cmdWriter.rotateFileIfNecessary();
 
-        SyncRateLimiter rateLimiter = rateLimiterRef.get();
-        if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
+        if(buildIndex) {
+            return appendCommandsWithIndex(byteBuf, rotateFile);
+        } else {
+            return onlyAppendCommand(byteBuf);
+        }
+    }
 
+    @Override
+    public int onlyAppendCommand(ByteBuf byteBuf) throws IOException {
+
+        SyncRateLimiter rateLimiter = rateLimiterRef.get();
+
+        if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
         commandStoreDelay.beginWrite();
 
         int wrote = cmdWriter.write(byteBuf);
@@ -294,15 +300,28 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         offsetNotifier.offsetIncreased(offset);
 
-        if(buildIndex) {
-            if(rotateFile) {
-                indexStore.switchCmdFile(cmdWriter);
-            }
-            indexStore.write(duplicate);
-        }
-
         return wrote;
     }
+
+    private int appendCommandsWithIndex(ByteBuf byteBuf, boolean rotateFile) throws IOException {
+
+        commandStoreDelay.beginWrite();
+
+        long beginOffset = cmdWriter.totalLength() - 1;
+
+        if(rotateFile) {
+            indexStore.switchCmdFile(cmdWriter);
+        }
+
+        indexStore.write(byteBuf);
+
+        long offset = cmdWriter.totalLength() - 1;
+        commandStoreDelay.endWrite(offset);
+        offsetNotifier.offsetIncreased(offset);
+
+        return (int)(offset - beginOffset);
+    }
+
 
     @Override
     public long totalLength() {
@@ -653,7 +672,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
         if(buildIndex)return;
         indexStore.close();
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
     }

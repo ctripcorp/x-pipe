@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
+import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
@@ -16,7 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
-public class IndexStore implements StreamCommandListener, Closeable {
+public class IndexStore implements StreamCommandListener, FinishParseDataListener,  Closeable {
 
     private IndexWriter indexWriter;
 
@@ -30,9 +31,12 @@ public class IndexStore implements StreamCommandListener, Closeable {
 
     private GtidSet startGtidSet;
 
-    public IndexStore(String baseDir, RedisOpParser redisOpParser) {
+    private CommandStore commandStore;
+
+    public IndexStore(String baseDir, RedisOpParser redisOpParser, CommandStore commandStore) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
+        this.commandStore = commandStore;
         this.startGtidSet = new GtidSet("");
     }
 
@@ -42,6 +46,7 @@ public class IndexStore implements StreamCommandListener, Closeable {
         this.streamCommandReader = new StreamCommandReader(cmdWriter.getFileContext().getChannel().size(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.streamCommandReader.addListener(this);
+        this.streamCommandReader.addFinishParseDataListener(this);
         this.indexWriter.init();
     }
 
@@ -50,10 +55,11 @@ public class IndexStore implements StreamCommandListener, Closeable {
         this.streamCommandReader = new StreamCommandReader(commandFile.getFile().length(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.streamCommandReader.addListener(this);
+        this.streamCommandReader.addFinishParseDataListener(this);
         this.indexWriter.init();
     }
 
-    public void write(ByteBuf byteBuf) {
+    public void write(ByteBuf byteBuf) throws IOException {
         streamCommandReader.doRead(byteBuf);
 
     }
@@ -173,5 +179,10 @@ public class IndexStore implements StreamCommandListener, Closeable {
         for (File file : files) {
             file.delete();
         }
+    }
+
+    @Override
+    public void onFinishParse(ByteBuf byteBuf) throws IOException {
+        commandStore.onlyAppendCommand(byteBuf);
     }
 }
