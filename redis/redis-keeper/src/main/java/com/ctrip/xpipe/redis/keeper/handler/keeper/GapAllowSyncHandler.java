@@ -190,6 +190,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         long backlogEnd = keeperRepl.backlogEndOffset();
         long maxTransfer = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 
+        long backlogBeginOffset = Math.max(xsyncStage.getBegOffsetBacklog(), keeperRepl.backlogBeginOffset());
+
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
             GtidSet gap = masterGtidSet.symmetricDiff(req);
@@ -200,6 +202,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));
             } else if (backlogEnd - backlogCont >= maxTransfer) {
                 return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, backlogCont, maxTransfer));
+            } else if (backlogCont < backlogBeginOffset) {
+                return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset));
             } else {
                 return SyncAction.XContinue(xsyncStage, masterGtidSet, backlogCont, masterLost).setBacklogEndExcluded(stageEndBacklogOffset);
             }
