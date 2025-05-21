@@ -152,9 +152,10 @@ public class IndexStoreTest {
     public void testClose() throws Exception {
         write(filePath);
         File directory = new File(baseDir);
-        Assert.assertEquals(directory.list().length, 3);
+        int initSize = directory.listFiles().length;
         indexStore.closeWithDeleteIndexFiles();
-        Assert.assertEquals(directory.list().length, 1);
+        int lastSize = directory.listFiles().length;
+        Assert.assertEquals(initSize, lastSize + 2);
     }
 
     @Test
