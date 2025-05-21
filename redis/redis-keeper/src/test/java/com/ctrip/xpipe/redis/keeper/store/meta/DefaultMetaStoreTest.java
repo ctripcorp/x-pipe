@@ -172,6 +172,17 @@ public class DefaultMetaStoreTest extends AbstractTest {
     }
 
     @Test
+    public void testPsyncContinueReplidSame_Ignored() throws IOException{
+        metaStore.rdbConfirmPsync(replidA, 1, 10000, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+        metaStore.psyncContinue(replidA, 11000);
+
+        Assert.assertEquals(metaStore.getCurrentReplStage().getProto(), ReplStage.ReplProto.PSYNC);
+        Assert.assertEquals(metaStore.getCurReplStageReplId(), replidA);
+        Assert.assertEquals(metaStore.getCurrentReplStage().getReplId2(), EMPTY_REPL_ID);
+        Assert.assertEquals(metaStore.getCurrentReplStage().getSecondReplIdOffset(), DEFAULT_SECOND_REPLID_OFFSET);
+    }
+
+    @Test
     public void testPsyncContinueFromOffset() throws IOException{
         metaStore.rdbConfirmPsync(replidA, 1, 10000, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
         metaStore.psyncContinueFrom(replidB, 10000, 20000, cmdPrefix);
