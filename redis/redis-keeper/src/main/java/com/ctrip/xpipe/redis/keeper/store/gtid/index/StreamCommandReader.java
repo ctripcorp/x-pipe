@@ -53,7 +53,6 @@ public class StreamCommandReader {
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
         }
-
         CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
         if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
             mergeBuf.addComponent(true, remainingBuf);
@@ -78,7 +77,6 @@ public class StreamCommandReader {
             if (protocol == null) {
                 this.protocolParser.reset();
                 remainingBuf = mergeBuf.copy(pre,  mergeBuf.writerIndex() - pre);
-                String remain = remainingBuf.duplicate().toString(Charset.defaultCharset());
                 break;
             }
 
