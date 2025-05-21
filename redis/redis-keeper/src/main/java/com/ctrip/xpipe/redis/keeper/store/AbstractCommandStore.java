@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -313,13 +314,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             indexStore.switchCmdFile(cmdWriter);
         }
 
-        indexStore.write(byteBuf);
-
         long offset = cmdWriter.totalLength() - 1;
-        commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        indexStore.write(byteBuf);
+        int writer = (int)(offset - beginOffset);
 
-        return (int)(offset - beginOffset);
+        return writer;
     }
 
 

@@ -154,6 +154,8 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
             e.printStackTrace();
         }
         finally {
+            // 从cmd 读 写完之后再加入写
+            this.streamCommandReader.addFinishParseDataListener(this);
             if(controllableFile != null) {
                 controllableFile.close();
             }

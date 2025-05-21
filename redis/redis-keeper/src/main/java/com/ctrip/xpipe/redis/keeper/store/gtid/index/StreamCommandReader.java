@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,25 +54,29 @@ public class StreamCommandReader {
             throw new XpipeRuntimeException("unlikely: opParser is null");
         }
 
-        CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
+        ByteBuf mergeBuf = null;
+        String str2 = null;
         if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
-            mergeBuf.addComponent(true, remainingBuf);
-            remainingBuf = null;
+            str2 = remainingBuf.duplicate().toString(Charset.defaultCharset());
+            mergeBuf = Unpooled.wrappedBuffer(remainingBuf, byteBuf);
+        } else {
+            mergeBuf = byteBuf;
         }
-        mergeBuf.addComponent(true, byteBuf);
+
+
+        String str = mergeBuf.duplicate().toString(Charset.defaultCharset());
+
+        int length = mergeBuf.readerIndex();
         while (mergeBuf.readableBytes() > 0) {
             int pre = mergeBuf.readerIndex();
             RedisClientProtocol<Object[]> protocol = null;
             try {
                 protocol = protocolParser.read(mergeBuf);
             } catch (RedisRuntimeException | NumberFormatException exception) {
-                log.error("[doRead]{}", exception.getMessage());
-                // skip dirty data
+                log.error("[doRead] {}", exception.getMessage());
                 int starIndex = findFirstStar(mergeBuf, pre + 1);
                 if(starIndex != -1) {
-                    long afterOffset = this.currentOffset + starIndex - pre;
-                    log.info("[skip some data] before {} after {}", this.currentOffset, afterOffset);
-                    this.currentOffset = afterOffset;
+                    log.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex).toString(Charset.defaultCharset()));
                     mergeBuf.readerIndex(starIndex);
                     this.protocolParser.reset();
                     continue;
@@ -79,11 +84,13 @@ public class StreamCommandReader {
             }
             if (protocol == null) {
                 this.protocolParser.reset();
-                remainingBuf = mergeBuf.copy(pre, mergeBuf.writerIndex() - pre);
+                remainingBuf = mergeBuf.copy(pre,  mergeBuf.writerIndex() - pre);
+                String remain = remainingBuf.duplicate().toString(Charset.defaultCharset());
                 break;
             }
 
-            notifyFinishParseDataListener(mergeBuf.slice(pre, mergeBuf.writerIndex() - pre));
+            ByteBuf finishBuf = mergeBuf.slice(pre, mergeBuf.readerIndex() - pre);
+            notifyFinishParseDataListener(finishBuf);
 
             this.currentOffset += mergeBuf.readerIndex() - pre;
 
@@ -96,6 +103,9 @@ public class StreamCommandReader {
             }
             this.protocolParser.reset();
         }
+
+        byteBuf.skipBytes(byteBuf.readableBytes());
+
     }
 
     private void notifyFinishParseDataListener(ByteBuf byteBuf) throws IOException {
