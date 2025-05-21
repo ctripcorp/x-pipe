@@ -356,9 +356,30 @@ public class IndexStoreTest {
 
         write(path);
 
+        String dirtyLength = "*7\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$47\r\n" +
+                "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99";
+
+        String dirtyLenth2 = "*7\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$47\r\n" +
+                "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633746\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
+                "$4\r\n" +
+                "HSET\r\n" +
+                "$6\r\n" +
+                "myhash\r\n" +
+                "$20\r\n" +
+                "element:__rand_int__\r\n" +
+                "$";
+
         for(int i = 633747; i < 633758; i++) {
             Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            RedisOp redisOp = IndexTestTool.readBytebufAfter(path, point.getKey());
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(path, point.getKey() + dirtyLength.getBytes().length + dirtyLenth2.getBytes().length);
             Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i+1));
         }
     }
