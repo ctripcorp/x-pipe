@@ -255,7 +255,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             slave.markPsyncProcessed();
             slave.beginWriteCommands(new BacklogOffsetReplicationProgress(action.backlogOffset, action.backlogEndOffsetExcluded));
             slave.partialSync();
-            keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
+            keeperServer.getKeeperMonitor().getKeeperStats().increatePartialSync();
         }
     }
 

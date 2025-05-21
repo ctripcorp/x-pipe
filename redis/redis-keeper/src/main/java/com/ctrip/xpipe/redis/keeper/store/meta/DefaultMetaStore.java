@@ -331,6 +331,12 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			}
 
 			String currentReplId = curReplStage.getReplId();
+
+			if(ObjectUtils.equals(currentReplId, newReplId)){
+				logger.info("[shiftReplicationId][repidEqual]{}", newReplId);
+				return metaDup;
+			}
+
 			// backlogOff - curReplStage.beginOffsetBacklog == secondReplidOffset - replStage.beginOffsetRepl
 			long secondReplidOffset = curReplStage.getBegOffsetRepl() + backlogOff - curReplStage.getBegOffsetBacklog();
 
