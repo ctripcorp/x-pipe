@@ -54,19 +54,12 @@ public class StreamCommandReader {
             throw new XpipeRuntimeException("unlikely: opParser is null");
         }
 
-        ByteBuf mergeBuf = null;
-        String str2 = null;
+        CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
         if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
-            str2 = remainingBuf.duplicate().toString(Charset.defaultCharset());
-            mergeBuf = Unpooled.wrappedBuffer(remainingBuf, byteBuf);
-        } else {
-            mergeBuf = byteBuf;
+            mergeBuf.addComponent(true, remainingBuf);
+            remainingBuf = null;
         }
-
-
-        String str = mergeBuf.duplicate().toString(Charset.defaultCharset());
-
-        int length = mergeBuf.readerIndex();
+        mergeBuf.addComponent(true, byteBuf);
         while (mergeBuf.readableBytes() > 0) {
             int pre = mergeBuf.readerIndex();
             RedisClientProtocol<Object[]> protocol = null;
