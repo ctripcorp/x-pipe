@@ -168,7 +168,12 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
     @Override
     public synchronized void close() throws IOException {
-        this.indexWriter.close();
+        if(this.streamCommandReader != null) {
+            this.streamCommandReader.relaseRemainBuf();
+        }
+        if(this.indexWriter != null) {
+            this.indexWriter.close();
+        }
     }
 
     public void closeWithDeleteIndexFiles() throws IOException {

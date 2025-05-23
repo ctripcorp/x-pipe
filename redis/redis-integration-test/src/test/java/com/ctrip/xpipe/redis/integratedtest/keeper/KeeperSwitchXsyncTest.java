@@ -69,7 +69,7 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
             try {
                 makeKeeperRight();
-                Thread.sleep(1200);
+                Thread.sleep(1000);
                 for (RedisMeta slave: getRedisSlaves()) {
                     setRedisToGtidEnabled(slave.getIp(), slave.getPort());
                     setRedisMaster(slave, new HostPort(backupKeeperMeta.getIp(), backupKeeperMeta.getPort()));
@@ -105,26 +105,26 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
         System.out.println(gtid);
     }
 
-    private String getGtidSet(String ip, int port) throws ExecutionException, InterruptedException {
+    private String getGtidSet(String ip, int port, String key) throws ExecutionException, InterruptedException {
         SimpleObjectPool<NettyClient> masterClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(ip, port));
         InfoCommand infoCommand = new InfoCommand(masterClientPool, InfoCommand.INFO_TYPE.GTID, scheduled);
         String value = infoCommand.execute().get();
         logger.info("get gtid set from {}, {}, {}", ip, port, value);
-        String gtidSet = new InfoResultExtractor(value).extract("gtid_executed");
+        String gtidSet = new InfoResultExtractor(value).extract(key);
         return gtidSet;
     }
 
     private void assertGtid(RedisMeta master) throws ExecutionException, InterruptedException {
-        String masterGtid = getGtidSet(master.getIp(), master.getPort());
-        String activeKeeperGtid = getGtidSet(activeKeeper.getIp(),activeKeeper.getPort());
-        String backGtidSet = getGtidSet(backupKeeper.getIp(),backupKeeper.getPort());
+        String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_set");
+        String activeKeeperGtid = getGtidSet(activeKeeper.getIp(),activeKeeper.getPort(), "gtid_executed");
+        String backGtidSet = getGtidSet(backupKeeper.getIp(),backupKeeper.getPort(), "gtid_executed");
         logger.info("masterGtid:{}", masterGtid);
         logger.info("activeKeeperGtid:{}", activeKeeperGtid);
         logger.info("backGtidSet:{}", backGtidSet);
         Assert.assertEquals(activeKeeperGtid, masterGtid);
         Assert.assertEquals(masterGtid, backGtidSet);
         for(RedisMeta slave: getRedisSlaves()) {
-            String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort());
+            String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
             logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
             Assert.assertEquals(masterGtid, slaveGtidStr);
         }
