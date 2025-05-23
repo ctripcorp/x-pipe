@@ -119,7 +119,6 @@ function tryRemoveJarLog() {
 FULL_DIR=`getCurrentRealPath`
 SERVICE_NAME=redis-proxy
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
-JMX_PORT=` expr $SERVER_PORT + 10000 `
 IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
 LOG_DIR=/opt/logs/100013684
 `trySaveHeapTrace ${LOG_DIR}`
@@ -129,7 +128,7 @@ LOG_DIR=/opt/logs/100013684
 if [ ! $SERVER_PORT -eq 8080 ];then
     LOG_DIR=${LOG_DIR}_$SERVER_PORT
 fi
-echo port:$SERVER_PORT, jmx_port:$JMX_PORT, local ip:$IP
+echo port:$SERVER_PORT, local ip:$IP
 echo log:$LOG_DIR
 
 #make sure log right
@@ -144,7 +143,7 @@ echo "current env:"$ENV
   XMN=`getSafeXmn $USED_MEM`
   MAX_DIRECT=`getSafeMaxDirect`
   JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
-export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.maxDirectMemory=-1 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
+export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZGC -XX:MaxTenuringThreshold=1 --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -Dio.netty.tryReflectionSetAccessible=true -Dio.netty.maxDirectMemory=-1 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dlog4j2.asyncLoggerRingBufferSize=32768 -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:safepoint,classhisto*=trace,age*,gc*=info:file=$LOG_DIR/gc-%t.log:time,tid,tags:filecount=5,filesize=50m -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/ -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
 
 export LD_PRELOAD=/usr/local/lib/libjemalloc.so
 export MALLOC_CONF=prof:false,lg_prof_interval:30,lg_prof_sample:20,prof_prefix:/opt/logs/100013684/jeprof
