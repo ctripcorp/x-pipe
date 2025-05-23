@@ -82,7 +82,6 @@ public class StreamCommandReader {
 
             ByteBuf finishBuf = mergeBuf.slice(pre, mergeBuf.readerIndex() - pre);
             notifyFinishParseDataListener(finishBuf);
-
             this.currentOffset += mergeBuf.readerIndex() - pre;
 
             Object[] payload = protocol.getPayload();
@@ -107,9 +106,6 @@ public class StreamCommandReader {
 
     public void resetOffset() {
         this.currentOffset = 0;
-        if(this.remainingBuf != null && this.remainingBuf.readableBytes() > 0) {
-            this.currentOffset -= remainingBuf.readableBytes();
-        }
     }
 
     private String readGtid(Object[] payload) {

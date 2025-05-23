@@ -767,6 +767,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				LifecycleHelper.stopIfPossible(this.keeperRedisMaster);
 				LifecycleHelper.disposeIfPossible(this.keeperRedisMaster);
 				this.keeperRedisMaster = null;
+				this.getReplicationStore().doAfterDisposeMaster();
 			} catch (Exception e) {
 				logger.error("[reconnectMaster][stop previois master]" + this.keeperRedisMaster, e);
 			}

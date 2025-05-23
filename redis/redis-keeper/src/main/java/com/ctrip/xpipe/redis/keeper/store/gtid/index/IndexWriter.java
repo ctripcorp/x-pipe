@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -11,6 +13,7 @@ import java.io.IOException;
 
 public class IndexWriter extends AbstractIndex implements Closeable {
 
+    private static final Logger log = LoggerFactory.getLogger(IndexWriter.class);
     private BlockWriter blockWriter;
     private IndexEntry indexEntry;
     private GtidSetWrapper gtidSetWrapper;
@@ -136,6 +139,9 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
     @Override
     public void close() throws IOException {
+        if(!isClosed.compareAndSet(false, true)) {
+            return;
+        }
         saveIndexEntry();
         super.closeIndexFile();
         if(blockWriter != null) {
@@ -150,6 +156,9 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     }
 
     public void saveIndexEntry() throws IOException {
+        if(isClosed.get()) {
+            return;
+        }
         if(indexEntry != null) {
             indexEntry.saveToDisk(blockWriter, indexFile.getFileChannel());
         }

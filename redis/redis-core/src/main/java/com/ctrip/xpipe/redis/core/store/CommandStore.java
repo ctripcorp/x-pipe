@@ -78,4 +78,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	void switchToPsync(String replId, long offset) throws IOException;
 
 	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
+
+	void doAfterDisposeMaster();
 }

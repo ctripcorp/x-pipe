@@ -8,8 +8,11 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractIndex {
+
+    protected AtomicBoolean isClosed = new AtomicBoolean(false);
 
     public static final String BLOCK = "block_";
     public static final String INDEX = "index_";
@@ -70,7 +73,7 @@ public abstract class AbstractIndex {
                 })
                 .max(Comparator.comparingLong(file -> {
                     String fileName = file.getName();
-                    return Long.parseLong(fileName.substring(0, fileName.indexOf('.')));
+                    return Long.parseLong(fileName.substring(fileName.lastIndexOf('_') + 1));
                 }))
                 .orElse(null);
 
