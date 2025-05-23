@@ -385,5 +385,20 @@ public class IndexStoreTest {
         }
     }
 
+    @Test
+    public void test() throws Exception {
+        String dir = "src/test/resources/GtidTest/replication/479a669b-a1f6-4cb1-8c13-e37b1f84fdbf/";
+        RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+        RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        indexStore = new IndexStore(dir, opParser, commandStore);
+        when(commandFile.getFile()).thenReturn(new File("cmd_d2309324-aee8-40fc-aa97-af10ff3edbf7_621957"));
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        indexStore.initialize(writer);
+
+        Pair<Long, GtidSet> point = indexStore.locateContinueGtidSet(new GtidSet("e288f2e53754c1f9e4c51ab8ed4805a31f0747ac:1-76"));
+        Assert.assertEquals(point.getValue().toString(), "e288f2e53754c1f9e4c51ab8ed4805a31f0747ac:21-76");
+    }
+
 
 }

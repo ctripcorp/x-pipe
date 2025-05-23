@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -12,6 +14,8 @@ import java.util.List;
 
 
 public class IndexReader extends AbstractIndex implements Closeable {
+
+    private static final Logger log = LoggerFactory.getLogger(IndexStore.class);
 
     private List<IndexEntry> indexItemList;
 
@@ -28,9 +32,15 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
 
     public void init() throws IOException {
-        super.initIndexFile();
-        // skip gtid set
+
         indexItemList = new ArrayList<>();
+        super.initIndexFile();
+
+        if(indexFile.getFileChannel().size() == 0) {
+            startGtidSet = null;
+            return;
+        }
+        // skip gtid set
         startGtidSet =  GtidSetWrapper.readGtidSet(indexFile.getFileChannel());
         IndexEntry item = IndexEntry.readFromFile(indexFile.getFileChannel());
         while (item != null) {
@@ -99,6 +109,23 @@ public class IndexReader extends AbstractIndex implements Closeable {
             }
         }
         return new Pair<>(-1l, startGtidSet);
+    }
+
+    public Pair<Long, GtidSet> getFirstPoint() throws IOException {
+        if(noIndex()) {
+            return new Pair<>(0L, startGtidSet);
+        }
+        IndexEntry indexEntry = indexItemList.get(0);
+        try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
+                new File(generateBlockName()))) {
+            long index  = 0;
+            return new Pair<>(blockReader.seek((int)index) + indexEntry.getCmdStartOffset(),
+                    calculateGtidSet(0, indexEntry.getStartGno()));
+        }
+    }
+
+    public boolean noIndex() {
+        return indexItemList.size() == 0;
     }
 
     //caculate continue gtid set

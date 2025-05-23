@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -328,7 +327,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        cmdWriter.rotateFileIfNecessary();
+        boolean rotate = cmdWriter.rotateFileIfNecessary();
+        if(rotate && indexStore != null && buildIndex) {
+            indexStore.switchCmdFile(cmdWriter);
+        }
     }
 
     public CommandFile findFileForOffset(long targetStartOffset) {
@@ -655,6 +657,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         try {
             return indexStore.locateContinueGtidSet(gtidSet);
         } catch (Exception e) {
+            getLogger().error("fail to locate", e);
             return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
         }
     }
@@ -662,7 +665,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public GtidSet getIndexGtidSet() {
         if(indexStore == null) {
-            return new GtidSet("");
+            throw new IllegalStateException("indexStore is null");
         }
         return indexStore.getIndexGtidSet();
     }
@@ -682,6 +685,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         buildIndex = false;
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
+        }
+    }
+
+    @Override
+    public void doAfterDisposeMaster() {
+        if(indexStore != null) {
+            indexStore.doAfterDisposeMaster();
         }
     }
 }

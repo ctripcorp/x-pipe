@@ -405,6 +405,13 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 	@Override
 	public boolean increaseLost(GtidSet lost) throws IOException {
+
+		try {
+			throw new RuntimeException("increase lost");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 

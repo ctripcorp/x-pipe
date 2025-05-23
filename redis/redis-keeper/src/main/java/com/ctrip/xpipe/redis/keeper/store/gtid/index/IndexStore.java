@@ -10,6 +10,8 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -18,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
 public class IndexStore implements StreamCommandListener, FinishParseDataListener,  Closeable {
+
+    private static final Logger log = LoggerFactory.getLogger(IndexStore.class);
 
     private IndexWriter indexWriter;
 
@@ -50,7 +54,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         this.indexWriter.init();
     }
 
-    public void initialize(CommandFile commandFile) throws IOException {
+    public synchronized void initialize(CommandFile commandFile) throws IOException {
         this.currentCmdFileName = commandFile.getFile().getName();
         this.streamCommandReader = new StreamCommandReader(commandFile.getFile().length(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
@@ -59,9 +63,8 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         this.indexWriter.init();
     }
 
-    public void write(ByteBuf byteBuf) throws IOException {
+    public synchronized void write(ByteBuf byteBuf) throws IOException {
         streamCommandReader.doRead(byteBuf);
-
     }
 
     public void switchCmdFile(CommandWriter cmdWriter) throws IOException {
@@ -69,7 +72,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         switchCmdFile(fileName);
     }
 
-    public void switchCmdFile(String cmdFileName) throws IOException {
+    public synchronized void switchCmdFile(String cmdFileName) throws IOException {
         this.indexWriter.finish();
         GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
@@ -91,6 +94,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         try {
             indexWriter.append(uuid, gno, (int)offset);
         } catch (Exception e) {
+            log.error("[onCommand fail]", e);
             // todo
         }
     }
@@ -103,10 +107,15 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
-            while (continuePoint.getKey() < 0) {
+            while (continuePoint.getKey() < 0 ) {
+                Pair<Long, GtidSet> firstPoint = indexReader.getFirstPoint();
                 boolean success = indexReader.changeToPre();
                 if(!success) {
+                    continuePoint = firstPoint;
                     break;
+                }
+                if(indexReader.noIndex()) {
+                    continue;
                 }
                 continuePoint = indexReader.seek(request);
             }
@@ -117,13 +126,11 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
                 offset = continuePoint.getKey();
             }
         }
-        offset = Math.max(offset, 0);
-
 
         return new Pair<>(baseOffset + offset, continueGtidSet);
     }
 
-    public GtidSet getIndexGtidSet() {
+    public synchronized GtidSet getIndexGtidSet() {
         return indexWriter.getGtidSet();
     }
 
@@ -150,10 +157,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
                 this.streamCommandReader.relaseRemainBuf();
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        finally {
+        } finally {
             // 从cmd 读 写完之后再加入写
             this.streamCommandReader.addFinishParseDataListener(this);
             if(controllableFile != null) {
@@ -163,7 +167,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         this.indexWriter.close();
     }
 
@@ -187,4 +191,11 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
     public void onFinishParse(ByteBuf byteBuf) throws IOException {
         commandStore.onlyAppendCommand(byteBuf);
     }
+
+    public void doAfterDisposeMaster() {
+        if(this.streamCommandReader != null) {
+            this.streamCommandReader.relaseRemainBuf();
+        }
+    }
+
 }

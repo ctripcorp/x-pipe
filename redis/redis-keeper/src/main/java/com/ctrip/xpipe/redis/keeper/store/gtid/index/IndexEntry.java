@@ -188,4 +188,18 @@ public class IndexEntry {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "IndexEntry{" +
+                "uuid='" + uuid + '\'' +
+                ", startGno=" + startGno +
+                ", endGno=" + (startGno + size) +
+                ", cmdStartOffset=" + cmdStartOffset +
+                ", blockStartOffset=" + blockStartOffset +
+                ", blockEndOffset=" + blockEndOffset +
+                ", size=" + size +
+                ", position=" + position +
+                '}';
+    }
+
 }
