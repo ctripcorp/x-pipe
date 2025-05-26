@@ -79,5 +79,4 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
 
-	void doAfterDisposeMaster();
 }

@@ -92,5 +92,4 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	boolean gc() throws IOException;
 
-	void doAfterDisposeMaster();
 }

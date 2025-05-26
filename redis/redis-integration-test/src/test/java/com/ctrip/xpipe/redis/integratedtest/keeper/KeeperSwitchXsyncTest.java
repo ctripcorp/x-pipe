@@ -56,6 +56,7 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
         logger.info("finish link ");
 
         assertGtid(master);
+        assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
         executors.execute(() -> {
@@ -69,7 +70,7 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
             try {
                 makeKeeperRight();
-                Thread.sleep(1000);
+                Thread.sleep(500);
                 for (RedisMeta slave: getRedisSlaves()) {
                     setRedisToGtidEnabled(slave.getIp(), slave.getPort());
                     setRedisMaster(slave, new HostPort(backupKeeperMeta.getIp(), backupKeeperMeta.getPort()));
@@ -84,6 +85,7 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
 
         assertGtid(master);
+        assertReplOffset(master);
 
         sendMessageToMasterAndTestSlaveRedis(10);
 
@@ -129,6 +131,15 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
             Assert.assertEquals(masterGtid, slaveGtidStr);
         }
 
+    }
+
+    private void assertReplOffset(RedisMeta master) throws ExecutionException, InterruptedException {
+        String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_master_repl_offset");
+        for(RedisMeta slave: getRedisSlaves()) {
+            String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_master_repl_offset");
+            logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
+            Assert.assertEquals(masterGtid, slaveGtidStr);
+        }
     }
 
 }

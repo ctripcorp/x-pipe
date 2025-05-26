@@ -197,10 +197,4 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         commandStore.onlyAppendCommand(byteBuf);
     }
 
-    public void doAfterDisposeMaster() {
-        if(this.streamCommandReader != null) {
-            this.streamCommandReader.relaseRemainBuf();
-        }
-    }
-
 }
