@@ -445,21 +445,26 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			}
 
 			if (curReplStage.updateReplId(replId)) {
+				logger.info("[xsyncUpdate][replid] replId:{}", replId);
 				updated = true;
 			}
 
 			if (curReplStage.adjustBegOffsetRepl(beginReplOffset, beginOffsetBacklog)) {
+				logger.info("[xsyncUpdate][begOffsetRepl] beginOffsetRepl:{}, beginOffsetBacklog:{}", beginReplOffset, beginOffsetBacklog);
 				updated = true;
 			}
 
 			if (curReplStage.updateMasterUuid(masterUuid)) {
+				logger.info("[xsyncUpdate][masterUuid] masterUuid:{}", masterUuid);
 				updated = true;
 			}
 
 			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset());
-			GtidSet gtidLost = gtidCont.subtract(gtidSet);
+			GtidSet deltaLost = gtidCont.subtract(gtidSet);
 
-			if (!gtidLost.equals(curReplStage.getGtidLost())) {
+			if (!deltaLost.isEmpty()) {
+				GtidSet gtidLost = curReplStage.getGtidLost().union(deltaLost);
+				logger.info("[xsyncUpdate][gtidLost] gtidLost:{} + deltaLost:{} => gtidLost:{}", curReplStage.getGtidLost(), deltaLost, gtidLost);
 				curReplStage.setGtidLost(gtidLost);
 				updated = true;
 			}
