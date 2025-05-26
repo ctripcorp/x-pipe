@@ -223,6 +223,10 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return leaderElectorManager;
 	}
 
+	protected File getRedisDataDir(RedisMeta redisMeta, File redisDir) {
+		return new File(redisDir, "data");
+	}
+
 	protected void startRedis(RedisMeta redisMeta, RedisMeta redisMaster) throws IOException {
 
 		stopServerListeningPort(redisMeta.getPort());
@@ -231,7 +235,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		File testDir = new File(getTestFileDir());
 		File redisDir = new File(testDir, "redisconfig");
-		File dataDir = new File(redisDir, "data");
+		File dataDir = getRedisDataDir(redisMeta, redisDir);
 		File logDir = new File(redisDir, "logs");
 
 		FileUtils.forceMkdir(dataDir);
