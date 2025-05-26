@@ -80,6 +80,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
         this.indexWriter.init();
         this.streamCommandReader.resetOffset();
+        log.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
 
     @Override
