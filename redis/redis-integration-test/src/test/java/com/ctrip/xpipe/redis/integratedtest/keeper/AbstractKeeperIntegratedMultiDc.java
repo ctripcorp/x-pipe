@@ -110,8 +110,11 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	}
 
 	protected void makePrimaryDcKeeperRight() throws Exception {
+		makePrimaryDcKeeperRight(getRedisMaster());
+	}
+
+	protected void makePrimaryDcKeeperRight(RedisMeta redisMaster) throws Exception {
 		List<KeeperMeta> keepers = getDcKeepers(getPrimaryDc(), getClusterId(), getShardId());
-		RedisMeta redisMaster = getRedisMaster();
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, new Pair<String, Integer>(redisMaster.getIp(), redisMaster.getPort()), null, getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
 		job.execute().sync();
 	}
