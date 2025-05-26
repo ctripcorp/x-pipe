@@ -327,9 +327,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        boolean rotate = cmdWriter.rotateFileIfNecessary();
-        if(rotate && indexStore != null && buildIndex) {
-            indexStore.switchCmdFile(cmdWriter);
+        if(buildIndex) {
+            cmdWriter.rotateFileIfNecessary();
+        } else {
+            synchronized (indexStore) {
+                boolean rotate = cmdWriter.rotateFileIfNecessary();
+                if(rotate && indexStore != null && buildIndex) {
+                    indexStore.switchCmdFile(cmdWriter);
+                }
+            }
         }
     }
 
@@ -688,10 +694,4 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         }
     }
 
-    @Override
-    public void doAfterDisposeMaster() {
-        if(indexStore != null) {
-            indexStore.doAfterDisposeMaster();
-        }
-    }
 }

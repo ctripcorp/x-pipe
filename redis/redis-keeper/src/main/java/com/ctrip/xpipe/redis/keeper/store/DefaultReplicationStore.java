@@ -879,13 +879,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return true;
 	}
 
-	@Override
-	public void doAfterDisposeMaster() {
-		if(cmdStore != null) {
-			cmdStore.doAfterDisposeMaster();
-		}
-	}
-
 	protected Logger getLogger() {
 		return logger;
 	}

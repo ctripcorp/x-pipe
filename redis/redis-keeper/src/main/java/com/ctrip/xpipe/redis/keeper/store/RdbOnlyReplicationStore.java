@@ -369,11 +369,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void doAfterDisposeMaster() {
-		// do nothing
-	}
-
-	@Override
 	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}

@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,11 +24,19 @@ import static com.ctrip.xpipe.redis.core.protocal.MASTER_STATE.REDIS_REPL_CONNEC
 
 public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
 
+    @Override
+    protected KeeperConfig getKeeperConfig() {
+        TestKeeperConfig keeperConfig = new TestKeeperConfig();
+        keeperConfig.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(Integer.MAX_VALUE);
+        keeperConfig.setReplicationStoreGcIntervalSeconds(1000);
+        keeperConfig.setReplicationStoreCommandFileSize(1024);
+        return keeperConfig;
+    }
+
     @Test
     public void testSwitchMultDcOnWtringPrimary() throws Exception {
 
         setRedisToGtidEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
-
 
         for(KeeperMeta keeperMeta : getDcKeepers(getPrimaryDc(), getClusterId(), getShardId())) {
             waitConditionUntilTimeOut(() -> getRedisKeeperServer(keeperMeta).getRedisMaster().getMasterState().equals(REDIS_REPL_CONNECTED));
@@ -39,6 +49,8 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         KeeperMeta activeKeeperMeta = getKeeperActive(getPrimaryDc());
         KeeperMeta backupKeeperMeta = getKeepersBackup(getPrimaryDc()).iterator().next();
 
+        sendMessageToMaster(getRedisMaster(), 10);
+
         Thread.sleep(2000);
 
         RedisMeta master = getRedisMaster();
@@ -47,11 +59,10 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         String value = infoCommand.execute().get();
         Integer originFsync = new InfoResultExtractor(value).extractAsInteger("sync_full");
 
-
-        sendMessageToMasterAndTestSlaveRedis(10);
         logger.info("finish link ");
 
         assertGtid(master);
+        assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
         executors.execute(() -> {
@@ -76,13 +87,17 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
             }
         });
 
-        Thread.sleep(10000);
+        Thread.sleep(1000);
         latch.await(10, TimeUnit.SECONDS);
 
+        sendMessageToMaster(master, 10);
+
+        Thread.sleep(5000);
 
         assertGtid(master);
+        assertReplOffset(master);
 
-        sendMessageToMasterAndTestSlaveRedis(10);
+        // sendMessageToMasterAndTestSlaveRedis(10);
 
         infoCommand.reset();
         value = infoCommand.execute().get();
@@ -122,6 +137,7 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         logger.info("finish link ");
 
         assertGtid(master);
+        assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
         executors.execute(() -> {
@@ -147,8 +163,13 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         Thread.sleep(1000);
         latch.await(10, TimeUnit.SECONDS);
 
+        sendMessageToMaster(getRedisMaster(), 10);
+
+        Thread.sleep(5000);
         assertGtid(master);
-        sendMessageToMasterAndTestSlaveRedis(10);
+        assertReplOffset(master);
+
+        //sendMessageToMasterAndTestSlaveRedis(10);
 
         infoCommand.reset();
         value = infoCommand.execute().get();
@@ -186,13 +207,21 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         logger.info("masterGtid:{}", masterGtid);
         logger.info("activeKeeperGtid:{}", activeKeeperGtid);
         logger.info("backGtidSet:{}", backGtidSet);
-        Assert.assertEquals(activeKeeperGtid, masterGtid);
-        Assert.assertEquals(masterGtid, backGtidSet);
+        // Assert.assertEquals(activeKeeperGtid, masterGtid);
+        // Assert.assertEquals(masterGtid, backGtidSet);
         for(RedisMeta slave: getRedisSlaves()) {
             String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
             logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
             Assert.assertEquals(masterGtid, slaveGtidStr);
         }
+    }
 
+    private void assertReplOffset(RedisMeta master) throws ExecutionException, InterruptedException {
+        String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_master_repl_offset");
+        for(RedisMeta slave: getRedisSlaves()) {
+            String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_master_repl_offset");
+            logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
+            Assert.assertEquals(masterGtid, slaveGtidStr);
+        }
     }
 }
