@@ -151,7 +151,6 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
 
             try {
                 makeBackupDcKeeperRight(getBackupDc());
-                Thread.sleep(1000);
                 for(RedisMeta redisMeta : getRedisSlaves(getBackupDc())) {
                     setRedisMaster(redisMeta, new HostPort(backupKeeperMeta.getIp(), backupKeeperMeta.getPort()));
                 }
@@ -200,6 +199,21 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         return gtidSet;
     }
 
+    private Long getOffset(String ip, int port) throws ExecutionException, InterruptedException {
+        SimpleObjectPool<NettyClient> masterClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(ip, port));
+        InfoCommand infoCommand = new InfoCommand(masterClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled);
+        String value = infoCommand.execute().get();
+        logger.info("get gtid set from {}, {}, {}", ip, port, value);
+        String gtidSet = new InfoResultExtractor(value).extract("master_repl_offset");
+        return Long.parseLong(gtidSet);
+    }
+
+    private long getReplOffset(String ip, int port) throws Exception {
+        String replOffset = getGtidSet(ip, port, "gtid_master_repl_offset");
+        String delat = getGtidSet(ip, port, "gtid_reploff_delta");
+        return Long.parseLong(replOffset) + Long.parseLong(delat);
+    }
+
     private void assertGtid(RedisMeta master) throws ExecutionException, InterruptedException {
         String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_set");
         String activeKeeperGtid = getGtidSet(getKeeperActive(getPrimaryDc()).getIp(), getKeeperActive(getPrimaryDc()).getPort(), "gtid_executed");
@@ -216,12 +230,12 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         }
     }
 
-    private void assertReplOffset(RedisMeta master) throws ExecutionException, InterruptedException {
-        String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_master_repl_offset");
+    private void assertReplOffset(RedisMeta master) throws Exception {
+        long masterOffset = getOffset(master.getIp(), master.getPort());
         for(RedisMeta slave: getRedisSlaves()) {
-            String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_master_repl_offset");
-            logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
-            Assert.assertEquals(masterGtid, slaveGtidStr);
+            long slaveOffset = getOffset(slave.getIp(), slave.getPort());
+            logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveOffset);
+            Assert.assertEquals(masterOffset, slaveOffset);
         }
     }
 }
