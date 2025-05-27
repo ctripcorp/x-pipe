@@ -37,7 +37,8 @@ public class IndexReader extends AbstractIndex implements Closeable {
         super.initIndexFile();
 
         if(indexFile.getFileChannel().size() == 0) {
-            startGtidSet = null;
+            log.warn("[IndexReader], file: {} length is 0", indexFile);
+            startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
             return;
         }
         // skip gtid set
