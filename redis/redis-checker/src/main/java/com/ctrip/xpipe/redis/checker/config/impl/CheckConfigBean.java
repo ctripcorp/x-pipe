@@ -357,11 +357,11 @@ public class CheckConfigBean extends AbstractConfigBean {
     }
 
     public int getMarkInstanceBaseDelayMilli() {
-        return getIntProperty(KEY_CHECKER_MARK_DELAY_BASE, 3000);
+        return getIntProperty(KEY_CHECKER_MARK_DELAY_BASE, 500);
     }
 
     public int getMarkInstanceMaxDelayMilli() {
-        return getIntProperty(KEY_CHECKER_MARK_DELAY_MAX, 10000);
+        return getIntProperty(KEY_CHECKER_MARK_DELAY_MAX, 14000);
     }
 
     public int getInstancePullIntervalSeconds() {
