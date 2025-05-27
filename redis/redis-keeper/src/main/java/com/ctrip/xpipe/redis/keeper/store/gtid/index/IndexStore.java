@@ -128,6 +128,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
             }
         }
 
+        log.info("[locateContinueGtidSet] {}, {}", baseOffset + offset, continueGtidSet);
         return new Pair<>(baseOffset + offset, continueGtidSet);
     }
 
