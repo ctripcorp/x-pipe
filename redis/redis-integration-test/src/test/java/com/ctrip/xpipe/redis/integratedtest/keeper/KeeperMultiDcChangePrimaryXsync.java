@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -75,6 +76,10 @@ public class KeeperMultiDcChangePrimaryXsync  extends AbstractKeeperIntegratedMu
         makeBackupDcKeeperRight(getBackupDc());
         Thread.sleep(2000);
 
+        for(RedisMeta slave : getRedisSlaves()) {
+            setRedisToGtidEnabled(slave.getIp(), slave.getPort());
+        }
+
         when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(getDcRedises(backupDc, getClusterId(), getShardId()));
         when(currentMetaManager.getSurviveKeepers(getClusterDbId(), getShardDbId())).thenReturn(getDcKeepers(backupDc, getClusterId(), getShardId()));
 
@@ -92,8 +97,6 @@ public class KeeperMultiDcChangePrimaryXsync  extends AbstractKeeperIntegratedMu
         MetaServerConsoleService.PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterDbId(), getShardDbId(), backupDc, new MasterInfo());
         logger.info("{}", message);
 
-        sleep(2000);
-
         logger.info(remarkableMessage("[make dc backup]change dc primary to:" + backupDc));
         when(dcMetaCache.getPrimaryDc(getClusterDbId(), getShardDbId())).thenReturn(backupDc);
         when(multiDcService.getActiveKeeper(backupDc, getClusterDbId(), getShardDbId())).thenReturn(getDcKeepers(backupDc, getClusterId(), getShardId()).get(0));
@@ -102,16 +105,14 @@ public class KeeperMultiDcChangePrimaryXsync  extends AbstractKeeperIntegratedMu
         when(currentMetaManager.getKeeperActive(getClusterDbId(), getShardDbId())).thenReturn(getKeeperActive(primaryDc));
         when(currentMetaManager.getSurviveKeepers(getClusterDbId(), getShardDbId())).thenReturn(getDcKeepers(primaryDc, getClusterId(), getShardId()));
 
+
         BecomeBackupAction becomeBackupAction = new BecomeBackupAction(getClusterDbId(), getShardDbId(), dcMetaCache,
                 currentMetaManager, sentinelManager, new ExecutionLog(currentTestName()),
                 getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
         message = becomeBackupAction.changePrimaryDc(getClusterDbId(), getShardDbId(), backupDc, new MasterInfo());
         logger.info("becomeBackupAction {}", message);
 
-        sleep(2000);
-
         RedisMeta newRedisMaster = newMasterChooser.getLastChoosenMaster();
-        setRedisToGtidEnabled(newRedisMaster.getIp(), newRedisMaster.getPort());
         logger.info("new master is {}", newRedisMaster);
         List<RedisMeta> allRedises = getRedises(primaryDc);
         allRedises.addAll(getRedises(backupDc));
@@ -119,12 +120,12 @@ public class KeeperMultiDcChangePrimaryXsync  extends AbstractKeeperIntegratedMu
 
 
         logger.info("{}\n{}", newRedisMaster, allRedises);
-
+        Thread.sleep(5000);
         sendMessageToMaster(newRedisMaster, 200);
 
-        Thread.sleep(5000);
+        Thread.sleep(1000);
 
-        assertGtid(newRedisMaster);
+         assertGtid(newRedisMaster);
         assertReplOffset(newRedisMaster);
     }
 
@@ -160,7 +161,7 @@ public class KeeperMultiDcChangePrimaryXsync  extends AbstractKeeperIntegratedMu
         for(RedisMeta slave: getRedisSlaves()) {
             String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
             logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
-            Assert.assertEquals(masterGtid, slaveGtidStr);
+            Assert.assertEquals(new GtidSet(masterGtid), new GtidSet(slaveGtidStr));
         }
 
     }
