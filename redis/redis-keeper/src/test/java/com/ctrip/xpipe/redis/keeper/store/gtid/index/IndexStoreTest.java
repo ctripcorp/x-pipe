@@ -386,7 +386,7 @@ public class IndexStoreTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void testSearchInReplication() throws Exception {
         String dir = "src/test/resources/GtidTest/replication/479a669b-a1f6-4cb1-8c13-e37b1f84fdbf/";
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);

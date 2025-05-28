@@ -327,7 +327,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        if(buildIndex) {
+        if(!buildIndex) {
             cmdWriter.rotateFileIfNecessary();
         } else {
             synchronized (indexStore) {
