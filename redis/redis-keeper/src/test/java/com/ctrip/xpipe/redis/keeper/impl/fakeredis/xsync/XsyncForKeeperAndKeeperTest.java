@@ -130,7 +130,7 @@ public class XsyncForKeeperAndKeeperTest extends AbstractFakeRedisTest {
                 1000,
                 1000000, 1000000, 1000000);
 
-        keeperConfig.setMaxAllowedMaxGap(3);
+        keeperConfig.setXsyncMaxGap(3);
 
 
         RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis(100, 5000);

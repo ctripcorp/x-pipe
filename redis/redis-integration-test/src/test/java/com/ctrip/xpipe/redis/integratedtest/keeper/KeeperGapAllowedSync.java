@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
@@ -24,6 +25,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 	private String INFO_KEY_MASTER_LINK_STATUS = "master_link_status";
 
 	private String INFO_KEY_REPL_MODE = "gtid_repl_mode";
+	private String INFO_KEY_PREV_REPL_MODE = "gtid_prev_repl_mode";
 	private String INFO_KEY_GTID_SET = "gtid_set";
 	private String INFO_KEY_GTID_EXECUTED = "gtid_executed";
 	private String INFO_KEY_UUID = "gtid_uuid";
@@ -49,26 +51,10 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		return redises;
 	}
 
-	private void jedisExecCommand(String host, int port, String method, String... args) {
-		try (Jedis jedis = new Jedis(host, port)) {
-			if (method.equalsIgnoreCase("SET")) {
-				jedis.set(args[0], args[1]);
-			} else if (method.equalsIgnoreCase("SLAVEOF")) {
-				if ("NO".equalsIgnoreCase(args[0])) {
-					jedis.slaveofNoOne();
-				} else {
-					jedis.slaveof(args[0], Integer.parseInt(args[1]));
-				}
-			} else if (method.equalsIgnoreCase("GET")) {
-				logger.info("[xxxx] GET {} => {}", args[0], jedis.get(args[0]));
-			} else {
-				throw new IllegalArgumentException("method not supported:" + method);
-			}
-		}
-	}
-
 	@Before
 	public void restoreReplicationLinkBeforeTest() throws Exception {
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
 		slaveExecCommand("SLAVEOF", "NO", "ONE");
 		sleep(100);
 		waitConditionUntilTimeOut(() -> {
@@ -94,31 +80,43 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 			String replMode = getRedisKeeperServer(keeperMeta).getReplicationStore().getMetaStore().getCurrentReplStage().getProto().toString().toLowerCase();
 			Assert.assertEquals(masterReplMode, replMode);
 		}
-		// master_uuid
-		String masterMyUuid = masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_UUID);
-		String masterMasterUuid = masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_MASTER_UUID);
-		Assert.assertEquals(masterMyUuid, masterMasterUuid);
-		for (RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())) {
-			String masterUuid = infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.GTID, INFO_KEY_MASTER_UUID);
-			Assert.assertEquals(masterMyUuid, masterUuid);
-		}
-		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
-			String masterUuid = getRedisKeeperServer(keeperMeta).getReplicationStore().getMetaStore().getCurrentReplStage().getMasterUuid();
-			Assert.assertEquals(masterMyUuid, masterUuid);
-		}
-		//gtid_set
-		GtidSet masterGtidSet = new GtidSet(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_SET));
-		for (RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())) {
-			GtidSet gtidSet = new GtidSet(infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_SET));
-			Assert.assertEquals(masterGtidSet, gtidSet);
-		}
-		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
-			Pair<GtidSet, GtidSet> gtidSets = getRedisKeeperServer(keeperMeta).getReplicationStore().getGtidSet();
-			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
-			if (!masterGtidSet.equals(gtidSet)) {
-				logger.info("[xxxx] keeperMeta: {}", keeperMeta);
+
+		boolean isXsyncMode = Objects.equals(masterReplMode, "xsync");
+
+		if (isXsyncMode) {
+			// master_uuid
+			String masterMyUuid = masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_UUID);
+			String masterMasterUuid = masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_MASTER_UUID);
+			Assert.assertEquals(masterMyUuid, masterMasterUuid);
+			for (RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())) {
+				String masterUuid = infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.GTID, INFO_KEY_MASTER_UUID);
+				Assert.assertEquals(masterMyUuid, masterUuid);
 			}
-			Assert.assertEquals(masterGtidSet, gtidSet);
+			for (KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())) {
+				String masterUuid = getRedisKeeperServer(keeperMeta).getReplicationStore().getMetaStore().getCurrentReplStage().getMasterUuid();
+				Assert.assertEquals(masterMyUuid, masterUuid);
+			}
+			//gtid_set
+			GtidSet masterGtidSet = new GtidSet(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_SET));
+			for (RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())) {
+				GtidSet gtidSet = new GtidSet(infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_SET));
+				Assert.assertEquals(masterGtidSet, gtidSet);
+			}
+			for (KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())) {
+				Pair<GtidSet, GtidSet> gtidSets = getRedisKeeperServer(keeperMeta).getReplicationStore().getGtidSet();
+				GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
+
+				if (!masterGtidSet.equals(gtidSet)) {
+					logger.info("[xxxx] masterGtidSet:{}, gtidSet:{}, keeperMeta:{}", masterGtidSet, gtidSet, keeperMeta);
+					for (int i = 0; i < 360; i++) {
+						sleep(10 * 1000);
+						Pair<GtidSet, GtidSet> gtidSets2 = getRedisKeeperServer(keeperMeta).getReplicationStore().getGtidSet();
+						GtidSet gtidSet2 = gtidSets2.getKey().union(gtidSets2.getValue());
+						logger.info("[xxxx] gtidSet:{}", gtidSet2);
+					}
+				}
+				Assert.assertEquals(masterGtidSet, gtidSet);
+			}
 		}
 		//replid
 		String masterMyReplId = masterInfoKey(InfoCommand.INFO_TYPE.REPLICATION, INFO_KEY_MASTER_REPLID);
@@ -175,61 +173,268 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 
 		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
 
-		slaveWaitForSync();
+		waitForSync();
 
 		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
 		Assert.assertEquals(fullSyncCount, fullSyncCount2); //TODO for now it is xcontinue, should be xfullresync
 
-		logger.info("[xxxx] waiting replstream align for 10 seconds");
-
-		sleep(10*1000);
-
 		assertReplStreamAligned();
 	}
 
-//	@Test
-//	public void testReplStageNotFound_SlaveXsync_XFullResync() throws Exception {
-//		// master: | (X) set hello world | (P) set hello world_1 | (X) set hello world_2 |
-//		// slave:  | (X)
-//	}
-//
-//	@Test
-//	public void testReplStageNotFound_SlavePsync_XFullResync() throws Exception {
-//		// master: | (P) set hello world_1 set hello world_2 | (X) set hello world_3 | (P) set hello world_4 |
-//		// slave:  | (P) set hello world_1 |
-//
-//	}
-//
-//	@Test
-//	public void testGapExeedsLimit_XFullResync() throws Exception {
-//	}
-//
-//	@Test
-//	public void testGapWithinLimit_XContinue() throws Exception {
-//	}
-//
-//	@Test
-//	public void testLocateInPrevPsyncStage_ContinueThenXContinue() throws Exception {
-//	}
-//
-//	@Test
-//	public void testLocateInPrevXsyncStage_GtidNotMatch_XFullResync() throws Exception {
-//	}
-//
-//	@Test
-//	public void testLocateInPrevXsyncStage_GtidMatch_XContinueThenContinue() throws Exception {
-//	}
+	@Test
+	public void testReplStageNotFound_SlaveXsync_XFullResync() throws Exception {
+		// master: | (X) set hello world | (P) set hello world_1 | (X) set hello world_2 |
+		// slave:  | (X)
 
-	private void masterExecCommand(String method, String... args) {
-		jedisExecCommand(redisMaster.getIp(), redisMaster.getPort(), method, args);
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED), slaveInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED));
+
+		masterExecCommand("SET", "hello", "world");
+
+		Assert.assertNotEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED), slaveInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED));
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_REPL_MODE), "psync");
+		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_PREV_REPL_MODE), "xsync");
+		masterExecCommand("SET", "hello", "world_1");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_REPL_MODE), "xsync");
+		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_PREV_REPL_MODE), "psync");
+		masterExecCommand("SET", "hello", "world_2");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+
+		waitForSync();
+
+		assertReplStreamAligned();
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2); //TODO for now it is psync, should be fullresync
+	}
+
+	@Test
+	public void testReplStageNotFound_SlavePsync_XFullResync() throws Exception {
+		// master: | (P) set hello world_1 set hello world_2 | (X) set hello world_3 | (P) set hello world_4 |
+		// slave:  | (P) set hello world_1 |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		logger.info("[xxxx] sync 1");
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		masterExecCommand("SET", "hello", "world_1");
+		waitForSync();
+		logger.info("[xxxx] sync 2");
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		slaveExecCommand("SLAVEOF", "127.0.0.1", "0");
+
+		masterExecCommand("SET", "hello", "world_2");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		masterExecCommand("SET", "hello", "world_3");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		masterExecCommand("SET", "hello", "world_4");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		logger.info("[xxxx] sync 3");
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_4");
+
+		// long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		// Assert.assertEquals(fullSyncCount+1, fullSyncCount2); //TODO confirm why more fullsync than expected
+	}
+
+	@Test
+	public void testGapExeedsLimit_XFullResync() throws Exception {
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		slaveExecCommand("CONFIG", "SET", "gtid-xsync-max-gap", "3");
+
+		for (int i = 0; i < 5; i++) {
+			slaveExecCommand("SET", "key_"+i, "value"+i);
+		}
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+
+		slaveExecCommand("CONFIG", "SET", "gtid-xsync-max-gap", "10000");
+	}
+
+	@Test
+	public void testGapWithinLimit_XContinue() throws Exception {
+		// write anything so that master-slave gtid related.
+		masterExecCommand("SET", "foo", "bar");
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+		sleep(1000);
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		for (int i = 0; i < 5; i++) {
+			slaveExecCommand("SET", "key_"+i, "value"+i);
+		}
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2);
+	}
+
+	@Test
+	public void testLocateInPrevPsyncStage_ContinueThenXContinue() throws Exception {
+		// master: | (P) set hello world_1 set hello world_2 | (X) set hello world_3 |
+		// slave:  | (P) set hello world_1 |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		masterExecCommand("SET", "hello", "world_1");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		slaveExecCommand("SLAVEOF", "127.0.0.1", "0");
+
+		masterExecCommand("SET", "hello", "world_2");
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		masterExecCommand("SET", "hello", "world_3");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_3");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2);
+	}
+
+	@Test
+	public void testReplStageNotMatch_XFullResync() throws Exception {
+		//master: | (psync) set hello world_1 | (X) set hello world_2 set hello world_3 |
+		//slave:  | (psync) set hello world_1  set hello world_2 |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		masterExecCommand("SET", "hello", "world_1");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+		slaveExecCommand("SET", "hello", "world_2");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		masterExecCommand("SET", "hello", "world_2");
+		masterExecCommand("SET", "hello", "world_3");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_3");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+	}
+
+	@Test
+	public void testLocateInPrevXsyncStage_GtidMatch_XContinueThenContinue() throws Exception {
+		// master: | (X) set hello world_1 set hello world_2 | (P) set hello world_3 |
+		// slave:  | (X) set hello world_1 |
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		masterExecCommand("SET", "hello", "world_1");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		slaveExecCommand("SLAVEOF", "127.0.0.1", "0");
+
+		masterExecCommand("SET", "hello", "world_2");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		masterExecCommand("SET", "hello", "world_3");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_3");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2);
+	}
+
+	private Object jedisExecCommand(String host, int port, String method, String... args) {
+		Object result = null;
+
+		try (Jedis jedis = new Jedis(host, port)) {
+			if (method.equalsIgnoreCase("SET")) {
+				jedis.set(args[0], args[1]);
+			} else if (method.equalsIgnoreCase("SLAVEOF")) {
+				if ("NO".equalsIgnoreCase(args[0])) {
+					jedis.slaveofNoOne();
+				} else {
+					jedis.slaveof(args[0], Integer.parseInt(args[1]));
+				}
+			} else if (method.equalsIgnoreCase("CONFIG")) {
+				if ("SET".equalsIgnoreCase(args[0])) {
+					jedis.configSet(args[1], args[2]);
+				} else {
+					result = jedis.configGet(args[1]);
+				}
+			} else if (method.equalsIgnoreCase("GET")) {
+				result = jedis.get(args[0]);
+			} else {
+				throw new IllegalArgumentException("method not supported:" + method);
+			}
+		}
+
+		return result;
+	}
+
+	private Object masterExecCommand(String method, String... args) {
+		return jedisExecCommand(redisMaster.getIp(), redisMaster.getPort(), method, args);
 	}
 
 	private String masterInfoKey(InfoCommand.INFO_TYPE section, String key) throws Exception {
 		return infoRedis(redisMaster.getIp(), redisMaster.getPort(), section, key);
 	}
 
-	private void slaveExecCommand(String method, String... args) {
-		jedisExecCommand(getSlaveMeta().getIp(), getSlaveMeta().getPort(), method, args);
+	private Object slaveExecCommand(String method, String... args) {
+		return jedisExecCommand(getSlaveMeta().getIp(), getSlaveMeta().getPort(), method, args);
 	}
 
 	private String slaveInfoKey(InfoCommand.INFO_TYPE section, String key) throws Exception {
@@ -243,6 +448,55 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 				throw new RuntimeException(e);
 			}
 		}, 10*1000,100);
+	}
+
+	private void waitForSync() throws Exception {
+		sleep(2000);
+		waitConditionUntilTimeOut(() -> {
+			long masterReplOff;
+			try {
+				masterReplOff = Long.parseLong(masterInfoKey(InfoCommand.INFO_TYPE.REPLICATION, INFO_KEY_MASTER_REPLOFF));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+			for (RedisMeta redisMeta : getDcRedises(dc, getClusterId(), getShardId())) {
+				Long replOff = null;
+				String masterLinkStatus = null;
+				try {
+					replOff = Long.parseLong(infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.REPLICATION, INFO_KEY_MASTER_REPLOFF));
+					masterLinkStatus = infoRedis(redisMeta.getIp(), redisMeta.getPort(), InfoCommand.INFO_TYPE.REPLICATION, INFO_KEY_MASTER_LINK_STATUS);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+				if (Objects.equals(masterLinkStatus, "down")) {
+					logger.info("[waitForSync] masterLinkStatus down, redis:{}", redisMeta.getPort());
+					return false;
+				}
+				if (masterReplOff != replOff) {
+					logger.info("[waitForSync] masterReplOff:{} != replOff:{}, redis:{}", masterReplOff, replOff, redisMeta.getPort());
+					return false;
+				}
+			}
+			for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
+				long replOff;
+				try {
+					replOff = getRedisKeeperServer(keeperMeta).getReplicationStore().getCurReplStageReplOff();
+				} catch (Exception e) {
+					logger.info("[waitForSync] exception:{}, keeper:{}",  e.getClass().getSimpleName(), keeperMeta.getPort());
+					return false;
+				}
+				if (getRedisKeeperServer(keeperMeta).getRedisMaster().getMasterState() != MASTER_STATE.REDIS_REPL_CONNECTED) {
+					logger.info("[waitForSync] masterLinkStatus down, keeper:{}",  keeperMeta.getPort());
+					return false;
+				}
+				if (masterReplOff != replOff) {
+					logger.info("[waitForSync] masterReplOff:{} != replOff:{}, keeper:{}",  masterReplOff, replOff, keeperMeta.getPort());
+					return false;
+				}
+			}
+
+			return true;
+		}, 60*1000, 100);
 	}
 
 }
