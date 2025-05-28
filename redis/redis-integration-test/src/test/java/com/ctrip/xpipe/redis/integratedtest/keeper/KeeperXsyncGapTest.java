@@ -57,18 +57,12 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
         setKeeperState(activeKeeper, KeeperState.ACTIVE, masterMeta.getIp(), masterMeta.getPort());
         setKeeperState(backupKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
 
-
-
-
-
         // 注入数据
         logger.info("send request to redis master " + fullSyncContInit);
 
         for(int i = 100; i < 252; i++) {
             setKey("key_" + i, redisMaster.getIp(), redisMaster.getPort());
         }
-
-
 
         setKeeperState(backupKeeper, KeeperState.ACTIVE, activeKeeper.getIp(), activeKeeper.getPort());
         Thread.sleep(1000);
@@ -78,7 +72,6 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
         for(int i = 252; i < 274; i++) {
             setKey("key_" + i, redisMaster.getIp(), redisMaster.getPort());
         }
-
 
         Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 152);
     }
