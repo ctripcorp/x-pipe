@@ -18,8 +18,16 @@ import java.util.concurrent.ExecutionException;
 public class AbstractKeeperIntegratedMultiDcXsync extends AbstractKeeperIntegratedMultiDc {
 
     protected void setRedisToGtidEnabled(String ip, Integer port) throws Exception {
+        setRedisToGtidEnabled(ip, port, true);
+    }
+
+    protected void setRedisToGtidNotEnabled(String ip, Integer port) throws Exception {
+        setRedisToGtidEnabled(ip, port, false);
+    }
+
+    protected void setRedisToGtidEnabled(String ip, Integer port, boolean enabled) throws Exception {
         SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
-        ConfigSetCommand.ConfigSetGtidEnabled configSetGtidEnabled = new ConfigSetCommand.ConfigSetGtidEnabled(true, keyPool, scheduled);
+        ConfigSetCommand.ConfigSetGtidEnabled configSetGtidEnabled = new ConfigSetCommand.ConfigSetGtidEnabled(enabled, keyPool, scheduled);
         String gtid = configSetGtidEnabled.execute().get().toString();
         System.out.println(gtid);
     }
