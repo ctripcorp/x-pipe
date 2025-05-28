@@ -3,9 +3,6 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
-import java.util.Collections;
-import java.util.List;
-
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 
 /**
@@ -291,7 +288,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return maxAllowedMaxGap;
 	}
 
-	public void setMaxAllowedMaxGap(int maxGap) {
+	public void setXsyncMaxGap(int maxGap) {
 		this.maxAllowedMaxGap = maxGap;
 	}
 }
