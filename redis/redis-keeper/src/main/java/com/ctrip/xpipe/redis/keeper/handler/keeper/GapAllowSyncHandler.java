@@ -205,6 +205,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             } else if (backlogCont < backlogBeginOffset) {
                 return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset));
             } else {
+                if (!masterLost.isEmpty()) {
+                    logger.info("[masterLost] masterLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", masterLost, cont, lost, req);
+                }
                 return SyncAction.XContinue(xsyncStage, masterGtidSet, backlogCont, masterLost).setBacklogEndExcluded(stageEndBacklogOffset);
             }
         } else {
@@ -229,6 +232,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         } else {
             if (null != action.masterLost && !action.masterLost.isEmpty()) {
                 try {
+                    logger.info("[runAction][increaseLost] {}", action.masterLost);
                     keeperServer.increaseLost(action.masterLost, slave);
                 } catch (IOException e) {
                     try {

@@ -397,6 +397,184 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		Assert.assertEquals(fullSyncCount, fullSyncCount2);
 	}
 
+	@Test
+	public void testLocateInPrevXsyncStage_GapWithinLimit_XContinueThenContinue() throws Exception {
+		// master: | (X) set hello world_1 set hello world_3 | (P) set hello world_4 |
+		// slave:  | (X) set hello world_1 set hello world_2 |
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		masterExecCommand("SET", "hello", "world_1");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+		assertReplStreamAligned();
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+		slaveExecCommand("SET", "hello", "world_2");
+
+		masterExecCommand("SET", "hello", "world_3");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		masterExecCommand("SET", "hello", "world_4");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_4");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2);
+	}
+
+	@Test
+	public void testLocateInPrevXsyncStage_GapExceedsLimit_XFullResync() throws Exception {
+		// master: | (X) set hello world_0 set foo bar_0 | (P) set hello world_2a |
+		// slave : | (X) set hello world_0 ...(10000)... set hello world_10001 set hello world_2b |
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+
+		masterExecCommand("SET", "hello", "world_0");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_0");
+		assertReplStreamAligned();
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+
+		masterExecCommand("SET", "foo", "bar_0");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		sleep(2000);
+
+		masterExecCommand("SET", "hello", "world_2a");
+
+		slaveExecCommand("CONFIG", "SET", "gtid-xsync-max-gap", "3");
+		for (int i = 0; i < 5; i++) {
+			slaveExecCommand("SET", "key_"+i, "value"+i);
+		}
+		slaveExecCommand("SET", "hello", "world_2b");
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "foo"), "bar_0");
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_2a");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+
+		slaveExecCommand("CONFIG", "SET", "gtid-xsync-max-gap", "10000");
+	}
+
+	@Test
+	public void testLocatePrevReplStage_StageNotMatch_FullResync() throws Exception {
+		// master: | (P) set hello world | (X) set hello world_0             set hello world_1a | (P) set hello world_2 |
+		// slave : | (P) set hello world | (X) set hello world_0 | (P) set hello world_1b |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		masterExecCommand("SET", "hello", "world");
+		waitForSync();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world");
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "yes");
+		masterExecCommand("SET", "hello", "world_0");
+		waitForSync();
+		assertReplStreamAligned();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_0");
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("SET", "hello", "world_1b");
+
+		masterExecCommand("SET", "hello", "world_1a");
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		masterExecCommand("SET", "hello", "world_2");
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_2");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+	}
+
+	@Test
+	public void testPsync_OffsetValid_Psync() throws Exception {
+		// master: | (P) set hello world set hello world_1 |
+		// slave : | (P) set hello world |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+
+		masterExecCommand("SET", "hello", "world");
+
+		waitForSync();
+		assertReplStreamAligned();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world");
+
+		slaveExecCommand("SLAVEOF", "127.0.0.1", "0");
+
+		masterExecCommand("SET", "hello", "world_1");
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world");
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount, fullSyncCount2);
+	}
+
+	@Test
+	public void testPsync_ReplIdChanged_Fullresync() throws Exception {
+		// master: | (P) set hello world set hello world_1 |
+		// slave : | (P) set hello world; |
+
+		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+		slaveExecCommand("CONFIG", "SET", "gtid-enabled", "no");
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+
+		masterExecCommand("SET", "hello", "world");
+
+		waitForSync();
+		assertReplStreamAligned();
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world");
+
+		slaveExecCommand("SLAVEOF", "NO", "ONE");
+
+		masterExecCommand("SET", "hello", "world_1");
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world");
+
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
+		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
+		waitForSync();
+		assertReplStreamAligned();
+
+		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
+
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+	}
+
 	private Object jedisExecCommand(String host, int port, String method, String... args) {
 		Object result = null;
 
