@@ -361,7 +361,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff);
 
-			logger.info("[switchToXsync] {} -> {}", curReplStage, newReplStage);
+			logger.info("[switchToPsync] {} -> {}", curReplStage, newReplStage);
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
