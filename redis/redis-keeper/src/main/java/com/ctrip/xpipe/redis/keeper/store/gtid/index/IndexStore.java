@@ -180,6 +180,10 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
     public void closeWithDeleteIndexFiles() throws IOException {
         this.close();
+        deleteAllIndexFile();
+    }
+
+    public void deleteAllIndexFile() {
         File directory = new File(baseDir);
 
         if (!directory.exists() || !directory.isDirectory()) {
