@@ -193,7 +193,7 @@ public class IndexEntry {
         return "IndexEntry{" +
                 "uuid='" + uuid + '\'' +
                 ", startGno=" + startGno +
-                ", endGno=" + (startGno + size) +
+                ", endGno=" + (startGno + size - 1) +
                 ", cmdStartOffset=" + cmdStartOffset +
                 ", blockStartOffset=" + blockStartOffset +
                 ", blockEndOffset=" + blockEndOffset +

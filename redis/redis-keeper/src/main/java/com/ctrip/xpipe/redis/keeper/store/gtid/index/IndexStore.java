@@ -186,6 +186,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
     public void deleteAllIndexFile() {
         File directory = new File(baseDir);
 
+        log.info("[deleteAllIndexFile] {}", baseDir);
         if (!directory.exists() || !directory.isDirectory()) {
             return;
         }

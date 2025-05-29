@@ -139,10 +139,12 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
     @Override
     public void close() throws IOException {
+
+        saveIndexEntry();
+
         if(!isClosed.compareAndSet(false, true)) {
             return;
         }
-        saveIndexEntry();
         super.closeIndexFile();
         if(blockWriter != null) {
             this.blockWriter.finishWriter();

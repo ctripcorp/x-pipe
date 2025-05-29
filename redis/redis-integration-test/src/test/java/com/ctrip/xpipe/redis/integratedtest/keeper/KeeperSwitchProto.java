@@ -48,7 +48,7 @@ public class KeeperSwitchProto extends AbstractKeeperIntegratedMultiDcXsync {
             waitConditionUntilTimeOut(() -> getRedisKeeperServer(keeperMeta).getRedisMaster().getMasterState().equals(REDIS_REPL_CONNECTED));
         }
 
-        sendMessageToMaster(getRedisMaster(), 10);
+        sendMessageToMaster(getRedisMaster(), 100);
         Thread.sleep(2000);
         assertGtid(getRedisMaster());
         assertReplOffset(getRedisMaster());

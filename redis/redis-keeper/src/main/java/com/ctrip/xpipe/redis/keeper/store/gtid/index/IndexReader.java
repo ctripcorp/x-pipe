@@ -138,6 +138,7 @@ public class IndexReader extends AbstractIndex implements Closeable {
             gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
         }
         IndexEntry indexEntry = indexItemList.get(index);
+        gno = Math.min(gno, indexEntry.getEndGno());
         gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), gno);
         return gtidSetWrapper.getGtidSet();
     }
