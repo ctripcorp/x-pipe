@@ -126,7 +126,7 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
         Assert.assertEquals(masterGtid, slaveGtid);
 
         int cnt5 = getFullCount();
-        Assert.assertEquals(cnt4 + 1, cnt5);
+        Assert.assertEquals(cnt4, cnt5);
     }
 
     private String getGtidSet(String ip, int port) throws Exception {
@@ -138,9 +138,12 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
 
     int getFullCount() {
         int cnt = 0;
+        logger.info("start getFullCount");
         for (RedisKeeperServer redisKeeperServer : redisKeeperServers) {
+            logger.info("[full count] {}", redisKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount());
             cnt += redisKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount();
         }
+        logger.info("end getFullCount");
         return cnt;
     }
 

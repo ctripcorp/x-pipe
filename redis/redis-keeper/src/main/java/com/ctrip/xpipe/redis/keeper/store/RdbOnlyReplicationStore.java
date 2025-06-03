@@ -234,6 +234,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public XSyncContinue locateLastPoint() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
 							   GtidSet gtidLost, String masterUuid) throws IOException {
 		prepareRdb(replId, rdbOffset, eofType);

@@ -37,13 +37,16 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
     private CommandStore commandStore;
 
-    public IndexStore(String baseDir, RedisOpParser redisOpParser, CommandStore commandStore) {
+    private CommandWriter cmdWriter;
+
+    public IndexStore(String baseDir, RedisOpParser redisOpParser,
+                      CommandStore commandStore, CommandWriter cmdWriter) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
         this.commandStore = commandStore;
         this.startGtidSet = new GtidSet("");
+        this.cmdWriter = cmdWriter;
     }
-
 
     public void initialize(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
@@ -83,6 +86,17 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         log.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
 
+    public synchronized void rotateFileIfNecessary() throws IOException {
+        boolean rotate = cmdWriter.rotateFileIfNecessary();
+        if(rotate) {
+            this.switchCmdFile(cmdWriter);
+        }
+    }
+
+    public synchronized Pair<Long, GtidSet> locateLastPoint() {
+        return new Pair<>(cmdWriter.totalLength(), this.getIndexGtidSet());
+    }
+
     @Override
     public void onCommand(String gtid, long offset) {
         String[] parts = gtid.split(":");
@@ -102,34 +116,11 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws Exception {
         this.indexWriter.saveIndexEntry();
-        long offset = -1;
-        long baseOffset = 0l;
-        GtidSet continueGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
-            while (continuePoint.getKey() < 0 ) {
-                Pair<Long, GtidSet> firstPoint = indexReader.getFirstPoint();
-                boolean success = indexReader.changeToPre();
-                if(!success) {
-                    continuePoint = firstPoint;
-                    break;
-                }
-                if(indexReader.noIndex()) {
-                    continue;
-                }
-                continuePoint = indexReader.seek(request);
-            }
-            baseOffset = indexReader.getStartOffset();
-
-            if(continuePoint.getKey() >= 0) {
-                continueGtidSet = continuePoint.getValue();
-                offset = continuePoint.getKey();
-            }
+            return continuePoint;
         }
-
-        log.info("[locateContinueGtidSet] {}, {}", baseOffset + offset, continueGtidSet);
-        return new Pair<>(baseOffset + offset, continueGtidSet);
     }
 
     public synchronized GtidSet getIndexGtidSet() {

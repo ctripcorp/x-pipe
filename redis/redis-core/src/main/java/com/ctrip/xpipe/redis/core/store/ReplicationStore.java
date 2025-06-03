@@ -8,7 +8,6 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
 
 /**
  * @author wenchao.meng
@@ -19,6 +18,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
+	XSyncContinue locateLastPoint();
 
 	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid) throws IOException;
 	void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException;

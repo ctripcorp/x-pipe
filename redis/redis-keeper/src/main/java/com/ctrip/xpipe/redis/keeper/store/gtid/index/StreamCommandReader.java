@@ -22,7 +22,8 @@ import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_B
 public class StreamCommandReader {
 
     private static final Logger log = LoggerFactory.getLogger(StreamCommandReader.class);
-    long currentOffset;
+    private long currentOffset;
+    private long lastOffset = -1;
 
     private RedisClientProtocol<Object[]> protocolParser;
     private RedisOpParser opParser;
@@ -33,6 +34,7 @@ public class StreamCommandReader {
 
     public StreamCommandReader(long offset, RedisOpParser opParser) {
         this.currentOffset = offset;
+        this.lastOffset = offset;
         this.protocolParser = new ArrayParser();
         this.opParser = opParser;
         this.remainingBuf = null;
@@ -89,7 +91,8 @@ public class StreamCommandReader {
             String gtid = readGtid(payload);
             if (!StringUtil.isEmpty(gtid)) {
                 for(StreamCommandListener listener : listeners) {
-                    listener.onCommand(gtid, this.currentOffset);
+                    listener.onCommand(gtid, this.lastOffset);
+                    lastOffset = this.currentOffset;
                 }
             }
             this.protocolParser.reset();
@@ -107,6 +110,7 @@ public class StreamCommandReader {
 
     public void resetOffset() {
         this.currentOffset = 0;
+        this.lastOffset = 0;
     }
 
     private String readGtid(Object[] payload) {

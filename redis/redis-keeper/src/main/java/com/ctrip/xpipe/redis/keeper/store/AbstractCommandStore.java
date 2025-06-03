@@ -118,7 +118,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this, cmdWriter);
     }
 
     @Override
@@ -330,12 +330,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(!buildIndex) {
             cmdWriter.rotateFileIfNecessary();
         } else {
-            synchronized (indexStore) {
-                boolean rotate = cmdWriter.rotateFileIfNecessary();
-                if(rotate && indexStore != null && buildIndex) {
-                    indexStore.switchCmdFile(cmdWriter);
-                }
-            }
+            indexStore.rotateFileIfNecessary();
         }
     }
 
@@ -669,6 +664,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public Pair<Long, GtidSet> locateLastPoint() {
+        if(indexStore != null) {
+            return this.indexStore.locateLastPoint();
+        }
+        return null;
+    }
+
+    @Override
     public GtidSet getIndexGtidSet() {
         if(indexStore == null) {
             throw new IllegalStateException("indexStore is null");
@@ -682,7 +685,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
         }
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this);
+        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this, cmdWriter);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
     }

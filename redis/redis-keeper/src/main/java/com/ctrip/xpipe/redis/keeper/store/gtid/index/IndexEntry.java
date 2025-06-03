@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,8 +14,6 @@ public class IndexEntry {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
-
-    private static final Logger logger = LoggerFactory.getLogger(GtidCmdOneSegmentReader.class);
 
     private static final String SEPARATOR = RedisProtocol.CRLF;
 

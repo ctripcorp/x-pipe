@@ -149,6 +149,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public XSyncContinue locateLastPoint() {
+		Pair<Long, GtidSet> lastPoint = cmdStore.locateLastPoint();
+		return new XSyncContinue(lastPoint.getValue(), lastPoint.getKey());
+	}
+
+	@Override
 	public long getCurReplStageReplOff() {
 		ReplStage curStage = metaStore.getCurrentReplStage();
 		if (getLogger().isDebugEnabled()) {

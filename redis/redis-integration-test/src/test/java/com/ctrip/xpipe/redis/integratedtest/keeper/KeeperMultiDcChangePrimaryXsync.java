@@ -114,6 +114,7 @@ public class KeeperMultiDcChangePrimaryXsync extends AbstractKeeperIntegratedMul
         sendMessageToMaster(newRedisMaster, 200);
 
         Thread.sleep(1000);
+        newRedisMaster.setMaster(null);
 
         assertGtid(newRedisMaster);
         assertReplOffset(newRedisMaster);
