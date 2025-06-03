@@ -79,7 +79,7 @@ public class StreamCommandReader {
             if (protocol == null) {
                 this.protocolParser.reset();
                 this.relaseRemainBuf();
-                remainingBuf = mergeBuf.copy(pre,  mergeBuf.writerIndex() - pre);
+                remainingBuf = Unpooled.copiedBuffer(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
                 break;
             }
 
