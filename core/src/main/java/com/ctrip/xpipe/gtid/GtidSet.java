@@ -18,6 +18,8 @@ public class GtidSet {
 
     public static final String PLACE_HOLDER = "0:0";
 
+    public static final long GTID_GNO_INITIAL = 1;
+
     public static Pair<String, Long> parseGtid(String gtid) {
         String[] split = gtid.split(":");
         if (split.length != 2) {

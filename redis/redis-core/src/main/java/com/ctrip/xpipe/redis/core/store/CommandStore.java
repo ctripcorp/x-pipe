@@ -71,6 +71,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet);
 
+	Pair<Long, GtidSet> locateLastPoint();
+
 	GtidSet getIndexGtidSet();
 
 	void switchToXSync(GtidSet gtidSet) throws IOException;

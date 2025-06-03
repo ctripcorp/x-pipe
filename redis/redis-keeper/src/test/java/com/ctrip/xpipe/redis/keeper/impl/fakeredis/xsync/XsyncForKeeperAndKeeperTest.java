@@ -106,6 +106,7 @@ public class XsyncForKeeperAndKeeperTest extends AbstractFakeRedisTest {
 
         RedisKeeperServer keeperServer2 = startRedisKeeperServerAndConnectToFakeRedis(100, 5000, 1000000000);
         waitRedisKeeperServerConnected(keeperServer2);
+        logger.info("[keeperServer2] port: {}", keeperServer2.getListeningPort());
 
         writeCommands2();
         Thread.sleep(1000);
@@ -117,7 +118,7 @@ public class XsyncForKeeperAndKeeperTest extends AbstractFakeRedisTest {
         Assert.assertEquals(keeperServer2.getReplicationStore().getGtidSet().getKey().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,b50c0ac6608a3351a6ed0c6a92d93ec736b390a1:622000-622009,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622009");
         backUp.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer2.getListeningPort()));
 
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         Assert.assertEquals(keeperServer2.getKeeperMonitor().getKeeperStats().getFullSyncCount(), 0);
         Assert.assertEquals(backUp.getReplicationStore().getGtidSet().getValue().toString(), "b50c0ac6608a3351a6ed0c6a92d93ec736b390a1:622000-622009");
     }

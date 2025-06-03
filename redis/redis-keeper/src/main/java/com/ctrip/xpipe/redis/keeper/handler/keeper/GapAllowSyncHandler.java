@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
@@ -99,6 +98,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     action = SyncAction.Continue(curStage, curStage.getReplId(), offset).markKeeperPartial();
                 } else {
                     XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSet(keeperRepl.getEndGtidSet());
+                    if(xsyncCont.getBacklogOffset() == -1){
+                        xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
+                    }
                     action = SyncAction.XContinue(curStage, xsyncCont.getContinueGtidSet().union(curStage.getGtidLost()),
                             xsyncCont.getBacklogOffset(), null).markKeeperPartial().setKeeperLost(curStage.getGtidLost());
                 }
@@ -116,6 +118,11 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             } else {
                 XSyncContinue xsyncCont = null;
                 xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
+                if(xsyncCont.getBacklogOffset() == -1){
+                    // to file tail
+                    xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
+                }
+                logger.info("[locateContinue] {}, {}, {}", xsyncCont.getBacklogOffset(), curStage.backlogOffset2ReplOffset(xsyncCont.getBacklogOffset()), curStage);
                 return anaXSync(request, curStage, xsyncCont, keeperRepl, keeperConfig, -1);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
@@ -129,10 +136,6 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 reqBacklogOffset = xsyncCont.getBacklogOffset();
             }
 
-            if (-1 == reqBacklogOffset) {
-                return SyncAction.full("locate backlog offset fail");
-            }
-
             if (reqBacklogOffset == curStage.getBegOffsetBacklog()) {
                 return switchProto(curStage);
             }
@@ -140,7 +143,13 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 return anaPSync(request, preStage, keeperRepl, keeperConfig, curStage.getBegOffsetBacklog());
             } else {
-                return anaXSync(request, preStage, xsyncCont, keeperRepl, keeperConfig, curStage.getBegOffsetBacklog());
+                if(xsyncCont.getBacklogOffset() == -1) {
+                    // not found in xsync, start with psync begin
+                    logger.info("[not found in xsync, switch to psync");
+                    return switchProto(curStage);
+                } else {
+                    return anaXSync(request, preStage, xsyncCont, keeperRepl, keeperConfig, curStage.getBegOffsetBacklog());
+                }
             }
         }
 

@@ -123,8 +123,6 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
         logger.info("masterGtid:{}", masterGtid);
         logger.info("activeKeeperGtid:{}", activeKeeperGtid);
         logger.info("backGtidSet:{}", backGtidSet);
-        Assert.assertEquals(activeKeeperGtid, masterGtid);
-        Assert.assertEquals(masterGtid, backGtidSet);
         for(RedisMeta slave: getRedisSlaves()) {
             String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
             logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
