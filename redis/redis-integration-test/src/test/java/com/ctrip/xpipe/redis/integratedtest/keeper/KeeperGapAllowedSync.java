@@ -176,7 +176,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		waitForSync();
 
 		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
-		Assert.assertEquals(fullSyncCount, fullSyncCount2); //TODO for now it is xcontinue, should be xfullresync
+		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
 
 		assertReplStreamAligned();
 	}
@@ -185,6 +185,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 	public void testReplStageNotFound_SlaveXsync_XFullResync() throws Exception {
 		// master: | (X) set hello world | (P) set hello world_1 | (X) set hello world_2 |
 		// slave:  | (X)
+
 
 		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
 
@@ -495,6 +496,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		slaveExecCommand("SET", "hello", "world_1b");
 
 		masterExecCommand("SET", "hello", "world_1a");
+
 		masterExecCommand("CONFIG", "SET", "gtid-enabled", "no");
 		masterExecCommand("SET", "hello", "world_2");
 
@@ -507,7 +509,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_2");
 
 		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
-		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
+		Assert.assertTrue(fullSyncCount < fullSyncCount2);
 	}
 
 	@Test

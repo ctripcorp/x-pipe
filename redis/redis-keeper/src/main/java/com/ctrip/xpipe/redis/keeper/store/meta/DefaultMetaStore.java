@@ -282,11 +282,13 @@ public class DefaultMetaStore extends AbstractMetaStore{
 				setRdbFileInfo(metaDup, eofType);
 				metaDup.setRdbGtidSet(null);
 				metaDup.setRdbContiguousBacklogOffset(backlogOff);
+				metaDup.setRdbReplProto(ReplStage.ReplProto.PSYNC);
 			} else if (RdbStore.Type.RORDB.equals(type)) {
 				metaDup.setRordbFile(rdbFile);
 				setRordbFileInfo(metaDup, eofType);
 				metaDup.setRordbGtidSet(null);
 				metaDup.setRordbContiguousBacklogOffset(backlogOff);
+				metaDup.setRordbReplProto(ReplStage.ReplProto.PSYNC);
 			} else {
 				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
 			}
@@ -385,11 +387,13 @@ public class DefaultMetaStore extends AbstractMetaStore{
 				setRdbFileInfo(metaDup, eofType);
 				metaDup.setRdbGtidSet(gtidExecuted.toString());
 				metaDup.setRdbContiguousBacklogOffset(beginOffsetBacklog);
+				metaDup.setRdbReplProto(ReplStage.ReplProto.XSYNC);
 			} else if (RdbStore.Type.RORDB.equals(type)) {
 				metaDup.setRordbFile(rdbFile);
 				setRordbFileInfo(metaDup, eofType);
 				metaDup.setRordbGtidSet(gtidExecuted.toString());
 				metaDup.setRordbContiguousBacklogOffset(beginOffsetBacklog);
+				metaDup.setRordbReplProto(ReplStage.ReplProto.XSYNC);
 			} else {
 				throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
 			}
@@ -554,18 +558,20 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 	private void updateRdbInfo(ReplicationStoreMeta metaDup,
 							   String rdbFile, RdbStore.Type type, EofType eofType,
-							   long rdbContBacklogOffset, String rdbGtidExecuted) {
+							   long rdbContBacklogOffset, String rdbGtidExecuted, ReplStage.ReplProto replProto) {
 		if (RdbStore.Type.NORMAL.equals(type)) {
 			logger.info("[rdbUpdated] update rdbContBacklogOffset to {}", rdbContBacklogOffset);
 			metaDup.setRdbFile(rdbFile);
 			setRdbFileInfo(metaDup, eofType);
 			metaDup.setRdbContiguousBacklogOffset(rdbContBacklogOffset);
+			metaDup.setRdbReplProto(replProto);
 			metaDup.setRdbGtidSet(rdbGtidExecuted);
 		} else if (RdbStore.Type.RORDB.equals(type)) {
 			logger.info("[rordbUpdated] update rordbBacklogOffset to {}", rdbContBacklogOffset);
 			metaDup.setRordbFile(rdbFile);
 			setRordbFileInfo(metaDup, eofType);
 			metaDup.setRordbContiguousBacklogOffset(rdbContBacklogOffset);
+			metaDup.setRordbReplProto(replProto);
 			metaDup.setRordbGtidSet(rdbGtidExecuted);
 		} else {
 			throw new IllegalStateException("unknown type " + (type == null?"null":type.name()));
@@ -588,7 +594,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			if (result != UPDATE_RDB_RESULT.OK) return result;
 
-			updateRdbInfo(metaDup, rdbFile, type, eofType, rdbContBacklogOffset, null);
+			updateRdbInfo(metaDup, rdbFile, type, eofType, rdbContBacklogOffset, null, ReplStage.ReplProto.PSYNC);
 			saveMeta(metaDup);
 
 			return result;
@@ -617,7 +623,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
 			if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
 
-			updateRdbInfo(metaDup, rdbFile, type, eofType, indexedOffsetBacklog, rdbGtidExecuted.toString());
+			updateRdbInfo(metaDup, rdbFile, type, eofType, indexedOffsetBacklog, rdbGtidExecuted.toString(), ReplStage.ReplProto.XSYNC);
 			saveMeta(metaDup);
 
 			return result;
@@ -631,6 +637,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRdbLastOffset(null);
 		metaDup.setRdbGtidSet(null);
 		metaDup.setRdbContiguousBacklogOffset(null);
+		metaDup.setRdbReplProto(null);
 	}
 
 	private void clearRordb(ReplicationStoreMeta metaDup) {
@@ -640,6 +647,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 		metaDup.setRordbLastOffset(null);
 		metaDup.setRordbGtidSet(null);
 		metaDup.setRordbContiguousBacklogOffset(null);
+		metaDup.setRordbReplProto(null);
 	}
 
 }
