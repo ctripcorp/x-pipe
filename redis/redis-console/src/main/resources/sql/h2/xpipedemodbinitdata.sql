@@ -42,5 +42,7 @@ insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, se
 insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (7,3,3,'127.0.0.1',32222);
 insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (8,3,3,'127.0.0.1',32223);
 
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (9,4,3,'127.0.0.1',40001);
+
 
 

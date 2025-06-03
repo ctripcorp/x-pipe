@@ -21,11 +21,11 @@ public interface SentinelGroupService {
 
     void addSentinelGroup(SentinelGroupModel sentinelGroupModel);
 
-    List<SentinelGroupModel> getSentinelGroupsWithUsageByType(ClusterType clusterType);
+    List<SentinelGroupModel> getSentinelGroupsWithUsageByType(ClusterType clusterType, String... region);
 
-    List<SentinelGroupModel> getAllSentinelGroupsWithUsage();
+    List<SentinelGroupModel> getAllSentinelGroupsWithUsage(String... region);
 
-    Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType);
+    Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, String... regionType);
 
     void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel);
 
