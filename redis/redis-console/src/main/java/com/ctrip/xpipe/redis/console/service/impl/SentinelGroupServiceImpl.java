@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.notifier.shard.AbstractShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -54,6 +55,12 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     private ShardEventHandler shardEventHandler;
 
     private static final long CROSS_DC_CONSTANT = 0L;
+    private static final String ALL_REGION = "ALL_REGION";
+    private static final String MASTER_REGION = "MASTER_REGION";
+    @Autowired
+    private DcClusterService dcClusterService;
+    @Autowired
+    private MetaCache metaCache;
 
     @PostConstruct
     private void postConstruct() {
@@ -201,7 +208,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     @Override
-    public List<SentinelGroupModel> getSentinelGroupsWithUsageByType(ClusterType clusterType) {
+    public List<SentinelGroupModel> getSentinelGroupsWithUsageByType(ClusterType clusterType, String... region) {
         List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
@@ -209,11 +216,11 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroups(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, region);
     }
 
     @Override
-    public List<SentinelGroupModel> getAllSentinelGroupsWithUsage() {
+    public List<SentinelGroupModel> getAllSentinelGroupsWithUsage(String... region) {
         List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
@@ -221,10 +228,10 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroups(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, region);
     }
 
-    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls){
+    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls, String... region) {
         Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream()
             .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
 
@@ -238,6 +245,35 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
                     v1.addAll(v2);
                     return v1;
                 }));
+
+        // 筛选主机房所在region的哨兵分片（对sentinelShardMap中dcClusterId作判断）
+        if (region != null && region.length > 0 && Objects.equals(MASTER_REGION, region[0])) {
+            logger.info("[getAllSentinelGroupsWithUsage] {} selecting", MASTER_REGION);
+            // 1. 获取当前所有哨兵分片对应的dcClusterId
+            Set<Long> dcClusterIds = new HashSet<>();
+            sentinelShardMap.values().forEach(pairSet -> {
+                pairSet.forEach(pair -> {
+                    Long dcClusterId = pair.getKey();
+                    if (!dcClusterId.equals(CROSS_DC_CONSTANT)) {
+                        dcClusterIds.add(dcClusterId);
+                    }
+                });
+            });
+            // 2. 准备
+            // 2.1 便于通过 dcClusterIds 得到 clusterId 和 dcId
+            List<DcClusterTbl> dcClusterTbls = dcClusterService.findAllDcClusters();
+            List<ClusterTbl> clusterTbls = clusterService.findAllClusters();
+            // 2.2 为clusterId和activeDcId作映射
+            Map<Long, Long> clusterActiveIdMap = clusterTbls.stream().collect(Collectors.toMap(ClusterTbl::getId, ClusterTbl::getActivedcId));
+
+            // 3. 获取 dcCluster 跨区信息
+            Map<Long, Boolean> isCrossRegionDcCluster = dcClusterTbls.stream()
+                    .filter(dcClusterTbl -> dcClusterIds.contains(dcClusterTbl.getDcClusterId()))
+                    .collect(Collectors.toMap(DcClusterTbl::getDcClusterId, dcClusterTbl -> metaCache.isCrossRegion(clusterActiveIdMap.get(dcClusterTbl.getClusterId()).toString(), String.valueOf(dcClusterTbl.getDcId()))));
+
+            // 4. 清除所有跨区的哨兵分片
+            sentinelShardMap.values().forEach(pairSet -> pairSet.removeIf(pair -> isCrossRegionDcCluster.getOrDefault(pair.getKey(), false)));
+        }
 
         groupMap.forEach((k, v) -> {
             Set<Pair<Long, Long>> shardSet = sentinelShardMap.get(k);
@@ -257,9 +293,9 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     @Override
-    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType) {
+    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, String... regionType) {
         String type = Strings.isNullOrEmpty(clusterType) ? ClusterType.ONE_WAY.name() : clusterType;
-        List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage();
+        List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage(regionType);
         Map<String, SentinelUsageModel> result = new HashMap<>();
         allSentinelGroups.forEach(sentinelGroupModel -> {
             if (sentinelGroupModel.getClusterType().equalsIgnoreCase(type)) {

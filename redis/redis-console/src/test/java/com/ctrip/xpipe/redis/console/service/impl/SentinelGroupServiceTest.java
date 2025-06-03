@@ -205,6 +205,106 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
     }
 
     @Test
+    public void getSentinelGroupsWithUsageByType2() {
+        ConsoleConfig consoleConfig = mock(ConsoleConfig.class);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(true);
+        shardService.setConsoleConfig(consoleConfig);
+        SentinelGroupModel sentinelGroupModel1 = new SentinelGroupModel().setClusterType(ClusterType.ONE_WAY.name())
+                .setSentinels(Lists.newArrayList(
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6000),
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6001),
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(6002)
+                ));
+        sentinelGroupService.addSentinelGroup(sentinelGroupModel1);
+
+        SentinelGroupModel sentinelGroupModelCrossDc1 = new SentinelGroupModel()
+                .setClusterType(ClusterType.CROSS_DC.name())
+                .setSentinels(Lists.newArrayList(
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(7000),
+                        new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7001),
+                        new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7002)
+                ));
+        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc1);
+
+        SentinelGroupModel sentinelGroupModelCrossDc2 = new SentinelGroupModel()
+                .setClusterType(ClusterType.CROSS_DC.name())
+                .setSentinels(Lists.newArrayList(
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8000),
+                        new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8001),
+                        new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(8002),
+                        new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8003),
+                        new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8004)
+                ));
+        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc2);
+
+        //force refresh cache
+        sentinelBalanceService.selectSentinelWithoutCache("OY", ClusterType.ONE_WAY, "");
+
+        createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_11", "one_way_shard_12", "one_way_shard_13"), "one_way_1");
+        createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_21", "one_way_shard_22"), "one_way_2");
+
+        List<SentinelGroupModel> result = sentinelGroupService.getSentinelGroupsWithUsageByType(ClusterType.ONE_WAY);
+        Assert.assertEquals(3, result.size());
+        int jqUsageOneWay = 0;
+        int oyUsageOneWay = 0;
+        int fraUsageOneWay = 0;
+        for (SentinelGroupModel sentinelGroupModel : result) {
+            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.ONE_WAY.name()) && sentinelGroupModel.dcIds().size() == 1) {
+                long dcId = sentinelGroupModel.dcIds().iterator().next();
+                if (dcId == 1L)
+                    jqUsageOneWay += sentinelGroupModel.getShardCount();
+                else if (dcId == 2L)
+                    oyUsageOneWay += sentinelGroupModel.getShardCount();
+                else
+                    fraUsageOneWay += sentinelGroupModel.getShardCount();
+            }
+        }
+        Assert.assertEquals(5, jqUsageOneWay);
+        Assert.assertEquals(5, oyUsageOneWay);
+        Assert.assertEquals(0, fraUsageOneWay);
+
+
+        createCluster(ClusterType.CROSS_DC, Lists.newArrayList("cross_dc_shard_1", "cross_dc_shard_2"), "cross_dc_cluster");
+        result = sentinelGroupService.getSentinelGroupsWithUsageByType(ClusterType.CROSS_DC);
+        Assert.assertEquals(2, result.size());
+
+        int crossDcUsage = 0;
+        for (SentinelGroupModel sentinelGroupModel : result) {
+            crossDcUsage += sentinelGroupModel.getShardCount();
+        }
+        Assert.assertEquals(2, crossDcUsage);
+
+
+        List<SentinelGroupModel> all = sentinelGroupService.getAllSentinelGroupsWithUsage();
+        Assert.assertEquals(6, all.size());
+        int xpipeSentinels = 0;
+        int xpipeSentinelsUsage = 0;
+        int crossSentinels = 0;
+        int crossSentinelsUsage = 0;
+        for (SentinelGroupModel sentinelGroupModel : all) {
+            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
+                xpipeSentinels++;
+                xpipeSentinelsUsage += sentinelGroupModel.getShardCount();
+            } else if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
+                crossSentinels++;
+                crossSentinelsUsage += sentinelGroupModel.getShardCount();
+            }
+        }
+        Assert.assertEquals(4, xpipeSentinels);
+        Assert.assertEquals(2, crossSentinels);
+        Assert.assertEquals(10, xpipeSentinelsUsage);
+        Assert.assertEquals(2, crossSentinelsUsage);
+
+
+        Map<String, SentinelUsageModel> allUsages = sentinelGroupService.getAllSentinelsUsage(ClusterType.CROSS_DC.name());
+        Assert.assertEquals(3, allUsages.size());
+        Assert.assertEquals(2, allUsages.get("jq").getSentinelUsages().size());
+        Assert.assertEquals(2, allUsages.get("oy").getSentinelUsages().size());
+        Assert.assertEquals(1, allUsages.get("fra").getSentinelUsages().size());
+    }
+
+
+    @Test
     public void updateSentinelGroup() {
         List<SentinelGroupModel> dcSentinels = sentinelGroupService.findAllByDcName("jq");
         SentinelGroupModel toUpdate = dcSentinels.get(0);

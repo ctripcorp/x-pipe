@@ -207,11 +207,23 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
-        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+//    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
+//    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
+//        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+//        try {
+//            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
+//            return GenericRetMessage.createGenericRetMessage(sentienlUsage);
+//        } catch (Exception e) {
+//            logger.error("[sentinelUsage]", e);
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
+
+    @RequestMapping(value = {"/sentinels/usage"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false) String regionType) {
+        logger.info("[sentinelUsage] begin to retrieve specific region sentinels' usage");
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
+            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, regionType);
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
