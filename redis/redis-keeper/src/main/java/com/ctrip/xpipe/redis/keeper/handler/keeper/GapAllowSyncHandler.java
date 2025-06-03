@@ -122,7 +122,6 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     // to file tail
                     xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
                 }
-                logger.info("[locateContinue] {}, {}, {}", xsyncCont.getBacklogOffset(), curStage.backlogOffset2ReplOffset(xsyncCont.getBacklogOffset()), curStage);
                 return anaXSync(request, curStage, xsyncCont, keeperRepl, keeperConfig, -1);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
