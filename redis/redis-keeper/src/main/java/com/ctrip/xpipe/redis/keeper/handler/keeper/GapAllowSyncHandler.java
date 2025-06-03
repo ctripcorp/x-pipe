@@ -197,8 +197,11 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             GtidSet gap = masterGtidSet.symmetricDiff(req);
             GtidSet masterLost = req.subtract(masterGtidSet);
             int gapCnt = gap.itemCnt();
+            boolean gtidNotRelated = masterGtidSet.retainAll(req).isEmpty();
             // TODO: keeper wait transform limit
-            if (request.maxGap >= 0 && request.maxGap < gapCnt) {
+            if (gtidNotRelated) {
+                return SyncAction.full(String.format("[gtid not related] req:{}, my:{}", req, masterGtidSet));
+            } else if (request.maxGap >= 0 && request.maxGap < gapCnt) {
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));
             } else if (backlogEnd - backlogCont >= maxTransfer) {
                 return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, backlogCont, maxTransfer));

@@ -123,7 +123,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
-				rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta));
+				rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
 				rdbStore.updateRdbType(RdbStore.Type.NORMAL);
 				rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -132,7 +132,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (meta != null && meta.getRordbFile() != null) {
 			File rordb = new File(baseDir, meta.getRordbFile());
 			if (rordb.isFile()) {
-				rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta));
+				rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
 				rordbStore.updateRdbType(RdbStore.Type.RORDB);
 				rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
 			}
@@ -627,6 +627,16 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		long minOffset = backlogBeginOffset();
 		long maxOffset = backlogEndOffset();
 
+		ReplStage rdbReplStage, curReplStage = metaStore.getCurrentReplStage(), preReplStage = metaStore.getPreReplStage();
+		if (rdbNextByte >= curReplStage.getBegOffsetBacklog()) {
+			rdbReplStage = curReplStage;
+		} else if (preReplStage != null && rdbNextByte >= preReplStage.getBegOffsetBacklog()) {
+			rdbReplStage = preReplStage;
+		} else {
+			rdbReplStage = null;
+		}
+
+
 		/**
 		 * rdb and cmd is continuous AND not so much cmd after rdb
 		 */
@@ -645,6 +655,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			getLogger().info("beginStage.begOffsetBacklog > rdbNextByte");
 			getLogger().info("[isFullSyncPossible][false][rdb not continue with replStage] {} > {}", beginStage.getBeginGtidset(), rdbNextByte);
 			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.MISS_REPL_STAGE);
+		} else if (rdbReplStage == null || rdbStore.getReplProto() != rdbReplStage.getProto()){
+			if (rdbReplStage == null) {
+				getLogger().info("[isFullSyncPossible][false][rdbReplStage null]");
+			} else {
+				getLogger().info("[isFullSyncPossible][false][replProto not match], store {} != rdb {}", rdbStore.getReplProto(), rdbReplStage.getProto());
+			}
+			context = new FullSyncContext(false, FULLSYNC_FAIL_CAUSE.PROTO_NOT_MATCH);
 		} else {
 			getLogger().info("minOffset <= rdbNextByte && maxOffset - rdbNextByte < cmdAfterRdbThreshold");
 			getLogger().info("[isFullSyncPossible][true] {} <= {} && {} - {} <= {}",

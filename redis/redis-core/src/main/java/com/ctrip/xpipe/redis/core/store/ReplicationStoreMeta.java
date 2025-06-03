@@ -14,6 +14,8 @@ public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Seri
 	// next byte after RDB
 	private Long rdbContiguousBacklogOffset;
 	private Long rordbContiguousBacklogOffset;
+	private ReplStage.ReplProto rdbReplProto;
+	private ReplStage.ReplProto rordbReplProto;
 
 	public ReplicationStoreMeta() {
 
@@ -48,6 +50,8 @@ public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Seri
 
 		this.rdbContiguousBacklogOffset = proto.rdbContiguousBacklogOffset;
 		this.rordbContiguousBacklogOffset = proto.rordbContiguousBacklogOffset;
+		this.rdbReplProto = proto.rdbReplProto;
+		this.rordbReplProto = proto.rordbReplProto;
 	}
 	
 	public ReplStage getCurReplStage() {
@@ -82,9 +86,25 @@ public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Seri
 		this.rordbContiguousBacklogOffset = rordbContiguousBacklogOffset;
 	}
 
+	public ReplStage.ReplProto getRdbReplProto() {
+		return rdbReplProto;
+	}
+	public void setRdbReplProto(ReplStage.ReplProto rdbReplProto) {
+		this.rdbReplProto = rdbReplProto;
+	}
+
+	public ReplStage.ReplProto getRordbReplProto() {
+		return rordbReplProto;
+	}
+	public void setRordbReplProto(ReplStage.ReplProto rordbReplProto) {
+		this.rordbReplProto = rordbReplProto;
+	}
+
 	public ReplicationStoreMetaV1 toV1() {
 		if (this.prevReplStage == null && (this.curReplStage == null ||
-				(this.curReplStage != null && this.curReplStage.getProto() == ReplStage.ReplProto.PSYNC && this.curReplStage.getBegOffsetBacklog() == 0))
+				(this.curReplStage.getProto() == ReplStage.ReplProto.PSYNC && this.curReplStage.getBegOffsetBacklog() == 0)) &&
+				(this.rdbReplProto == null || this.rdbReplProto == ReplStage.ReplProto.PSYNC) &&
+				(this.rordbReplProto == null || this.rordbReplProto == ReplStage.ReplProto.PSYNC)
 		) {
 			ReplicationStoreMetaV1 v1Meta = new ReplicationStoreMetaV1();
 
@@ -166,6 +186,13 @@ public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Seri
 		this.rdbLastOffset = null;
 		this.rordbLastOffset = null;
 
+		if (v1Meta.rdbFile != null) {
+			this.rdbReplProto = ReplStage.ReplProto.PSYNC;
+		}
+		if (v1Meta.rordbFile != null) {
+			this.rordbReplProto = ReplStage.ReplProto.PSYNC;
+		}
+
 		return this;
 	}
 
@@ -183,12 +210,14 @@ public class ReplicationStoreMeta extends ReplicationStoreMetaV1 implements Seri
 				", rdbEofMark='" + rdbEofMark + '\'' +
 				", rdbGtidSet='" + rdbGtidSet + '\'' +
 				", rdbContiguousBacklogOffset=" + rdbContiguousBacklogOffset +
+				", rdbReplProto=" + rdbReplProto +
 				", rordbFile='" + rordbFile + '\'' +
 				", rordbLastOffset=" + rordbLastOffset +
 				", rordbFileSize=" + rordbFileSize +
 				", rordbEofMark='" + rordbEofMark + '\'' +
 				", rordbGtidSet='" + rordbGtidSet + '\'' +
 				", rordbContiguousBacklogOffset=" + rordbContiguousBacklogOffset +
+				", rordbReplProto=" + rordbReplProto +
 				", cmdFilePrefix='" + cmdFilePrefix + '\'' +
 				", keeperState=" + keeperState +
 				", keeperRunid='" + keeperRunid + '\'' +
