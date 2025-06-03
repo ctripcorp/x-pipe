@@ -64,6 +64,8 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         synchronized (aggregator) {
             boolean emptyBeforeAdd = aggregator.isEmpty();
             if (aggregator.add(info.getHostPort()) && emptyBeforeAdd) {
+                long randomMill = randomMill();
+                logger.info("[delayMarkInstance][{}] {}", info.getClusterName(), randomMill);
                 scheduled.schedule(new AbstractExceptionLogTask() {
                     @Override
                     protected void doRun() throws Exception {
@@ -84,7 +86,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                         }
                         handleInstances(key.cluster, key.activeDc, batch);
                     }
-                }, randomMill(), TimeUnit.MILLISECONDS);
+                }, randomMill, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -97,7 +99,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
     @VisibleForTesting
     public int randomMill() {
         int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
-                checkerConfig.getCheckerMetaRefreshIntervalMilli() + checkerConfig.getRedisReplicationHealthCheckInterval() + DELTA);
+                checkerConfig.getRedisReplicationHealthCheckInterval() + checkerConfig.getCheckerMetaRefreshIntervalMilli());
         int delayMax = Math.max(checkerConfig.getMarkInstanceMaxDelayMilli(), delayBase + DELTA);
         return delayBase + rand.nextInt(delayMax - delayBase);
     }
