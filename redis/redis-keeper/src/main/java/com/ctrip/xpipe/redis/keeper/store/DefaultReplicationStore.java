@@ -151,7 +151,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public XSyncContinue locateLastPoint() {
 		Pair<Long, GtidSet> lastPoint = cmdStore.locateLastPoint();
-		return new XSyncContinue(lastPoint.getValue(), lastPoint.getKey());
+		GtidSet begin = getBeginGtidSetAndLost().getKey();
+		GtidSet continueGtidSet = lastPoint.getValue().union(begin);
+		return new XSyncContinue(continueGtidSet, lastPoint.getKey());
 	}
 
 	@Override
