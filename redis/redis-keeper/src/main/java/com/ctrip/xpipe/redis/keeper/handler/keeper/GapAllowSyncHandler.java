@@ -97,10 +97,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     long offset = keeperRepl.getEndOffset() + 1;
                     action = SyncAction.Continue(curStage, curStage.getReplId(), offset).markKeeperPartial();
                 } else {
-                    XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSet(keeperRepl.getEndGtidSet());
-                    if(xsyncCont.getBacklogOffset() == -1){
-                        xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
-                    }
+                    XSyncContinue xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
                     action = SyncAction.XContinue(curStage, xsyncCont.getContinueGtidSet().union(curStage.getGtidLost()),
                             xsyncCont.getBacklogOffset(), null).markKeeperPartial();
                 }
