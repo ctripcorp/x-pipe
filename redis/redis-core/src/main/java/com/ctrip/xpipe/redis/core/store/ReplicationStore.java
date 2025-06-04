@@ -27,7 +27,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void switchToPSync(String replId, long offset) throws IOException;
 	void psyncContinue(String replId) throws IOException;
 	void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
-	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
+	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();
 	boolean increaseLost(GtidSet lost) throws IOException;

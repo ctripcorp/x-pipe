@@ -52,7 +52,7 @@ public class InMemoryGapAllowedSync extends AbstractGapAllowedSync {
             }
 
             @Override
-            public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+            public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
                 log.info("[onSwitchToXsync]{}, {}", replId, replOff);
                 replOffset = replOff;
             }

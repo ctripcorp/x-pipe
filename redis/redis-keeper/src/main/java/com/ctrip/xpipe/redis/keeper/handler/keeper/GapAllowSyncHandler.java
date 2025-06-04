@@ -102,7 +102,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                         xsyncCont = redisKeeperServer.getReplicationStore().locateLastPoint();
                     }
                     action = SyncAction.XContinue(curStage, xsyncCont.getContinueGtidSet().union(curStage.getGtidLost()),
-                            xsyncCont.getBacklogOffset(), null).markKeeperPartial().setKeeperLost(curStage.getGtidLost());
+                            xsyncCont.getBacklogOffset(), null).markKeeperPartial();
                 }
                 return action;
             } else if (request.offset == -3) {
@@ -203,7 +203,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
             GtidSet gap = masterGtidSet.symmetricDiff(req);
-            GtidSet masterLost = req.subtract(masterGtidSet);
+            GtidSet deltaLost = req.subtract(masterGtidSet);
             int gapCnt = gap.itemCnt();
             boolean gtidNotRelated = masterGtidSet.retainAll(req).isEmpty();
             // TODO: keeper wait transform limit
@@ -216,10 +216,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             } else if (backlogCont < backlogBeginOffset) {
                 return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset));
             } else {
-                if (!masterLost.isEmpty()) {
-                    logger.info("[masterLost] masterLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", masterLost, cont, lost, req);
+                if (!deltaLost.isEmpty()) {
+                    logger.info("[deltaLost] deltaLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", deltaLost, cont, lost, req);
                 }
-                return SyncAction.XContinue(xsyncStage, masterGtidSet, backlogCont, masterLost).setBacklogEndExcluded(stageEndBacklogOffset);
+                return SyncAction.XContinue(xsyncStage, masterGtidSet, backlogCont, deltaLost).setBacklogEndExcluded(stageEndBacklogOffset);
             }
         } else {
             return SyncAction.full("replId mismatch");
@@ -241,10 +241,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
         } else {
-            if (null != action.masterLost && !action.masterLost.isEmpty()) {
+            if (null != action.deltaLost && !action.deltaLost.isEmpty()) {
                 try {
-                    logger.info("[runAction][increaseLost] {}", action.masterLost);
-                    keeperServer.increaseLost(action.masterLost, slave);
+                    logger.info("[runAction][increaseLost] {}", action.deltaLost);
+                    keeperServer.increaseLost(action.deltaLost, slave);
                 } catch (IOException e) {
                     try {
                         slave.close();
@@ -260,9 +260,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 respStr = String.format("%s %s", PARTIAL_SYNC, action.replId)
                         + (action.protoSwitch || action.keeperPartial ? " "+(action.replOffset - 1):"");
             } else {
-                respStr = String.format("XCONTINUE GTID.SET %s MASTER.UUID %s REPLID %s REPLOFF %d",
-                        action.gtidSet.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1)
-                        + (action.keeperPartial ? " GTID.LOST " + action.keeperLost:"");
+                respStr = String.format("XCONTINUE GTID.SET %s GTID.LOST %s MASTER.UUID %s REPLID %s REPLOFF %d",
+                        action.gtidSet.toString(), action.gtidLost.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1);
             }
 
             logger.info("[runAction][resp] {}", respStr);
@@ -298,9 +297,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
         GtidSet gtidSet;
 
-        GtidSet masterLost;
+        GtidSet deltaLost;
 
-        GtidSet keeperLost;
+        GtidSet gtidLost;
 
         public static SyncAction full(String fullCause) {
             return full(fullCause, false);
@@ -314,14 +313,15 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             return action;
         }
 
-        public static SyncAction XContinue(ReplStage replStage, GtidSet contGtidSet, long backlogOffset, GtidSet masterLost) {
+        public static SyncAction XContinue(ReplStage replStage, GtidSet contGtidSet, long backlogOffset, GtidSet deltaLost) {
             SyncAction action = new SyncAction();
             action.replStage = replStage;
             action.gtidSet = contGtidSet;
             action.replId = replStage.getReplId();
             action.replOffset = replStage.backlogOffset2ReplOffset(backlogOffset);
             action.backlogOffset = backlogOffset;
-            action.masterLost = masterLost;
+            action.deltaLost = deltaLost;
+            action.gtidLost = replStage.getGtidLost().clone();
             return action;
         }
 
@@ -370,11 +370,6 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
         public SyncAction setBacklogEndExcluded(long backlogEndOffsetExcluded) {
             this.backlogEndOffsetExcluded = backlogEndOffsetExcluded;
-            return this;
-        }
-
-        public SyncAction setKeeperLost(GtidSet lost) {
-            this.keeperLost = lost;
             return this;
         }
 

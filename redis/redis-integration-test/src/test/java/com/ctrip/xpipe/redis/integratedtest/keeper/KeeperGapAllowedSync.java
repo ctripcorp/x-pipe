@@ -186,9 +186,6 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		// master: | (X) set hello world | (P) set hello world_1 | (X) set hello world_2 |
 		// slave:  | (X)
 
-
-		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
-
 		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED), slaveInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_GTID_EXECUTED));
 
 		masterExecCommand("SET", "hello", "world");
@@ -205,6 +202,8 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		Assert.assertEquals(masterInfoKey(InfoCommand.INFO_TYPE.GTID, INFO_KEY_PREV_REPL_MODE), "psync");
 		masterExecCommand("SET", "hello", "world_2");
 
+		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+
 		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
 
 		waitForSync();
@@ -212,7 +211,7 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 		assertReplStreamAligned();
 
 		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
-		Assert.assertEquals(fullSyncCount, fullSyncCount2); //TODO for now it is psync, should be fullresync
+		Assert.assertTrue(fullSyncCount < fullSyncCount2);
 	}
 
 	@Test
@@ -225,13 +224,11 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 
 		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
 		waitForSync();
-		logger.info("[xxxx] sync 1");
 
 		long fullSyncCount = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
 
 		masterExecCommand("SET", "hello", "world_1");
 		waitForSync();
-		logger.info("[xxxx] sync 2");
 
 		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_1");
 
@@ -247,13 +244,12 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 
 		slaveExecCommand("SLAVEOF", activeKeeper.getIp(), activeKeeper.getPort().toString());
 		waitForSync();
-		logger.info("[xxxx] sync 3");
 		assertReplStreamAligned();
 
 		Assert.assertEquals(slaveExecCommand("GET", "hello"), "world_4");
 
-		// long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
-		// Assert.assertEquals(fullSyncCount+1, fullSyncCount2); //TODO confirm why more fullsync than expected
+		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+		Assert.assertTrue(fullSyncCount < fullSyncCount2);
 	}
 
 	@Test

@@ -343,7 +343,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
     class XContinueReply extends AbstractSyncReply {
         String masterUuid;
         GtidSet gtidCont;
-        GtidSet masterLost;
+        GtidSet gtidLost;
 
         public GtidSet getGtidCont() {
             return gtidCont;
@@ -353,8 +353,8 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
             return masterUuid;
         }
 
-        public GtidSet getMasterLost() {
-            return masterLost;
+        public GtidSet getGtidLost() {
+            return gtidLost;
         }
 
         public SyncReply parse(String[] split) {
@@ -371,7 +371,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
                 } else if (optkey.equalsIgnoreCase(XSYNC_REPLY_OPT_GTID_SET)) {
                     gtidCont = new GtidSet(StringUtil.unwrap(optval,'"'));
                 } else if (optkey.equalsIgnoreCase(XSYNC_REPLY_OPT_GTID_LOST)) {
-                    masterLost = new GtidSet(StringUtil.unwrap(optval,'"'));
+                    gtidLost = new GtidSet(StringUtil.unwrap(optval,'"'));
                 } else {
                     getLogger().info("[parse] ignore unrecognized option {}:{}", optkey, optval);
                 }
@@ -567,12 +567,12 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
     private void notifySwitchToXsync() {
         XContinueReply reply = (XContinueReply) syncReply;
-        getLogger().debug("[notifySwitchToXsync] replid:{}, replOff:{}, masterUuid:{}, gtidCont:{}", reply.getReplId(),
-                reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
+        getLogger().debug("[notifySwitchToXsync] replid:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}", reply.getReplId(),
+                reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont(), reply.getGtidLost());
         for (PsyncObserver observer : observers) {
             if (observer instanceof GapAllowedSyncObserver) {
                 ((GapAllowedSyncObserver) observer).onSwitchToXsync(reply.getReplId(),
-                        reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont());
+                        reply.getReplOff(), reply.getMasterUuid(), reply.getGtidCont(), reply.getGtidLost());
             }
         }
     }

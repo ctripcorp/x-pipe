@@ -35,10 +35,10 @@ import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_REPL_MODE;
 
 public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
+	private final String EMPTY_GTIDSET_REPR = "\"\"";
 	private DefaultGapAllowedSync gasync;
 	private ReplicationStoreManager replicationStoreManager;
 	private ReplicationStore replicationStore;
-
 	private String REPLID_EMPTY = "0000000000000000000000000000000000000000";
 	private String replIdA = "000000000000000000000000000000000000000A";
 	private String replIdB = "000000000000000000000000000000000000000B";
@@ -107,7 +107,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		}
 
 		@Override
-		public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+		public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
 			switchToXsync++;
 		}
 
@@ -389,7 +389,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 
 		long bakBacklogEndOff = replicationStore.backlogEndOffset();
 
-		replicationStore.switchToXSync(replidX,replOffX,uuidX,new GtidSet(gtidContRepr));
+		replicationStore.switchToXSync(replidX,replOffX,uuidX,new GtidSet(gtidContRepr), null);
 
 		replicationStore.appendCommands(Unpooled.wrappedBuffer(generateGtidCommands(uuidX, gnoCmdX, gnoCountX)));
 
@@ -407,7 +407,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 
 		replStageAssertXsync(curReplStage);
 		Assert.assertEquals(curReplStage.getBeginGtidset().toString(), gtidContRepr);
-		Assert.assertEquals(curReplStage.getGtidLost().toString(), GtidSet.EMPTY_GTIDSET);
+		Assert.assertTrue(curReplStage.getGtidLost().isEmpty());
 		Assert.assertEquals(curReplStage.getReplId(), replidX);
 		Assert.assertEquals(curReplStage.getBegOffsetBacklog(), bakBacklogEndOff);
 		Assert.assertEquals(curReplStage.getBegOffsetRepl(), replOffX+1);
@@ -441,8 +441,8 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		replicationStore = replicationStoreManager.getCurrent();
 
 		Pair<GtidSet, GtidSet> gtidSet = replicationStore.getGtidSet();
-		Assert.assertEquals(gtidSet.getKey().toString(), GtidSet.EMPTY_GTIDSET);
-		Assert.assertEquals(gtidSet.getValue().toString(), GtidSet.EMPTY_GTIDSET);
+		Assert.assertTrue(gtidSet.getKey().isEmpty());
+		Assert.assertTrue(gtidSet.getValue().isEmpty());
 
 		MetaStore metaStore = replicationStore.getMetaStore();
 		metaStoreAssertGapAllowed(replicationStore.getMetaStore());
@@ -693,7 +693,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(curReplStage.getBegOffsetRepl(), replOffC+1);
 		Assert.assertEquals(curReplStage.getBegOffsetBacklog(), 0);
 		Assert.assertEquals(curReplStage.getBeginGtidset().toString(), gtidContRepr);
-		Assert.assertEquals(curReplStage.getGtidLost().toString(), GtidSet.EMPTY_GTIDSET);
+		Assert.assertTrue(curReplStage.getGtidLost().isEmpty());
 
 		Assert.assertNull(metaStore.getPreReplStage());
 	}
@@ -798,7 +798,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(curReplStage.getBegOffsetRepl(), replOffC+1);
 		Assert.assertEquals(curReplStage.getBegOffsetBacklog(), bakBacklogEndOffset);
 		Assert.assertEquals(curReplStage.getBeginGtidset().toString(), gtidContRepr);
-		Assert.assertEquals(curReplStage.getGtidLost().toString(), GtidSet.EMPTY_GTIDSET);
+		Assert.assertTrue(curReplStage.getGtidLost().isEmpty());
 
 		replStageAssertPsync(prevReplStage);
 		Assert.assertEquals(prevReplStage.getReplId(), replIdB);

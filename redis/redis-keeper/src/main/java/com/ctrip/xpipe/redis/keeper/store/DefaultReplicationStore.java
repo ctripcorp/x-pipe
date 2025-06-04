@@ -204,9 +204,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
-		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
-		metaStore.switchToXsync(replId, replOff+1, backlogEndOffset(), masterUuid, gtidCont);
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}", replId, replOff, masterUuid, gtidCont, gtidLost);
+		metaStore.switchToXsync(replId, replOff+1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
 		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
 	}
 

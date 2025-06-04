@@ -496,7 +496,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 	@Override
 	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
-											  GtidSet gtidCont) throws IOException {
+											  GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
@@ -504,9 +504,8 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
 				throw new IllegalStateException("switchtoxsync in xsync replstage");
 			}
-
-			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff, masterUuid,
-					new GtidSet(GtidSet.EMPTY_GTIDSET), gtidCont);
+			GtidSet gtidExecuted = gtidCont.subtract(gtidLost);
+			ReplStage newReplStage = new ReplStage(replId, beginReplOffset, backlogOff, masterUuid, gtidLost, gtidExecuted);
 
 			logger.info("[switchToXsync] {} -> {}", curReplStage, newReplStage);
 			metaDup.setPrevReplStage(curReplStage);

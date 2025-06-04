@@ -273,8 +273,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
-		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont);
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont, gtidLost);
 		closeSlaves("toXSync " + gtidCont);
 	}
 
@@ -1025,7 +1025,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+	public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
 		String alert = String.format("SWITCH2XSYNC(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
 		EventMonitor.DEFAULT.logAlertEvent(alert);
 		closeSlaves("switch2xsync");

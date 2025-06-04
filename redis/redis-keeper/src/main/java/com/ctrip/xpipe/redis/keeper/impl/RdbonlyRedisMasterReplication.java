@@ -243,7 +243,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+	protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
 		throw new IllegalStateException("impossible to be here");
 	}
 
