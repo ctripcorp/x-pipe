@@ -79,7 +79,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals(new GtidSet("A:1-10,C:1-5"), action.gtidSet);
         Assert.assertEquals(cont.getBacklogOffset(), action.backlogOffset);
         Assert.assertEquals(200, action.backlogEndOffsetExcluded);
-        Assert.assertEquals(new GtidSet("B:1-15"), action.masterLost);
+        Assert.assertEquals(new GtidSet("B:1-15"), action.deltaLost);
     }
 
     @Test
@@ -198,7 +198,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         GapAllowSyncHandler.SyncAction action = handler.anaRequest(request, keeperServer, slave);
         Assert.assertTrue(action.protoSwitch);
         Assert.assertEquals(new GtidSet("A:1-20"), action.getGtidSet());
-        Assert.assertNull(action.masterLost);
+        Assert.assertNull(action.deltaLost);
         Assert.assertEquals(1001, action.backlogOffset);
         Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
     }
@@ -224,7 +224,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertFalse(action.full);
         Assert.assertEquals("test-repl-id1", action.replId);
         Assert.assertEquals(new GtidSet("A:1-10,B:1-5,C:1-15"), action.getGtidSet());
-        Assert.assertEquals(new GtidSet("A:1-10"), action.keeperLost);
+        Assert.assertEquals(new GtidSet("A:1-10"), action.gtidLost);
         Assert.assertEquals(1000, action.backlogOffset);
         Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
         Assert.assertEquals(990, action.replOffset);

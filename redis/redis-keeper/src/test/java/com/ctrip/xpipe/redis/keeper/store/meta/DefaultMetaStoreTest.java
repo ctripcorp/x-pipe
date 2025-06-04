@@ -104,7 +104,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         result = metaStore.checkReplIdAndUpdateRdbInfoXsync(rdbFile, RdbStore.Type.NORMAL, new LenEofType(100), rdbOffset, rdbReplId, rdbMasterUuid, rdbGtidSet, rdbGtidSet, 10000, 11000, rdbBacklogOff, rdbGtidSet);
         Assert.assertEquals(result, UPDATE_RDB_RESULT.REPLSTAGE_NOT_MATCH);
 
-        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB);
+        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB, null);
 
         result =  metaStore.checkReplIdAndUpdateRdbInfoXsync(rdbFile, RdbStore.Type.NORMAL, new LenEofType(100), rdbOffset, rdbReplId, rdbMasterUuid, rdbGtidSet, rdbGtidSet, 10000, 12000, rdbBacklogOff, rdbGtidSet);
         Assert.assertEquals(result, UPDATE_RDB_RESULT.REPLID_NOT_MATCH);
@@ -124,7 +124,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         long rdbOffset, rdbBacklogOff;
 
         metaStore.rdbConfirmPsync(replidA, beginReplOffsetA, backlogOffA, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB);
+        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB, null);
 
         rdbOffset = 1500; rdbBacklogOff = 11500;
         result =  metaStore.checkReplIdAndUpdateRdbInfoXsync(rdbFile, RdbStore.Type.NORMAL, new LenEofType(100), rdbOffset, rdbReplId, rdbMasterUuid, rdbGtidSet, rdbGtidSet, 10000, 12000, rdbBacklogOff, rdbGtidSet);
@@ -153,7 +153,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         long rdbOffset, rdbBacklogOff;
 
         metaStore.rdbConfirmPsync(replidA, beginReplOffsetA, backlogOffA, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB);
+        metaStore.switchToXsync(replidB, beginReplOffsetB, backlogOffB, masterUuidB, gtidContB, null);
 
         rdbOffset = 2500; rdbBacklogOff = 11500;
         result =  metaStore.checkReplIdAndUpdateRdbInfoXsync(rdbFile, RdbStore.Type.NORMAL, new LenEofType(100), rdbOffset, rdbReplId, rdbMasterUuid, rdbGtidSet, rdbGtidSet, 10000, 12000, rdbBacklogOff, rdbGtidSet);
@@ -204,7 +204,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
     @Test
     public void testSwitchToXsync() throws IOException{
         metaStore.rdbConfirmPsync(replidA, 1, 10000, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        metaStore.switchToXsync(replidB, 20001,20000, masterUuidB, new GtidSet(GtidSet.EMPTY_GTIDSET));
+        metaStore.switchToXsync(replidB, 20001,20000, masterUuidB, new GtidSet(GtidSet.EMPTY_GTIDSET), null);
 
         Assert.assertEquals(metaStore.getCurrentReplStage().getProto(), ReplStage.ReplProto.XSYNC);
         Assert.assertEquals(metaStore.getCurReplStageReplId(), replidB);
@@ -280,7 +280,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
     @Test
     public void testReplOffsetToBacklogOffset() throws Exception {
         metaStore.rdbConfirmPsync(replidA, 10001, 10000, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        metaStore.switchToXsync(replidB, 20001,20000, masterUuidB, new GtidSet(GtidSet.EMPTY_GTIDSET));
+        metaStore.switchToXsync(replidB, 20001,20000, masterUuidB, new GtidSet(GtidSet.EMPTY_GTIDSET), null);
 
         Assert.assertNull(metaStore.replOffsetToBacklogOffset(null));
         Assert.assertNull(metaStore.replOffsetToBacklogOffset(1L));

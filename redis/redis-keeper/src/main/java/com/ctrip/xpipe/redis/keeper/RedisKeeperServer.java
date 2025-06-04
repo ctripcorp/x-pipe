@@ -34,7 +34,7 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 
 	void switchToPSync(String replId, long replOff) throws IOException;
 
-	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
+	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 
 	boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException;
 

@@ -283,7 +283,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
     }
 
     @Override
-    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
         doOnContinue0("doOnSwitchToXsync");
     }
 
