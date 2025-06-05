@@ -617,10 +617,21 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			GtidSet beginGtidSet = getCurrentReplStage().getBeginGtidset();
 			GtidSet gtidLost = getCurrentReplStage().getGtidLost();
 			GtidSet gtidCont = beginGtidSet.union(indexedGtidSet).union(gtidLost);
+			logger.info("[checkReplIdAndUpdateRdbInfoXsync] gtidCont:{} = beginGtidSet:{} + indexedGtidSet:{} + gtidLost:{}", gtidCont, beginGtidSet, indexedGtidSet, gtidLost);
 
 			GtidSet rdbGtidSet = rdbGtidExecuted.union(rdbGtidLost);
-			if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
-			if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+			logger.info("[checkReplIdAndUpdateRdbInfoXsync] rdbGtidSet:{} = rdbGtidExecuted:{} + rdbGtidLost:{}", rdbGtidSet, rdbGtidExecuted, rdbGtidLost);
+
+			if (gtidCont.subtract(rdbGtidSet).itemCnt() > 0) {
+				logger.warn("[checkReplIdAndUpdateRdbInfoXsync][gtid.set not match] gtidCont:{} > rdbGtidSet:{}", gtidCont, rdbGtidSet);
+				return UPDATE_RDB_RESULT.GTID_SET_NOT_MATCH;
+			}
+			if (rdbGtidSet.subtract(gtidCont).itemCnt() > 0) {
+				logger.warn("[checkReplIdAndUpdateRdbInfoXsync][rdb more recent] gtidCont:{} < rdbGtidSet:{}", gtidCont, rdbGtidSet);
+				return UPDATE_RDB_RESULT.RDB_MORE_RECENT;
+			}
+
+			logger.info("[checkReplIdAndUpdateRdbInfoXsync][check ok] gtidCont:{} == rdbGtidSet:{}", gtidCont, rdbGtidSet);
 
 			updateRdbInfo(metaDup, rdbFile, type, eofType, indexedOffsetBacklog, rdbGtidExecuted.toString(), ReplStage.ReplProto.XSYNC);
 			saveMeta(metaDup);
