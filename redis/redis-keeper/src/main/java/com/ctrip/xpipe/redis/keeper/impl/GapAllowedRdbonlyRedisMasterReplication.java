@@ -88,7 +88,7 @@ public class GapAllowedRdbonlyRedisMasterReplication extends RdbonlyRedisMasterR
 						}
 					} else {
 						logger.info("[doRdbTypeConfirm] rdb more recent, no more check, checkCount:{}", checkCount);
-						throw new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail: RDB_MORE_RECENT too many times");
+						dumpFail(new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail: RDB_MORE_RECENT too many times"));
 					}
 					break;
 				case REPLSTAGE_NOT_MATCH:
@@ -97,7 +97,8 @@ public class GapAllowedRdbonlyRedisMasterReplication extends RdbonlyRedisMasterR
 				case MASTER_UUID_NOT_MATCH:
 				case GTID_SET_NOT_MATCH:
 				default:
-					throw new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail:" + result);
+					dumpFail(new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail:" + result));
+					break;
 			}
 		} while (checkAgain);
 	}
