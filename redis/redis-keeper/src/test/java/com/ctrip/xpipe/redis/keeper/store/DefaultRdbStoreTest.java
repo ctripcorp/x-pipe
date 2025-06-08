@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.utils.CloseState;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +41,46 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		rdbFile = new File(fileName);
 		rdbStore = new DefaultRdbStore(rdbFile, "replId",1L, new LenEofType(rdbFileSize));
 	}
-	
+
+	@Test
+	public void testReadRdbFail() throws IOException {
+		rdbStore.readRdbFile(new RdbFileListener() {
+			@Override
+			public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
+				logger.info("[setRdbFileInfo]{}, {}", eofType, rdbProgress);
+			}
+
+			@Override
+			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+				logger.info("[onFileData]");
+				throw new CloseState.CloseStateException("mock already closed");
+			}
+
+			@Override
+			public boolean isOpen() {
+				return true;
+			}
+
+			@Override
+			public void exception(Exception e) {
+				logger.error("[exception]", e);
+			}
+
+			@Override
+			public void beforeFileData() {
+				logger.info("[beforeFileData]");
+			}
+
+			@Override
+			public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+				return true;
+			}
+
+		});
+
+		Assert.assertTrue(rdbStore.isClosed());
+	}
+
 	@Test
 	public void testFail() throws IOException, TimeoutException {
 		

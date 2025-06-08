@@ -90,7 +90,7 @@ public abstract class AbstractControllableFile implements ControllableFile{
 			return;
 		}
 		
-		logger.debug("[doOpen]{}", file);
+		logger.info("[doOpen]{}", file);
 		closed.set(false);
 		randomAccessFile.set(new RandomAccessFile(file, "rw"));
 		FileChannel fileChannel = randomAccessFile.get().getChannel();
