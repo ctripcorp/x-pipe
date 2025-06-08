@@ -81,7 +81,7 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 
 		if (closed.get() && reference.get() <= 0) {
 			try {
-				logger.debug("[tryCloseChannel][doClose]{}", file);
+				logger.info("[tryCloseChannel][doClose]{}", file);
 				file.close();
 			} catch (IOException e) {
 				logger.error("[tryCloseChannel]" + file, e);
