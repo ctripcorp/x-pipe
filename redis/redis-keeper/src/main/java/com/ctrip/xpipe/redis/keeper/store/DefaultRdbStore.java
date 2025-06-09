@@ -294,7 +294,13 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 				int readBytes = (int)Math.min(referenceFileRegion.count(), limitBytes);
 				rateLimiter.acquire(readBytes);
 			}
-			rdbFileListener.onFileData(referenceFileRegion);
+			try {
+				rdbFileListener.onFileData(referenceFileRegion);
+			} catch (Throwable t) {
+				logger.info("[doReadRdbFile] exception on send file data", t);
+				referenceFileRegion.deallocate();
+				throw t;
+			}
 			if(referenceFileRegion.count() <= 0) {
 				try {
 					Thread.sleep(1);

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -16,6 +17,9 @@ public class DefaultReferenceFileRegion extends DefaultFileRegion implements Ref
 	protected static Logger logger = LoggerFactory.getLogger(DefaultReferenceFileRegion.class);
 	
 	private ReferenceFileChannel referenceFileChannel;
+
+	// Atomic flag to ensure deallocate() is only executed once
+	private final AtomicBoolean deallocated = new AtomicBoolean(false);
 	
 	/**
 	 * for debug purpose, ignore
@@ -33,7 +37,9 @@ public class DefaultReferenceFileRegion extends DefaultFileRegion implements Ref
 	public void deallocate() {
 		
 		try {
-			referenceFileChannel.release();
+			if(deallocated.compareAndSet(false, true)) {
+				referenceFileChannel.release();
+			}
 		} catch (Exception e) {
 			logger.error("[deallocate]" + referenceFileChannel, e);
 		}
@@ -53,6 +59,10 @@ public class DefaultReferenceFileRegion extends DefaultFileRegion implements Ref
 
 	public void setTotalPos(long totalPos) {
 		this.totalPos = totalPos;
+	}
+
+	public boolean isDeallocated() {
+		return deallocated.get();
 	}
 
 }
