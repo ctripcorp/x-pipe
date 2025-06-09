@@ -4,7 +4,6 @@ import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.utils.CloseState;
@@ -161,6 +160,62 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 				}
 			}
 		}).start();
+	}
+
+	@Test
+	public void testOnException() throws InterruptedException {
+
+		final DefaultReferenceFileRegion[] reference = {null};
+
+		Thread t = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					rdbStore.readRdbFile(new RdbFileListener() {
+						@Override
+						public void setRdbFileInfo(EofType eofType, ReplicationProgress<?> rdbProgress) {
+							logger.info("[setRdbFileInfo]{}, {}", eofType, rdbProgress);
+						}
+
+						@Override
+						public boolean supportProgress(Class<? extends ReplicationProgress<?>> clazz) {
+							return true;
+						}
+
+						@Override
+						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+							reference[0] = referenceFileRegion;
+							Assert.assertEquals(reference[0].isDeallocated(), false);
+							throw new IOException("just fail it");
+						}
+
+						@Override
+						public boolean isOpen() {
+							return true;
+						}
+
+						@Override
+						public void exception(Exception e) {
+							logger.info("[exception]", e);
+							exception.set(e);
+						}
+
+						@Override
+						public void beforeFileData() {
+							logger.info("[beforeFileData]");
+						}
+					});
+				} catch (IOException e) {
+					logger.error("[run][read rdb error]" + rdbStore, e);
+					exception.set(e);
+				}
+			}
+		});
+		t.start();
+		t.join();
+
+		Assert.assertEquals(reference[0].isDeallocated(), true);
 	}
 
 }
