@@ -240,7 +240,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
             this.keeperContainerParts = newKeeperContainerParts;
 
             List<TimeBoundCache<String>> localXPipeMetaParts = new ArrayList<>();
-            IntStream.range(0, consoleConfig.getClusterDividedParts()).forEach(i -> {
+            IntStream.range(0, parts).forEach(i -> {
                 // using as lazy-load cache
                 localXPipeMetaParts.add(new TimeBoundCache<>(() -> Long.MAX_VALUE, () -> getDividedXpipeMeta(i).toString()));
             });

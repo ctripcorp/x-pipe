@@ -33,10 +33,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -61,9 +58,6 @@ public class AdvancedDcMetaService implements DcMetaService {
     private ZoneService zoneService;
 
     @Autowired
-    private ReplDirectionService replDirectionService;
-
-    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -74,9 +68,6 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     private AppliercontainerService appliercontainerService;
-
-    @Autowired
-    private ApplierService applierService;
 
     @Autowired
     private AzService azService;
@@ -136,8 +127,7 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
-        List<DcTbl> dcTblList = dcService.findAllDcs();
-        DcTbl dcTbl = dcTblList.stream().filter(dc -> dc.getDcName().equalsIgnoreCase(dcName)).findFirst().orElse(null);
+        DcTbl dcTbl = dcService.find(dcName);
         if (dcTbl == null) {
             return new DcMeta();
         }
@@ -158,10 +148,9 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
+        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, Collections.singletonList(dcTbl), allowTypes, executors, redisMetaService,
             dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
-            azGroupCache, replDirectionService, zoneService, keeperContainerService, applierService, factory,
-            consoleConfig);
+            azGroupCache, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
@@ -199,8 +188,7 @@ public class AdvancedDcMetaService implements DcMetaService {
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors,
             redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, factory, consoleConfig);
+            azGroupClusterRepository, azGroupCache, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {

@@ -56,7 +56,8 @@ public class ConsoleController extends AbstractConsoleController {
 		DcMeta dcMeta;
 		Set<String> upperCaseTypes = types == null ? Collections.emptySet()
 			: types.stream().map(String::toUpperCase).collect(Collectors.toSet());
-		if (CollectionUtils.isEmpty(upperCaseTypes)) {
+		boolean requireAllTypes = CollectionUtils.isEmpty(upperCaseTypes);
+		if (requireAllTypes) {
 			dcMeta = dcMetaService.getDcMeta(dcId);
 		} else {
 			Set<String> searchTypes = Sets.newHashSet(upperCaseTypes);
@@ -71,7 +72,7 @@ public class ConsoleController extends AbstractConsoleController {
 			}
 
 			ClusterType azGroupClusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
-			if (upperCaseTypes.contains(azGroupClusterType.toString())) {
+			if (requireAllTypes || upperCaseTypes.contains(azGroupClusterType.toString())) {
 				clusterMeta.setType(azGroupClusterType.toString());
 				clusterMeta.setAzGroupType(null);
 			} else {
