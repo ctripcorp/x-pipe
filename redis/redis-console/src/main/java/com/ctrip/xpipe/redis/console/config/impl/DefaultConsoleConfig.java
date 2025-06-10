@@ -598,6 +598,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getDcMetaBuildConcurrent() {
+        return consoleConfigBean.getDcMetaBuildConcurrent();
+    }
+
+    @Override
     public boolean getShouldDoAfterNettyClientConnected() {
         return dataCenterConfigBean.getDoAfterNettyClientConnected();
     }
