@@ -135,7 +135,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     }
 
     public Set<String> getOwnClusterType() {
-        String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+//        String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+        String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, "ONE_WAY,BI_DIRECTION,SINGLE_DC,LOCAL_DC,CROSS_DC,HETERO");
 
         return getSplitStringSet(clusterTypes);
     }
