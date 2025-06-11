@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xpipe>
+    <redisCheckRule id="1" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256'}"/>
+    <redisCheckRule id="2" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128'}"/>
+    <redisCheckRule id="3" checkType="info" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '232'}"/>
+    <dc id="jq" zone="SHA">
+        <metaServer ip="127.0.0.1" port="9747" master="true"/>
+        <zkServer address="127.0.0.1:2181"/>
+        <keeperContainers>
+            <keeperContainer id="1" ip="1.1.1.1" port="8080" az_id="1234567890123456789"/>
+            <keeperContainer id="2" ip="1.1.1.2" port="8080" az_id="1234567890123456789"/>
+        </keeperContainers>
+        <applierContainers>
+            <applierContainer id="11" ip="1.1.1.11" port="8080" az_id="1234567890123456789"/>
+            <applierContainer id="12" ip="1.1.1.12" port="8080" az_id="1234567890123456789"/>
+        </applierContainers>
+        <sentinel id="1" address="127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"/>
+        <sentinel id="2" address="127.0.0.1:17170,127.0.0.1:17171,127.0.0.1:17172"/>
+        <sentinel id="3" address="127.0.0.1:32222,127.0.0.1:32223"/>
+        <cluster id="cluster1" db-id="1" active-dc="jq" phase="1" type="one_way">
+            <shard id="shard1" db-id="1" sentinelId="1" sentinelMonitorName="cluster1+shard1+jq">
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" master="127.0.0.1:8000" active="true"/>
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" master="127.0.0.1:6000" active="false"/>
+                <redis ip="127.0.0.1" port="6379" master=""/>
+                <redis ip="127.0.0.1" port="8000" master=""/>
+                <redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster3" db-id="3" active-dc="jq" type="bi_direction">
+            <shard id="shard1" db-id="3" sentinelId="1" sentinelMonitorName="cluster3+shard1+jq">
+                <redis ip="10.0.0.1" port="6379" master=""/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="oy" zone="SHA">
+        <metaServer ip="127.0.0.1" port="9847" master="true"/>
+        <zkServer address="127.0.0.1:2281"/>
+        <keeperContainers>
+            <keeperContainer id="3" ip="1.1.1.3" port="8080" az_id="1234567890123456789"/>
+            <keeperContainer id="4" ip="1.1.1.4" port="8080" az_id="1234567890123456789"/>
+        </keeperContainers>
+        <applierContainers>
+            <applierContainer id="13" ip="1.1.1.13" port="8080" az_id="1234567890123456789"/>
+            <applierContainer id="14" ip="1.1.1.14" port="8080" az_id="1234567890123456789"/>
+        </applierContainers>
+        <cluster id="cluster1" db-id="1" active-dc="jq" phase="1" type="one_way">
+            <shard id="shard1" db-id="1" sentinelId="2" sentinelMonitorName="cluster1+shard1+oy">
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6100" master="127.0.0.1:6000" active="true"/>
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6101" master="127.0.0.1:6100" active="false"/>
+                <redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100"/>
+                <redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" db-id="2" active-dc="oy" phase="1" type="one_way">
+            <shard id="shard2" db-id="2" sentinelId="2" sentinelMonitorName="cluster2+shard2+oy">
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.2" port="6100" master="127.0.0.1:6000" active="true"/>
+                <keeper id="0123456789012345678901234567890123456789" ip="127.0.0.2" port="6101" master="127.0.0.1:6100" active="false"/>
+                <redis ip="127.0.0.2" port="8100" master="127.0.0.1:6100"/>
+                <redis ip="127.0.0.2" port="8101" master="127.0.0.1:6100"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="fra" zone="FRA">
+        <keeperContainers>
+            <keeperContainer id="5" ip="1.1.1.3" port="8080" az_id="1234567890123456789"/>
+            <keeperContainer id="6" ip="1.1.1.4" port="8080" az_id="1234567890123456789"/>
+        </keeperContainers>
+        <applierContainers>
+            <applierContainer id="15" ip="1.1.1.13" port="8080" az_id="1234567890123456789"/>
+            <applierContainer id="16" ip="1.1.1.14" port="8080" az_id="1234567890123456789"/>
+        </applierContainers>
+        <cluster id="cluster3" db-id="3" active-dc="jq" type="one_way">
+            <shard id="shard1" db-id="3" sentinelId="3" sentinelMonitorName="cluster3+shard1+oy">
+                <redis ip="10.0.0.2" port="6379" master=""/>
+            </shard>
+        </cluster>
+        <cluster id="cluster4" db-id="4" active-dc="fra" type="one_way">
+            <shard id="shard1" db-id="4" sentinelId="3" sentinelMonitorName="cluster4+shard1+oy">
+                <redis ip="10.0.0.2" port="6479" master=""/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>

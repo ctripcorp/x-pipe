@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -207,16 +208,21 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
-        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+    @RequestMapping(value = {"/sentinels/usage"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
+        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage, includeCrossRegion: {}", includeCrossRegion);
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
-            return GenericRetMessage.createGenericRetMessage(sentienlUsage);
+            Map<String, SentinelUsageModel> sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
+            return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @GetMapping("/meta")
+    public XpipeMeta getMeta() {
+        return sentinelGroupService.getMeta();
     }
 
     @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)

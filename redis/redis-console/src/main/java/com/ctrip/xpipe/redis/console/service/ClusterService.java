@@ -24,6 +24,7 @@ public interface ClusterService {
 	boolean containsRedisInstance(String clusterName);
 
 	ClusterTbl find(long clusterId);
+	List<ClusterTbl> findAllClusters();
 	List<ClusterTbl> findAllClustersWithOrgInfo();
 	List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType);
 	List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc);
