@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -217,6 +218,11 @@ public class SentinelUpdateController {
             logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @GetMapping("/meta")
+    public XpipeMeta getMeta() {
+        return sentinelGroupService.getMeta();
     }
 
     @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)

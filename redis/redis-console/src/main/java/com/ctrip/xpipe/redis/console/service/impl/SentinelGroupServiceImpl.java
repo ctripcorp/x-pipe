@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
@@ -467,6 +468,11 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
         return sentinelGroupTbl;
+    }
+
+    @Override
+    public XpipeMeta getMeta() {
+        return metaCache.getXpipeMeta();
     }
 
     private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {
