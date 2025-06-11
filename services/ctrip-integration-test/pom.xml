@@ -133,6 +133,10 @@
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.xerial.snappy</groupId>
+                    <artifactId>snappy-java</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
