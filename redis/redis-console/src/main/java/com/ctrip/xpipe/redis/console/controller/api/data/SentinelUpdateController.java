@@ -208,16 +208,11 @@ public class SentinelUpdateController {
     }
 
     @RequestMapping(value = {"/sentinels/usage"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false) Boolean includeCrossRegion) {
+    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage, includeCrossRegion: {}", includeCrossRegion);
         try {
-            Map<String, SentinelUsageModel> sentienlUsage;
-            if (includeCrossRegion == null) {
-                sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
-            } else {
-                sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
-            }
-            return GenericRetMessage.createGenericRetMessage(sentienlUsage);
+            Map<String, SentinelUsageModel> sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
+            return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());

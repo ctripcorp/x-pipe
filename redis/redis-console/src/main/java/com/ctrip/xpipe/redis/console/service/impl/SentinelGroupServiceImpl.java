@@ -217,78 +217,21 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroups(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, true);
     }
 
     @Override
     public List<SentinelGroupModel> getAllSentinelGroupsWithUsage() {
-        List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
-            @Override
-            public List<SentinelGroupTbl> doQuery() throws DalException {
-                return dao.findAll(SentinelGroupTblEntity.READSET_FULL);
-            }
-        });
-
-        return getSentinelGroups(sentinelGroupTbls);
-    }
-
-    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls){
-        Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream()
-            .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
-
-        List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
-        Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream()
-            .filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId()))
-            .collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
-                dcClusterShardTbl -> Sets.newHashSet(
-                    new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
-                (v1, v2) -> {
-                    v1.addAll(v2);
-                    return v1;
-                }));
-
-        groupMap.forEach((k, v) -> {
-            Set<Pair<Long, Long>> shardSet = sentinelShardMap.get(k);
-            if (shardSet != null) {
-                v.setShardCount(shardSet.size());
-            }
-        });
-
-        List<SentinelTbl> sentinelTbls = sentinelService.findAllWithDcName();
-        sentinelTbls.forEach(sentinelTbl -> {
-            if(groupMap.containsKey(sentinelTbl.getSentinelGroupId())){
-                groupMap.get(sentinelTbl.getSentinelGroupId()).addSentinel(new SentinelInstanceModel(sentinelTbl));
-            }
-        });
-
-        return new ArrayList<>(groupMap.values());
+        return getAllSentinelGroupsWithUsage(true);
     }
 
     @Override
     public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType) {
-        String type = Strings.isNullOrEmpty(clusterType) ? ClusterType.ONE_WAY.name() : clusterType;
-        List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage();
-        Map<String, SentinelUsageModel> result = new HashMap<>();
-        allSentinelGroups.forEach(sentinelGroupModel -> {
-            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(type)) {
-                Set<String> dcs = sentinelGroupModel.dcInfos().keySet();
-                for (String dc : dcs) {
-                    result.putIfAbsent(dc, new SentinelUsageModel(dc));
-                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
-                    if (!StringUtil.trimEquals(CLUSTER_DEFAULT_TAG, sentinelGroupModel.getTag(), true)) {
-                        result.get(dc).addSentinelTag(sentinelGroupModel.getTag(), sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
-                    }
-                }
-            }
-        });
-        return result;
+        return getAllSentinelsUsage(clusterType, true);
     }
 
     @Override
-    public List<SentinelGroupModel> getAllSentinelGroupsWithUsage(Boolean includeCrossRegion) {
-        if (includeCrossRegion) {
-            return getAllSentinelGroupsWithUsage();
-        }
+    public List<SentinelGroupModel> getAllSentinelGroupsWithUsage(boolean includeCrossRegion) {
         List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
@@ -296,33 +239,45 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroupsNotCrossRegion(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, includeCrossRegion);
     }
 
-    List<SentinelGroupModel> getSentinelGroupsNotCrossRegion(List<SentinelGroupTbl> sentinelGroupTbls) {
+    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls, boolean includeCrossRegion) {
         Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream()
                 .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
+        Map<Long, Set<Pair<String, String>>> sentinelShardMap;
 
-        Map<String, DcMeta> dcMetaMap = metaCache.getXpipeMeta().getDcs();
+        if (includeCrossRegion) {
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
+            sentinelShardMap = dcClusterShardTbls.stream()
+                    .filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId()))
+                    .collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
+                            dcClusterShardTbl -> Sets.newHashSet(
+                                    new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? String.valueOf(CROSS_DC_CONSTANT) : String.valueOf(dcClusterShardTbl.getDcClusterId()), String.valueOf(dcClusterShardTbl.getShardId()))),
+                            (v1, v2) -> {
+                                v1.addAll(v2);
+                                return v1;
+                            }));
+        } else {
+            sentinelShardMap = new HashMap<>();
+            Map<String, DcMeta> dcMetaMap = metaCache.getXpipeMeta().getDcs();
+            for (Map.Entry<String, DcMeta> entry : dcMetaMap.entrySet()) {
+                String dcName = entry.getKey();
+                DcMeta dcMeta = entry.getValue();
 
-        Map<Long, Set<Pair<String, String>>> sentinelShardMap = new HashMap<>();
-
-        for (Map.Entry<String, DcMeta> entry : dcMetaMap.entrySet()) {
-            String dcName = entry.getKey();
-            DcMeta dcMeta = entry.getValue();
-
-            Map<String, ClusterMeta> clusters = dcMeta.getClusters();
-            clusters.forEach((clusterName, clusterMeta) -> {
-                if (!(ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.HETERO) || metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc()))) {
-                    String dcClusterString = dcName + "-" + clusterName;
-                    clusterMeta.getShards().forEach((shardName, shardMeta) -> {
-                        if (groupMap.containsKey(shardMeta.getSentinelId())) {
-                            Set<Pair<String, String>> pairSet = sentinelShardMap.computeIfAbsent(shardMeta.getSentinelId(), k -> new HashSet<>());
-                            pairSet.add(Pair.of(ClusterType.lookup(groupMap.get(shardMeta.getSentinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_STRING_CONSTANT : dcClusterString, shardName));
-                        }
-                    });
-                }
-            });
+                Map<String, ClusterMeta> clusters = dcMeta.getClusters();
+                clusters.forEach((clusterName, clusterMeta) -> {
+                    if (ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.ONE_WAY) && !metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc())) {
+                        String dcClusterString = dcName + "-" + clusterName;
+                        clusterMeta.getShards().forEach((shardName, shardMeta) -> {
+                            if (groupMap.containsKey(shardMeta.getSentinelId())) {
+                                Set<Pair<String, String>> pairSet = sentinelShardMap.computeIfAbsent(shardMeta.getSentinelId(), k -> new HashSet<>());
+                                pairSet.add(Pair.of(ClusterType.lookup(groupMap.get(shardMeta.getSentinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_STRING_CONSTANT : dcClusterString, shardName));
+                            }
+                        });
+                    }
+                });
+            }
         }
 
         groupMap.forEach((k, v) -> {
@@ -344,7 +299,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
 
 
     @Override
-    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, Boolean includeCrossRegion) {
+    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, boolean includeCrossRegion) {
         String type = Strings.isNullOrEmpty(clusterType) ? ClusterType.ONE_WAY.name() : clusterType;
         List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage(includeCrossRegion);
         Map<String, SentinelUsageModel> result = new HashMap<>();

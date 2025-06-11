@@ -205,17 +205,6 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
     }
 
     @Test
-    public void getSentinelGroupsWithUsage() {
-        Map<String, SentinelUsageModel> sentinelsUsage = sentinelGroupService.getAllSentinelsUsage(ClusterType.ONE_WAY.name());
-        Map<String, SentinelUsageModel> sentinelsUsageIncludeCrossRegion = sentinelGroupService.getAllSentinelsUsage(ClusterType.ONE_WAY.name(), true);
-        Map<String, SentinelUsageModel> sentinelsUsageNotCrossRegion = sentinelGroupService.getAllSentinelsUsage(ClusterType.ONE_WAY.name(), false);
-        Assert.assertEquals(sentinelsUsage.size(), sentinelsUsageIncludeCrossRegion.size());
-        System.out.println("1:\n" + sentinelsUsage);
-        System.out.println("2:\n" + sentinelsUsageIncludeCrossRegion);
-        System.out.println("3\n" + sentinelsUsageNotCrossRegion);
-    }
-
-    @Test
     public void updateSentinelGroup() {
         List<SentinelGroupModel> dcSentinels = sentinelGroupService.findAllByDcName("jq");
         SentinelGroupModel toUpdate = dcSentinels.get(0);
