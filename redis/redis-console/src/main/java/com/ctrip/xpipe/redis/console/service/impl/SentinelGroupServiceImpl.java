@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
@@ -268,7 +267,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
 
                 Map<String, ClusterMeta> clusters = dcMeta.getClusters();
                 clusters.forEach((clusterName, clusterMeta) -> {
-                    if (ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.ONE_WAY) && !metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc())) {
+                    if (!(ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.ONE_WAY) && metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc()))) {
                         String dcClusterString = dcName + "-" + clusterName;
                         clusterMeta.getShards().forEach((shardName, shardMeta) -> {
                             if (groupMap.containsKey(shardMeta.getSentinelId())) {
@@ -468,11 +467,6 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
         return sentinelGroupTbl;
-    }
-
-    @Override
-    public XpipeMeta getMeta() {
-        return metaCache.getXpipeMeta();
     }
 
     private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {

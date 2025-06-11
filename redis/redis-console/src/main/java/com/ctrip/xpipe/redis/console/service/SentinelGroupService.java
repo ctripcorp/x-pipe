@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,4 @@ public interface SentinelGroupService {
     void updateActive(long id, int active);
 
     SentinelGroupTbl updateTag(long id, String tag);
-
-    // for test
-    XpipeMeta getMeta();
 }
