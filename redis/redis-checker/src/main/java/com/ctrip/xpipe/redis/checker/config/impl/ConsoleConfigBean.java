@@ -60,6 +60,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
 
+    private static final String KEY_DC_META_BUILD_CONCURRENT = "console.dcmeta.build.concurrent";
+
     private FoundationService foundationService;
 
     @Autowired
@@ -165,6 +167,10 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public boolean autoSetKeeperSyncLimit() {
         return getBooleanProperty(KEY_KEEPERCONTAINER_SYNC_LIMIT_ON, false);
+    }
+
+    public int getDcMetaBuildConcurrent() {
+        return getIntProperty(KEY_DC_META_BUILD_CONCURRENT, 3);
     }
 
 }

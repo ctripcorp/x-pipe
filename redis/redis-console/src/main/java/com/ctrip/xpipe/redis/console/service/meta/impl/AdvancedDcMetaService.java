@@ -7,6 +7,7 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
@@ -20,6 +21,7 @@ import com.ctrip.xpipe.redis.core.entity.AzMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -33,12 +35,11 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
@@ -61,9 +62,6 @@ public class AdvancedDcMetaService implements DcMetaService {
     private ZoneService zoneService;
 
     @Autowired
-    private ReplDirectionService replDirectionService;
-
-    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -74,9 +72,6 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     private AppliercontainerService appliercontainerService;
-
-    @Autowired
-    private ApplierService applierService;
 
     @Autowired
     private AzService azService;
@@ -119,7 +114,11 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     private ExecutorService executors;
 
+    private Pair<Semaphore, Integer> semaphorePair;
+
     private RetryCommandFactory factory;
+
+    protected static int DC_META_BUILD_MAX_HANG = 2000;
 
     @PostConstruct
     public void initService() {
@@ -127,6 +126,19 @@ public class AdvancedDcMetaService implements DcMetaService {
         executors = DefaultExecutorFactory.createAllowCoreTimeout("AdvancedDcMetaService", corePoolSize).createExecutorService();
         int retryTimeoutMilli = 3000, retryDelayMilli = 5;
         factory = new DefaultRetryCommandFactory(new RetryDelay(retryDelayMilli), retryTimeoutMilli, scheduled);
+        int dcMetaBuildConcurrent = consoleConfig.getDcMetaBuildConcurrent();
+        semaphorePair = new Pair<>(new Semaphore(dcMetaBuildConcurrent), dcMetaBuildConcurrent);
+    }
+
+    private void updateSemaphore() {
+        if (null == semaphorePair || consoleConfig.getDcMetaBuildConcurrent() != semaphorePair.getValue()) {
+            synchronized (this) {
+                int dcMetaBuildConcurrent = consoleConfig.getDcMetaBuildConcurrent();
+                if (null == semaphorePair || dcMetaBuildConcurrent != semaphorePair.getValue()) {
+                    semaphorePair = new Pair<>(new Semaphore(dcMetaBuildConcurrent), dcMetaBuildConcurrent);
+                }
+            }
+        }
     }
 
     @Override
@@ -136,42 +148,52 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Override
     public DcMeta getDcMeta(String dcName, Set<String> allowTypes) throws Exception {
-        List<DcTbl> dcTblList = dcService.findAllDcs();
-        DcTbl dcTbl = dcTblList.stream().filter(dc -> dc.getDcName().equalsIgnoreCase(dcName)).findFirst().orElse(null);
-        if (dcTbl == null) {
-            return new DcMeta();
+        updateSemaphore();
+        Semaphore semaphore = semaphorePair.getKey();
+
+        if (!semaphore.tryAcquire(DC_META_BUILD_MAX_HANG, TimeUnit.MILLISECONDS)) {
+            logger.error("[getDcMeta][overflow][{}:{}] {}", dcName, allowTypes, semaphore.getQueueLength());
+            EventMonitor.DEFAULT.logAlertEvent("getDcMeta Overflow");
+            throw new XpipeRuntimeException("getDcMeta Overflow");
         }
-        ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
-
-        DcMeta dcMeta = new DcMeta().
-                setId(dcName).
-                setLastModifiedTime(dcTbl.getDcLastModifiedTime()).
-                setZone(zoneTbl.getZoneName())
-                .setDcId(dcTbl.getId());
-        Map<String, DcMeta> dcMetaMap = new HashMap<>();
-        dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
-
-        ParallelCommandChain chain = new ParallelCommandChain(executors, false);
-        chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
-        chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
-
-        DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, allowTypes, executors, redisMetaService,
-            dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
-            azGroupCache, replDirectionService, zoneService, keeperContainerService, applierService, factory,
-            consoleConfig);
-        chain.add(retry3TimesUntilSuccess(builder));
-
         try {
-            chain.execute().get();
-        } catch (Throwable th) {
-            EventMonitor.DEFAULT.logAlertEvent("getDcMeta throw exception");
-            throw th;
-        }
+            DcTbl dcTbl = dcService.find(dcName);
+            if (dcTbl == null) {
+                return new DcMeta();
+            }
+            ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
-        return dcMeta;
+            DcMeta dcMeta = new DcMeta().
+                    setId(dcName).
+                    setLastModifiedTime(dcTbl.getDcLastModifiedTime()).
+                    setZone(zoneTbl.getZoneName())
+                    .setDcId(dcTbl.getId());
+            Map<String, DcMeta> dcMetaMap = new HashMap<>();
+            dcMetaMap.put(dcMeta.getId().toUpperCase(), dcMeta);
+
+            ParallelCommandChain chain = new ParallelCommandChain(executors, false);
+            chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllApplierContainerCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
+            chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
+
+            DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, Collections.singletonList(dcTbl), allowTypes, executors, redisMetaService,
+                    dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
+                    azGroupCache, factory, consoleConfig);
+            chain.add(retry3TimesUntilSuccess(builder));
+
+            try {
+                chain.execute().get();
+            } catch (Throwable th) {
+                EventMonitor.DEFAULT.logAlertEvent("getDcMeta throw exception");
+                throw th;
+            }
+
+            return dcMeta;
+        } finally {
+            semaphore.release();
+        }
     }
 
     @Override
@@ -199,8 +221,7 @@ public class AdvancedDcMetaService implements DcMetaService {
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, dcTblList, consoleConfig.getOwnClusterType(), executors,
             redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, factory, consoleConfig);
+            azGroupClusterRepository, azGroupCache, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {

@@ -161,4 +161,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getKeeperContainerDiskInfoCollectIntervalMilli();
 
+	int getDcMetaBuildConcurrent();
+
 }

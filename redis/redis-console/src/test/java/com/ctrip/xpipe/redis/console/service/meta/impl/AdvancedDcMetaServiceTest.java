@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
@@ -49,6 +50,9 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Test
     public void testRetry3TimesUntilSuccess() throws Exception {
@@ -146,6 +150,32 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/apptest.sql");
+    }
+
+    @Test
+    @Ignore
+    public void testGetDcMetaHang() throws Exception {
+        int origin = service.DC_META_BUILD_MAX_HANG;
+        service.DC_META_BUILD_MAX_HANG = 1;
+        try {
+            AtomicInteger errorCnt = new AtomicInteger();
+            AtomicInteger successCnt = new AtomicInteger();
+            int concurrent = consoleConfig.getDcMetaBuildConcurrent();
+            for (int i =0; i <= concurrent; i++) {
+                executors.execute(() -> {
+                    try {
+                        service.getDcMeta("jq");
+                        successCnt.incrementAndGet();
+                    } catch (Exception e) {
+                        errorCnt.incrementAndGet();
+                    }
+                });
+            }
+            waitConditionUntilTimeOut(() -> successCnt.get() >= concurrent);
+            Assert.assertEquals(1, errorCnt.get());
+        } finally {
+            service.DC_META_BUILD_MAX_HANG = origin;
+        }
     }
 
     @Ignore

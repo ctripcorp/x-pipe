@@ -60,28 +60,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     private ClusterService clusterService;
 
     @Autowired
-    private ShardService shardService;
-
-    @Autowired
-    private RedisService redisService;
-
-    @Autowired
-    private MigrationService migrationService;
-
-    @Autowired
-    private ReplDirectionService replDirectionService;
-
-    @Autowired
     private ConsoleConfig consoleConfig;
-
-    @Autowired
-    private ZoneService zoneService;
-
-    @Autowired
-    private KeeperContainerService keeperContainerService;
-
-    @Autowired
-    private ApplierService applierService;
 
     @Autowired
     private AzGroupClusterRepository azGroupClusterRepository;
@@ -100,8 +79,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         List<DcTbl> dcTblList = dcService.findAllDcs();
         builder = new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.toString()),
             executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, new DefaultRetryCommandFactory(), consoleConfig);
+            azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
 
         logger.info("[beforeDcMetaBuilderTest] dcId: {}", dcId);
@@ -111,7 +89,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildMetaForClusterType() throws Exception {
-        testBuildMetaForClusterType(ClusterType.ONE_WAY, 6);
+        testBuildMetaForClusterType(ClusterType.ONE_WAY, 2);
         testBuildMetaForClusterType(ClusterType.BI_DIRECTION, 1);
     }
 
@@ -150,20 +128,6 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals("jq,oy", clusterMeta.getDcs());
         Assert.assertEquals("1,2",clusterMeta.getActiveRedisCheckRules());
         Assert.assertEquals("1,2",clusterMeta.getClusterDesignatedRouteIds());
-    }
-
-    @Test
-    public void getOrCreateHeteroClusterMeta() throws Exception {
-        ClusterTbl clusterTbl = clusterService.find("asymmetric2-local-cluster");
-        Assert.assertNotNull(clusterTbl);
-
-        tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
-        ClusterMeta clusterMeta = dcMeta.getClusters().get("asymmetric2-local-cluster");
-        Assert.assertNotNull(clusterMeta);
-
-        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
-        Assert.assertEquals("jq", clusterMeta.getActiveDc());
-        Assert.assertEquals("", clusterMeta.getBackupDcs());
     }
 
     @Test
@@ -210,101 +174,19 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testHeteroPrimaryDc() throws ExecutionException, InterruptedException {
-        DcMeta dcMeta = new DcMeta();
-        dcMetaMap.clear();
-        dcMetaMap.put("JQ", dcMeta);
-        List<DcTbl> dcTblList = dcService.findAllDcs();
-
-        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()), executors,
-            redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, new DefaultRetryCommandFactory(), consoleConfig).execute().get();
-
-        boolean found = false;
-        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-            if (clusterMeta.getId().equals("asymmetric2-local-cluster")) {
-                found = true;
-            } else {
-                continue;
-            }
-
-            Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
-            Assert.assertEquals("jq", clusterMeta.getActiveDc());
-            Assert.assertEquals("", clusterMeta.getBackupDcs());
-            Assert.assertEquals("oy", clusterMeta.getDownstreamDcs());
-            Assert.assertEquals("ONE_WAY", clusterMeta.getAzGroupType());
-            Assert.assertEquals("LOCAL_JQ", clusterMeta.getAzGroupName());
-            Collection<ShardMeta> shardMetas = clusterMeta.getShards().values();
-            Assert.assertEquals(2, shardMetas.size());
-            for (ShardMeta shardMeta : shardMetas) {
-                Assert.assertEquals(2, shardMeta.getRedises().size());
-                Assert.assertEquals(2, shardMeta.getKeepers().size());
-                Assert.assertEquals(0, shardMeta.getAppliers().size());
-            }
-            List<SourceMeta> sourceMetas = clusterMeta.getSources();
-            Assert.assertEquals(0, sourceMetas.size());
-        }
-        Assert.assertTrue(found);
-    }
-
-    @Test
     public void testGetDcClusterInfoWhenClusterNotExist() {
 
         List<DcTbl> dcTblList = dcService.findAllDcs();
 
         DcMetaBuilder dcMetaBuilder = new DcMetaBuilder(dcMetaMap, dcTblList,
             Collections.singleton(ClusterType.ONE_WAY.name()), executors, redisMetaService, dcClusterService,
-            clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository, azGroupCache,
-            replDirectionService, zoneService, keeperContainerService, applierService, new DefaultRetryCommandFactory(),
+            clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(),
             consoleConfig);
 
         dcMetaBuilder.cluster2DcClusterMap = new HashMap<>();
 
         DcMetaBuilder.BuildDcMetaCommand buildDcMetaCommand = dcMetaBuilder.createBuildDcMetaCommand();
         Assert.assertNull(buildDcMetaCommand.getDcClusterInfo(1L, 1L));
-    }
-
-    @Test
-    public void testHeteroDownstreamDc() throws ExecutionException, InterruptedException {
-        DcMeta dcMeta = new DcMeta();
-        dcMetaMap.clear();
-        dcMetaMap.put("OY", dcMeta);
-        List<DcTbl> dcTblList = dcService.findAllDcs();
-
-        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.name()), executors,
-            redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, new DefaultRetryCommandFactory(), consoleConfig).execute().get();
-
-        boolean found = false;
-        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-            if (clusterMeta.getId().equals("asymmetric2-local-cluster")) {
-                found = true;
-            } else {
-                continue;
-            }
-            Assert.assertEquals(ClusterType.ONE_WAY.name(), clusterMeta.getType().toUpperCase());
-            Assert.assertEquals("jq", clusterMeta.getActiveDc());
-            Assert.assertEquals("", clusterMeta.getBackupDcs());
-            Assert.assertEquals("", clusterMeta.getDownstreamDcs());
-            Assert.assertEquals("SINGLE_DC", clusterMeta.getAzGroupType());
-            Assert.assertEquals("LOCAL_OY", clusterMeta.getAzGroupName());
-            Collection<ShardMeta> shardMetas = clusterMeta.getShards().values();
-            Assert.assertEquals(1, shardMetas.size());
-            for (ShardMeta shardMeta : shardMetas) {
-                Assert.assertEquals(2, shardMeta.getRedises().size());
-                Assert.assertEquals(0, shardMeta.getAppliers().size());
-            }
-            List<SourceMeta> sourceMetas = clusterMeta.getSources();
-            Assert.assertEquals(1, sourceMetas.size());
-            for (ShardMeta shardMeta : sourceMetas.get(0).getShards().values()) {
-                Assert.assertEquals(0, shardMeta.getRedises().size());
-                Assert.assertEquals(2, shardMeta.getKeepers().size());
-                Assert.assertEquals(2, shardMeta.getAppliers().size());
-            }
-        }
-        Assert.assertTrue(found);
     }
 
     private void testBuildMetaForClusterType(ClusterType clusterType, int clusterSize) throws Exception {
@@ -317,8 +199,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(clusterType.toString()), executors,
             redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-            azGroupClusterRepository, azGroupCache, replDirectionService, zoneService, keeperContainerService,
-            applierService, new DefaultRetryCommandFactory(), consoleConfig).execute().get();
+            azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(), consoleConfig).execute().get();
 
         Assert.assertEquals(clusterSize, dcMeta.getClusters().size());
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
