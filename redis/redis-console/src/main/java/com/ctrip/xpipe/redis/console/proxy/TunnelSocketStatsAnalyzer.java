@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.proxy;
 
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
-import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.tuple.Pair;
 

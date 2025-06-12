@@ -8,7 +8,6 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.proxy.exception.FrontendAlreadyClosedException;
 import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
-import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;

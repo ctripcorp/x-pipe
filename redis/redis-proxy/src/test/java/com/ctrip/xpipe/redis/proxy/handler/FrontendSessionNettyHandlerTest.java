@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.ReferenceCountUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

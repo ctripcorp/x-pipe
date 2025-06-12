@@ -14,11 +14,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
 import org.junit.Before;
 

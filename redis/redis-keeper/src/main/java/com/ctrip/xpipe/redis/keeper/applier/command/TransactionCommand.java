@@ -3,16 +3,13 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.api.command.CommandChain;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpTransactionAdapter;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 public class TransactionCommand extends AbstractCommand<Boolean> implements RedisOpCommand<Boolean> {
 

@@ -11,7 +11,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import org.slf4j.Logger;

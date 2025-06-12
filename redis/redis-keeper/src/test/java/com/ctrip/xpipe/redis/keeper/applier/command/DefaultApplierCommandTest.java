@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserMan
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.*;
 
 import java.util.concurrent.ExecutorService;

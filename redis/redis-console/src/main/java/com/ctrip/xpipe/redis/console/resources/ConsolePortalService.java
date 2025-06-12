@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;

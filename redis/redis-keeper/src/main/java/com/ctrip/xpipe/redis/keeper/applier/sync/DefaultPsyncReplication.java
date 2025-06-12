@@ -3,19 +3,15 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.Sync;
 import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ApplierPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

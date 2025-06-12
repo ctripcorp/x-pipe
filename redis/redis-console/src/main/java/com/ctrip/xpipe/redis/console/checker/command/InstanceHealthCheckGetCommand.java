@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.checker.command;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
-import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
 
 public class InstanceHealthCheckGetCommand extends AbstractCommand<String> {
 

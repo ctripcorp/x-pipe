@@ -6,7 +6,6 @@ import com.ctrip.xpipe.cluster.AbstractLeaderElector;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.keeper.store.meta;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import org.junit.After;
 import org.junit.Assert;
@@ -12,12 +10,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
-import java.nio.channels.FileChannel;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author chen.zhu

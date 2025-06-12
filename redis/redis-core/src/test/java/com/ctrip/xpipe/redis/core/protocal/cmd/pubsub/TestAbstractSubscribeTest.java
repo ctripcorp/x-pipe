@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
-
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;

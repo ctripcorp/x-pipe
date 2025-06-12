@@ -7,7 +7,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
-import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;

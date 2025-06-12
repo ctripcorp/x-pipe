@@ -16,10 +16,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvali
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;

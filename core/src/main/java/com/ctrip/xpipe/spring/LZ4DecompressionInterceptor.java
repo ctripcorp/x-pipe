@@ -1,17 +1,13 @@
 package com.ctrip.xpipe.spring;
 
 import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
 import net.jpountz.lz4.LZ4SafeDecompressor;
 import org.apache.http.Header;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.protocol.HttpContext;
-
-import net.jpountz.lz4.LZ4FrameInputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

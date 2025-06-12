@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
