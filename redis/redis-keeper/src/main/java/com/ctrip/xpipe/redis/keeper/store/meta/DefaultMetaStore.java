@@ -532,7 +532,7 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			return UPDATE_RDB_RESULT.REPLID_NOT_MATCH;
 		}
 
-		if (!Objects.equals(expectedMasterUuid, curReplStage.getMasterUuid())) {
+		if (expectedProto == ReplStage.ReplProto.XSYNC && !Objects.equals(expectedMasterUuid, curReplStage.getMasterUuid())) {
 			logger.info("[checkBeforeUpdateRdbInfo]update rdb fail, masterUuid:{}, rdbMasterUuid:{}", curReplStage.getMasterUuid(), expectedMasterUuid);
 			return UPDATE_RDB_RESULT.MASTER_UUID_NOT_MATCH;
 		}

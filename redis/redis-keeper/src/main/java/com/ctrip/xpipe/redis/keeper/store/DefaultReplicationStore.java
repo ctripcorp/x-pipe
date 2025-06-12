@@ -376,9 +376,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			UPDATE_RDB_RESULT result;
 			long rdbContBacklogOffset;
 			if (replProto == ReplStage.ReplProto.PSYNC) {
-				rdbContBacklogOffset = getMetaStore().replOffsetToBacklogOffset(rdbOffset);
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEndOffset());
+				Long rdbContBacklogOffsetTmp = getMetaStore().replOffsetToBacklogOffset(rdbOffset);
+				rdbContBacklogOffset = rdbContBacklogOffsetTmp == null ? 0 : rdbContBacklogOffsetTmp;
 			} else {
 				String gtidExecutedRepr = rdbStore.getGtidSet();
 				String gtidLostRepr = rdbStore.getGtidLost();
@@ -395,6 +396,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				}
 
 				rdbContBacklogOffset = cont.getBacklogOffset();
+				if (rdbContBacklogOffset < 0) {
+					// repl proto will be checked before backlogOffset, so we can assume that repl proto is XSYNC.
+					logger.info("[checkReplIdAndUpdateRdbGapAllowed] adjust rdbContinuouseBacklogOffset from {} to {}",
+							rdbContBacklogOffset, backlogEndOffset());
+					rdbContBacklogOffset = backlogEndOffset();
+				}
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
 						backlogBeginOffset(), backlogEndOffset(), rdbContBacklogOffset, cont.getContinueGtidSet());
