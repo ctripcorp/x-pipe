@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cache.TimeBoundCache;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -16,6 +15,7 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -40,6 +40,9 @@ public class ClusterServiceWithoutDB implements ClusterService {
 
     @Autowired
     private ConsoleConfig config;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @PostConstruct
     public void init() {
@@ -415,7 +418,7 @@ public class ClusterServiceWithoutDB implements ClusterService {
         List<ClusterTbl> dcClusters = findClustersWithOrgInfoByActiveDcId(activeDc);
         int count = 0;
         for (ClusterTbl clusterTbl : dcClusters) {
-            if (ClusterType.lookup(clusterTbl.getClusterType()).supportMigration())
+            if (metaCache.isDcClusterMigratable(clusterTbl.getClusterName(), dcService.getDcName(activeDc)))
                 count++;
         }
         return count;

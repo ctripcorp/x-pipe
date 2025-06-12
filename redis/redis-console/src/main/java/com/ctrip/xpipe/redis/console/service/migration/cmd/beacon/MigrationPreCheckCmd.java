@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,12 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
     private ConsoleConfig config;
 
+    private MetaCache metaCache;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationPreCheckCmd.class);
 
     public MigrationPreCheckCmd(BeaconMigrationRequest migrationRequest, MigrationSystemAvailableChecker checker, ConfigService configService,
-                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService, ConsoleConfig config) {
+                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService, ConsoleConfig config, MetaCache metaCache) {
         super(migrationRequest);
         this.checker = checker;
         this.configService = configService;
@@ -43,6 +46,7 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
         this.dcCache = dcCache;
         this.beaconMetaService = beaconMetaService;
         this.config = config;
+        this.metaCache = metaCache;
     }
 
     @Override
@@ -63,7 +67,7 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
             future().setFailure(new ClusterNotFoundException(clusterName));
             return;
         }
-        if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMigration()) {
+        if (!metaCache.isDcClusterMigratable(clusterName, dcCache.find(clusterTbl.getActivedcId()).getDcName())) {
             future().setFailure(new MigrationNotSupportException(clusterName));
             return;
         }
