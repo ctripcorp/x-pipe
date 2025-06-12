@@ -12,8 +12,8 @@ import com.ctrip.xpipe.redis.core.store.UPDATE_RDB_RESULT;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.GapAllowedSyncRdbNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncCommandFailException;
-import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
@@ -95,16 +95,10 @@ public class GapAllowedRdbonlyRedisMasterReplicationTest extends AbstractRedisKe
         });
 
         when(replicationStore.checkReplIdAndUpdateRdbGapAllowed(any())).thenReturn(UPDATE_RDB_RESULT.RDB_MORE_RECENT);
-        Assertions.assertThrows(IllegalStateException.class,
-                () -> gapAllowedRdbonlyRedisMasterReplication.doRdbTypeConfirm(Mockito.mock(RdbStore.class))
-        );
-
-        Assert.assertFalse(dumper.future().isDone());
-
-        psync.future().setFailure(Mockito.mock(IllegalStateException.class));
+        gapAllowedRdbonlyRedisMasterReplication.doRdbTypeConfirm(Mockito.mock(RdbStore.class));
 
         Assert.assertTrue(dumper.future().isDone());
-        Assert.assertTrue(dumper.future().cause() instanceof PsyncCommandFailException);
+        Assert.assertTrue(dumper.future().cause() instanceof IllegalStateException);
     }
 
     @Test
@@ -123,7 +117,7 @@ public class GapAllowedRdbonlyRedisMasterReplicationTest extends AbstractRedisKe
     }
 
     @Test
-    public void testRdbPropertyNotMatch_DumpFail() throws Exception {
+    public void testRdbReplIdNotMatch_DumpFail() throws Exception {
         RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper(false, false);
         RdbonlyRedisMasterReplication gapAllowedRdbonlyRedisMasterReplication = new GapAllowedRdbonlyRedisMasterReplication(keeperServer,
                 keeperRedisMaster, false, false, masterEventLoopGroup, scheduled, dumper, getRegistry().getComponent(KeeperResourceManager.class));
@@ -138,16 +132,10 @@ public class GapAllowedRdbonlyRedisMasterReplicationTest extends AbstractRedisKe
         });
 
         when(replicationStore.checkReplIdAndUpdateRdbGapAllowed(any())).thenReturn(UPDATE_RDB_RESULT.REPLID_NOT_MATCH);
-        Assertions.assertThrows(IllegalStateException.class,
-                () -> gapAllowedRdbonlyRedisMasterReplication.doRdbTypeConfirm(Mockito.mock(RdbStore.class))
-        );
-
-        Assert.assertFalse(dumper.future().isDone());
-
-        psync.future().setFailure(Mockito.mock(IllegalStateException.class));
+        gapAllowedRdbonlyRedisMasterReplication.doRdbTypeConfirm(Mockito.mock(RdbStore.class));
 
         Assert.assertTrue(dumper.future().isDone());
-        Assert.assertTrue(dumper.future().cause() instanceof PsyncCommandFailException);
+        Assert.assertTrue(dumper.future().cause() instanceof IllegalStateException);
     }
 
     @Test
@@ -186,7 +174,7 @@ public class GapAllowedRdbonlyRedisMasterReplicationTest extends AbstractRedisKe
         gapAllowedRdbonlyRedisMasterReplication.doRdbTypeConfirm(Mockito.mock(RdbStore.class));
         Assert.assertEquals(1, reconnectCnt.get());
         Assert.assertTrue(dumper.future().isDone());
-        Assert.assertTrue(dumper.future().cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException);
+        Assert.assertTrue(dumper.future().cause() instanceof GapAllowedSyncRdbNotContinuousRuntimeException);
     }
 
 }

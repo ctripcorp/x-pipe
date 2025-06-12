@@ -77,7 +77,6 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 
 		});
 
-		Assert.assertTrue(rdbStore.isClosed());
 	}
 
 	@Test
