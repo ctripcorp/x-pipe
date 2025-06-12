@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import org.junit.Assert;

@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.proxy.command.AbstractProxyMonitorCommand;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
 import org.assertj.core.util.Lists;
 import org.junit.After;
@@ -23,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 public class CheckCrdtRedisByProxy extends AbstractXpipeServerMultiDcTest {
 
     @BeforeClass

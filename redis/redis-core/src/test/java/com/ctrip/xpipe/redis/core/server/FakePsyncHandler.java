@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.core.server;
 
-import com.ctrip.xpipe.gtid.GtidSet;
-
-import java.util.List;
-
 /**
  * @author hailu
  * @date 2024/5/14 13:55

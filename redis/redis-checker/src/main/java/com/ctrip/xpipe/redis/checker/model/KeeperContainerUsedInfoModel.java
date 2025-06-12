@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.checker.model;
 
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 
 public class KeeperContainerUsedInfoModel {
 

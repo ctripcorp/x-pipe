@@ -17,8 +17,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 @RunWith(MockitoJUnitRunner.class)
 public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
 

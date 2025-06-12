@@ -4,7 +4,6 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
-import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
 
 public class InstanceHealthStatusGetCommand extends AbstractCommand<HEALTH_STATE> {
     ConsoleCheckerApiService service;

@@ -3,10 +3,8 @@ package com.ctrip.xpipe.redis.core.proxy.parser.path;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
-import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 /**
  * @author chen.zhu

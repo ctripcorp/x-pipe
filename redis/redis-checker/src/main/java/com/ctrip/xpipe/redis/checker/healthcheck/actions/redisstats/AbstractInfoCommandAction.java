@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats;
 
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractActionContext;
-import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.slf4j.Logger;

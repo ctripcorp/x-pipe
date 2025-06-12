@@ -3,11 +3,8 @@ package com.ctrip.xpipe.redis.integratedtest.checker;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
-import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -21,7 +18,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
 import static com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 
 public class TwoChecker2SameConsole extends AbstractXpipeServerMultiDcTest {
     

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;

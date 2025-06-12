@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.MetaServerLocalDcSlotService;
-import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.impl.MetaServerSlotServiceImpl;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;

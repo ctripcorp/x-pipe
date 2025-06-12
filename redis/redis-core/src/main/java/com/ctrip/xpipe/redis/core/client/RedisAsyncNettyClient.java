@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.client;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.monitor.Task;
-import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
 import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
@@ -23,8 +21,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNettyClient {
