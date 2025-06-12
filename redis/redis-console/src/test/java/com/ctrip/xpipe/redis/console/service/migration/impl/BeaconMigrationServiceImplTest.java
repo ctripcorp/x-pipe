@@ -67,6 +67,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         dcRelationsService = Mockito.mock(DcRelationsService.class);
         Mockito.when(dcRelationsService.getClusterTargetDcByPriority(Mockito.anyLong(), Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn("oy");
         migrationService.setDcRelationsService(dcRelationsService);
+        migrationService.setMetaCache(metaCache);
+        Mockito.when(metaCache.isDcClusterMigratable(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
     }
 
     @DirtiesContext

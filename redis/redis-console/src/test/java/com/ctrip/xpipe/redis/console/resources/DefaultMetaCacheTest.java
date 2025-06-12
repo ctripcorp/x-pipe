@@ -364,6 +364,13 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertEquals(cntMap.get("oy").intValue(), 2);
     }
 
+    @Test
+    public void testSupportMigration() {
+        Assert.assertTrue(metaCache.isDcClusterMigratable("oy", "cluster1"));
+        Assert.assertTrue(metaCache.isDcClusterMigratable("oy", "cluster5"));
+        Assert.assertFalse(metaCache.isDcClusterMigratable("oy", "cluster6"));
+    }
+
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }

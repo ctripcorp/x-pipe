@@ -24,10 +24,9 @@ import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
 
 /**
  * @author lishanglin
@@ -718,6 +717,37 @@ public abstract class AbstractMetaCache implements MetaCache {
             clusterCntMap.put(dcMeta.getId(), cnt);
         }
         return clusterCntMap;
+    }
+
+    @Override
+    public boolean isDcClusterMigratable(String dc, String clusterName) {
+        if (clusterName == null || clusterName.isEmpty() || dc == null || dc.isEmpty()) return false;
+        DcMeta dcMeta = meta.getKey().getDcs().get(dc);
+        if (dcMeta == null) return false;
+        ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+        if (clusterMeta == null) return false;
+        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+        if (clusterType != HETERO) {
+            return clusterType.supportMigration();
+        }
+        return ClusterType.lookup(clusterMeta.getAzGroupType()).supportMigration();
+    }
+
+    @Override
+    public boolean anyDcMigratable(String clusterName) {
+        if (clusterName == null || clusterName.isEmpty()) return false;
+        for (DcMeta dcMeta : meta.getKey().getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta == null) continue;
+            ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+            if (clusterType != HETERO) {
+                return clusterType.supportMigration();
+            }
+            if (ClusterType.lookup(clusterMeta.getAzGroupType()).supportMigration()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting

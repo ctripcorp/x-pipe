@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +59,9 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
     @Mock
     private ConsoleConfig config;
 
+    @Mock
+    private MetaCache metaCache;
+
     private BeaconMigrationRequest migrationRequest;
 
     private String clusterName = "cluster1";
@@ -75,7 +79,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         migrationRequest = new BeaconMigrationRequest();
         clusterTbl = new ClusterTbl();
         dcTbl = new DcTbl();
-        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config);
+        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config, metaCache);
 
         dcTbl.setDcName(dcName);
         migrationRequest.setFailoverGroups(Sets.newHashSet("shard1+dc1"));
@@ -91,6 +95,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         when(dcCache.find(anyLong())).thenReturn(dcTbl);
         when(beaconMetaService.compareMetaWithXPipe(eq(clusterName), anySet())).thenReturn(true);
         when(configService.allowAutoMigration()).thenReturn(true);
+        when(metaCache.isDcClusterMigratable(anyString(), anyString())).thenReturn(true);
     }
 
     @Test
@@ -143,6 +148,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
     @Test(expected = MigrationNotSupportException.class)
     public void testClusterTypeNotSupportMigration() throws Throwable {
         clusterTbl.setClusterType(ClusterType.BI_DIRECTION.name());
+        when(metaCache.isDcClusterMigratable(anyString(), anyString())).thenReturn(false);
         CommandFuture future = preCheckCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());

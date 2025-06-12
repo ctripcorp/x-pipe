@@ -52,8 +52,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
-
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
 
@@ -295,7 +293,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
             }
 
-            if (null == clusterType || !clusterType.supportMigration())
+            if (null == clusterType || !metaCache.isDcClusterMigratable(clusterInfo.getClusterName(), clusterInfo.getFromDcName()))
                 throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
 
         }
@@ -438,7 +436,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (clusterTbl == null) {
             throw new ClusterNotFoundException(clusterName);
         }
-        if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMigration()) {
+        if (!metaCache.isDcClusterMigratable(clusterName, fromIdc)) {
             throw new MigrationNotSupportException(clusterName);
         }
 
