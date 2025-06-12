@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.google.common.collect.Maps;
@@ -19,6 +20,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author yu
@@ -37,11 +40,11 @@ public class DefaultKeeperContainerMigrationServiceTest {
     @Before
     public void before() {
         ShardModel shardModel = new ShardModel();
-        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
+        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(), any(ReplDirectionInfoModel.class)))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(ShardModel.class), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), any(ShardModel.class)))
                 .thenReturn(true);
     }
 

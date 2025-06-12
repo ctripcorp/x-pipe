@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -77,7 +76,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 		TimeUnit.SECONDS.sleep(1);
 		verify(metaServerConsoleServiceManagerWrapper, times(retryTimes)).get(dcName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterModified(clusterName, mockedClusterMeta);
-		verify(notifier, times(1)).submitNotifyTask((MetaNotifyTask<?>) anyObject());
+		verify(notifier, times(1)).submitNotifyTask(any(MetaNotifyTask.class));
 
 		assertEquals(metaServerConsoleServiceManagerWrapper.get(dcName), mockedMetaServerConsoleService);
 		assertEquals(clusterMetaService.getClusterMeta(dcName, clusterName), mockedClusterMeta);
@@ -90,7 +89,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 		verify(metaServerConsoleServiceManagerWrapper, times(retryTimes)).get(dcName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterDeleted(clusterName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterDeleted(anyString());
-		verify(notifier, times(1)).submitNotifyTask((MetaNotifyTask<?>) anyObject());
+		verify(notifier, times(1)).submitNotifyTask(any(MetaNotifyTask.class));
 
 		assertEquals(metaServerConsoleServiceManagerWrapper.get(dcName), mockedMetaServerConsoleService);
 		assertEquals(clusterMetaService.getClusterMeta(dcName, clusterName), mockedClusterMeta);

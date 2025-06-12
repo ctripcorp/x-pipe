@@ -21,7 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 /**

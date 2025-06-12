@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
+import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
@@ -260,7 +261,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
 				};
 				return null;
 			}
-		}).when(mockedMigrationCluster).update(anyObject(), anyObject());
+		}).when(mockedMigrationCluster).update(any(), any(Observable.class));
 
         mockedMigrationShard = (new MigrationShardTbl()).setId(1).setKeyId(1).setShardId(1).setMigrationClusterId(1);
         mockedCurrentShard = (new ShardTbl()).setId(1).setKeyId(1).setShardName("test-shard").setClusterId(1)
