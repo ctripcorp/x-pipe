@@ -123,11 +123,6 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
-    public List<ClusterTbl> findAllClusters() {
-        return allClusters.getData();
-    }
-
-    @Override
     public List<ClusterTbl> findAllClustersWithOrgInfo() {
         return allClusters.getData();
     }

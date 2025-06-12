@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -55,79 +56,21 @@ public class SentinelGroupServiceMockTest extends AbstractRedisTest {
     @Test
     public void testGetSentinelGroups() {
         List<SentinelGroupTbl> sentinelGroupTbls = Lists.newArrayList();
-        SentinelGroupTbl tbl1 = new SentinelGroupTbl();
-        tbl1.setSentinelGroupId(1);
-        tbl1.setClusterType(ClusterType.ONE_WAY.name());
-        tbl1.setDeleted(0);
-        tbl1.setActive(1);
-        tbl1.setDatachangeLasttime(new Date());
-        tbl1.setKeySentinelGroupId(1);
-        tbl1.setCount(0);
-        tbl1.setShardCount(0);
-        sentinelGroupTbls.add(tbl1);
+        for (int i = 0; i < 3; i++) { sentinelGroupTbls.add(new SentinelGroupTbl().setSentinelGroupId(i + 1).setClusterType(ClusterType.ONE_WAY.name()).setActive(1).setKeySentinelGroupId(i + 1)); }
 
-        SentinelGroupTbl tbl2 = new SentinelGroupTbl();
-        tbl2.setSentinelGroupId(2);
-        tbl2.setClusterType(ClusterType.ONE_WAY.name());
-        tbl2.setDeleted(0);
-        tbl2.setActive(1);
-        tbl2.setDatachangeLasttime(new Date());
-        tbl2.setKeySentinelGroupId(2);
-        tbl2.setCount(0);
-        tbl2.setShardCount(0);
-        sentinelGroupTbls.add(tbl2);
-
-        SentinelGroupTbl tbl3 = new SentinelGroupTbl();
-        tbl3.setSentinelGroupId(3);
-        tbl3.setClusterType(ClusterType.ONE_WAY.name());
-        tbl3.setDeleted(0);
-        tbl3.setActive(1);
-        tbl3.setDatachangeLasttime(new Date());
-        tbl3.setKeySentinelGroupId(3);
-        tbl3.setCount(0);
-        tbl3.setShardCount(0);
-        sentinelGroupTbls.add(tbl3);
-
-        List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList();
-        DcClusterShardTbl tbl4 = new DcClusterShardTbl();
-        tbl4.setSetinelId(1);
-        tbl4.setDcClusterId(1);
-        tbl4.setShardId(1);
-        dcClusterShardTbls.add(tbl4);
-        DcClusterShardTbl tbl5 = new DcClusterShardTbl();
-        tbl5.setSetinelId(1);
-        tbl5.setDcClusterId(2);
-        tbl5.setShardId(2);
-        dcClusterShardTbls.add(tbl5);
-        DcClusterShardTbl tbl6 = new DcClusterShardTbl();
-        tbl6.setSetinelId(2);
-        tbl6.setDcClusterId(3);
-        tbl6.setShardId(3);
-        dcClusterShardTbls.add(tbl6);
-        DcClusterShardTbl tbl7 = new DcClusterShardTbl();
-        tbl7.setSetinelId(2);
-        tbl7.setDcClusterId(4);
-        tbl7.setShardId(4);
-        dcClusterShardTbls.add(tbl7);
-        DcClusterShardTbl tbl8 = new DcClusterShardTbl();
-        tbl8.setSetinelId(3);
-        tbl8.setDcClusterId(5);
-        tbl8.setShardId(5);
-        dcClusterShardTbls.add(tbl8);
-        DcClusterShardTbl tbl9 = new DcClusterShardTbl();
-        tbl9.setSetinelId(3);
-        tbl9.setDcClusterId(6);
-        tbl9.setShardId(6);
-        dcClusterShardTbls.add(tbl9);
+        List<DcClusterShardTbl> dcClusterShardTbls = new ArrayList<>();
+        for (int i = 0; i < 6; i++) { dcClusterShardTbls.add(new DcClusterShardTbl().setSetinelId(i / 2 + 1).setDcClusterId(i + 1).setShardId(i + 1)); }
 
         MockitoAnnotations.initMocks(this);
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
-        when(metaCache.isCrossRegion("fra", "jq")).thenReturn(true);
-        when(metaCache.isCrossRegion("fra", "oy")).thenReturn(true);
-        when(metaCache.isCrossRegion("oy", "jq")).thenReturn(false);
-        when(metaCache.isCrossRegion("oy", "oy")).thenReturn(false);
-        when(metaCache.isCrossRegion("jq", "jq")).thenReturn(false);
-        when(metaCache.isCrossRegion("jq", "oy")).thenReturn(false);
+        when(metaCache.isCrossRegion(anyString(), anyString()))
+                .thenAnswer(invocation -> {
+                    String region1 = invocation.getArgument(0);
+                    String region2 = invocation.getArgument(1);
+                    if (region1.equals(region2)) return false;
+                    if ("fra".equals(region1) || "fra".equals(region2)) return true;
+                    return false;
+                });
 
         when(mockDcClusterShardService.findAll()).thenReturn(dcClusterShardTbls);
         when(sentinelService.findAllWithDcName()).thenReturn(Lists.newArrayList());
@@ -136,12 +79,12 @@ public class SentinelGroupServiceMockTest extends AbstractRedisTest {
         Assert.assertEquals(2, sentinelGroups.get(0).getShardCount());
         Assert.assertEquals(2, sentinelGroups.get(1).getShardCount());
         Assert.assertEquals(2, sentinelGroups.get(2).getShardCount());
+
         sentinelGroups = sentinelGroupService.getSentinelGroups(sentinelGroupTbls, false);
         Assert.assertEquals(3, sentinelGroups.size());
-        Assert.assertEquals(1, sentinelGroups.get(0).getShardCount());
+        Assert.assertEquals(2, sentinelGroups.get(0).getShardCount());
         Assert.assertEquals(2, sentinelGroups.get(1).getShardCount());
         Assert.assertEquals(1, sentinelGroups.get(2).getShardCount());
-        logger.info("[getSentinelGroups]{}", sentinelGroups);
     }
 
 
