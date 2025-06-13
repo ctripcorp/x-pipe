@@ -332,7 +332,7 @@ public class GtidSet {
             }
         }
 
-        if (intervals.get(index).start < other.end) {
+        if (intervals.get(index).start <= other.end) {
             intervals.get(index).start = other.end + 1;
         }
     }
