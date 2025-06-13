@@ -415,24 +415,29 @@ public class GtidSetTest {
         GtidSet res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-2:9-10");
 
+        big = new GtidSet(UUID + ":2-3");
+        small = new GtidSet(UUID + ":1-2");
+        res = big.subtract(small);
+        Assert.assertEquals(res.toString(), UUID + ":3");
+
         big = new GtidSet(UUID + ":1-10:50-100");
         small = new GtidSet(UUID + ":3-8:75-85:98");
         res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-2:9-10:50-74:86-97:99-100");
         res = small.subtract(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10:100");
         small = new GtidSet(UUID + ":100");
         res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-10");
         res = small.subtract(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet("");
         small = new GtidSet(UUID + ":3-8:75-85:98");
         res = big.subtract(small);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10:50-100");
         small = new GtidSet(UUID + ":3-8:75-85:98-99");
@@ -473,7 +478,7 @@ public class GtidSetTest {
         big = new GtidSet(UUID + ":1-10");
         small = new GtidSet(UUID + ":1-10");
         res = big.subtract(small);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10");
         small = new GtidSet(UUID + ":1-9");
@@ -721,7 +726,7 @@ public class GtidSetTest {
         big = new GtidSet("");
         small = new GtidSet("");
         res = small.union(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet("cb190774-6bf1-11ea-9799-fa163e02998c:1-18912721");
         small = new GtidSet("cb190774-6bf1-11ea-9799-fa163e02998c:1-16504165:16504173-16541256:16541260-16545608:16545610-18913165");
