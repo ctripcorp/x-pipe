@@ -18,11 +18,18 @@ public class KeeperSingleDcWaitForGtidset extends AbstractKeeperIntegratedSingle
 
         setRedisToGtidEnabled(redisMaster.getIp(), redisMaster.getPort());
         Assert.assertTrue(isRedisGtidEnabled(redisMaster.getIp(), redisMaster.getPort()));
+        sendMessageToMaster(redisMaster, 1);
 
         RedisKeeperServer redisKeeperServer = getRedisKeeperServer(backupKeeper);
         Assert.assertEquals(PARTIAL_STATE.PARTIAL, redisKeeperServer.getRedisMaster().partialState());
         // wait keeper repl stage switch
-        waitConditionUntilTimeOut(() -> redisKeeperServer.getKeeperRepl().currentStage().getProto().equals(ReplStage.ReplProto.XSYNC));
+        waitConditionUntilTimeOut(() -> {
+            try {
+                return redisKeeperServer.getKeeperRepl().currentStage().getProto().equals(ReplStage.ReplProto.XSYNC);
+            } catch (Exception e) {
+                return false;
+            }
+        });
 
         logger.info(remarkableMessage("make keeper active to wrong addr{}"), backupKeeper);
         String ip = "localhost";

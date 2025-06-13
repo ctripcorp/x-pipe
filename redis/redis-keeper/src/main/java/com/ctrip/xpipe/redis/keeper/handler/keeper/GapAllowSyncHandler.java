@@ -116,6 +116,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         } else if (null != curStage && curStage.getProto() == request.proto) {
             logger.info("[anaRequest][{}] useCurStage cur:{}", slave, curStage);
             if (!awaitIfRequestExceedsCurrent(request, redisKeeperServer, curStage, WAIT_OFFSET_TIME_MILLI, CHECK_INTERVAL_MILL)) {
+                redisKeeperServer.getKeeperMonitor().getKeeperStats().increatePartialSyncError();
                 return SyncAction.full("wait fail");
             }
 
@@ -184,11 +185,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             }
             logger.info("[run][offset wait failed]{}", request);
             redisKeeperServer.getKeeperMonitor().getKeeperStats().increasWaitOffsetFail();
-            redisKeeperServer.getKeeperMonitor().getKeeperStats().increatePartialSyncError();
             return false;
         } else if (request.proto == ReplStage.ReplProto.XSYNC
                 && ("*".equals(request.replId) || curStage.getReplId().equalsIgnoreCase(request.replId))) {
-            GtidSet backlogGtidSet = redisKeeperServer.getKeeperRepl().getEndGtidSet();
+            GtidSet backlogGtidSet = redisKeeperServer.getReplicationStore().getGtidSet().getKey();
             GtidSet slaveGtidSet = request.slaveGtidSet;
             String masterUuid = curStage.getMasterUuid();
             long masterLastGno = backlogGtidSet.contains(masterUuid) ? backlogGtidSet.getUUIDSet(masterUuid).getLastGno() : 0;
@@ -199,10 +199,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             logger.info("[waitForGtidset][begin wait] backlog:{}, req:{}", backlogGtidSet, slaveGtidSet);
             try {
                 while (checkTime > 0 && slaveLastGno > masterLastGno) {
-                    logger.info("[testwaitForGtidset] {} > {}", slaveGtidSet, backlogGtidSet);
+                    logger.info("[waitForGtidset] {} > {}", slaveGtidSet, backlogGtidSet);
                     checkTime--;
                     Thread.sleep(checkInterval);
-                    backlogGtidSet = redisKeeperServer.getKeeperRepl().getEndGtidSet();
+                    backlogGtidSet = redisKeeperServer.getReplicationStore().getGtidSet().getKey();
                     masterLastGno = backlogGtidSet.contains(masterUuid) ? backlogGtidSet.getUUIDSet(masterUuid).getLastGno() : 0;
                 }
             } catch (Exception e) {
@@ -212,9 +212,11 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
             if (slaveLastGno <= masterLastGno) {
                 logger.info("[WaitForGtidset][wait succeed]");
+                redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseWaitOffsetSucceed();
                 return true;
             } else {
                 logger.info("[WaitForGtidset][failed] backlog:{}, req:{}", backlogGtidSet, slaveGtidSet);
+                redisKeeperServer.getKeeperMonitor().getKeeperStats().increasWaitOffsetFail();
                 return false;
             }
         } else {

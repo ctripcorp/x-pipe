@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Before;
@@ -273,15 +274,16 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     public void testAwaitGtidset() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
         Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperRepl.getEndGtidSet()).thenReturn(new GtidSet("A:1-10"));
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("")));
 
         GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-10", 10);
         Assert.assertTrue(handler.awaitIfRequestExceedsCurrent(syncRequest, keeperServer, replStage, 3, 1));
-        Mockito.verify(keeperRepl, Mockito.times(1)).getEndGtidSet();
+        Mockito.verify(store, Mockito.times(1)).getGtidSet();
 
         syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-15", 10);
         Assert.assertFalse(handler.awaitIfRequestExceedsCurrent(syncRequest, keeperServer, replStage, 3, 1));
-        Mockito.verify(keeperRepl, Mockito.times(5)).getEndGtidSet();
+        Mockito.verify(store, Mockito.times(5)).getGtidSet();
     }
 
 }
