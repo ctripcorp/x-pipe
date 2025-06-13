@@ -267,6 +267,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public XSyncContinue locateLastPoint() {
+		return getCurrentReplicationStore().locateLastPoint();
+	}
+
+	@Override
 	public void switchToPSync(String replId, long offset) throws IOException {
 		getCurrentReplicationStore().switchToPSync(replId, offset);
 		closeSlaves("toPSync " + replId + ":" + offset);

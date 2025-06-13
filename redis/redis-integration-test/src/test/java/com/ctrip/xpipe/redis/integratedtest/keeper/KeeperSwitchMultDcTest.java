@@ -61,7 +61,7 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDcXsync
 
         logger.info("finish link ");
 
-        assertGtid(master);
+        assertMultiDcGtid(master);
         assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -93,7 +93,7 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDcXsync
 
         Thread.sleep(5000);
 
-        assertGtid(master);
+        assertMultiDcGtid(master);
         assertReplOffset(master);
 
         // sendMessageToMasterAndTestSlaveRedis(10);
@@ -138,7 +138,7 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDcXsync
         sendMessageToMasterAndTestSlaveRedis(10);
         logger.info("finish link ");
 
-        assertGtid(master);
+        assertMultiDcGtid(master);
         assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -167,7 +167,7 @@ public class KeeperSwitchMultDcTest extends AbstractKeeperIntegratedMultiDcXsync
         sendMessageToMaster(getRedisMaster(), 10);
 
         Thread.sleep(5000);
-        assertGtid(master);
+        assertMultiDcGtid(master);
         assertReplOffset(master);
 
         infoCommand.reset();

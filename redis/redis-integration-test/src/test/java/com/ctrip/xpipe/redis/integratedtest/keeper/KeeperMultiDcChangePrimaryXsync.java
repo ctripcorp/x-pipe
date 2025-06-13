@@ -77,7 +77,7 @@ public class KeeperMultiDcChangePrimaryXsync extends AbstractKeeperIntegratedMul
         when(clusterMeta.getActiveDc()).thenReturn(primaryDc);
         when(currentMetaManager.getClusterMeta(getClusterDbId())).thenReturn(clusterMeta);
 
-        assertGtid(getRedisMaster());
+        assertMultiDcGtid(getRedisMaster());
         assertReplOffset(getRedisMaster());
 
         logger.info(remarkableMessage("[make dc primary]change dc primary to:" + backupDc));
@@ -116,7 +116,7 @@ public class KeeperMultiDcChangePrimaryXsync extends AbstractKeeperIntegratedMul
         Thread.sleep(1000);
         newRedisMaster.setMaster(null);
 
-        assertGtid(newRedisMaster);
+        assertMultiDcGtid(newRedisMaster);
         assertReplOffset(newRedisMaster);
     }
 

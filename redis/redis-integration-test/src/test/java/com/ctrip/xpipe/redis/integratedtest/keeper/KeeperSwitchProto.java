@@ -51,7 +51,7 @@ public class KeeperSwitchProto extends AbstractKeeperIntegratedMultiDcXsync {
 
         sendMessageToMaster(getRedisMaster(), 100);
         Thread.sleep(2000);
-        assertGtid(getRedisMaster());
+        assertMultiDcGtid(getRedisMaster());
         assertReplOffset(getRedisMaster());
 
         RedisMeta master = getRedisMaster();
@@ -113,7 +113,7 @@ public class KeeperSwitchProto extends AbstractKeeperIntegratedMultiDcXsync {
 
         sendMessageToMaster(getRedisMaster(), 100);
         Thread.sleep(2000);
-        assertGtid(getRedisMaster());
+        assertMultiDcGtid(getRedisMaster());
         assertReplOffset(getRedisMaster());
 
         RedisMeta master = getRedisMaster();
@@ -166,7 +166,7 @@ public class KeeperSwitchProto extends AbstractKeeperIntegratedMultiDcXsync {
 
         logger.info("finish link ");
 
-        assertGtid(master);
+        assertMultiDcGtid(master);
         assertReplOffset(master);
 
         CountDownLatch latch = new CountDownLatch(1);
