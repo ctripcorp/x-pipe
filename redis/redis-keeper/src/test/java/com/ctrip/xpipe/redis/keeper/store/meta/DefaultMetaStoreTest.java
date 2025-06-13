@@ -290,4 +290,13 @@ public class DefaultMetaStoreTest extends AbstractTest {
         Assert.assertEquals(metaStore.replOffsetToBacklogOffset(20000L), (Long)20000L);
         Assert.assertEquals(metaStore.replOffsetToBacklogOffset(20086L), (Long)20086L);
     }
+
+    @Test
+    public void testReplStageGtidNullIsEmpty() {
+        ReplStage a = new ReplStage(replidA,10000,0,masterUuidA,null,null);
+        ReplStage b = new ReplStage(replidA,10000,0,masterUuidA,new GtidSet(GtidSet.EMPTY_GTIDSET),new GtidSet(GtidSet.EMPTY_GTIDSET));
+        Assert.assertEquals(a, b);
+        a.setGtidLost(null);
+        Assert.assertEquals(a.getGtidLost(), new GtidSet(GtidSet.EMPTY_GTIDSET));
+    }
 }
