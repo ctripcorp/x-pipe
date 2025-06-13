@@ -1,16 +1,19 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.ExecuteException;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author wenchao.meng
@@ -156,4 +159,19 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	protected List<RedisMeta> getRedisSlaves() {
 		return getAllRedisSlaves();
 	}
+
+	protected void assertMultiDcGtid(RedisMeta master) throws ExecutionException, InterruptedException {
+		String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_set");
+		String activeKeeperGtid = getGtidSet(getKeeperActive(getPrimaryDc()).getIp(), getKeeperActive(getPrimaryDc()).getPort(), "gtid_executed");
+		String backGtidSet = getGtidSet(getKeeperActive(getBackupDc()).getIp(), getKeeperActive(getBackupDc()).getPort(), "gtid_executed");
+		logger.info("masterGtid:{}", masterGtid);
+		logger.info("activeKeeperGtid:{}", activeKeeperGtid);
+		logger.info("backGtidSet:{}", backGtidSet);
+		for(RedisMeta slave: getRedisSlaves()) {
+			String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
+			logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
+			Assert.assertEquals(new GtidSet(masterGtid), new GtidSet(slaveGtidStr));
+		}
+	}
+
 }

@@ -103,13 +103,6 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
 
     }
 
-    private void setRedisToGtidEnabled(String ip, Integer port) throws Exception {
-        SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
-        ConfigSetCommand.ConfigSetGtidEnabled configSetGtidEnabled = new ConfigSetCommand.ConfigSetGtidEnabled(true, keyPool, scheduled);
-        String gtid =  configSetGtidEnabled.execute().get().toString();
-        System.out.println(gtid);
-    }
-
     private void initKeepers(String ip, int port) throws Exception {
 
         redisKeeperServers.add(getRedisKeeperServer(activeKeeper));
