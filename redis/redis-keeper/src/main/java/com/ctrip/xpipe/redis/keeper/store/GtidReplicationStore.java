@@ -157,6 +157,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     @Override
     public GtidSet getBeginGtidSet() throws IOException {
+        if (null == cmdStore) return new GtidSet("");
         return cmdStore.getBeginGtidSet();
     }
 

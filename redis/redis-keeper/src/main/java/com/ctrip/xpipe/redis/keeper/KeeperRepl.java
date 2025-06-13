@@ -34,6 +34,8 @@ public interface KeeperRepl {
 
 	GtidSet getEndGtidSet() throws IOException;
 
+	GtidSet getBacklogGtidSet() throws IOException;
+
 	boolean supportGtidSet();
 
 }

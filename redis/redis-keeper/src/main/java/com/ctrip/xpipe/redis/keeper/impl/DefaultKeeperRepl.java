@@ -83,6 +83,13 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	}
 
 	@Override
+	public GtidSet getBacklogGtidSet() throws IOException {
+		GtidSet begin = getBeginGtidSet();
+		if (null == begin) return new GtidSet("");
+		return begin.union(getEndGtidSet());
+	}
+
+	@Override
 	public boolean supportGtidSet() {
 		return replicationStore.supportGtidSet();
 	}
