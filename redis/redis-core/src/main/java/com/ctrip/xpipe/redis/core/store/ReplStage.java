@@ -96,11 +96,11 @@ public class ReplStage {
     }
 
     public GtidSet getGtidLost() {
-        return this.gtidLost;
+        return this.gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : this.gtidLost;
     }
 
     public void setGtidLost(GtidSet gtidLost) {
-        this.gtidLost = gtidLost;
+        this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost.clone();
     }
 
     public ReplStage(String replId, long beginReplOffset, long begOffsetBacklog) {
@@ -119,8 +119,8 @@ public class ReplStage {
         this.begOffsetRepl = begOffsetRepl;
         this.begOffsetBacklog = begOffsetBacklog;
         this.masterUuid = masterUuid;
-        this.beginGtidset = gtidBegin == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidBegin;
-        this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost;
+        this.beginGtidset = gtidBegin == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidBegin.clone();
+        this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost.clone();
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }
@@ -133,8 +133,8 @@ public class ReplStage {
         this.replId2 = original.replId2;
         this.secondReplIdOffset = original.secondReplIdOffset;
         this.masterUuid = original.masterUuid;
-        this.beginGtidset = original.beginGtidset == null ? null : original.beginGtidset.clone();
-        this.gtidLost = original.gtidLost == null ? null : original.gtidLost.clone();
+        this.beginGtidset = original.beginGtidset == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : original.beginGtidset.clone();
+        this.gtidLost = original.gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : original.gtidLost.clone();
     }
 
     @JsonCreator
@@ -154,8 +154,8 @@ public class ReplStage {
         this.begOffsetRepl = begOffsetRepl;
         this.begOffsetBacklog = begOffsetBacklog;
         this.masterUuid = masterUuid;
-        this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? new GtidSet("") : new GtidSet(beginGtidset);
-        this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? new GtidSet("") : new GtidSet(gtidLost);
+        this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(beginGtidset);
+        this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(gtidLost);
         this.replId2 =  replId2;
         this.secondReplIdOffset = secondReplIdOffset;
     }
@@ -195,7 +195,7 @@ public class ReplStage {
     }
 
     public GtidSet getBeginGtidset() {
-        return beginGtidset;
+        return beginGtidset == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : beginGtidset;
     }
 
     public long getBegOffsetBacklog() {
@@ -215,6 +215,12 @@ public class ReplStage {
         }
     }
 
+    private boolean gtidSetEquals(GtidSet a, GtidSet b) {
+        boolean aIsEmpty = a == null || a.isEmpty();
+        boolean bIsEmpty = b == null || b.isEmpty();
+        return (aIsEmpty && bIsEmpty) || (!aIsEmpty && !bIsEmpty && a.equals(b));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -227,8 +233,8 @@ public class ReplStage {
                 replId.equals(replStage.replId) &&
                 Objects.equals(replId2, replStage.replId2) &&
                 Objects.equals(masterUuid, replStage.masterUuid) &&
-                Objects.equals(beginGtidset, replStage.beginGtidset) &&
-                Objects.equals(gtidLost, replStage.gtidLost);
+                gtidSetEquals(beginGtidset, replStage.beginGtidset) &&
+                gtidSetEquals(gtidLost, replStage.gtidLost);
     }
 
     @Override
