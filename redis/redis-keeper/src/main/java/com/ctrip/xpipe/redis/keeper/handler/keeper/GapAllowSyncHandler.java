@@ -137,6 +137,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             long reqBacklogOffset;
             XSyncContinue xsyncCont = null;
             if (request.proto == ReplStage.ReplProto.PSYNC) {
+                if(request.offset < preStage.getBegOffsetRepl()) {
+                    SyncAction.full("request offset < beginOffsetRepl");
+                }
                 reqBacklogOffset = preStage.replOffset2BacklogOffset(request.offset);
             } else {
                 xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);

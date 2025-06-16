@@ -53,6 +53,7 @@ public abstract class AbstractControllableFile implements ControllableFile{
 		
 		closed.set(true);
 		if(randomAccessFile.get() != null){
+			logger.debug("[doClose]{}", file);
 			randomAccessFile.get().close();
 		}
 	}

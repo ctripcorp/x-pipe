@@ -165,6 +165,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
             this.streamCommandReader.relaseRemainBuf();
         }
         if(this.indexWriter != null) {
+            log.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
         }
     }
