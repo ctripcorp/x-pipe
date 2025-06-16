@@ -567,6 +567,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public long backlogBeginOffset() {
+		makeSureOpen();
 		if (null == cmdStore) return -1;
 		else return cmdStore.lowestAvailableOffset();
 	}
