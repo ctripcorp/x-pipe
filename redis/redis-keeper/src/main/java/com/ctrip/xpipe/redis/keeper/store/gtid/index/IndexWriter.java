@@ -118,6 +118,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
         gtidSetWrapper.compensate(indexEntry);
         if(blockWriter != null) {
             blockWriter.close();
+            blockWriter = null;
         }
     }
 
@@ -147,7 +148,6 @@ public class IndexWriter extends AbstractIndex implements Closeable {
         }
         super.closeIndexFile();
         if(blockWriter != null) {
-            this.blockWriter.finishWriter();
             this.blockWriter.close();
         }
     }

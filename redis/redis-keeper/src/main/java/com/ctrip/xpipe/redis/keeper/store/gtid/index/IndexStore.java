@@ -76,7 +76,6 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
     }
 
     public synchronized void switchCmdFile(String cmdFileName) throws IOException {
-        this.indexWriter.finish();
         GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
         this.indexWriter.close();
