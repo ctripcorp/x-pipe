@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
-import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
 import io.netty.buffer.Unpooled;
 import org.junit.Test;
 

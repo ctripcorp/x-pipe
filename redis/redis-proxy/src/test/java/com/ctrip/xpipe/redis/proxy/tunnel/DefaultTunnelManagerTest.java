@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
-import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.DefaultChannelPromise;

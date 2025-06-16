@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

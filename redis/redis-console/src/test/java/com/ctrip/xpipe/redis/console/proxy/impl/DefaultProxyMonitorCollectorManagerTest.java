@@ -9,7 +9,10 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 

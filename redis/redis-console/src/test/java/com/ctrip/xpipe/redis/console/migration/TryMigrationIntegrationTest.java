@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;

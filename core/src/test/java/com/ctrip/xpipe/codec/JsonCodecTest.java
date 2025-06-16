@@ -2,15 +2,10 @@ package com.ctrip.xpipe.codec;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
-import org.assertj.core.util.Lists;
 import org.junit.Test;
 
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author wenchao.meng

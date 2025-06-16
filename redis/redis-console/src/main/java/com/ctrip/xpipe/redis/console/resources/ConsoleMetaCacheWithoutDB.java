@@ -9,7 +9,7 @@ import org.xml.sax.SAXException;
 
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {

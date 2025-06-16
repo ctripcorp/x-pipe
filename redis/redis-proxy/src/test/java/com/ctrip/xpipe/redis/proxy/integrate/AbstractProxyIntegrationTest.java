@@ -1,14 +1,11 @@
 package com.ctrip.xpipe.redis.proxy.integrate;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointHealthChecker;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
-import com.ctrip.xpipe.redis.proxy.ProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
-import com.ctrip.xpipe.redis.core.redis.exception.RdbParseFailException;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;
@@ -9,8 +8,6 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
 
 /**
  * @author hailu

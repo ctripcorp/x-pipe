@@ -1,12 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
-import com.ctrip.xpipe.redis.proxy.exception.WriteToClosedSessionException;
-import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 
 
 /**

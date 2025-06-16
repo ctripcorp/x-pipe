@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.core.redis.operation.op;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
