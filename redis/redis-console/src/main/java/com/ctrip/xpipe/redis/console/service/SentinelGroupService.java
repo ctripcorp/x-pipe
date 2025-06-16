@@ -25,7 +25,9 @@ public interface SentinelGroupService {
 
     List<SentinelGroupModel> getAllSentinelGroupsWithUsage();
 
-    Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType);
+    List<SentinelGroupModel> getAllSentinelGroupsWithUsage(boolean includeCrossRegion);
+
+    Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, boolean includeCrossRegion);
 
     void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel);
 

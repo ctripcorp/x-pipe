@@ -207,12 +207,12 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
-        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+    @RequestMapping(value = {"/sentinels/usage"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
+        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage, includeCrossRegion: {}", includeCrossRegion);
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
-            return GenericRetMessage.createGenericRetMessage(sentienlUsage);
+            Map<String, SentinelUsageModel> sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
+            return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());
@@ -268,11 +268,11 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = {"/dc/sentinels/{clusterType}", "/dc/sentinels"}, method = RequestMethod.GET)
-    public RetMessage dcSentinelUsage(@RequestParam String dc, @PathVariable(required = false) String clusterType) {
-        logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
+    @RequestMapping(value = { "/dc/sentinels"}, method = RequestMethod.GET)
+    public RetMessage dcSentinelUsage(@RequestParam String dc, @RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
+        logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage, includeCrossRegion: {}", dc, includeCrossRegion);
         try {
-            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType).get(dc.toUpperCase());
+            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion).get(dc.toUpperCase());
             return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[dcSentinelUsage]", e);

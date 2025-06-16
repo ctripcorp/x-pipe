@@ -223,7 +223,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
-
 	@Override
 	public List<String> findAllClusterNames() {
 

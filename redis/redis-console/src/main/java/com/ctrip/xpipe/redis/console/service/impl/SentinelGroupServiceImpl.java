@@ -10,8 +10,10 @@ import com.ctrip.xpipe.redis.console.notifier.shard.AbstractShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -53,7 +55,8 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     @Autowired
     private ShardEventHandler shardEventHandler;
 
-    private static final long CROSS_DC_CONSTANT = 0L;
+    @Autowired
+    private MetaCache metaCache;
 
     @PostConstruct
     private void postConstruct() {
@@ -209,11 +212,16 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroups(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, true);
     }
 
     @Override
     public List<SentinelGroupModel> getAllSentinelGroupsWithUsage() {
+        return getAllSentinelGroupsWithUsage(true);
+    }
+
+    @Override
+    public List<SentinelGroupModel> getAllSentinelGroupsWithUsage(boolean includeCrossRegion) {
         List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
@@ -221,26 +229,47 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             }
         });
 
-        return getSentinelGroups(sentinelGroupTbls);
+        return getSentinelGroups(sentinelGroupTbls, includeCrossRegion);
     }
 
-    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls){
+    List<SentinelGroupModel> getSentinelGroups(List<SentinelGroupTbl> sentinelGroupTbls, boolean includeCrossRegion) {
         Map<Long, SentinelGroupModel> groupMap = sentinelGroupTbls.stream()
-            .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
+                .collect(Collectors.toMap(SentinelGroupTbl::getSentinelGroupId, SentinelGroupModel::new));
+        Map<Long, Set<Long>> sentinelShardMap;
 
-        List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
-        Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream()
-            .filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId()))
-            .collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
-                dcClusterShardTbl -> Sets.newHashSet(
-                    new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
-                (v1, v2) -> {
-                    v1.addAll(v2);
-                    return v1;
-                }));
+        if (includeCrossRegion) {
+            List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
+            sentinelShardMap = dcClusterShardTbls.stream()
+                    .filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId()))
+                    .collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
+                            dcClusterShardTbl -> Sets.newHashSet(dcClusterShardTbl.getShardId()),
+                            (v1, v2) -> {
+                                v1.addAll(v2);
+                                return v1;
+                            }));
+        } else {
+            sentinelShardMap = new HashMap<>();
+            Map<String, DcMeta> dcMetaMap = metaCache.getXpipeMeta().getDcs();
+            for (Map.Entry<String, DcMeta> entry : dcMetaMap.entrySet()) {
+                String dcName = entry.getKey();
+                DcMeta dcMeta = entry.getValue();
+
+                Map<String, ClusterMeta> clusters = dcMeta.getClusters();
+                clusters.forEach((clusterName, clusterMeta) -> {
+                    if (!(ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.ONE_WAY) && metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc()))) {
+                        clusterMeta.getShards().values().forEach(shardMeta -> {
+                            if (groupMap.containsKey(shardMeta.getSentinelId())) {
+                                Set<Long> shardSet = sentinelShardMap.computeIfAbsent(shardMeta.getSentinelId(), k -> new HashSet<>());
+                                shardSet.add(shardMeta.getDbId());
+                            }
+                        });
+                    }
+                });
+            }
+        }
 
         groupMap.forEach((k, v) -> {
-            Set<Pair<Long, Long>> shardSet = sentinelShardMap.get(k);
+            Set<Long> shardSet = sentinelShardMap.get(k);
             if (shardSet != null) {
                 v.setShardCount(shardSet.size());
             }
@@ -257,9 +286,9 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     @Override
-    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType) {
+    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, boolean includeCrossRegion) {
         String type = Strings.isNullOrEmpty(clusterType) ? ClusterType.ONE_WAY.name() : clusterType;
-        List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage();
+        List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage(includeCrossRegion);
         Map<String, SentinelUsageModel> result = new HashMap<>();
         allSentinelGroups.forEach(sentinelGroupModel -> {
             if (sentinelGroupModel.getClusterType().equalsIgnoreCase(type)) {
@@ -275,6 +304,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         });
         return result;
     }
+
 
     @Override
     public void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel) {
