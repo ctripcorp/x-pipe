@@ -111,9 +111,6 @@ public class ReferenceFileChannel implements Closeable, Releasable {
 	
 	public boolean hasAnythingToRead() throws IOException{
 
-		if(isFileChannelClosed()){
-			throw new RuntimeException("[hasAnythingToRead] channel close {}");
-		}
 		long fileSize = file.size();
 		long current = currentPos.get();
 
