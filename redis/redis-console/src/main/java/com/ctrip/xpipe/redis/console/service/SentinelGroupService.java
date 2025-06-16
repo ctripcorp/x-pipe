@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -27,8 +26,6 @@ public interface SentinelGroupService {
     List<SentinelGroupModel> getAllSentinelGroupsWithUsage();
 
     List<SentinelGroupModel> getAllSentinelGroupsWithUsage(boolean includeCrossRegion);
-//deleted
-    Pair<List<String>, List<SentinelGroupModel>> getAllSentinelGroupsWithUsageForTest(boolean includeCrossRegion);
 
     Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType, boolean includeCrossRegion);
 

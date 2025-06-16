@@ -21,7 +21,6 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -214,18 +213,6 @@ public class SentinelUpdateController {
         try {
             Map<String, SentinelUsageModel> sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
             return GenericRetMessage.createGenericRetMessage(sentinelUsage);
-        } catch (Exception e) {
-            logger.error("[sentinelUsage]", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
-//test deleted
-    @RequestMapping(value = {"/sentinels/usage/test"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsageTest(@RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
-        try {
-            Pair<List<String>, List<SentinelGroupModel>> diff = sentinelGroupService.getAllSentinelGroupsWithUsageForTest(includeCrossRegion);
-
-            return GenericRetMessage.createGenericRetMessage(diff);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());
