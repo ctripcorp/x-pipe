@@ -573,6 +573,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public long backlogEndOffset() {
+		makeSureOpen();
 		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
 		return cmdStore.totalLength();
 	}
