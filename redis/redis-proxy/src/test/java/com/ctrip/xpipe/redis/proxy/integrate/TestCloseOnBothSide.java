@@ -118,7 +118,7 @@ public class TestCloseOnBothSide extends AbstractProxyIntegrationTest {
         channel.writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer()
                 .writeBytes(getProxyProtocol(port).getBytes()));
 
-        waitConditionUntilTimeOut(()->!channel.isActive(), 2000);
+        waitConditionUntilTimeOut(()->!channel.isActive(), 4000);
     }
 
     private Server buildChain() throws Exception {

@@ -11,6 +11,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
  * @author wenchao.meng
  *
@@ -64,6 +66,12 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		waitConditionUntilTimeOut(() -> psync.getCommands().length >= fakeRedisServer.getCommandsLength());
 		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
+
+		System.out.println("------------------");
+		System.out.println(rdbDumpCount2);
+		System.out.println(fakeRedisServer.getRdbContent().length);
+		System.out.println(Arrays.toString(fakeRedisServer.getRdbContent()));
+		System.out.println(Arrays.toString(psync.getRdb()));
 
 		assertPsyncResultEquals(psync);
 	}
