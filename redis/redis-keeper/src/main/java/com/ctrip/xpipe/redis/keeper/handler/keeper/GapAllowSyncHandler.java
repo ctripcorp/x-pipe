@@ -168,6 +168,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     protected boolean awaitIfRequestExceedsCurrent(SyncRequest request, RedisKeeperServer redisKeeperServer, ReplStage curStage, int timeoutMill, int checkInterval) throws Exception {
         if (request.proto == ReplStage.ReplProto.PSYNC && request.replId.equalsIgnoreCase(curStage.getReplId())) {
+            if(request.offset < curStage.getBegOffsetRepl()) {
+                return false;
+            }
             long reqBacklogOffset = curStage.replOffset2BacklogOffset(request.offset);
             long backlogEnd = redisKeeperServer.getKeeperRepl().backlogEndOffset();
             if (reqBacklogOffset <= backlogEnd + 1) return true;
