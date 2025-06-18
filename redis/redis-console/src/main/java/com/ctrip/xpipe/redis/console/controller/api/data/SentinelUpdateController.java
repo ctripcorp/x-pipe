@@ -207,8 +207,8 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = {"/sentinels/usage"}, method = RequestMethod.GET)
-    public RetMessage sentinelUsage(@RequestParam(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
+    @RequestMapping(value = {"/sentinels/usage/{clusterType}/{includecross"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType, @RequestParam(required = false, defaultValue = "true") boolean includeCrossRegion) {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage, includeCrossRegion: {}", includeCrossRegion);
         try {
             Map<String, SentinelUsageModel> sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType, includeCrossRegion);
