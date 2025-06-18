@@ -493,6 +493,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			cmdStore.initialize();
 		} catch (Exception e) {
 			logger.info("[createCommandStore] init fail", e);
+			cmdStore.close();
 			throw new XpipeRuntimeException("cmdStore init fail", e);
 		}
 
