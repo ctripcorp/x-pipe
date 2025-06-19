@@ -161,6 +161,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private ReplDelayConfigCache replDelayConfigCache;
 
+	private static final int IDLE_TIME = 180;
+
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
@@ -535,7 +537,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-				 p.addLast(new IdleStateHandler(180, 180, 180, TimeUnit.SECONDS));
+				 p.addLast(new IdleStateHandler(IDLE_TIME, IDLE_TIME, IDLE_TIME, TimeUnit.SECONDS));
 				 p.addLast(new MyIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
