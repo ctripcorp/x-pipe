@@ -100,4 +100,10 @@ public interface MetaCache {
     Set<String> getAllShardNamesByClusterName(String clusterName);
 
     Map<String, Integer> getClusterCntMap(String clusterName);
+
+    boolean isDcClusterMigratable(String dc, String clusterName);
+
+    boolean anyDcMigratable(String clusterName);
+
+    int getCountByActiveDcClusterTypeAndAzGroupType(String dc, String clusterType, String azGroupType);
 }

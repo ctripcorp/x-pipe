@@ -232,4 +232,19 @@ public class TestMetaCache implements MetaCache {
         return Collections.emptyMap();
     }
 
+    @Override
+    public boolean isDcClusterMigratable(String clusterName, String dc) {
+        return false;
+    }
+
+    @Override
+    public boolean anyDcMigratable(String clusterName) {
+        return false;
+    }
+
+    @Override
+    public int getCountByActiveDcClusterTypeAndAzGroupType(String dc, String clusterType, String azGroupType) {
+        return 0;
+    }
+
 }

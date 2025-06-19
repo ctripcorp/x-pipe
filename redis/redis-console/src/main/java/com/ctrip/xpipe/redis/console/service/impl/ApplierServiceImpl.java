@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.MathUtil;
@@ -65,6 +66,9 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
 
     @Autowired
     private ClusterMonitorModifiedNotifier monitorNotifier;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     ExecutorService executor;
@@ -354,7 +358,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
             }
         }
 
-        if (type.supportMigration()) {
+        if (metaCache.isDcClusterMigratable(clusterName, dcName)) {
             monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
         }
     }

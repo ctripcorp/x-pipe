@@ -88,6 +88,7 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(),ClusterType.BI_DIRECTION.name()));
+        when(metaCache.anyDcMigratable(anyString())).thenReturn(true);
     }
 
     @Test

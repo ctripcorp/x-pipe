@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
@@ -29,6 +30,9 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     private static final int DEFAULT_HOURS = 1;
 
@@ -61,7 +65,7 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
         Long nonMigrateClustersNum = 0L;
         for (String breakDownDc : migrationReporterConfig.getBreakDownDc()) {
             nonMigrateClustersNum += clusterService.getCountByActiveDcAndClusterType(dcService.find(breakDownDc).getId(), ClusterType.ONE_WAY.name());
-            nonMigrateClustersNum += clusterService.getCountByActiveDcAndClusterType(dcService.find(breakDownDc).getId(), ClusterType.HETERO.name());
+            nonMigrateClustersNum += metaCache.getCountByActiveDcClusterTypeAndAzGroupType(breakDownDc, ClusterType.HETERO.name(), ClusterType.ONE_WAY.name());
         }
         if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;

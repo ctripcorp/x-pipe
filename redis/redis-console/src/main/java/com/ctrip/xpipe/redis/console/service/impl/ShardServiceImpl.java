@@ -533,7 +533,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterType.toString()))
 			notifier.notifyClusterUpdate(clusterName, dcs);
-		if (clusterType.supportMigration()) {
+		if (metaCache.anyDcMigratable(clusterName)) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}
 	}
