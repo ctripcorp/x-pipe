@@ -47,14 +47,14 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
@@ -535,6 +535,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
+				 p.addLast(new IdleStateHandler(180, 180, 180, TimeUnit.SECONDS));
+				 p.addLast(new MyIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager(), keeperConfig.getTrafficReportIntervalMillis()));
@@ -1165,5 +1167,21 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
 		this.replicationStoreManager = replicationStoreManager;
 	}
+
+	class MyIdleHandler extends ChannelInboundHandlerAdapter {
+		@Override
+		public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+			if (evt instanceof IdleStateEvent) {
+				IdleStateEvent e = (IdleStateEvent) evt;
+				if (e.state() == IdleState.ALL_IDLE) {
+					logger.info("[long time no read and writer][close] {}", ctx.channel().remoteAddress());
+					ctx.close();
+				}
+			} else {
+				super.userEventTriggered(ctx, evt);
+			}
+		}
+	}
+
 
 }
