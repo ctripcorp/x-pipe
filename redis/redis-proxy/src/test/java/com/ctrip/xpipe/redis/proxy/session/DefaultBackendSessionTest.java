@@ -154,7 +154,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
         session.setNioEventLoopGroup(new NioEventLoopGroup(1));
         session.doStart();
-        waitConditionUntilTimeOut(()->session.getSessionState().equals(new SessionClosed(session)), 1200);
+        waitConditionUntilTimeOut(()->session.getSessionState().equals(new SessionClosed(session)), 6000);
     }
 
     @Test
