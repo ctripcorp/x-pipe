@@ -365,16 +365,19 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     }
 
     @Test
-    public void testSupportMigration() {
-        Assert.assertTrue(metaCache.isDcClusterMigratable("cluster1", "oy"));
-        Assert.assertTrue(metaCache.isDcClusterMigratable("cluster5", "oy"));
-        Assert.assertFalse(metaCache.isDcClusterMigratable("cluster6", "oy"));
-        Assert.assertFalse(metaCache.isDcClusterMigratable("cluster7", "oy"));
-        Assert.assertTrue(metaCache.anyDcMigratable("cluster1"));
-        Assert.assertTrue(metaCache.anyDcMigratable("cluster5"));
-        Assert.assertFalse(metaCache.anyDcMigratable("cluster6"));
-        Assert.assertFalse(metaCache.anyDcMigratable("cluster7"));
-        Assert.assertEquals(1, metaCache.getCountByActiveDcClusterTypeAndAzGroupType("oy", "HETERO", "ONE_WAY"));
+    public void testGetMigratableClustersCountByActiveDc() {
+        Assert.assertEquals(1, metaCache.getMigratableClustersCountByActiveDc("jq"));
+        Assert.assertEquals(2, metaCache.getMigratableClustersCountByActiveDc("oy"));
+        Assert.assertEquals(0, metaCache.getMigratableClustersCountByActiveDc("fra-aws"));
+    }
+
+    @Test
+    public void testGetAllDcMigratableClustersCnt() {
+        Map<String, Integer> allDcClusters = metaCache.getAllDcMigratableClustersCnt();
+        Assert.assertEquals(3, allDcClusters.size());
+        Assert.assertEquals(1, allDcClusters.get("jq").intValue());
+        Assert.assertEquals(2, allDcClusters.get("oy").intValue());
+        Assert.assertEquals(0, allDcClusters.get("fra-aws").intValue());
     }
 
     protected String getXpipeMetaConfigFile() {

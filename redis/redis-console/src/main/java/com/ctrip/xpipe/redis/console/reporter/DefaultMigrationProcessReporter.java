@@ -23,18 +23,10 @@ import java.util.Set;
 public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalAction implements MigrationReporter{
 
     @Autowired
-    private ClusterService clusterService;
-
-    @Autowired
     private MigrationReporterConfig migrationReporterConfig;
 
     @Autowired
-    private DcService dcService;
-
-    @Autowired
     private MetaCache metaCache;
-
-    private static final int DEFAULT_HOURS = 1;
 
     private static final String DEFAULT_SERVICE = "redis";
 
@@ -64,8 +56,7 @@ public class DefaultMigrationProcessReporter extends AbstractSiteLeaderIntervalA
 
         Long nonMigrateClustersNum = 0L;
         for (String breakDownDc : migrationReporterConfig.getBreakDownDc()) {
-            nonMigrateClustersNum += clusterService.getCountByActiveDcAndClusterType(dcService.find(breakDownDc).getId(), ClusterType.ONE_WAY.name());
-            nonMigrateClustersNum += metaCache.getCountByActiveDcClusterTypeAndAzGroupType(breakDownDc, ClusterType.HETERO.name(), ClusterType.ONE_WAY.name());
+            nonMigrateClustersNum += metaCache.getMigratableClustersCountByActiveDc(breakDownDc);
         }
         if (totalClusters == 0 || nonMigrateClustersNum > totalClusters) {
             totalClusters = nonMigrateClustersNum;

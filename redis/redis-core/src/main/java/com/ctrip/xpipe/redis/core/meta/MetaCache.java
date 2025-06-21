@@ -105,5 +105,8 @@ public interface MetaCache {
 
     boolean anyDcMigratable(String clusterName);
 
-    int getCountByActiveDcClusterTypeAndAzGroupType(String dc, String clusterType, String azGroupType);
+    int getMigratableClustersCountByActiveDc(String activeDc);
+
+    Map<String, Integer> getAllDcMigratableClustersCnt();
+
 }

@@ -749,18 +749,30 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public int getCountByActiveDcClusterTypeAndAzGroupType(String dc, String clusterType, String azGroupType) {
-        if (StringUtil.isEmpty(dc) || StringUtil.isEmpty(clusterType) || StringUtil.isEmpty(azGroupType)) return 0;
+    public int getMigratableClustersCountByActiveDc(String dc) {
+        if (StringUtil.isEmpty(dc)) return 0;
         DcMeta dcMeta = meta.getKey().findDc(dc);
-        int count = 0;
-        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-            if (dc.equalsIgnoreCase(clusterMeta.getActiveDc()) &&
-                    clusterType.equalsIgnoreCase(clusterMeta.getType()) &&
-                    azGroupType.equalsIgnoreCase(clusterMeta.getAzGroupType())) {
-                count++;
+        if (null == dcMeta) return 0;
+
+        int cnt = 0;
+        for (ClusterMeta cluster: dcMeta.getClusters().values()) {
+            if (!dc.equalsIgnoreCase(cluster.getActiveDc())) continue;
+            ClusterType type = ClusterType.lookup(cluster.getType());
+            if (type.equals(HETERO)) {
+                type = ClusterType.lookup(cluster.getAzGroupType());
             }
+            if (type.supportMigration()) cnt++;
         }
-        return count;
+        return cnt;
+    }
+
+    @Override
+    public Map<String, Integer> getAllDcMigratableClustersCnt() {
+        Map<String, Integer> ret = new HashMap<>();
+        for (String dc: meta.getKey().getDcs().keySet()) {
+            ret.put(dc, getMigratableClustersCountByActiveDc(dc));
+        }
+        return ret;
     }
 
     @VisibleForTesting

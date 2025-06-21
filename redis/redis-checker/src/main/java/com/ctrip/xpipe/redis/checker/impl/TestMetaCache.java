@@ -243,8 +243,13 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public int getCountByActiveDcClusterTypeAndAzGroupType(String dc, String clusterType, String azGroupType) {
+    public int getMigratableClustersCountByActiveDc(String activeDc) {
         return 0;
+    }
+
+    @Override
+    public Map<String, Integer> getAllDcMigratableClustersCnt() {
+        return Collections.emptyMap();
     }
 
 }
