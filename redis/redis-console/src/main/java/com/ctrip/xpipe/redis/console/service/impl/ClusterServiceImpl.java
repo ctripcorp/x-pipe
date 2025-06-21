@@ -662,7 +662,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<ClusterTbl> dcClusters = findAllClustersByActiveDcId(activeDc);
 		int count = 0;
 		for (ClusterTbl clusterTbl : dcClusters) {
-			if (ClusterType.lookup(clusterTbl.getClusterType()).supportMigration())
+			if (metaCache.isDcClusterMigratable(clusterTbl.getClusterName(), dcService.find(activeDc).getDcName()))
 				count++;
 		}
 		return count;

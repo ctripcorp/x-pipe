@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -50,6 +51,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected DcService dcService;
     @Autowired
     protected ConsoleConfig consoleConfig;
+    @Autowired
+    protected MetaCache metaCache;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
@@ -417,7 +420,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
         }
 
-        if (type.supportMigration()) {
+        if (metaCache.isDcClusterMigratable(clusterName, dcName)) {
             monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
         }
     }

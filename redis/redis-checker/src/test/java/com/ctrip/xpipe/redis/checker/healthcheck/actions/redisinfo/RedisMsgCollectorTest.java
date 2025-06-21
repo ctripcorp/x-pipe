@@ -44,7 +44,6 @@ public class RedisMsgCollectorTest {
 
         Map<HostPort, RedisMsg> initialMap = new HashMap<>();
         initialMap.put(hostPort, redisMsg);
-//        redisMsgCollector.getRedisMasterMsgMap().put(dcClusterShard.getDcId(), initialMap);
 
         Mockito.when(context.getResult()).thenReturn("used_memory:2048\nmaster_repl_offset:2000\nmaxmemory:1024\nswap_used_db_size:1024\n");
         RedisHealthCheckInstance actionInstance =  Mockito.mock(RedisHealthCheckInstance.class);
@@ -55,20 +54,9 @@ public class RedisMsgCollectorTest {
 
         redisMsgCollector.onAction(context);
 
-        Mockito.when(info.isMaster()).thenReturn(true);
-        Mockito.when(info.getClusterType()).thenReturn(ONE_WAY);
-        Mockito.when(actionInstance.getCheckInfo()).thenReturn(info);
         Mockito.when(context.getResult()).thenReturn(null);
         redisMsgCollector.onAction(context);
 
-
-//        Map<HostPort, RedisMsg> updatedRedisMsgMap = redisMsgCollector.getRedisMasterMsgMap().get(dcClusterShard.getDcId());
-//        Assert.assertNotNull(updatedRedisMsgMap);
-//        Assert.assertTrue(updatedRedisMsgMap.containsKey(hostPort));
-//        RedisMsg updatedRedisMsg = updatedRedisMsgMap.get(hostPort);
-//        Assert.assertEquals(0, updatedRedisMsg.getInPutFlow());
-//        Assert.assertEquals(5120, updatedRedisMsg.getUsedMemory());
-//        Assert.assertEquals(2000, updatedRedisMsg.getOffset());
     }
 
     @Test
@@ -81,7 +69,6 @@ public class RedisMsgCollectorTest {
 
         Map<HostPort, RedisMsg> initialMap = new HashMap<>();
         initialMap.put(hostPort, redisMsg);
-//        redisMsgCollector.getRedisMasterMsgMap().put(dcClusterShard.getDcId(), initialMap);
         HealthCheckInstance actionInstance =  Mockito.mock(HealthCheckInstance.class);
 
         Mockito.when(action.getActionInstance()).thenReturn(actionInstance);
@@ -93,9 +80,6 @@ public class RedisMsgCollectorTest {
 
         redisMsgCollector.stopWatch(action);
 
-//        Map<HostPort, RedisMsg> updatedRedisMsgMap = redisMsgCollector.getRedisMasterMsgMap().get(dcClusterShard.getDcId());
-//        Assert.assertNotNull(updatedRedisMsgMap);
-//        Assert.assertFalse(updatedRedisMsgMap.containsKey(hostPort));
     }
 
 }

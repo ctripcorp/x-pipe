@@ -364,6 +364,22 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertEquals(cntMap.get("oy").intValue(), 2);
     }
 
+    @Test
+    public void testGetMigratableClustersCountByActiveDc() {
+        Assert.assertEquals(1, metaCache.getMigratableClustersCountByActiveDc("jq"));
+        Assert.assertEquals(2, metaCache.getMigratableClustersCountByActiveDc("oy"));
+        Assert.assertEquals(0, metaCache.getMigratableClustersCountByActiveDc("fra-aws"));
+    }
+
+    @Test
+    public void testGetAllDcMigratableClustersCnt() {
+        Map<String, Integer> allDcClusters = metaCache.getAllDcMigratableClustersCnt();
+        Assert.assertEquals(3, allDcClusters.size());
+        Assert.assertEquals(1, allDcClusters.get("jq").intValue());
+        Assert.assertEquals(2, allDcClusters.get("oy").intValue());
+        Assert.assertEquals(0, allDcClusters.get("fra-aws").intValue());
+    }
+
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }

@@ -60,6 +60,12 @@
 				<redis ip="10.0.0.2" port="6479" master="" />
 			</shard>
 		</cluster>
+		<cluster id="cluster5" db-id="1" type="HETERO" az-group-type="ONE_WAY" active-dc="oy">
+		</cluster>
+		<cluster id="cluster6" db-id="1" type="HETERO" az-group-type="SINGLE_DC" active-dc="oy">
+		</cluster>
+		<cluster id="cluster7" db-id="1" type="SINGLE_DC" az-group-type="" active-dc="oy">
+		</cluster>
 		<keeperContainers>
 			<keeperContainer id="3" ip="1.1.1.3" port="8080" az_id="1234567890123456789"/>
 			<keeperContainer id="4" ip="1.1.1.4" port="8080" az_id="1234567890123456789"/>
@@ -70,6 +76,9 @@
 		</applierContainers>
 	</dc>
 	<dc id="fra-aws" zone="FRA">
-
+		<cluster id="cluster5" db-id="1" type="HETERO" az-group-type="SINGLE_DC" active-dc="fra-aws">
+		</cluster>
+		<cluster id="cluster6" db-id="1" type="HETERO" az-group-type="SINGLE_DC" active-dc="fra-aws">
+		</cluster>
 	</dc>
 </xpipe>

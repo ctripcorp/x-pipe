@@ -24,7 +24,7 @@ public class MigrationProgress {
 
     private long avgMigrationSeconds;
 
-    private Map<String, Long> activeDcs;
+    private Map<String, Integer> activeDcs;
 
     private Map<MigrationStatus, Long> migrationStatuses;
 
@@ -116,11 +116,11 @@ public class MigrationProgress {
         this.avgMigrationSeconds = avgMigrationSeconds;
     }
 
-    public Map<String, Long> getActiveDcs() {
+    public Map<String, Integer> getActiveDcs() {
         return activeDcs;
     }
 
-    public void setActiveDcs(Map<String, Long> activeDcs) {
+    public void setActiveDcs(Map<String, Integer> activeDcs) {
         this.activeDcs = activeDcs;
     }
 
