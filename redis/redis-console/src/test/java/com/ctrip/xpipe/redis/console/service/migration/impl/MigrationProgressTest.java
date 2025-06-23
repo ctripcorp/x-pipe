@@ -31,10 +31,10 @@ public class MigrationProgressTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(1, progress.getProcess());
         Assert.assertEquals(1, progress.getInit());
         Assert.assertEquals(0, progress.getFail());
-        Assert.assertEquals(new HashMap<String, Long>() {{
-            put("jq", 2L);
-            put("oy", 1L);
-            put("fra", 0L);
+        Assert.assertEquals(new HashMap<String, Integer>() {{
+            put("jq", 2);
+            put("oy", 1);
+            put("fra", 0);
         }}, progress.getActiveDcs());
         Assert.assertEquals(new HashMap<MigrationStatus, Long>() {{
             put(MigrationStatus.Success, 1L);

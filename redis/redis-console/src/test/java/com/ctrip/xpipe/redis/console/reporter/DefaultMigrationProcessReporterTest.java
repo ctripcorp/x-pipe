@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,12 +26,6 @@ public class DefaultMigrationProcessReporterTest {
     @InjectMocks
     DefaultMigrationProcessReporter migrationReporter;
 
-    @Mock
-    ClusterService clusterService;
-
-    @Mock
-    DcService dcService;
-
     @Captor
     ArgumentCaptor<MigrationProcessReportModel> migrationProcessReportModelArgumentCaptor;
 
@@ -43,15 +38,14 @@ public class DefaultMigrationProcessReporterTest {
     @Mock
     DefaultHttpService httpService;
 
-
-    @Mock
-    private CrossDcClusterServer clusterServer;
-
     @Mock
     protected ConsoleConfig consoleConfig;
 
     @Mock
     protected MigrationReporterConfig migrationReporterConfig;
+
+    @Mock
+    private MetaCache metaCache;
 
     @Before
     public void before() {
@@ -61,12 +55,13 @@ public class DefaultMigrationProcessReporterTest {
         Mockito.when(restTemplate.postForEntity(Mockito.anyString(),
                 migrationProcessReportModelArgumentCaptor.capture(), Mockito.eq(NocReportResponseModel.class)))
                 .thenReturn(new ResponseEntity<NocReportResponseModel>(new NocReportResponseModel().setCode(200), HttpStatus.OK));
-        Mockito.when(dcService.find(Mockito.anyString())).thenReturn(new DcTbl());
+        DcTbl dcTbl = new DcTbl();
+        dcTbl.setDcName("jq");
     }
 
     @Test
     public void testReportSuccess() {
-        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(1000L);
+        Mockito.when(metaCache.getMigratableClustersCountByActiveDc(Mockito.anyString())).thenReturn(2000);
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(1))
                 .postForEntity(Mockito.anyString(),
@@ -76,7 +71,7 @@ public class DefaultMigrationProcessReporterTest {
         Assert.assertEquals(2000, value.getObjectCount());
         Assert.assertEquals("redis", value.getService());
 
-        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(1001L);
+        Mockito.when(metaCache.getMigratableClustersCountByActiveDc(Mockito.anyString())).thenReturn(2002);
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(2))
                 .postForEntity(Mockito.anyString(),
@@ -85,7 +80,7 @@ public class DefaultMigrationProcessReporterTest {
         Assert.assertEquals(0, value.getProcess());
         Assert.assertEquals(2002, value.getObjectCount());
 
-        Mockito.when(clusterService.getCountByActiveDcAndClusterType(Mockito.anyLong(), Mockito.anyString())).thenReturn(400L);
+        Mockito.when(metaCache.getMigratableClustersCountByActiveDc(Mockito.anyString())).thenReturn(800);
         migrationReporter.doAction();
         Mockito.verify(restTemplate, Mockito.times(3))
                 .postForEntity(Mockito.anyString(),

@@ -24,10 +24,9 @@ import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
 
 /**
  * @author lishanglin
@@ -718,6 +717,62 @@ public abstract class AbstractMetaCache implements MetaCache {
             clusterCntMap.put(dcMeta.getId(), cnt);
         }
         return clusterCntMap;
+    }
+
+    @Override
+    public boolean isDcClusterMigratable(String clusterName, String dc) {
+        if (StringUtil.isEmpty(clusterName) || StringUtil.isEmpty(dc)) return false;
+        DcMeta dcMeta = meta.getKey().getDcs().get(dc);
+        if (dcMeta == null) return false;
+        ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+        if (clusterMeta == null) return false;
+        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+        if (clusterType != HETERO) {
+            return clusterType.supportMigration();
+        }
+        return ClusterType.lookup(clusterMeta.getAzGroupType()).supportMigration();
+    }
+
+    @Override
+    public boolean anyDcMigratable(String clusterName) {
+        if (StringUtil.isEmpty(clusterName)) return false;
+        for (DcMeta dcMeta : meta.getKey().getDcs().values()) {
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta == null) continue;
+            ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+            if ((clusterType != HETERO && clusterType.supportMigration())
+                    || (!StringUtil.isEmpty(clusterMeta.getAzGroupType()) && ClusterType.lookup(clusterMeta.getAzGroupType()).supportMigration())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public int getMigratableClustersCountByActiveDc(String dc) {
+        if (StringUtil.isEmpty(dc)) return 0;
+        DcMeta dcMeta = meta.getKey().findDc(dc);
+        if (null == dcMeta) return 0;
+
+        int cnt = 0;
+        for (ClusterMeta cluster: dcMeta.getClusters().values()) {
+            if (!dc.equalsIgnoreCase(cluster.getActiveDc())) continue;
+            ClusterType type = ClusterType.lookup(cluster.getType());
+            if (type.equals(HETERO)) {
+                type = ClusterType.lookup(cluster.getAzGroupType());
+            }
+            if (type.supportMigration()) cnt++;
+        }
+        return cnt;
+    }
+
+    @Override
+    public Map<String, Integer> getAllDcMigratableClustersCnt() {
+        Map<String, Integer> ret = new HashMap<>();
+        for (String dc: meta.getKey().getDcs().keySet()) {
+            ret.put(dc, getMigratableClustersCountByActiveDc(dc));
+        }
+        return ret;
     }
 
     @VisibleForTesting
