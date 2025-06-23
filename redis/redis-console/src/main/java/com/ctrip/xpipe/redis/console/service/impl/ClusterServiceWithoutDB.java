@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
-import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
 import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
@@ -16,8 +15,6 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -42,12 +39,6 @@ public class ClusterServiceWithoutDB implements ClusterService {
 
     @Autowired
     private ConsoleConfig config;
-
-    @Autowired
-    private MetaCache metaCache;
-
-    @Autowired
-    private DcCache dcCache;
 
     @PostConstruct
     public void init() {
@@ -183,39 +174,6 @@ public class ClusterServiceWithoutDB implements ClusterService {
     @Override
     public void updateClusterTag(String clusterName, String clusterTag) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Long getCountByActiveDc(long activeDcId) {
-        return Long.valueOf(findClustersWithOrgInfoByActiveDcId(activeDcId).size());
-    }
-
-    @Override
-    public Map<String, Long> getAllCountByActiveDc() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Map<String, Long> getMigratableClustersCountByActiveDc() {
-        List<DcTbl> dcs = dcService.findAllDcs();
-        Map<String, Long> counts = new HashMap<>();
-
-        dcs.forEach(dcTbl -> {
-            counts.put(dcTbl.getDcName(), getMigratableClustersCountByActiveDcId(dcTbl.getId()));
-        });
-
-        return counts;
-    }
-
-    @Override
-    public Long getCountByActiveDcAndClusterType(long activeDc, String clusterType) {
-        long result = 0;
-        for(ClusterTbl clusterTbl : allClusters.getData()) {
-            if(StringUtil.trimEquals(clusterTbl.getClusterType(), clusterType) && activeDc == clusterTbl.getId()) {
-                result++;
-            }
-        }
-        return result;
     }
 
     @Override
@@ -419,13 +377,4 @@ public class ClusterServiceWithoutDB implements ClusterService {
         throw new UnsupportedOperationException();
     }
 
-    private long getMigratableClustersCountByActiveDcId(long activeDc) {
-        List<ClusterTbl> dcClusters = findClustersWithOrgInfoByActiveDcId(activeDc);
-        int count = 0;
-        for (ClusterTbl clusterTbl : dcClusters) {
-            if (metaCache.isDcClusterMigratable(clusterTbl.getClusterName(), dcCache.find(activeDc).getDcName()))
-                count++;
-        }
-        return count;
-    }
 }

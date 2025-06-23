@@ -266,38 +266,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public Map<String, Long> getAllCountByActiveDc() {
-		List<DcTbl> dcs = dcService.findAllDcs();
-		Map<String, Long> counts = new HashMap<>();
-
-		dcs.forEach(dcTbl -> {
-			counts.put(dcTbl.getDcName(), getCountByActiveDc(dcTbl.getId()));
-		});
-
-		return counts;
-	}
-
-	@Override
-	public Long getCountByActiveDc(long activeDc) {
-		return queryHandler.handleQuery(new DalQuery<Long>() {
-			@Override
-			public Long doQuery() throws DalException {
-				return dao.countByActiveDc(activeDc, ClusterTblEntity.READSET_COUNT).getCount();
-			}
-		});
-	}
-
-	@Override
-	public Long getCountByActiveDcAndClusterType(long activeDc, String clusterType) {
-		return queryHandler.handleQuery(new DalQuery<Long>() {
-			@Override
-			public Long doQuery() throws DalException {
-				return dao.countByActiveDcAndClusterType(activeDc, clusterType, ClusterTblEntity.READSET_COUNT).getCount();
-			}
-		});
-	}
-
-	@Override
 	public Long getAllCount() {
 		return queryHandler.handleQuery(new DalQuery<Long>() {
 			@Override
@@ -644,32 +612,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			clusterTbl.setOrganizationInfo(null);
 		}
 		return clusterTbl;
-	}
-
-	@Override
-	public Map<String, Long> getMigratableClustersCountByActiveDc() {
-		List<DcTbl> dcs = dcService.findAllDcs();
-		Map<String, Long> counts = new HashMap<>();
-
-		dcs.forEach(dcTbl -> {
-			counts.put(dcTbl.getDcName(), getMigratableClustersCountByActiveDcId(dcTbl.getId()));
-		});
-
-		return counts;
-	}
-
-	public long getMigratableClustersCountByActiveDcId(long activeDc) {
-		List<ClusterTbl> dcClusters = findAllClustersByActiveDcId(activeDc);
-		int count = 0;
-		for (ClusterTbl clusterTbl : dcClusters) {
-			if (metaCache.isDcClusterMigratable(clusterTbl.getClusterName(), dcService.find(activeDc).getDcName()))
-				count++;
-		}
-		return count;
-	}
-
-	public List<ClusterTbl> findAllClustersByActiveDcId(long activeDc) {
-		return clusterDao.findClustersByActiveDcId(activeDc);
 	}
 
 	@Override

@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClu
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface ClusterService {
@@ -30,10 +29,6 @@ public interface ClusterService {
 	List<String> findAllClusterNames();
 	String findClusterTag(String clusterName);
 	void updateClusterTag(String clusterName, String clusterTag);
-	Long getCountByActiveDc(long activeDcId);
-	Map<String, Long> getAllCountByActiveDc();
-	Map<String, Long> getMigratableClustersCountByActiveDc();
-    Long getCountByActiveDcAndClusterType(long activeDc, String clusterType);
     Long getAllCount();
 	ClusterDTO getCluster(String clusterName);
 	List<ClusterDTO> getClusters(String clusterType);
