@@ -69,9 +69,11 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void attachRateLimiter(SyncRateLimiter rateLimiter);
 
-	Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet);
+	Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) throws IOException;
 
-	Pair<Long, GtidSet> locateLastPoint();
+	Pair<Long, GtidSet> locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException;
+
+	Pair<Long, GtidSet> locateTailOfCmd();
 
 	GtidSet getIndexGtidSet();
 

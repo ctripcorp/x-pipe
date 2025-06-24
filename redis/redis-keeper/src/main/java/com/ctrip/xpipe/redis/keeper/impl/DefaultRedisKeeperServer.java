@@ -31,11 +31,9 @@ import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -267,8 +265,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public XSyncContinue locateLastPoint() {
-		return getCurrentReplicationStore().locateLastPoint();
+	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws Exception {
+		return getCurrentReplicationStore().locateContinueGtidSetWithFallbackToEnd(gtidSet);
+	}
+
+	@Override
+	public XSyncContinue locateTailOfCmd() {
+		return getCurrentReplicationStore().locateTailOfCmd();
 	}
 
 	@Override

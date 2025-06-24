@@ -651,19 +651,19 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) {
-        try {
-            return indexStore.locateContinueGtidSet(gtidSet);
-        } catch (Exception e) {
-            getLogger().error("fail to locate", e);
-            return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
-        }
+    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) throws IOException {
+        return indexStore.locateContinueGtidSet(gtidSet);
     }
 
     @Override
-    public Pair<Long, GtidSet> locateLastPoint() {
+    public Pair<Long, GtidSet> locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException {
+        return indexStore.locateGtidSetWithFallbackToEnd(gtidSet);
+    }
+
+    @Override
+    public Pair<Long, GtidSet> locateTailOfCmd() {
         if(indexStore != null) {
-            return this.indexStore.locateLastPoint();
+            return this.indexStore.locateTailOfCmd();
         }
         return null;
     }

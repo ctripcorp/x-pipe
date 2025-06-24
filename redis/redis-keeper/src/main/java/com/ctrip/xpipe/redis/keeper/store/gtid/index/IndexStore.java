@@ -92,7 +92,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         }
     }
 
-    public synchronized Pair<Long, GtidSet> locateLastPoint() {
+    public synchronized Pair<Long, GtidSet> locateTailOfCmd() {
         return new Pair<>(cmdWriter.totalLength(), this.getIndexGtidSet());
     }
 
@@ -113,13 +113,21 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         }
     }
 
-    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws Exception {
+    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
         this.indexWriter.saveIndexEntry();
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
             return continuePoint;
         }
+    }
+
+    public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
+        Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
+        if(continuePoint.getKey() == -1) {
+            continuePoint = locateTailOfCmd();
+        }
+        return continuePoint;
     }
 
     public synchronized GtidSet getIndexGtidSet() {

@@ -103,7 +103,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     long offset = keeperRepl.getEndOffset() + 1;
                     action = SyncAction.Continue(curStage, curStage.getReplId(), offset).markKeeperPartial();
                 } else {
-                    XSyncContinue xsyncCont = redisKeeperServer.locateLastPoint();
+                    XSyncContinue xsyncCont = redisKeeperServer.locateTailOfCmd();
                     action = SyncAction.XContinue(curStage, xsyncCont.getContinueGtidSet().union(curStage.getGtidLost()),
                             xsyncCont.getBacklogOffset(), null).markKeeperPartial();
                 }
@@ -125,11 +125,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 return anaPSync(request, curStage, keeperRepl, keeperConfig);
             } else {
-                XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSet(request.slaveGtidSet);
-                if(xsyncCont.getBacklogOffset() == -1){
-                    // to file tail
-                    xsyncCont = redisKeeperServer.locateLastPoint();
-                }
+                XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSetWithFallbackToEnd(request.slaveGtidSet);
                 return anaXSync(request, curStage, xsyncCont, keeperRepl, keeperConfig);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
