@@ -19,7 +19,7 @@ public interface DcService {
 	Map<Long, String> dcNameMap();
     Map<String, Long> dcNameIdMap();
     Map<String, Long> dcNameZoneMap();
-	List<DcListDcModel> findAllDcsRichInfo();
+	List<DcListDcModel> findAllDcsRichInfo(boolean isCountTypeInHetero);
 
 	void insertWithPartField(long zoneId, String dcName, String description);
 

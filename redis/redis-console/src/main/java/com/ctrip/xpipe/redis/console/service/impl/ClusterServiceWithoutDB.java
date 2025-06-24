@@ -346,7 +346,7 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
-    public List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType) {
+    public List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType, boolean isCountTypeInHetero) {
         return Collections.emptyList();
     }
 
@@ -356,7 +356,7 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
-    public List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType) {
+    public List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType, boolean isCountTypeInHetero) {
         return Collections.emptyList();
     }
 

@@ -129,7 +129,7 @@ public class DcServiceWithoutDB implements DcService {
     }
 
     @Override
-    public List<DcListDcModel> findAllDcsRichInfo() {
+    public List<DcListDcModel> findAllDcsRichInfo(boolean isCountTypeInHetero) {
         throw new UnsupportedOperationException();
     }
 

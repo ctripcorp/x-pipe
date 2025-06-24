@@ -14,10 +14,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -158,6 +155,34 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
         shardMeta22.addRedis(new RedisMeta().setIp("127.0.0.3").setPort(6380));
         shardMeta22.addRedis(new RedisMeta().setIp("127.0.0.4").setPort(6380));
 
+        String cluster3 = "cluster3";
+        ClusterMeta clusterMeta3 = new ClusterMeta(cluster3).setType("HETERO");
+        clusterMeta3.setParent(jqDc);
+        jqDc.addCluster(clusterMeta3);
+        clusterMeta3.setActiveDc("jq");
+        clusterMeta3.setBackupDcs("oy");
+        clusterMeta3.setAzGroupType("ONE_WAY");
+
+        String cluster4 = "cluster3";
+        ClusterMeta clusterMeta4 = new ClusterMeta(cluster4).setType("HETERO");
+        clusterMeta4.setParent(oyDc);
+        oyDc.addCluster(clusterMeta4);
+        clusterMeta4.setActiveDc("jq");
+        clusterMeta4.setBackupDcs("oy");
+        clusterMeta4.setAzGroupType("SINGLE_DC");
+
+        ShardMeta shardMeta3 = new ShardMeta("shard3");
+        shardMeta3.setParent(clusterMeta3);
+        clusterMeta3.addShard(shardMeta3);
+        shardMeta3.addRedis(new RedisMeta().setIp("127.0.0.1").setPort(6380));
+        shardMeta3.addRedis(new RedisMeta().setIp("127.0.0.2").setPort(6380));
+
+        ShardMeta shardMeta4 = new ShardMeta("shard4");
+        shardMeta4.setParent(clusterMeta4);
+        clusterMeta4.addShard(shardMeta4);
+        shardMeta4.addRedis(new RedisMeta().setIp("127.0.0.3").setPort(6380));
+        shardMeta4.addRedis(new RedisMeta().setIp("127.0.0.4").setPort(6380));
+
         xpipeMeta.addDc(jqDc).addDc(oyDc);
         return xpipeMeta;
     }
@@ -179,18 +204,17 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testFindAllDcsRichinfo() throws Exception {
-
         Map<String, DcMeta> dcMetaMap = new HashMap<>();
         dcMetaMap.put("jq".toUpperCase(), xpipeMeta.findDc("jq"));
         dcMetaMap.put("oy".toUpperCase(), xpipeMeta.findDc("oy"));
         when(dcMetaService.getAllDcMetas()).thenReturn(dcMetaMap);
         dcService = spy(dcService);
         Mockito.doReturn(toBuildTbl()).when(dcService).findAllDcs();
-        List<DcListDcModel> result = dcService.findAllDcsRichInfo();
+        List<DcListDcModel> result = dcService.findAllDcsRichInfo(false);
         Assert.assertEquals(2, result.size());
         result.forEach(dcListDcModel -> {
             if (dcListDcModel.getDcName() == "jq") {
-                Assert.assertEquals(5, dcListDcModel.getClusterTypes().size());
+                Assert.assertEquals(6, dcListDcModel.getClusterTypes().size());
                 dcListDcModel.getClusterTypes().forEach(model -> {
                     if (model.getClusterType().equals(ClusterType.ONE_WAY.name())) {
                         Assert.assertEquals(4, model.getRedisCount());
@@ -208,17 +232,21 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
                         Assert.assertEquals(2, model.getRedisCount());
                         Assert.assertEquals(1, model.getClusterCount());
                         Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.HETERO.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(1, model.getClusterInActiveDcCount());
                     } else if (model.getClusterType().equals("")) {
-                        Assert.assertEquals(10, model.getRedisCount());
-                        Assert.assertEquals(5, model.getClusterCount());
-                        Assert.assertEquals(3, model.getClusterInActiveDcCount());
+                        Assert.assertEquals(12, model.getRedisCount());
+                        Assert.assertEquals(6, model.getClusterCount());
+                        Assert.assertEquals(4, model.getClusterInActiveDcCount());
                     } else {
                         Assert.fail("no cluster type matched");
                     }
                 });
 
             } else if (dcListDcModel.getDcName() == "oy") {
-                Assert.assertEquals(4, dcListDcModel.getClusterTypes().size());
+                Assert.assertEquals(5, dcListDcModel.getClusterTypes().size());
                 dcListDcModel.getClusterTypes().forEach(model -> {
                     if (model.getClusterType().equals(ClusterType.ONE_WAY.name())) {
                         Assert.assertEquals(4, model.getRedisCount());
@@ -232,9 +260,91 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest {
                         Assert.assertEquals(2, model.getRedisCount());
                         Assert.assertEquals(1, model.getClusterCount());
                         Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.HETERO.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
                     } else if (model.getClusterType().equals("")) {
-                        Assert.assertEquals(8, model.getRedisCount());
-                        Assert.assertEquals(4, model.getClusterCount());
+                        Assert.assertEquals(10, model.getRedisCount());
+                        Assert.assertEquals(5, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else {
+                        Assert.fail("no cluster type matched");
+                    }
+                });
+            }
+        });
+    }
+
+    @Test
+    public void testFindAllDcsRichinfoForHetero() throws Exception {
+        Map<String, DcMeta> dcMetaMap = new HashMap<>();
+        dcMetaMap.put("jq".toUpperCase(), xpipeMeta.findDc("jq"));
+        dcMetaMap.put("oy".toUpperCase(), xpipeMeta.findDc("oy"));
+        when(dcMetaService.getAllDcMetas()).thenReturn(dcMetaMap);
+        dcService = spy(dcService);
+        Mockito.doReturn(toBuildTbl()).when(dcService).findAllDcs();
+        List<DcListDcModel> result = dcService.findAllDcsRichInfo(true);
+        Assert.assertEquals(2, result.size());
+        result.forEach(dcListDcModel -> {
+            if (dcListDcModel.getDcName() == "jq") {
+                Assert.assertEquals(6, dcListDcModel.getClusterTypes().size());
+                dcListDcModel.getClusterTypes().forEach(model -> {
+                    if (model.getClusterType().equals(ClusterType.ONE_WAY.name())) {
+                        Assert.assertEquals(6, model.getRedisCount());
+                        Assert.assertEquals(3, model.getClusterCount());
+                        Assert.assertEquals(3, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.SINGLE_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(1, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.LOCAL_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.CROSS_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.HETERO.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(1, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals("")) {
+                        Assert.assertEquals(12, model.getRedisCount());
+                        Assert.assertEquals(6, model.getClusterCount());
+                        Assert.assertEquals(4, model.getClusterInActiveDcCount());
+                    } else {
+                        Assert.fail("no cluster type matched");
+                    }
+                });
+
+            } else if (dcListDcModel.getDcName() == "oy") {
+                Assert.assertEquals(6, dcListDcModel.getClusterTypes().size());
+                dcListDcModel.getClusterTypes().forEach(model -> {
+                    if (model.getClusterType().equals(ClusterType.ONE_WAY.name())) {
+                        Assert.assertEquals(4, model.getRedisCount());
+                        Assert.assertEquals(2, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.SINGLE_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.LOCAL_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.CROSS_DC.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals(ClusterType.HETERO.name())) {
+                        Assert.assertEquals(2, model.getRedisCount());
+                        Assert.assertEquals(1, model.getClusterCount());
+                        Assert.assertEquals(0, model.getClusterInActiveDcCount());
+                    } else if (model.getClusterType().equals("")) {
+                        Assert.assertEquals(10, model.getRedisCount());
+                        Assert.assertEquals(5, model.getClusterCount());
                         Assert.assertEquals(0, model.getClusterInActiveDcCount());
                     } else {
                         Assert.fail("no cluster type matched");

@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
@@ -141,7 +142,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
-	public List<DcListDcModel> findAllDcsRichInfo(){
+	public List<DcListDcModel> findAllDcsRichInfo(boolean isCountTypeInHetero){
 		try {
 			List<DcTbl> dcTbls = findAllDcs();
 			if (dcTbls == null || dcTbls.size() == 0)
@@ -155,15 +156,28 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				DcMeta dcMeta = dcMetaMap.get(dcTbl.getDcName().toUpperCase());
 
 				Map<String, List<ClusterMeta>> typeClusters = new HashMap<>();
+				Map<String, List<ClusterMeta>> duplicateTypeClusters = new HashMap<>();
 				for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 					String type = clusterMeta.getType().toUpperCase();
 					typeClusters.putIfAbsent(type, new ArrayList<>());
 					typeClusters.get(type).add(clusterMeta);
+
+					if (isCountTypeInHetero && ClusterType.lookup(type) == ClusterType.HETERO) {
+						String azGroupType = clusterMeta.getAzGroupType();
+						if (!StringUtils.isEmpty(azGroupType)) {
+							typeClusters.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
+							duplicateTypeClusters.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
+						}
+					}
 				}
 
 				List<DcClusterTypeStatisticsModel> dcClusterTypeClustersAnalyzers = new ArrayList<>();
 				dcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, typeClusters));
-				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers));
+
+				List<DcClusterTypeStatisticsModel> duplicateDcClusterTypeClustersAnalyzers = new ArrayList<>();
+				duplicateDcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, duplicateTypeClusters));
+
+				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers, duplicateDcClusterTypeClustersAnalyzers));
 
 				result.add(new DcListDcModel().setDcName(dcTbl.getDcName()).setDcDescription(dcTbl.getDcDescription()).setDcId(dcTbl.getId()).setClusterTypes(dcClusterTypeClustersAnalyzers));
 			});
@@ -240,7 +254,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return allTypes;
 	}
 
-	private DcClusterTypeStatisticsModel totalStatistics(String dc, List<DcClusterTypeStatisticsModel> allTypes) {
+	private DcClusterTypeStatisticsModel totalStatistics(String dc, List<DcClusterTypeStatisticsModel> allTypes, List<DcClusterTypeStatisticsModel> duplicateTypes) {
 		int allTypeClusterCount = 0, allTypeRedisCount = 0, allTypeKeeperCount = 0, allTypeClusterInActiveDcCount = 0, allTypeKeeperContainerCount = 0;
 		for (DcClusterTypeStatisticsModel model : allTypes) {
 			allTypeClusterCount += model.getClusterCount();
@@ -248,6 +262,13 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			allTypeKeeperCount += model.getKeeperCount();
 			allTypeClusterInActiveDcCount += model.getClusterInActiveDcCount();
 			allTypeKeeperContainerCount += model.getKeeperContainerCount();
+		}
+		for (DcClusterTypeStatisticsModel model : duplicateTypes) {
+			allTypeClusterCount -= model.getClusterCount();
+			allTypeRedisCount -= model.getRedisCount();
+			allTypeKeeperCount -= model.getKeeperCount();
+			allTypeClusterInActiveDcCount -= model.getClusterInActiveDcCount();
+			allTypeKeeperContainerCount -= model.getKeeperContainerCount();
 		}
 		return new DcClusterTypeStatisticsModel().
 				setClusterType("").
