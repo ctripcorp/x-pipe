@@ -125,6 +125,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
     public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
         Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
         if(continuePoint.getKey() == -1) {
+            log.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
             continuePoint = locateTailOfCmd();
         }
         return continuePoint;
