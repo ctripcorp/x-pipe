@@ -140,17 +140,27 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return new Pair<>(rdbStore,rordbStore);
 	}
 
-	@Override
-	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
-		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
-        GtidSet begin = getBeginGtidSetAndLost().getKey();
+	protected XSyncContinue buildXSyncContinue(Pair<Long, GtidSet> continuePoint) {
+		GtidSet begin = getBeginGtidSetAndLost().getKey();
 		GtidSet continueGtidSet = continuePoint.getValue().union(begin);
 		return new XSyncContinue(continueGtidSet, continuePoint.getKey());
 	}
 
 	@Override
-	public XSyncContinue locateLastPoint() {
-		Pair<Long, GtidSet> lastPoint = cmdStore.locateLastPoint();
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws IOException {
+		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSet(gtidSet);
+        return buildXSyncContinue(continuePoint);
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException {
+		Pair<Long, GtidSet> continuePoint = cmdStore.locateContinueGtidSetWithFallbackToEnd(gtidSet);
+		return buildXSyncContinue(continuePoint);
+	}
+
+	@Override
+	public XSyncContinue locateTailOfCmd() {
+		Pair<Long, GtidSet> lastPoint = cmdStore.locateTailOfCmd();
 		GtidSet begin = getBeginGtidSetAndLost().getKey();
 		GtidSet continueGtidSet = lastPoint.getValue().union(begin);
 		return new XSyncContinue(continueGtidSet, lastPoint.getKey());

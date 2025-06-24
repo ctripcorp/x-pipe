@@ -216,7 +216,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
                 new GtidSet("A:1-10"), new GtidSet("B:1-5"));
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
         Mockito.when(keeperRepl.getEndGtidSet()).thenReturn(new GtidSet("C:1-15"));
-        Mockito.when(keeperServer.locateLastPoint())
+        Mockito.when(keeperServer.locateTailOfCmd())
                 .thenReturn(new XSyncContinue(new GtidSet("B:1-5,C:1-15"), 1000));
 
         GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.psync("?", -2);

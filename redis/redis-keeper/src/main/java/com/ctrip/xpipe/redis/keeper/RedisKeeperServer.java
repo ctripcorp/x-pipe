@@ -32,7 +32,9 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 
-	XSyncContinue locateLastPoint();
+	XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws Exception;
+
+	XSyncContinue locateTailOfCmd();
 
 	void switchToPSync(String replId, long replOff) throws IOException;
 

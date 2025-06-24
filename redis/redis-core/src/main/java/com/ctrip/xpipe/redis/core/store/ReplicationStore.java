@@ -17,8 +17,9 @@ import java.io.IOException;
 public interface ReplicationStore extends Closeable, Destroyable {
 	public static String BACKUP_REPLICATION_STORE_REDIS_MASTER_META_NAME = "BACKUP_REDIS_MASTER";
 
-	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
-	XSyncContinue locateLastPoint();
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws IOException;
+	XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException;
+	XSyncContinue locateTailOfCmd();
 
 	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid) throws IOException;
 	void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException;

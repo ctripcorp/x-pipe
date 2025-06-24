@@ -234,7 +234,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public XSyncContinue locateLastPoint() {
+	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public XSyncContinue locateTailOfCmd() {
 		throw new UnsupportedOperationException();
 	}
 
