@@ -5,10 +5,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -29,8 +26,8 @@ public class DcController extends AbstractConsoleController{
 		return valueOrEmptySet(DcTbl.class, dcService.findAllDcBasic());
 	}
 
-	@RequestMapping(value = {"/dcs/all/richInformation", "/dcs/all/richInformation/{isCountTypeInHetero}"}, method = RequestMethod.GET)
-	public List<DcListDcModel> findAllDcsRichInfo(@PathVariable(required = false) boolean isCountTypeInHetero){
+	@RequestMapping(value = "/dcs/all/richInformation", method = RequestMethod.GET)
+	public List<DcListDcModel> findAllDcsRichInfo(@RequestParam(required = false, defaultValue = "true") boolean isCountTypeInHetero){
 		return valueOrEmptySet(DcListDcModel.class, dcService.findAllDcsRichInfo(isCountTypeInHetero));
 	}
 }

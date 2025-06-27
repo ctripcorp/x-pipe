@@ -245,8 +245,8 @@ public class ClusterController extends AbstractConsoleController {
         return clusterService.findAllClusterByDcNameBind(dcName);
     }
 
-    @RequestMapping(value = {"/clusters/allBind/{dcName}/{clusterType}", "/clusters/allBind/{dcName}/{clusterType}/{isCountTypeInHetero}"}, method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByDcNameBindAndType(@PathVariable String dcName, @PathVariable String clusterType, @PathVariable(required = false) boolean isCountTypeInHetero) {
+    @RequestMapping(value = "/clusters/allBind/{dcName}/{clusterType}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByDcNameBindAndType(@PathVariable String dcName, @PathVariable String clusterType, @RequestParam(required = false, defaultValue = "true") boolean isCountTypeInHetero) {
         logger.info("[findClustersByDcNameBindAndType]dcName: {}, clusterType: {}, isCountTypeInHetero: {}", dcName, clusterType, isCountTypeInHetero);
         return clusterService.findAllClusterByDcNameBindAndType(dcName, clusterType, isCountTypeInHetero);
     }
@@ -257,8 +257,8 @@ public class ClusterController extends AbstractConsoleController {
         return clusterService.findActiveClustersByDcName(dcName);
     }
 
-    @RequestMapping(value = {"/clusters/activeDc/{dcName}/{clusterType}","/clusters/activeDc/{dcName}/{clusterType}/{isCountTypeInHetero}"}, method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByActiveDcNameAndType(@PathVariable String dcName, @PathVariable String clusterType, @PathVariable(required = false) boolean isCountTypeInHetero) {
+    @RequestMapping(value = "/clusters/activeDc/{dcName}/{clusterType}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByActiveDcNameAndType(@PathVariable String dcName, @PathVariable String clusterType, @RequestParam(required = false, defaultValue = "true") boolean isCountTypeInHetero) {
         logger.info("[findClustersByActiveDcNameAndType]dcName: {}, clusterType: {}, isCountTypeInHetero: {}", dcName, clusterType, isCountTypeInHetero);
         return clusterService.findActiveClustersByDcNameAndType(dcName, clusterType, isCountTypeInHetero);
     }

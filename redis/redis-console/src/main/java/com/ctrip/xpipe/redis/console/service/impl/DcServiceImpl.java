@@ -156,7 +156,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				DcMeta dcMeta = dcMetaMap.get(dcTbl.getDcName().toUpperCase());
 
 				Map<String, List<ClusterMeta>> typeClusters = new HashMap<>();
-				Map<String, List<ClusterMeta>> duplicateTypeClusters = new HashMap<>();
+				Map<String, List<ClusterMeta>> duplicatedClustersToRemove = new HashMap<>();
 				for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 					String type = clusterMeta.getType().toUpperCase();
 					typeClusters.putIfAbsent(type, new ArrayList<>());
@@ -166,7 +166,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 						String azGroupType = clusterMeta.getAzGroupType();
 						if (!StringUtils.isEmpty(azGroupType)) {
 							typeClusters.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
-							duplicateTypeClusters.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
+							duplicatedClustersToRemove.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
 						}
 					}
 				}
@@ -174,10 +174,10 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				List<DcClusterTypeStatisticsModel> dcClusterTypeClustersAnalyzers = new ArrayList<>();
 				dcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, typeClusters));
 
-				List<DcClusterTypeStatisticsModel> duplicateDcClusterTypeClustersAnalyzers = new ArrayList<>();
-				duplicateDcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, duplicateTypeClusters));
+				List<DcClusterTypeStatisticsModel> analyzersForDuplicatedClusters = new ArrayList<>();
+				analyzersForDuplicatedClusters.addAll(clusterTypesStatistics(dcMeta, duplicatedClustersToRemove));
 
-				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers, duplicateDcClusterTypeClustersAnalyzers));
+				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers, analyzersForDuplicatedClusters));
 
 				result.add(new DcListDcModel().setDcName(dcTbl.getDcName()).setDcDescription(dcTbl.getDcDescription()).setDcId(dcTbl.getId()).setClusterTypes(dcClusterTypeClustersAnalyzers));
 			});

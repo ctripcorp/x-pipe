@@ -685,7 +685,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
 		String dcName = dcService.getDcName(activeDc);
-		List<ClusterTbl> typeClustersInHetero = findDcTypeClustersInHetero(dcName, null, dcName, heteroClusters);
+		List<ClusterTbl> typeClustersInHetero = findClustersByActiveDcInHetero(dcName, dcName, heteroClusters);
 		result.addAll(typeClustersInHetero);
 
 		result = fillClusterOrgName(result);
@@ -1492,13 +1492,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<ClusterTbl> dcClusters = findClustersByDcNameBindAndType(dcName, clusterType);
 		if (isCountTypeInHetero && !clusterType.equalsIgnoreCase(HETERO.name())) {
 			List<ClusterTbl> heteroClusters = findClustersByDcNameBindAndType(dcName, HETERO.name());
-			List<ClusterTbl> typeClustersInHetero = findDcTypeClustersInHetero(dcName, clusterType, null, heteroClusters);
+			List<ClusterTbl> typeClustersInHetero = findClustersByDcNameBindAndTypeInHetero(dcName, clusterType, heteroClusters);
 			dcClusters.addAll(typeClustersInHetero);
 		}
 		return dcClusters;
 	}
 
-	private List<ClusterTbl> findDcTypeClustersInHetero(String dcName, String clusterType, String activeDc, List<ClusterTbl> heteroClusters) {
+	private List<ClusterTbl> findClustersByDcNameBindAndTypeInHetero(String dcName, String clusterType, List<ClusterTbl> heteroClusters) {
+		return findClustersByActiveDcAndTypeInHetero(dcName, clusterType, "", heteroClusters);
+	}
+
+	private List<ClusterTbl> findClustersByActiveDcAndTypeInHetero(String dcName, String clusterType, String activeDc, List<ClusterTbl> heteroClusters) {
 		if (dcName.isEmpty() || CollectionUtils.isEmpty(heteroClusters)) return Collections.emptyList();
 		List<ClusterTbl> result = Lists.newArrayList();
 		List<AzGroupModel> azGroups = azGroupCache.getAzGroupsByAz(dcName);
@@ -1506,15 +1510,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			List<Long> azGroupIds = azGroups.stream().map(AzGroupModel::getId).collect(Collectors.toList());
 			List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByAzGroupIds(azGroupIds);
 			if (!CollectionUtils.isEmpty(azGroupClusters)) {
-				Map<Long, AzGroupClusterEntity> clusterId2AzGroupCluster = azGroupClusters.stream().collect(Collectors.toMap(AzGroupClusterEntity::getClusterId, Function.identity()));
+				Map<Long, List<AzGroupClusterEntity>> clusterId2AzGroupCluster = azGroupClusters.stream().collect(Collectors.groupingBy(AzGroupClusterEntity::getClusterId));
 				long activeDcId = StringUtils.isNullOrEmpty(activeDc) ? -1L : dcService.find(activeDc).getId();
 				heteroClusters.forEach(clusterTbl -> {
 					if (clusterId2AzGroupCluster.containsKey(clusterTbl.getId())) {
-						if (StringUtils.isNullOrEmpty(activeDc) || clusterId2AzGroupCluster.get(clusterTbl.getId()).getActiveAzId().equals(activeDcId)) {
-							if (StringUtils.isNullOrEmpty(clusterType) || clusterId2AzGroupCluster.get(clusterTbl.getId()).getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
-								result.add(clusterTbl);
+						clusterId2AzGroupCluster.get(clusterTbl.getId()).forEach(azGroupClusterEntity -> {
+							if (StringUtils.isNullOrEmpty(activeDc) || azGroupClusterEntity.getActiveAzId().equals(activeDcId)) {
+								if (StringUtils.isNullOrEmpty(clusterType) || azGroupClusterEntity.getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
+									result.add(clusterTbl);
+								}
 							}
-						}
+						});
 					}
 				});
 			}
@@ -1543,19 +1549,23 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		if (clusterType.equalsIgnoreCase(HETERO.name())) {
             List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
-			result = findDcTypeClustersInHetero(dcName, null, dcName, heteroClusters);
+			result = findClustersByActiveDcInHetero(dcName, dcName, heteroClusters);
 		} else {
-			result = findClustersByActiveDcIdAndType(dcName, clusterType);
+			result = findClustersByActiveDcAndType(dcName, clusterType);
 			if (isCountTypeInHetero) {
 				List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
-				List<ClusterTbl> typeClustersInHetero = findDcTypeClustersInHetero(dcName, clusterType, dcName, heteroClusters);
+				List<ClusterTbl> typeClustersInHetero = findClustersByActiveDcAndTypeInHetero(dcName, clusterType, dcName, heteroClusters);
 				result.addAll(typeClustersInHetero);
 			}
 		}
 		return result;
 	}
 
-	private List<ClusterTbl> findClustersByActiveDcIdAndType(String dcName, String clusterType) {
+	private List<ClusterTbl> findClustersByActiveDcInHetero(String dcName, String activeDc, List<ClusterTbl> heteroClusters) {
+		return findClustersByActiveDcAndTypeInHetero(dcName, "", activeDc, heteroClusters);
+	}
+
+	private List<ClusterTbl> findClustersByActiveDcAndType(String dcName, String clusterType) {
 		if (dcName.isEmpty() || clusterType.isEmpty()) return Collections.emptyList();
 		return setOrgNullIfNoOrgIdExsits(fillClusterOrgName(clusterDao.findByActiveDcIdAndType(dcService.find(dcName).getId(), clusterType)));
 	}
