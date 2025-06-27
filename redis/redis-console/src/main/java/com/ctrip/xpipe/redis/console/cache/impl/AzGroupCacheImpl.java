@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.repository.AzGroupMappingRepository;
 import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
 import com.ctrip.xpipe.redis.console.repository.DcRepository;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.commons.collections.SetUtils;
 import org.slf4j.Logger;
@@ -61,6 +62,11 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     public AzGroupCacheImpl() {
 
+    }
+
+    @VisibleForTesting
+    public AzGroupCacheImpl(List<AzGroupModel> azGroupModels) {
+        this.azGroupModels = azGroupModels;
     }
 
     @PostConstruct

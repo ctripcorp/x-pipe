@@ -1,0 +1,101 @@
+package com.ctrip.xpipe.redis.console.service.impl;
+
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.cache.impl.AzGroupCacheImpl;
+import com.ctrip.xpipe.redis.console.model.AzGroupModel;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.*;
+
+
+public class ClusterServiceImplTest5 extends AbstractConsoleIntegrationTest {
+
+    @Autowired
+    private ClusterServiceImpl clusterService;
+
+    @Before
+    public void beforeClusterServiceImplTest() {
+        List<AzGroupModel> azGroupModels = new ArrayList<>();
+        HashSet<String> azs = new HashSet<>();
+        azs.add("jq");
+        azGroupModels.add(new AzGroupModel(3L, "LOCAL_JQ","SHA", azs));
+        azs.add("oy");
+        azGroupModels.add(new AzGroupModel(1L, "LOCAL_SHA","SHA", azs));
+        azs.remove("jq");
+        azGroupModels.add(new AzGroupModel(4L, "LOCAL_OY","SHA", azs));
+        AzGroupCache azGroupCache = new AzGroupCacheImpl(azGroupModels);
+        clusterService.setAzGroupCache(azGroupCache);
+    }
+
+    @Override
+    public String prepareDatas() {
+        try {
+            return prepareDatasFromFile("src/test/resources/cluster-service-impl-test5.sql");
+        } catch (Exception e) {
+            logger.error("[ClusterServiceImplTest3]prepare data error for path", e);
+        }
+        return "";
+    }
+
+    @Test
+    public void testFindAllClustersByDcNameBind() {
+        List<ClusterTbl> result = clusterService.findAllClusterByDcNameBind("jq");
+        Assert.assertEquals(4, result.size());
+    }
+
+    @Test
+    public void testFindAllClusterByDcNameBindAndType() {
+        List<ClusterTbl> result = clusterService.findAllClusterByDcNameBindAndType("jq", "one_way", true);
+        Assert.assertEquals(2, result.size());
+        result = clusterService.findAllClusterByDcNameBindAndType("oy", "one_way", true);
+        Assert.assertEquals(2, result.size());
+
+        result = clusterService.findAllClusterByDcNameBindAndType("jq", "one_way", false);
+        Assert.assertEquals(1, result.size());
+        result = clusterService.findAllClusterByDcNameBindAndType("oy", "one_way", false);
+        Assert.assertEquals(1, result.size());
+
+
+        result = clusterService.findAllClusterByDcNameBindAndType("jq", "hetero", false);
+        Assert.assertEquals(1, result.size());
+        result = clusterService.findAllClusterByDcNameBindAndType("oy", "hetero", false);
+        Assert.assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testFindActiveClustersByDcName() {
+        List<ClusterTbl> result = clusterService.findActiveClustersByDcName("jq");
+        Assert.assertEquals(4, result.size());
+        result = clusterService.findActiveClustersByDcName("oy");
+        Assert.assertEquals(4, result.size());
+    }
+
+    @Test
+    public void testFindActiveClustersByDcNameAndType() {
+        List<ClusterTbl> result = clusterService.findActiveClustersByDcNameAndType("jq", "one_way", true);
+        Assert.assertEquals(2, result.size());
+        result = clusterService.findActiveClustersByDcNameAndType("oy", "one_way", true);
+        Assert.assertEquals(2, result.size());
+
+        result = clusterService.findActiveClustersByDcNameAndType("jq", "single_dc", true);
+        Assert.assertEquals(1, result.size());
+        result = clusterService.findActiveClustersByDcNameAndType("oy", "single_dc", true);
+        Assert.assertEquals(1, result.size());
+
+        result = clusterService.findActiveClustersByDcNameAndType("jq", "hetero", true);
+        Assert.assertEquals(1, result.size());
+        result = clusterService.findActiveClustersByDcNameAndType("oy", "hetero", true);
+        Assert.assertEquals(1, result.size());
+
+        result = clusterService.findActiveClustersByDcNameAndType("jq", "single_dc", false);
+        Assert.assertEquals(1, result.size());
+        result = clusterService.findActiveClustersByDcNameAndType("oy", "single_dc", false);
+        Assert.assertEquals(1, result.size());
+    }
+
+}

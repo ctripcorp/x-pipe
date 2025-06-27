@@ -2010,4 +2010,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public void setConsoleConfig(ConsoleConfig consoleConfig) {
 		this.consoleConfig = consoleConfig;
 	}
+
+	@VisibleForTesting
+	public void setAzGroupCache(AzGroupCache azGroupCache) {
+		this.azGroupCache = azGroupCache;
+	}
 }
