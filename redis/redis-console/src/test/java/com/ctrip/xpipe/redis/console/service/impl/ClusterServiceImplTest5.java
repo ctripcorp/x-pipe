@@ -1,12 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
-import com.ctrip.xpipe.redis.console.cache.impl.AzGroupCacheImpl;
-import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -17,20 +13,6 @@ public class ClusterServiceImplTest5 extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterServiceImpl clusterService;
-
-    @Before
-    public void beforeClusterServiceImplTest() {
-        List<AzGroupModel> azGroupModels = new ArrayList<>();
-        HashSet<String> azs = new HashSet<>();
-        azs.add("jq");
-        azGroupModels.add(new AzGroupModel(3L, "LOCAL_JQ","SHA", azs));
-        azs.add("oy");
-        azGroupModels.add(new AzGroupModel(1L, "LOCAL_SHA","SHA", azs));
-        azs.remove("jq");
-        azGroupModels.add(new AzGroupModel(4L, "LOCAL_OY","SHA", azs));
-        AzGroupCache azGroupCache = new AzGroupCacheImpl(azGroupModels);
-        clusterService.setAzGroupCache(azGroupCache);
-    }
 
     @Override
     public String prepareDatas() {

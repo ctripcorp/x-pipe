@@ -14,6 +14,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.commons.collections.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,7 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     private AzGroupMappingRepository azGroupMappingRepository;
 
+    @Autowired
     public AzGroupCacheImpl(ConsoleConfig config,
                             DcRepository dcRepository,
                             AzGroupRepository azGroupRepository,
@@ -59,10 +61,6 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     private List<AzGroupModel> azGroupModels = null;
     private Map<Long, AzGroupModel> idAzGroupMap = null;
-
-    public AzGroupCacheImpl() {
-
-    }
 
     @VisibleForTesting
     public AzGroupCacheImpl(List<AzGroupModel> azGroupModels) {
