@@ -37,7 +37,7 @@ public class ClusterServiceImplTest5 extends AbstractConsoleIntegrationTest {
         try {
             return prepareDatasFromFile("src/test/resources/cluster-service-impl-test5.sql");
         } catch (Exception e) {
-            logger.error("[ClusterServiceImplTest3]prepare data error for path", e);
+            logger.error("[ClusterServiceImplTest5]prepare data error for path", e);
         }
         return "";
     }

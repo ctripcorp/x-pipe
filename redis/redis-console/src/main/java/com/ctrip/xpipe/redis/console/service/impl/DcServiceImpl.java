@@ -270,6 +270,11 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			allTypeClusterInActiveDcCount -= model.getClusterInActiveDcCount();
 			allTypeKeeperContainerCount -= model.getKeeperContainerCount();
 		}
+		logger.info("[totalStatistics] dc: {}", dc);
+		duplicateTypes.forEach(model -> {
+			logger.info("[totalStatistics]In hetero: clusterType: {}, activeDcClusterCount: {}, clusterCount: {}, redisCount: {}, keeperContainerCount: {}, keeperCount: {}",
+					model.getClusterType(), model.getClusterInActiveDcCount(), model.getClusterCount(), model.getRedisCount(), model.getKeeperContainerCount(), model.getKeeperCount());
+		});
 		return new DcClusterTypeStatisticsModel().
 				setClusterType("").
 				setDcName(dc).

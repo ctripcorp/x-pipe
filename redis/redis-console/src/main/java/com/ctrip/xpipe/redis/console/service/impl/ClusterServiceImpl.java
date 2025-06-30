@@ -687,7 +687,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		String dcName = dcService.getDcName(activeDc);
 		List<ClusterTbl> typeClustersInHetero = findClustersByActiveDcInHetero(dcName, dcName, heteroClusters);
 		result.addAll(typeClustersInHetero);
-
+		logger.info("[findClustersWithOrgInfoByActiveDcId] dc: {},  clusters size = {}", dcName, result.size());
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
 	}
@@ -1495,6 +1495,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			List<ClusterTbl> typeClustersInHetero = findClustersByDcNameBindAndTypeInHetero(dcName, clusterType, heteroClusters);
 			dcClusters.addAll(typeClustersInHetero);
 		}
+		logger.info("[findAllClusterByDcNameBindAndType] dc: {}, clusterType: {}, isCountTypeInHetero: {},  clusters size = {}", dcName, clusterType, isCountTypeInHetero, dcClusters.size());
 		return dcClusters;
 	}
 
@@ -1558,6 +1559,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				result.addAll(typeClustersInHetero);
 			}
 		}
+		logger.info("[findActiveClustersByDcNameAndType] dc: {}, clusterType: {}, isCountTypeInHetero: {},  clusters size = {}", dcName, clusterType, isCountTypeInHetero, result.size());
 		return result;
 	}
 
