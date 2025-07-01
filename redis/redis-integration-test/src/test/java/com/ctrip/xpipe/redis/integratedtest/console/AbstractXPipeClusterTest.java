@@ -8,8 +8,6 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
@@ -35,7 +33,6 @@ import org.junit.BeforeClass;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
-import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -46,8 +43,6 @@ import static com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector.KE
 import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_CHECKER_META_REFRESH_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.KEY_SENTINEL_CHECK_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_METASERVERS;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CHECKER;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 import static com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector.KEY_CONSOLE_ID;
 import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACON_GROUP_SEPARATOR;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;

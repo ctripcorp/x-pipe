@@ -1,23 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.metaserver.scenes.tools;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
-import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-import com.ctrip.xpipe.tuple.Pair;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestOperations;
 
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BooleanSupplier;
 
 public class ConsoleService {

@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import java.util.concurrent.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Slight

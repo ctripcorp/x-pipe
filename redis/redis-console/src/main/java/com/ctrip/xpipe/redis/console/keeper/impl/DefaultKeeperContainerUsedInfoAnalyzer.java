@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.console.keeper.command.AbstractGetAllDcCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.MigrationKeeperContainerDetailInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.DateTimeUtils;

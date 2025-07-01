@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.redis.core.redis.operation.*;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 
 /**
  * @author lishanglin

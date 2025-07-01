@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 
 public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
     @Before

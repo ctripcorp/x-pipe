@@ -6,8 +6,6 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.*;
 
-import java.util.UUID;
-
 
 /**
  * @author chen.zhu

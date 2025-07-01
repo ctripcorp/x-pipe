@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.inforeplication;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;

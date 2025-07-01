@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParser;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpNoneKeyParser;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSingleKeyParser;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 
 import java.util.Arrays;

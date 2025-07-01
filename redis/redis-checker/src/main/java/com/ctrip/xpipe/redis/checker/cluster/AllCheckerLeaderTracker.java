@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.cluster;
 
-import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.track.AbstractLeaderTracker;
 import org.springframework.stereotype.Component;
 

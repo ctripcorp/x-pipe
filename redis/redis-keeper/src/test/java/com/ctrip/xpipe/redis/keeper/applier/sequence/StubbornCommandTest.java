@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSupplierCommand;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

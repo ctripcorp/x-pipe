@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.op;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Slight
