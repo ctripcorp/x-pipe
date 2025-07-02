@@ -20,7 +20,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 	@Before
 	public void setupDefaultRedisKeeperServerConnectToFakeRedisTest() {
-		this.fakeRedisServer.setRdbSize(10000);
+//		this.fakeRedisServer.setRdbSize(10000);
 	}
 
 	@Test
