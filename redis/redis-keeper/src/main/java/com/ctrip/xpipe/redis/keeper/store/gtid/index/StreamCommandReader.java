@@ -70,7 +70,7 @@ public class StreamCommandReader {
                 log.error("[doRead] {}", exception.getMessage());
                 int starIndex = findFirstStar(mergeBuf, pre + 1);
                 if(starIndex != -1) {
-                    log.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex).toString(Charset.defaultCharset()));
+                    log.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex - pre).toString(Charset.defaultCharset()));
                     mergeBuf.readerIndex(starIndex);
                     this.protocolParser.reset();
                     continue;
