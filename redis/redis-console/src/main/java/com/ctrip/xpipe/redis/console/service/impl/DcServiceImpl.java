@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -156,28 +157,25 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				DcMeta dcMeta = dcMetaMap.get(dcTbl.getDcName().toUpperCase());
 
 				Map<String, List<ClusterMeta>> typeClusters = new HashMap<>();
-				Map<String, List<ClusterMeta>> duplicatedClustersToRemove = new HashMap<>();
 				for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
 					String type = clusterMeta.getType().toUpperCase();
 					typeClusters.putIfAbsent(type, new ArrayList<>());
 					typeClusters.get(type).add(clusterMeta);
-
-					if (isCountTypeInHetero && ClusterType.lookup(type) == ClusterType.HETERO) {
-						String azGroupType = clusterMeta.getAzGroupType();
-						if (!StringUtils.isEmpty(azGroupType)) {
-							typeClusters.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
-							duplicatedClustersToRemove.computeIfAbsent(azGroupType.toUpperCase(), k -> new ArrayList<>()).add(clusterMeta);
-						}
-					}
 				}
 
 				List<DcClusterTypeStatisticsModel> dcClusterTypeClustersAnalyzers = new ArrayList<>();
 				dcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, typeClusters));
+				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers));
 
-				List<DcClusterTypeStatisticsModel> analyzersForDuplicatedClusters = new ArrayList<>();
-				analyzersForDuplicatedClusters.addAll(clusterTypesStatistics(dcMeta, duplicatedClustersToRemove));
+				if (isCountTypeInHetero) {
+					Map<String, List<ClusterMeta>> typeClustersInHetero = new HashMap<>();
 
-				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers, analyzersForDuplicatedClusters));
+					dcMeta.getClusters().values().stream()
+							.filter(clusterMeta -> clusterMeta.getType().equalsIgnoreCase(ClusterType.HETERO.name()) && !clusterMeta.getAzGroupType().isEmpty())
+							.forEach(clusterMeta -> typeClustersInHetero.computeIfAbsent(clusterMeta.getAzGroupType().toUpperCase(), k -> new ArrayList<>()).add(clusterMeta));
+
+					dcClusterTypeClustersAnalyzers = mergeClusterStatistics(dcClusterTypeClustersAnalyzers, typeClustersInHetero, dcMeta);
+				}
 
 				result.add(new DcListDcModel().setDcName(dcTbl.getDcName()).setDcDescription(dcTbl.getDcDescription()).setDcId(dcTbl.getId()).setClusterTypes(dcClusterTypeClustersAnalyzers));
 			});
@@ -186,6 +184,31 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		} catch (Exception e) {
 			return Collections.emptyList();
 		}
+	}
+
+	private List<DcClusterTypeStatisticsModel> mergeClusterStatistics(List<DcClusterTypeStatisticsModel> analyzers, Map<String, List<ClusterMeta>> typeClustersInHetero, DcMeta dcMeta) {
+		List<DcClusterTypeStatisticsModel> statisticsModels = clusterTypesStatistics(dcMeta, typeClustersInHetero);
+		if (CollectionUtils.isEmpty(statisticsModels)) {
+			return analyzers;
+		}
+		DcClusterTypeStatisticsModel allType = analyzers.remove(analyzers.size() - 1);
+
+		Map<String, DcClusterTypeStatisticsModel> resultMap = analyzers.stream().collect(Collectors.toMap(
+						DcClusterTypeStatisticsModel::getClusterType,
+						DcClusterTypeStatisticsModel::new,
+						(existing, replacement) -> existing
+				));
+		statisticsModels.forEach(model -> {
+			resultMap.merge(model.getClusterType(), model, (existing, replacement) -> {
+				existing.addCounts(model);
+				return existing;
+			});
+		});
+
+		ArrayList<DcClusterTypeStatisticsModel> result = new ArrayList<>(resultMap.values());
+		result.add(allType);
+
+		return result;
 	}
 
 	@Override
@@ -254,7 +277,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return allTypes;
 	}
 
-	private DcClusterTypeStatisticsModel totalStatistics(String dc, List<DcClusterTypeStatisticsModel> allTypes, List<DcClusterTypeStatisticsModel> duplicateTypes) {
+	private DcClusterTypeStatisticsModel totalStatistics(String dc, List<DcClusterTypeStatisticsModel> allTypes) {
 		int allTypeClusterCount = 0, allTypeRedisCount = 0, allTypeKeeperCount = 0, allTypeClusterInActiveDcCount = 0, allTypeKeeperContainerCount = 0;
 		for (DcClusterTypeStatisticsModel model : allTypes) {
 			allTypeClusterCount += model.getClusterCount();
@@ -263,18 +286,6 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			allTypeClusterInActiveDcCount += model.getClusterInActiveDcCount();
 			allTypeKeeperContainerCount += model.getKeeperContainerCount();
 		}
-		for (DcClusterTypeStatisticsModel model : duplicateTypes) {
-			allTypeClusterCount -= model.getClusterCount();
-			allTypeRedisCount -= model.getRedisCount();
-			allTypeKeeperCount -= model.getKeeperCount();
-			allTypeClusterInActiveDcCount -= model.getClusterInActiveDcCount();
-			allTypeKeeperContainerCount -= model.getKeeperContainerCount();
-		}
-		logger.info("[totalStatistics] dc: {}", dc);
-		duplicateTypes.forEach(model -> {
-			logger.info("[totalStatistics]In hetero: clusterType: {}, activeDcClusterCount: {}, clusterCount: {}, redisCount: {}, keeperContainerCount: {}, keeperCount: {}",
-					model.getClusterType(), model.getClusterInActiveDcCount(), model.getClusterCount(), model.getRedisCount(), model.getKeeperContainerCount(), model.getKeeperCount());
-		});
 		return new DcClusterTypeStatisticsModel().
 				setClusterType("").
 				setDcName(dc).

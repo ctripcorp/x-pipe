@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xpipe>
+    <dc id="jq">
+        <cluster id="singleDcCluster" active-dc="jq" type="single_dc">
+            <shard id="singleDcShard">
+                <redis ip="127.0.0.1" port="7000"/>
+                <redis ip="127.0.0.1" port="7001"/>
+            </shard>
+        </cluster>
+        <cluster id="localDcCluster" type="local_dc" dcs="oy,jq">
+            <shard id="localDcClusterMetaJqShard">
+                <redis ip="127.0.0.1" port="8000"/>
+                <redis ip="127.0.0.1" port="8001"/>
+            </shard>
+        </cluster>
+        <cluster id="crossDcCluster" type="cross_dc" dcs="oy,jq">
+            <shard id="crossDcClusterMetaJqShard">
+                <redis ip="127.0.0.1" port="9000"/>
+                <redis ip="127.0.0.1" port="9001"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy" type="ONE_WAY">
+            <shard id="shard1">
+                <redis ip="127.0.0.1" port="6379"/>
+                <redis ip="127.0.0.2" port="6379"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="jq" backup-dcs="oy" type="ONE_WAY">
+            <shard id="shard2">
+                <redis ip="127.0.0.1" port="6380"/>
+                <redis ip="127.0.0.2" port="6380"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster3" active-dc="jq" backup-dcs="oy" az-group-type="ONE_WAY" type="HETERO">
+            <shard id="shard3">
+                <redis ip="127.0.0.1" port="6380"/>
+                <redis ip="127.0.0.2" port="6380"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster4" active-dc="jq" backup-dcs="oy,fra" az-group-type="ONE_WAY" type="HETERO">
+            <shard id="shard4">
+                <redis ip="127.0.0.3" port="6380"/>
+                <redis ip="127.0.0.4" port="6380"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="oy">
+        <cluster id="localDcCluster" type="local_dc" dcs="oy,jq">
+            <shard id="localDcClusterMetaOyShard">
+                <redis ip="127.0.0.1" port="8002"/>
+                <redis ip="127.0.0.1" port="8003"/>
+            </shard>
+        </cluster>
+        <cluster id="crossDcCluster" type="cross_dc" dcs="oy,jq">
+            <shard id="crossDcClusterMetaOyShard">
+                <redis ip="127.0.0.1" port="9002"/>
+                <redis ip="127.0.0.1" port="9003"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy" type="ONE_WAY">
+            <shard id="shard1">
+                <redis ip="127.0.0.3" port="6379"/>
+                <redis ip="127.0.0.4" port="6379"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="jq" backup-dcs="oy" type="ONE_WAY">
+            <shard id="shard2">
+                <redis ip="127.0.0.3" port="6380"/>
+                <redis ip="127.0.0.4" port="6380"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster4" active-dc="oy" az-group-type="SINGLE_DC" type="HETERO">
+            <shard id="shard6">
+                <redis ip="127.0.0.3" port="6380"/>
+                <redis ip="127.0.0.4" port="6380"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="fra">
+        <cluster id="cluster4" active-dc="fra" az-group-type="SINGLE_DC" type="HETERO">
+            <shard id="shard5">
+                <redis ip="127.0.0.1" port="6380"/>
+                <redis ip="127.0.0.2" port="6380"/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>

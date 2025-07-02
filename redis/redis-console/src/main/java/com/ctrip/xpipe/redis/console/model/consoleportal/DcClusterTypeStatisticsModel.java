@@ -27,6 +27,17 @@ public class DcClusterTypeStatisticsModel {
         this.typeClusters = typeClusters;
     }
 
+    public DcClusterTypeStatisticsModel(DcClusterTypeStatisticsModel model) {
+        this.dcName = model.dcName;
+        this.clusterType = model.clusterType;
+        this.typeClusters = model.typeClusters;
+        this.clusterCount = model.clusterCount;
+        this.redisCount = model.redisCount;
+        this.keeperCount = model.keeperCount;
+        this.keeperContainerCount = model.keeperContainerCount;
+        this.clusterInActiveDcCount = model.clusterInActiveDcCount;
+    }
+
 
     public String getDcName() {
         return dcName;
@@ -107,5 +118,13 @@ public class DcClusterTypeStatisticsModel {
                 }
             }
         }
+    }
+
+    public void addCounts(DcClusterTypeStatisticsModel other) {
+        this.clusterCount += other.clusterCount;
+        this.redisCount += other.redisCount;
+        this.keeperCount += other.keeperCount;
+        this.clusterInActiveDcCount += other.clusterInActiveDcCount;
+        this.keeperContainerCount += other.keeperContainerCount;
     }
 }
