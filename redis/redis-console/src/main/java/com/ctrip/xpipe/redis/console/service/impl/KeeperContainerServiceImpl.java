@@ -162,6 +162,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       public List<KeepercontainerTbl> doQuery() throws DalException {
         // find all keepers, both in used and unused
         List<KeepercontainerTbl> allDcKeeperContainers = dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
+        logger.error("[findBestKeeperContainersByDcCluster] dc {} has no active KeeperContainers", dcName);
         List<KeepercontainerTbl> allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId && Objects.equals(keepercontainer.getTag(), clusterTag)).collect(Collectors.toList());
 
         List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed;
@@ -172,6 +173,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
           // find keepers in used in normal org
           dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID, clusterTag,
+                  KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
+        } else if (allDcOrgTagKeeperContainers.isEmpty()) {
+          logger.info("[findBestKeeperContainersByDcCluster][Enable degraded mode] dc {} has no KeeperContainers matching cluster {}'clusterTag {}", dcName, clusterName, clusterTag);
+          allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID).collect(Collectors.toList());
+          dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByDcAndOrg(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
                   KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         } else {
           // find keepers in used in cluster org
