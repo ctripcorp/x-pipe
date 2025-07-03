@@ -76,6 +76,16 @@ public class AzGroupClusterRepository {
         return azGroupClusterMapper.selectList(wrapper);
     }
 
+
+    public List<AzGroupClusterEntity> selectByAzGroupIds(List<Long> azGroupIds) {
+        if(CollectionUtils.isEmpty(azGroupIds)){
+            return Collections.emptyList();
+        }
+        QueryWrapper<AzGroupClusterEntity> wrapper = new QueryWrapper<>();
+        wrapper.in(AzGroupClusterEntity.AZ_GROUP_ID, azGroupIds);
+        return azGroupClusterMapper.selectList(wrapper);
+    }
+
     public AzGroupClusterEntity selectByClusterIdAndAzGroupId(Long clusterId, Long azGroupId) {
         if (clusterId == null || azGroupId == null) {
             return null;

@@ -9,15 +9,18 @@ import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.repository.AzGroupMappingRepository;
 import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
 import com.ctrip.xpipe.redis.console.repository.DcRepository;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.apache.commons.collections.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,6 +42,7 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     private AzGroupMappingRepository azGroupMappingRepository;
 
+    @Autowired
     public AzGroupCacheImpl(ConsoleConfig config,
                             DcRepository dcRepository,
                             AzGroupRepository azGroupRepository,
@@ -57,6 +61,11 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     private List<AzGroupModel> azGroupModels = null;
     private Map<Long, AzGroupModel> idAzGroupMap = null;
+
+    @VisibleForTesting
+    public AzGroupCacheImpl(List<AzGroupModel> azGroupModels) {
+        this.azGroupModels = azGroupModels;
+    }
 
     @PostConstruct
     public void init() {
@@ -109,6 +118,17 @@ public class AzGroupCacheImpl implements AzGroupCache {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<AzGroupModel> getAzGroupsByAz(String az) {
+        if (az == null) return Collections.emptyList();
+        if (this.azGroupModels == null) {
+            this.loadAzGroupCache();
+        }
+        return this.azGroupModels.stream()
+                .filter(model -> model.containsAz(az))
+                .collect(Collectors.toList());
     }
 
 }

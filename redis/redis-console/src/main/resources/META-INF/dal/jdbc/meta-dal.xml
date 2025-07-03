@@ -336,6 +336,20 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-clusters-with-org-info-by-active-dc-id-and-type" type="SELECT" multiple="true">
+				<param name='activedc-id'/>
+				<param name='cluster-type'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='cluster-type'/> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> DESC
+					]]>
+				</statement>
+			</query>
 			<query name="find-cluster-by-cluster-name" type="SELECT" multiple="false">
 				<param name='cluster-name'/>
 				<statement>
@@ -437,6 +451,22 @@
 					AND <FIELD name='deleted'/> = 0
 					AND dct.deleted = 0
 					AND ot.deleted = 0
+					ORDER BY <FIELD name='id'/> ASC
+					]]>
+				</statement>
+			</query>
+			<query name="find-clusters-binded-by-dc-id-and-type" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<param name='cluster-type'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> join <TABLE name='dc-cluster-info'/> on <FIELD name='id'/> = dct.cluster_id
+					left join <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE dct.dc_id = ${dc-id}
+					AND <FIELD name='cluster-type'/> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
+					AND dct.deleted = 0
 					ORDER BY <FIELD name='id'/> ASC
 					]]>
 				</statement>

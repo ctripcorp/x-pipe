@@ -264,6 +264,16 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		});
 	}
 
+
+	public List<ClusterTbl> findByDcIdAndType(final long dcId, String type) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findClustersBindedByDcIdAndType(dcId, type, READSET_FULL_WITH_ORG);
+			}
+		});
+	}
+
 	public List<ClusterTbl> findAllByDcId(final long dcId) {
 		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override
@@ -296,5 +306,14 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 
 	public List<ClusterTbl> findMigratingClusterNames() {
 		return queryHandler.handleQuery(() -> clusterTblDao.findMigratingClusters(READSET_NAME));
+	}
+
+	public List<ClusterTbl> findByActiveDcIdAndType(final long dcId, String type) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findClustersWithOrgInfoByActiveDcIdAndType(dcId, type, READSET_FULL_WITH_ORG);
+			}
+		});
 	}
 }

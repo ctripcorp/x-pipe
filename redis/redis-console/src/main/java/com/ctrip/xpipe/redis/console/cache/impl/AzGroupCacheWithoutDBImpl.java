@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -58,6 +59,17 @@ public class AzGroupCacheWithoutDBImpl implements AzGroupCache {
             }
         }
         return null;
+    }
+
+    @Override
+    public List<AzGroupModel> getAzGroupsByAz(String az) {
+        if (az == null) return Collections.emptyList();
+        if (this.azGroupModels == null) {
+            this.loadAzGroupCache();
+        }
+        return this.azGroupModels.stream()
+                .filter(model -> model.containsAz(az))
+                .collect(Collectors.toList());
     }
 
     private void loadAzGroupCache() {

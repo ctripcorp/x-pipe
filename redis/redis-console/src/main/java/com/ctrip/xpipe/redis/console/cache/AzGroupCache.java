@@ -12,4 +12,6 @@ public interface AzGroupCache {
 
     AzGroupModel getAzGroupByAzs(List<String> azs);
 
+    List<AzGroupModel> getAzGroupsByAz(String az);
+
 }

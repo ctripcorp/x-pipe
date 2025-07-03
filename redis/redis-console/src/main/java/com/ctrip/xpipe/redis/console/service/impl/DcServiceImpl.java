@@ -19,9 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -141,7 +143,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
-	public List<DcListDcModel> findAllDcsRichInfo(){
+	public List<DcListDcModel> findAllDcsRichInfo(boolean isCountTypeInHetero){
 		try {
 			List<DcTbl> dcTbls = findAllDcs();
 			if (dcTbls == null || dcTbls.size() == 0)
@@ -165,6 +167,16 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				dcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, typeClusters));
 				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers));
 
+				if (isCountTypeInHetero) {
+					Map<String, List<ClusterMeta>> typeClustersInHetero = new HashMap<>();
+
+					dcMeta.getClusters().values().stream()
+							.filter(clusterMeta -> clusterMeta.getType().equalsIgnoreCase(ClusterType.HETERO.name()) && !clusterMeta.getAzGroupType().isEmpty())
+							.forEach(clusterMeta -> typeClustersInHetero.computeIfAbsent(clusterMeta.getAzGroupType().toUpperCase(), k -> new ArrayList<>()).add(clusterMeta));
+
+					dcClusterTypeClustersAnalyzers = mergeClusterStatistics(dcClusterTypeClustersAnalyzers, typeClustersInHetero, dcMeta);
+				}
+
 				result.add(new DcListDcModel().setDcName(dcTbl.getDcName()).setDcDescription(dcTbl.getDcDescription()).setDcId(dcTbl.getId()).setClusterTypes(dcClusterTypeClustersAnalyzers));
 			});
 
@@ -172,6 +184,31 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		} catch (Exception e) {
 			return Collections.emptyList();
 		}
+	}
+
+	private List<DcClusterTypeStatisticsModel> mergeClusterStatistics(List<DcClusterTypeStatisticsModel> analyzers, Map<String, List<ClusterMeta>> typeClustersInHetero, DcMeta dcMeta) {
+		List<DcClusterTypeStatisticsModel> statisticsModels = clusterTypesStatistics(dcMeta, typeClustersInHetero);
+		if (CollectionUtils.isEmpty(statisticsModels)) {
+			return analyzers;
+		}
+		DcClusterTypeStatisticsModel allType = analyzers.remove(analyzers.size() - 1);
+
+		Map<String, DcClusterTypeStatisticsModel> resultMap = analyzers.stream().collect(Collectors.toMap(
+						DcClusterTypeStatisticsModel::getClusterType,
+						DcClusterTypeStatisticsModel::new,
+						(existing, replacement) -> existing
+				));
+		statisticsModels.forEach(model -> {
+			resultMap.merge(model.getClusterType(), model, (existing, replacement) -> {
+				existing.addCounts(model);
+				return existing;
+			});
+		});
+
+		ArrayList<DcClusterTypeStatisticsModel> result = new ArrayList<>(resultMap.values());
+		result.add(allType);
+
+		return result;
 	}
 
 	@Override

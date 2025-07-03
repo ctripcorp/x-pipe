@@ -246,9 +246,9 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/allBind/{dcName}/{clusterType}", method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByDcNameBindAndType(@PathVariable String dcName, @PathVariable String clusterType) {
-        logger.info("[findClustersByDcNameBindAndType]dcName: {}, clusterType: {}", dcName, clusterType);
-        return clusterService.findAllClusterByDcNameBindAndType(dcName, clusterType);
+    public List<ClusterTbl> findClustersByDcNameBindAndType(@PathVariable String dcName, @PathVariable String clusterType, @RequestParam(required = false, defaultValue = "true") boolean isCountTypeInHetero) {
+        logger.info("[findClustersByDcNameBindAndType]dcName: {}, clusterType: {}, isCountTypeInHetero: {}", dcName, clusterType, isCountTypeInHetero);
+        return clusterService.findAllClusterByDcNameBindAndType(dcName, clusterType, isCountTypeInHetero);
     }
 
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)
@@ -258,9 +258,9 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/activeDc/{dcName}/{clusterType}", method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByActiveDcNameAndType(@PathVariable String dcName, @PathVariable String clusterType) {
-        logger.info("[findClustersByActiveDcNameAndType]dcName: {}, clusterType: {}", dcName, clusterType);
-        return clusterService.findActiveClustersByDcNameAndType(dcName, clusterType);
+    public List<ClusterTbl> findClustersByActiveDcNameAndType(@PathVariable String dcName, @PathVariable String clusterType, @RequestParam(required = false, defaultValue = "true") boolean isCountTypeInHetero) {
+        logger.info("[findClustersByActiveDcNameAndType]dcName: {}, clusterType: {}, isCountTypeInHetero: {}", dcName, clusterType, isCountTypeInHetero);
+        return clusterService.findActiveClustersByDcNameAndType(dcName, clusterType, isCountTypeInHetero);
     }
 
     @RequestMapping(value = "/clusters/master/unhealthy/{level}", method = RequestMethod.GET)
