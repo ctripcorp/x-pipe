@@ -1830,9 +1830,8 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-keeper-container-by-cluster-without-tag" type="SELECT" multiple="true">
+			<query name="find-keeper-container-by-dc-name" type="SELECT" multiple="true">
 				<param name="dc-name"/>
-				<param name="org-id" />
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
@@ -1841,7 +1840,6 @@
 					AND dt.dc_name = ${dc-name}
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
-					AND <FIELD name='keepercontainer-org-id'/> = ${org-id}
 					GROUP BY <FIELD name='keepercontainer-id'/>
 					order by count
 					]]>
