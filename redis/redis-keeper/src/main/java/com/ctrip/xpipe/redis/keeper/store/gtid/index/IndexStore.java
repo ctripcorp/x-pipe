@@ -128,6 +128,8 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
             log.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
             continuePoint = locateTailOfCmd();
         }
+        log.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
+                request, continuePoint.getValue());
         return continuePoint;
     }
 
