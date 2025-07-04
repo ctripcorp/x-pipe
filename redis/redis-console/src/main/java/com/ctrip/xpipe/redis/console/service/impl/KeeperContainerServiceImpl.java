@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -13,8 +11,6 @@ import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -23,23 +19,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
 import org.unidal.dal.jdbc.DalException;
 
-import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -157,36 +144,58 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       clusterTag = "";
     }
     logger.info("cluster org id: {}, tag: {}", clusterOrgId, clusterTag);
-    return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+
+    List<KeepercontainerTbl> allDcKeeperContainers = queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
-        // find all keepers, both in used and unused
-        List<KeepercontainerTbl> allDcKeeperContainers = dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
-        List<KeepercontainerTbl> allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId && Objects.equals(keepercontainer.getTag(), clusterTag)).collect(Collectors.toList());
-
-        List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed;
-        if (allDcOrgTagKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
-          logger.info("cluster {} with org id {} is going to find keepercontainers in normal pool",
-                  clusterName, clusterOrgId);
-          allDcOrgTagKeeperContainers = allDcKeeperContainers.stream().filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID && Objects.equals(keepercontainer.getTag(), clusterTag)).collect(Collectors.toList());
-
-          // find keepers in used in normal org
-          dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID, clusterTag,
-                  KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
-        } else {
-          // find keepers in used in cluster org
-          dcOrgTagKeeperContainersInUsed = dao.findKeeperContainerByCluster(dcName, clusterOrgId, clusterTag,
-                  KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
-        }
-
-        setCountAndSortForAllKeeperContainers(allDcOrgTagKeeperContainers,  dcOrgTagKeeperContainersInUsed);
-        if (!skipAzFilter) {
-          allDcOrgTagKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgTagKeeperContainers, dcName);
-        }
-        logger.info("find keeper containers: {}", allDcOrgTagKeeperContainers);
-        return allDcOrgTagKeeperContainers;
+        return dao.findActiveByDcName(dcName, KeepercontainerTblEntity.READSET_FULL);
       }
     });
+
+    List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed = queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+      @Override
+      public List<KeepercontainerTbl> doQuery() throws DalException {
+        return dao.findKeeperContainerByDcName(dcName, KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
+      }
+    });
+
+    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = findBestKeeperContainersByOrgAndTag(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag);
+    if (allDcOrgTagKeeperContainers.isEmpty()) {
+      logger.info("[findBestKeeperContainersByDcCluster][DegradedMode] dc={} has no KeeperContainers matching cluster={} (requiredTag={}). Falling back to find without tag matching.",
+              dcName, clusterName, clusterTag);
+      allDcOrgTagKeeperContainers = findBestKeeperContainersByOrg(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId);
+    }
+    if (!skipAzFilter) {
+      allDcOrgTagKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgTagKeeperContainers, dcName);
+    }
+    logger.info("find keeper containers: {}", allDcOrgTagKeeperContainers);
+    return allDcOrgTagKeeperContainers;
+  }
+
+  private List<KeepercontainerTbl> findBestKeeperContainersByOrg(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId) {
+    return filterKeeperContainers(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, "", false);
+  }
+
+  private List<KeepercontainerTbl> findBestKeeperContainersByOrgAndTag(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag) {
+    return filterKeeperContainers(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag, true);
+  }
+
+  private List<KeepercontainerTbl> filterKeeperContainers(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag, boolean useTag) {
+    if (dcName == null) return Collections.emptyList();
+        // find all keepers, both in used and unused
+    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = allDcKeeperContainers.stream()
+            .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId && (!useTag || Objects.equals(keepercontainer.getTag(), clusterTag))).collect(Collectors.toList());
+
+      if (allDcOrgTagKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
+      logger.info("cluster with org id {} is going to find keepercontainers in normal pool", clusterOrgId);
+          allDcOrgTagKeeperContainers = allDcKeeperContainers.stream()
+                  .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID && (!useTag || Objects.equals(keepercontainer.getTag(), clusterTag))).collect(Collectors.toList());
+    }
+    if (allDcOrgTagKeeperContainers.isEmpty()) {
+      return Collections.emptyList();
+    }
+    setCountAndSortForAllKeeperContainers(allDcOrgTagKeeperContainers,  dcOrgTagKeeperContainersInUsed);
+    return allDcOrgTagKeeperContainers;
   }
 
 
