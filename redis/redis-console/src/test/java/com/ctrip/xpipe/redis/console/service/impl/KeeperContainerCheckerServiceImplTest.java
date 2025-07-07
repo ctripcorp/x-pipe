@@ -60,6 +60,16 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
     }
 
     @Test
+    public void testFindKeeperCountByClusterWithTagSpecified(){
+        ClusterTbl cluster1 = clusterDao.findClusterByClusterName("cluster1");
+        cluster1.setTag("tag1");
+        logger.info("{}", cluster1);
+        clusterDao.updateCluster(cluster1);
+        List<KeepercontainerTbl> kcs = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster1");
+        Assert.assertEquals(2, kcs.size());
+    }
+
+    @Test
     public void testFindKeeperCountByClusterWithBUSpecified() {
         String clusterName = "cluster2";
         long orgId = 2L;
