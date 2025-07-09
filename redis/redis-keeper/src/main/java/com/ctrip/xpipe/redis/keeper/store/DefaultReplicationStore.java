@@ -143,6 +143,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected XSyncContinue buildXSyncContinue(Pair<Long, GtidSet> continuePoint) {
 		GtidSet begin = getBeginGtidSetAndLost().getKey();
 		GtidSet continueGtidSet = continuePoint.getValue().union(begin);
+		logger.info("[buildXSyncContinue] continueGtidSet: {}, begin: {}]", continueGtidSet,begin.toString());
 		return new XSyncContinue(continueGtidSet, continuePoint.getKey());
 	}
 

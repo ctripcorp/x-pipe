@@ -271,6 +271,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         long maxTransfer = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
         long backlogBeginOffset = Math.max(xsyncStage.getBegOffsetBacklog(), keeperRepl.backlogBeginOffset());
 
+        logger.info("[anaXsync] lost : {}, cont: {}, req: {}, backlogCont: {}", lost, cont, req, backlogCont);
+
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
             GtidSet gap = masterGtidSet.symmetricDiff(req);
