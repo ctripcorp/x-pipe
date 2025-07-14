@@ -2,6 +2,7 @@ package com.ctrip.xpipe.retry;
 
 import com.ctrip.xpipe.api.retry.RetryPolicy;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -28,7 +29,7 @@ public class RestOperationsRetryPolicy extends AbstractRetryPolicy implements Re
             return true;
         }
         if (e instanceof HttpServerErrorException) {
-            HttpStatus statusCode = ((HttpServerErrorException) e).getStatusCode();
+            HttpStatusCode statusCode = ((HttpServerErrorException) e).getStatusCode();
             if (statusCode == HttpStatus.BAD_GATEWAY) {
                 return true;
             }
