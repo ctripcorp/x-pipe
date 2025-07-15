@@ -15,6 +15,8 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+
 /**
  * @author chen.zhu
  * <p>
@@ -31,6 +33,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     protected AlertManager alertManager;
 
     @Autowired
+    @Lazy
     protected DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Autowired
