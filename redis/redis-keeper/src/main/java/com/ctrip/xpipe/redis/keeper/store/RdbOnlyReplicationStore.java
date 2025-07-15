@@ -225,6 +225,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, String rdbMasterUuid,  GtidSet rdbGtidExecuted, GtidSet rdbGtidLost, long backlogBeginOffset, long backlogEndOffset, long indexedOffsetBacklog, GtidSet indexedGtidSet) throws IOException {
 				throw new UnsupportedOperationException();
 			}
+
+			@Override
+			public GtidCmdFilter generateGtidCmdFilter() {
+				throw new UnsupportedOperationException();
+			}
 		};
 	}
 

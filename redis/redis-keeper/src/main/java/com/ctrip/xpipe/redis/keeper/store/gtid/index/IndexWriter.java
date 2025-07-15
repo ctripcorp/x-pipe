@@ -17,13 +17,13 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     private BlockWriter blockWriter;
     private IndexEntry indexEntry;
     private GtidSetWrapper gtidSetWrapper;
-    private IndexStore indexStore;
+    private DefaultIndexStore defaultIndexStore;
 
 
-    public IndexWriter(String baseDir, String fileName, GtidSet gtidSet, IndexStore indexStore) {
+    public IndexWriter(String baseDir, String fileName, GtidSet gtidSet, DefaultIndexStore defaultIndexStore) {
         super(baseDir, fileName);
         this.gtidSetWrapper = new GtidSetWrapper(gtidSet);
-        this.indexStore = indexStore;
+        this.defaultIndexStore = defaultIndexStore;
     }
 
 
@@ -83,7 +83,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
                 this.indexFile.setLength((int)index.getPosition());
                 setBlockWriter(null);
                 this.indexEntry = null;
-                indexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
+                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
             }
         } finally {
             if(cmdFile != null) {
@@ -98,10 +98,10 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     public void append(String uuid, long gno, int commandOffset) throws IOException {
 
         if(blockWriter == null) {
-            this.createNewBlock(uuid, gno, 0);
+            this.createNewBlock(uuid, gno, commandOffset);
         } else {
             if(needChangeBlock(uuid, gno)) {
-                changeBlock(uuid, gno, this.blockWriter.getCmdOffset());
+                changeBlock(uuid, gno, commandOffset);
             }
         }
         this.blockWriter.append(uuid, gno, commandOffset);
