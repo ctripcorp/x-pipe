@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
+import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
+import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
+import com.ctrip.xpipe.redis.core.store.IndexStore;
+import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -13,15 +16,14 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
-public class IndexStore implements StreamCommandListener, FinishParseDataListener,  Closeable {
+public class DefaultIndexStore implements IndexStore {
 
-    private static final Logger log = LoggerFactory.getLogger(IndexStore.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
 
     private IndexWriter indexWriter;
 
@@ -37,35 +39,32 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
     private CommandStore commandStore;
 
-    private CommandWriter cmdWriter;
+    private GtidCmdFilter gtidCmdFilter;
 
-    public IndexStore(String baseDir, RedisOpParser redisOpParser,
-                      CommandStore commandStore, CommandWriter cmdWriter) {
+    private boolean writerCmdEnabled;
+
+    private CommandStore parentCommandStore;
+
+    public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
+                             CommandStore commandStore, CommandStore cmdStore, GtidCmdFilter gtidCmdFilter) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
         this.commandStore = commandStore;
         this.startGtidSet = new GtidSet("");
-        this.cmdWriter = cmdWriter;
+        this.parentCommandStore = commandStore;
+        this.gtidCmdFilter = gtidCmdFilter;
+        this.writerCmdEnabled = true;
     }
 
+    @Override
     public void initialize(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
-        this.streamCommandReader = new StreamCommandReader(cmdWriter.getFileContext().getChannel().size(), this.opParser);
+        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
-        this.streamCommandReader.addListener(this);
-        this.streamCommandReader.addFinishParseDataListener(this);
         this.indexWriter.init();
     }
 
-    public synchronized void initialize(CommandFile commandFile) throws IOException {
-        this.currentCmdFileName = commandFile.getFile().getName();
-        this.streamCommandReader = new StreamCommandReader(commandFile.getFile().length(), this.opParser);
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
-        this.streamCommandReader.addListener(this);
-        this.streamCommandReader.addFinishParseDataListener(this);
-        this.indexWriter.init();
-    }
-
+    @Override
     public synchronized void write(ByteBuf byteBuf) throws IOException {
         streamCommandReader.doRead(byteBuf);
     }
@@ -85,34 +84,35 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         log.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
 
+    @Override
     public synchronized void rotateFileIfNecessary() throws IOException {
-        boolean rotate = cmdWriter.rotateFileIfNecessary();
+        boolean rotate = parentCommandStore.getCommandWriter().rotateFileIfNecessary();
         if(rotate) {
-            this.switchCmdFile(cmdWriter);
+            this.switchCmdFile(parentCommandStore.getCommandWriter());
         }
     }
 
+    @Override
     public synchronized Pair<Long, GtidSet> locateTailOfCmd() {
-        return new Pair<>(cmdWriter.totalLength(), this.getIndexGtidSet());
+        return new Pair<>(parentCommandStore.getCommandWriter().totalLength(), this.getIndexGtidSet());
     }
 
-    @Override
-    public void onCommand(String gtid, long offset) {
+    public boolean onCommand(String gtid, long offset) throws IOException {
         String[] parts = gtid.split(":");
         if (parts.length != 2 || parts[0].length() != 40) {
             throw new IllegalArgumentException("Invalid gtid: " + gtid);
         }
         String uuid = parts[0];
         long gno = Long.parseLong(parts[1]);
-
-        try {
-            indexWriter.append(uuid, gno, (int)offset);
-        } catch (Exception e) {
-            log.error("[onCommand fail]", e);
-            // todo
+        if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
+            log.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            return false;
         }
+        indexWriter.append(uuid, gno, (int)offset);
+        return true;
     }
 
+    @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
         this.indexWriter.saveIndexEntry();
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
@@ -122,6 +122,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         }
     }
 
+    @Override
     public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
         Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
         if(continuePoint.getKey() == -1) {
@@ -133,14 +134,24 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         return continuePoint;
     }
 
+    @Override
     public synchronized GtidSet getIndexGtidSet() {
         return indexWriter.getGtidSet();
     }
 
-    public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
+    @Override
+    public synchronized boolean increaseLost(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
+        GtidSet backlogGtidSet = getIndexGtidSet();
+        GtidSet intersection = backlogGtidSet.retainAll(lost);
+        if(intersection.itemCnt() > 0) {
+            throw new LostGtidsetBacklogConflictException("increase lost conflict with backlog");
+        }
+        return supplier.get();
+    }
 
-        this.streamCommandReader = new StreamCommandReader(cmdFileOffset, this.opParser);
-        this.streamCommandReader.addListener(this);
+    public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
+        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset, this.opParser);
+        this.disableWriterCmd();
         ControllableFile controllableFile = null;
         try {
             File f = new File(Paths.get(baseDir, cmdFileName).toString());
@@ -162,7 +173,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
 
         } finally {
             // 从cmd 读 写完之后再加入写
-            this.streamCommandReader.addFinishParseDataListener(this);
+            this.enableWriterCmd();
             if(controllableFile != null) {
                 controllableFile.close();
             }
@@ -180,6 +191,7 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         }
     }
 
+    @Override
     public void closeWithDeleteIndexFiles() throws IOException {
         this.close();
         deleteAllIndexFile();
@@ -201,9 +213,18 @@ public class IndexStore implements StreamCommandListener, FinishParseDataListene
         }
     }
 
-    @Override
     public void onFinishParse(ByteBuf byteBuf) throws IOException {
-        commandStore.onlyAppendCommand(byteBuf);
+        if(writerCmdEnabled) {
+            commandStore.onlyAppendCommand(byteBuf);
+        }
+    }
+
+    private void disableWriterCmd() {
+        this.writerCmdEnabled = false;
+    }
+
+    private void enableWriterCmd() {
+        this.writerCmdEnabled = true;
     }
 
 }

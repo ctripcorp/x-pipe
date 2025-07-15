@@ -516,6 +516,14 @@ public class GtidSet {
         return this.map.containsKey(uuid);
     }
 
+    public boolean contains(String uuid, long gno) {
+        UUIDSet uuidSet = this.map.get(uuid);
+        if (null == uuidSet) {
+            return false;
+        }
+        return uuidSet.contains(gno);
+    }
+
     /**
      * A range of GTIDs for a single server with a specific UUID.
      * @see GtidSet
@@ -544,6 +552,15 @@ public class GtidSet {
             }
 
             return cnt;
+        }
+
+        public boolean contains(long gno) {
+            for (Interval interval: intervals) {
+                if(gno <= interval.end && gno >= interval.start) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private boolean isZero() {

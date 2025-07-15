@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexStore;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -91,6 +92,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     private RedisOpParser redisOpParser;
 
+    private GtidCmdFilter gtidCmdFilter;
+
     private boolean buildIndex = true;
     
     public abstract Logger getLogger();
@@ -99,7 +102,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
-                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser) throws IOException {
+                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser,
+                               GtidCmdFilter  gtidCmdFilter
+    ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
@@ -111,6 +116,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
         this.redisOpParser = redisOpParser;
+        this.gtidCmdFilter = gtidCmdFilter;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -118,7 +124,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this, cmdWriter);
+        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+                this, this,  gtidCmdFilter);
     }
 
     @Override
@@ -682,7 +689,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
         }
-        indexStore = new IndexStore(baseDir.getAbsolutePath(), redisOpParser, this, cmdWriter);
+        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+                this, this, gtidCmdFilter);
         indexStore.initialize(cmdWriter);
         buildIndex = true;
     }
@@ -694,6 +702,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.close();
         }
+    }
+
+    @Override
+    public boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
+        return indexStore.increaseLost(lost, supplier);
+    }
+
+    @Override
+    public CommandWriter getCommandWriter() {
+        return cmdWriter;
     }
 
 }

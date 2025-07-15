@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 
 import java.io.IOException;
@@ -318,7 +319,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 try {
                     logger.info("[runAction][increaseLost][{}] {}", slave, action.deltaLost);
                     keeperServer.increaseLost(action.deltaLost, slave);
-                } catch (IOException e) {
+                } catch (LostGtidsetBacklogConflictException | IOException e) {
+                    logger.error("[runAction][increaseLost]", e);
                     try {
                         slave.close();
                         return;

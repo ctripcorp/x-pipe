@@ -3,10 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.meta;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.ReplStage;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
-import com.ctrip.xpipe.redis.core.store.UPDATE_RDB_RESULT;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.io.File;
@@ -18,7 +15,7 @@ import java.util.Objects;
  *
  * Dec 4, 2016
  */
-public class DefaultMetaStore extends AbstractMetaStore{
+public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter {
 	public DefaultMetaStore(File baseDir, String keeperRunid) {
 		super(baseDir, keeperRunid);
 	}
@@ -431,6 +428,13 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public boolean gtidSetContains(String uuid, long gno) {
+		synchronized (metaRef) {
+			return metaRef.get().getCurReplStage().getGtidLost().contains(uuid, gno);
+		}
+	}
+
+	@Override
 	public boolean xsyncContinue(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
 								 GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
 		boolean	updated = false;
@@ -638,6 +642,11 @@ public class DefaultMetaStore extends AbstractMetaStore{
 
 			return result;
 		}
+	}
+
+	@Override
+	public GtidCmdFilter generateGtidCmdFilter() {
+		return this;
 	}
 
 	private void clearRdb(ReplicationStoreMeta metaDup) {

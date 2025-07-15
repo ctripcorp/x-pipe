@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
@@ -28,17 +26,18 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
+	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter) throws IOException {
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser) throws IOException {
+										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter
+	) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
