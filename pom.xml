@@ -1005,12 +1005,8 @@
                     <configuration>
                         <requiresUnpack>
                             <dependency>
-                                <groupId>org.unidal.framework</groupId>
-                                <artifactId>foundation-service</artifactId>
-                            </dependency>
-                            <dependency>
-                                <groupId>com.ctrip.framework.xpipe.redis</groupId>
-                                <artifactId>redis-console</artifactId>
+                                <groupId>*</groupId>
+                                <artifactId>*</artifactId>
                             </dependency>
                         </requiresUnpack>
                     </configuration>
