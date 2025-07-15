@@ -47,6 +47,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     private CheckerConfig checkerConfig;
 
     @Autowired
+    @Lazy
     private OuterClientAggregator outerClientAggregator;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
