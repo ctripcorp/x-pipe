@@ -1009,7 +1009,7 @@
                                 <artifactId>foundation-service</artifactId>
                             </dependency>
                             <dependency>
-                                <groupId>com.ctrip.xpipe.redis</groupId>
+                                <groupId>com.ctrip.framework.xpipe.redis</groupId>
                                 <artifactId>redis-console</artifactId>
                             </dependency>
                         </requiresUnpack>
