@@ -40,6 +40,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     private RemoteCheckerManager remoteCheckerManager;
 
     @Autowired
+    @Lazy
     private StabilityHolder siteStability;
 
     @Autowired
