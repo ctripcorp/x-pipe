@@ -16,17 +16,10 @@ import java.util.List;
 public abstract class AbstractSender implements Sender {
 
     @Autowired
-    private SenderManager senderManager;
-
-    @Autowired
     private AlertConfig alertConfig;
 
     public static final String CC_ER = "ccers";
 
-    public Sender querySender() {
-        String id = getId();
-        return senderManager.querySender(id);
-    }
 
     protected Email createEmail(AlertMessageEntity message) {
         Email email = new Email();
