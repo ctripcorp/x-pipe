@@ -133,6 +133,18 @@
    <build>
       <plugins>
          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+               <requiresUnpack>
+                  <dependency>
+                     <groupId>*</groupId>
+                     <artifactId>*</artifactId>
+                  </dependency>
+               </requiresUnpack>
+            </configuration>
+         </plugin>
+         <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
             <artifactId>codegen-maven-plugin</artifactId>
             <executions>
