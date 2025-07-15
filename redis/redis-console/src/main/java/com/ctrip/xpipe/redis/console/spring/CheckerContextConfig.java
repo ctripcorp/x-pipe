@@ -69,6 +69,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    @Primary
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public MetaCache metaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         return new CheckerMetaCache(checkerConfig, checkerConsoleService);
@@ -80,6 +81,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    @Primary
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public MetaCache testMetaCache() {
         return new TestMetaCache();
