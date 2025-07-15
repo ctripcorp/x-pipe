@@ -15,7 +15,7 @@ import java.util.List;
 
 public class IndexReader extends AbstractIndex implements Closeable {
 
-    private static final Logger log = LoggerFactory.getLogger(IndexStore.class);
+    private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
 
     private List<IndexEntry> indexItemList;
 

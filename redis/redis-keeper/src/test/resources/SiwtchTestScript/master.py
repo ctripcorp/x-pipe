@@ -3,13 +3,13 @@ import requests
 import time
 import subprocess
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 日志配置
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
+
 logger = logging.getLogger("redis_cluster_check")
 
 def get_redis_instances(cluster_name):
@@ -26,11 +26,12 @@ def get_redis_instances(cluster_name):
                     "Port": instance["Port"],
                     "Env": instance.get("Env", None),
                 })
+
+        logger.info(f"instances: {instances}")
         return instances
     except Exception as e:
         logger.error(f"Error fetching data from API: {e}")
         return None
-
 
 def send_redis_command(ip, port, command, timeout=3):
     s = None
@@ -87,7 +88,6 @@ def send_redis_command(ip, port, command, timeout=3):
             except Exception:
                 pass
 
-
 def parse_info_fields(response_str):
     if not response_str:
         return None, None, None, None
@@ -116,14 +116,11 @@ def parse_info_fields(response_str):
     repl_offset = master_repl_offset if role == "master" else slave_repl_offset
     return role, repl_offset, gtid_set, gtid_lost
 
-
 def set_master_acl_readonly(master_host, master_port):
     return send_redis_command(master_host, master_port, "ACL SETUSER default on +@read -@write")
 
-
 def restore_master_acl_all(master_host, master_port):
     return send_redis_command(master_host, master_port, "ACL SETUSER default on +@all")
-
 
 def find_master_and_env(instances):
     master_info = None
@@ -139,10 +136,24 @@ def find_master_and_env(instances):
             break
     return master_info, master_env
 
-
 def get_instances_with_env(instances, env):
     return [inst for inst in instances if inst.get("Env", None) == env]
 
+def debug_sleep_master_only(master_instance, sleep_seconds=60):
+    """
+    只对master节点，发送DEBUG SLEEP命令
+    """
+    logger.info(f"只给master节点 {master_instance['IPAddress']}:{master_instance['Port']} 发送 DEBUG SLEEP {sleep_seconds}")
+    try:
+        result = send_redis_command(
+            master_instance["IPAddress"],
+            master_instance["Port"],
+            f"DEBUG SLEEP {sleep_seconds}",
+            timeout=sleep_seconds+2
+        )
+        logger.info(f"{master_instance['IPAddress']}:{master_instance['Port']} DEBUG SLEEP 发送完成，结果: {result}")
+    except Exception as e:
+        logger.error(f"{master_instance['IPAddress']}:{master_instance['Port']} DEBUG SLEEP 发送异常: {e}")
 
 def check_cluster_repl_gtid(instances, readonly_seconds=2):
     master_info, _ = find_master_and_env(instances)
@@ -202,10 +213,10 @@ def check_cluster_repl_gtid(instances, readonly_seconds=2):
             return
 
         logger.info("\n所有节点repl_offset、gtid_set一致，且gtid_lost均为空，可以继续后续流程。")
+        return True
     finally:
         recover_res = restore_master_acl_all(master_host, master_port)
         logger.info(f"\n恢复 master {master_host}:{master_port} 写权限: {recover_res}")
-
 
 def run_redis_full_check_on_slaves(instances, full_check_bin="redis-full-check", full_check_extra_args=None):
     logger.info("\n==== 开始对所有slave进行redis-full-check一致性校验 ====")
@@ -217,78 +228,58 @@ def run_redis_full_check_on_slaves(instances, full_check_bin="redis-full-check",
     master_host = master_info["IPAddress"]
     master_port = master_info["Port"]
 
-    slave_nodes = []
-    for inst in instances:
-        info = send_redis_command(inst["IPAddress"], inst["Port"], "INFO replication")
-        role, _, _, _ = parse_info_fields(info)
-        if role == "slave":
-            slave_nodes.append(inst)
+    # 1. 开始前将master设为只读
+    acl_res = set_master_acl_readonly(master_host, master_port)
+    logger.info(f"[full-check] 设置 master {master_host}:{master_port} 只读: {acl_res}")
+    time.sleep(2)  # 给从节点一点同步时间
 
-    if not slave_nodes:
-        logger.warning("未找到slave节点，跳过full-check。")
-        return
-
-    for slave in slave_nodes:
-        slave_host = slave["IPAddress"]
-        slave_port = slave["Port"]
-        logger.info(f"\n对比 master {master_host}:{master_port} <-> slave {slave_host}:{slave_port} ...")
-        cmd = [
-            full_check_bin,
-            "--source", f"{master_host}:{master_port}",
-            "--target", f"{slave_host}:{slave_port}",
-            "--parallel", "4",
-        ]
-        if full_check_extra_args:
-            cmd.extend(full_check_extra_args)
-        logger.info("运行命令：%s", " ".join(cmd))
-        try:
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=600)
-            logger.info(f"redis-full-check 结果:\n{result.stdout}\n{result.stderr}")
-        except Exception as e:
-            logger.error(f"执行redis-full-check时发生异常: {e}")
-
-
-def get_keeper_ip_ports(cluster_name, shard="test1"):
-    base_url = f"http://xpipe.ptjq.fx.uat.tripqate.com/api/keepers/UAT/{cluster_name}/{shard}"
     try:
-        response = requests.get(base_url, timeout=5)
-        response.raise_for_status()
-        ip_ports = response.json()
-        if isinstance(ip_ports, list):
-            return ip_ports
-        else:
-            logger.error(f"keeper接口返回不是列表: {ip_ports}")
-            return []
-    except Exception as e:
-        logger.error(f"keeper接口请求或解析出错: {e}")
-        return []
+        slave_nodes = []
+        for inst in instances:
+            info = send_redis_command(inst["IPAddress"], inst["Port"], "INFO replication")
+            role, _, _, _ = parse_info_fields(info)
+            if role == "slave":
+                slave_nodes.append(inst)
 
+        if not slave_nodes:
+            logger.warning("未找到slave节点，跳过full-check。")
+            return
 
-def keeper_reset(ip_port, replid):
-    ip, _ = ip_port.split(":")
-    url = f"http://{ip}:8080/keepers/election/reset"
-    payload = {"replId": replid}
-    try:
-        resp = requests.post(url, json=payload, timeout=5)
-        logger.info(f"{url} POST返回状态码: {resp.status_code}, 响应: {resp.text}")
-        return resp.status_code == 200
-    except Exception as e:
-        logger.error(f"POST请求 {url} 时出错: {e}")
-        return False
-
+        for slave in slave_nodes:
+            slave_host = slave["IPAddress"]
+            slave_port = slave["Port"]
+            logger.info(f"\n对比 master {master_host}:{master_port} <-> slave {slave_host}:{slave_port} ...")
+            cmd = [
+                full_check_bin,
+                "--source", f"{master_host}:{master_port}",
+                "--target", f"{slave_host}:{slave_port}",
+                "--parallel", "4",
+            ]
+            if full_check_extra_args:
+                cmd.extend(full_check_extra_args)
+            logger.info("运行命令：%s", " ".join(cmd))
+            try:
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=600)
+                logger.info(f"redis-full-check 结果:\n{result.stdout}\n{result.stderr}")
+            except Exception as e:
+                logger.error(f"执行redis-full-check时发生异常: {e}")
+    finally:
+        # 2. 恢复master写权限
+        recover_res = restore_master_acl_all(master_host, master_port)
+        logger.info(f"[full-check] 恢复 master {master_host}:{master_port} 写权限: {recover_res}")
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Check Redis cluster repl_offset/gtid_set/gtid_lost consistency and keeper reset on Env, and run redis-full-check on slaves.")
+    parser = argparse.ArgumentParser(description="Check Redis cluster repl_offset/gtid_set/gtid_lost consistency and DEBUG SLEEP on master only, and run redis-full-check on slaves.")
     parser.add_argument("--cluster", type=str, default="xpipe-test-gap-allow-xsync", help="Redis cluster name")
-    parser.add_argument("--keeper-replid", type=str, default= "786906", required=True, help="keeper replid, e.g. 786906")
-    parser.add_argument("--shard", type=str, default="xpipe-test-gap-allow-xsync_1", help="keeper shard")
-    parser.add_argument("--debug-sleep-interval", type=int, default=60, help="Interval between keeper reset (seconds, default 600=10min)")
+    parser.add_argument("--debug-sleep-seconds", type=int, default=45, help="DEBUG SLEEP N duration (seconds)")
+    parser.add_argument("--debug-sleep-interval", type=int, default=300, help="Interval between DEBUG SLEEP (seconds, default 600=10min)")
     parser.add_argument("--readonly-seconds", type=int, default=5, help="Readonly duration in seconds for master ACL")
-    parser.add_argument("--repeat", type=int, default=1, help="How many times to repeat reset+check (default 1)")
-    parser.add_argument("--full-check", default=True ,action="store_true", help="是否对所有slave进行redis-full-check主从一致性校验")
+    parser.add_argument("--repeat", type=int, default=1, help="How many times to repeat sleep+check (default 1)")
+    parser.add_argument("--full-check", default=True, action="store_true", help="是否对所有slave进行redis-full-check主从一致性校验")
     parser.add_argument("--full-check-bin", type=str, default="./redis-full-check", help="redis-full-check二进制路径")
     parser.add_argument("--full-check-extra-args", type=str, default="", help="redis-full-check额外参数（空格分隔）")
+    parser.add_argument("--full-check-interval", type=int, default=10, help="多少轮执行一次redis-full-check（默认10轮执行一次）")
     args = parser.parse_args()
 
     instances = get_redis_instances(args.cluster)
@@ -297,29 +288,21 @@ def main():
         return
 
     for round_num in range(1, args.repeat + 1):
-        logger.info(f"\n==== 第{round_num}轮 keeper reset + 检查 ====")
-
-        # 1. 获取 keeper ip:port
-        keeper_ip_ports = get_keeper_ip_ports(args.cluster, args.shard)
-        if not keeper_ip_ports:
-            logger.error("没有获取到 keeper ip:port 信息，终止。")
+        logger.info(f"\n==== 第{round_num}轮 DEBUG SLEEP + 检查 ====")
+        master_info, master_env = find_master_and_env(instances)
+        if not master_info or not master_env:
+            logger.error("没有找到master或master的Env，终止。")
             break
 
-        # 2. 给所有 keeper 节点 reset
-        for ip_port in keeper_ip_ports:
-            ip, port = ip_port.split(":")
-            info_result = send_redis_command(ip, port, "info")
-            if "ACTIVE"in info_result:
-                logger.info(f"正在重置 keeper {ip_port} ...")
-                keeper_reset(ip_port, args.keeper_replid)
-                break
+        # 只对master发送debug sleep
+        debug_sleep_master_only(master_info, sleep_seconds=args.debug_sleep_seconds)
 
-        logger.info("等待一段时间后进行repl/gtid一致性检查...")
-        time.sleep(20)  # 你可以根据实际情况调整
-
+        logger.info("等待后进行repl/gtid一致性检查...")
+        time.sleep(args.debug_sleep_seconds * 1)
         check_cluster_repl_gtid(instances, readonly_seconds=args.readonly_seconds)
 
-        if args.full_check:
+        # 每 full_check_interval 轮执行一次full check
+        if args.full_check and round_num % args.full_check_interval == 0:
             run_redis_full_check_on_slaves(
                 instances,
                 full_check_bin=args.full_check_bin,
@@ -329,6 +312,15 @@ def main():
         if round_num < args.repeat:
             logger.info(f"等待 {args.debug_sleep_interval} 秒后开始下一轮...")
             time.sleep(args.debug_sleep_interval)
+
+    # 最后强制再做一次full check（如果没做过）
+    if args.full_check and (args.repeat % args.full_check_interval != 0):
+        logger.info("最后一轮结束后，补充执行一次redis-full-check")
+        run_redis_full_check_on_slaves(
+            instances,
+            full_check_bin=args.full_check_bin,
+            full_check_extra_args=args.full_check_extra_args.split() if args.full_check_extra_args else None
+        )
 
 if __name__ == "__main__":
     main()

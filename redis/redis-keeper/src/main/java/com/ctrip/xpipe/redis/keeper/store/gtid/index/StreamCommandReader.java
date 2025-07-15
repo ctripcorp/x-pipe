@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
 
@@ -29,25 +27,15 @@ public class StreamCommandReader {
     private RedisOpParser opParser;
     private ByteBuf remainingBuf;
 
-    private List<StreamCommandListener> listeners;
-    private List<FinishParseDataListener> finishParseDataListeners;
+    private DefaultIndexStore defaultIndexStore;
 
-    public StreamCommandReader(long offset, RedisOpParser opParser) {
+    public StreamCommandReader(DefaultIndexStore defaultIndexStore, long offset, RedisOpParser opParser) {
+        this.defaultIndexStore = defaultIndexStore;
         this.currentOffset = offset;
         this.lastOffset = offset;
         this.protocolParser = new ArrayParser();
         this.opParser = opParser;
         this.remainingBuf = null;
-        this.listeners = new ArrayList<>();
-        this.finishParseDataListeners = new ArrayList<>();
-    }
-
-    public void addListener(StreamCommandListener listener) {
-        this.listeners.add(listener);
-    }
-
-    public void addFinishParseDataListener(FinishParseDataListener listener) {
-        this.finishParseDataListeners.add(listener);
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
@@ -84,28 +72,23 @@ public class StreamCommandReader {
             }
 
             ByteBuf finishBuf = mergeBuf.slice(pre, mergeBuf.readerIndex() - pre);
-            notifyFinishParseDataListener(finishBuf);
-            this.currentOffset += mergeBuf.readerIndex() - pre;
 
             Object[] payload = protocol.getPayload();
             String gtid = readGtid(payload);
+            boolean needWrite = true;
             if (!StringUtil.isEmpty(gtid)) {
-                for(StreamCommandListener listener : listeners) {
-                    listener.onCommand(gtid, this.lastOffset);
-                    lastOffset = this.currentOffset;
-                }
+                needWrite &= defaultIndexStore.onCommand(gtid, this.lastOffset);
             }
+            if(needWrite) {
+                defaultIndexStore.onFinishParse(finishBuf);
+                this.currentOffset += mergeBuf.readerIndex() - pre;
+            }
+            lastOffset = this.currentOffset;
             this.protocolParser.reset();
         }
 
         byteBuf.skipBytes(byteBuf.readableBytes());
 
-    }
-
-    private void notifyFinishParseDataListener(ByteBuf byteBuf) throws IOException {
-        for (FinishParseDataListener listener : finishParseDataListeners) {
-            listener.onFinishParse(byteBuf);
-        }
     }
 
     public void resetOffset() {

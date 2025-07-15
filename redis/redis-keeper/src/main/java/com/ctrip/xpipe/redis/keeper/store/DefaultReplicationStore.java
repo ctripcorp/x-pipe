@@ -93,7 +93,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
 
-		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
+		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
+
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
 		Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
@@ -105,7 +106,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		if (null != meta && null != meta.getCmdFilePrefix()) {
-			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+					metaStore.generateGtidCmdFilter());
 			//TODO remove obselete gtid feature
 			if (meta.getRdbLastOffset() != null) {
 				cmdStore.setBaseIndex(meta.getRdbGtidSet(), meta.getRdbLastOffset() - (meta.getBeginOffset() - 1));
@@ -179,7 +181,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public boolean increaseLost(GtidSet lost) throws IOException {
 		getLogger().info("[increaseLost] {}", lost);
-		return metaStore.increaseLost(lost);
+
+		return cmdStore.increaseLostNotInCmdStore(lost, () ->
+			metaStore.increaseLost(lost)
+		);
 	}
 
 	@Override
@@ -211,7 +216,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),
 				masterUuid,gtidLost,gtidExecuted,cmdFilePrefix);
 
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				metaStore.generateGtidCmdFilter());
 
 		cmdStore.switchToXSync(gtidEmpty);
 	}
@@ -320,7 +326,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		storeRef.set(rdbStore);
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				metaStore.generateGtidCmdFilter());
 		cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
 
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
@@ -356,7 +363,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		rdbStore.addListener(createRdbStoreListener(rdbStore));
 		storeRef.set(rdbStore);
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				metaStore.generateGtidCmdFilter());
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
 			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
 		} else {
@@ -472,7 +480,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
 
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				metaStore.generateGtidCmdFilter());
 		cmdStore.switchToPsync(replId, continueOffset);
 	}
 
@@ -486,19 +495,21 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff+1, backlogEndOffset(), cmdFilePrefix);
 
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor);
+		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				metaStore.generateGtidCmdFilter());
 		cmdStore.switchToPsync(replId, replOff);
 	}
 
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
-											  KeeperMonitor keeperMonitor) throws IOException {
+											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
 		DefaultCommandStore cmdStore = new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser);
+				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter
+		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
 			cmdStore.initialize();
