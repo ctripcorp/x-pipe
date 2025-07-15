@@ -1002,6 +1002,14 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot-maven-plugin.version}</version>
+                    <configuration>
+                        <requiresUnpack>
+                            <dependency>
+                                <groupId>org.unidal.framework</groupId>
+                                <artifactId>foundation-service</artifactId>
+                            </dependency>
+                        </requiresUnpack>
+                    </configuration>
                     <executions>
                         <execution>
                             <goals>
