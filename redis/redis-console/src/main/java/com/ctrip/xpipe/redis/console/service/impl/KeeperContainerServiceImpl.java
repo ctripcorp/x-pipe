@@ -19,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
@@ -44,6 +45,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   private OrganizationService organizationService;
 
   @Autowired
+  @Lazy
   private RedisService redisService;
 
   @Autowired
@@ -53,6 +55,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   private DcClusterService dcClusterService;
 
   @Autowired
+  @Lazy
   private AzService azService;
 
   @Autowired

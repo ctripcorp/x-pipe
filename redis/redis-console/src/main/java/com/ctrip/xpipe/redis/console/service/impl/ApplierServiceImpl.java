@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -33,9 +34,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> implements ApplierService {
-
-    @Autowired
-    private DcClusterShardService dcClusterShardService;
 
     @Autowired
     private AppliercontainerService appliercontainerService;
@@ -62,6 +60,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     private RedisService redisService;
 
     @Autowired
+    @Lazy
     private ReplDirectionService replDirectionService;
 
     @Autowired

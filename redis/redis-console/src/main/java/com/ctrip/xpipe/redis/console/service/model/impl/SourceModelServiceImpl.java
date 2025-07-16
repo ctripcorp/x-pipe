@@ -17,22 +17,7 @@ import java.util.List;
 public class SourceModelServiceImpl implements SourceModelService {
 
     @Autowired
-    private DcService dcService;
-
-    @Autowired
-    private ClusterService clusterService;
-
-    @Autowired
     private ShardService shardService;
-
-    @Autowired
-    private DcClusterService dcClusterService;
-
-    @Autowired
-    private DcClusterShardService dcClusterShardService;
-
-    @Autowired
-    private ApplierService applierService;
 
     @Autowired
     private ReplDirectionService replDirectionService;

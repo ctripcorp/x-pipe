@@ -33,6 +33,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
@@ -71,6 +72,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private MetaCache metaCache;
 
 	@Autowired
+	@Lazy
 	private SentinelGroupService sentinelService;
 
 	@Autowired
@@ -81,7 +83,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Autowired
 	private List<ShardEventListener> shardEventListeners;
+
 	@Autowired
+	@Lazy
 	private SentinelBalanceService sentinelBalanceService;
 
 	@Autowired

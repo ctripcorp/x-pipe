@@ -42,6 +42,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -58,9 +59,11 @@ import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
 
     @Autowired
+    @Lazy
     private MigrationEventDao migrationEventDao;
 
     @Autowired
+    @Lazy
     private MigrationEventManager migrationEventManager;
 
     @Autowired

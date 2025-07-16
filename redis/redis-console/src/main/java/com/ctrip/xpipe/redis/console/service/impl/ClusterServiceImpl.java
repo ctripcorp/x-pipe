@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
-import com.ctrip.xpipe.redis.console.dao.RouteDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.dto.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
@@ -55,6 +54,7 @@ import com.google.common.collect.Sets;
 import com.mysql.jdbc.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -84,56 +84,73 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private DcClusterDao dcClusterDao;
 	@Autowired
 	private ShardDao shardDao;
-	@Autowired
-	private RouteDao routeDao;
 
 	@Autowired
+	@Lazy
 	private ApplierService applierService;
+
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
+
 	@Autowired
+	@Lazy
 	private ShardService shardService;
+
 	@Autowired
 	private OrganizationService organizationService;
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
+
 	@Autowired
 	private DelayService delayService;
+
 	@Autowired
+	@Lazy
 	private RouteService routeService;
+
 	@Autowired
+	@Lazy
 	private ProxyService proxyService;
+
 	@Autowired
 	private MetaCache metaCache;
 
 	@Autowired
+	@Lazy
 	private ClusterDeleteEventFactory clusterDeleteEventFactory;
 
 	@Autowired
+	@Lazy
 	private DcClusterService dcClusterService;
 
 	@Autowired
+	@Lazy
 	private RedisService redisService;
 
 	@Autowired
+	@Lazy
 	private SentinelBalanceService sentinelBalanceService;
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
 	@Autowired
+	@Lazy
 	private ReplDirectionService replDirectionService;
 
 	@Autowired
+	@Lazy
 	private SourceModelService sourceModelService;
 
 	@Autowired
+	@Lazy
 	private ShardModelService shardModelService;
 
 	@Autowired
 	private ShardRepository shardRepository;
 
 	@Autowired
+	@Lazy
 	private KeeperAdvancedService keeperAdvancedService;
 
     @Autowired

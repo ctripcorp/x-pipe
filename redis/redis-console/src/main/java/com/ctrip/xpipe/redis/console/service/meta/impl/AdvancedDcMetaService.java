@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -56,54 +57,71 @@ public class AdvancedDcMetaService implements DcMetaService {
     private static final Logger logger = LoggerFactory.getLogger(AdvancedDcMetaService.class);
 
     @Autowired
+    @Lazy
     private DcService dcService;
 
     @Autowired
+    @Lazy
     private ZoneService zoneService;
 
     @Autowired
+    @Lazy
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
+    @Lazy
     private SentinelGroupService sentinelService;
 
     @Autowired
+    @Lazy
     private KeeperContainerService keeperContainerService;
 
     @Autowired
+    @Lazy
     private AppliercontainerService appliercontainerService;
 
     @Autowired
+    @Lazy
     private AzService azService;
 
     @Autowired
+    @Lazy
     private SentinelMetaService sentinelMetaService;
 
     @Autowired
+    @Lazy
     private KeepercontainerMetaService keepercontainerMetaService;
 
     @Autowired
+    @Lazy
     private AppliercontainerMetaService appliercontainerMetaService;
 
     @Autowired
+    @Lazy
     private RedisMetaService redisMetaService;
 
     @Autowired
+    @Lazy
     private DcClusterService dcClusterService;
 
     @Autowired
+    @Lazy
     private AzGroupClusterRepository azGroupClusterRepository;
 
     @Autowired
+    @Lazy
     private AzGroupCache azGroupCache;
 
     @Autowired
+    @Lazy
     private ClusterMetaService clusterMetaService;
 
     @Autowired
+    @Lazy
     private RouteService routeService;
 
     @Autowired
+    @Lazy
     private ProxyService proxyService;
 
     @Autowired
