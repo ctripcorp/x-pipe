@@ -69,7 +69,7 @@ public class AppTest extends AbstratAppTest {
 
 		try {
 			startZk(2181);
-			System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
+			System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 			System.setProperty("server.port", "8080");
 			start();
 		}catch (Throwable e){

@@ -76,8 +76,8 @@
       <!-- mybatis plus + ctrip dal -->
       <dependency>
          <groupId>com.baomidou</groupId>
-         <artifactId>mybatis-plus-boot-starter</artifactId>
-         <version>3.5.3.1</version>
+         <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+         <version>3.5.12</version>
       </dependency>
 
       <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
@@ -115,7 +115,7 @@
       <dependency>
          <groupId>com.baomidou</groupId>
          <artifactId>mybatis-plus-generator</artifactId>
-         <version>3.5.3.1</version>
+         <version>3.5.12</version>
          <scope>test</scope>
       </dependency>
    </dependencies>
@@ -132,18 +132,6 @@
    </profiles>
    <build>
       <plugins>
-         <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-               <requiresUnpack>
-                  <dependency>
-                     <groupId>*</groupId>
-                     <artifactId>*</artifactId>
-                  </dependency>
-               </requiresUnpack>
-            </configuration>
-         </plugin>
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>
             <artifactId>codegen-maven-plugin</artifactId>
