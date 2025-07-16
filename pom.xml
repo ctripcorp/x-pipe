@@ -26,9 +26,9 @@
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <jersey.version>2.19</jersey.version>
         <commons-exec.version>1.3</commons-exec.version>
-        <unidal.test.version>3.1.4</unidal.test.version>
-        <unidal.foundation.version>3.1.4</unidal.foundation.version>
-        <unidal.jdbc.version>3.1.4</unidal.jdbc.version>
+        <unidal.test.version>3.0.8</unidal.test.version>
+        <unidal.foundation.version>3.0.8</unidal.foundation.version>
+        <unidal.jdbc.version>3.0.8</unidal.jdbc.version>
         <unidal.codegen.version>2.5.8</unidal.codegen.version>
         <unidal.plexus.version>2.5.8</unidal.plexus.version>
         <commons-pool.version>2.3</commons-pool.version>
