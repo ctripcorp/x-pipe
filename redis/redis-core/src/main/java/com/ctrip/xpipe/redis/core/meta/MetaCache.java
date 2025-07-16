@@ -46,6 +46,8 @@ public interface MetaCache {
 
     Set<HostPort> getActiveDcSentinels(String clusterId, String shardId);
 
+    Set<HostPort> getAllActiveDcSentinels();
+
     HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException;
 
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
@@ -73,6 +75,8 @@ public interface MetaCache {
     Map<String, RouteMeta> chooseClusterMetaRoutes(String clusterName, String srcDc, List<String> dstDcs);
 
     boolean isCrossRegion(String activeDc, String backupDc);
+
+    boolean isCurrentDc(String dc);
 
     boolean isDcInRegion(String dc, String zone);
 

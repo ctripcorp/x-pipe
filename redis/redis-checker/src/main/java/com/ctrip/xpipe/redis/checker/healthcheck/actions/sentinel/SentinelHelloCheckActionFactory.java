@@ -31,7 +31,7 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_SCHEDU
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
+public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, CrossRegionSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
@@ -70,7 +70,10 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
             action.addListeners(collectorsByClusterType.get(azGroupClusterType));
             action.addControllers(controllersByClusterType.get(azGroupClusterType));
-        } else {
+        } else if (clusterType == ClusterType.ONE_WAY && metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()) && metaCache.isCurrentDc(info.getDcId())) {
+            action.addListeners(collectorsByClusterType.get(ClusterType.CROSS_REGION));
+            action.addControllers(controllersByClusterType.get(ClusterType.CROSS_REGION));
+        }else {
             action.addListeners(collectorsByClusterType.get(clusterType));
             action.addControllers(controllersByClusterType.get(clusterType));
         }

@@ -333,6 +333,11 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public boolean isCurrentDc(String dc) {
+        return currentDc.equalsIgnoreCase(dc);
+    }
+
+    @Override
     public boolean isDcInRegion(String dc, String zone) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         return xpipeMetaManager.getDcZone(dc).equalsIgnoreCase(zone);
@@ -456,6 +461,14 @@ public abstract class AbstractMetaCache implements MetaCache {
         SentinelMeta sentinel = xpipeMetaManager.getSentinel(activeDc, clusterId, shardId);
 
         return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
+    }
+
+    @Override
+    public Set<HostPort> getAllActiveDcSentinels() {
+        Set<HostPort> sentinels = new HashSet<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.getAllActiveDcSentinels().forEach(sentinelMeta -> sentinels.addAll(IpUtils.parseAsHostPorts(sentinelMeta.getAddress())));
+        return sentinels;
     }
 
     @Override

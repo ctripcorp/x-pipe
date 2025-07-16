@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author chen.zhu
@@ -159,7 +160,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-            clusterType, clusterMeta.getOrgId());
+            clusterType, clusterMeta.getOrgId(), clusterMeta.parent().getId());
         info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
@@ -239,11 +240,22 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void initActions(DefaultClusterHealthCheckInstance instance) {
         List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckActionFactories = clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType());
         if (clusterHealthCheckActionFactories == null) return;
-        for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
-            if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
-                installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
-            } else {
-                instance.register(factory.create(instance));
+        ClusterInstanceInfo info = instance.getCheckInfo();
+        if (ClusterType.ONE_WAY == info.getClusterType() && metaCache.isCrossRegion(currentDcId, info.getDcId()) && Objects.equals(currentDcId, info.getDcId())) {
+            for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
+                if (factory instanceof SiteLeaderAwareHealthCheckActionFactory && factory instanceof CrossRegionSupport) {
+                    installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
+                } else {
+                    instance.register(factory.create(instance));
+                }
+            }
+        } else {
+            for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
+                if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
+                    installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
+                } else {
+                    instance.register(factory.create(instance));
+                }
             }
         }
     }

@@ -16,7 +16,8 @@ public enum ClusterType {
     LOCAL_DC(false, false, false, true),
     CROSS_DC(false, false, false, true,true),
     // 异构集群，具体集群类型由AzGroup中的clusterType来表示
-    HETERO(true, true, true, false);
+    HETERO(true, true, true, false),
+    CROSS_REGION(true, true , true , false, false);
 
     private boolean supportKeeper;
     private boolean supportMigration;

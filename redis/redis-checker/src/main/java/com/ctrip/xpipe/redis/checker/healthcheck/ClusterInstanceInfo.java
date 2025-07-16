@@ -10,4 +10,8 @@ public interface ClusterInstanceInfo extends CheckInfo {
 
     int getOrgId();
 
+    ClusterInstanceInfo setDcId(String dcId);
+
+    String getDcId();
+
 }

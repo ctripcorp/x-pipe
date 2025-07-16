@@ -11,10 +11,17 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements ClusterInstanceInfo {
 
     private int orgId;
+    private String dcId;
 
     public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
         super(clusterId, activeDc, clusterType);
         this.orgId = orgId;
+    }
+
+    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, String dcId) {
+        super(clusterId, activeDc, clusterType);
+        this.orgId = orgId;
+        this.dcId = dcId;
     }
 
     @Override
@@ -25,6 +32,17 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
 
     public int getOrgId() {
         return orgId;
+    }
+
+    @Override
+    public ClusterInstanceInfo setDcId(String dcId) {
+        this.dcId = dcId;
+        return this;
+    }
+
+    @Override
+    public String getDcId() {
+        return dcId;
     }
 
     @Override

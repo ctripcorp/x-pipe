@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.NoRedisToSubContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
@@ -53,6 +54,12 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
 
     @Override
     public synchronized void onAction(SentinelActionContext context) {
+        if (context instanceof NoRedisToSubContext) {
+            logger.warn("[{}-{}+{}]no redis to sub, downgrade.", LOG_TITLE, clusterId, shardId);
+            if (!needDowngrade) beginDowngrade();
+            return;
+        }
+
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         RedisInstanceInfo info = context.instance().getCheckInfo();
         transaction.logTransactionSwallowException("sentinel.check.notify", info.getClusterId(), new Task() {
@@ -66,7 +73,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
                 int collectedInstanceCount = collectHello(context);
 
                 if (allInstancesCollected(collectedInstanceCount)) {
-                    if (!needDowngrade && shouldDowngrade(info)) {
+                    if (!needDowngrade && shouldDowngrade()) {
                         logger.warn("[{}-{}+{}]backup dc or slaves {} sub failed, try to sub from active dc or master", LOG_TITLE, clusterId, shardId, info.getDcId());
                         beginDowngrade();
                     } else {
@@ -92,20 +99,19 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
 
     abstract protected boolean allInstancesCollectedInNormalStatus(int collectedInstanceCount);
 
-    private boolean allInstancesCollected(int collectedInstanceCount) {
+    protected boolean allInstancesCollected(int collectedInstanceCount) {
         return needDowngrade && allInstancesCollectedInDowngradeStatus(collectedInstanceCount) ||
                 !needDowngrade && allInstancesCollectedInNormalStatus(collectedInstanceCount);
     }
 
-    private boolean shouldDowngrade(RedisInstanceInfo info) {
+    private boolean shouldDowngrade() {
         DowngradeStrategy strategy = DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy());
-        boolean shouldDowngrade = strategy.needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
-        if (shouldDowngrade)
-            CatEventMonitor.DEFAULT.logEvent("sentinel.check.downgrade", String.format("%s-%s-%s", strategy.name(), info.getClusterId(), info.getShardId()));
-        return shouldDowngrade;
+        return strategy.needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
     }
 
     private void beginDowngrade() {
+        CatEventMonitor.DEFAULT.logEvent("sentinel.check.downgrade",
+                String.format("%s-%s-%s", checkerConfig.sentinelCheckDowngradeStrategy(), clusterId, shardId));
         needDowngrade = true;
         resetCheckResult();
     }
