@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTblDao;
 import com.ctrip.xpipe.redis.console.model.OrganizationTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -23,10 +25,13 @@ public class OrganizationDao extends AbstractXpipeConsoleDAO {
 
     private OrganizationTblDao organizationTblDao;
 
+    @Autowired
+    private PlexusContainer container;
+
     @PostConstruct
     private void postConstruct() {
         try {
-            organizationTblDao = ContainerLoader.getDefaultContainer().lookup(OrganizationTblDao.class);
+            organizationTblDao = container.lookup(OrganizationTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct dao.", e);
         }

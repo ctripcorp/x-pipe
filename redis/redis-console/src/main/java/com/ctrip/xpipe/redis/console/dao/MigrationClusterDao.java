@@ -5,8 +5,11 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.tuple.Pair;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -25,11 +28,14 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
 
     private MigrationClusterTblDao migrationClusterTblDao;
 
+    @Autowired
+    private PlexusContainer container;
+
 
     @PostConstruct
     public void postConstruct() throws ComponentLookupException {
 
-        migrationClusterTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
+        migrationClusterTblDao = container.lookup(MigrationClusterTblDao.class);
     }
 
     public List<MigrationClusterTbl> find(long size, long offset) {

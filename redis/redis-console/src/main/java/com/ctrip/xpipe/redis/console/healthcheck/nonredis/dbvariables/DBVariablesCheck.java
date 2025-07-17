@@ -8,6 +8,7 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,11 +32,14 @@ public class DBVariablesCheck extends AbstractCrossDcIntervalAction {
 
     private Set<String> interestedDataSources = new HashSet<>();
 
+    @Autowired
+    private PlexusContainer plexusContainer;
+
     @PostConstruct
     @Override
     public void postConstruct() {
         try {
-            dataSourceManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+            dataSourceManager = plexusContainer.lookup(DataSourceManager.class);
             super.postConstruct(); // not start check if load DataSourceManager fail.
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct DataSourceManager.", e);
@@ -51,6 +55,7 @@ public class DBVariablesCheck extends AbstractCrossDcIntervalAction {
 
             DatabaseVariablesCheck databaseCheck = MapUtils.getOrCreate(databaseVariablesCheckMap, dataSourceName, () -> {
                     DatabaseVariablesCheck databaseVariablesCheck = new DatabaseVariablesCheck();
+                    databaseVariablesCheck.setPlexusContainer(plexusContainer);
                     variableCheckers.forEach(databaseVariablesCheck::addChecker);
                     return databaseVariablesCheck;
             });

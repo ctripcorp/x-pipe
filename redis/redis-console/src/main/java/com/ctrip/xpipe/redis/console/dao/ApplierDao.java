@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.console.model.ApplierTblDao;
 import com.ctrip.xpipe.redis.console.model.ApplierTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -19,10 +21,13 @@ public class ApplierDao extends AbstractXpipeConsoleDAO {
 
     private ApplierTblDao applierTblDao;
 
+    @Autowired
+    private PlexusContainer container;
+
     @PostConstruct
     private void postConstruct() {
         try {
-            applierTblDao = ContainerLoader.getDefaultContainer().lookup(ApplierTblDao.class);
+            applierTblDao = container.lookup(ApplierTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct dao.", e);
         }

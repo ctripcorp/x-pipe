@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -58,10 +59,13 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private PlexusContainer plexusContainer;
+
     @PostConstruct
     private void postConstruct() {
         try {
-            dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+            dcClusterShardTblDao = plexusContainer.lookup(DcClusterShardTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Dao construct failed.", e);
         }

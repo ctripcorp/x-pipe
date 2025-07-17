@@ -40,6 +40,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -104,10 +105,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     private MigrationShardTblDao migrationShardTblDao;
 
+    @Autowired
+    private PlexusContainer plexusContainer;
+
     @PostConstruct
     private void postConstruct() throws ServerException {
         try {
-            migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
+            migrationShardTblDao = plexusContainer.lookup(MigrationShardTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct dao.");
         }

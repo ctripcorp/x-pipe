@@ -21,6 +21,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Sets;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -340,12 +341,15 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public static class UnidalContainerMocker {
 
+        @Autowired
+        private PlexusContainer plexusContainer;
+
         @PostConstruct
         public void postConstruct() {
             if (!onTest) return;
 
             try {
-                DefaultQueryExecutor queryExecutor = (DefaultQueryExecutor)ContainerLoader.getDefaultContainer().lookup(QueryExecutor.class);
+                DefaultQueryExecutor queryExecutor = (DefaultQueryExecutor) plexusContainer.lookup(QueryExecutor.class);
                 Field writeHandlerField = queryExecutor.getClass().getDeclaredField("m_writeHandler");
                 Field readHandlerField = queryExecutor.getClass().getDeclaredField("m_readHandler");
                 writeHandlerField.setAccessible(true);

@@ -6,10 +6,12 @@ import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
 import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.apache.ibatis.datasource.DataSourceException;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -33,6 +35,9 @@ public class MybatisDataSourceConfig {
 
     private CommonConfigBean commonConfigBean = new CommonConfigBean();
 
+    @Autowired
+    private PlexusContainer container;
+
     @Bean
     public MybatisSqlSessionFactoryBean mybatisSqlSessionFactoryBean() throws Exception {
         MybatisSqlSessionFactoryBean sqlSessionFactoryBean = new MybatisSqlSessionFactoryBean();
@@ -48,7 +53,7 @@ public class MybatisDataSourceConfig {
             return makeFakeDataSource();
         }
         // 强制查询使Xpipe DataSource初始化
-        ConfigTblDao configTblDao = ContainerLoader.getDefaultContainer().lookup(ConfigTblDao.class);
+        ConfigTblDao configTblDao = container.lookup(ConfigTblDao.class);
         configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
 
         XPipeDataSource dataSource = tryGetXpipeDataSource();
@@ -69,7 +74,7 @@ public class MybatisDataSourceConfig {
                 return this.dataSource;
             }
             try {
-                DataSourceManager dataSourceManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+                DataSourceManager dataSourceManager = container.lookup(DataSourceManager.class);
                 if (dataSourceManager.getDataSourceNames().isEmpty()) {
                     logger.info("[tryGetDataSource] no datasource found");
                 } else {

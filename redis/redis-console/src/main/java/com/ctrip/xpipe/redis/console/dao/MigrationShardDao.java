@@ -6,7 +6,9 @@ import com.ctrip.xpipe.redis.console.model.MigrationShardTblDao;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
@@ -15,11 +17,14 @@ import org.unidal.lookup.ContainerLoader;
 public class MigrationShardDao extends AbstractXpipeConsoleDAO {
 	
 	private MigrationShardTblDao migrationShardDao;
+
+	@Autowired
+	private PlexusContainer plexusContainer;
 	
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			migrationShardDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
+			migrationShardDao = plexusContainer.lookup(MigrationShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}

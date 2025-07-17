@@ -28,7 +28,7 @@ public abstract class AbstractConsoleService<T> {
 	protected T dao;
 
 	@Autowired
-	PlexusContainer container;
+	private PlexusContainer container;
 
 	@SuppressWarnings("unchecked")
 	@PostConstruct
