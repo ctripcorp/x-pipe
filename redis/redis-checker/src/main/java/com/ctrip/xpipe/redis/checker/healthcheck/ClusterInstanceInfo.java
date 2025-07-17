@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck;
 
+import java.util.List;
+
 /**
  * @author lishanglin
  * date 2021/1/10
@@ -10,8 +12,8 @@ public interface ClusterInstanceInfo extends CheckInfo {
 
     int getOrgId();
 
-    ClusterInstanceInfo setDcId(String dcId);
+    ClusterInstanceInfo setDcs(List<String> dcs);
 
-    String getDcId();
+    List<String> getDcs();
 
 }

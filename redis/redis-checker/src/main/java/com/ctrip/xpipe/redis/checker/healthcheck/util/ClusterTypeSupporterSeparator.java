@@ -19,7 +19,6 @@ public class ClusterTypeSupporterSeparator {
         clusterTypeToSupporter.put(ClusterType.SINGLE_DC, allSupporter.stream().filter(supporter -> supporter instanceof SingleDcSupport).collect(Collectors.toList()));
         clusterTypeToSupporter.put(ClusterType.LOCAL_DC, allSupporter.stream().filter(supporter -> supporter instanceof LocalDcSupport).collect(Collectors.toList()));
         clusterTypeToSupporter.put(ClusterType.CROSS_DC, allSupporter.stream().filter(supporter -> supporter instanceof CrossDcSupport).collect(Collectors.toList()));
-        clusterTypeToSupporter.put(ClusterType.CROSS_REGION, allSupporter.stream().filter(supporter -> supporter instanceof CrossRegionSupport).collect(Collectors.toList()));
         return clusterTypeToSupporter;
     }
 

@@ -191,6 +191,38 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
 
     }
 
+    @Test
+    public void generateCrossRegionHealthCheckInstancesTest() throws Exception {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDcMeta = new DcMeta("jq").setZone("SHA");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("fra").setBackupDcs("jq").setAzGroupName("jq").setAzGroupType("ONE_WAY");
+        jqDcMeta.addCluster(jqClusterMeta);
+        RedisMeta jqRedisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379);
+        jqClusterMeta.addShard(new ShardMeta().setId("one_way_shard").addRedis(jqRedisMeta));
+
+        DcMeta fraDcMeta = new DcMeta("fra").setZone("FRA");
+
+        xpipeMeta.addDc(jqDcMeta).addDc(fraDcMeta);
+        when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.doAnswer(inv -> {
+            String currentDc = inv.getArgument(0, String.class);
+            String otherDc = inv.getArgument(1, String.class);
+            DcMeta currentDcMeta = xpipeMeta.findDc(currentDc);
+            DcMeta otherDcMeta = xpipeMeta.findDc(otherDc);
+            if (null == currentDcMeta || null == otherDcMeta) return false;
+            return !currentDcMeta.getZone().equalsIgnoreCase(otherDcMeta.getZone());
+        }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
+
+        checker.generateHealthCheckInstances();
+        verify(instanceManager, times(1)).getOrCreate(new ClusterMeta().setId("one_way_cluster"));
+        verify(instanceManager, times(1)).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+
+        jqClusterMeta.setActiveDc("jq");
+        checker.generateHealthCheckInstances();
+        verify(instanceManager, times(2)).getOrCreate(new ClusterMeta().setId("one_way_cluster"));
+        verify(instanceManager, times(1)).getOrCreate(any(RedisMeta.class));
+    }
+
     @Override
     protected String getXpipeMetaConfigFile() {
         return "health-instance-load-test.xml";

@@ -464,10 +464,10 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getAllActiveDcSentinels() {
+    public Set<HostPort> getAllSentinels() {
         Set<HostPort> sentinels = new HashSet<>();
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        xpipeMetaManager.getAllActiveDcSentinels().forEach(sentinelMeta -> sentinels.addAll(IpUtils.parseAsHostPorts(sentinelMeta.getAddress())));
+        xpipeMetaManager.getAllSentinels().forEach(sentinelMeta -> sentinels.addAll(IpUtils.parseAsHostPorts(sentinelMeta.getAddress())));
         return sentinels;
     }
 

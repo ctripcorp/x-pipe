@@ -4,6 +4,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author lishanglin
  * date 2021/1/14
@@ -11,17 +14,17 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements ClusterInstanceInfo {
 
     private int orgId;
-    private String dcId;
+    private List<String> dcs;
 
     public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
         super(clusterId, activeDc, clusterType);
         this.orgId = orgId;
     }
 
-    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, String dcId) {
+    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, List<String> dcs) {
         super(clusterId, activeDc, clusterType);
         this.orgId = orgId;
-        this.dcId = dcId;
+        this.dcs = dcs;
     }
 
     @Override
@@ -35,14 +38,14 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
     }
 
     @Override
-    public ClusterInstanceInfo setDcId(String dcId) {
-        this.dcId = dcId;
+    public ClusterInstanceInfo setDcs(List<String> dcs) {
+        this.dcs = dcs;
         return this;
     }
 
     @Override
-    public String getDcId() {
-        return dcId;
+    public List<String> getDcs() {
+        return dcs;
     }
 
     @Override

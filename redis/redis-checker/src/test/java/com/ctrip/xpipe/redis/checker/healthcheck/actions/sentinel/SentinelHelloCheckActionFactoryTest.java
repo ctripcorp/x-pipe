@@ -4,13 +4,16 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.CrossRegionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4Keeper;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -71,6 +74,24 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
 
         Assert.assertTrue(action.getListeners().stream().allMatch(listener -> listener instanceof BiDirectionSupport));
         Assert.assertTrue(action.getControllers().stream().allMatch(controller -> controller instanceof BiDirectionSupport));
+
+        action.processSentinelHellos();
+    }
+
+    @Test
+    public void testCreateForCrossRegionInstance() throws Exception {
+        factory = spy(factory);
+        when(factory.isBackupDcAndCrossRegion(any(), any(), any())).thenReturn(true);
+        SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
+                .create(newRandomClusterHealthCheckInstance("dc1", ClusterType.ONE_WAY));
+        Assert.assertFalse(action.getListeners().isEmpty());
+        Assert.assertFalse(action.getControllers().isEmpty());
+
+        Assert.assertTrue(action.getListeners().stream().allMatch(listener -> listener instanceof CrossRegionSupport));
+        Assert.assertTrue(action.getControllers().stream().allMatch(controller -> controller instanceof CrossRegionSupport));
+
+        logger.info("[listeners]: {}", action.getListeners());
+        logger.info("[controllers]: {}", action.getControllers());
 
         action.processSentinelHellos();
     }

@@ -58,6 +58,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
     private static final String shardName1 = "shard1";
     private static final String shardName2 = "shard2";
+    private static final String shardName3 = "shard3";
 
     private static final String ACTIVE_DC_SHARD1_MASTER = "activeDcShard1Master";
     private static final String ACTIVE_DC_SHARD1_SLAVE = "activeDcShard1Slave";
@@ -70,6 +71,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     private static final String BACKUP_DC_SHARD2_SLAVE1 = "backUpDcShard2Slave1";
     private static final String BACKUP_DC_SHARD2_SLAVE2 = "backUpDcShard2Slave2";
 
+
+    private static final String ACTIVE_DC_SHARD3_MASTER = "activeDcShard3Master";
+    private static final String ACTIVE_DC_SHARD3_SLAVE = "activeDcShard3Slave";
 
     private List<String> redisNames = new ArrayList<>();
     private Map<String, Server> servers = new HashMap<>();
@@ -99,7 +103,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void beforeSentinelHelloCheckActionTest() throws Exception {
         MockitoAnnotations.initMocks(this);
         redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1, BACKUP_DC_SHARD1_SLAVE2,
-                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2);
+                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2, ACTIVE_DC_SHARD3_MASTER, ACTIVE_DC_SHARD3_SLAVE);
 
         for (String redisIp : redisNames) {
             serverResults.put(redisIp, new Supplier<String>() {
@@ -393,11 +397,17 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         backupDcShard2Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD2_SLAVE1));
         backupDcShard2Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD2_SLAVE2));
 
+        ShardMeta activeDcShard3Meta = new ShardMeta();
+        activeDcShard3Meta.setId(shardName3);
+        activeDcShard3Meta.addRedis(redisMetas.get(ACTIVE_DC_SHARD3_MASTER));
+        activeDcShard3Meta.addRedis(redisMetas.get(ACTIVE_DC_SHARD3_SLAVE));
+
         ClusterMeta activeDcClusterMeta = new ClusterMeta();
         activeDcClusterMeta.setId(clusterName);
         activeDcClusterMeta.setActiveDc("dc1");
         activeDcClusterMeta.addShard(activeDcShard1Meta);
         activeDcClusterMeta.addShard(activeDcShard2Meta);
+        activeDcClusterMeta.addShard(activeDcShard3Meta);
         ClusterMeta backupDcClusterMeta = new ClusterMeta();
         backupDcClusterMeta.setId(clusterName);
         backupDcClusterMeta.setActiveDc("dc1");
