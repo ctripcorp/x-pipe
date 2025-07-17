@@ -4,9 +4,11 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
 import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
 import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.lookup.ContainerLoader;
 
 import java.lang.reflect.ParameterizedType;
@@ -25,6 +27,9 @@ public abstract class AbstractConsoleService<T> {
 
 	protected T dao;
 
+	@Autowired
+	PlexusContainer container;
+
 	@SuppressWarnings("unchecked")
 	@PostConstruct
     private void postConstruct() {
@@ -39,12 +44,12 @@ public abstract class AbstractConsoleService<T> {
 
         	 Class clazz = Class.forName(parseTypeName(type.toString()));
 
-            dao = (T) ContainerLoader.getDefaultContainer().lookup(clazz);
-        } catch (ComponentLookupException e) {
-            throw new ServerException("Dao construct failed.", e);
+              dao = (T) container.lookup(clazz);
         } catch (ClassNotFoundException e) {
 			throw new ServerException("Dao construct failed due to class not found.", e);
-		}
+		} catch (ComponentLookupException e) {
+            throw new ServerException("Dao construct failed", e);
+        }
     }
 	
 	private String parseTypeName(String typeString) {
