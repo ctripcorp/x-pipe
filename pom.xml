@@ -409,7 +409,7 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.httpcomponents.client</groupId>
+                <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${commons-httpclient4.version}</version>
                 <exclusions>
