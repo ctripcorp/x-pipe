@@ -195,22 +195,6 @@
                </execution>
             </executions>
          </plugin>
-         <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-               <requiresUnpack>
-                  <dependency>
-                     <groupId>org.apache.httpcomponents</groupId>
-                     <artifactId>httpclient</artifactId>
-                  </dependency>
-                  <dependency>
-                     <groupId>org.apache.httpcomponents</groupId>
-                     <artifactId>httpcore</artifactId>
-                  </dependency>
-               </requiresUnpack>
-            </configuration>
-         </plugin>
       </plugins>
    </build>
    <properties>
