@@ -142,11 +142,6 @@
          <version>3.5.12</version>
          <scope>test</scope>
       </dependency>
-      <dependency>
-         <groupId>org.apache.httpcomponents</groupId>
-         <artifactId>httpclient</artifactId>
-         <version>${commons-httpclient4.version}</version>
-      </dependency>
    </dependencies>
    <profiles>
       <profile>
