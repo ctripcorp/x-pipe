@@ -262,4 +262,9 @@ public class TestMetaCache implements MetaCache {
         return Collections.emptyMap();
     }
 
+    @Override
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+        return true;
+    }
+
 }

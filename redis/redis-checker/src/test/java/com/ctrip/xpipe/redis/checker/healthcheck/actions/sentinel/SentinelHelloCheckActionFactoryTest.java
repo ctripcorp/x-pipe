@@ -80,8 +80,6 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
 
     @Test
     public void testCreateForCrossRegionInstance() throws Exception {
-        factory = spy(factory);
-        when(factory.isBackupDcAndCrossRegion(any(), any(), any())).thenReturn(true);
         SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
                 .create(newRandomClusterHealthCheckInstance("dc1", ClusterType.ONE_WAY));
         Assert.assertFalse(action.getListeners().isEmpty());

@@ -113,4 +113,5 @@ public interface MetaCache {
 
     Map<String, Integer> getAllDcMigratableClustersCnt();
 
+    boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs);
 }

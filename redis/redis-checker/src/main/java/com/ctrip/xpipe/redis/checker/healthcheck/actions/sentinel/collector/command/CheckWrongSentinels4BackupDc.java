@@ -27,10 +27,12 @@ public class CheckWrongSentinels4BackupDc extends AbstractSentinelHelloCollectCo
             future().setSuccess();
         } else {
             logger.warn("[{}-{}+{}+{}] {} to find wrong sentinel : {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getInfo().getDcId(), context.getSentinelMonitorName(), wrongHellos.values());
-            CatEventMonitor.DEFAULT.logEvent("sentinel.check.wrong.external",
-                    String.format("%s-%s-%s-%s:%s", context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getInfo().getDcId(), context.getSentinelMonitorName(), wrongHellos.get(WRONG_OUT_OF_XPIPE)));
-            CatEventMonitor.DEFAULT.logEvent("sentinel.check.wrong.internal",
-                    String.format("%s-%s-%s-%s:%s", context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getInfo().getDcId(), context.getSentinelMonitorName(), wrongHellos.get(WRONG_OTHER_SHARD)));
+            if (!wrongHellos.get(WRONG_OUT_OF_XPIPE).isEmpty() )
+                CatEventMonitor.DEFAULT.logEvent("sentinel.check.wrong.external",
+                    String.format("%s-%s-%s-%s", context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getInfo().getDcId(), context.getSentinelMonitorName()));
+            if (!wrongHellos.get(WRONG_OTHER_SHARD).isEmpty())
+                CatEventMonitor.DEFAULT.logEvent("sentinel.check.wrong.internal",
+                    String.format("%s-%s-%s-%s", context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getInfo().getDcId(), context.getSentinelMonitorName()));
 
         }
     }

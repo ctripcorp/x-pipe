@@ -788,6 +788,12 @@ public abstract class AbstractMetaCache implements MetaCache {
         return ret;
     }
 
+    @Override
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+        dcs = dcs.stream().map(String::toLowerCase).collect(Collectors.toList());
+        return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
+    }
+
     @VisibleForTesting
     public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;

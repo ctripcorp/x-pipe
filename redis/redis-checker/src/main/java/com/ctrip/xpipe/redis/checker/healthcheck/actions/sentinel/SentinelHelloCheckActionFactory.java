@@ -80,7 +80,7 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
             action.addListeners(collectorsByClusterType.get(azGroupClusterType));
             action.addControllers(controllersByClusterType.get(azGroupClusterType));
-        } else if (clusterType == ClusterType.ONE_WAY && isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs())) {
+        } else if (clusterType == ClusterType.ONE_WAY && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs())) {
             action.addListeners(collectors4CrossRegion);
             action.addControllers(controllers4CrossRegion);
         }else {
@@ -89,10 +89,6 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         }
 
         return action;
-    }
-
-    protected boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
-        return metaCache.isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc);
     }
 
     @Override
