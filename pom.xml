@@ -34,7 +34,7 @@
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
         <commons-httpclient.version>5.2</commons-httpclient.version>
-        <commons-httpclient4.version>4.5.13</commons-httpclient4.version>
+        <commons-httpclient4.version>4.5.14</commons-httpclient4.version>
         <spring-boot.version>3.2.5</spring-boot.version>
         <spring-boot-test.version>3.2.5</spring-boot-test.version>
         <spring.version>6.1.6</spring.version>
