@@ -84,7 +84,7 @@
         <h2.version>1.4.191</h2.version>
         <asm.version>5.2</asm.version>
         <mockwebserver.version>3.12.0</mockwebserver.version>
-        <mysql-connector.version>8.0.33</mysql-connector.version>
+        <mysql-connector.version>8.0.33-ctrip.3</mysql-connector.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
         <guava-version>31.0.1-jre</guava-version>
@@ -715,8 +715,8 @@
             </dependency>
 
             <dependency>
-                <groupId>com.mysql</groupId>
-                <artifactId>mysql-connector-j</artifactId>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-jave</artifactId>
                 <version>${mysql-connector.version}</version>
             </dependency>
 
