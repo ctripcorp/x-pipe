@@ -51,7 +51,6 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.mysql.cj.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
@@ -1471,12 +1470,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByAzGroupIds(azGroupIds);
 			if (!CollectionUtils.isEmpty(azGroupClusters)) {
 				Map<Long, List<AzGroupClusterEntity>> clusterId2AzGroupCluster = azGroupClusters.stream().collect(Collectors.groupingBy(AzGroupClusterEntity::getClusterId));
-				long activeDcId = StringUtils.isNullOrEmpty(activeDc) ? -1L : dcService.find(activeDc).getId();
+				long activeDcId = StringUtil.isEmpty(activeDc) ? -1L : dcService.find(activeDc).getId();
 				heteroClusters.forEach(clusterTbl -> {
 					if (clusterId2AzGroupCluster.containsKey(clusterTbl.getId())) {
 						clusterId2AzGroupCluster.get(clusterTbl.getId()).forEach(azGroupClusterEntity -> {
-							if (StringUtils.isNullOrEmpty(activeDc) || azGroupClusterEntity.getActiveAzId().equals(activeDcId)) {
-								if (StringUtils.isNullOrEmpty(clusterType) || azGroupClusterEntity.getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
+							if (StringUtil.isEmpty(activeDc) || azGroupClusterEntity.getActiveAzId().equals(activeDcId)) {
+								if (StringUtil.isEmpty(clusterType) || azGroupClusterEntity.getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
 									result.add(clusterTbl);
 								}
 							}
