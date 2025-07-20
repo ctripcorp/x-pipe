@@ -60,7 +60,8 @@ public class PlexusManualLoaderConfiguration {
         DocumentBuilder builder = factory.newDocumentBuilder();
 
         for (Resource resource : resources) {
-            if(resource.getURL().toString().contains("foundation-service")) {
+            if(resource.getURL().toString().contains("foundation-service") ||
+                    resource.getURL().toString().contains("apollo-client")) {
                 continue;
             }
             logger.info("Parsing Plexus component descriptor: {}" + resource.getURL());
