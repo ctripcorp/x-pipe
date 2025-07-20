@@ -84,7 +84,7 @@
         <h2.version>1.4.191</h2.version>
         <asm.version>5.2</asm.version>
         <mockwebserver.version>3.12.0</mockwebserver.version>
-        <mysql-connector.version>8.0.33</mysql-connector.version>
+        <mysql-connector.version>5.1.48</mysql-connector.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
         <guava-version>31.0.1-jre</guava-version>

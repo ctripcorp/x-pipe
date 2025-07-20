@@ -2,7 +2,7 @@
 <wizard package="com.ctrip.xpipe.redis.console">
    <jdbc package="com.ctrip.xpipe.redis.console.dal" name="fxxpipe">
       <datasource>
-         <driver>com.mysql.cj.jdbc.Driver</driver>
+         <driver>com.mysql.jdbc.Driver</driver>
          <url>jdbc:mysql://localhost:3306/fxxpipedb</url>
          <user>root</user>
          <password>123456</password>
