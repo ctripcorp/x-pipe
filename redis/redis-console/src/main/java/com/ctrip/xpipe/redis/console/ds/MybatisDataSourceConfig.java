@@ -35,18 +35,16 @@ public class MybatisDataSourceConfig {
 
     private CommonConfigBean commonConfigBean = new CommonConfigBean();
 
-    @Autowired
-    private PlexusContainer container;
 
     @Bean
-    public MybatisSqlSessionFactoryBean mybatisSqlSessionFactoryBean() throws Exception {
+    public MybatisSqlSessionFactoryBean mybatisSqlSessionFactoryBean(PlexusContainer container) throws Exception {
         MybatisSqlSessionFactoryBean sqlSessionFactoryBean = new MybatisSqlSessionFactoryBean();
-        sqlSessionFactoryBean.setDataSource(dataSource());
+        sqlSessionFactoryBean.setDataSource(dataSource(container));
         return sqlSessionFactoryBean;
     }
 
     @Bean
-    public javax.sql.DataSource dataSource() throws Exception {
+    public javax.sql.DataSource dataSource(PlexusContainer container) throws Exception {
 
         if(commonConfigBean.disableDb()) {
             // if disableDb is true, set a fake datasource, only for autowired.
@@ -56,7 +54,7 @@ public class MybatisDataSourceConfig {
         ConfigTblDao configTblDao = container.lookup(ConfigTblDao.class);
         configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
 
-        XPipeDataSource dataSource = tryGetXpipeDataSource();
+        XPipeDataSource dataSource = tryGetXpipeDataSource(container);
         if (dataSource == null) {
             logger.info("[mybatisSqlSessionFactoryBean] no xpipe datasource found");
             throw new DataSourceException("no xpipe datasource found");
@@ -65,7 +63,7 @@ public class MybatisDataSourceConfig {
     }
 
 
-    private XPipeDataSource tryGetXpipeDataSource() {
+    private XPipeDataSource tryGetXpipeDataSource(PlexusContainer container) {
         if (this.dataSource != null) {
             return this.dataSource;
         }
