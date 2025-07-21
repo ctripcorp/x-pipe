@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.ds;
 
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
+import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
+import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.apache.ibatis.datasource.DataSourceException;
 import org.codehaus.plexus.PlexusContainer;
@@ -17,6 +19,7 @@ import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
+import org.unidal.lookup.ContainerLoader;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -47,6 +50,9 @@ public class MybatisDataSourceConfig {
             // if disableDb is true, set a fake datasource, only for autowired.
             return makeFakeDataSource();
         }
+        // 强制查询使Xpipe DataSource初始化
+        ConfigTblDao configTblDao = container.lookup(ConfigTblDao.class);
+        configTblDao.findByPK(1L, ConfigTblEntity.READSET_FULL);
 
         XPipeDataSource dataSource = tryGetXpipeDataSource(container);
         if (dataSource == null) {
