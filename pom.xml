@@ -824,6 +824,11 @@
                 <version>${soa.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.19.4</version>
+            </dependency>
+            <dependency>
                 <groupId>com.ctriposs.baiji</groupId>
                 <artifactId>baiji-rpc-extensions</artifactId>
                 <version>${soa.version}</version>

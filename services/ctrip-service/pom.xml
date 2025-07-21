@@ -50,11 +50,6 @@
                 <artifactId>httpclient</artifactId>
                 <version>${commons-httpclient4.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>3.19.4</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -216,10 +211,6 @@
             <artifactId>emailservice</artifactId>
             <version>1.3.12</version>
             <exclusions>
-                <exclusion>
-                    <artifactId>protobuf-java</artifactId>
-                    <groupId>com.google.protobuf</groupId>
-                </exclusion>
                 <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
