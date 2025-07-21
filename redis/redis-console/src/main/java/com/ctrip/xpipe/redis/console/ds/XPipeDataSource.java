@@ -60,7 +60,7 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
                 m_factory = (DataSourceFactory)(Class.forName(ctripDalDataSourceFactory).newInstance());
                 Class<?> clazz = Class.forName(ctripDalDataSource);
                 Constructor<?> constructor = clazz.getConstructor(DataSourceFactory.class);
-                m_delegate = (DataSource) constructor.newInstance(m_factory);
+                m_delegate = (DataSource) constructor.newInstance();
             } catch (Throwable ex) {
                 logger.error("Loading ctrip datasource failed", ex);
             }
