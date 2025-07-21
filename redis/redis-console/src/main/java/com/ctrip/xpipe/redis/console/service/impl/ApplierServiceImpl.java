@@ -45,6 +45,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     private ConsoleConfig consoleConfig;
 
     @Autowired
+    @Lazy
     private ClusterMetaModifiedNotifier notifier;
 
     @Autowired
