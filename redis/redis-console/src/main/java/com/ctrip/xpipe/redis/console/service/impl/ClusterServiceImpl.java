@@ -89,6 +89,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ApplierService applierService;
 
 	@Autowired
+	@Lazy
 	private ClusterMetaModifiedNotifier notifier;
 
 	@Autowired
