@@ -114,6 +114,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private ProxyService proxyService;
 
 	@Autowired
+	@Lazy
 	private MetaCache metaCache;
 
 	@Autowired
