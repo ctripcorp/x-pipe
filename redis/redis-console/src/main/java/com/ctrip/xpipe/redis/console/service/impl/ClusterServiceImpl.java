@@ -102,6 +102,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private DcClusterShardService dcClusterShardService;
 
 	@Autowired
+	@Lazy
 	private DelayService delayService;
 
 	@Autowired
