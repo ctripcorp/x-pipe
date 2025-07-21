@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.service.datasource;
 
-import com.ctrip.platform.dal.dao.configure.SwitchableDataSourceStatus;
-import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSource;
-import com.ctrip.platform.dal.dao.datasource.IForceSwitchableDataSource;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.service.fireman.ForceSwitchableDataSourceHolder;
+import com.ctrip.datasource.configure.DalDataSourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
 
@@ -17,39 +14,16 @@ public class CtripDalBasedDataSource implements DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(CtripDalBasedDataSource.class);
 
-    private ForceSwitchableDataSource dataSource;
+    private javax.sql.DataSource dataSource;
 
     private DataSourceDescriptor descriptor;
 
-    private void init() throws SQLException {
-        dataSource = new ForceSwitchableDataSource(new XPipeDataSourceConfigureProvider(descriptor));
-        ForceSwitchableDataSourceHolder.getInstance().setDataSource(dataSource);
-        dataSource.addListener(new IForceSwitchableDataSource.SwitchListener() {
-            @Override
-            public void onForceSwitchSuccess(SwitchableDataSourceStatus currentStatus) {
-                logger.info("[onForceSwitchSuccess] current status, {}", currentStatus);
-                EventMonitor.DEFAULT.logEvent("DAL.SWITCH", "SUCCESS");
-            }
+    private static final String DB = "fxxpipedb_dalcluster";
 
-            @Override
-            public void onForceSwitchFail(SwitchableDataSourceStatus currentStatus, Throwable cause) {
-                logger.error("[onForceSwitchFail] current status, {}", currentStatus, cause);
-                EventMonitor.DEFAULT.logEvent("DAL.SWITCH", "FAILURE");
-            }
+    private DalDataSourceFactory factory = new DalDataSourceFactory();
 
-            @Override
-            public void onRestoreSuccess(SwitchableDataSourceStatus currentStatus) {
-                logger.info("[onRestoreSuccess] current status, {}", currentStatus);
-                EventMonitor.DEFAULT.logEvent("DAL.RESTORE", "SUCCESS");
-            }
-
-            @Override
-            public void onRestoreFail(SwitchableDataSourceStatus currentStatus, Throwable cause) {
-                logger.error("[onRestoreFail] current status, {}", currentStatus, cause);
-                EventMonitor.DEFAULT.logEvent("DAL.RESTORE", "FAILURE");
-            }
-        });
-
+    private void init() throws Exception {
+        dataSource = factory.getOrCreateDataSource(DB);
     }
 
     @Override
@@ -67,7 +41,7 @@ public class CtripDalBasedDataSource implements DataSource {
         this.descriptor = descriptor;
         try {
             init();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             logger.error("[initialize]", e);
         }
     }
