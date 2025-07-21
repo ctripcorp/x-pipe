@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class CtripDalBasedDataSource implements DataSource {
+
     private static final Logger logger = LoggerFactory.getLogger(CtripDalBasedDataSource.class);
 
     private ForceSwitchableDataSource dataSource;

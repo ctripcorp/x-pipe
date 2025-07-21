@@ -31,7 +31,7 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     private org.codehaus.plexus.logging.Logger m_logger;
 
     private static final String ctripDalDataSource =
-        "com.ctrip.xpipe.service.datasource.CtripDynamicDataSource";
+        "com.ctrip.xpipe.service.datasource.CtripDalBasedDataSource";
     private static final String ctripDalDataSourceFactory =
         "com.ctrip.xpipe.service.datasource.CtripDalDataSourceFactory";
 
