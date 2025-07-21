@@ -214,35 +214,47 @@ public class PlexusManualLoaderConfiguration {
     }
 
     /**
-     * 注入组件依赖
+     * 注入组件依赖，会递归向上查找父类中的 @Inject 字段
      * @param container Plexus 容器
      * @param component 组件实例
      */
     private void injectDependencies(PlexusContainer container, Object component) {
-        for (Field field : component.getClass().getDeclaredFields()) {
-            // 寻找我们关心的 "遗留" 注解
-            if (field.isAnnotationPresent(org.unidal.lookup.annotation.Inject.class)) {
-                try {
-                    field.setAccessible(true);
+        // 从当前类开始，向上遍历继承树
+        Class<?> currentClass = component.getClass();
+        while (currentClass != null && currentClass != Object.class) {
+            // 处理当前类中声明的字段
+            for (Field field : currentClass.getDeclaredFields()) {
+                if (field.isAnnotationPresent(org.unidal.lookup.annotation.Inject.class)) {
+                    try {
+                        field.setAccessible(true);
 
-                    // 从注解中获取信息（这里简化处理，直接用字段类型作为role）
-                    // Unidal的@Inject注解还可以指定role和roleHint，这里需要更复杂的逻辑来处理
-                    Class<?> dependencyType = field.getType();
+                        // 如果字段已经被注入（可能在子类中被覆盖），则跳过
+                        if (field.get(component) != null) {
+                            continue;
+                        }
 
-                    // 从容器中查找依赖
-                    Object dependency = container.lookup(dependencyType);
+                        Class<?> dependencyType = field.getType();
+                        Object dependency = container.lookup(dependencyType);
 
-                    // 反射注入
-                    field.set(component, dependency);
-                    logger.info("成功为组件 {} 的字段 {} 注入依赖类型 {}",
-                            component.getClass().getSimpleName(), field.getName(), dependencyType.getSimpleName());
+                        field.set(component, dependency);
+                        logger.info("成功为组件 {} 的字段 {} (声明于 {}) 注入依赖 {}",
+                                component.getClass().getSimpleName(),
+                                field.getName(),
+                                currentClass.getSimpleName(),
+                                dependencyType.getSimpleName());
 
-                } catch (Exception e) {
-                    logger.error("为组件 {} 的字段 {} 注入依赖失败", component.getClass().getName(), field.getName(), e);
-                    // 注入失败，抛出异常或继续，取决于你的健壮性要求
-                    throw new RuntimeException("依赖注入失败", e);
+                    } catch (Exception e) {
+                        logger.error("为组件 {} 的字段 {} (声明于 {}) 注入依赖失败",
+                                component.getClass().getName(),
+                                field.getName(),
+                                currentClass.getSimpleName(), e);
+                        throw new RuntimeException("依赖注入失败", e);
+                    }
                 }
             }
+            // 移动到父类，继续下一次循环
+            currentClass = currentClass.getSuperclass();
         }
     }
+
 }
