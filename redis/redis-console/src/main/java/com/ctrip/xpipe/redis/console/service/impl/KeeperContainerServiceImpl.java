@@ -59,6 +59,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   private AzService azService;
 
   @Autowired
+  @Lazy
   private ShardService shardService;
 
   private RestOperations restTemplate;
