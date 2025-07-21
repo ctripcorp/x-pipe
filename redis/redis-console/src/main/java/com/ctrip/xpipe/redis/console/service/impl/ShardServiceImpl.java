@@ -64,6 +64,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ClusterMetaModifiedNotifier notifier;
 
 	@Autowired
+	@Lazy
 	private ClusterMonitorModifiedNotifier monitorNotifier;
 
 	@Autowired
