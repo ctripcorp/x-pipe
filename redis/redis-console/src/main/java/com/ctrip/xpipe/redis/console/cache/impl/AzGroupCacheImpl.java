@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.console.repository.DcRepository;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.collections.SetUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

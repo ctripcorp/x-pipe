@@ -57,6 +57,16 @@
         <dependency>
             <groupId>com.ctrip.framework.clogging</groupId>
             <artifactId>clogging-agent</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.errorprone</groupId>
+                    <artifactId>error_prone_annotations</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.unidal.framework</groupId>
@@ -195,12 +205,6 @@
             <version>${dubbo.version}</version>
         </dependency>
 
-        <dependency>
-            <artifactId>protobuf-java</artifactId>
-            <groupId>com.google.protobuf</groupId>
-            <version>3.6.0</version>
-        </dependency>
-
         <!--Email Service-->
         <dependency>
             <groupId>com.ctrip.platform.basesystem.emailservice.v1</groupId>
@@ -221,7 +225,19 @@
                 </exclusion>
                 <exclusion>
                     <groupId>io.grpc</groupId>
+                    <artifactId>grpc-stub</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
                     <artifactId>grpc-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-protobuf</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xerial.snappy</groupId>
+                    <artifactId>snappy-java</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

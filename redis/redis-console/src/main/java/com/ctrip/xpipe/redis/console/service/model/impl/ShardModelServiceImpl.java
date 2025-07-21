@@ -24,12 +24,12 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.utils.StringUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;

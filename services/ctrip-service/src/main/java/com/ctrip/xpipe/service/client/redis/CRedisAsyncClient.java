@@ -5,12 +5,11 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
-import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
-import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
+import credis.java.client.common.Pair;
 import credis.java.client.config.ConfigFrozenAware;
 import credis.java.client.lifecycle.LifecycleUtil;
 import credis.java.client.sync.RedisClient;
@@ -20,8 +19,6 @@ import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
 import qunar.tc.qclient.redis.command.value.ValueResult;
-import qunar.tc.qclient.redis.exception.checked.RedisException;
-
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * @author Slight

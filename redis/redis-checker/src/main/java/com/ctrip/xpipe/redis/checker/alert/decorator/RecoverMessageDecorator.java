@@ -13,7 +13,7 @@ public class RecoverMessageDecorator extends GroupedAlertMessageDecorator {
 
     public static final String ID = "recover.message.email.decorator";
 
-    private static final String TEMPLATE_NAME = "templates/RecoverTemplate.vm";
+    private static final String TEMPLATE_NAME = "templates/RecoverTemplate.html";
 
     @Override
     protected String getTemplateName() {

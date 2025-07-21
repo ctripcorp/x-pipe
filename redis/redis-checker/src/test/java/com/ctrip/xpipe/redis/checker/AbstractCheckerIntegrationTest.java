@@ -26,7 +26,6 @@ import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.velocity.app.VelocityEngine;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -63,14 +62,6 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
     @SpringBootApplication
     @ConditionalOnProperty(name = { CHECKER_TEST })
     public static class CheckerTestConfig extends AbstractRedisConfigContext {
-
-        @Bean
-        public VelocityEngine getVelocityEngine() {
-            Properties props = new Properties();
-            props.put("resource.loader", "class");
-            props.put("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-            return new VelocityEngine(props);
-        }
 
         @Bean
         public MetaCache metaCache() {

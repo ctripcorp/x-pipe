@@ -92,16 +92,6 @@
          <version>0.9.0.M4</version>
       </dependency>
 
-      <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
-      <dependency>
-         <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-starter-velocity</artifactId>
-      </dependency>
-      <dependency>
-         <groupId>org.apache.velocity</groupId>
-         <artifactId>velocity</artifactId>
-      </dependency>
-
       <dependency>
          <groupId>com.google.inject</groupId>
          <artifactId>guice</artifactId>
@@ -126,6 +116,12 @@
          <type>test-jar</type>
          <scope>test</scope>
       </dependency>
+
+      <dependency>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-thymeleaf</artifactId>
+      </dependency>
+
       <dependency>
          <groupId>org.apache.curator</groupId>
          <artifactId>curator-test</artifactId>
@@ -141,6 +137,11 @@
          <artifactId>mybatis-plus-generator</artifactId>
          <version>3.5.12</version>
          <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-collections4</artifactId>
+         <version>4.4</version>
       </dependency>
    </dependencies>
    <profiles>

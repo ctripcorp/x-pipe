@@ -40,7 +40,6 @@
         <spring.version>6.1.6</spring.version>
         <spring-core.version>6.1.6</spring-core.version>
         <spring-boot-maven-plugin.version>3.2.5</spring-boot-maven-plugin.version>
-        <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
         <netty3.version>3.10.5.Final</netty3.version>
         <ctrip-framework-foundation.version>1.8.26</ctrip-framework-foundation.version>
         <ctrip-super-rule.version>1.0.25</ctrip-super-rule.version>
@@ -57,27 +56,26 @@
         <tomcat.version>8.0.33</tomcat.version>
         <okhttp3.version>3.12.0</okhttp3.version>
         <influxdb.version>2.7</influxdb.version>
-        <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
-        <clogging.version>4.9.0</clogging.version>
+        <hickwall.client.version>1.1.17</hickwall.client.version>
+        <clogging.version>5.0.5-Java21</clogging.version>
         <credis.version>4.4.10-SNAPSHOT</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
         <qunar.suprule.version>1.0.56</qunar.suprule.version>
-        <qconfig.client.version>1.100.70-ctrip</qconfig.client.version>
+        <qconfig.client.version>1.100.74-ctrip</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
         <netty.boringssl.version>2.0.65.Final</netty.boringssl.version>
         <netty4.version>4.1.92.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
         <jackson.version>2.15.0</jackson.version>
         <jedis.version>2.8.1.4-ctrip</jedis.version>
-        <soa.version>2.24.55</soa.version>
+        <soa.version>2.24.86-Java21</soa.version>
         <sso.version>1.0.1-Java21</sso.version>
-        <vi.version>0.11.49</vi.version>
+        <vi.version>0.11.77-Java21</vi.version>
         <dal.version>3.1.27</dal.version>
         <ucs.version>0.7.0</ucs.version>
-        <artemis.version>1.9.22</artemis.version>
-        <caravan.version>1.19.30</caravan.version>
-        <velocity.version>1.7</velocity.version>
+        <artemis.version>1.9.24-Java21</artemis.version>
+        <caravan.version>1.19.36-Java21</caravan.version>
         <lettuce.version>3.2.Final</lettuce.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-digester.version>2.1</commons-digester.version>
@@ -485,6 +483,11 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
@@ -550,11 +553,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot</artifactId>
                 <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-velocity</artifactId>
-                <version>${spring.velocity.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -921,11 +919,6 @@
                         <artifactId>commons-beanutils-core</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.velocity</groupId>
-                <artifactId>velocity</artifactId>
-                <version>${velocity.version}</version>
             </dependency>
             <dependency>
                 <groupId>biz.paluch.redis</groupId>

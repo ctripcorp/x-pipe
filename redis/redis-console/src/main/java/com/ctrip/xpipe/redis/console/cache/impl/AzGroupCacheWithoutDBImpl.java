@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
-import org.apache.commons.collections.SetUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
