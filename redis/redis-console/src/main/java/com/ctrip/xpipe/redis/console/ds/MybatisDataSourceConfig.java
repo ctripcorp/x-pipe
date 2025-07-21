@@ -1,18 +1,22 @@
 package com.ctrip.xpipe.redis.console.ds;
 
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import com.ctrip.datasource.configure.DalDataSourceFactory;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.apache.ibatis.datasource.DataSourceException;
 import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.datasource.AbstractDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.unidal.dal.jdbc.datasource.DataSource;
+import org.unidal.dal.jdbc.datasource.DataSourceManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -24,12 +28,9 @@ import java.sql.SQLException;
 public class MybatisDataSourceConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MybatisDataSourceConfig.class);
+    private XPipeDataSource dataSource;
 
     private CommonConfigBean commonConfigBean = new CommonConfigBean();
-
-    private static final String DB = "fxxpipedb_dalcluster";
-
-    private DalDataSourceFactory factory = new DalDataSourceFactory();
 
 
     @Bean
@@ -47,7 +48,42 @@ public class MybatisDataSourceConfig {
             return makeFakeDataSource();
         }
 
-        return factory.getOrCreateDataSource(DB);
+        XPipeDataSource dataSource = tryGetXpipeDataSource(container);
+        if (dataSource == null) {
+            logger.info("[mybatisSqlSessionFactoryBean] no xpipe datasource found");
+            throw new DataSourceException("no xpipe datasource found");
+        }
+        return dataSource.getBaseDataSource();
+    }
+
+
+    private XPipeDataSource tryGetXpipeDataSource(PlexusContainer container) {
+        if (this.dataSource != null) {
+            return this.dataSource;
+        }
+        synchronized (this) {
+            if (this.dataSource != null) {
+                return this.dataSource;
+            }
+            try {
+                DataSourceManager dataSourceManager = container.lookup(DataSourceManager.class);
+                if (dataSourceManager.getDataSourceNames().isEmpty()) {
+                    logger.info("[tryGetDataSource] no datasource found");
+                } else {
+                    String datasourceName = dataSourceManager.getDataSourceNames().get(0);
+                    DataSource dataSource = dataSourceManager.getDataSource(datasourceName);
+                    if (dataSource instanceof XPipeDataSource) {
+                        this.dataSource = (XPipeDataSource) dataSource;
+                    }
+                }
+            } catch (ComponentLookupException e) {
+                logger.info("[tryGetDataSource] xpipe datasource miss");
+            } catch (Throwable th) {
+                logger.info("[tryGetDataSource] fail", th);
+            }
+
+            return this.dataSource;
+        }
     }
 
     private javax.sql.DataSource makeFakeDataSource() {
