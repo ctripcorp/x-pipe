@@ -52,11 +52,15 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private DcService dcService;
 	@Autowired
 	private ShardDao shardDao;
+
 	@Autowired
 	private ShardRepository shardRepository;
+
 	@Autowired
 	private ClusterDao clusterDao;
+
 	@Autowired
+	@Lazy
 	private ClusterMetaModifiedNotifier notifier;
 
 	@Autowired
