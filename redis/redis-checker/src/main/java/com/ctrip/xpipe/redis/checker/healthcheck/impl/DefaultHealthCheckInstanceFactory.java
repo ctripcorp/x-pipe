@@ -178,10 +178,10 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private ClusterInstanceInfo getClusterInstanceInfo(ClusterMeta clusterMeta, ClusterType clusterType) {
         Set<String> dcs = new HashSet<>();
         dcs.add(clusterMeta.getActiveDc().toLowerCase());
-        if (!clusterMeta.getDcs().isEmpty()) {
+        if (clusterMeta.getDcs() != null && !clusterMeta.getDcs().isEmpty()) {
             dcs.addAll(Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*")));
         }
-        if (!clusterMeta.getBackupDcs().isEmpty()) {
+        if (clusterMeta.getBackupDcs() != null && !clusterMeta.getBackupDcs().isEmpty()) {
             dcs.addAll(Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")));
         }
         if (clusterMeta.getActiveDc() != null) {
