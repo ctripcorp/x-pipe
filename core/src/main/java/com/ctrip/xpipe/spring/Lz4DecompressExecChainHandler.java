@@ -46,8 +46,6 @@ public class Lz4DecompressExecChainHandler implements ExecChainHandler {
             // 改用默认的安全内容类型，避开解析错误
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
 
-            log.info("AllMeta length {}", deCompressedData.length);
-
             // 将解压缩后的数据设置回响应实体
             response.setEntity(new ByteArrayEntity(deCompressedData, contentType));
             response.removeHeaders("Content-Encoding");
