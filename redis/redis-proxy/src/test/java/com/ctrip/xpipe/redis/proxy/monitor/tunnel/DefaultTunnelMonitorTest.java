@@ -63,7 +63,7 @@ public class DefaultTunnelMonitorTest extends AbstractRedisProxyServerTest {
     @Test
     public void recordThrowException() throws Exception {
         tunnel = new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),
-                proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager));
+                proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
         monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel, new DefaultTunnelRecorder());
         DefaultTunnelMonitor spy = spy(monitor);
         doThrow(new RuntimeException()).when(spy).record(any());

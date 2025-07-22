@@ -83,6 +83,11 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @VisibleForTesting
+    protected void addTunnel(Channel channel, Tunnel tunnel) {
+        cache.put(channel, tunnel);
+    }
+
+    @VisibleForTesting
     protected void doClean() {
         Set<Channel> keys = Sets.newHashSet(cache.keySet());
         for(Channel channel : keys) {
@@ -99,7 +104,6 @@ public class DefaultTunnelManager implements TunnelManager {
                 } else {
 
                     Tunnel tunnel = cache.get(channel);
-                    if (!tunnel.getLifecycleState().isStarted()) continue;
                     logger.info("[doClean] check tunnel, {}", tunnel.getTunnelMeta());
                     if (tunnel.getState().equals(new TunnelClosed(null))) {
                         cache.remove(channel);
@@ -116,7 +120,7 @@ public class DefaultTunnelManager implements TunnelManager {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {
-                return new DefaultTunnel(frontendChannel, protocol, config, proxyResourceManager, tunnelMonitorManager);
+                return new DefaultTunnel(frontendChannel, protocol, config, proxyResourceManager, tunnelMonitorManager, proxyResourceManager.getGlobalSharedScheduled());
             }
         });
         tunnel.addObserver(this);

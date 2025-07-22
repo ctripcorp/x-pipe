@@ -56,9 +56,9 @@ public class DefaultProxyServer implements ProxyServer {
 
     private static final int MEGA_BYTE = 1000 * 1000;
 
-    public static final int WRITE_LOW_WATER_MARK = 10 * MEGA_BYTE;
+    public static final int WRITE_LOW_WATER_MARK = Integer.parseInt(System.getProperty("PROXY.LOW.WATER", "" + MEGA_BYTE));
 
-    public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
+    public static final int WRITE_HIGH_WATER_MARK = Integer.parseInt(System.getProperty("PROXY.HIGH.WATER", "" + 5 * WRITE_LOW_WATER_MARK));
 
     public DefaultProxyServer() {
     }

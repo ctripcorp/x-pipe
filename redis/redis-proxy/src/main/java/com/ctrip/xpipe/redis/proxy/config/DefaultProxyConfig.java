@@ -67,6 +67,10 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_PROXY_REPORT_TRAFFIC = "proxy.report.traffic";
 
+    private static final String KEY_PROXY_BLOCK_WAIT_BASE_MILLi = "proxy.block.wait.base.milli";
+
+    private static final String KEY_PROXY_BLOCK_RATE = "proxy.block.rate";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -208,6 +212,16 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public String getRootFilePath() {
         return getProperty(KEY_ROOT_FILE_PATH, "/opt/data/100013684/openssl/ca.crt");
+    }
+
+    @Override
+    public int getBlockWaitBaseMill() {
+        return getIntProperty(KEY_PROXY_BLOCK_WAIT_BASE_MILLi, 20000);
+    }
+
+    @Override
+    public int getBlockWaitRate() {
+        return getIntProperty(KEY_PROXY_BLOCK_RATE, 1000000);
     }
 
     protected String getProperty(String key, String defaultValue){

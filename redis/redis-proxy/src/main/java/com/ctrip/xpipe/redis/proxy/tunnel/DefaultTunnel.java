@@ -9,6 +9,7 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.proxy.exception.FrontendAlreadyClosedException;
 import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
 import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
+import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
@@ -31,6 +32,11 @@ import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 
@@ -65,9 +71,16 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private TunnelMonitor tunnelMonitor;
 
+    protected AtomicLong backendBlockFrom = new AtomicLong(-1);
+    protected AtomicLong frontendBlockFrom = new AtomicLong(-1);
+
+    private ScheduledExecutorService scheduled;
+
+    private volatile AtomicReference<ScheduledFuture<?>> checkFutureRef;
+
 
     public DefaultTunnel(Channel frontendChannel, ProxyConnectProtocol protocol, ProxyConfig config,
-                         ResourceManager resourceManager, TunnelMonitorManager tunnelMonitorManager) {
+                         ResourceManager resourceManager, TunnelMonitorManager tunnelMonitorManager, ScheduledExecutorService scheduled) {
 
         this.config = config;
         this.protocol = protocol;
@@ -75,6 +88,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.resourceManager = resourceManager;
         this.identity = new TunnelIdentity(frontendChannel, protocol.getFinalStation(), protocol.getSource());
         this.tunnelMonitorManager = tunnelMonitorManager;
+        this.scheduled = scheduled;
+        this.checkFutureRef = new AtomicReference<>();
     }
 
     @Override
@@ -182,6 +197,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
                 return;
         }
         setState(new TunnelClosing(this));
+        stopTunnelCheck();
         peer.release();
     }
 
@@ -192,6 +208,43 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
         if(session.getSessionType() == SESSION_TYPE.BACKEND) {
             setState(new TunnelEstablished(this));
+            startTunnelCheck();
+        }
+    }
+
+    private void startTunnelCheck() {
+        if (null != checkFutureRef.get()) return;
+        checkFutureRef.set(scheduled.scheduleWithFixedDelay(this::check, 1, 1, TimeUnit.SECONDS));
+    }
+
+    private void stopTunnelCheck() {
+        if (null == checkFutureRef.get()) return;
+        checkFutureRef.get().cancel(false);
+        checkFutureRef.set(null);
+    }
+
+    @VisibleForTesting
+    protected void check() {
+        try {
+            if (!(getState() instanceof TunnelEstablished)) {
+                logger.info("[check][unexpected state:{}] stop check", getState());
+                stopTunnelCheck();
+                return;
+            }
+
+            long current = System.currentTimeMillis();
+            long maxBlockWait = config.getBlockWaitBaseMill() + DefaultProxyServer.WRITE_HIGH_WATER_MARK / config.getBlockWaitRate();
+            long localFrontendBlockFrom = frontendBlockFrom.get();
+            long localBackendBlockFrom = backendBlockFrom.get();
+            if (localFrontendBlockFrom > 0 && current - localFrontendBlockFrom > maxBlockWait) {
+                logger.warn("[check][frontendLongBlock][{}] close", current - localFrontendBlockFrom);
+                frontend.release();
+            } else if (localBackendBlockFrom > 0 && current - localBackendBlockFrom > maxBlockWait) {
+                logger.warn("[check][backendLongBlock][{}] close", current - localBackendBlockFrom);
+                backend.release();
+            }
+        } catch (Throwable th) {
+            logger.info("[check][fail]", th);
         }
     }
 
@@ -316,12 +369,14 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         @Override
         public void onWritable() {
             logger.info("[onWritable][Backend][{}]open frontend auto read", identity());
+            backendBlockFrom.set(-1);
             frontend.markReadable();
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Backend][{}]close frontend auto read", identity());
+            backendBlockFrom.set(System.currentTimeMillis());
             frontend.markUnReadable();
         }
     }
@@ -344,12 +399,14 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         @Override
         public void onWritable() {
             logger.info("[onWritable][Frontend][{}]open backend auto read", identity());
+            frontendBlockFrom.set(-1);
             backend.markReadable();
         }
 
         @Override
         public void onNotWritable() {
             logger.info("[onNotWritable][Frontend][{}]close backend auto read", identity());
+            frontendBlockFrom.set(System.currentTimeMillis());
             backend.markUnReadable();
         }
     }

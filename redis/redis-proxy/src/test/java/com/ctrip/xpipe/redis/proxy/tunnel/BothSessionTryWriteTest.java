@@ -79,7 +79,7 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
 
         proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager));
+        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
         ResourceManager resourceManager = mock(ResourceManager.class);

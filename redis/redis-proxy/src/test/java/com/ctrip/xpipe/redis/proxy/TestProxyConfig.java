@@ -124,6 +124,16 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getBlockWaitBaseMill() {
+        return 1000;
+    }
+
+    @Override
+    public int getBlockWaitRate() {
+        return 1000;
+    }
+
+    @Override
     public String getServerCertChainFilePath() {
         return certDir + "/server.crt";
     }
