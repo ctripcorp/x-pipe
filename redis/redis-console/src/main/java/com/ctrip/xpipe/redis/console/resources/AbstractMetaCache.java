@@ -790,7 +790,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     @Override
     public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
-        if (dcs == null || dcs.isEmpty()) return false;
+        if (activeDc == null || dcs == null || dcs.isEmpty()) return false;
         dcs = dcs.stream().map(String::toLowerCase).collect(Collectors.toList());
         return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
     }
