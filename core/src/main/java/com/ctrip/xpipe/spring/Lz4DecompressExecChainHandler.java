@@ -16,13 +16,14 @@ import java.io.InputStream;
 
 public class Lz4DecompressExecChainHandler implements ExecChainHandler {
 
-    private static LZ4Factory factory = LZ4Factory.fastestInstance();
+    private static final LZ4Factory factory = LZ4Factory.fastestInstance();
 
     @Override
     public ClassicHttpResponse execute(ClassicHttpRequest classicHttpRequest, ExecChain.Scope scope, ExecChain execChain) throws IOException, HttpException {
         ClassicHttpResponse response = execChain.proceed(classicHttpRequest, scope);
         String encoding = response.getFirstHeader("Content-Encoding") != null ?
                 response.getFirstHeader("Content-Encoding").getValue() : null;
+
         if ("lz4".equalsIgnoreCase(encoding)) {
             // 获取响应实体
             InputStream entityStream = response.getEntity().getContent();
@@ -38,8 +39,12 @@ public class Lz4DecompressExecChainHandler implements ExecChainHandler {
             LZ4SafeDecompressor decompressor = factory.safeDecompressor();
             byte[] deCompressedData = decompressor.decompress(compressed, compressed.length * 20);
 
+            // 直接获取内容类型，不使用原始内容类型字符串
+            // 改用默认的安全内容类型，避开解析错误
+            ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
+
             // 将解压缩后的数据设置回响应实体
-            response.setEntity(new ByteArrayEntity(deCompressedData, ContentType.create(response.getEntity().getContentType())));
+            response.setEntity(new ByteArrayEntity(deCompressedData, contentType));
         }
         return response;
     }
