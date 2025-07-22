@@ -80,6 +80,7 @@ public class ConsolePortalService extends AbstractService {
         HttpEntity<String> entity = buildHttpEntity();
         ResponseEntity<String> raw = exchange(comp.toUri().toString(), HttpMethod.GET, entity, String.class, "getXpipeAllMeta");
         if (StringUtil.isEmpty(raw.getBody())) return null;
+        logger.info("[getXpipeAllMeta]{}", raw.getBody());
         return DefaultSaxParser.parse(raw.getBody());
     }
 
