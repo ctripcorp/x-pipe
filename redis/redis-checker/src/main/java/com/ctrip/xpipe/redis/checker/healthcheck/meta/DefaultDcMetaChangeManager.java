@@ -136,7 +136,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private void addRedis(RedisMeta added) {
-        if (!isInterestedInCluster(added.parent().parent())) {
+        if (!isInterestedInCluster(added.parent().parent()) || isOneWayClusterActiveDcCrossRegionAndCurrentDc(added.parent().parent())) {
             return;
         }
         logger.info("[addRedis][{}:{}] {}", added.getIp(), added.getPort(), added);

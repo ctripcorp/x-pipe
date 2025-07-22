@@ -156,8 +156,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-            clusterType, clusterMeta.getOrgId(), Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*")));
+        ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
         info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
@@ -167,6 +166,15 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         startCheck(instance);
 
         return instance;
+    }
+
+    private ClusterInstanceInfo getClusterInstanceInfo(ClusterMeta clusterMeta, ClusterType clusterType) {
+        List<String> dcs = clusterMeta.getDcs().isEmpty() ? Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")) : Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*"));
+        if (!dcs.contains(clusterMeta.getActiveDc().toLowerCase())) {
+            dcs.add(clusterMeta.getActiveDc().toLowerCase());
+        }
+        return new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
+                clusterType, clusterMeta.getOrgId(), dcs);
     }
 
     @Override
