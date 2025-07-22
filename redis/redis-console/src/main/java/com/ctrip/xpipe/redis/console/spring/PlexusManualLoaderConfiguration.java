@@ -173,19 +173,19 @@ public class PlexusManualLoaderConfiguration {
                         // 查找并调用 setter 方法
                         Method setter = component.getClass().getMethod(setterName, String.class);
                         setter.invoke(component, value);
-                        logger.info("成功为组件 {} 设置配置属性 {} = {}",
+                        logger.info("Successfully set configuration property {} = {} for component {}",
                                 component.getClass().getSimpleName(), name, value);
                     } catch (NoSuchMethodException e) {
-                        logger.warn("在组件 {} 上找不到配置属性 {} 的 setter 方法",
+                        logger.warn("Setter method for configuration property {} not found on component {}",
                                 component.getClass().getSimpleName(), name);
                     } catch (Exception e) {
-                        logger.error("在组件 {} 上设置配置属性 {} 失败",
+                        logger.error("Failed to set configuration property {} on component {}",
                                 component.getClass().getSimpleName(), name, e);
                     }
                 }
             }
         } catch (Exception e) {
-            logger.error("向组件 {} 注入配置失败", component.getClass().getName(), e);
+            logger.error("Failed to inject configuration into component {}", component.getClass().getName(), e);
         }
     }
 
@@ -237,18 +237,18 @@ public class PlexusManualLoaderConfiguration {
                         Object dependency = container.lookup(dependencyType);
 
                         field.set(component, dependency);
-                        logger.info("成功为组件 {} 的字段 {} (声明于 {}) 注入依赖 {}",
+                        logger.info("Successfully injected dependency {} into field {} (declared in {}) of component {}",
                                 component.getClass().getSimpleName(),
                                 field.getName(),
                                 currentClass.getSimpleName(),
                                 dependencyType.getSimpleName());
 
                     } catch (Exception e) {
-                        logger.error("为组件 {} 的字段 {} (声明于 {}) 注入依赖失败",
+                        logger.error("Failed to inject dependency into field {} (declared in {}) of component {}",
                                 component.getClass().getName(),
                                 field.getName(),
                                 currentClass.getSimpleName(), e);
-                        throw new RuntimeException("依赖注入失败", e);
+                        throw new RuntimeException("Dependency injection failed", e);
                     }
                 }
             }

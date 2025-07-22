@@ -9,8 +9,6 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,7 +17,6 @@ import java.io.InputStream;
 public class Lz4DecompressExecChainHandler implements ExecChainHandler {
 
     private static final LZ4Factory factory = LZ4Factory.fastestInstance();
-    private static final Logger log = LoggerFactory.getLogger(Lz4DecompressExecChainHandler.class);
 
     @Override
     public ClassicHttpResponse execute(ClassicHttpRequest classicHttpRequest, ExecChain.Scope scope, ExecChain execChain) throws IOException, HttpException {
