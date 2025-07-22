@@ -45,6 +45,10 @@ public class Lz4DecompressExecChainHandler implements ExecChainHandler {
 
             // 将解压缩后的数据设置回响应实体
             response.setEntity(new ByteArrayEntity(deCompressedData, contentType));
+            response.removeHeaders("Content-Encoding");
+            response.removeHeaders("Content-Length");
+            response.addHeader("Content-Length", String.valueOf(deCompressedData.length));
+
         }
         return response;
     }
