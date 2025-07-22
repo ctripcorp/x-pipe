@@ -21,12 +21,6 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
         this.orgId = orgId;
     }
 
-    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, List<String> dcs) {
-        super(clusterId, activeDc, clusterType);
-        this.orgId = orgId;
-        this.dcs = dcs;
-    }
-
     @Override
     public ClusterInstanceInfo setOrgId(int orgId) {
         this.orgId = orgId;

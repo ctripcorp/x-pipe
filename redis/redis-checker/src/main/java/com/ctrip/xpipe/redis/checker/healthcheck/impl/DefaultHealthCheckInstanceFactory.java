@@ -32,6 +32,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -157,13 +158,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
-        try {
-            info.setAzGroupType(clusterMeta.getAzGroupType());
-        }catch (Exception e){
-            logger.error("[createClusterHealthCheckInstance] info:{}, clusterMeta:{}, azGroupType:{}", info, clusterMeta, clusterMeta.getAzGroupType());
-            logger.error("[create-DefaultClusterInstanceInfo] cluster instance info error", e);
-            throw e;
-        }
+        info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
 
@@ -175,12 +170,21 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private ClusterInstanceInfo getClusterInstanceInfo(ClusterMeta clusterMeta, ClusterType clusterType) {
-        List<String> dcs = clusterMeta.getDcs().isEmpty() ? Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")) : Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*"));
-        if (!dcs.contains(clusterMeta.getActiveDc().toLowerCase())) {
+        Set<String> dcs = new HashSet<>();
+        dcs.add(clusterMeta.getActiveDc().toLowerCase());
+        if (!clusterMeta.getDcs().isEmpty()) {
+            dcs.addAll(Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*")));
+        }
+        if (!clusterMeta.getBackupDcs().isEmpty()) {
+            dcs.addAll(Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")));
+        }
+        if (clusterMeta.getActiveDc() != null) {
             dcs.add(clusterMeta.getActiveDc().toLowerCase());
         }
-        return new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-                clusterType, clusterMeta.getOrgId(), dcs);
+        DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
+                clusterType, clusterMeta.getOrgId());
+        info.setDcs(new ArrayList<>(dcs));
+        return info;
     }
 
     @Override
