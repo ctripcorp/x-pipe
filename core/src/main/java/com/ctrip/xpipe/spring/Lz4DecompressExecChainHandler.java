@@ -9,6 +9,8 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.io.InputStream;
 public class Lz4DecompressExecChainHandler implements ExecChainHandler {
 
     private static final LZ4Factory factory = LZ4Factory.fastestInstance();
+    private static final Logger log = LoggerFactory.getLogger(Lz4DecompressExecChainHandler.class);
 
     @Override
     public ClassicHttpResponse execute(ClassicHttpRequest classicHttpRequest, ExecChain.Scope scope, ExecChain execChain) throws IOException, HttpException {
@@ -42,6 +45,8 @@ public class Lz4DecompressExecChainHandler implements ExecChainHandler {
             // 直接获取内容类型，不使用原始内容类型字符串
             // 改用默认的安全内容类型，避开解析错误
             ContentType contentType = ContentType.APPLICATION_OCTET_STREAM;
+
+            log.info("AllMeta length {}", deCompressedData.length);
 
             // 将解压缩后的数据设置回响应实体
             response.setEntity(new ByteArrayEntity(deCompressedData, contentType));
