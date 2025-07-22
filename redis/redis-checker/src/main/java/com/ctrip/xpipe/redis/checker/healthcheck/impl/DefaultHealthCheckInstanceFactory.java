@@ -158,7 +158,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
-        info.setAzGroupType(clusterMeta.getAzGroupType());
+        try {
+            info.setAzGroupType(clusterMeta.getAzGroupType());
+        } catch (Exception e) {
+            logger.error("[createClusterHealthCheckInstance] info:{}, clusterMeta:{}, azGroupType:{}", info, clusterMeta, clusterMeta.getAzGroupType());
+            logger.error("[create-DefaultClusterInstanceInfo] cluster instance info error", e);
+            throw e;
+        }
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
 
