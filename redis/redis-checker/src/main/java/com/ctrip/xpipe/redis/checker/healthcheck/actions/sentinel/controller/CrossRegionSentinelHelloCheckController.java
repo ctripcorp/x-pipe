@@ -29,7 +29,7 @@ import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.Sentine
 @Component
 public class CrossRegionSentinelHelloCheckController implements CrossRegionSupport, SentinelHelloCollector, SentinelActionController {
 
-    protected static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
+    protected static final Logger logger = LoggerFactory.getLogger(CrossRegionSentinelHelloCheckController.class);
 
     @Autowired
     private MetaCache metaCache;
