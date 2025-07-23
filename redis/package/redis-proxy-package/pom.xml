@@ -9,7 +9,7 @@
     <artifactId>redis-proxy-package</artifactId>
 
     <properties>
-        <netty4.version>4.1.92.Final</netty4.version>
+        <netty4.version>4.1.109.Final</netty4.version>
     </properties>
 
     <dependencies>

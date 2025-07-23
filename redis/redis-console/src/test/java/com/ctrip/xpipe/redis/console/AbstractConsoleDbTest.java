@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 import com.ctrip.xpipe.redis.console.h2.FunctionsMySQL;
+import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
+import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
 import com.ctrip.xpipe.redis.console.spring.PlexusManualLoaderConfiguration;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -19,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
+import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.ContainerLoader;
 
 import java.io.IOException;
@@ -66,6 +70,8 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     public void before() throws Exception {
         PlexusManualLoaderConfiguration config = new PlexusManualLoaderConfiguration();
         plexusContainer = config.plexusContainer();
+        XpipeDataSourceProvider dataSourceProvider = (XpipeDataSourceProvider)plexusContainer.lookup(DataSourceProvider.class);
+        dataSourceProvider.initialize();
         setUpTestDataSource();
     }
 
@@ -80,6 +86,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         DataSourceManager dsManager = plexusContainer.lookup(DataSourceManager.class);
         waitConditionUntilTimeOut(() -> {
             try {
+                dsManager.getDataSourceNames();
                 return dsManager.getDataSource(DATA_SOURCE) != null;
             } catch (Exception e) {
                 return false;
