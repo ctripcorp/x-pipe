@@ -33,11 +33,232 @@ python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed
 ```
 > 这会解析 `/opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/` 目录下所有的 `index_*` 文件。
 
+准备解析 1 个索引文件...
+
+```
+================================================================================
+正在处理文件: index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145865074460
+--- GTID Set: 7ed252973c7428d7277cacb18a0971d7494ec0a7:1-10120021,20545541a7f8f96bdb02c0035df190eaba3e8593:1-7570961 ---
+
+--- IndexEntry 1 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10120022,
+"cmd_start_offset": 0,
+"block_start_offset": 0,
+"block_end_offset": 12747,
+"size": 8192
+}
+
+--- IndexEntry 2 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10128214,
+"cmd_start_offset": 7101316,
+"block_start_offset": 12747,
+"block_end_offset": 25516,
+"size": 8192
+}
+
+--- IndexEntry 3 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10136406,
+"cmd_start_offset": 14203398,
+"block_start_offset": 25516,
+"block_end_offset": 38280,
+"size": 8192
+}
+
+--- IndexEntry 4 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10144598,
+"cmd_start_offset": 21320980,
+"block_start_offset": 38280,
+"block_end_offset": 51031,
+"size": 8192
+}
+
+--- IndexEntry 5 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10152790,
+"cmd_start_offset": 28422198,
+"block_start_offset": 51031,
+"block_end_offset": 63796,
+"size": 8192
+}
+
+--- IndexEntry 6 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10160982,
+"cmd_start_offset": 35524265,
+"block_start_offset": 63796,
+"block_end_offset": 76567,
+"size": 8192
+}
+
+--- IndexEntry 7 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10169174,
+"cmd_start_offset": 42641962,
+"block_start_offset": 76567,
+"block_end_offset": 77138,
+"size": 366
+}
+
+--- IndexEntry 8 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7570962,
+"cmd_start_offset": 42964977,
+"block_start_offset": 77138,
+"block_end_offset": 89798,
+"size": 8192
+}
+
+--- IndexEntry 9 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7579154,
+"cmd_start_offset": 50053621,
+"block_start_offset": 89798,
+"block_end_offset": 89798,
+"size": 0
+}
+
+================================================================================
+所有任务完成。
+```
+
 **示例 2：解析指定的索引文件，不解析block**
 ```bash
 python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072 --no-block
 ```
 > 这会解析 `index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072` 这个索引文件。
+
+准备解析 1 个索引文件...
+```
+================================================================================
+正在处理文件: index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145865074460
+--- GTID Set: 7ed252973c7428d7277cacb18a0971d7494ec0a7:1-10120021,20545541a7f8f96bdb02c0035df190eaba3e8593:1-7570961 ---
+
+--- IndexEntry 1 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10120022,
+"cmd_start_offset": 0,
+"block_start_offset": 0,
+"block_end_offset": 12747,
+"size": 8192
+}
+
+--- IndexEntry 2 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10128214,
+"cmd_start_offset": 7101316,
+"block_start_offset": 12747,
+"block_end_offset": 25516,
+"size": 8192
+}
+
+--- IndexEntry 3 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10136406,
+"cmd_start_offset": 14203398,
+"block_start_offset": 25516,
+"block_end_offset": 38280,
+"size": 8192
+}
+
+--- IndexEntry 4 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10144598,
+"cmd_start_offset": 21320980,
+"block_start_offset": 38280,
+"block_end_offset": 51031,
+"size": 8192
+}
+
+--- IndexEntry 5 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10152790,
+"cmd_start_offset": 28422198,
+"block_start_offset": 51031,
+"block_end_offset": 63796,
+"size": 8192
+}
+
+--- IndexEntry 6 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10160982,
+"cmd_start_offset": 35524265,
+"block_start_offset": 63796,
+"block_end_offset": 76567,
+"size": 8192
+}
+
+--- IndexEntry 7 ---
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10169174,
+"cmd_start_offset": 42641962,
+"block_start_offset": 76567,
+"block_end_offset": 77138,
+"size": 366
+}
+
+--- IndexEntry 8 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7570962,
+"cmd_start_offset": 42964977,
+"block_start_offset": 77138,
+"block_end_offset": 89798,
+"size": 8192
+}
+
+--- IndexEntry 9 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7579154,
+"cmd_start_offset": 50053621,
+"block_start_offset": 89798,
+"block_end_offset": 102512,
+"size": 8192
+}
+
+--- IndexEntry 10 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7587346,
+"cmd_start_offset": 57138682,
+"block_start_offset": 102512,
+"block_end_offset": 115265,
+"size": 8192
+}
+
+--- IndexEntry 11 ---
+{
+"uuid": "20545541a7f8f96bdb02c0035df190eaba3e8593",
+"start_gno": 7595538,
+"cmd_start_offset": 64231801,
+"block_start_offset": 115265,
+"block_end_offset": 115265,
+"size": 0
+}
+
+================================================================================
+所有任务完成。
+```
 
 **示例 3：解析指定的索引文件，并指定Entry, 并解析block**
 ```bash
@@ -45,4 +266,50 @@ python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed
 ```
 > 这会解析 `index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072` 这个索引文件第三个索引块和对应的block信息。block会带有gno, 增量信息和cmd_offset
 
+```
+准备解析 1 个索引文件...
 
+================================================================================
+正在处理文件: index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145865074460
+--- GTID Set: 7ed252973c7428d7277cacb18a0971d7494ec0a7:1-10120021,20545541a7f8f96bdb02c0035df190eaba3e8593:1-7570961 ---
+
+--- IndexEntry 3 (关联Block文件: block_cmd_ca73e222-28e2-4477-a485-d366d0692130_145865074460) ---
+(在Block文件中找到 8192 个VarInt增量)
+{
+"uuid": "7ed252973c7428d7277cacb18a0971d7494ec0a7",
+"start_gno": 10136406,
+"cmd_start_offset": 14203398,
+"block_start_offset": 25516,
+"block_end_offset": 38280,
+"size": 8192,
+"commands": [
+{
+"gno": 10136406,
+"offset_delta": 0,
+"cmd_offset": 14203398
+},
+{
+"gno": 10136407,
+"offset_delta": 138,
+"cmd_offset": 14203536
+},
+{
+"gno": 10136408,
+"offset_delta": 104,
+"cmd_offset": 14203640
+},
+... 省略
+{
+"gno": 10144596,
+"offset_delta": 8305,
+"cmd_offset": 21320738
+},
+{
+"gno": 10144597,
+"offset_delta": 138,
+"cmd_offset": 21320876
+}
+]
+}
+
+```
