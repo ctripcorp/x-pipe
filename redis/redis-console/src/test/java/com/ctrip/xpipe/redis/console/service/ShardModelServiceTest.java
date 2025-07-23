@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.when;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class ShardModelServiceTest extends ShardModelServiceImpl{
+public class ShardModelServiceTest {
 
     @InjectMocks
     private ShardModelServiceImpl shardModelService;
@@ -59,6 +60,8 @@ public class ShardModelServiceTest extends ShardModelServiceImpl{
     private final String targetIp = "10.10.10.20";
     @Before
     public void initMockData() {
+        ReflectionTestUtils.setField(shardModelService, "retryCommandFactory", retryCommandFactory);
+
         ShardTbl shardTbl = new ShardTbl();
         shardTbl.setShardName(shardName);
         shardModel.setShardTbl(shardTbl);
