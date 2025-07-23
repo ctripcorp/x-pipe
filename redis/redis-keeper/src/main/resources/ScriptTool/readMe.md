@@ -2,7 +2,7 @@
 #### 使用示例
 
 ```bash
-python parser.py [选项] <输入路径>
+python parser.py <输入路径> [选项]
 ```
 
 ##### **参数说明**
