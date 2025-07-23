@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.NoRedisToSubContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.CrossRegionSentinelCheckAggregationCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CrossRegionSentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -13,15 +15,21 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
+
 
 @Component
 public class CrossRegionSentinelHelloCheckController implements CrossRegionSupport, SentinelHelloCollector, SentinelActionController {
+
+    protected static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
 
     @Autowired
     private MetaCache metaCache;
@@ -52,6 +60,10 @@ public class CrossRegionSentinelHelloCheckController implements CrossRegionSuppo
 
     @Override
     public void onAction(SentinelActionContext context) {
+        if (context instanceof NoRedisToSubContext) {
+            logger.warn("[{}-{}+{}]no redis to sub in cross-region backup DC, skip.", LOG_TITLE, ((NoRedisToSubContext) context).getCluster(), ((NoRedisToSubContext) context).getShard());
+            return;
+        }
         RedisInstanceInfo info = context.instance().getCheckInfo();
         getCheckCollectorController(info.getClusterId(), info.getShardId())
                 .onAction(context);
