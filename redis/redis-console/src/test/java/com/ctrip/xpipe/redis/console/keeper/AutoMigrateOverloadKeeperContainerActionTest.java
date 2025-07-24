@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +41,18 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Before
     public void beforeAutoMigrateOverloadKeeperContainerActionTest() {
+
+        action = new AutoMigrateOverloadKeeperContainerAction();
+
         ShardModel shardModel = new ShardModel();
+
         Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(), any(ReplDirectionInfoModel.class)))
                 .thenReturn(shardModel);
         Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(ShardModel.class), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
+
+        ReflectionTestUtils.setField(action, "shardModelService", shardModelService);
+        ReflectionTestUtils.setField(action, "alertManager", alertManager);
     }
 
     @Test

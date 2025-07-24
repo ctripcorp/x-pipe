@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
 
@@ -39,6 +40,9 @@ public class KeeperContainerCheckerServiceTest extends AbstractConsoleTest {
 
 	@Before
 	public void initMockData() throws Exception {
+
+		ReflectionTestUtils.setField(keeperContainerService, "dao", mockedKeepercontainerTblDao);
+
 		when(mockedKeepercontainerTblDao.findByDcName("NTGXH", KeepercontainerTblEntity.READSET_FULL))
 				.thenReturn(Arrays.asList(new KeepercontainerTbl().setKeepercontainerId(1)));
 	}
