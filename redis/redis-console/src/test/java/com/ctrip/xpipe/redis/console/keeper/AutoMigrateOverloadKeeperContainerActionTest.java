@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.any;
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class AutoMigrateOverloadKeeperContainerActionTest {
 
-    @InjectMocks
     AutoMigrateOverloadKeeperContainerAction action;
 
     @Mock
@@ -46,17 +45,22 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
         ShardModel shardModel = new ShardModel();
 
-        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(), any(ReplDirectionInfoModel.class)))
+        // 修改第一个mock配置，使用Mockito.nullable()来匹配null值
+        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(), Mockito.nullable(ReplDirectionInfoModel.class)))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(ShardModel.class), Mockito.anyString(), Mockito.anyString()))
+
+        // 修改第二个mock配置，使用Mockito.any()来匹配任何对象
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
 
         ReflectionTestUtils.setField(action, "shardModelService", shardModelService);
         ReflectionTestUtils.setField(action, "alertManager", alertManager);
+
     }
 
     @Test
     public void testMigrateAllKeepersSuccess() {
+
         KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
         KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
         KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
@@ -116,6 +120,7 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
         Assert.assertEquals(0, migrationKeeperContainerDetailModel1.getMigrateKeeperCompleteCount());
         Assert.assertEquals(0, migrationKeeperContainerDetailModel2.getMigrateKeeperCompleteCount());
+
     }
 
     @Test
