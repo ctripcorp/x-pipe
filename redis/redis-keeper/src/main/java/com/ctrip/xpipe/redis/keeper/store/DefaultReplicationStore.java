@@ -409,7 +409,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 				XSyncContinue cont;
 				try {
-					cont = locateContinueGtidSet(rdbGtidSet);
+					cont = locateContinueGtidSetWithFallbackToEnd(rdbGtidSet);
 				} catch (Exception e) {
 					throw new KeeperReplicationStoreRuntimeException(e.toString());
 				}
