@@ -28,7 +28,7 @@ public class FakeRedisRdbDumperTest extends AbstractFakeRedisTest {
 		InMemoryGapAllowedSync inMemoryGAsync = sendInmemoryGAsync("localhost", redisKeeperServer.getListeningPort());
 		CommandFuture<?> future = inMemoryGAsync.future();
 
-		sleep(sleepBeforeSendFullSyncInfo + 1000);
+		sleep(sleepBeforeSendFullSyncInfo + 2000);
 
 		Assert.assertEquals(1, ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount());
 		Assert.assertFalse(future.isSuccess());

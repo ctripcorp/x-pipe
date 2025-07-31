@@ -10,7 +10,8 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
-import com.ctrip.xpipe.redis.keeper.handler.keeper.PsyncHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.GapAllowPSyncHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.GapAllowXSyncHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +117,11 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 					}
 
 					try {
-						new PsyncHandler().handle(args, redisClient);
+						if(redisClient instanceof GapAllowRedisSlave) {
+							new GapAllowXSyncHandler().handle(args, redisClient);
+						} else {
+							new GapAllowPSyncHandler().handle(args, redisClient);
+						}
 					} catch (Exception e) {
 						logger.error("[update]" + updateArgs + "," + observable + "," + redisClient, e);
 						try {

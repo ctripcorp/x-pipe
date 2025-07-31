@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis.xsync;
 
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -79,12 +80,10 @@ public class XsyncForKeeperTest extends AbstractFakeRedisTest {
         RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis();
         waitRedisKeeperServerConnected(keeperServer);
 
-        Thread.sleep(1000);
-
         // 异步调用 restartKeeperServer
         CompletableFuture<RedisKeeperServer> futureKeeperServer = CompletableFuture.supplyAsync(() -> {
             try {
-                return restartKeeperServer(keeperServer, 1, 10);
+                return restartKeeperServer(keeperServer, 60, 10);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

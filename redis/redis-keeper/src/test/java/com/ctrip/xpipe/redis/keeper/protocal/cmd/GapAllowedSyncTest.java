@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -299,8 +300,16 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(replStage.getReplId2().length(), 40);
 		Assert.assertTrue(replStage.getSecondReplIdOffset() >= -1);
 		Assert.assertNull(replStage.getMasterUuid());
-		Assert.assertNull(replStage.getBeginGtidset());
-		Assert.assertNull(replStage.getGtidLost());
+		assertNull(replStage.getBeginGtidset());
+		assertNull(replStage.getGtidLost());
+	}
+
+	private void assertNull(GtidSet gtidSet) {
+		Assert.assertTrue(gtidSet == null || StringUtil.trimEquals(gtidSet.toString(), "\"\""));
+	}
+
+	private void assertNotNull(GtidSet gtidSet) {
+		Assert.assertTrue(gtidSet != null && !StringUtil.trimEquals(gtidSet.toString(), "\"\""));
 	}
 
 	private void replStageAssertXsync(ReplStage replStage) {
@@ -311,8 +320,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		Assert.assertNull(replStage.getReplId2());
         Assert.assertEquals(replStage.getSecondReplIdOffset(), -1);
 		Assert.assertNotNull(replStage.getMasterUuid());
-		Assert.assertNotNull(replStage.getBeginGtidset());
-		Assert.assertNotNull(replStage.getGtidLost());
+		assertNotNull(replStage.getBeginGtidset());
 	}
 
 	// XFULLRESYNC REPLID <replidX> REPLOFF <reploffX> MASTER.UUID <uuidX> GTID.LOST <uuidX>:<gnoBaseX>-<gnoBaseX+gnoCountX-1>

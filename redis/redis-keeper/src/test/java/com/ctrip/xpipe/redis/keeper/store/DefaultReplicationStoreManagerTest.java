@@ -3,11 +3,14 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -256,6 +259,9 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		assertNotEquals(currentStore, mgr.getCurrent());
 
 		MetaStore metaStore = newCurrentStore.getMetaStore();
+		EofMarkType eofMarkType = new EofMarkType("12");
+		metaStore.rdbConfirmPsync(metaStore.getReplId(), metaStore.beginOffset(),
+				0, "", RdbStore.Type.NORMAL, eofMarkType, "");
 		metaStore.setMasterAddress(new DefaultEndPoint("redis://127.0.0.1:6379"));
 		RdbStore rdbStore = newCurrentStore.prepareRdb("masterRunid", 0, new LenEofType(100));
 		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);

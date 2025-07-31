@@ -154,7 +154,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	}
 
 	protected void waitRedisKeeperServerConnected(RedisKeeperServer redisKeeperServer) throws TimeoutException {
-		waitConditionUntilTimeOut(()->{return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
+		waitConditionUntilTimeOut(()->{return redisKeeperServer.getRedisMaster() != null && redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
 	}
 
 
