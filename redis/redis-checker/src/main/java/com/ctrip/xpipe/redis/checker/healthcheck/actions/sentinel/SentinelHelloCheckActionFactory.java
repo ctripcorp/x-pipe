@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_EXECUTORS;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_SCHEDULED;
@@ -31,11 +33,15 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_SCHEDU
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
+public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport, CrossRegionSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
     private Map<ClusterType, List<SentinelActionController>> controllersByClusterType;
+
+    private List<SentinelHelloCollector> collectors4CrossRegion;
+
+    private List<SentinelActionController> controllers4CrossRegion;
 
     private CheckerDbConfig checkerDbConfig;
 
@@ -49,6 +55,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
     @Resource(name = HELLO_CHECK_EXECUTORS)
     private ExecutorService helloCheckExecutors;
 
+    private final String currentDc = FoundationService.DEFAULT.getDataCenter();
+
     @Autowired
     public SentinelHelloCheckActionFactory(List<SentinelHelloCollector> collectors, List<SentinelActionController> controllers,
                                            CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, PersistenceCache persistenceCache, MetaCache metaCache) {
@@ -57,6 +65,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         this.collectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(collectors);
         this.controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
         this.metaCache = metaCache;
+        this.collectors4CrossRegion = collectors.stream().filter(collector -> collector instanceof CrossRegionSupport).collect(Collectors.toList()) ;
+        this.controllers4CrossRegion = controllers.stream().filter(controller -> controller instanceof CrossRegionSupport).collect(Collectors.toList()) ;
     }
 
     @Override
@@ -70,7 +80,10 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
         if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
             action.addListeners(collectorsByClusterType.get(azGroupClusterType));
             action.addControllers(controllersByClusterType.get(azGroupClusterType));
-        } else {
+        } else if (clusterType == ClusterType.ONE_WAY && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs())) {
+            action.addListeners(collectors4CrossRegion);
+            action.addControllers(controllers4CrossRegion);
+        }else {
             action.addListeners(collectorsByClusterType.get(clusterType));
             action.addControllers(controllersByClusterType.get(clusterType));
         }

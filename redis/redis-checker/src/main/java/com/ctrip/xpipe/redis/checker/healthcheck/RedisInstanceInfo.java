@@ -28,6 +28,8 @@ public interface RedisInstanceInfo extends CheckInfo {
 
     boolean isCrossRegion();
 
+    void isCrossRegion(boolean crossRegion);
+
     Long getShardDbId();
 
     Map<Long, String> getActiveDcAllShardIds();

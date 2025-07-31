@@ -148,6 +148,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
                         expectClusters.add(clusterId);
                     } else if (dcId.equalsIgnoreCase(currentDc) && !currentZone.equalsIgnoreCase(xpipeMeta.getDcs().get(activeDc).getZone())) {
                         addInstanceForPing = true;
+                        expectClusters.add(clusterId);
                     } else {
                         continue;
                     }

@@ -333,6 +333,11 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public boolean isCurrentDc(String dc) {
+        return currentDc.equalsIgnoreCase(dc);
+    }
+
+    @Override
     public boolean isDcInRegion(String dc, String zone) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         return xpipeMetaManager.getDcZone(dc).equalsIgnoreCase(zone);
@@ -456,6 +461,14 @@ public abstract class AbstractMetaCache implements MetaCache {
         SentinelMeta sentinel = xpipeMetaManager.getSentinel(activeDc, clusterId, shardId);
 
         return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
+    }
+
+    @Override
+    public Set<HostPort> getAllSentinels() {
+        Set<HostPort> sentinels = new HashSet<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.getAllSentinels().forEach(sentinelMeta -> sentinels.addAll(IpUtils.parseAsHostPorts(sentinelMeta.getAddress())));
+        return sentinels;
     }
 
     @Override
@@ -773,6 +786,13 @@ public abstract class AbstractMetaCache implements MetaCache {
             ret.put(dc, getMigratableClustersCountByActiveDc(dc));
         }
         return ret;
+    }
+
+    @Override
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+        if (activeDc == null || dcs == null || dcs.isEmpty()) return false;
+        dcs = dcs.stream().map(String::toLowerCase).collect(Collectors.toList());
+        return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
     }
 
     @VisibleForTesting

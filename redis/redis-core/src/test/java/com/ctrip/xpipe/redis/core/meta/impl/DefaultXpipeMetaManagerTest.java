@@ -393,4 +393,10 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Assert.assertNull(metaManager.chooseMetaRoute(clusterMeta, dstDc, currentDc, strategy));
 	}
 
+	@Test
+	public void testGetAllSentinels() throws MetaException {
+		Set<SentinelMeta> allSentinels = metaManager.getAllSentinels();
+		Assert.assertEquals(allSentinels.size(), 2);
+	}
+
 }

@@ -101,6 +101,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Set<HostPort> getAllSentinels() {
+        return null;
+    }
+
+    @Override
     public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
         return null;
     }
@@ -137,6 +142,11 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
+        return false;
+    }
+
+    @Override
+    public boolean isCurrentDc(String dc) {
         return false;
     }
 
@@ -250,6 +260,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public Map<String, Integer> getAllDcMigratableClustersCnt() {
         return Collections.emptyMap();
+    }
+
+    @Override
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+        return true;
     }
 
 }

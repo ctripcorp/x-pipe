@@ -13,6 +13,6 @@ public interface SentinelHelloCollector extends HealthCheckActionListener<Sentin
 
     @Override
     default boolean worksfor(ActionContext t) {
-        return t instanceof SentinelActionContext;
+        return !(t instanceof NoRedisToSubContext) && t instanceof SentinelActionContext;
     }
 }

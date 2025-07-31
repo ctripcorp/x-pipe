@@ -749,6 +749,15 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public Set<SentinelMeta> doGetAllSentinels() {
+		Set<SentinelMeta> sentinels = new HashSet<>();
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			sentinels.addAll(dcMeta.getSentinels().values());
+		}
+		return sentinels;
+	}
+
+	@Override
 	public String doGetSentinelMonitorName(String dc, String clusterId, String shardId) {
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
 		if(null == shardMeta) {

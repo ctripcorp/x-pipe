@@ -119,15 +119,14 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         if (isInterestedInCluster(added)) {
             logger.info("[addCluster][{}][{}] add health check", dcId, added.getId());
             instanceManager.getOrCreate(added);
-            ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
-            clusterMetaVisitor.accept(added);
+            if (isOneWayClusterActiveDcCrossRegionAndCurrentDc(added)) {
+                ClusterMetaCrossRegionVisitor clusterMetaPingActionVisitor = new ClusterMetaCrossRegionVisitor(new ShardMetaCrossRegionVisitor(new RedisMetaVisitor(addPingActionConsumer)));
+                clusterMetaPingActionVisitor.accept(added);
+            } else {
+                ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
+                clusterMetaVisitor.accept(added);
+            }
         }
-
-        if (isOneWayClusterActiveDcCrossRegionAndCurrentDc(added)) {
-            ClusterMetaCrossRegionVisitor clusterMetaPingActionVisitor = new ClusterMetaCrossRegionVisitor(new ShardMetaCrossRegionVisitor(new RedisMetaVisitor(addPingActionConsumer)));
-            clusterMetaPingActionVisitor.accept(added);
-        }
-
     }
 
     private void removeRedis(RedisMeta removed) {
@@ -137,7 +136,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private void addRedis(RedisMeta added) {
-        if (!isInterestedInCluster(added.parent().parent())) {
+        if (!isInterestedInCluster(added.parent().parent()) || isOneWayClusterActiveDcCrossRegionAndCurrentDc(added.parent().parent())) {
             return;
         }
         logger.info("[addRedis][{}:{}] {}", added.getIp(), added.getPort(), added);
@@ -185,6 +184,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
             result = result || Arrays.asList(dcs).contains(currentDcId.toLowerCase());
         }
+        result = result || isOneWayClusterActiveDcCrossRegionAndCurrentDc(cluster);
 
         return result;
     }
