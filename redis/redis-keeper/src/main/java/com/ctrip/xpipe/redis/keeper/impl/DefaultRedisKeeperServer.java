@@ -301,7 +301,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
-			if (null == replicationStore || null == replicationStore.getMetaStore().getReplId()) {
+			if (null == replicationStore || null == replicationStore.getMetaStore().getCurReplStageReplId()) {
 				logger.debug("[resetReplAfterLongTimeDown][empty] skip");
 				return;
 			}

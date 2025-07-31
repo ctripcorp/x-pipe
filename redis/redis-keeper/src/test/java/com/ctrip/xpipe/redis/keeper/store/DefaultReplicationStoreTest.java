@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.buffer.ByteBuf;
@@ -23,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -229,11 +229,14 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		int dataLen = 100;
 		RdbStore rdbStore = beginRdb(store, dataLen);
 
+		store.psyncContinueFrom("repl", 1);
+
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
 
 		IntStream.range(0,5).forEach(i -> {
 			try {
+				ReflectionTestUtils.setField(store.cmdStore, "buildIndex", false);
 				store.cmdStore.appendCommands(Unpooled.wrappedBuffer(randomString(100).getBytes()));
 			} catch (Exception e) {
 				logger.info("[testGcNotContinueRdb][append cmd fail]", e);

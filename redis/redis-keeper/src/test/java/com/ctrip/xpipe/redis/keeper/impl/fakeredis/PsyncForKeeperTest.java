@@ -128,7 +128,7 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
 
 
     private void waitKeeperSyncWithRedis(RedisKeeperServer keeperServer) throws Exception {
-        waitConditionUntilTimeOut(() -> keeperServer.getKeeperRepl().getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength());
+        waitConditionUntilTimeOut(() -> keeperServer.getKeeperRepl().currentStage() != null && keeperServer.getKeeperRepl().getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength());
     }
 
     private void waitCmdNotContinueWithRdb(RedisKeeperServer keeperServer) throws Exception {

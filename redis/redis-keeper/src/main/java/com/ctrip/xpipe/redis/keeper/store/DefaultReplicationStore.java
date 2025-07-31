@@ -581,10 +581,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long firstAvailableOffset() {
 
-		long beginOffset = beginOffset();
+		long beginOffset = metaStore.getCurrentReplStage().getBegOffsetRepl();
 
 		long minCmdOffset = cmdStore == null ? 0 : cmdStore.lowestAvailableOffset();
 		long firstAvailableOffset = minCmdOffset + beginOffset;
+
 		return firstAvailableOffset;
 	}
 

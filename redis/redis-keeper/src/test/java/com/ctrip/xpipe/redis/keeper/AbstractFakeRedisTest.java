@@ -103,6 +103,15 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
+	public  RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(KeeperConfig keeperConfig) throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
+		connectToFakeRedis(redisKeeperServer);
+		return redisKeeperServer;
+	}
+
 	protected RedisKeeperServer startRedisKeeperServer(int replicationStoreCommandFileNumToKeep,
 		   int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate, int replicationTimeout) throws Exception {
 

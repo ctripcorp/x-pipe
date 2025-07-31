@@ -158,7 +158,8 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	}
 
 	protected byte[] handleReplconf(String line) throws NumberFormatException, IOException{
-		
+
+		logger.info("[handleReplconf] " + line);
 		String []sp = line.split("\\s+");
 		String option = sp[1];
 		if(option.equals("ack")){
@@ -181,7 +182,10 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 
 		if (option.equals("capa")) {
 			for (int i = 2; i < sp.length; i++) {
-				if (sp[i].equalsIgnoreCase("rordb")) this.capaRordb = true;
+				if (sp[i].equalsIgnoreCase("rordb")) {
+					logger.info("[handleReplconf] set rordb true");
+					this.capaRordb = true;
+				}
 			}
 		}
 
