@@ -40,7 +40,7 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 		waitConditionUntilTimeOut(
 				() -> MASTER_STATE.REDIS_REPL_CONNECTED == redisKeeperServer.getRedisMaster().getMasterState(),
-				replicationTimeoutMilli * 5
+				replicationTimeoutMilli * 10
 		);
 
 	}

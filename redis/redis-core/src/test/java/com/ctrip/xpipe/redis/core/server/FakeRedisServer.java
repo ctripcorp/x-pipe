@@ -8,6 +8,7 @@ import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
+import javax.swing.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -162,6 +163,11 @@ public class FakeRedisServer extends AbstractLifecycle{
 		if (commandsLength < 0) return;
 		prefix = String.format("cmd_rdboffset:%d--", rdbOffset);
 		commands = prefix + AbstractTest.randomString(commandsLength - prefix.length());
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.error("[reGenerateRdb]", e);
+		}
 		addCommands(commands);
 	}
 

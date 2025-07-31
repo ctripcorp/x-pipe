@@ -43,8 +43,8 @@ public class RateLimitTest extends AbstractFakeRedisTest {
 
         BEFORE_APPROXIMATE__RESTART_TIME_MILLI = OsUtils.APPROXIMATE__RESTART_TIME_MILLI;
         OsUtils.APPROXIMATE__RESTART_TIME_MILLI = replDownSafeIntervalMilli / 100;
-        redisKeeperServer1 = startRedisKeeperServer();
-        redisKeeperServer2 = startRedisKeeperServer();
+        redisKeeperServer1 = startRedisKeeperServer(100, allCommandsSize * 10, 1000);
+        redisKeeperServer2 = startRedisKeeperServer(100, allCommandsSize * 10, 1000);
         logger.info(remarkableMessage("keeper1 {}, keeper2 {}"), redisKeeperServer1.getListeningPort(), redisKeeperServer2.getListeningPort());
 
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);

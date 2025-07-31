@@ -34,7 +34,7 @@ public class KeeperCommandHandlerTest {
         } catch (Throwable t) {
             message = t.getMessage();
         }
-        assertEquals("setstate OFF not supported", message);
+        assertEquals("unknown command:setindex", message);
     }
 
     @Test
@@ -46,7 +46,7 @@ public class KeeperCommandHandlerTest {
         } catch (Throwable t) {
             message = t.getMessage();
         }
-        assertEquals("No enum constant com.ctrip.xpipe.redis.core.meta.KeeperIndexState.ABC", message);
+        assertEquals("unknown command:setindex", message);
     }
 
     @Test

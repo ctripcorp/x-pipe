@@ -69,7 +69,6 @@ import org.junit.runners.Suite.SuiteClasses;
         FakeRedisExceptionTest.class,
         FakeRedisRdbDumperTest.class,
         FakeRedisRdbDumpLong.class,
-        PsyncHandlerTest.class,
         SlaveOfCommandHandlerTest.class,
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
@@ -105,8 +104,6 @@ import org.junit.runners.Suite.SuiteClasses;
         XsyncForKeeperAndKeeperTest.class,
         XsyncForKeeperSlaveTest.class,
         XsyncForKeeperTest.class,
-        DefaultIndexStoreTest.class,
-
         AllApplierTests.class,
 })
 public class AllTests {

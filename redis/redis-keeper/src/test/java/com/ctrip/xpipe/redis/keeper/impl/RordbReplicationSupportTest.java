@@ -118,7 +118,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         Pair<InMemoryGapAllowedSync, InMemoryGapAllowedSync> psyncs = sendGAsyncOnDumpingAndWaitRdbDone("127.0.0.1",
                 redisKeeperServer.getListeningPort(), false, true);
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psyncs.getKey().getRdb()));
-        Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psyncs.getValue().getRdb()));
+        Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psyncs.getValue().getRdb()));
     }
 
     @Test

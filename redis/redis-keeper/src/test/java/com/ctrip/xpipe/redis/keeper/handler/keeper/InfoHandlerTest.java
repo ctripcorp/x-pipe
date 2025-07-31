@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.InfoHandler;
@@ -48,6 +49,7 @@ public class InfoHandlerTest extends AbstractFakeRedisTest {
 
     @Test
     public void testInfoAll() throws Exception {
+        waitConditionUntilTimeOut(()-> {return keeperServer.getRedisMaster() != null && keeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
         EmbeddedChannel channel = new EmbeddedChannel();
         new InfoHandler().handle(new String[]{"all"}, new DefaultRedisClient(channel, keeperServer));
         Assert.assertFalse(channel.outboundMessages().isEmpty());
