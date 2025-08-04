@@ -123,12 +123,10 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
                 UpDownInstances instanceNeedAdjust = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interested);
 
                 checkTimeout(timeoutMill, "after compare");
-                if (!instanceNeedAdjust.getHealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getHealthyInstances(), false, true, timeoutMill);
-
-                checkTimeout(timeoutMill, "after adjust up");
-                if (!instanceNeedAdjust.getUnhealthyInstances().isEmpty())
-                    adjuster.adjustInstances(instanceNeedAdjust.getUnhealthyInstances(), false, false, timeoutMill);
+                Set<HostPort> all = instanceNeedAdjust.getAll();
+                if (!all.isEmpty()) {
+                    adjuster.adjustInstances(instanceNeedAdjust.getAll(), timeoutMill);
+                }
             }
 
             @Override

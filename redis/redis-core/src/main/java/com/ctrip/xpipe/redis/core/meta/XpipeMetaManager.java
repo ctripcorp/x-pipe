@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,9 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 
 	default List<RedisMeta> getRedises(String dc, String clusterId) { return read(()->doGetRedises(dc, clusterId)); }
 	List<RedisMeta> doGetRedises(String dc, String clusterId);
+
+	default Map<String,List<RedisMeta>> getRedises(String clusterId) { return read(()->doGetRedises(clusterId)); }
+	Map<String,List<RedisMeta>> doGetRedises(String clusterId);
 
 	default KeeperMeta getKeeperActive(String dc, String clusterId, String shardId) { return read(()->doGetKeeperActive(dc, clusterId, shardId)); }
 	KeeperMeta doGetKeeperActive(String dc, String clusterId, String shardId);

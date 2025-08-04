@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensato
 
 import com.ctrip.xpipe.endpoint.HostPort;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -27,4 +28,10 @@ public class UpDownInstances {
         return unhealthyInstances;
     }
 
+    public Set<HostPort> getAll() {
+        Set<HostPort> all = new HashSet<>();
+        all.addAll(healthyInstances);
+        all.addAll(unhealthyInstances);
+        return all;
+    }
 }

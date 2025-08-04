@@ -60,6 +60,8 @@ public interface MetaCache {
 
     List<RedisMeta> getAllInstanceOfDc(String cluster, String dc);
 
+    Map<String, List<RedisMeta>> getAllInstance(String cluster);
+
     String getDc(HostPort hostPort);
 
     String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard);

@@ -331,6 +331,27 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return result;
 	}
 
+	@Override
+	public Map<String, List<RedisMeta>> doGetRedises(String clusterId) {
+		Map<String, List<RedisMeta>> result = new HashMap<>();
+		for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+
+			ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
+			if (clusterMeta == null) {
+				continue;
+			}
+
+			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+				if (shardMeta == null) {
+					continue;
+				}
+				result.put(dcMeta.getId(), cloneList(shardMeta.getRedises()));
+			}
+
+		}
+		return result;
+	}
+
 	protected List<RedisMeta> getDirectRedises(String dc, String clusterId, String shardId) {
 
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);

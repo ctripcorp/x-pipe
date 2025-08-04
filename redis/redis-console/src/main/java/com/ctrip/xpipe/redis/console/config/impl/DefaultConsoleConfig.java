@@ -528,8 +528,13 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public int getMarkInstanceMaxDelayMilli() {
-        return checkConfigBean.getMarkInstanceMaxDelayMilli();
+    public int getMarkdownInstanceMaxDelayMilli() {
+        return checkConfigBean.getMarkdownInstanceMaxDelayMilli();
+    }
+
+    @Override
+    public int getMarkupInstanceMaxDelayMilli() {
+        return checkConfigBean.getMarkupInstanceMaxDelayMilli();
     }
 
     @Override

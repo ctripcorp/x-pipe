@@ -731,6 +731,7 @@ public interface OuterClientService extends Ordered{
 		private Set<HostPortDcStatus> hostPortDcStatuses;
 		private String clusterName;
 		private String activeDc;
+		private Integer noModifySeconds;
 
 		private Map<String, Integer> instanceCnt;
 
@@ -743,6 +744,15 @@ public interface OuterClientService extends Ordered{
 			this.clusterName = clusterName;
 			this.activeDc = activeDc;
 			this.instanceCnt = instanceCnt;
+		}
+
+		public MarkInstanceRequest(Set<HostPortDcStatus> hostPortDcStatuses, String clusterName,
+								   String activeDc, Map<String, Integer> instanceCnt, Integer noModifySeconds) {
+			this.hostPortDcStatuses = hostPortDcStatuses;
+			this.clusterName = clusterName;
+			this.activeDc = activeDc;
+			this.instanceCnt = instanceCnt;
+			this.noModifySeconds = noModifySeconds;
 		}
 
 		public Set<HostPortDcStatus> getHostPortDcStatuses() {
@@ -775,6 +785,14 @@ public interface OuterClientService extends Ordered{
 
 		public void setInstanceCnt(Map<String, Integer> instanceCnt) {
 			this.instanceCnt = instanceCnt;
+		}
+
+		public Integer getNoModifySeconds() {
+			return noModifySeconds;
+		}
+
+		public void setNoModifySeconds(Integer noModifySeconds) {
+			this.noModifySeconds = noModifySeconds;
 		}
 
 		@Override

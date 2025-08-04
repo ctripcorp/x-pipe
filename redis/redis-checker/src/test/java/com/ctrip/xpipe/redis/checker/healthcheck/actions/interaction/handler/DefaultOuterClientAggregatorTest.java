@@ -61,7 +61,7 @@ public class DefaultOuterClientAggregatorTest {
         info2 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort2);
         info3 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort3);
         when(checkerConfig.getMarkInstanceBaseDelayMilli()).thenReturn(baseDelay * 1000);
-        when(checkerConfig.getMarkInstanceMaxDelayMilli()).thenReturn(maxDelay * 1000);
+        when(checkerConfig.getMarkdownInstanceMaxDelayMilli()).thenReturn(maxDelay * 1000);
         outerClientAggregator.setScheduled(MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("DefaultOuterClientAggregatorTest")),
                 5, TimeUnit.SECONDS

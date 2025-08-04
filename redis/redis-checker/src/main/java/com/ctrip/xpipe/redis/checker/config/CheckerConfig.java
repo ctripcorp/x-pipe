@@ -110,7 +110,9 @@ public interface CheckerConfig {
 
     int getMarkInstanceBaseDelayMilli();
 
-    int getMarkInstanceMaxDelayMilli();
+    int getMarkdownInstanceMaxDelayMilli();
+
+    int getMarkupInstanceMaxDelayMilli();
 
     boolean getShouldDoAfterNettyClientConnected();
 
