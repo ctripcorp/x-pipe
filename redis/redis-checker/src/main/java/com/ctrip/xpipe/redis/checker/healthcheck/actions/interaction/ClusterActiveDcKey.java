@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.DefaultOuterClientAggregator;
-
 import java.util.Objects;
 
 public class ClusterActiveDcKey {

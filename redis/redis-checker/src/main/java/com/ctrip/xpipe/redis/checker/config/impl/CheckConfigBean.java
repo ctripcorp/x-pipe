@@ -367,7 +367,7 @@ public class CheckConfigBean extends AbstractConfigBean {
     }
 
     public int getMarkupInstanceMaxDelayMilli() {
-        return getIntProperty(KEY_CHECKER_MARK_UP_DELAY_MAX, 120000);
+        return getIntProperty(KEY_CHECKER_MARK_UP_DELAY_MAX, 60000);
     }
 
     public int getInstancePullIntervalSeconds() {

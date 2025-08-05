@@ -316,6 +316,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public int getMarkupInstanceMaxDelayMilli() {
+        return 5000;
+    }
+
+    @Override
     public boolean getShouldDoAfterNettyClientConnected() {
         return true;
     }

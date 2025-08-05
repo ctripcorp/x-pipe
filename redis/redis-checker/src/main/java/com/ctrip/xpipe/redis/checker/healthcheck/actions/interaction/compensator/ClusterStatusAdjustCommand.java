@@ -57,15 +57,15 @@ public class ClusterStatusAdjustCommand extends AbstractCommand<Void> {
             return;
         }
 
-        Set<HostPort> activeDcInstances = activeDcInstances();
-        if (activeDcInstances.isEmpty()) {
+        Set<HostPort> backupDcInstances = backupDcInstances();
+        if (backupDcInstances.isEmpty()) {
             logger.info("[compensate][skip][active dc instance]{}, {}", clusterActiveDcKey, instances);
             future().setFailure(new IllegalArgumentException("instance not in backup dc"));
             return;
         }
 
-        Set<HostPortDcStatus> needAdjustInstances = aggregatorPullService.getNeedAdjustInstances(clusterActiveDcKey.getCluster(), activeDcInstances);
-        if (null == needAdjustInstances) {
+        Set<HostPortDcStatus> needAdjustInstances = aggregatorPullService.getNeedAdjustInstances(clusterActiveDcKey.getCluster(), backupDcInstances);
+        if (null == needAdjustInstances || needAdjustInstances.isEmpty()) {
             logger.info("[compensate][skip][empty needAdjustInstances]{}, {}", clusterActiveDcKey, instances);
             future().setSuccess();
             return;
@@ -74,7 +74,6 @@ public class ClusterStatusAdjustCommand extends AbstractCommand<Void> {
         if (checkTimeout()) return;
         logger.info("[compensate]{},{}", clusterActiveDcKey, needAdjustInstances);
         long noModifySeconds = TimeUnit.MILLISECONDS.toSeconds(config.getHealthMarkCompensateIntervalMill());
-
         aggregatorPullService.doMarkInstancesIfNoModifyFor(clusterActiveDcKey.getCluster(), clusterActiveDcKey.getActiveDc(), needAdjustInstances, noModifySeconds);
 
         future().setSuccess();
@@ -90,14 +89,14 @@ public class ClusterStatusAdjustCommand extends AbstractCommand<Void> {
         return false;
     }
 
-    private Set<HostPort> activeDcInstances() {
-        Set<HostPort> activeDcInstances = new HashSet<>();
+    private Set<HostPort> backupDcInstances() {
+        Set<HostPort> backupDcInstances = new HashSet<>();
         for (ClusterShardHostPort instance : instances) {
-            if (!metaCache.inBackupDc(instance.getHostPort())) {
-                activeDcInstances.add(instance.getHostPort());
+            if (metaCache.inBackupDc(instance.getHostPort())) {
+                backupDcInstances.add(instance.getHostPort());
             }
         }
-        return activeDcInstances;
+        return backupDcInstances;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
+import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 import com.ctrip.xpipe.api.migration.OuterClientService.*;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -105,8 +106,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
                     @Override
                     protected void doRun() throws Exception {
-                        prepareInstances();
-                        if (doing.isEmpty())
+                        if (noInstance())
                             return;
 
                         handleInstances();
@@ -114,9 +114,14 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 }, randomMill(), checkInterval(), TimeUnit.MILLISECONDS);
         }
 
-        public synchronized void prepareInstances() {
+        public synchronized boolean noInstance() {
+            return todo.isEmpty() && doing.isEmpty();
+        }
+
+        public synchronized Set<HostPort> prepareInstances() {
             doing.addAll(todo);
             todo.clear();
+            return doing;
         }
 
         public synchronized void done() {
@@ -125,45 +130,47 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
 
         public void handleInstances() {
-            logger.info("[handleInstances][{}:{}] {}", clusterName, activeDc, doing);
+            logger.info("[handleInstances][{}:{}]", clusterName, activeDc);
             clusterOneThreadTaskExecutor.execute(clusterName, new AggregatorCheckAndSetTask(clusterName, activeDc, this));
         }
 
-        public synchronized Set<HostPort> getDoing() {
+        @VisibleForTesting
+        synchronized Set<HostPort> getDoing() {
             return doing;
         }
 
-        public String getClusterName() {
-            return clusterName;
+        @VisibleForTesting
+        synchronized Set<HostPort> getTodo() {
+            return todo;
         }
 
-        public String getActiveDc() {
-            return activeDc;
+        @VisibleForTesting
+        synchronized long getWaitStartTime() {
+            return waitStartTime;
         }
-
     }
 
-    @VisibleForTesting
-    public int randomMill() {
+    int randomMill() {
         int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
                 checkerConfig.getRedisReplicationHealthCheckInterval() + checkerConfig.getCheckerMetaRefreshIntervalMilli());
         int delayMax = Math.max(checkerConfig.getMarkdownInstanceMaxDelayMilli(), delayBase + DELTA);
         return delayBase + rand.nextInt(delayMax - delayBase);
     }
 
-    public int checkInterval() {
+    int checkInterval() {
         int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
                 checkerConfig.getRedisReplicationHealthCheckInterval() + checkerConfig.getCheckerMetaRefreshIntervalMilli());
-        return Math.max(checkerConfig.getMarkdownInstanceMaxDelayMilli(), delayBase + DELTA);
+        int delayMax = Math.max(checkerConfig.getMarkdownInstanceMaxDelayMilli(), delayBase + DELTA);
+        return delayMax - delayBase;
     }
 
     private Set<HostPortDcStatus> getNeedMarkInstances(String cluster, Set<HostPort> clusterHostPorts) throws Exception {
-        logger.info("[getNeedMarkInstances][{}]", cluster);
+        logger.info("[aggregator][getNeedMarkInstances][{}]{}", cluster, clusterHostPorts);
         return aggregatorPullService.getNeedAdjustInstances(cluster, clusterHostPorts);
     }
 
     private void doMarkInstance(String cluster, String activeDc, Set<HostPortDcStatus> needMarkInstances) throws Exception {
-        logger.info("[doMarkInstance][{}]", cluster);
+        logger.info("[aggregator][doMarkInstance][{}]{}", cluster, needMarkInstances);
         aggregatorPullService.doMarkInstances(cluster, activeDc, needMarkInstances);
     }
 
@@ -191,24 +198,25 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         @Override
         protected void doExecute() throws Exception {
 
+            Set<HostPort> current = aggregator.prepareInstances();
             Set<HostPortDcStatus> instancesToUpdate;
 
             try {
-                instancesToUpdate = getNeedMarkInstances(cluster, aggregator.getDoing());
+                instancesToUpdate = getNeedMarkInstances(cluster, current);
             } catch (Throwable th) {
-                logger.info("[aggregator]][getFail[{}]", cluster, th);
+                logger.error("[aggregator][getFail]{}", cluster, th);
+                aggregator.done();
                 future().setFailure(th);
-                //todo: aggregator done?
                 return;
             }
 
             if (instancesToUpdate.isEmpty()) {
-                logger.info("[aggregator][getEmpty] skip");
+                logger.info("[aggregator][getEmpty] skip: {}", cluster);
                 aggregator.done();
                 future().setSuccess();
             } else {
                 Set<HostPortDcStatus> markdownInstances = instancesToUpdate.stream().filter(hostPortDcStatus -> !hostPortDcStatus.isCanRead()).collect(Collectors.toSet());
-                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(aggregator)) {
+                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, current)) {
                     for (HostPortDcStatus hostPortDcStatus : instancesToUpdate) {
                         for (HealthStateService stateService : healthStateServices) {
                             try {
@@ -216,7 +224,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                                         new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()),
                                         hostPortDcStatus.isCanRead());
                             } catch (Throwable th) {
-                                logger.info("[aggregator][updateLastMark][fail]", th);
+                                logger.warn("[aggregator][updateLastMark][fail]{}", cluster, th);
                             }
                         }
                     }
@@ -225,16 +233,18 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                         try {
                             logger.debug("[aggregator][begin] {}", cluster);
                             doMarkInstance(cluster, activeDc, instancesToUpdate);
+                            aggregator.done();
                             future().setSuccess();
                             logger.debug("[aggregator][end] {}", cluster);
                             return;
                         } catch (Throwable th) {
-                            logger.error("[aggregator][setFail] " + cluster, th);
+                            logger.error("[aggregator][setFail] {} ", cluster, th);
                         }
                     }
                     aggregator.done();
-                    future().setSuccess();
+                    future().setFailure(new IllegalStateException("[aggregator][fail] "+ cluster));
                 } else {
+                    logger.info("[aggregator][allMarkup] continue wait, {}", cluster);
                     future().setSuccess();
                 }
 
@@ -251,18 +261,28 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
     }
 
-    public boolean dcInstancesAllUp(Aggregator aggregator) {
-        return aggregatorPullService.dcInstancesAllUp(aggregator.clusterName, aggregator.getDoing());
+    boolean dcInstancesAllUp(String clusterName, Set<HostPort> instances) {
+        return aggregatorPullService.dcInstancesAllUp(clusterName, instances);
     }
 
     @VisibleForTesting
-    public void setScheduled(ScheduledExecutorService scheduled) {
+    void setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
     }
 
     @VisibleForTesting
-    public void setHealthStateServices(List<HealthStateService> healthStateServices) {
+    void setExecutors(ExecutorService executors) {
+        this.executors = executors;
+    }
+
+    @VisibleForTesting
+    void setHealthStateServices(List<HealthStateService> healthStateServices) {
         this.healthStateServices = healthStateServices;
+    }
+
+    @VisibleForTesting
+    Aggregator getClusterAggregator(ClusterActiveDcKey clusterActiveDcKey) {
+        return this.clusterAggregators.get(clusterActiveDcKey);
     }
 
 }
