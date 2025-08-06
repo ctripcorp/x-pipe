@@ -71,14 +71,11 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalAction {
         return clusterShards;
     }
 
-    private boolean isDcClusterShardSafe(DcMeta dcMeta, ClusterMeta cluster, ShardMeta shard) {
-        if (!ClusterType.lookup(cluster.getType()).supportMultiActiveDC()) {
+    protected boolean isDcClusterShardSafe(DcMeta dcMeta, ClusterMeta cluster, ShardMeta shard) {
+        if (ClusterType.lookup(cluster.getType()).equals(ClusterType.ONE_WAY)) {
             // sentinel is unnecessary for single active cluster in cross-region dc
-            // except for single_dc type
-            if (!(ClusterType.lookup(cluster.getType()).equals(ClusterType.SINGLE_DC) || (cluster.getAzGroupType() != null && ClusterType.lookup(cluster.getAzGroupType()).equals(ClusterType.SINGLE_DC)))) {
-                String activeDc = metaCache.getActiveDc(cluster.getId());
-                if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) return true;
-            }
+            String activeDc = metaCache.getActiveDc(cluster.getId());
+            if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) return true;
         }
 
         return null != shard.getSentinelId() && !shard.getSentinelId().equals(0L);
