@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorP
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActiveDcKey;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import jdk.internal.joptsimple.internal.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
