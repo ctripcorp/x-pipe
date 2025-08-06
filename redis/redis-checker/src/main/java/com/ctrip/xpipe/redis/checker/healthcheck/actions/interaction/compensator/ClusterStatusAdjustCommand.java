@@ -52,27 +52,27 @@ public class ClusterStatusAdjustCommand extends AbstractCommand<Void> {
     protected void doExecute() throws Throwable {
         if (checkTimeout()) return;
         if (!siteStability.isSiteStable()) {
-            logger.info("[compensate][skip][unstable]{}, {}", clusterActiveDcKey, instances);
+            logger.info("[compensate][{}][skip][unstable]{}", clusterActiveDcKey, instances);
             future().setSuccess();
             return;
         }
 
         Set<HostPort> backupDcInstances = backupDcInstances();
         if (backupDcInstances.isEmpty()) {
-            logger.info("[compensate][skip][active dc instance]{}, {}", clusterActiveDcKey, instances);
+            logger.info("[compensate][{}][skip][active dc instance]{}", clusterActiveDcKey, instances);
             future().setFailure(new IllegalArgumentException("instance not in backup dc"));
             return;
         }
 
         Set<HostPortDcStatus> needAdjustInstances = aggregatorPullService.getNeedAdjustInstances(clusterActiveDcKey.getCluster(), backupDcInstances);
         if (null == needAdjustInstances || needAdjustInstances.isEmpty()) {
-            logger.info("[compensate][skip][empty needAdjustInstances]{}, {}", clusterActiveDcKey, instances);
+            logger.info("[compensate][{}][skip][empty needAdjustInstances]{}", clusterActiveDcKey, instances);
             future().setSuccess();
             return;
         }
 
         if (checkTimeout()) return;
-        logger.info("[compensate]{},{}", clusterActiveDcKey, needAdjustInstances);
+        logger.info("[compensate][{}]{}", clusterActiveDcKey, needAdjustInstances);
         long noModifySeconds = TimeUnit.MILLISECONDS.toSeconds(config.getHealthMarkCompensateIntervalMill());
         aggregatorPullService.doMarkInstancesIfNoModifyFor(clusterActiveDcKey.getCluster(), clusterActiveDcKey.getActiveDc(), needAdjustInstances, noModifySeconds);
 
@@ -81,7 +81,7 @@ public class ClusterStatusAdjustCommand extends AbstractCommand<Void> {
 
     private boolean checkTimeout() {
         if (System.currentTimeMillis() > deadlineTimeMilli) {
-            logger.info("[compensate][skip] timeout {}, cluster {}, instance {}", deadlineTimeMilli, clusterActiveDcKey, instances);
+            logger.warn("[compensate][{}][skip] timeout {}, instance {}", clusterActiveDcKey, deadlineTimeMilli, instances);
             future().setFailure(new TimeoutException(clusterActiveDcKey.toString()));
             return true;
         }

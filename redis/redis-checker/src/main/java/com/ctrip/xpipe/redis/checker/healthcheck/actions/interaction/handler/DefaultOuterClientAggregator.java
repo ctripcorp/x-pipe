@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
-import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
-import com.ctrip.xpipe.api.migration.OuterClientService.*;
+import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
@@ -21,7 +20,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -70,7 +71,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         });
 
         aggregator.add(info.getHostPort());
-        logger.info("[delayMarkInstance][{}]{}", key, info.getHostPort());
+        logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
     }
 
     public class Aggregator {
@@ -130,7 +131,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
 
         public void handleInstances() {
-            logger.info("[handleInstances][{}:{}]", clusterName, activeDc);
+            logger.info("[aggregator][{}:{}][handleInstances]", clusterName, activeDc);
             clusterOneThreadTaskExecutor.execute(clusterName, new AggregatorCheckAndSetTask(clusterName, activeDc, this));
         }
 
@@ -164,13 +165,13 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         return delayMax - delayBase;
     }
 
-    private Set<HostPortDcStatus> getNeedMarkInstances(String cluster, Set<HostPort> clusterHostPorts) throws Exception {
-        logger.info("[aggregator][getNeedMarkInstances][{}]{}", cluster, clusterHostPorts);
+    private Set<HostPortDcStatus> getNeedMarkInstances(String cluster, String activeDc, Set<HostPort> clusterHostPorts) throws Exception {
+        logger.info("[aggregator][{}:{}][getNeedMarkInstances]{}", cluster, activeDc, clusterHostPorts);
         return aggregatorPullService.getNeedAdjustInstances(cluster, clusterHostPorts);
     }
 
     private void doMarkInstance(String cluster, String activeDc, Set<HostPortDcStatus> needMarkInstances) throws Exception {
-        logger.info("[aggregator][doMarkInstance][{}]{}", cluster, needMarkInstances);
+        logger.info("[aggregator][{}:{}][doMarkInstance]{}", cluster, activeDc, needMarkInstances);
         aggregatorPullService.doMarkInstances(cluster, activeDc, needMarkInstances);
     }
 
@@ -202,16 +203,16 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
             Set<HostPortDcStatus> instancesToUpdate;
 
             try {
-                instancesToUpdate = getNeedMarkInstances(cluster, current);
+                instancesToUpdate = getNeedMarkInstances(cluster, activeDc, current);
             } catch (Throwable th) {
-                logger.error("[aggregator][getFail]{}", cluster, th);
+                logger.error("[aggregator][{}:{}][getNeedMarkInstances]", cluster, activeDc, th);
                 aggregator.done();
                 future().setFailure(th);
                 return;
             }
 
             if (instancesToUpdate.isEmpty()) {
-                logger.info("[aggregator][getEmpty] skip: {}", cluster);
+                logger.info("[aggregator][{}:{}][getNeedMarkInstances]empty, skip", cluster, activeDc);
                 aggregator.done();
                 future().setSuccess();
             } else {
@@ -224,27 +225,27 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                                         new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()),
                                         hostPortDcStatus.isCanRead());
                             } catch (Throwable th) {
-                                logger.warn("[aggregator][updateLastMark][fail]{}", cluster, th);
+                                logger.warn("[aggregator][{}:{}][updateLastMark][fail]", cluster, activeDc, th);
                             }
                         }
                     }
 
                     for (int i = 0; i < retry; i++) {
                         try {
-                            logger.debug("[aggregator][begin] {}", cluster);
+                            logger.debug("[aggregator][{}:{}][doMarkInstance][begin]", cluster, activeDc);
                             doMarkInstance(cluster, activeDc, instancesToUpdate);
                             aggregator.done();
                             future().setSuccess();
-                            logger.debug("[aggregator][end] {}", cluster);
+                            logger.debug("[aggregator][{}:{}][doMarkInstance][end]", cluster, activeDc);
                             return;
                         } catch (Throwable th) {
-                            logger.error("[aggregator][setFail] {} ", cluster, th);
+                            logger.error("[aggregator][{}:{}][doMarkInstance][fail]", cluster, activeDc, th);
                         }
                     }
                     aggregator.done();
                     future().setFailure(new IllegalStateException("[aggregator][fail] "+ cluster));
                 } else {
-                    logger.info("[aggregator][allMarkup] continue wait, {}", cluster);
+                    logger.info("[aggregator][{}:{}][allMarkup] continue wait", cluster, activeDc);
                     future().setSuccess();
                 }
 
