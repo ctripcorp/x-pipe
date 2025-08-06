@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActi
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import jdk.internal.joptsimple.internal.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +100,11 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
 
         public synchronized boolean markupWaitTimeout() {
-            return System.currentTimeMillis() - waitStartTime > markupWaitTimeoutInMills;
+            boolean timeout = System.currentTimeMillis() - waitStartTime > markupWaitTimeoutInMills;
+            if (timeout) {
+                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}, timeoutInMillis:{} ", clusterName, activeDc, waitStartTime, markupWaitTimeoutInMills);
+            }
+            return timeout;
         }
 
         public void start() {
@@ -217,7 +222,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 future().setSuccess();
             } else {
                 Set<HostPortDcStatus> markdownInstances = instancesToUpdate.stream().filter(hostPortDcStatus -> !hostPortDcStatus.isCanRead()).collect(Collectors.toSet());
-                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, current)) {
+                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, activeDc, current)) {
                     for (HostPortDcStatus hostPortDcStatus : instancesToUpdate) {
                         for (HealthStateService stateService : healthStateServices) {
                             try {
@@ -262,8 +267,14 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
     }
 
-    boolean dcInstancesAllUp(String clusterName, Set<HostPort> instances) {
-        return aggregatorPullService.dcInstancesAllUp(clusterName, instances);
+    boolean dcInstancesAllUp(String clusterName, String activeDc, Set<HostPort> instances) {
+        String allUpDc = aggregatorPullService.dcInstancesAllUp(clusterName, instances);
+        if (!Strings.isNullOrEmpty(allUpDc)) {
+            logger.warn("[aggregator][{}:{}][dcInstancesAllUp]{}", clusterName, activeDc, allUpDc);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @VisibleForTesting

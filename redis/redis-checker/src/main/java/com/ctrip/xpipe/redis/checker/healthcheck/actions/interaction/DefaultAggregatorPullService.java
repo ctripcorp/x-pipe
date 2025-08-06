@@ -112,7 +112,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     }
 
     @Override
-    public boolean dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup) {
+    public String dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup) {
         Set<String> relatedDcs = new HashSet<>();
         instancesToMarkup.forEach(hostPort -> relatedDcs.add(metaCache.getDc(hostPort)));
 
@@ -122,9 +122,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         for (String dc : relatedDcs) {
             List<HostPort> allDcInstances = dcInstances.get(dc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
             if (allInstancesUp(allDcInstances, allStatus))
-                return true;
+                return dc;
         }
-        return false;
+        return null;
     }
 
     boolean allInstancesUp(List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {

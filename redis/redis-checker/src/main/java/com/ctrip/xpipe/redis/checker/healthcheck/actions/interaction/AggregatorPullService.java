@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.api.migration.OuterClientService.*;
+import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
 import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.util.Set;
@@ -14,5 +14,5 @@ public interface AggregatorPullService {
 
     void doMarkInstancesIfNoModifyFor(String clusterName, String activeDc, Set<HostPortDcStatus> instances, long noModifySeconds) throws OuterClientException;
 
-    boolean dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup);
+    String dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup);
 }

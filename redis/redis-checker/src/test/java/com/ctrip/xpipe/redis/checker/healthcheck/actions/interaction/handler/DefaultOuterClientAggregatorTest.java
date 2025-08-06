@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActi
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.curator.shaded.com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,14 +18,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -231,7 +231,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
     public void testAggregateMarkUpDcInstancesAllUp() throws Exception {
         doReturn(10).when(outerClientAggregator).randomMill();
         doReturn(200).when(outerClientAggregator).checkInterval();
-        doReturn(false).when(outerClientAggregator).dcInstancesAllUp(anyString(), any());
+        doReturn(false).when(outerClientAggregator).dcInstancesAllUp(anyString(), anyString(), any());
         when(checkerConfig.getMarkupInstanceMaxDelayMilli()).thenReturn(8000);
         CountDownLatch latch = new CountDownLatch(3);
         executors.execute(() -> {
@@ -274,7 +274,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
         verify(healthStateService, never()).updateLastMarkHandled(any(), anyBoolean());
         verify(aggregatorPullService, never()).doMarkInstances(anyString(), anyString(), anySet());
 
-        doReturn(true).when(outerClientAggregator).dcInstancesAllUp(anyString(), any());
+        doReturn(true).when(outerClientAggregator).dcInstancesAllUp(anyString(), anyString(), any());
         Thread.sleep(500);
         verify(aggregatorPullService, atLeast(3)).getNeedAdjustInstances(anyString(), anySet());
         aggregator = outerClientAggregator.getClusterAggregator(new ClusterActiveDcKey(cluster1, activeDc));
