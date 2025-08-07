@@ -67,7 +67,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
     public void markInstance(ClusterShardHostPort info) {
         ClusterActiveDcKey key = new ClusterActiveDcKey(info.getClusterName(), info.getActiveDc());
         Aggregator aggregator = clusterAggregators.computeIfAbsent(key, clusterActiveDcKey -> {
-            Aggregator clusterAggregator = new Aggregator(clusterActiveDcKey, scheduled, checkerConfig.getMarkupInstanceMaxDelayMilli());
+            Aggregator clusterAggregator = new Aggregator(clusterActiveDcKey, scheduled);
             try {
                 clusterAggregator.start();
             } catch (Throwable th) {
@@ -80,14 +80,9 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
     }
 
-    static class StartTimeAndInstances {
+    class StartTimeAndInstances {
         private long waitStartTime = 0;
-        private final long markupWaitTimeoutInMills;
         private final Set<HostPort> instances = new HashSet<>();
-
-        public StartTimeAndInstances(long markupWaitTimeoutInMills) {
-            this.markupWaitTimeoutInMills = markupWaitTimeoutInMills;
-        }
 
         public long getWaitStartTime() {
             return waitStartTime;
@@ -118,7 +113,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         public boolean timeout() {
             if (waitStartTime == 0)
                 return false;
-            return System.currentTimeMillis() - waitStartTime > markupWaitTimeoutInMills;
+            return System.currentTimeMillis() - waitStartTime > checkerConfig.getMarkupInstanceMaxDelayMilli();
         }
     }
 
@@ -129,11 +124,11 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         private StartTimeAndInstances doing;
         private DynamicDelayPeriodTask task;
 
-        public Aggregator(ClusterActiveDcKey key, ScheduledExecutorService scheduled, long markupWaitTimeoutInMills) {
+        public Aggregator(ClusterActiveDcKey key, ScheduledExecutorService scheduled) {
             this.clusterName = key.getCluster();
             this.activeDc = key.getActiveDc();
-            this.todo = new StartTimeAndInstances(markupWaitTimeoutInMills);
-            this.doing = new StartTimeAndInstances(markupWaitTimeoutInMills);
+            this.todo = new StartTimeAndInstances();
+            this.doing = new StartTimeAndInstances();
             this.task = new DynamicDelayPeriodTask("Aggregator-" + clusterName + "-" + activeDc, new AbstractExceptionLogTask() {
                 @Override
                 protected void doRun() throws Exception {

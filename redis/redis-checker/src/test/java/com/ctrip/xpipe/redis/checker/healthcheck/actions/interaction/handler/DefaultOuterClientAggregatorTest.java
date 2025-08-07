@@ -219,7 +219,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
             return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, true)).collect(Collectors.toSet());
         }).when(aggregatorPullService).getNeedAdjustInstances(anyString(), anySet());
 
-        Thread.sleep(100);
+        Thread.sleep(200);
         verify(aggregatorPullService, atLeast(1)).getNeedAdjustInstances(anyString(), anySet());
         aggregator = outerClientAggregator.getClusterAggregator(new ClusterActiveDcKey(cluster1, activeDc));
         Assert.assertTrue(aggregator.getTodo().getInstances().isEmpty());
@@ -268,7 +268,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
             return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, true)).collect(Collectors.toSet());
         }).when(aggregatorPullService).getNeedAdjustInstances(anyString(), anySet());
 
-        Thread.sleep(100);
+        Thread.sleep(200);
         verify(aggregatorPullService, atLeast(1)).getNeedAdjustInstances(anyString(), anySet());
         aggregator = outerClientAggregator.getClusterAggregator(new ClusterActiveDcKey(cluster1, activeDc));
         Assert.assertTrue(aggregator.getTodo().getInstances().isEmpty());
