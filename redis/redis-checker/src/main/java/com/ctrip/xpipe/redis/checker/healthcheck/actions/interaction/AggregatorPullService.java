@@ -14,5 +14,5 @@ public interface AggregatorPullService {
 
     void doMarkInstancesIfNoModifyFor(String clusterName, String activeDc, Set<HostPortDcStatus> instances, long noModifySeconds) throws OuterClientException;
 
-    String dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup);
+    String dcInstancesAllUp(String clusterName, String activeDc, Set<HostPortDcStatus> instancesToMarkup);
 }

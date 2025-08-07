@@ -47,6 +47,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     private MetaCache metaCache;
     @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
+    @Autowired
+    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
+
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
 
@@ -112,24 +115,39 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     }
 
     @Override
-    public String dcInstancesAllUp(String clusterName, Set<HostPort> instancesToMarkup) {
+    public String dcInstancesAllUp(String clusterName, String activeDc, Set<HostPortDcStatus> instancesToMarkup) {
         Set<String> relatedDcs = new HashSet<>();
-        instancesToMarkup.forEach(hostPort -> relatedDcs.add(metaCache.getDc(hostPort)));
+        instancesToMarkup.forEach(hostPortDcStatus -> relatedDcs.add(metaCache.getDc(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()))));
 
         Map<String, List<RedisMeta>> dcInstances = metaCache.getAllInstance(clusterName);
-        Map<HostPort, HealthStatusDesc> allStatus = defaultDelayPingActionCollector.getAllHealthStatus();
+        Map<HostPort, HealthStatusDesc> allStatus;
+        if (crossRegion(relatedDcs, activeDc)) {
+            allStatus = defaultPsubPingActionCollector.getAllHealthStatus();
+        } else {
+            allStatus = defaultDelayPingActionCollector.getAllHealthStatus();
+        }
 
         for (String dc : relatedDcs) {
             List<HostPort> allDcInstances = dcInstances.get(dc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
-            if (allInstancesUp(allDcInstances, allStatus))
+            if (allInstancesUp(clusterName, activeDc, allDcInstances, allStatus))
                 return dc;
         }
         return null;
     }
 
-    boolean allInstancesUp(List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {
+    boolean crossRegion(Set<String> relatedDcs, String activeDc) {
+        for (String relatedDc : relatedDcs) {
+            if (metaCache.isCrossRegion(activeDc, relatedDc))
+                return true;
+        }
+        return false;
+    }
+
+    boolean allInstancesUp(String clusterName, String activeDc, List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {
         for (HostPort hostPort : instances) {
-            if (!allStatus.get(hostPort).getState().shouldNotifyMarkup())
+            HEALTH_STATE healthState = allStatus.get(hostPort).getState();
+            logger.info("[aggregator][{}:{}][allInstancesUp]{},{},{}", clusterName, activeDc, hostPort, healthState.name(), healthState.shouldNotifyMarkup());
+            if (!healthState.shouldNotifyMarkup())
                 return false;
         }
         return true;

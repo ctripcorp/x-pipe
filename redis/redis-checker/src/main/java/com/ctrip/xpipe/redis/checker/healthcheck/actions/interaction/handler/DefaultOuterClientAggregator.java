@@ -75,34 +75,71 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
     }
 
-    public class Aggregator {
+    class StartTimeAndInstances {
         private long waitStartTime = 0;
+        private long markupWaitTimeoutInMills;
+        private Set<HostPort> instances = new HashSet<>();
+
+        public StartTimeAndInstances(long markupWaitTimeoutInMills) {
+            this.markupWaitTimeoutInMills = markupWaitTimeoutInMills;
+        }
+
+        public long getWaitStartTime() {
+            return waitStartTime;
+        }
+
+        public Set<HostPort> getInstances() {
+            return instances;
+        }
+
+        public void addInstance(HostPort hostPort) {
+            if (this.waitStartTime == 0)
+                this.waitStartTime = System.currentTimeMillis();
+            this.instances.add(hostPort);
+        }
+
+        public void merge(StartTimeAndInstances other) {
+            if (waitStartTime == 0) {
+                this.waitStartTime = other.waitStartTime;
+            }
+            this.instances.addAll(other.instances);
+        }
+
+        public void clear() {
+            this.waitStartTime = 0;
+            this.instances.clear();
+        }
+
+        public boolean timeout() {
+            if (waitStartTime == 0)
+                return false;
+            return System.currentTimeMillis() - waitStartTime > markupWaitTimeoutInMills;
+        }
+    }
+
+    public class Aggregator {
         private String clusterName;
         private String activeDc;
-        private Set<HostPort> todo = new HashSet<>();
-        private Set<HostPort> doing = new HashSet<>();
-        private long markupWaitTimeoutInMills;
+        private StartTimeAndInstances todo;
+        private StartTimeAndInstances doing;
         private ScheduledExecutorService scheduled;
-
 
         public Aggregator(ClusterActiveDcKey key, ScheduledExecutorService scheduled, long markupWaitTimeoutInMills) {
             this.clusterName = key.getCluster();
             this.activeDc = key.getActiveDc();
+            this.todo = new StartTimeAndInstances(markupWaitTimeoutInMills);
+            this.doing = new StartTimeAndInstances(markupWaitTimeoutInMills);
             this.scheduled = scheduled;
-            this.markupWaitTimeoutInMills = markupWaitTimeoutInMills;
         }
 
-
-        public synchronized boolean add(HostPort hostPort) {
-            if (waitStartTime == 0)
-                waitStartTime = System.currentTimeMillis();
-            return todo.add(hostPort);
+        public synchronized void add(HostPort hostPort) {
+            this.todo.addInstance(hostPort);
         }
 
         public synchronized boolean markupWaitTimeout() {
-            boolean timeout = System.currentTimeMillis() - waitStartTime > markupWaitTimeoutInMills;
+            boolean timeout = doing.timeout();
             if (timeout) {
-                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}, timeoutInMillis:{} ", clusterName, activeDc, waitStartTime, markupWaitTimeoutInMills);
+                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}", clusterName, activeDc, doing.getWaitStartTime());
             }
             return timeout;
         }
@@ -121,18 +158,17 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
 
         public synchronized boolean noInstance() {
-            return todo.isEmpty() && doing.isEmpty();
+            return todo.getInstances().isEmpty() && doing.getInstances().isEmpty();
         }
 
         public synchronized Set<HostPort> prepareInstances() {
-            doing.addAll(todo);
-            todo.clear();
-            return doing;
+            this.doing.merge(this.todo);
+            this.todo.clear();
+            return doing.getInstances();
         }
 
         public synchronized void done() {
             this.doing.clear();
-            this.waitStartTime = 0;
         }
 
         public void handleInstances() {
@@ -141,19 +177,15 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
 
         @VisibleForTesting
-        synchronized Set<HostPort> getDoing() {
+        synchronized StartTimeAndInstances getDoing() {
             return doing;
         }
 
         @VisibleForTesting
-        synchronized Set<HostPort> getTodo() {
+        synchronized StartTimeAndInstances getTodo() {
             return todo;
         }
 
-        @VisibleForTesting
-        synchronized long getWaitStartTime() {
-            return waitStartTime;
-        }
     }
 
     int randomMill() {
@@ -204,11 +236,11 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         @Override
         protected void doExecute() throws Exception {
 
-            Set<HostPort> current = aggregator.prepareInstances();
+            Set<HostPort> doing = aggregator.prepareInstances();
             Set<HostPortDcStatus> instancesToUpdate;
 
             try {
-                instancesToUpdate = getNeedMarkInstances(cluster, activeDc, current);
+                instancesToUpdate = getNeedMarkInstances(cluster, activeDc, doing);
             } catch (Throwable th) {
                 logger.error("[aggregator][{}:{}][getNeedMarkInstances]", cluster, activeDc, th);
                 aggregator.done();
@@ -222,7 +254,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 future().setSuccess();
             } else {
                 Set<HostPortDcStatus> markdownInstances = instancesToUpdate.stream().filter(hostPortDcStatus -> !hostPortDcStatus.isCanRead()).collect(Collectors.toSet());
-                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, activeDc, current)) {
+                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, activeDc, instancesToUpdate)) {
                     for (HostPortDcStatus hostPortDcStatus : instancesToUpdate) {
                         for (HealthStateService stateService : healthStateServices) {
                             try {
@@ -267,10 +299,10 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
     }
 
-    boolean dcInstancesAllUp(String clusterName, String activeDc, Set<HostPort> instances) {
-        String allUpDc = aggregatorPullService.dcInstancesAllUp(clusterName, instances);
+    boolean dcInstancesAllUp(String clusterName, String activeDc, Set<HostPortDcStatus> instances) {
+        String allUpDc = aggregatorPullService.dcInstancesAllUp(clusterName, activeDc, instances);
         if (!Strings.isNullOrEmpty(allUpDc)) {
-            logger.warn("[aggregator][{}:{}][dcInstancesAllUp]{}", clusterName, activeDc, allUpDc);
+            logger.info("[aggregator][{}:{}][dcInstancesAllUp]{}", clusterName, activeDc, allUpDc);
             return true;
         } else {
             return false;
