@@ -797,7 +797,7 @@ public interface OuterClientService extends Ordered{
 
 		@Override
 		public String toString() {
-			return String.format("[%s:%s]%s", clusterName, activeDc, hostPortDcStatuses);
+			return String.format("[%s:%s]%s, %d", clusterName, activeDc, hostPortDcStatuses, noModifySeconds == null ? 0 : noModifySeconds);
 		}
 	}
 

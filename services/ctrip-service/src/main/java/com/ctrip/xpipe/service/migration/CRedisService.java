@@ -224,6 +224,7 @@ public class CRedisService extends AbstractOuterClientService {
 						put("cluster", markInstanceRequest.getClusterName());
 						put("hostPortDcStatuses", markInstanceRequest.getHostPortDcStatuses());
 						put("activeDc", markInstanceRequest.getActiveDc());
+						put("noModifySeconds", markInstanceRequest.getNoModifySeconds());
 					}};
 				}
 			});

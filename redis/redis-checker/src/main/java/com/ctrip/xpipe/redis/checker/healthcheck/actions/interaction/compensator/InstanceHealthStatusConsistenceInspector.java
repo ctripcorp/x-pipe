@@ -12,10 +12,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -125,7 +122,8 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
                 checkTimeout(timeoutMill, "after compare");
                 Set<HostPort> all = instanceNeedAdjust.getAll();
                 if (!all.isEmpty()) {
-                    adjuster.adjustInstances(instanceNeedAdjust.getAll(), timeoutMill);
+                    logger.info("[compensate]need adjust instances: {}", all);
+                    adjuster.adjustInstances(all, timeoutMill);
                 }
             }
 
@@ -138,7 +136,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
     protected void checkTimeout(long timeoutAtMilli, String msg) throws TimeoutException {
         if (System.currentTimeMillis() > timeoutAtMilli) {
-            logger.info("[timeout] {}", msg);
+            logger.info("[compensate][timeout] {}", msg);
             throw new TimeoutException(msg);
         }
     }
@@ -184,8 +182,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         needMarkUpInstances.retainAll(outClientInstances.getUnhealthyInstances());
         needMarkDownInstances.retainAll(outClientInstances.getHealthyInstances());
         needMarkDownInstances = filterMasterHealthyInstances(xpipeInstanceHealthHolder, needMarkDownInstances, quorum);
-        logger.info("[InstanceHealthStatusConsistenceInspector] needMarkUpInstances:{}", needMarkUpInstances);
-        logger.info("[InstanceHealthStatusConsistenceInspector] needMarkDownInstances:{}", needMarkDownInstances);
         return new UpDownInstances(needMarkUpInstances, needMarkDownInstances);
     }
 

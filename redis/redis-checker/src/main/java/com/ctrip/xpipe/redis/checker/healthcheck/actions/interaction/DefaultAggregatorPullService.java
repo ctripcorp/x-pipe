@@ -110,7 +110,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     public void doMarkInstancesIfNoModifyFor(String clusterName, String activeDc, Set<HostPortDcStatus> instances, long seconds) throws OuterClientException {
         alertMarkInstance(clusterName, instances);
         Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
-        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt);
+        MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt, (int) seconds);
         outerClientService.batchMarkInstance(markInstanceRequest);
     }
 
