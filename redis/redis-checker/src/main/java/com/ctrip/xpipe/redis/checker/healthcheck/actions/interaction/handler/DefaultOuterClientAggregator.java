@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorP
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActiveDcKey;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -20,10 +21,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -67,7 +68,11 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         ClusterActiveDcKey key = new ClusterActiveDcKey(info.getClusterName(), info.getActiveDc());
         Aggregator aggregator = clusterAggregators.computeIfAbsent(key, clusterActiveDcKey -> {
             Aggregator clusterAggregator = new Aggregator(clusterActiveDcKey, scheduled, checkerConfig.getMarkupInstanceMaxDelayMilli());
-            clusterAggregator.start();
+            try {
+                clusterAggregator.start();
+            } catch (Throwable th) {
+                logger.error("[aggregator][{}:{}][markInstance]start aggregator failed: {}", key.getCluster(), key.getActiveDc(), info.getHostPort(), th);
+            }
             return clusterAggregator;
         });
 
@@ -75,10 +80,10 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
     }
 
-    class StartTimeAndInstances {
+    static class StartTimeAndInstances {
         private long waitStartTime = 0;
-        private long markupWaitTimeoutInMills;
-        private Set<HostPort> instances = new HashSet<>();
+        private final long markupWaitTimeoutInMills;
+        private final Set<HostPort> instances = new HashSet<>();
 
         public StartTimeAndInstances(long markupWaitTimeoutInMills) {
             this.markupWaitTimeoutInMills = markupWaitTimeoutInMills;
@@ -122,14 +127,22 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         private String activeDc;
         private StartTimeAndInstances todo;
         private StartTimeAndInstances doing;
-        private ScheduledExecutorService scheduled;
+        private DynamicDelayPeriodTask task;
 
         public Aggregator(ClusterActiveDcKey key, ScheduledExecutorService scheduled, long markupWaitTimeoutInMills) {
             this.clusterName = key.getCluster();
             this.activeDc = key.getActiveDc();
             this.todo = new StartTimeAndInstances(markupWaitTimeoutInMills);
             this.doing = new StartTimeAndInstances(markupWaitTimeoutInMills);
-            this.scheduled = scheduled;
+            this.task = new DynamicDelayPeriodTask("Aggregator-" + clusterName + "-" + activeDc, new AbstractExceptionLogTask() {
+                @Override
+                protected void doRun() throws Exception {
+                    if (noInstance())
+                        return;
+
+                    handleInstances();
+                }
+            }, DefaultOuterClientAggregator.this::randomMill, DefaultOuterClientAggregator.this::checkInterval, scheduled);
         }
 
         public synchronized void add(HostPort hostPort) {
@@ -139,22 +152,13 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         public synchronized boolean markupWaitTimeout() {
             boolean timeout = doing.timeout();
             if (timeout) {
-                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}", clusterName, activeDc, doing.getWaitStartTime());
+                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}", clusterName, activeDc, new Timestamp(doing.getWaitStartTime()));
             }
             return timeout;
         }
 
-        public void start() {
-            if (scheduled != null)
-                scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-                    @Override
-                    protected void doRun() throws Exception {
-                        if (noInstance())
-                            return;
-
-                        handleInstances();
-                    }
-                }, randomMill(), checkInterval(), TimeUnit.MILLISECONDS);
+        public void start() throws Exception {
+            task.start();
         }
 
         public synchronized boolean noInstance() {

@@ -245,7 +245,6 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
         doReturn(10).when(outerClientAggregator).randomMill();
         doReturn(200).when(outerClientAggregator).checkInterval();
         when(aggregatorPullService.dcInstancesAllUp(anyString(), anyString(), anySet())).thenReturn(null);
-//        doReturn(false).when(outerClientAggregator).dcInstancesAllUp(anyString(), anyString(), any());
         when(checkerConfig.getMarkupInstanceMaxDelayMilli()).thenReturn(8000);
         CountDownLatch latch = new CountDownLatch(2);
         executors.execute(() -> {
