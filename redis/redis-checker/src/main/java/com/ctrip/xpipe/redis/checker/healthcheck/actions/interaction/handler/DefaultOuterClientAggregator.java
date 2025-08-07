@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -211,7 +212,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         aggregatorPullService.doMarkInstances(cluster, activeDc, needMarkInstances);
     }
 
-    public class AggregatorCheckAndSetTask extends AbstractCommand<Void> {
+    public class AggregatorCheckAndSetTask extends AbstractCommand<Void> implements LogIgnoreCommand {
 
         private int retry;
 
