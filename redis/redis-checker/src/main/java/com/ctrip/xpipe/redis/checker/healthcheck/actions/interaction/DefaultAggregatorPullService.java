@@ -129,7 +129,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
         for (String dc : relatedDcs) {
             List<HostPort> allDcInstances = dcInstances.get(dc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
-            if (allInstancesUp(clusterName, activeDc, allDcInstances, allStatus))
+            if (allInstancesUp(allDcInstances, allStatus))
                 return dc;
         }
         return null;
@@ -143,10 +143,13 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         return false;
     }
 
-    boolean allInstancesUp(String clusterName, String activeDc, List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {
+    boolean allInstancesUp(List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {
         for (HostPort hostPort : instances) {
-            HEALTH_STATE healthState = allStatus.get(hostPort).getState();
-            logger.info("[aggregator][{}:{}][allInstancesUp]{},{},{}", clusterName, activeDc, hostPort, healthState.name(), healthState.shouldNotifyMarkup());
+            HealthStatusDesc healthStatusDesc = allStatus.get(hostPort);
+            if (healthStatusDesc == null) {
+                continue;
+            }
+            HEALTH_STATE healthState = healthStatusDesc.getState();
             if (!healthState.shouldNotifyMarkup())
                 return false;
         }

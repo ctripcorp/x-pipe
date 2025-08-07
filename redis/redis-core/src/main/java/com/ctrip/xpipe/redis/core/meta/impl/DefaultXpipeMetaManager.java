@@ -4,7 +4,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.meta.*;
+import com.ctrip.xpipe.redis.core.meta.MetaException;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -341,13 +343,15 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 				continue;
 			}
 
+			List<RedisMeta> dcRedisMetas = new ArrayList<>();
 			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 				if (shardMeta == null) {
 					continue;
 				}
-				result.put(dcMeta.getId(), cloneList(shardMeta.getRedises()));
+				dcRedisMetas.addAll(cloneList(shardMeta.getRedises()));
 			}
 
+			result.put(dcMeta.getId(), dcRedisMetas);
 		}
 		return result;
 	}
