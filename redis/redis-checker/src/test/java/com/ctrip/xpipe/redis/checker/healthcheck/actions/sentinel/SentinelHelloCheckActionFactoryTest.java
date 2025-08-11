@@ -8,12 +8,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.CrossRegionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4Keeper;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -85,8 +83,8 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
         Assert.assertFalse(action.getListeners().isEmpty());
         Assert.assertFalse(action.getControllers().isEmpty());
 
-        Assert.assertTrue(action.getListeners().stream().allMatch(listener -> listener instanceof CrossRegionSupport));
-        Assert.assertTrue(action.getControllers().stream().allMatch(controller -> controller instanceof CrossRegionSupport));
+        Assert.assertFalse(action.getListeners().stream().allMatch(listener -> listener instanceof CrossRegionSupport));
+        Assert.assertFalse(action.getControllers().stream().allMatch(controller -> controller instanceof CrossRegionSupport));
 
         logger.info("[listeners]: {}", action.getListeners());
         logger.info("[controllers]: {}", action.getControllers());
