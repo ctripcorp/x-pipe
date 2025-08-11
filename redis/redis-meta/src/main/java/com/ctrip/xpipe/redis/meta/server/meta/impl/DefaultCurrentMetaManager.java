@@ -4,24 +4,31 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -36,10 +43,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,9 +53,13 @@ import java.util.stream.Collectors;
  */
 @Component
 public class DefaultCurrentMetaManager extends AbstractLifecycleObservable implements CurrentMetaManager, Observer{
-	
+
 	private int slotCheckInterval = 60;
-	
+	private final int checkRedisTimeoutSeconds = 1;
+
+	@Resource(name = "clientPool")
+	private XpipeNettyClientKeyedObjectPool clientPool;
+
 	@Autowired
 	private SlotManager slotManager;
 	
@@ -69,7 +77,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private ScheduledExecutorService scheduled;
 
 	private ScheduledFuture<?> 		slotCheckFuture;
-	
+
 	@Autowired
 	private List<MetaServerStateChangeHandler> stateHandlers;
 
@@ -547,6 +555,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.info("[setKeeperMaster][rejected] primaryDc:{}, expectedPrimaryDc:{}", dcName, expectedPrimaryDc);
 			return;
 		}
+		if (!checkKeeperMaster(clusterDbId, shardDbId, ip, port)) {
+			logger.info("[setKeeperMaster][check failed] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[setKeeperMaster][check failed] cluster_%d,shard_%d,%s:%d", clusterDbId, shardDbId, ip, port));
+			return;
+		}
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
 		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
 			logger.info("[setKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
@@ -554,7 +567,81 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}else{
 			logger.info("[setKeeperMaster][keeper master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
-		
+	}
+
+	protected boolean checkKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
+		Object roleMeta = getKeeperMasterRole(clusterDbId, shardDbId, ip, port);
+		if (roleMeta == null) {
+			logger.info("[checkKeeperMaster][role not match] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			return false;
+		} else if (roleMeta instanceof RedisMeta) {
+			logger.info("[checkKeeperMaster][redis] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			return isMaster((RedisMeta) roleMeta);
+		} else {
+			logger.info("[checkKeeperMaster][keeper] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			Pair<String, String> activeKeeperMaster = isActiveKeeper((KeeperMeta) roleMeta);
+			if (activeKeeperMaster == null || activeKeeperMaster.getKey() == null || activeKeeperMaster.getValue() == null) {
+				return false;
+			}
+			return isMaster(new RedisMeta().setIp(activeKeeperMaster.getKey()).setPort(Integer.parseInt(activeKeeperMaster.getValue())));
+		}
+	}
+
+	protected Pair<String, String> isActiveKeeper(KeeperMeta keeperMeta) {
+		if (keeperMeta == null) {
+			return null;
+		}
+		try {
+			InfoCommand infoCommand = new InfoCommand(
+					clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),
+					InfoCommand.INFO_TYPE.REPLICATION,
+					scheduled
+			);
+			infoCommand.logRequest(false);
+			infoCommand.logResponse(false);
+			InfoResultExtractor extractor = new InfoResultExtractor(infoCommand.execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS));
+			logger.info("[isActiveKeeper] ip:{}, port:{}, state:{}, master_host:{}, master_port:{}", keeperMeta.getIp(), keeperMeta.getPort(), extractor.extract("state"), extractor.extract("master_host"), extractor.extract("master_port"));
+			if (extractor.extract("state").equals(KeeperState.ACTIVE.name())) {
+				return new Pair<>(extractor.extract("master_host"), extractor.extract("master_port"));
+			}
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			logger.error("[isMaster]{}", keeperMeta, e);
+		}
+		return null;
+	}
+
+	protected boolean isMaster(RedisMeta redisMeta) {
+		if (redisMeta == null) {
+			return false;
+		}
+		try {
+			RoleCommand rolecommand = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), scheduled);
+			rolecommand.logRequest(false);
+			rolecommand.logResponse(false);
+			Role role = rolecommand.execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
+			logger.info("[isMaster] ip:{}, port:{}, role:{}", redisMeta.getIp(), redisMeta.getPort(), role.getServerRole());
+			return Server.SERVER_ROLE.MASTER == role.getServerRole();
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			logger.error("[isMaster]{}", redisMeta, e);
+		}
+		return false;
+	}
+
+	protected Object getKeeperMasterRole(Long clusterDbId, Long shardDbId, String ip, int port) {
+		if (clusterDbId == null || shardDbId == null || ip == null || ip.isEmpty()) {
+			return null;
+		}
+		if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+			List<RedisMeta> shardRedis = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+			for (RedisMeta redis : shardRedis) {
+				if (redis.getIp().equals(ip) && redis.getPort() == port) {
+					return redis;
+				}
+			}
+		} else if (dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)) {
+			return new KeeperMeta().setIp(ip).setPort(port);
+		}
+		return null;
 	}
 
 	@Override

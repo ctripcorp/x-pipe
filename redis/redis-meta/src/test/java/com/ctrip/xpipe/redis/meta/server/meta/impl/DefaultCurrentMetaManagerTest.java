@@ -24,8 +24,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
@@ -527,5 +527,35 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		int times = futureClusterMeta.getShards().size();
 		verify(currentMetaServerMetaManager, times(times)).notifyPeerMasterChange(clusterDbId, shardDbId);
+	}
+
+	@Test
+	public void testCheckKeeperMaster() {
+		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
+		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
+		Long clusterDbId = 1L;
+		Long shardDbId = 1L;
+		XpipeMeta xpipeMeta = getXpipeMeta();
+		ShardMeta shard1 = xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").getShards().get("shard1");
+		List<RedisMeta> redises = shard1.getRedises();
+		Mockito.when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(true);
+		Mockito.when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(redises);
+		Mockito.when(currentMetaServerMetaManager.isMaster(any()))
+				.thenReturn(true)
+				.thenReturn(false)
+				.thenReturn(true);
+		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6379));
+		Assert.assertFalse(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 8000));
+		Mockito.when(currentMetaServerMetaManager.isActiveKeeper(any()))
+				.thenReturn(new Pair<>("127.0.0.1", "6379"))
+				.thenReturn(null);
+		Mockito.when(dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)).thenReturn(true);
+		Mockito.when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6000));
+		Assert.assertFalse(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6001));
+	}
+
+	protected String getXpipeMetaConfigFile() {
+		return "meta-test.xml";
 	}
 }

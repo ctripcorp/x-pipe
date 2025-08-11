@@ -5,8 +5,10 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -15,14 +17,19 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Objects;
+import java.util.concurrent.*;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
@@ -91,6 +98,11 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 		}
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 
+		if (!checkKeeperMaster(activeKeeperMaster)) {
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[KeeperStateChangeJob][check failed] keeper_%s:%d,master_%s:%d", activeKeeper.getIp(), activeKeeper.getPort(), activeKeeperMaster.getKey(), activeKeeperMaster.getValue()));
+			return;
+		}
+
 		if(activeKeeperMaster != null){
 			Command<?> setActiveCommand = createKeeperSetStateCommand(activeKeeper, activeKeeperMaster);
 			addActiveCommandHook(setActiveCommand);
@@ -124,6 +136,66 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 			}
 		});
 	}
+
+	protected boolean checkKeeperMaster(Pair<String, Integer> activeKeeperMaster) {
+		if (activeKeeperMaster == null) {
+			return false;
+		}
+		Role role = getRole(activeKeeperMaster.getKey(), activeKeeperMaster.getValue());
+		if (role == null) {
+			return false;
+		}
+		if (Server.SERVER_ROLE.KEEPER == role.getServerRole()) {
+			String info = getInfo(activeKeeperMaster.getKey(), activeKeeperMaster.getValue());
+			if (info == null) {
+				return false;
+			}
+			InfoResultExtractor extractor = new InfoResultExtractor(info);
+			if (!KeeperState.ACTIVE.name().equals(extractor.extract("state"))) {
+				return false;
+			}
+			Role masterRole = getRole(extractor.extract("master_host"), Integer.valueOf(extractor.extract("master_port")));
+			return masterRole != null && masterRole.getServerRole() == Server.SERVER_ROLE.MASTER;
+		} else {
+			return Server.SERVER_ROLE.MASTER == role.getServerRole();
+		}
+	}
+
+	@VisibleForTesting
+	protected String getInfo(String ip, Integer port) {
+		if (ip == null || port == null || ip.isEmpty() || port < 0) {
+			return null;
+		}
+		try {
+			InfoCommand infoCommand = new InfoCommand(
+					clientPool.getKeyPool(new DefaultEndPoint(ip, port)),
+					InfoCommand.INFO_TYPE.REPLICATION,
+					scheduled
+			);
+			infoCommand.logRequest(false);
+			infoCommand.logResponse(false);
+			return infoCommand.execute().get(DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, TimeUnit.SECONDS);
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			getLogger().error("[getInfo]{}:{}", ip, port, e);
+		}
+		return null;
+	}
+
+	@VisibleForTesting
+	protected Role getRole(String ip, Integer port) {
+		if (ip == null || port == null || ip.isEmpty() || port < 0) {
+			return null;
+		}
+		try {
+			RoleCommand rolecommand = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(ip, port)), scheduled);
+			rolecommand.logRequest(false);
+			rolecommand.logResponse(false);
+            return rolecommand.execute().get(DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+			getLogger().info("[getRole]{}:{}", ip, port, e);
+        }
+		return null;
+    }
 
 	private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {
 		
