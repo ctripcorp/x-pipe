@@ -1,15 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
@@ -41,6 +46,7 @@ import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
@@ -55,7 +61,7 @@ import java.util.stream.Collectors;
 public class DefaultCurrentMetaManager extends AbstractLifecycleObservable implements CurrentMetaManager, Observer{
 
 	private int slotCheckInterval = 60;
-	private final int checkRedisTimeoutSeconds = 1;
+	public static int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = Integer.parseInt(System.getProperty("DEFAULT_REDIS_COMMAND_TIME_OUT_SECONDS", "660"));
 
 	@Resource(name = "clientPool")
 	private XpipeNettyClientKeyedObjectPool clientPool;
@@ -84,7 +90,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private Executor executors;
 
+	private RetryCommandFactory retryCommandFactory;
+
 	public DefaultCurrentMetaManager() {
+	}
+
+	@PostConstruct
+	public void init() {
+		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 500);
 	}
 	
 	@Override
@@ -578,36 +591,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.info("[checkKeeperMaster][redis] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 			return isMaster((RedisMeta) roleMeta);
 		} else {
-			logger.info("[checkKeeperMaster][keeper] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
-			Pair<String, String> activeKeeperMaster = isActiveKeeper((KeeperMeta) roleMeta);
-			if (activeKeeperMaster == null || activeKeeperMaster.getKey() == null || activeKeeperMaster.getValue() == null) {
-				return false;
-			}
-			return isMaster(new RedisMeta().setIp(activeKeeperMaster.getKey()).setPort(Integer.parseInt(activeKeeperMaster.getValue())));
+			logger.info("[checkKeeperMaster][keeper][skip] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			return true;
 		}
-	}
-
-	protected Pair<String, String> isActiveKeeper(KeeperMeta keeperMeta) {
-		if (keeperMeta == null) {
-			return null;
-		}
-		try {
-			InfoCommand infoCommand = new InfoCommand(
-					clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),
-					InfoCommand.INFO_TYPE.REPLICATION,
-					scheduled
-			);
-			infoCommand.logRequest(false);
-			infoCommand.logResponse(false);
-			InfoResultExtractor extractor = new InfoResultExtractor(infoCommand.execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS));
-			logger.info("[isActiveKeeper] ip:{}, port:{}, state:{}, master_host:{}, master_port:{}", keeperMeta.getIp(), keeperMeta.getPort(), extractor.extract("state"), extractor.extract("master_host"), extractor.extract("master_port"));
-			if (extractor.extract("state").equals(KeeperState.ACTIVE.name())) {
-				return new Pair<>(extractor.extract("master_host"), extractor.extract("master_port"));
-			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			logger.error("[isMaster]{}", keeperMeta, e);
-		}
-		return null;
 	}
 
 	protected boolean isMaster(RedisMeta redisMeta) {
@@ -615,10 +601,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			return false;
 		}
 		try {
-			RoleCommand rolecommand = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), scheduled);
-			rolecommand.logRequest(false);
-			rolecommand.logResponse(false);
-			Role role = rolecommand.execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
+			Command<Object> roleCommand = retryCommandFactory.createRetryCommand(new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled));
+			Role role = (Role) roleCommand.execute().get(DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, TimeUnit.MILLISECONDS);
 			logger.info("[isMaster] ip:{}, port:{}, role:{}", redisMeta.getIp(), redisMeta.getPort(), role.getServerRole());
 			return Server.SERVER_ROLE.MASTER == role.getServerRole();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {

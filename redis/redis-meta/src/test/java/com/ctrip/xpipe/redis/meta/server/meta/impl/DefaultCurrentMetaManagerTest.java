@@ -546,13 +546,10 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 				.thenReturn(true);
 		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6379));
 		Assert.assertFalse(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 8000));
-		Mockito.when(currentMetaServerMetaManager.isActiveKeeper(any()))
-				.thenReturn(new Pair<>("127.0.0.1", "6379"))
-				.thenReturn(null);
 		Mockito.when(dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)).thenReturn(true);
 		Mockito.when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
 		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6000));
-		Assert.assertFalse(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6001));
+		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6001));
 	}
 
 	protected String getXpipeMetaConfigFile() {
