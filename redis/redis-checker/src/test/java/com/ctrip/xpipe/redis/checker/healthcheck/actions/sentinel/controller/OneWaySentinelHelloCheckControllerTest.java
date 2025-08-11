@@ -153,7 +153,6 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     @Test
     public void crossRegionTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
-        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         when(metaCache.isCrossRegion("dc1", "dc2")).thenReturn(true);
         //make command do not easily timeout on github
         allActionDoTask();
