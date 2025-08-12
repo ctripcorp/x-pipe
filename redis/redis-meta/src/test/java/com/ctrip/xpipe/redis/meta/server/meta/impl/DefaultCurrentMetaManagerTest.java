@@ -540,16 +540,14 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		List<RedisMeta> redises = shard1.getRedises();
 		Mockito.when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(true);
 		Mockito.when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(redises);
-		Mockito.when(currentMetaServerMetaManager.isMaster(any()))
-				.thenReturn(true)
-				.thenReturn(false)
-				.thenReturn(true);
-		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6379));
-		Assert.assertFalse(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 8000));
-		Mockito.when(dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)).thenReturn(true);
+		Mockito.when(dcMetaCache.getPrimaryDc(clusterDbId, shardDbId)).thenReturn("jq");
+
+		Assert.assertTrue(currentMetaServerMetaManager.isRedis(clusterDbId, shardDbId, "127.0.0.1", 6379));
+		Assert.assertTrue(currentMetaServerMetaManager.isRedis(clusterDbId, shardDbId, "127.0.0.1", 8000));
+
 		Mockito.when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
-		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6000));
-		Assert.assertTrue(currentMetaServerMetaManager.checkKeeperMaster(clusterDbId, shardDbId, "127.0.0.1", 6001));
+		Assert.assertFalse(currentMetaServerMetaManager.isRedis(clusterDbId, shardDbId, "127.0.0.1", 6000));
+		Assert.assertFalse(currentMetaServerMetaManager.isRedis(clusterDbId, shardDbId, "127.0.0.1", 6001));
 	}
 
 	protected String getXpipeMetaConfigFile() {

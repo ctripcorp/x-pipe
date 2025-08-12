@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -97,7 +98,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@PostConstruct
 	public void init() {
-		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 1000);
+		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 1, 10);
 	}
 	
 	@Override
@@ -568,64 +569,52 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.info("[setKeeperMaster][rejected] primaryDc:{}, expectedPrimaryDc:{}", dcName, expectedPrimaryDc);
 			return;
 		}
-		if (!checkKeeperMaster(clusterDbId, shardDbId, ip, port)) {
-			logger.info("[setKeeperMaster][check failed] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
-			EventMonitor.DEFAULT.logAlertEvent(String.format("[setKeeperMaster][check failed] cluster_%d,shard_%d,%s:%d", clusterDbId, shardDbId, ip, port));
+		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+			doSetKeeperMaster(clusterDbId, shardDbId, ip, port);
 			return;
 		}
-		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
+		if (!isRedis(clusterDbId, shardDbId, ip, port)) {
+			logger.info("[setKeeperMaster][PrimaryDc] keeper master is not a redis, cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[setKeeperMaster][PrimaryDc][not redis] cluster_%d,shard_%d,%s:%d", clusterDbId, shardDbId, ip, port));
+			return;
+		}
+		Command<Role> roleCommand = retryCommandFactory.createRetryCommand(new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(ip, port)), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled));
+		roleCommand.execute().addListener(commandFuture -> {
+			try {
+				if (commandFuture.isSuccess() && commandFuture.get().getServerRole() == Server.SERVER_ROLE.MASTER) {
+					doSetKeeperMaster(clusterDbId, shardDbId, ip, port);
+				} else {
+					logger.info("[setKeeperMaster][PrimaryDc] check master failed, cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port, commandFuture.cause());
+					EventMonitor.DEFAULT.logAlertEvent(String.format("[setKeeperMaster][PrimaryDc][check master failed] cluster_%d,shard_%d,%s:%d", clusterDbId, shardDbId, ip, port));
+				}
+			} catch (Exception e) {
+				logger.error("[setKeeperMaster][exception] check master error, cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port, e);
+				EventMonitor.DEFAULT.logAlertEvent(String.format("[setKeeperMaster][PrimaryDc][exception] cluster_%d,shard_%d,%s:%d", clusterDbId, shardDbId, ip, port));
+			}
+		});
+	}
+
+	protected void doSetKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
+		Pair<String, Integer> keeperMaster = new Pair<>(ip, port);
 		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
-			logger.info("[setKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			logger.info("[doSetKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 			notifyKeeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 		}else{
-			logger.info("[setKeeperMaster][keeper master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
+			logger.info("[doSetKeeperMaster][keeper master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
 	}
 
-	protected boolean checkKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
-		Object roleMeta = getKeeperMasterRole(clusterDbId, shardDbId, ip, port);
-		if (roleMeta == null) {
-			logger.info("[checkKeeperMaster][role not match] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
-			return false;
-		} else if (roleMeta instanceof RedisMeta) {
-			logger.info("[checkKeeperMaster][redis] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
-			return isMaster((RedisMeta) roleMeta);
-		} else {
-			logger.info("[checkKeeperMaster][keeper][skip] cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
-			return true;
-		}
-	}
-
-	protected boolean isMaster(RedisMeta redisMeta) {
-		if (redisMeta == null) {
+	protected boolean isRedis(Long clusterDbId, Long shardDbId, String ip, int port) {
+		if (clusterDbId == null || shardDbId == null || ip == null || ip.isEmpty()) {
 			return false;
 		}
-		try {
-			Command<Role> roleCommand = retryCommandFactory.createRetryCommand(new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled));
-			Role role = roleCommand.execute().get();
-			logger.info("[isMaster] ip:{}, port:{}, role:{}", redisMeta.getIp(), redisMeta.getPort(), role.getServerRole());
-			return Server.SERVER_ROLE.MASTER == role.getServerRole();
-		} catch (InterruptedException | ExecutionException e) {
-			logger.error("[isMaster]{}", redisMeta, e);
+		List<RedisMeta> shardRedis = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+		for (RedisMeta redis : shardRedis) {
+			if (redis.getIp().equals(ip) && redis.getPort() == port) {
+				return true;
+			}
 		}
 		return false;
-	}
-
-	protected Object getKeeperMasterRole(Long clusterDbId, Long shardDbId, String ip, int port) {
-		if (clusterDbId == null || shardDbId == null || ip == null || ip.isEmpty()) {
-			return null;
-		}
-		if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-			List<RedisMeta> shardRedis = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
-			for (RedisMeta redis : shardRedis) {
-				if (redis.getIp().equals(ip) && redis.getPort() == port) {
-					return redis;
-				}
-			}
-		} else if (dcMetaCache.isCurrentDcBackUp(clusterDbId, shardDbId)) {
-			return new KeeperMeta().setIp(ip).setPort(port);
-		}
-		return null;
 	}
 
 	@Override
