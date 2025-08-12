@@ -97,7 +97,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@PostConstruct
 	public void init() {
-		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 500);
+		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 3, 1000);
 	}
 	
 	@Override
@@ -601,11 +601,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			return false;
 		}
 		try {
-			Command<Object> roleCommand = retryCommandFactory.createRetryCommand(new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled));
-			Role role = (Role) roleCommand.execute().get(DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, TimeUnit.MILLISECONDS);
+			Command<Role> roleCommand = retryCommandFactory.createRetryCommand(new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled));
+			Role role = roleCommand.execute().get();
 			logger.info("[isMaster] ip:{}, port:{}, role:{}", redisMeta.getIp(), redisMeta.getPort(), role.getServerRole());
 			return Server.SERVER_ROLE.MASTER == role.getServerRole();
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			logger.error("[isMaster]{}", redisMeta, e);
 		}
 		return false;
