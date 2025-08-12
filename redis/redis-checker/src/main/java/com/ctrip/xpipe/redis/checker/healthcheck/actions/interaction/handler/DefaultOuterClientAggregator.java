@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorP
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActiveDcKey;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -26,6 +25,8 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -67,18 +68,9 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
     @Override
     public void markInstance(ClusterShardHostPort info) {
         ClusterActiveDcKey key = new ClusterActiveDcKey(info.getClusterName(), info.getActiveDc());
-        Aggregator aggregator = clusterAggregators.computeIfAbsent(key, clusterActiveDcKey -> {
-            Aggregator clusterAggregator = new Aggregator(clusterActiveDcKey, scheduled);
-            try {
-                clusterAggregator.start();
-            } catch (Throwable th) {
-                logger.error("[aggregator][{}:{}][markInstance]start aggregator failed: {}", key.getCluster(), key.getActiveDc(), info.getHostPort(), th);
-            }
-            return clusterAggregator;
-        });
-
-        aggregator.add(info.getHostPort());
         logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
+        Aggregator aggregator = clusterAggregators.computeIfAbsent(key, Aggregator::new);
+        aggregator.add(info.getHostPort());
     }
 
     class StartTimeAndInstances {
@@ -123,26 +115,28 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         private String activeDc;
         private StartTimeAndInstances todo;
         private StartTimeAndInstances doing;
-        private DynamicDelayPeriodTask task;
+        private ScheduledFuture<?> scheduledFuture;
 
-        public Aggregator(ClusterActiveDcKey key, ScheduledExecutorService scheduled) {
+        public Aggregator(ClusterActiveDcKey key) {
             this.clusterName = key.getCluster();
             this.activeDc = key.getActiveDc();
             this.todo = new StartTimeAndInstances();
             this.doing = new StartTimeAndInstances();
-            this.task = new DynamicDelayPeriodTask("Aggregator-" + clusterName + "-" + activeDc, new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() throws Exception {
-                    if (noInstance())
-                        return;
-
-                    handleInstances();
-                }
-            }, DefaultOuterClientAggregator.this::randomMill, DefaultOuterClientAggregator.this::checkInterval, scheduled);
         }
 
         public synchronized void add(HostPort hostPort) {
             this.todo.addInstance(hostPort);
+            if (scheduledFuture == null) {
+                scheduledFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        if (noInstance())
+                            return;
+
+                        handleInstances();
+                    }
+                }, randomMill(), checkInterval(), TimeUnit.MILLISECONDS);
+            }
         }
 
         public synchronized boolean markupWaitTimeout() {
@@ -151,10 +145,6 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
                 logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}", clusterName, activeDc, new Timestamp(doing.getWaitStartTime()));
             }
             return timeout;
-        }
-
-        public void start() throws Exception {
-            task.start();
         }
 
         public synchronized boolean noInstance() {
@@ -169,6 +159,10 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
         public synchronized void done() {
             this.doing.clear();
+            if (todo.getInstances().isEmpty()) {
+                scheduledFuture.cancel(true);
+                scheduledFuture = null;
+            }
         }
 
         public void handleInstances() {
