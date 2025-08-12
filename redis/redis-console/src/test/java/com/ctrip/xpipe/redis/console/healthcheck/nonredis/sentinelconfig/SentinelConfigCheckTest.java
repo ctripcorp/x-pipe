@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -132,6 +133,58 @@ public class SentinelConfigCheckTest {
         Mockito.verify(alertManager, Mockito.never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());
+    }
+
+    @Test
+    public void testIsDcClusterShardSafe() {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        xpipeMeta.getDcs().get("fra").addCluster(mockHeteroClusterMeta("cluster4", ClusterType.HETERO.name(),  ClusterType.SINGLE_DC.name(), "fra"));
+        xpipeMeta.getDcs().get("oy").addCluster(mockHeteroClusterMeta("cluster4", ClusterType.HETERO.name(),  ClusterType.SINGLE_DC.name(), "jq"));
+
+        Mockito.reset(metaCache);
+        buildForHeteroTest();
+
+        DcMeta oyDcMeta = xpipeMeta.getDcs().get("oy");
+        ClusterMeta cluster4Meta = oyDcMeta.getClusters().get("cluster4");
+        ShardMeta shard4Meta = cluster4Meta.getShards().get("shard1");
+
+        try {
+            sentinelConfigCheck.isDcClusterShardSafe(oyDcMeta, cluster4Meta, shard4Meta);
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof MetaException);
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private ClusterMeta mockHeteroClusterMeta(String name, String type, String azGroupType, String activeDc) {
+
+        ClusterMeta cluster = new ClusterMeta().setId(name).setType(type).addShard(mockShardMeta("shard1")).addShard(mockShardMeta("shard2"));
+        cluster.setAzGroupType(azGroupType);
+        cluster.setActiveDc(activeDc);
+
+        return cluster;
+    }
+
+    public void buildForHeteroTest() {
+        when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+        when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(Collections.emptySet());
+        when(metaCache.getActiveDc(Mockito.anyString())).then(invocationOnMock -> {
+            String cluster = invocationOnMock.getArgument(0, String.class);
+            if (cluster.equals("cluster4")) {
+                throw new MetaException("cluster4 is hetero cluster without one way");
+            }
+            return activeDcMap.get(cluster);
+        });
+
+        when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
+            String activeDc = invocationOnMock.getArgument(0, String.class);
+            String backupDc = invocationOnMock.getArgument(1, String.class);
+            for (Set<String> dcSet: regions) {
+                if (dcSet.contains(activeDc)) return !dcSet.contains(backupDc);
+            }
+
+            return false;
+        });
     }
 
     private XpipeMeta mockXpipeMeta() {

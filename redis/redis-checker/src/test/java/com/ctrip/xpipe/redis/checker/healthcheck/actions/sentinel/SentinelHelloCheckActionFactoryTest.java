@@ -8,14 +8,15 @@ import com.ctrip.xpipe.redis.checker.healthcheck.CrossRegionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4Keeper;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 
@@ -52,6 +53,7 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
     public void testCreate() throws Exception {
         collector1 = spy(collector1);
         collector2 = spy(collector2);
+        factory.setMetaCache(new TestMetaCache());
         SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
                 .create(newRandomClusterHealthCheckInstance("dc2",ClusterType.ONE_WAY));
         Assert.assertTrue(action.getListeners().size() > 0);
@@ -80,6 +82,7 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
 
     @Test
     public void testCreateForCrossRegionInstance() throws Exception {
+        factory.setMetaCache(new MockMetaCache());
         SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
                 .create(newRandomClusterHealthCheckInstance("dc1", ClusterType.ONE_WAY));
         Assert.assertFalse(action.getListeners().isEmpty());
@@ -97,5 +100,12 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
     @Test
     public void testSupport() {
         Assert.assertEquals(SentinelHelloCheckAction.class, factory.support());
+    }
+
+    private static class MockMetaCache extends TestMetaCache {
+        @Override
+        public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+            return true;
+        }
     }
 }

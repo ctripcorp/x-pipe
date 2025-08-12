@@ -264,7 +264,7 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
-        return true;
+        return false;
     }
 
 }
