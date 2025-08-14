@@ -116,7 +116,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         ComponentRegistryHolder.initializeRegistry(registry);
 
         tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),
-                resourceManager, new DefaultTunnelMonitorManager(resourceManager));
+                resourceManager, new DefaultTunnelMonitorManager(resourceManager), scheduled);
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 

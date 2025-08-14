@@ -77,6 +77,16 @@ public class LocalProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getBlockWaitBaseMill() {
+        return 1000;
+    }
+
+    @Override
+    public int getBlockWaitRate() {
+        return 1000;
+    }
+
+    @Override
     public boolean isCompressEnabled() {
         return compress;
     }

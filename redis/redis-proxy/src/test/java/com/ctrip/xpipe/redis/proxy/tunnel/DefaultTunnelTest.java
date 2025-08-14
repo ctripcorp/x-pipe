@@ -36,6 +36,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -85,7 +86,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
         proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
         tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager,
-                new DefaultTunnelMonitorManager(proxyResourceManager));
+                new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
 
         frontChannel.pipeline().addLast(new FrontendSessionNettyHandler(tunnel),
                 new SessionTrafficReporter(6000, ()->true, frontend));
@@ -123,14 +124,14 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
                 new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
 
         DefaultTunnel tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
-                new DefaultTunnelMonitorManager(proxyResourceManager));
+                new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
         tunnel1.addCompressOptionToProtocolIfNeeded();
         Assert.assertNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
 
         proxyConnectProtocol1 = new DefaultProxyConnectProtocolParser()
                 .read("PROXY ROUTE PROXYTLS://127.0.0.1:443,PROXYTLS://127.0.0.2:443 TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\n");
         tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
-                new DefaultTunnelMonitorManager(proxyResourceManager));
+                new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
         tunnel1.addCompressOptionToProtocolIfNeeded();
         Assert.assertNotNull(tunnel1.getProxyProtocol().getCompressAlgorithm());
     }
@@ -318,6 +319,30 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         logger.info("[testRelease2] backend: {}", backend.getSessionState());
         verify(frontend).release();
         verify(backend).release();
+    }
+
+    @Test
+    public void testTunnelCheck() {
+        tunnel.setState(new TunnelEstablished(tunnel));
+        tunnel.check();
+        Mockito.verify(frontend, never()).release();
+        Mockito.verify(backend, never()).release();
+
+        tunnel.backendBlockFrom.set(System.currentTimeMillis());
+        tunnel.check();
+        Mockito.verify(frontend, never()).release();
+        Mockito.verify(backend, never()).release();
+
+        tunnel.frontendBlockFrom.set(1);
+        tunnel.check();
+        Mockito.verify(frontend, times(1)).release();
+        Mockito.verify(backend, never()).release();
+
+        tunnel.frontendBlockFrom.set(-1);
+        tunnel.backendBlockFrom.set(1);
+        tunnel.check();
+        Mockito.verify(frontend, times(1)).release();
+        Mockito.verify(backend, times(1)).release();
     }
 
 }

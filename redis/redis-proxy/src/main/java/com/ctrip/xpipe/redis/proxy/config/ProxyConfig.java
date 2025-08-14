@@ -45,4 +45,8 @@ public interface ProxyConfig extends TLSConfig {
 
     boolean shouldReportTraffic();
 
+    int getBlockWaitBaseMill();
+
+    int getBlockWaitRate();
+
 }
