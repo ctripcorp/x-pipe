@@ -20,7 +20,8 @@ import org.springframework.context.annotation.Profile;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -71,18 +72,45 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_PROXY_BLOCK_RATE = "proxy.block.rate";
 
+    private static final String KEY_CROSS_REGION_TRAFFIC_CONTROL_ENABLED = "proxy.cross.region.traffic.control.enabled";
+
+    private static final String KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT = "proxy.cross.region.traffic.control.limit";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
+
+    private final List<ConfigChangeListener> configChangeListeners = new CopyOnWriteArrayList<>();
+
+    public interface ConfigChangeListener {
+        void onConfigChanged();
+    }
 
     public DefaultProxyConfig() {
         config = initConfig();
         scheduledFresh();
     }
 
+    public void addConfigChangeListener(ConfigChangeListener listener) {
+        configChangeListeners.add(listener);
+    }
+
+    public void removeConfigChangeListener(ConfigChangeListener listener) {
+        configChangeListeners.remove(listener);
+    }
+
     public void scheduledFresh() {
         scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
+                Config oldConfig = config;
                 config = initConfig();
+                // Notify listeners of config change
+                for (ConfigChangeListener listener : configChangeListeners) {
+                    try {
+                        listener.onConfigChanged();
+                    } catch (Exception e) {
+                        logger.error("[scheduledFresh] Error notifying config change listener", e);
+                    }
+                }
             }
         }, 1, 1, TimeUnit.MINUTES);
     }
@@ -222,6 +250,16 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public int getBlockWaitRate() {
         return getIntProperty(KEY_PROXY_BLOCK_RATE, 1000000);
+    }
+
+    @Override
+    public boolean isCrossRegionTrafficControlEnabled() {
+        return getBooleanProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_ENABLED, false);
+    }
+
+    @Override
+    public long getCrossRegionTrafficControlLimit() {
+        return getLongProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT, 100 * 1024 * 1024L); // 100MB/s default
     }
 
     protected String getProperty(String key, String defaultValue){

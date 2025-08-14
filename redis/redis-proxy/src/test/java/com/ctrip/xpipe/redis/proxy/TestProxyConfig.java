@@ -158,6 +158,16 @@ public class TestProxyConfig implements ProxyConfig {
         return certDir + "/ca.crt";
     }
 
+    @Override
+    public boolean isCrossRegionTrafficControlEnabled() {
+        return false;
+    }
+
+    @Override
+    public long getCrossRegionTrafficControlLimit() {
+        return 104857600L; // 100MB/s default
+    }
+
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
         this.frontendTcpPort = frontendTcpPort;
         return this;

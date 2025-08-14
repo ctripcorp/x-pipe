@@ -112,4 +112,10 @@ public class TestResourceManager implements ResourceManager {
         selector.setSelectStrategy(new SelectOneCycle(selector));
         return selector;
     }
+
+    @Override
+    public GlobalTrafficControlManager getGlobalTrafficControlManager() {
+        // For testing, return null since we don't need traffic control in tests
+        return null;
+    }
 }
