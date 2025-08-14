@@ -49,9 +49,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class DefaultCurrentMetaManager extends AbstractLifecycleObservable implements CurrentMetaManager, Observer{
-
+	
 	private int slotCheckInterval = 60;
-
+	
 	@Autowired
 	private SlotManager slotManager;
 	
@@ -69,7 +69,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private ScheduledExecutorService scheduled;
 
 	private ScheduledFuture<?> 		slotCheckFuture;
-
+	
 	@Autowired
 	private List<MetaServerStateChangeHandler> stateHandlers;
 
@@ -78,7 +78,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	public DefaultCurrentMetaManager() {
 	}
-
+	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
@@ -547,13 +547,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.info("[setKeeperMaster][rejected] primaryDc:{}, expectedPrimaryDc:{}", dcName, expectedPrimaryDc);
 			return;
 		}
-		Pair<String, Integer> keeperMaster = new Pair<>(ip, port);
+		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
 		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
 			logger.info("[setKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 			notifyKeeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 		}else{
 			logger.info("[setKeeperMaster][keeper master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
+		
 	}
 
 	@Override
