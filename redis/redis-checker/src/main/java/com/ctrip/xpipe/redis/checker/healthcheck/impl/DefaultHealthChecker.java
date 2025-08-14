@@ -135,7 +135,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                     }
 
                     if (clusterType == ClusterType.ONE_WAY && isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
-                        generatePsubPingActionHealthCheckInstances(cluster);
+                        generateHealthCheckInstances4CrossRegion(cluster);
                     }
 
                 } catch (Exception e) {
@@ -146,6 +146,15 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         }
     }
 
+    void generateHealthCheckInstances4CrossRegion(ClusterMeta clusterMeta) {
+        for(ShardMeta shard : clusterMeta.getShards().values()) {
+            for(RedisMeta redis : shard.getRedises()) {
+                instanceManager.getOrCreateRedisInstanceForPsubPingAction(redis);
+            }
+        }
+        instanceManager.getOrCreate(clusterMeta);
+    }
+
     void generateHealthCheckInstances(ClusterMeta clusterMeta){
         for(ShardMeta shard : clusterMeta.getShards().values()) {
             for(RedisMeta redis : shard.getRedises()) {
@@ -154,15 +163,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         }
         instanceManager.getOrCreate(clusterMeta);
     }
-
-    void generatePsubPingActionHealthCheckInstances(ClusterMeta clusterMeta){
-        for(ShardMeta shard : clusterMeta.getShards().values()) {
-            for(RedisMeta redis : shard.getRedises()) {
-                instanceManager.getOrCreateRedisInstanceForPsubPingAction(redis);
-            }
-        }
-    }
-
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
         return cluster.getActiveDc().equalsIgnoreCase(currentDcId);

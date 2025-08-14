@@ -31,9 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author chen.zhu
@@ -158,8 +156,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        ClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-            clusterType, clusterMeta.getOrgId());
+        ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
         info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
@@ -169,6 +166,23 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         startCheck(instance);
 
         return instance;
+    }
+
+    private ClusterInstanceInfo getClusterInstanceInfo(ClusterMeta clusterMeta, ClusterType clusterType) {
+        Set<String> dcs = new HashSet<>();
+        if (clusterMeta.getDcs() != null && !clusterMeta.getDcs().isEmpty()) {
+            dcs.addAll(Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*")));
+        }
+        if (clusterMeta.getBackupDcs() != null && !clusterMeta.getBackupDcs().isEmpty()) {
+            dcs.addAll(Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")));
+        }
+        if (clusterMeta.getActiveDc() != null) {
+            dcs.add(clusterMeta.getActiveDc().toLowerCase());
+        }
+        DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
+                clusterType, clusterMeta.getOrgId());
+        info.setDcs(new ArrayList<>(dcs));
+        return info;
     }
 
     @Override
@@ -239,10 +253,14 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void initActions(DefaultClusterHealthCheckInstance instance) {
         List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckActionFactories = clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType());
         if (clusterHealthCheckActionFactories == null) return;
-        for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
+        ClusterInstanceInfo info = instance.getCheckInfo();
+        boolean isBackupDcAndCrossRegion = ClusterType.ONE_WAY == info.getClusterType() && metaCache.isBackupDcAndCrossRegion(currentDcId, info.getActiveDc(), info.getDcs());
+        for (ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
             if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
-                installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
-            } else {
+                if (!isBackupDcAndCrossRegion || factory instanceof CrossRegionSupport) {
+                    installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
+                }
+            } else if (!isBackupDcAndCrossRegion || factory instanceof CrossRegionSupport) {
                 instance.register(factory.create(instance));
             }
         }

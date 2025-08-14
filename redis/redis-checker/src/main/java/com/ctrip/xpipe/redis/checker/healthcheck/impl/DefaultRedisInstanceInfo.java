@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Maps;
 
@@ -143,5 +144,12 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     public void setActiveDcShardIds(Map<Long, String> shardIds) {
         this.activeDcShardIds = shardIds;
+    }
+
+    @VisibleForTesting
+    @JsonIgnore
+    @Override
+    public void isCrossRegion(boolean crossRegion) {
+        this.crossRegion = crossRegion;
     }
 }

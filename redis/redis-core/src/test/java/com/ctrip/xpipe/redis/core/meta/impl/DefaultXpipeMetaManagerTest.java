@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.Crc32HashRouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -391,6 +390,12 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 		// no routes
 		Assert.assertNull(metaManager.chooseMetaRoute(clusterMeta, dstDc, currentDc, strategy));
+	}
+
+	@Test
+	public void testGetAllSentinels() throws MetaException {
+		Set<SentinelMeta> allSentinels = metaManager.getAllSentinels();
+		Assert.assertEquals(allSentinels.size(), 2);
 	}
 
 }

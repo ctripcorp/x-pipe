@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,6 +82,14 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
         XpipeMeta xpipeMeta = getXpipeMeta();
         xpipeMeta.getDcs().get("jq").getClusters().remove("bbz_qmq_idempotent_fra_default");
         Assert.assertFalse(healthCheckInstanceManager.checkInstancesMiss(xpipeMeta));
+    }
+
+    @Test
+    public void testCrossRegionInstanceMatch() {
+        healthChecker.generateHealthCheckInstances();
+        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForPsubPingAction(new HostPort("10.43.49.173", 6379)));
+        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForPsubPingAction(new HostPort("10.56.204.175", 6379)));
+        Assert.assertNotNull(healthCheckInstanceManager.findClusterHealthCheckInstance("bbz_qmq_idempotent_fra_default"));
     }
 
     @Override

@@ -150,7 +150,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Override
     public void onAction(SentinelActionContext context) {
         try {
-            CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(collectExecutor);
+            CommandFuture<Void> future = getCommand(context).execute(collectExecutor);
             ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
                 @Override
                 public void run() {
@@ -176,6 +176,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Override
     public boolean worksfor(ActionContext t) {
         return false;
+    }
+
+    protected SentinelHelloCollectorCommand getCommand(SentinelActionContext context) {
+        return new SentinelHelloCollectorCommand(context);
     }
 
     protected String getSentinelMonitorName(RedisInstanceInfo info) {
@@ -230,16 +234,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         public void go() throws Exception {
                             SequenceCommandChain chain = new SequenceCommandChain(false, false);
                             SentinelHelloCollectContext context = new SentinelHelloCollectContext(info, hellos, sentinelMonitorName, sentinels, metaMaster, shardInstances, clusterTypeSentinelConfig);
-                            chain.add(new DeleteWrongSentinels(context, sentinelManager));
-                            chain.add(new CheckMissingOrMasterSwitchedSentinels(context, alertManager, checkerConfig, sentinelManager));
-                            chain.add(new CheckFailoverInProgress(context, sentinelManager));
-                            chain.add(new CheckTrueMaster(context, alertManager, keyedObjectPool, scheduled));
-                            chain.add(new AnalyseHellos(context, checkerConfig));
-                            chain.add(new AcquireLeakyBucket(context, leakyBucket));
-                            chain.add(new DeleteSentinels(context, sentinelManager));
-                            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig));
-                            chain.add(new AddSentinels(context, sentinelManager, checkerConfig));
-                            chain.add(new SetSentinels(context, sentinelManager));
+                            addCommand2Chain(chain, context);
                             chain.execute().addListener(commandFuture -> {
                                 future().setSuccess();
                             });
@@ -256,6 +251,19 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     });
                 }
             }
+        }
+
+        protected void addCommand2Chain(SequenceCommandChain chain, SentinelHelloCollectContext context) {
+            chain.add(new DeleteWrongSentinels(context, sentinelManager));
+            chain.add(new CheckMissingOrMasterSwitchedSentinels(context, alertManager, checkerConfig, sentinelManager));
+            chain.add(new CheckFailoverInProgress(context, sentinelManager));
+            chain.add(new CheckTrueMaster(context, alertManager, keyedObjectPool, scheduled));
+            chain.add(new AnalyseHellos(context, checkerConfig));
+            chain.add(new AcquireLeakyBucket(context, leakyBucket));
+            chain.add(new DeleteSentinels(context, sentinelManager));
+            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig));
+            chain.add(new AddSentinels(context, sentinelManager, checkerConfig));
+            chain.add(new SetSentinels(context, sentinelManager));
         }
 
         HostPort getMetaMaster() {

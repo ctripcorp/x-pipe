@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
@@ -98,6 +101,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Set<HostPort> getAllSentinels() {
+        return null;
+    }
+
+    @Override
     public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
         return null;
     }
@@ -134,6 +142,11 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
+        return false;
+    }
+
+    @Override
+    public boolean isCurrentDc(String dc) {
         return false;
     }
 
@@ -253,4 +266,9 @@ public class TestMetaCache implements MetaCache {
     public Map<String, List<RedisMeta>> getAllInstance(String cluster) {
         return new HashMap<>();
     }
+    @Override
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
+        return false;
+    }
+
 }

@@ -113,6 +113,9 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default SentinelMeta getSentinel(String dc, String clusterId, String shardId) { return read(()->doGetSentinel(dc, clusterId, shardId)); }
 	SentinelMeta doGetSentinel(String dc, String clusterId, String shardId);
 
+	default Set<SentinelMeta> getAllSentinels() { return read(this::doGetAllSentinels); }
+	Set<SentinelMeta> doGetAllSentinels();
+
 	default String getSentinelMonitorName(String dc, String clusterId, String shardId) { return read(()->doGetSentinelMonitorName(dc, clusterId, shardId)); }
 	String doGetSentinelMonitorName(String dc, String clusterId, String shardId);
 

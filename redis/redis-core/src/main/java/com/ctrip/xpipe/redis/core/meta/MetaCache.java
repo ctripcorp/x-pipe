@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.tuple.Triple;
@@ -46,6 +49,8 @@ public interface MetaCache {
 
     Set<HostPort> getActiveDcSentinels(String clusterId, String shardId);
 
+    Set<HostPort> getAllSentinels();
+
     HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException;
 
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
@@ -75,6 +80,8 @@ public interface MetaCache {
     Map<String, RouteMeta> chooseClusterMetaRoutes(String clusterName, String srcDc, List<String> dstDcs);
 
     boolean isCrossRegion(String activeDc, String backupDc);
+
+    boolean isCurrentDc(String dc);
 
     boolean isDcInRegion(String dc, String zone);
 
@@ -111,4 +118,5 @@ public interface MetaCache {
 
     Map<String, Integer> getAllDcMigratableClustersCnt();
 
+    boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs);
 }

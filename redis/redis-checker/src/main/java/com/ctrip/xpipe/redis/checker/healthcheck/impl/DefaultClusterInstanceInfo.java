@@ -4,6 +4,8 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import java.util.List;
+
 /**
  * @author lishanglin
  * date 2021/1/14
@@ -11,6 +13,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements ClusterInstanceInfo {
 
     private int orgId;
+    private List<String> dcs;
 
     public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
         super(clusterId, activeDc, clusterType);
@@ -28,9 +31,20 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
     }
 
     @Override
+    public ClusterInstanceInfo setDcs(List<String> dcs) {
+        this.dcs = dcs;
+        return this;
+    }
+
+    @Override
+    public List<String> getDcs() {
+        return dcs;
+    }
+
+    @Override
     public String toString() {
         return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "azGroupType:" + azGroupType,
-            "isAsymmetricCluster:" + asymmetricCluster);
+            "isAsymmetricCluster:" + asymmetricCluster, "dcs:" + dcs);
     }
 
 }
