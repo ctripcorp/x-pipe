@@ -4,19 +4,21 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
@@ -48,7 +50,14 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_executed;
+    public AtomicReference<GtidSet> execGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> startGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> lostGtidSet;
+
 
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
@@ -56,102 +65,94 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicLong offsetRecorder;
 
-    /* why not a global resource */
-    @VisibleForTesting
-    RdbParser<?> rdbParser;
+    @InstanceDependency
+    public AtomicReference<String> replId;
 
     @VisibleForTesting
     Set<String> receivedSids;
 
-    @VisibleForTesting
-    GtidSet gtid_received;
-
-    private GtidSet rdbGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+    private RedisClientProtocol<Object[]> protocolParser = new ArrayParser();
 
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
 
     private int dbNumber = 0;
 
+    private String startGtidStr = "";
+    private String lostGtidStr = "";
+    private long startOffset = -1;
+
     public DefaultCommandDispatcher() {
-        this.rdbParser = createRdbParser();
 
         this.receivedSids = new HashSet<>();
 
         this.transactionCommand = new AtomicReference<>();
     }
 
-    private RdbParser<?> createRdbParser() {
-        RdbParser<?> rdbParser = new DefaultRdbParser();
-        rdbParser.registerListener(this);
-        return rdbParser;
-    }
-
     @VisibleForTesting
-    void resetState(GtidSet gtidSet) {
-        this.gtid_received = gtidSet.clone();
+    void resetState() {
         this.receivedSids = new HashSet<>();
-        this.gtid_executed.set(gtidSet.clone());
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
         this.transactionCommand.set(null);
+        this.execGtidSet.set(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        startGtidStr = "";
+        startOffset = -1;
+        lostGtidStr = "";
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
-
-        logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
-
-        this.resetState(rdbGtidSet);
-        if (this.rdbParser != null) {
-            this.rdbParser.reset();
-        }
-        this.rdbParser = createRdbParser();
+    public void doOnFullSync(long replOff) {
+        this.startOffset = replOff;
     }
 
     @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
-        logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
+    public void doOnXFullSync(GtidSet lost, long replOff) {
+        this.lostGtidStr = lost.toString();
+        this.startOffset = replOff;
     }
 
     @Override
-    public void onRdbData(ByteBuf rdbData) {
-        try {
-            rdbParser.read(rdbData);
-        } catch (Throwable t) {
-            logger.error("[onRdbData] unlikely - error", t);
-            throw t;
-        }
+    public void doOnXContinue(GtidSet lost, long replOffset) {
+        this.resetState();
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
-        logger.info("[endReadRdb] eofType={}", eofType);
+    public void doOnContinue(String newReplId) {
+        replId.set(newReplId);
+        this.resetState();
     }
 
     @Override
-    public void onContinue(GtidSet gtidSetExcluded, long continueOffset) {
-        logger.info("[onContinue]");
-        this.resetState(gtidSetExcluded);
-    }
-
-    @Override
-    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
-        RedisOp redisOp = null;
-        try {
-            redisOp = parser.parse(rawCmdArgs);
-            doOnRedisOp(redisOp, commandOffset);
-        } catch (Throwable unlikely) {
-            try {
-                logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
-                logger.error("[onCommand] unlikely {}, {}", redisOp, gtid_received.toString());
-            } catch (Throwable ignore) {
+    public void doOnAppendCommand(ByteBuf byteBuf) {
+        while (byteBuf.readableBytes() > 0) {
+            int pre = byteBuf.readerIndex();
+            RedisClientProtocol<Object[]> protocol = protocolParser.read(byteBuf);
+            if (protocol == null) {
+                this.protocolParser.reset();
+                break;
             }
+            Object[] payload = protocol.getPayload();
+            RedisOp redisOp = parser.parse(payload);
+            String gtid = redisOp.getOpGtid();
+            doOnRedisOp(redisOp, byteBuf.readerIndex() - pre);
+            if(!StringUtil.isEmpty(gtid)) {
+                execGtidSet.get().add(gtid);
+            }
+            this.protocolParser.reset();
         }
+    }
+
+    @Override
+    public void endReadRdb() {
+        logger.info("[endReadRdb]{}", startGtidStr);
+        this.offsetRecorder.set(startOffset);
+        this.lostGtidSet.set(new GtidSet(lostGtidStr));
+        this.startGtidSet.set(new GtidSet(startGtidStr));
     }
 
     @Override
     public GtidSet getGtidReceived() {
-        GtidSet ref = gtid_received;
+        GtidSet ref = execGtidSet.get();
         if (ref != null) {
             return ref.clone();
         }
@@ -168,8 +169,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
-            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
-            gtid_executed.get().rise(gtid);
+            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, execGtidSet.get());
+            execGtidSet.get().rise(gtid);
         }
     }
 
@@ -189,8 +190,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
-            logger.debug("[updateGtidState] add leap gtid {}:{}-{} to gtid_executed {}", sourceId, last + 1, current - 1, gtid_executed.get());
-            gtid_executed.get().compensate(sourceId, last + 1, current - 1);
+            logger.debug("[updateGtidState] add leap gtid {}:{}-{} to gtid_executed {}", sourceId, last + 1, current - 1, execGtidSet.get());
+            execGtidSet.get().compensate(sourceId, last + 1, current - 1);
         }
     }
 
@@ -204,19 +205,19 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         if (receivedSids.add(parsed.getKey())) {
             //sid first received
-            gtid_received.rise(gtid);
+            execGtidSet.get().rise(gtid);
 
             stateThread.execute(new GtidRiseJob(gtid));
         } else {
             //sid already received, transactionId may leap
-            long last = gtid_received.rise(gtid);
+            long last = execGtidSet.get().rise(gtid);
             long current = parsed.getValue();
             if (current <= last) {
                 //gtid under low watermark
                 return true;
             }
             if (current - last > 10000) {
-                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}", last, current, gtid, gtid_received.toString());
+                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}", last, current, gtid, execGtidSet.toString());
             }
             if (current > last + 1) {
                 stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
@@ -224,7 +225,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         try {
-            gtidDistanceThreshold.get().tryPass(gtid_received.lwmSum());
+            gtidDistanceThreshold.get().tryPass(execGtidSet.get().lwmSum());
         } catch (InterruptedException interrupted) {
             logger.info("[updateGtidState] gtidDistanceThreshold.tryPass() interrupted, probably quit.");
             throw new XpipeRuntimeException("gtidDistanceThreshold.tryPass() interrupted, probably quit", interrupted);
@@ -347,6 +348,8 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAuxFinish(Map<String, String> auxMap) {
-
+        startGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED, GtidSet.EMPTY_GTIDSET);
+        lostGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_LOST, GtidSet.EMPTY_GTIDSET);
+        logger.info("[onAuxFinish] startGtidStr: {}, lostGtidStr: {}", startGtidSet, lostGtidStr);
     }
 }

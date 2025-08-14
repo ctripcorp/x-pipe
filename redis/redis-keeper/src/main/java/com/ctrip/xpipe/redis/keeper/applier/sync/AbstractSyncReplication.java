@@ -4,14 +4,12 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.protocal.Sync;
-import com.ctrip.xpipe.redis.core.protocal.SyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.ApplierPsync;
+import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.ApplierGapAllowSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierServer;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.utils.CloseState;
@@ -28,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author hailu
  * @date 2024/5/10 9:53
  */
-public abstract class AbstractSyncReplication extends StubbornNetworkCommunication implements ApplierSyncReplication, SyncObserver {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultPsyncReplication.class);
+public abstract class AbstractSyncReplication extends StubbornNetworkCommunication implements ApplierSyncReplication, ApplierSyncObserver {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultGapAllowReplication.class);
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
 
@@ -42,11 +40,14 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     @InstanceDependency
     public AtomicLong offsetRecorder;
 
+    @InstanceDependency
+    public RdbParser<?> rdbParser;
+
     protected ApplierServer applierServer;
 
     protected Endpoint endpoint;
 
-    protected Sync currentSync;
+    protected GapAllowedSync currentSync;
 
     protected Future<?> replConfFuture;
 
@@ -108,37 +109,6 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
         }
     }
 
-    @Override
-    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
-
-    }
-
-    @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
-
-    }
-
-    @Override
-    public void onRdbData(ByteBuf rdbData) {
-
-    }
-
-    @Override
-    public void endReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
-        offsetRecorder.set(rdbOffset);
-        scheduleReplconf();
-    }
-
-    @Override
-    public void onContinue(GtidSet gtidSetExcluded, long continueOffset) {
-        offsetRecorder.set(continueOffset);
-        scheduleReplconf();
-    }
-
-    @Override
-    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
-
-    }
     protected void scheduleReplconf() {
 
         if (logger.isInfoEnabled()) {
@@ -153,9 +123,9 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
             protected void doRun() throws Exception {
                 try {
 
-                    getLogger().debug("[run][send ack]{}", ((AbstractSync) currentSync).getNettyClient().channel());
+                    getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
 
-                    Command<Object> command = new Replconf(new FixedObjectPool<>(((AbstractSync) currentSync).getNettyClient()), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
+                    Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     command.execute();
                 } catch (Throwable t) {
                     logger.error("[scheduleReplconf] sync {} error", currentSync, t);
@@ -165,4 +135,35 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
 
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
+
+    @Override
+    public void doOnFullSync(long replOffset) {
+        this.rdbParser.reset();
+    }
+
+    @Override
+    public void doOnXFullSync(GtidSet lost, long replOffset) {
+        this.rdbParser.reset();
+    }
+
+    @Override
+    public void doOnXContinue(GtidSet lost, long replOffset) {
+        scheduleReplconf();
+    }
+
+    @Override
+    public void doOnContinue(String newReplId) {
+        scheduleReplconf();
+    }
+
+    @Override
+    public void doOnAppendCommand(ByteBuf byteBuf) {
+
+    }
+
+    @Override
+    public void endReadRdb() {
+    }
+
+
 }

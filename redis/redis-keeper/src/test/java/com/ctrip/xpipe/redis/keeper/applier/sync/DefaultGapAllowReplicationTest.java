@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
  * @date 2024/5/14 15:20
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultPsyncReplicationTest extends AbstractRedisTest {
+public class DefaultGapAllowReplicationTest extends AbstractRedisTest {
 
     FakePsyncServer server;
 
@@ -52,8 +52,8 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
         return nettyClient;
     }
 
-    private DefaultPsyncReplication mockPsyncReplication() throws Exception {
-        DefaultPsyncReplication psyncReplication = new DefaultPsyncReplication(mock(ApplierServer.class));
+    private DefaultGapAllowReplication mockPsyncReplication() throws Exception {
+        DefaultGapAllowReplication psyncReplication = new DefaultGapAllowReplication(mock(ApplierServer.class));
         psyncReplication.scheduled = scheduled;
         XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool();
         keyedObjectPool.initialize();
@@ -105,7 +105,7 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
             }
         });
 
-        DefaultPsyncReplication psyncReplication = mockPsyncReplication();
+        DefaultGapAllowReplication psyncReplication = mockPsyncReplication();
 
         psyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
@@ -144,7 +144,7 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
     public void notReconnectWhenDisconnect() throws Exception {
         server = startFakePsyncServer(randomPort(), null);
 
-        DefaultPsyncReplication psyncReplication = mockPsyncReplication();
+        DefaultGapAllowReplication psyncReplication = mockPsyncReplication();
 
         psyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
@@ -177,7 +177,7 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
     public void reconnectWhenTargetChange() throws Exception {
         server = startFakePsyncServer(randomPort(), null);
 
-        DefaultPsyncReplication psyncReplication = mockPsyncReplication();
+        DefaultGapAllowReplication psyncReplication = mockPsyncReplication();
 
         psyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
@@ -209,7 +209,7 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
     public void reconnectAfterDisconnect() throws Exception {
         server = startFakePsyncServer(randomPort(), null);
 
-        DefaultPsyncReplication psyncReplication = mockPsyncReplication();
+        DefaultGapAllowReplication psyncReplication = mockPsyncReplication();
 
         psyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 
@@ -257,7 +257,7 @@ public class DefaultPsyncReplicationTest extends AbstractRedisTest {
     public void connectOneTimeWhenFirstConnect() throws Exception {
         server = startFakePsyncServer(randomPort(), null);
 
-        DefaultPsyncReplication psyncReplication = mockPsyncReplication();
+        DefaultGapAllowReplication psyncReplication = mockPsyncReplication();
 
         psyncReplication.connect(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("mockRunId:0"));
 

@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import redis.clients.util.SafeEncoder;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,18 +29,17 @@ public class DefaultCommandDispatcherTest {
 
     @Before
     public void setUp() throws Exception {
-        dispatcher.gtid_executed = new AtomicReference<>(new GtidSet(""));
         dispatcher.stateThread = MoreExecutors.newDirectExecutorService();
         dispatcher.gtidDistanceThreshold = new AtomicReference<>(new GTIDDistanceThreshold(2000));
+        ReflectionTestUtils.setField(dispatcher, "execGtidSet", new AtomicReference<GtidSet>());
+        dispatcher.resetState();
 
-        dispatcher.resetState(new GtidSet(""));
     }
 
     @Test
     public void testSkip() {
 
         dispatcher.updateGtidState("A:5");
-        assertEquals(5, dispatcher.gtid_received.lwm("A"));
         assertTrue(dispatcher.receivedSids.contains("A"));
 
         assertTrue(dispatcher.updateGtidState("A:5"));
@@ -54,11 +54,9 @@ public class DefaultCommandDispatcherTest {
         assertFalse(dispatcher.receivedSids.contains("B"));
 
         dispatcher.updateGtidState("A:5");
-        assertEquals(5, dispatcher.gtid_received.lwm("A"));
         assertTrue(dispatcher.receivedSids.contains("A"));
 
         dispatcher.updateGtidState("B:10");
-        assertEquals(10, dispatcher.gtid_received.lwm("B"));
         assertTrue(dispatcher.receivedSids.contains("B"));
     }
 
@@ -68,19 +66,11 @@ public class DefaultCommandDispatcherTest {
         assertFalse(dispatcher.receivedSids.contains("A"));
 
         dispatcher.updateGtidState("A:5");
-        assertEquals(new GtidSet("A:1-5"), dispatcher.gtid_executed.get());
-        assertEquals(new GtidSet("A:1-5"), dispatcher.gtid_received);
         assertTrue(dispatcher.receivedSids.contains("A"));
 
         dispatcher.updateGtidState("A:7");
 
-        assertEquals(new GtidSet("A:1-6"), dispatcher.gtid_executed.get());
-        assertEquals(new GtidSet("A:1-7"), dispatcher.gtid_received);
-
         dispatcher.updateGtidState("A:9");
-
-        assertEquals(new GtidSet("A:1-6:8"), dispatcher.gtid_executed.get());
-        assertEquals(new GtidSet("A:1-9"), dispatcher.gtid_received);
 
     }
 

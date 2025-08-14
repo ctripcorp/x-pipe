@@ -16,17 +16,16 @@ import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sync.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.handler.ApplierCommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.impl.ApplierRedisClient;
 import com.ctrip.xpipe.redis.keeper.netty.ApplierChannelHandlerFactory;
@@ -47,7 +46,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,9 +86,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public AsyncRedisClient client;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_executed;
-
-    @InstanceDependency
     public AtomicReference<String> replId;
 
     public final int listeningPort;
@@ -129,6 +124,18 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @InstanceDependency
     public AtomicReference<ApplierConfig> applierConfigRef;
 
+    @InstanceDependency
+    public AtomicReference<GtidSet> lostGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> startGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> execGtidSet;
+
+    @InstanceDependency
+    public RdbParser<?> rdbParser;
+
     private long startTime;
 
     private final Map<Channel, RedisClient> redisClients = new ConcurrentHashMap<Channel, RedisClient>();
@@ -162,7 +169,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.dispatcher = new DefaultCommandDispatcher();
-        this.replication = new DefaultPsyncReplication(this);
+        this.replication = new DefaultGapAllowReplication(this);
         this.offsetRecorder = new AtomicLong(-1);
         this.replId = new AtomicReference<>("?");
 
@@ -171,7 +178,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                 leaderElectorManager));
 
         this.gtidDistanceThreshold = new AtomicReference<>();
-        this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -198,6 +204,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         applierConfigRef = new AtomicReference<>(new ApplierConfig());
         applierStatisticRef = new AtomicReference<>(new ApplierStatistic());
+        startGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        lostGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        execGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        rdbParser = new DefaultRdbParser();
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,

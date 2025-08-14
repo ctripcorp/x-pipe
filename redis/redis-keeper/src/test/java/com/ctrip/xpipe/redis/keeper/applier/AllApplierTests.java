@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.BytesPerSecondThresholdTes
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThresholdTest;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThresholdTest;
 import com.ctrip.xpipe.redis.keeper.applier.sync.DefaultCommandDispatcherTest;
-import com.ctrip.xpipe.redis.keeper.applier.sync.DefaultXsyncReplicationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -27,8 +26,6 @@ import org.junit.runners.Suite.SuiteClasses;
         StubbornCommandTest.class,
 
         DefaultCommandDispatcherTest.class,
-        DefaultXsyncReplicationTest.class,
-
         AbstractInstanceNodeTest.class,
         DefaultApplierServerTest.class,
 

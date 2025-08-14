@@ -58,7 +58,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
         assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
 
-        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+        assertEquals(server.execGtidSet, ((DefaultCommandDispatcher) server.dispatcher).execGtidSet);
 
         assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
@@ -119,7 +119,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
         assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
 
-        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+        assertEquals(server.execGtidSet, ((DefaultCommandDispatcher) server.dispatcher).execGtidSet);
 
         assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
