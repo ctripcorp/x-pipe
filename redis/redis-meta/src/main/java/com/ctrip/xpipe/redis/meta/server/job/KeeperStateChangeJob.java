@@ -5,10 +5,8 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -17,19 +15,14 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
