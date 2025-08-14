@@ -2,17 +2,17 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.tuple.Triple;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author wenchao.meng
@@ -262,6 +262,10 @@ public class TestMetaCache implements MetaCache {
         return Collections.emptyMap();
     }
 
+    @Override
+    public Map<String, List<RedisMeta>> getAllInstance(String cluster) {
+        return new HashMap<>();
+    }
     @Override
     public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
         return false;

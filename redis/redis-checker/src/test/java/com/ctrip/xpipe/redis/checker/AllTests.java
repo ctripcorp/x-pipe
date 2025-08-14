@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.ClusterStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusConsistenceInspectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceStatusAdjustCommandTest;
@@ -157,6 +158,7 @@ import org.junit.runners.Suite;
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
         InstanceStatusAdjustCommandTest.class,
+        ClusterStatusAdjustCommandTest.class,
         StabilityInspectorTest.class,
 
         PingActionContextTest.class,

@@ -103,12 +103,10 @@ public class InstanceCrossRegionHealthStatusConsistenceInspector extends Abstrac
                 UpDownInstances hostPortNeedAdjustForPingAction = findHostPortNeedAdjust(xpipeInstanceHealth, outClientInstanceHealth, interestedCurrentDc);
 
                 checkTimeout(timeoutMill, "after compare");
-                if (!hostPortNeedAdjustForPingAction.getHealthyInstances().isEmpty())
-                    adjuster.adjustInstances(hostPortNeedAdjustForPingAction.getHealthyInstances(), true, true, timeoutMill);
-
-                checkTimeout(timeoutMill, "after adjust up");
-                if (!hostPortNeedAdjustForPingAction.getUnhealthyInstances().isEmpty())
-                    adjuster.adjustInstances(hostPortNeedAdjustForPingAction.getUnhealthyInstances(), true, false, timeoutMill);
+                Set<HostPort> all = hostPortNeedAdjustForPingAction.getAll();
+                if (!all.isEmpty()) {
+                    adjuster.adjustInstances(hostPortNeedAdjustForPingAction.getAll(), timeoutMill);
+                }
             }
 
             @Override

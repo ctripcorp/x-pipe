@@ -161,7 +161,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     public HealthStatusDesc getHealthStatusDesc(HostPort hostPort) {
         HealthStatus status = getHealthStatus(hostPort);
         if (null != status) {
-            long timeoutMill = config.getMarkInstanceMaxDelayMilli() + config.getCheckerMetaRefreshIntervalMilli();
+            long timeoutMill = config.getMarkdownInstanceMaxDelayMilli() + config.getCheckerMetaRefreshIntervalMilli();
             return new HealthStatusDesc(hostPort, status, status.getLastMarkHandled(timeoutMill));
         } else {
             return new HealthStatusDesc(hostPort, HEALTH_STATE.UNKNOWN);

@@ -47,7 +47,7 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
         instance = newRandomRedisHealthCheckInstance(6379);
         delayPingActionCollector.createOrGetHealthStatus(instance);
 
-        when(config.getMarkInstanceMaxDelayMilli()).thenReturn(lastMarkTimeout/2);
+        when(config.getMarkdownInstanceMaxDelayMilli()).thenReturn(lastMarkTimeout/2);
         when(config.getCheckerMetaRefreshIntervalMilli()).thenReturn(lastMarkTimeout/2);
     }
 

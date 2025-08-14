@@ -311,8 +311,13 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public int getMarkInstanceMaxDelayMilli() {
+    public int getMarkdownInstanceMaxDelayMilli() {
         return 2000;
+    }
+
+    @Override
+    public int getMarkupInstanceMaxDelayMilli() {
+        return 5000;
     }
 
     @Override

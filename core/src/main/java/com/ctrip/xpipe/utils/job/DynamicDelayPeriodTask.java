@@ -21,20 +21,27 @@ public class DynamicDelayPeriodTask extends AbstractStartStoppable implements St
 
     private LongSupplier delaySupplier;
 
+    private LongSupplier initDelaySupplier;
+
     private ScheduledExecutorService scheduled;
 
     private ScheduledFuture<?> future;
 
-    public DynamicDelayPeriodTask(String name, Runnable task, LongSupplier delaySupplier, ScheduledExecutorService scheduled) {
+    public DynamicDelayPeriodTask(String name, Runnable task, LongSupplier initDelaySupplier, LongSupplier delaySupplier, ScheduledExecutorService scheduled) {
         this.name = name;
         this.innerTask = task;
         this.delaySupplier = delaySupplier;
+        this.initDelaySupplier = initDelaySupplier;
         this.scheduled = scheduled;
+    }
+
+    public DynamicDelayPeriodTask(String name, Runnable task, LongSupplier delaySupplier, ScheduledExecutorService scheduled) {
+        this(name, task, null, delaySupplier, scheduled);
     }
 
     @Override
     protected void doStart() throws Exception {
-        scheduled.schedule(this::doRun, 0, TimeUnit.MILLISECONDS);
+        scheduled.schedule(this::doRun, initDelaySupplier == null ? 0 : initDelaySupplier.getAsLong(), TimeUnit.MILLISECONDS);
     }
 
     @Override

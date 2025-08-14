@@ -1,53 +1,24 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucket;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.AcquireLeakyBucket;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.CheckWrongSentinels4BackupDc;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.SentinelHelloCollectContext;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
-import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
-import com.ctrip.xpipe.redis.core.protocal.pojo.DefaultSentinelMasterInstance;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
-import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelFlag;
-import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
-import com.ctrip.xpipe.simpleserver.Server;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.Spy;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
-import java.net.SocketException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Set;
 
-import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector.NO_SUCH_MASTER;
 import static org.mockito.Mockito.*;
 
 /**

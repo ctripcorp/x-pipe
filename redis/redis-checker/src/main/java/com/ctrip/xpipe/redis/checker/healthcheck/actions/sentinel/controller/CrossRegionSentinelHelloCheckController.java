@@ -7,9 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.NoRedisToSubCo
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.CrossRegionSentinelCheckAggregationCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CrossRegionSentinelHelloCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.CrossRegionSentinelCheckAggregationCollector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;

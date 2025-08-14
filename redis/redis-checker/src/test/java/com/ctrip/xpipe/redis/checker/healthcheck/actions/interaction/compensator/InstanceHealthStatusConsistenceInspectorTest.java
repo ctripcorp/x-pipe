@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,10 +103,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(true);
         inspector.inspect();
 
-        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.1", 6379))), anyBoolean(),
-                ArgumentMatchers.eq(true), anyLong());
-        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Collections.singleton(new HostPort("10.0.0.2", 6379))), anyBoolean(),
-                ArgumentMatchers.eq(false), anyLong());
+        Mockito.verify(adjuster).adjustInstances(ArgumentMatchers.eq(Sets.newHashSet(new HostPort("10.0.0.1", 6379), new HostPort("10.0.0.2", 6379))), anyLong());
     }
 
     @Test
@@ -117,7 +115,7 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
         Mockito.when(xpipeInstanceHealthHolder.aggregate(ArgumentMatchers.eq(master), anyInt())).thenReturn(false);
         inspector.inspect();
 
-        Mockito.verify(adjuster, Mockito.never()).adjustInstances(any(), anyBoolean(), anyBoolean(), anyLong());
+        Mockito.verify(adjuster, Mockito.never()).adjustInstances(any(), anyLong());
     }
 
     @Test

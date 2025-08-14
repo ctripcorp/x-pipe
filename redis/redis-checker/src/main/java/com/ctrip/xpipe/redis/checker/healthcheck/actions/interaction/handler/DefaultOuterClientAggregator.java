@@ -1,16 +1,19 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
-import com.ctrip.xpipe.api.migration.OuterClientService.*;
+import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorPullService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActiveDcKey;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
-import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +21,13 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
@@ -27,7 +35,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
 @Component
 public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
-    private HashMap<ClusterActiveDcKey, Set<HostPort>> clusterAggregators = new HashMap<>();
+    private Map<ClusterActiveDcKey, Aggregator> clusterAggregators = Maps.newConcurrentMap();
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -48,7 +56,7 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
     private KeyedOneThreadTaskExecutor<String> clusterOneThreadTaskExecutor;
 
-    private static final Logger logger =  LoggerFactory.getLogger(DefaultOuterClientAggregator.class);
+    private final Logger logger =  LoggerFactory.getLogger(DefaultOuterClientAggregator.class);
 
     private static final int DELTA = 500;
 
@@ -60,61 +68,145 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
     @Override
     public void markInstance(ClusterShardHostPort info) {
         ClusterActiveDcKey key = new ClusterActiveDcKey(info.getClusterName(), info.getActiveDc());
-        Set<HostPort> aggregator = MapUtils.getOrCreate(clusterAggregators, key, HashSet::new);
-        synchronized (aggregator) {
-            boolean emptyBeforeAdd = aggregator.isEmpty();
-            if (aggregator.add(info.getHostPort()) && emptyBeforeAdd) {
-                long randomMill = randomMill();
-                logger.info("[delayMarkInstance][{}] {}", info.getClusterName(), randomMill);
-                scheduled.schedule(new AbstractExceptionLogTask() {
-                    @Override
-                    protected void doRun() throws Exception {
-                        Set<HostPort> batch;
-                        Set<HostPort> innerAggregator = clusterAggregators.get(key);
-                        if (null == innerAggregator) {
-                            logger.warn("[markInstance][aggregate][unexpected null aggregator] {}", info.getClusterName());
-                            return;
-                        }
+        logger.info("[aggregator][{}:{}][delayMarkInstance]{}", key.getCluster(), key.getActiveDc(), info.getHostPort());
+        Aggregator aggregator = clusterAggregators.computeIfAbsent(key, Aggregator::new);
+        aggregator.add(info.getHostPort());
+    }
 
-                        synchronized (innerAggregator) {
-                            if (innerAggregator.isEmpty()) {
-                                logger.warn("[markInstance][aggregate][unexpected empty aggregator] {}", info.getClusterName());
-                                return;
-                            }
-                            batch = new HashSet<>(innerAggregator);
-                            innerAggregator.clear();
-                        }
-                        handleInstances(key.cluster, key.activeDc, batch);
-                    }
-                }, randomMill, TimeUnit.MILLISECONDS);
+    class StartTimeAndInstances {
+        private long waitStartTime = 0;
+        private final Set<HostPort> instances = new HashSet<>();
+
+        public long getWaitStartTime() {
+            return waitStartTime;
+        }
+
+        public Set<HostPort> getInstances() {
+            return instances;
+        }
+
+        public void addInstance(HostPort hostPort) {
+            if (this.waitStartTime == 0)
+                this.waitStartTime = System.currentTimeMillis();
+            this.instances.add(hostPort);
+        }
+
+        public void merge(StartTimeAndInstances other) {
+            if (waitStartTime == 0) {
+                this.waitStartTime = other.waitStartTime;
             }
+            this.instances.addAll(other.instances);
+        }
+
+        public void clear() {
+            this.waitStartTime = 0;
+            this.instances.clear();
+        }
+
+        public boolean timeout() {
+            if (waitStartTime == 0)
+                return false;
+            return System.currentTimeMillis() - waitStartTime > checkerConfig.getMarkupInstanceMaxDelayMilli();
         }
     }
 
-    private void handleInstances(String cluster, String activeDc, Set<HostPort> instances) {
-        logger.info("[handleInstances][{}:{}] {}", cluster, activeDc, instances);
-        clusterOneThreadTaskExecutor.execute(cluster, new AggregatorCheckAndSetTask(cluster, activeDc, instances));
+    public class Aggregator {
+        private String clusterName;
+        private String activeDc;
+        private StartTimeAndInstances todo;
+        private StartTimeAndInstances doing;
+        private ScheduledFuture<?> scheduledFuture;
+
+        public Aggregator(ClusterActiveDcKey key) {
+            this.clusterName = key.getCluster();
+            this.activeDc = key.getActiveDc();
+            this.todo = new StartTimeAndInstances();
+            this.doing = new StartTimeAndInstances();
+        }
+
+        public synchronized void add(HostPort hostPort) {
+            this.todo.addInstance(hostPort);
+            if (scheduledFuture == null) {
+                scheduledFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        if (noInstance())
+                            return;
+
+                        handleInstances();
+                    }
+                }, randomMill(), checkInterval(), TimeUnit.MILLISECONDS);
+            }
+        }
+
+        public synchronized boolean markupWaitTimeout() {
+            boolean timeout = doing.timeout();
+            if (timeout) {
+                logger.warn("[aggregator][{}:{}][markupWaitTimeout]startTime:{}", clusterName, activeDc, new Timestamp(doing.getWaitStartTime()));
+            }
+            return timeout;
+        }
+
+        public synchronized boolean noInstance() {
+            return todo.getInstances().isEmpty() && doing.getInstances().isEmpty();
+        }
+
+        public synchronized Set<HostPort> prepareInstances() {
+            this.doing.merge(this.todo);
+            this.todo.clear();
+            return doing.getInstances();
+        }
+
+        public synchronized void done() {
+            this.doing.clear();
+            if (todo.getInstances().isEmpty()) {
+                scheduledFuture.cancel(true);
+                scheduledFuture = null;
+            }
+        }
+
+        public void handleInstances() {
+            logger.info("[aggregator][{}:{}][handleInstances]", clusterName, activeDc);
+            clusterOneThreadTaskExecutor.execute(clusterName, new AggregatorCheckAndSetTask(clusterName, activeDc, this));
+        }
+
+        @VisibleForTesting
+        synchronized StartTimeAndInstances getDoing() {
+            return doing;
+        }
+
+        @VisibleForTesting
+        synchronized StartTimeAndInstances getTodo() {
+            return todo;
+        }
+
     }
 
-    @VisibleForTesting
-    public int randomMill() {
+    int randomMill() {
         int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
                 checkerConfig.getRedisReplicationHealthCheckInterval() + checkerConfig.getCheckerMetaRefreshIntervalMilli());
-        int delayMax = Math.max(checkerConfig.getMarkInstanceMaxDelayMilli(), delayBase + DELTA);
+        int delayMax = Math.max(checkerConfig.getMarkdownInstanceMaxDelayMilli(), delayBase + DELTA);
         return delayBase + rand.nextInt(delayMax - delayBase);
     }
 
-    private Set<HostPortDcStatus> getNeedMarkInstances(String cluster, Set<HostPort> clusterHostPorts) throws Exception {
-        logger.info("[getNeedMarkInstances][{}]", cluster);
+    int checkInterval() {
+        int delayBase = Math.max(checkerConfig.getMarkInstanceBaseDelayMilli(),
+                checkerConfig.getRedisReplicationHealthCheckInterval() + checkerConfig.getCheckerMetaRefreshIntervalMilli());
+        int delayMax = Math.max(checkerConfig.getMarkdownInstanceMaxDelayMilli(), delayBase + DELTA);
+        return delayMax - delayBase;
+    }
+
+    private Set<HostPortDcStatus> getNeedMarkInstances(String cluster, String activeDc, Set<HostPort> clusterHostPorts) throws Exception {
+        logger.info("[aggregator][{}:{}][getNeedMarkInstances]{}", cluster, activeDc, clusterHostPorts);
         return aggregatorPullService.getNeedAdjustInstances(cluster, clusterHostPorts);
     }
 
     private void doMarkInstance(String cluster, String activeDc, Set<HostPortDcStatus> needMarkInstances) throws Exception {
-        logger.info("[doMarkInstance][{}]", cluster);
+        logger.info("[aggregator][{}:{}][doMarkInstance]{}", cluster, activeDc, needMarkInstances);
         aggregatorPullService.doMarkInstances(cluster, activeDc, needMarkInstances);
     }
 
-    public class AggregatorCheckAndSetTask extends AbstractCommand<Void> {
+    public class AggregatorCheckAndSetTask extends AbstractCommand<Void> implements LogIgnoreCommand {
 
         private int retry;
 
@@ -122,60 +214,72 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
 
         private String activeDc;
 
-        private Set<HostPort> instances;
+        private Aggregator aggregator;
 
-        public AggregatorCheckAndSetTask(String cluster, String activeDc, Set<HostPort> instances) {
-            this(cluster, activeDc, instances, 3);
+        public AggregatorCheckAndSetTask(String cluster, String activeDc, Aggregator aggregator) {
+            this(cluster, activeDc, aggregator, 3);
         }
 
-        public AggregatorCheckAndSetTask(String cluster, String activeDc, Set<HostPort> instances, int retry){
+        public AggregatorCheckAndSetTask(String cluster, String activeDc, Aggregator aggregator, int retry){
             this.cluster = cluster;
             this.activeDc = activeDc;
-            this.instances = instances;
+            this.aggregator = aggregator;
             this.retry = retry;
         }
 
         @Override
         protected void doExecute() throws Exception {
 
+            Set<HostPort> doing = aggregator.prepareInstances();
             Set<HostPortDcStatus> instancesToUpdate;
 
             try {
-                instancesToUpdate = getNeedMarkInstances(cluster, instances);
+                instancesToUpdate = getNeedMarkInstances(cluster, activeDc, doing);
             } catch (Throwable th) {
-                logger.info("[aggregator]][getFail[{}]", cluster, th);
+                logger.error("[aggregator][{}:{}][getNeedMarkInstances]", cluster, activeDc, th);
+                aggregator.done();
                 future().setFailure(th);
                 return;
             }
 
             if (instancesToUpdate.isEmpty()) {
-                logger.info("[aggregator][getEmpty] skip");
+                logger.info("[aggregator][{}:{}][getNeedMarkInstances]empty, skip", cluster, activeDc);
+                aggregator.done();
                 future().setSuccess();
             } else {
-                for (HostPortDcStatus hostPortDcStatus: instancesToUpdate) {
-                    for (HealthStateService stateService: healthStateServices) {
-                        try {
-                            stateService.updateLastMarkHandled(
-                                    new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()),
-                                    hostPortDcStatus.isCanRead());
-                        } catch (Throwable th) {
-                            logger.info("[aggregator][updateLastMark][fail]", th);
+                Set<HostPortDcStatus> markdownInstances = instancesToUpdate.stream().filter(hostPortDcStatus -> !hostPortDcStatus.isCanRead()).collect(Collectors.toSet());
+                if (!markdownInstances.isEmpty() || aggregator.markupWaitTimeout() || dcInstancesAllUp(cluster, activeDc, instancesToUpdate)) {
+                    for (HostPortDcStatus hostPortDcStatus : instancesToUpdate) {
+                        for (HealthStateService stateService : healthStateServices) {
+                            try {
+                                stateService.updateLastMarkHandled(
+                                        new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()),
+                                        hostPortDcStatus.isCanRead());
+                            } catch (Throwable th) {
+                                logger.warn("[aggregator][{}:{}][updateLastMark][fail]", cluster, activeDc, th);
+                            }
                         }
                     }
+
+                    for (int i = 0; i < retry; i++) {
+                        try {
+                            logger.debug("[aggregator][{}:{}][doMarkInstance][begin]", cluster, activeDc);
+                            doMarkInstance(cluster, activeDc, instancesToUpdate);
+                            aggregator.done();
+                            future().setSuccess();
+                            logger.debug("[aggregator][{}:{}][doMarkInstance][end]", cluster, activeDc);
+                            return;
+                        } catch (Throwable th) {
+                            logger.error("[aggregator][{}:{}][doMarkInstance][fail]", cluster, activeDc, th);
+                        }
+                    }
+                    aggregator.done();
+                    future().setFailure(new IllegalStateException("[aggregator][fail] "+ cluster));
+                } else {
+                    logger.info("[aggregator][{}:{}][allMarkup] continue wait", cluster, activeDc);
+                    future().setSuccess();
                 }
 
-                for(int i=0; i < retry ;i++){
-                    try{
-                        logger.debug("[aggregator][begin] {}", cluster);
-                        doMarkInstance(cluster, activeDc, instancesToUpdate);
-                        future().setSuccess();
-                        logger.debug("[aggregator][end] {}", cluster);
-                        return;
-                    } catch (Throwable th){
-                        logger.error("[aggregator][setFail] " + cluster, th);
-                    }
-                }
-                future().setFailure(new IllegalStateException("[aggregator][fail]" + cluster));
             }
         }
 
@@ -189,45 +293,34 @@ public class DefaultOuterClientAggregator implements OuterClientAggregator{
         }
     }
 
+    boolean dcInstancesAllUp(String clusterName, String activeDc, Set<HostPortDcStatus> instances) {
+        String allUpDc = aggregatorPullService.dcInstancesAllUp(clusterName, activeDc, instances);
+        if (!Strings.isNullOrEmpty(allUpDc)) {
+            logger.info("[aggregator][{}:{}][dcInstancesAllUp]{}", clusterName, activeDc, allUpDc);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     @VisibleForTesting
-    public void setScheduled(ScheduledExecutorService scheduled) {
+    void setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
     }
 
     @VisibleForTesting
-    public void setHealthStateServices(List<HealthStateService> healthStateServices) {
+    void setExecutors(ExecutorService executors) {
+        this.executors = executors;
+    }
+
+    @VisibleForTesting
+    void setHealthStateServices(List<HealthStateService> healthStateServices) {
         this.healthStateServices = healthStateServices;
     }
 
-    private static class ClusterActiveDcKey {
-
-        private String cluster;
-
-        private String activeDc;
-
-        public ClusterActiveDcKey(String cluster, String activeDc) {
-            this.cluster = cluster;
-            this.activeDc = activeDc;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ClusterActiveDcKey that = (ClusterActiveDcKey) o;
-            return Objects.equals(cluster, that.cluster) &&
-                    Objects.equals(activeDc, that.activeDc);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(cluster, activeDc);
-        }
-
-        @Override
-        public String toString() {
-            return cluster + ":" + activeDc;
-        }
+    @VisibleForTesting
+    Aggregator getClusterAggregator(ClusterActiveDcKey clusterActiveDcKey) {
+        return this.clusterAggregators.get(clusterActiveDcKey);
     }
 
 }

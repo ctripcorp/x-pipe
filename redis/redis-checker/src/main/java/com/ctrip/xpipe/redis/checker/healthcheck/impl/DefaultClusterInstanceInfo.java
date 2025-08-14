@@ -4,7 +4,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

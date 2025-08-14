@@ -119,6 +119,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_CHECKER_MARK_DELAY_MAX = "checker.health.mark.delay.max.milli";
 
+    public static final String KEY_CHECKER_MARK_UP_DELAY_MAX = "checker.health.mark.up.delay.max.milli";
+
     public static final String KEY_CHECKER_INSTANCE_PULL_INTERVAL = "checker.instance.pull.interval";
 
     public static final String KEY_CHECKER_INSTANCE_PULL_RANDOM = "checker.instance.pull.random";
@@ -360,8 +362,12 @@ public class CheckConfigBean extends AbstractConfigBean {
         return getIntProperty(KEY_CHECKER_MARK_DELAY_BASE, 500);
     }
 
-    public int getMarkInstanceMaxDelayMilli() {
+    public int getMarkdownInstanceMaxDelayMilli() {
         return getIntProperty(KEY_CHECKER_MARK_DELAY_MAX, 14000);
+    }
+
+    public int getMarkupInstanceMaxDelayMilli() {
+        return getIntProperty(KEY_CHECKER_MARK_UP_DELAY_MAX, 60000);
     }
 
     public int getInstancePullIntervalSeconds() {
