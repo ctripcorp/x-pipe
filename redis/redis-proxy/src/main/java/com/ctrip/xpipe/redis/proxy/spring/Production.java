@@ -11,8 +11,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -37,8 +35,6 @@ public class Production extends AbstractProfile {
 
     public static final String SERVER_SSL_HANDLER_FACTORY = "serverSslHandlerFactory";
 
-    public static final String BACKEND_EVENTLOOP_GROUP = "backendEventLoopGroup";
-
     public static final String GLOBAL_SCHEDULED = "globalScheduled";
 
     private ProxyConfig config = new DefaultProxyConfig();
@@ -56,12 +52,6 @@ public class Production extends AbstractProfile {
     @Bean(name = SERVER_SSL_HANDLER_FACTORY)
     public NettySslHandlerFactory serverSslHandlerFactory() {
         return new NettyServerSslHandlerFactory(config);
-    }
-
-    @Bean(name = BACKEND_EVENTLOOP_GROUP)
-    public EventLoopGroup backendEventLoopGroup() {
-        int threads = Math.min(OsUtils.getCpuCount(), 8);
-        return new NioEventLoopGroup(threads, XpipeThreadFactory.create(BACKEND_EVENTLOOP_GROUP));
     }
 
     @Bean(name = GLOBAL_SCHEDULED)

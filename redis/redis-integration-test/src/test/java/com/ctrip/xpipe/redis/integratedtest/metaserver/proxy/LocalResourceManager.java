@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStatsManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStatsManager;
+import com.ctrip.xpipe.redis.proxy.resource.GlobalTrafficControlManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.resource.SslEnabledNettyClientFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -35,6 +36,8 @@ public class LocalResourceManager implements ResourceManager {
 
     private SocketStatsManager socketStatsManager = new DefaultSocketStatsManager();
 
+    private GlobalTrafficControlManager trafficControlManager;
+
     private ProxyConfig config ;
 
     private NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
@@ -44,6 +47,7 @@ public class LocalResourceManager implements ResourceManager {
         this.config = config;
         clientSslHandlerFactory = new NettyClientSslHandlerFactory(config);
         serverSslHandlerFactory = new NettyServerSslHandlerFactory(config);
+        trafficControlManager = new GlobalTrafficControlManager(config, scheduled);
     }
 
     @Override
@@ -69,6 +73,11 @@ public class LocalResourceManager implements ResourceManager {
     @Override
     public SocketStatsManager getSocketStatsManager() {
         return socketStatsManager;
+    }
+
+    @Override
+    public GlobalTrafficControlManager getGlobalTrafficControlManager() {
+        return trafficControlManager;
     }
 
     @Override

@@ -139,19 +139,16 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(loggingHandler);
-                        
+
                         // Add traffic control handler for cross-region proxy tunnels
                         if (tunnel().getProxyProtocol().isNextHopProxy()) {
                             GlobalTrafficControlManager trafficControlManager = resourceManager.getGlobalTrafficControlManager();
-                            if (trafficControlManager.isTrafficControlEnabled()) {
-                                io.netty.handler.traffic.GlobalTrafficShapingHandler trafficHandler = trafficControlManager.getTrafficShapingHandler();
-                                if (trafficHandler != null) {
-                                    p.addLast("globalTrafficShaping", trafficHandler);
-                                    logger.debug("[initChannel] Added global traffic shaping handler for cross-region tunnel: {}", tunnel().identity());
-                                }
+                            io.netty.handler.traffic.GlobalTrafficShapingHandler trafficHandler = trafficControlManager.getTrafficShapingHandler();
+                            if (null != trafficHandler) {
+                                p.addLast("globalTrafficShaping", trafficHandler);
                             }
                         }
-                        
+
                         p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, config::shouldReportTraffic, DefaultBackendSession.this));
                         p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                     }

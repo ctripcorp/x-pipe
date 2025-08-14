@@ -259,7 +259,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public long getCrossRegionTrafficControlLimit() {
-        return getLongProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT, 100 * 1024 * 1024L); // 100MB/s default
+        return getLongProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT, 200 * 1024 * 1024L); // 100MB/s default
     }
 
     protected String getProperty(String key, String defaultValue){

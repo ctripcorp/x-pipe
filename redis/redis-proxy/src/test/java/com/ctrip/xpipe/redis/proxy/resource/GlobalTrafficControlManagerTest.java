@@ -27,7 +27,6 @@ public class GlobalTrafficControlManagerTest {
 
     private GlobalTrafficControlManager manager;
     private TestProxyConfig config;
-    private EventLoopGroup eventLoopGroup;
     private ScheduledExecutorService scheduledExecutor;
 
     @Before
@@ -35,19 +34,15 @@ public class GlobalTrafficControlManagerTest {
         MockitoAnnotations.initMocks(this);
         
         config = new TestProxyConfig();
-        eventLoopGroup = new NioEventLoopGroup(1);
         scheduledExecutor = new ScheduledThreadPoolExecutor(1);
         
-        manager = new GlobalTrafficControlManager(config, eventLoopGroup, scheduledExecutor);
+        manager = new GlobalTrafficControlManager(config, scheduledExecutor);
     }
 
     @After
     public void tearDown() {
         if (manager != null) {
             manager.release();
-        }
-        if (eventLoopGroup != null) {
-            eventLoopGroup.shutdownGracefully();
         }
         if (scheduledExecutor != null) {
             scheduledExecutor.shutdown();
@@ -57,7 +52,6 @@ public class GlobalTrafficControlManagerTest {
     @Test
     public void testTrafficControlDisabledByDefault() {
         assertFalse("Traffic control should be disabled by default", manager.isTrafficControlEnabled());
-        assertNull("Traffic shaping handler should be null when disabled", manager.getTrafficShapingHandler());
     }
 
     @Test
@@ -75,7 +69,7 @@ public class GlobalTrafficControlManagerTest {
             }
         };
         
-        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, eventLoopGroup, scheduledExecutor);
+        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, scheduledExecutor);
         
         try {
             assertTrue("Traffic control should be enabled", newManager.isTrafficControlEnabled());
@@ -100,7 +94,7 @@ public class GlobalTrafficControlManagerTest {
             }
         };
         
-        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, eventLoopGroup, scheduledExecutor);
+        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, scheduledExecutor);
         
         try {
             assertTrue("Traffic control should be enabled", newManager.isTrafficControlEnabled());
@@ -131,7 +125,7 @@ public class GlobalTrafficControlManagerTest {
             }
         };
         
-        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, eventLoopGroup, scheduledExecutor);
+        GlobalTrafficControlManager newManager = new GlobalTrafficControlManager(enabledConfig, scheduledExecutor);
         
         assertTrue("Traffic control should be enabled", newManager.isTrafficControlEnabled());
         

@@ -43,9 +43,6 @@ public class ProxyRelatedResourceManager implements ResourceManager {
     @Resource(name = GLOBAL_ENDPOINT_MANAGER)
     private ProxyEndpointManager endpointManager;
 
-    @Resource(name = BACKEND_EVENTLOOP_GROUP)
-    private io.netty.channel.EventLoopGroup backendEventLoopGroup;
-
     @Autowired
     private ProxyConfig config;
 
@@ -108,7 +105,7 @@ public class ProxyRelatedResourceManager implements ResourceManager {
         if (globalTrafficControlManager == null) {
             synchronized (this) {
                 if (globalTrafficControlManager == null) {
-                    globalTrafficControlManager = new GlobalTrafficControlManager(config, backendEventLoopGroup, scheduled);
+                    globalTrafficControlManager = new GlobalTrafficControlManager(config, scheduled);
                 }
             }
         }

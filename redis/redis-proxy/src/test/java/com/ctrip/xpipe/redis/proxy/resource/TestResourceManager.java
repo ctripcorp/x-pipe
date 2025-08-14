@@ -44,6 +44,8 @@ public class TestResourceManager implements ResourceManager {
 
     private NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 
+    private GlobalTrafficControlManager trafficControlManager;
+
     private volatile SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool;
 
     @Override
@@ -113,9 +115,13 @@ public class TestResourceManager implements ResourceManager {
         return selector;
     }
 
+    public void setGlobalTrafficControlManager(GlobalTrafficControlManager trafficControlManager) {
+        this.trafficControlManager = trafficControlManager;
+    }
+
     @Override
     public GlobalTrafficControlManager getGlobalTrafficControlManager() {
         // For testing, return null since we don't need traffic control in tests
-        return null;
+        return trafficControlManager;
     }
 }
