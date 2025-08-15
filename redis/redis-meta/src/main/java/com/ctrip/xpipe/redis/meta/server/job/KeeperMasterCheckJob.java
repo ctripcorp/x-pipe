@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.server.Server;
@@ -18,7 +17,6 @@ import com.ctrip.xpipe.tuple.Pair;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -65,54 +63,49 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 			future().setSuccess(null);
 			return;
 		}
-		checkPrimaryDcKeeperMaster();
-		if (future().isSuccess()) {
-			return;
-		}
-
-		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
-
-        ParallelCommandChain roleChain = new ParallelCommandChain(executors);
-
-		for(RedisMeta redisMeta : redises){
-			if (redisMeta.getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(redisMeta.getPort(), activeKeeperMaster.getValue())) {
-				continue;
-			}
-			RoleCommand command = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), checkRedisTimeoutSeconds * 1000, false, scheduled);
-			roleChain.add(command);
-		}
-
-		roleChain.execute().addListener(commandFuture -> {
-			boolean hasMaster = false;
-			for (CommandFuture future : roleChain.getResult()) {
-				Role role = (Role) future.getNow();
-				if (role != null && role.getServerRole() == Server.SERVER_ROLE.MASTER) {
-					hasMaster = true;
-					break;
-				}
-			}
-			if (hasMaster) {
-				setFutureFailure(activeKeeperMaster, "two master");
-			} else {
-				future().setSuccess(null);
-			}
-		});
-	}
-
-	private void checkPrimaryDcKeeperMaster() {
 		if (!isRedis(clusterId, shardId, activeKeeperMaster.getKey(), activeKeeperMaster.getValue())) {
 			setFutureFailure(activeKeeperMaster, "not redis");
 			return;
 		}
-		try {
-			Role masterRole = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(activeKeeperMaster.getKey(), activeKeeperMaster.getValue())), checkRedisTimeoutSeconds * 1000, false, scheduled)
-					.execute().get(checkRedisTimeoutSeconds * 1000L, TimeUnit.MILLISECONDS);
-			if (masterRole == null || masterRole.getServerRole()!= Server.SERVER_ROLE.MASTER) {
-				setFutureFailure(activeKeeperMaster, "not master");
+		RoleCommand masterCommand = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(activeKeeperMaster.getKey(), activeKeeperMaster.getValue())), checkRedisTimeoutSeconds * 1000, false, scheduled);
+		masterCommand.execute().addListener(masterFuture -> {
+			if (masterFuture.isSuccess()) {
+				Role masterRole = masterFuture.getNow();
+				if (masterRole == null || masterRole.getServerRole() != Server.SERVER_ROLE.MASTER) {
+					setFutureFailure(activeKeeperMaster, "not master");
+				} else {
+					List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
+
+					ParallelCommandChain roleChain = new ParallelCommandChain(executors);
+
+					for (RedisMeta redisMeta : redises) {
+						if (redisMeta.getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(redisMeta.getPort(), activeKeeperMaster.getValue())) {
+							continue;
+						}
+						RoleCommand command = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), checkRedisTimeoutSeconds * 1000, false, scheduled);
+						roleChain.add(command);
+					}
+
+					roleChain.execute().addListener(redisFuture -> {
+						boolean hasMaster = false;
+						for (CommandFuture future : roleChain.getResult()) {
+							Role role = (Role) future.getNow();
+							if (role != null && role.getServerRole() == Server.SERVER_ROLE.MASTER) {
+								hasMaster = true;
+								break;
+							}
+						}
+						if (hasMaster) {
+							setFutureFailure(activeKeeperMaster, "two master");
+						} else {
+							future().setSuccess(null);
+						}
+					});
+				}
+			} else {
+				setFutureFailure(activeKeeperMaster, "check master fail");
 			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			setFutureFailure(activeKeeperMaster, "check master fail:" + e.getMessage());
-		}
+		});
 	}
 
 	private void setFutureFailure(Pair<String, Integer> activeKeeperMaster, String message) {
