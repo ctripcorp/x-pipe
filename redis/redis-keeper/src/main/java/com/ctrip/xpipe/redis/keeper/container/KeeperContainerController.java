@@ -77,6 +77,12 @@ public class KeeperContainerController extends AbstractController {
         return keepers;
     }
 
+    @RequestMapping(value = "/size", method = RequestMethod.GET)
+    public Integer listSize() {
+        List<KeeperInstanceMeta> keepers = list();
+        return keepers.size();
+    }
+
     @GetMapping(value = "/port/{port}")
     public KeeperInstanceMeta infoPort(@PathVariable int port) {
         logger.info("[infoPort] {}", port);
