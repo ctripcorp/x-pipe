@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
-import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -38,15 +36,13 @@ public class KeeperMasterCheckJobTest extends AbstractMetaServerTest{
 	private Long clusterId = 1L;
 	private Long shardId = 1L;
 	private XpipeMeta xpipeMeta;
-	private RetryCommandFactory retryCommandFactory;
 	private ExecutorService executors;
 
 
 	@Before
-	public void beforeKeeperStateChangeJobTest() throws Exception{
+	public void beforeKeeperMasterCheckJobTest() throws Exception{
 		job = new KeeperMasterCheckJob(clusterId, shardId, dcMetaCache,new Pair<>("localhost", randomPort()), getXpipeNettyClientKeyedObjectPool(), executors, scheduled);
 		xpipeMeta = loadXpipeMeta(getXpipeMetaConfigFile());
-		retryCommandFactory = DefaultRetryCommandFactory.retryNTimes(scheduled, 1, 10);
 	}
 
 	@Test

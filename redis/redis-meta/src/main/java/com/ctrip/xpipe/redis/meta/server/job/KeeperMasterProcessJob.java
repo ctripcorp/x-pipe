@@ -59,30 +59,25 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 
 	@Override
 	public String getName() {
-		return "keeper master process job";
+		return "KeeperMasterProcessJob";
 	}
 
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 		SequenceCommandChain chain = new SequenceCommandChain(false);
-		KeeperMasterCheckJob checkJob = new KeeperMasterCheckJob(clusterDbId, shardDbId, dcMetaCache, activeKeeperMaster, clientPool, scheduled);
+		KeeperMasterCheckJob checkJob = new KeeperMasterCheckJob(clusterDbId, shardDbId, dcMetaCache, activeKeeperMaster, clientPool, executors, scheduled);
 		KeeperStateChangeJob changeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, scheduled, executors);
 		chain.add(checkJob);
 		chain.add(changeJob);
-		chain.execute().addListener(new CommandFutureListener<Object>() {
-
-			@Override
-			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-
-				if(commandFuture.isSuccess()){
-					future().setSuccess(null);
-				}else {
-					future().setFailure(commandFuture.cause());
-					getLogger().info("[KeeperMasterProcessJob][fail]clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
-					EventMonitor.DEFAULT.logAlertEvent(String.format("[KeeperMasterProcessJob][exception] cluster_%d,shard_%d, error:%s", clusterDbId, shardDbId, commandFuture.cause().getMessage()));
-				}
-			}
-		});
+		chain.execute().addListener(commandFuture -> {
+            if(commandFuture.isSuccess()){
+                future().setSuccess(null);
+            } else {
+                future().setFailure(commandFuture.cause().getCause());
+                getLogger().info("[KeeperMasterProcessJob][fail]clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
+                EventMonitor.DEFAULT.logAlertEvent("keeper.master.process:" + commandFuture.cause().getMessage());
+            }
+        });
 	}
 
 	@Override
