@@ -5,10 +5,11 @@ import io.netty.buffer.ByteBuf;
 
 public interface ApplierSyncObserver {
 
-    void doOnFullSync(long replOffset);
+    void doOnFullSync(String replId, long replOffset);
     void doOnXFullSync(GtidSet lost, long replOffset);
     void doOnXContinue(GtidSet lost, long replOffset);
     void doOnContinue(String newReplId);
     void doOnAppendCommand(ByteBuf byteBuf);
     void endReadRdb();
+    void protoChange();
 }

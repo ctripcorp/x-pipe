@@ -34,6 +34,12 @@ public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp impleme
     }
 
     @Override
+    public void clearGtid() {
+        this.rawGtidArgs = new byte[0][];
+        this.gtid = null;
+    }
+
+    @Override
     public Long getTimestamp() {
         return innerRedisOp.getTimestamp();
     }

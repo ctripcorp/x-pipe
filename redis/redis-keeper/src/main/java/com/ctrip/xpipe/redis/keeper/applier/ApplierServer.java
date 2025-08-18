@@ -13,7 +13,9 @@ import com.ctrip.xpipe.redis.keeper.RedisServer;
  */
 public interface ApplierServer extends Lifecycle, RedisServer {
 
-    enum STATE { NONE, ACTIVE, BACKUP }
+    enum STATE { NONE, ACTIVE, BACKUP}
+
+    enum STATUS {NONE, TRANSFER, CONNECTED, PROTO_CHANGE_ERROR }
 
     int getListeningPort();
 
@@ -34,6 +36,14 @@ public interface ApplierServer extends Lifecycle, RedisServer {
     Endpoint getUpstreamEndpoint();
 
     long getEndOffset();
+
+    GtidSet getStartGtidSet();
+
+    GtidSet getLostGtidSet();
+
+    GtidSet getExecGtidSet();
+
+    STATUS getStatus();
 
     ApplierHealth checkHealth();
 

@@ -21,13 +21,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author hailu
  * @date 2024/5/10 9:53
  */
 public abstract class AbstractSyncReplication extends StubbornNetworkCommunication implements ApplierSyncReplication, ApplierSyncObserver {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultGapAllowReplication.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractSyncReplication.class);
     @InstanceDependency
     public ApplierCommandDispatcher dispatcher;
 
@@ -42,6 +43,9 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
 
     @InstanceDependency
     public RdbParser<?> rdbParser;
+
+    @InstanceDependency
+    public AtomicReference<ApplierServer.STATUS> status;
 
     protected ApplierServer applierServer;
 
@@ -137,32 +141,42 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     }
 
     @Override
-    public void doOnFullSync(long replOffset) {
+    public void doOnFullSync(String replId, long replOffset) {
         this.rdbParser.reset();
+        this.status.set(ApplierServer.STATUS.TRANSFER);
     }
 
     @Override
     public void doOnXFullSync(GtidSet lost, long replOffset) {
         this.rdbParser.reset();
+        this.status.set(ApplierServer.STATUS.TRANSFER);
     }
 
     @Override
     public void doOnXContinue(GtidSet lost, long replOffset) {
+        this.status.set(ApplierServer.STATUS.CONNECTED);
         scheduleReplconf();
     }
 
     @Override
     public void doOnContinue(String newReplId) {
+        this.status.set(ApplierServer.STATUS.CONNECTED);
         scheduleReplconf();
     }
 
     @Override
     public void doOnAppendCommand(ByteBuf byteBuf) {
-
     }
 
     @Override
     public void endReadRdb() {
+        this.status.set(ApplierServer.STATUS.CONNECTED);
+        scheduleReplconf();
+    }
+
+    @Override
+    public void protoChange() {
+        this.status.set(ApplierServer.STATUS.PROTO_CHANGE_ERROR);
     }
 
 

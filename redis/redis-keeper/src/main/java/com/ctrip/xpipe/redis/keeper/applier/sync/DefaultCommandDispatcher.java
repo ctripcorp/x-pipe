@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
@@ -21,12 +22,17 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
 
 /**
  * @author Slight
@@ -95,13 +101,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
         this.transactionCommand.set(null);
         this.execGtidSet.set(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        this.remainingBuf = null;
         startGtidStr = "";
         startOffset = -1;
         lostGtidStr = "";
     }
 
     @Override
-    public void doOnFullSync(long replOff) {
+    public void doOnFullSync(String replId, long replOff) {
+        this.replId.set(replId);
         this.startOffset = replOff;
     }
 
@@ -109,45 +117,75 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void doOnXFullSync(GtidSet lost, long replOff) {
         this.lostGtidStr = lost.toString();
         this.startOffset = replOff;
+        this.remainingBuf = null;
     }
 
     @Override
     public void doOnXContinue(GtidSet lost, long replOffset) {
+        this.offsetRecorder.set(replOffset);
+        this.remainingBuf = null;
         this.resetState();
     }
 
     @Override
     public void doOnContinue(String newReplId) {
         replId.set(newReplId);
+        this.remainingBuf = null;
         this.resetState();
     }
 
+    private ByteBuf remainingBuf;
     @Override
     public void doOnAppendCommand(ByteBuf byteBuf) {
-        while (byteBuf.readableBytes() > 0) {
-            int pre = byteBuf.readerIndex();
-            RedisClientProtocol<Object[]> protocol = protocolParser.read(byteBuf);
+        CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
+        if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
+            mergeBuf.addComponent(true, remainingBuf);
+            remainingBuf = null;
+        }
+        mergeBuf.addComponent(true, byteBuf);
+        while (mergeBuf.readableBytes() > 0) {
+            int pre = mergeBuf.readerIndex();
+            RedisClientProtocol<Object[]> protocol = null;
+            try {
+                protocol = protocolParser.read(mergeBuf);
+            } catch (RedisRuntimeException | NumberFormatException exception) {
+                logger.error("[doOnAppendCommand]{}", exception);
+                int starIndex = findFirstStar(mergeBuf, pre + 1);
+                if(starIndex != -1) {
+                    logger.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex - pre).toString(Charset.defaultCharset()));
+                    mergeBuf.readerIndex(starIndex);
+                    this.protocolParser.reset();
+                    continue;
+                }
+            }
             if (protocol == null) {
+                remainingBuf = Unpooled.copiedBuffer(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
                 this.protocolParser.reset();
                 break;
             }
             Object[] payload = protocol.getPayload();
             RedisOp redisOp = parser.parse(payload);
             String gtid = redisOp.getOpGtid();
-            doOnRedisOp(redisOp, byteBuf.readerIndex() - pre);
+            doOnRedisOp(redisOp, mergeBuf.readerIndex() - pre);
             if(!StringUtil.isEmpty(gtid)) {
                 execGtidSet.get().add(gtid);
             }
             this.protocolParser.reset();
+            byteBuf.skipBytes(byteBuf.readableBytes());
         }
     }
 
     @Override
     public void endReadRdb() {
-        logger.info("[endReadRdb]{}", startGtidStr);
+        logger.info("[endReadRdb] start {}, lost: {}, offset: {} ", startGtidStr, lostGtidStr, offsetRecorder);
         this.offsetRecorder.set(startOffset);
         this.lostGtidSet.set(new GtidSet(lostGtidStr));
         this.startGtidSet.set(new GtidSet(startGtidStr));
+    }
+
+    @Override
+    public void protoChange() {
+
     }
 
     @Override
@@ -301,6 +339,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
+        redisOp.clearGtid();
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
@@ -351,5 +390,15 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         startGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED, GtidSet.EMPTY_GTIDSET);
         lostGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_LOST, GtidSet.EMPTY_GTIDSET);
         logger.info("[onAuxFinish] startGtidStr: {}, lostGtidStr: {}", startGtidSet, lostGtidStr);
+    }
+
+    private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
+        for(int i = beginOffset; i < byteBuf.writerIndex(); i++) {
+            byte b = byteBuf.getByte(i);
+            if(b == ASTERISK_BYTE) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

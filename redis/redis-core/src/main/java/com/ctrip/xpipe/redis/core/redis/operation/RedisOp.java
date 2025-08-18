@@ -22,4 +22,6 @@ public interface RedisOp {
 
     //overhead apart
     long estimatedSize();
+
+    void clearGtid();
 }

@@ -62,6 +62,11 @@ public class RedisOpTransactionAdapter implements RedisOp {
     }
 
     @Override
+    public void clearGtid() {
+        this.execOp.clearGtid();
+    }
+
+    @Override
     public Long getTimestamp() {
         throw new UnsupportedOperationException();
     }

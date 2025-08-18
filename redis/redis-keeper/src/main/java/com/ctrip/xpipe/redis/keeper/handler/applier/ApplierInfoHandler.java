@@ -28,10 +28,14 @@ public class ApplierInfoHandler extends AbstractCommandHandler {
 
         StringBuilder sb = new StringBuilder();
         sb.append("state:" + applierServer.getState() + RedisProtocol.CRLF);
+        sb.append("status:" + applierServer.getStatus() + RedisProtocol.CRLF);
         if (null != upstreamEndpoint) {
             sb.append("master_host:" + upstreamEndpoint.getHost() + RedisProtocol.CRLF );
             sb.append("master_port:"  + upstreamEndpoint.getPort() +  RedisProtocol.CRLF );
             sb.append("master_repl_offset:" + applierServer.getEndOffset() + RedisProtocol.CRLF);
+            sb.append("gtid_start:" + applierServer.getStartGtidSet() + RedisProtocol.CRLF);
+            sb.append("gtid_lost:" + applierServer.getLostGtidSet() + RedisProtocol.CRLF);
+            sb.append("gtid_exec:" + applierServer.getExecGtidSet() + RedisProtocol.CRLF);
             sb.append("drop_keys:" + statistic.getDroppedKeys() + RedisProtocol.CRLF);
             sb.append("trans_keys:" + statistic.getTransKeys() + RedisProtocol.CRLF);
         }

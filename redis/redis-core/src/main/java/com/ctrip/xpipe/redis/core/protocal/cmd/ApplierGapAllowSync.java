@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -112,18 +111,25 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
     protected void doOnSwitchToXsync() throws IOException {
         super.doOnSwitchToXsync();
         if(replProto.get() != null) {
-            EventMonitor.DEFAULT.logAlertEvent("PROTO had changed");
+            notifyProtoChange();
+            EventMonitor.DEFAULT.logAlertEvent("PROTO_CHANGED");
             throw new RuntimeException("PROTO had changed");
         }
         replProto.set(XSYNC);
+    }
 
+    private void notifyProtoChange() {
+        for(ApplierSyncObserver observer : observers) {
+            observer.protoChange();
+        }
     }
 
     @Override
     protected void doOnSwitchToPsync() throws IOException {
         super.doOnSwitchToPsync();
         if(replProto.get() != null) {
-            EventMonitor.DEFAULT.logAlertEvent("PROTO had changed");
+            notifyProtoChange();
+            EventMonitor.DEFAULT.logAlertEvent("PROTO_CHANGED");
             throw new RuntimeException("PROTO had changed");
         }
         replProto.set(PSYNC);
@@ -132,7 +138,7 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
     protected void doOnFullSync() throws IOException {
         super.doOnFullSync();
         for(ApplierSyncObserver observer : observers) {
-            observer.doOnFullSync(syncReply.getReplOff());
+            observer.doOnFullSync(syncReply.getReplId(), syncReply.getReplOff());
         }
         if(replProto.get() == null) {
             replProto.set(PSYNC);

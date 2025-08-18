@@ -78,6 +78,11 @@ public abstract class AbstractRedisOp implements RedisOp {
     }
 
     @Override
+    public void clearGtid() {
+        this.gtid = null;
+    }
+
+    @Override
     public Long getTimestamp() {
         return timestamp;
     }

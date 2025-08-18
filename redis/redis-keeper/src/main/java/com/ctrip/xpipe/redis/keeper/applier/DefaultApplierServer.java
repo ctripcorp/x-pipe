@@ -136,6 +136,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @InstanceDependency
     public RdbParser<?> rdbParser;
 
+    @InstanceDependency
+    public AtomicReference<STATUS> status;
+
     private long startTime;
 
     private final Map<Channel, RedisClient> redisClients = new ConcurrentHashMap<Channel, RedisClient>();
@@ -208,6 +211,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         lostGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
         execGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
         rdbParser = new DefaultRdbParser();
+        status = new AtomicReference<>(STATUS.NONE);
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
@@ -309,6 +313,26 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @Override
     public long getEndOffset() {
         return offsetRecorder.get();
+    }
+
+    @Override
+    public GtidSet getStartGtidSet() {
+        return startGtidSet.get();
+    }
+
+    @Override
+    public GtidSet getLostGtidSet() {
+        return lostGtidSet.get();
+    }
+
+    @Override
+    public GtidSet getExecGtidSet() {
+        return execGtidSet.get();
+    }
+
+    @Override
+    public STATUS getStatus() {
+        return status.get();
     }
 
     @Override
