@@ -13,9 +13,9 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
@@ -62,6 +62,13 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		KeeperMasterCheckJob checkJob = new KeeperMasterCheckJob(clusterDbId, shardDbId, dcMetaCache, activeKeeperMaster, clientPool, executors, scheduled);
 		KeeperStateChangeJob changeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, scheduled, executors);
+		AtomicReference<KEEPER_ALERT> alertMsg = new AtomicReference<>(KEEPER_ALERT.COMMAND_FAIL);
+		checkJob.future().addListener(commandFuture -> {
+			if (!commandFuture.isSuccess() && commandFuture.cause() instanceof KeeperMasterCheckNotAsExpectedException) {
+				alertMsg.set(((KeeperMasterCheckNotAsExpectedException) commandFuture.cause()).getAlert());
+			}
+		});
+
 		chain.add(checkJob);
 		chain.add(changeJob);
 		chain.execute().addListener(commandFuture -> {
@@ -70,13 +77,8 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
             } else {
                 future().setFailure(commandFuture.cause().getCause());
 				getLogger().info("[KeeperMasterProcessJob][fail] clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
-
-				String alertMessage = Optional.ofNullable(commandFuture.cause().getMessage())
-						.filter(msg -> msg.lastIndexOf("error:") != -1)
-						.map(msg -> msg.substring(msg.lastIndexOf("error:") + 6))
-						.orElse("exception occurred");
-				EventMonitor.DEFAULT.logAlertEvent("keeper.master.process:" + alertMessage);
-            }
+				EventMonitor.DEFAULT.logAlertEvent("keeper.master.process:" + alertMsg.get().name());
+			}
         });
 	}
 

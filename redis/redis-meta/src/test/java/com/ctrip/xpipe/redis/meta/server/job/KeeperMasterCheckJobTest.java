@@ -132,6 +132,28 @@ public class KeeperMasterCheckJobTest extends AbstractMetaServerTest{
 	}
 
 	@Test
+	public void testKeeperMasterCheck_WrongMaster() throws Exception {
+		Server master = getMasterServer("127.0.0.1", 6379);
+		Server slave = getSlaveServer("127.0.0.1", 5374, MASTER_STATE.REDIS_REPL_CONNECTED);
+		Server slave2 = getSlaveServer("127.0.0.1", 5375, MASTER_STATE.REDIS_REPL_CONNECTED);
+
+		List<RedisMeta> redisMetaList = new ArrayList<>();
+		redisMetaList.add(new RedisMeta().setIp("127.0.0.1").setPort(master.getPort()));
+		redisMetaList.add(new RedisMeta().setIp("127.0.0.1").setPort(slave2.getPort()));
+		redisMetaList.add(new RedisMeta().setIp("127.0.0.1").setPort(slave.getPort()));
+
+		when(dcMetaCache.isCurrentDcPrimary(anyLong(), anyLong())).thenReturn(true);
+		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(redisMetaList);
+
+		job = new KeeperMasterCheckJob(clusterId, shardId, dcMetaCache, new Pair<>("127.0.0.1", slave2.getPort()), getXpipeNettyClientKeyedObjectPool(), executors, scheduled);
+		job = spy(job);
+		job.execute();
+		waitConditionUntilTimeOut(()-> job.future().isDone());
+		Assert.assertFalse(job.future().isSuccess());
+		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:not master", slave2.getPort()));
+	}
+
+	@Test
 	public void testKeeperMasterCheck_Timeout() throws Exception {
 		Server master = getMasterServer("127.0.0.1", 6379);
 		Server master2 = getMasterServer("127.0.0.1", 6378);

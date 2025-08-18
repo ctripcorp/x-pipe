@@ -20,6 +20,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+import static com.ctrip.xpipe.redis.meta.server.job.KEEPER_ALERT.*;
 
 public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 
@@ -59,7 +60,7 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 			return;
 		}
 		if (!isRedis(clusterId, shardId, activeKeeperMaster.getKey(), activeKeeperMaster.getValue())) {
-			setFutureFailure(activeKeeperMaster, "not redis");
+			setFutureFailure(activeKeeperMaster, CHECK_NOT_REDIS);
 			return;
 		}
 
@@ -79,19 +80,19 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 			List<RedisMeta> masterList = shardRedis.stream().filter(redisMeta -> roleResult.containsKey(Pair.of(redisMeta.getIp(), redisMeta.getPort())) &&
 					roleResult.get(Pair.of(redisMeta.getIp(), redisMeta.getPort())).getServerRole() == Server.SERVER_ROLE.MASTER).collect(Collectors.toList());
 			if (masterList.size() > 1) {
-				setFutureFailure(activeKeeperMaster, "multi master");
-			} else if (masterList.size() == 1) {
-				if (masterList.get(0).getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(masterList.get(0).getPort(), activeKeeperMaster.getValue())) {
-					future().setSuccess(null);
-				}
+				setFutureFailure(activeKeeperMaster, CHECK_MULTI_MASTER);
 			} else {
-				setFutureFailure(activeKeeperMaster, "not master");
+				if (masterList.size() == 1 && masterList.get(0).getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(masterList.get(0).getPort(), activeKeeperMaster.getValue())) {
+					future().setSuccess(null);
+				} else {
+					setFutureFailure(activeKeeperMaster, CHECK_NOT_MASTER);
+				}
 			}
 		});
 	}
 
-	private void setFutureFailure(Pair<String, Integer> activeKeeperMaster, String message) {
-		future().setFailure(new KeeperMasterCheckNotAsExpectedException(activeKeeperMaster.getKey(), activeKeeperMaster.getValue(), message));
+	private void setFutureFailure(Pair<String, Integer> activeKeeperMaster, KEEPER_ALERT alert) {
+		future().setFailure(new KeeperMasterCheckNotAsExpectedException(activeKeeperMaster.getKey(), activeKeeperMaster.getValue(), alert));
 	}
 
 	protected boolean isRedis(Long clusterDbId, Long shardDbId, String ip, int port) {
