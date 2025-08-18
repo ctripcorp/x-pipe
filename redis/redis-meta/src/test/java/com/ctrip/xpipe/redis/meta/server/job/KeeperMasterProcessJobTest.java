@@ -54,7 +54,7 @@ public class KeeperMasterProcessJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(() -> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:not redis", port));
+		Assert.assertTrue(job.future().cause().getMessage().contains(String.format("keeperMaster:127.0.0.1:%d, error:not redis", port)));
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public class KeeperMasterProcessJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(()-> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:not master", port));
+		Assert.assertTrue(job.future().cause().getMessage().contains(String.format("keeperMaster:127.0.0.1:%d, error:not master", port)));
 	}
 
 	@Test
@@ -85,7 +85,7 @@ public class KeeperMasterProcessJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(()-> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals("can not find active keeper:[]", job.future().cause().getMessage());
+		Assert.assertTrue( job.future().cause().getMessage().contains("can not find active keeper:[]"));
 	}
 
 	@Test
@@ -107,7 +107,7 @@ public class KeeperMasterProcessJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(()-> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:multi master", master.getPort()));
+		Assert.assertTrue(job.future().cause().getMessage().contains(String.format("keeperMaster:127.0.0.1:%d, error:multi master", master.getPort())));
 	}
 
 	private Server getMasterServer(String ip, int port) throws Exception {

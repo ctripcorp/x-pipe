@@ -20,7 +20,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
-import static com.ctrip.xpipe.redis.meta.server.job.KEEPER_ALERT.*;
+import static com.ctrip.xpipe.redis.meta.server.keeper.manager.KeeperMasterCheckNotAsExpectedException.KeeperAlertType.*;
 
 public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 
@@ -91,7 +91,7 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 		});
 	}
 
-	private void setFutureFailure(Pair<String, Integer> activeKeeperMaster, KEEPER_ALERT alert) {
+	private void setFutureFailure(Pair<String, Integer> activeKeeperMaster, KeeperMasterCheckNotAsExpectedException.KeeperAlertType alert) {
 		future().setFailure(new KeeperMasterCheckNotAsExpectedException(activeKeeperMaster.getKey(), activeKeeperMaster.getValue(), alert));
 	}
 
