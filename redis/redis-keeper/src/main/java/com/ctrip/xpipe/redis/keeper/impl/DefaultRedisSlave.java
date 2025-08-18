@@ -548,6 +548,16 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
+	public void setRegion(String region) {
+		redisClient.setRegion(region);
+	}
+
+	@Override
+	public String getRegion() {
+		return redisClient.getRegion();
+	}
+
+	@Override
 	public long getDelayMilli() {
 		return redisClient.getDelayMilli();
 	}

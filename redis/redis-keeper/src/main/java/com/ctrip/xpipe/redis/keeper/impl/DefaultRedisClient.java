@@ -34,6 +34,8 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
 	private String idc = null;
+
+	private String region = null;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 
@@ -80,6 +82,19 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	@Override
 	public String getIdc() {
 		return this.idc;
+	}
+
+	@Override
+	public void setRegion(String region) {
+		if (logger.isInfoEnabled()){
+			logger.info("[setRegion][{}] {}", this, region);
+		}
+		this.region = region;
+	}
+
+	@Override
+	public String getRegion() {
+		return this.region;
 	}
 
 	public void setReplDelayConfigCache(ReplDelayConfigCache replDelayConfigCache) {

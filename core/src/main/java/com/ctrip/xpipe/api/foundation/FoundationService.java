@@ -26,4 +26,6 @@ public interface FoundationService extends Ordered{
 
 	String getGroupId();
 
+	String getRegion();
+
 }

@@ -271,6 +271,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
         }
         chain.add(new FailSafeCommandWrapper<>(capa));
         chain.add(new FailSafeCommandWrapper<>(keeperIdcCommand()));
+        chain.add(new FailSafeCommandWrapper<>(keeperRegionCommand()));
 
         try {
             executeCommand(chain).addListener(new CommandFutureListener() {
@@ -368,6 +369,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     private Replconf keeperIdcCommand() {
         return new Replconf(clientPool, ReplConfType.IDC, scheduled, commandTimeoutMilli,
                 FoundationService.DEFAULT.getDataCenter());
+    }
+
+    private Replconf keeperRegionCommand() {
+        return new Replconf(clientPool, ReplConfType.REGION, scheduled, commandTimeoutMilli,
+                FoundationService.DEFAULT.getRegion());
     }
 
     private Replconf listeningPortCommand() {
