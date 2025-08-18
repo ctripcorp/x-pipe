@@ -38,4 +38,9 @@ public class DefaultKeeperCommonConfig extends AbstractCoreConfig implements Kee
         String replDelayConfigInfo = getProperty(KEY_REDIS_REPL_DELAY_CONFIG, "{}");
         return Codec.DEFAULT.decode(replDelayConfigInfo, redisReplDelayConfigMapType);
     }
+
+    @Override
+    public int getCrossRegionBytesLimit() {
+        return -1;
+    }
 }

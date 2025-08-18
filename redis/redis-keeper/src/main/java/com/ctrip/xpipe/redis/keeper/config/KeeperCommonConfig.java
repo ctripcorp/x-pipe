@@ -9,4 +9,6 @@ public interface KeeperCommonConfig {
 
     Map<String, RedisReplDelayConfig> getRedisReplDelayConfigs();
 
+    int getCrossRegionBytesLimit();
+
 }
