@@ -35,8 +35,6 @@ public class Production extends AbstractProfile {
 
     public static final String SERVER_SSL_HANDLER_FACTORY = "serverSslHandlerFactory";
 
-    public static final String BACKEND_EVENTLOOP_GROUP = "backendEventLoopGroup";
-
     public static final String GLOBAL_SCHEDULED = "globalScheduled";
 
     private ProxyConfig config = new DefaultProxyConfig();

@@ -112,7 +112,6 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
                 .thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
         when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY))
                 .thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
-        when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
         ComponentRegistryHolder.initializeRegistry(registry);
 
         tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),

@@ -121,6 +121,16 @@ public class LocalProxyConfig implements ProxyConfig {
         return new ZstdEncoder();
     }
 
+    @Override
+    public boolean isCrossRegionTrafficControlEnabled() {
+        return false;
+    }
+
+    @Override
+    public long getCrossRegionTrafficControlLimit() {
+        return 0;
+    }
+
     String certDir = System.getProperty("java.io.tmpdir");
     //    @Override
     public String getServerCertChainFilePath() {

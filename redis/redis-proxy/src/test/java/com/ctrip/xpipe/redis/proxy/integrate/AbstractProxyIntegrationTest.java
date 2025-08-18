@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
+import com.ctrip.xpipe.redis.proxy.resource.GlobalTrafficControlManager;
 import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
@@ -30,6 +31,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.junit.BeforeClass;
+import org.mockito.Mockito;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.ExecutionException;
@@ -84,6 +86,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         TestResourceManager resourceManager = new TestResourceManager();
         resourceManager.setEndpointManager(endpointManager);
         resourceManager.setConfig(server.getConfig());
+        resourceManager.setGlobalTrafficControlManager(Mockito.mock(GlobalTrafficControlManager.class));
         server.setTunnelManager(new DefaultTunnelManager()
                 .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
                 .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));
