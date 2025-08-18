@@ -1,22 +1,15 @@
 package com.ctrip.xpipe.redis.proxy.resource;
 
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
-import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Test for GlobalTrafficControlManager
@@ -100,7 +93,7 @@ public class GlobalTrafficControlManagerTest {
             assertTrue("Traffic control should be enabled", newManager.isTrafficControlEnabled());
             
             // Trigger config change
-            newManager.onConfigChanged();
+            newManager.updateTrafficControlSettings();
             
             // Verify the change took effect
             assertTrue("Traffic control should still be enabled after config change", newManager.isTrafficControlEnabled());

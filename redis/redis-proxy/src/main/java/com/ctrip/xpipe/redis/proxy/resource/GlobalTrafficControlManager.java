@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.proxy.resource;
 
-import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfig;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import io.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -15,24 +17,21 @@ import java.util.concurrent.atomic.AtomicReference;
  * 
  * @author system
  */
-public class GlobalTrafficControlManager implements DefaultProxyConfig.ConfigChangeListener {
+public class GlobalTrafficControlManager {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalTrafficControlManager.class);
 
     private final ProxyConfig config;
     private final ScheduledExecutorService scheduledExecutor;
-    
+
+    private ScheduledFuture<?> updateFuture;
     private final AtomicReference<GlobalTrafficShapingHandler> trafficShapingHandlerRef = new AtomicReference<>();
 
     public GlobalTrafficControlManager(ProxyConfig config, ScheduledExecutorService scheduledExecutor) {
         this.config = config;
         this.scheduledExecutor = scheduledExecutor;
         initializeTrafficShapingHandler();
-        
-        // Register as config change listener if config supports it
-        if (config instanceof DefaultProxyConfig) {
-            ((DefaultProxyConfig) config).addConfigChangeListener(this);
-        }
+        initConfigUpdateScheduler();
     }
 
     private void initializeTrafficShapingHandler() {
@@ -42,10 +41,20 @@ public class GlobalTrafficControlManager implements DefaultProxyConfig.ConfigCha
         updateTrafficControlSettings();
     }
 
+    private void initConfigUpdateScheduler() {
+        updateFuture = this.scheduledExecutor.scheduleAtFixedRate(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                updateTrafficControlSettings();
+            }
+        }, 60, 10, TimeUnit.SECONDS);
+    }
+
     /**
      * Update traffic control settings based on current configuration
      */
     public void updateTrafficControlSettings() {
+        logger.debug("[updateTrafficControlSettings][begin]");
         if (config.isCrossRegionTrafficControlEnabled()) {
             long limit = Math.max(0, config.getCrossRegionTrafficControlLimit());
             GlobalTrafficShapingHandler currentHandler = trafficShapingHandlerRef.get();
@@ -88,16 +97,8 @@ public class GlobalTrafficControlManager implements DefaultProxyConfig.ConfigCha
             handler.release();
             logger.info("[release] Released traffic shaping handler");
         }
-        
-        // Unregister from config change listeners
-        if (config instanceof DefaultProxyConfig) {
-            ((DefaultProxyConfig) config).removeConfigChangeListener(this);
+        if (null != updateFuture) {
+            updateFuture.cancel(false);
         }
-    }
-
-    @Override
-    public void onConfigChanged() {
-        logger.info("[onConfigChanged] Configuration changed, updating traffic control settings");
-        updateTrafficControlSettings();
     }
 } 
