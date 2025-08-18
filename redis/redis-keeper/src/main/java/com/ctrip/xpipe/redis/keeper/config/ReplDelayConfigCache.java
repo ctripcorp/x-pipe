@@ -73,6 +73,10 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
         return this.redisReplDelayConfig;
     }
 
+    public int getCrossRegionBytesLimit() {
+        return keeperConfig.getCrossRegionBytesLimit();
+    }
+
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();

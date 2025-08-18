@@ -15,4 +15,9 @@ public class TestKeeperCommonConfig implements KeeperCommonConfig {
     public Map<String, RedisReplDelayConfig> getRedisReplDelayConfigs() {
         return Collections.emptyMap();
     }
+
+    @Override
+    public int getCrossRegionBytesLimit() {
+        return -1;
+    }
 }

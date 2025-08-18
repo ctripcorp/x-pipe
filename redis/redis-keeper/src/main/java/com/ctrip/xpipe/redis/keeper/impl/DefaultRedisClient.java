@@ -49,6 +49,8 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 
 	private final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
+	private final String CURRENT_REGION = FoundationService.DEFAULT.getRegion();
+
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		super(channel, redisKeeperServer);
 		String remoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
@@ -97,6 +99,10 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		return this.region;
 	}
 
+	public boolean isCrossRegion() {
+		return !StringUtil.isEmpty(this.region) && !CURRENT_REGION.equalsIgnoreCase(this.region);
+	}
+
 	public void setReplDelayConfigCache(ReplDelayConfigCache replDelayConfigCache) {
 		this.replDelayConfigCache = replDelayConfigCache;
 	}
@@ -110,10 +116,16 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	}
 
 	public int getLimitBytesPerSecond() {
-		if (null == replDelayConfigCache || isKeeper()) return super.getLimitBytesPerSecond();
-		RedisReplDelayConfig replDelayConfig = replDelayConfigCache.getRedisReplDelayConfig();
-		if (null == replDelayConfig) return super.getLimitBytesPerSecond();
-		else return replDelayConfig.getBytesLimitPerSecond();
+		if (null == replDelayConfigCache) return super.getLimitBytesPerSecond();
+		if (isKeeper() && isCrossRegion()) {
+			return replDelayConfigCache.getCrossRegionBytesLimit();
+		} else if (!isKeeper()) {
+			RedisReplDelayConfig replDelayConfig = replDelayConfigCache.getRedisReplDelayConfig();
+			if (null == replDelayConfig) return super.getLimitBytesPerSecond();
+			else return replDelayConfig.getBytesLimitPerSecond();
+		} else {
+			return super.getLimitBytesPerSecond();
+		}
 	}
 
 	@Override
