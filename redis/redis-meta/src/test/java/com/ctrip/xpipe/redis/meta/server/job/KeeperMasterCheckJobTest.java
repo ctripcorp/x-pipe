@@ -21,11 +21,6 @@ import java.util.concurrent.ExecutorService;
 
 import static org.mockito.Mockito.*;
 
-/**
- * @author wenchao.meng
- *
- * Jan 4, 2017
- */
 @RunWith(MockitoJUnitRunner.class)
 public class KeeperMasterCheckJobTest extends AbstractMetaServerTest{
 
@@ -133,7 +128,7 @@ public class KeeperMasterCheckJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(()-> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:two master", master.getPort()));
+		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:multi master", master.getPort()));
 	}
 
 	@Test
@@ -154,7 +149,7 @@ public class KeeperMasterCheckJobTest extends AbstractMetaServerTest{
 		job.execute();
 		waitConditionUntilTimeOut(()-> job.future().isDone());
 		Assert.assertFalse(job.future().isSuccess());
-		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:two master", master.getPort()));
+		Assert.assertEquals(job.future().cause().getMessage(), String.format("keeperMaster:127.0.0.1:%d, error:multi master", master.getPort()));
 	}
 
 

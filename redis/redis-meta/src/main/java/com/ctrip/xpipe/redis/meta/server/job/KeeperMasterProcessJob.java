@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
@@ -10,20 +8,17 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.KeeperMasterCheckNotAsExpectedException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-/**
- * @author wenchao.meng
- *
- * Jul 8, 2016
- */
 public class KeeperMasterProcessJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
 	private Long clusterDbId;
@@ -74,8 +69,13 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
                 future().setSuccess(null);
             } else {
                 future().setFailure(commandFuture.cause().getCause());
-                getLogger().info("[KeeperMasterProcessJob][fail]clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
-                EventMonitor.DEFAULT.logAlertEvent("keeper.master.process:" + commandFuture.cause().getMessage());
+				getLogger().info("[KeeperMasterProcessJob][fail] clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
+
+				String alertMessage = Optional.ofNullable(commandFuture.cause().getMessage())
+						.filter(msg -> msg.lastIndexOf("error:") != -1)
+						.map(msg -> msg.substring(msg.lastIndexOf("error:") + 6))
+						.orElse("exception occurred");
+				EventMonitor.DEFAULT.logAlertEvent("keeper.master.process:" + alertMessage);
             }
         });
 	}

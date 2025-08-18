@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.server.Server;
@@ -15,15 +14,13 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-/**
- * @author wenchao.meng
- *
- * Jul 8, 2016
- */
 public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 
 	private Long clusterId;
@@ -33,7 +30,6 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 	private SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
 	private ScheduledExecutorService scheduled;
 	private Executor executors;
-	private int checkRedisTimeoutSeconds = 1;
 
 	public KeeperMasterCheckJob(Long clusterId,
 								Long shardId,
@@ -57,7 +53,6 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 	}
 
 	@Override
-	@SuppressWarnings("rawtypes")
     protected void doExecute() throws CommandExecutionException {
 		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
 			future().setSuccess(null);
@@ -67,43 +62,30 @@ public class KeeperMasterCheckJob extends AbstractCommand<Void> {
 			setFutureFailure(activeKeeperMaster, "not redis");
 			return;
 		}
-		RoleCommand masterCommand = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(activeKeeperMaster.getKey(), activeKeeperMaster.getValue())), checkRedisTimeoutSeconds * 1000, false, scheduled);
-		masterCommand.execute().addListener(masterFuture -> {
-			if (masterFuture.isSuccess()) {
-				Role masterRole = masterFuture.getNow();
-				if (masterRole == null || masterRole.getServerRole() != Server.SERVER_ROLE.MASTER) {
-					setFutureFailure(activeKeeperMaster, "not master");
-				} else {
-					List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
 
-					ParallelCommandChain roleChain = new ParallelCommandChain(executors);
-
-					for (RedisMeta redisMeta : redises) {
-						if (redisMeta.getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(redisMeta.getPort(), activeKeeperMaster.getValue())) {
-							continue;
-						}
-						RoleCommand command = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), checkRedisTimeoutSeconds * 1000, false, scheduled);
-						roleChain.add(command);
-					}
-
-					roleChain.execute().addListener(redisFuture -> {
-						boolean hasMaster = false;
-						for (CommandFuture future : roleChain.getResult()) {
-							Role role = (Role) future.getNow();
-							if (role != null && role.getServerRole() == Server.SERVER_ROLE.MASTER) {
-								hasMaster = true;
-								break;
-							}
-						}
-						if (hasMaster) {
-							setFutureFailure(activeKeeperMaster, "two master");
-						} else {
-							future().setSuccess(null);
-						}
-					});
+		Map<Pair<String, Integer>, Role> roleResult = new ConcurrentHashMap<>();
+		List<RedisMeta> shardRedis = dcMetaCache.getShardRedises(clusterId, shardId);
+		ParallelCommandChain chain = new ParallelCommandChain(executors);
+		for (RedisMeta redisMeta : shardRedis) {
+			RoleCommand command = new RoleCommand(clientPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())), DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI, false, scheduled);
+			command.future().addListener(commandFuture -> {
+				if (commandFuture.isSuccess()) {
+					roleResult.put(Pair.of(redisMeta.getIp(), redisMeta.getPort()), commandFuture.getNow());
+				}
+			});
+			chain.add(command);
+		}
+		chain.execute().addListener(redisFuture -> {
+			List<RedisMeta> masterList = shardRedis.stream().filter(redisMeta -> roleResult.containsKey(Pair.of(redisMeta.getIp(), redisMeta.getPort())) &&
+					roleResult.get(Pair.of(redisMeta.getIp(), redisMeta.getPort())).getServerRole() == Server.SERVER_ROLE.MASTER).collect(Collectors.toList());
+			if (masterList.size() > 1) {
+				setFutureFailure(activeKeeperMaster, "multi master");
+			} else if (masterList.size() == 1) {
+				if (masterList.get(0).getIp().equals(activeKeeperMaster.getKey()) && Objects.equals(masterList.get(0).getPort(), activeKeeperMaster.getValue())) {
+					future().setSuccess(null);
 				}
 			} else {
-				setFutureFailure(activeKeeperMaster, "check master fail");
+				setFutureFailure(activeKeeperMaster, "not master");
 			}
 		});
 	}
