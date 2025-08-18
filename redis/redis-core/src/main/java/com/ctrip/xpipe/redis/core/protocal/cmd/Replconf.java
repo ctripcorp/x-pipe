@@ -50,7 +50,7 @@ public class Replconf extends AbstractRedisCommand<Object> {
 
     public enum ReplConfType {
 
-        LISTENING_PORT("listening-port"), CAPA("capa"), CRDT("crdt"), ACK("ack"), KEEPER("keeper"), IDC("idc");
+        LISTENING_PORT("listening-port"), CAPA("capa"), ACK("ack"), KEEPER("keeper"), IDC("idc"), REGION("region");
 
         private String command;
 

@@ -37,6 +37,11 @@ public class TestFoundationService implements FoundationService, ApplicationCont
     }
 
     @Override
+    public String getRegion() {
+        return "sha";
+    }
+
+    @Override
     public int getOrder() {
         Assert.assertNotNull(applicationContext);
         return HIGHEST_PRECEDENCE;

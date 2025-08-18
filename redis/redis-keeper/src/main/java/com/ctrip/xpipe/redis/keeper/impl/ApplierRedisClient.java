@@ -109,4 +109,12 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
         return null;
     }
 
+    @Override
+    public void setRegion(String region) {
+    }
+
+    @Override
+    public String getRegion() {
+        return null;
+    }
 }

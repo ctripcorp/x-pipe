@@ -56,6 +56,11 @@ public class CtripFoundationService implements FoundationService{
 	}
 
 	@Override
+	public String getRegion() {
+		return Foundation.server().getRegion();
+	}
+
+	@Override
 	public int getOrder() {
 		return HIGHEST_PRECEDENCE;
 	}
