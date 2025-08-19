@@ -10,12 +10,13 @@ import com.ctrip.xpipe.redis.keeper.RedisServer;
  * @author Slight
  * <p>
  * Jun 10, 2022 11:38
+ *
  */
 public interface ApplierServer extends Lifecycle, RedisServer {
 
     enum STATE { NONE, ACTIVE, BACKUP}
 
-    enum STATUS {NONE, TRANSFER, CONNECTED, PROTO_CHANGE_ERROR }
+    enum STATUS {UNKNOWN, TRANSFER, CONNECTED, PROTO_CHANGE_ERROR }
 
     int getListeningPort();
 

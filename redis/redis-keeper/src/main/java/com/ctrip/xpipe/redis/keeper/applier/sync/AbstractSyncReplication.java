@@ -6,6 +6,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.GapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ApplierGapAllowSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
@@ -129,7 +130,13 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
 
                     getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
 
-                    Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
+                    Command<Object> command = null;
+                    // 定时发送 repl 避免处理 rdb 时间太长导致被 idle 检测给干掉了
+                    if(status.get() == ApplierServer.STATUS.UNKNOWN || status.get() == ApplierServer.STATUS.TRANSFER) {
+                        command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
+                    } else {
+                        command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());
+                    }
                     command.execute();
                 } catch (Throwable t) {
                     logger.error("[scheduleReplconf] sync {} error", currentSync, t);
