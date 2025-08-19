@@ -49,9 +49,6 @@ public class DefaultGapAllowReplication extends AbstractSyncReplication implemen
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
         scheduleReplconf();
         rdbParser.registerListener(dispatcher);
-        if(replProto == null) {
-            replProto = new AtomicReference<>();
-        }
         ApplierGapAllowSync sync = new ApplierGapAllowSync(objectPool, scheduled, replId, execGtidSet, offsetRecorder, rdbParser,
                 startGtidSet, lostGtidSet, replProto);
         sync.addObserver(dispatcher);

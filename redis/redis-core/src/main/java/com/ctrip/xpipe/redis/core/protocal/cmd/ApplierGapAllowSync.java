@@ -112,8 +112,6 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
         super.doOnSwitchToXsync();
         if(replProto.get() != null) {
             notifyProtoChange();
-            EventMonitor.DEFAULT.logAlertEvent("PROTO_CHANGED");
-            throw new RuntimeException("PROTO had changed");
         }
         replProto.set(XSYNC);
     }
@@ -129,8 +127,6 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
         super.doOnSwitchToPsync();
         if(replProto.get() != null) {
             notifyProtoChange();
-            EventMonitor.DEFAULT.logAlertEvent("PROTO_CHANGED");
-            throw new RuntimeException("PROTO had changed");
         }
         replProto.set(PSYNC);
     }

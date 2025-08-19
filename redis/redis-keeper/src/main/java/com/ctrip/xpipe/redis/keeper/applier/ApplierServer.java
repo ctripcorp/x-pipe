@@ -16,8 +16,6 @@ public interface ApplierServer extends Lifecycle, RedisServer {
 
     enum STATE { NONE, ACTIVE, BACKUP}
 
-    enum STATUS {UNKNOWN, TRANSFER, CONNECTED, PROTO_CHANGE_ERROR }
-
     int getListeningPort();
 
     ApplierInstanceMeta getApplierInstanceMeta();
@@ -43,8 +41,6 @@ public interface ApplierServer extends Lifecycle, RedisServer {
     GtidSet getLostGtidSet();
 
     GtidSet getExecGtidSet();
-
-    STATUS getStatus();
 
     ApplierHealth checkHealth();
 

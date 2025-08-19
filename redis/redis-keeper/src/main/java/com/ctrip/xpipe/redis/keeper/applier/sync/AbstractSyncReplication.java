@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,7 +47,7 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     public RdbParser<?> rdbParser;
 
     @InstanceDependency
-    public AtomicReference<ApplierServer.STATUS> status;
+    public AtomicBoolean protoChanged;
 
     protected ApplierServer applierServer;
 
@@ -57,6 +58,8 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     protected Future<?> replConfFuture;
 
     protected CloseState closeState = new CloseState();
+
+    private boolean onContinueCommand = false;
 
     @Override
     protected void doStart() throws Exception {
@@ -82,6 +85,7 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
         cancelReplConf();
 
         if (currentSync != null) {
+            currentSync.future().cancel(true);
             currentSync.close();
             currentSync = null;
         }
@@ -127,12 +131,16 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
             @Override
             protected void doRun() throws Exception {
                 try {
-
-                    getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
+                    if(endpoint == null) {
+                        return;
+                    }
+                    if(currentSync != null) {
+                        getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
+                    }
 
                     Command<Object> command = null;
                     // 定时发送 repl 避免处理 rdb 时间太长导致被 idle 检测给干掉了
-                    if(status.get() == ApplierServer.STATUS.UNKNOWN || status.get() == ApplierServer.STATUS.TRANSFER) {
+                    if(!onContinueCommand) {
                         command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     } else {
                         command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());
@@ -150,25 +158,23 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     @Override
     public void doOnFullSync(String replId, long replOffset) {
         this.rdbParser.reset();
-        this.status.set(ApplierServer.STATUS.TRANSFER);
     }
 
     @Override
     public void doOnXFullSync(GtidSet lost, long replOffset) {
         this.rdbParser.reset();
-        this.status.set(ApplierServer.STATUS.TRANSFER);
     }
 
     @Override
     public void doOnXContinue(GtidSet lost, long replOffset) {
-        this.status.set(ApplierServer.STATUS.CONNECTED);
         scheduleReplconf();
+        onContinueCommand = true;
     }
 
     @Override
     public void doOnContinue(String newReplId) {
-        this.status.set(ApplierServer.STATUS.CONNECTED);
         scheduleReplconf();
+        onContinueCommand = true;
     }
 
     @Override
@@ -177,14 +183,11 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
 
     @Override
     public void endReadRdb() {
-        this.status.set(ApplierServer.STATUS.CONNECTED);
         scheduleReplconf();
+        onContinueCommand = true;
     }
 
     @Override
     public void protoChange() {
-        this.status.set(ApplierServer.STATUS.PROTO_CHANGE_ERROR);
     }
-
-
 }
