@@ -69,7 +69,6 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
                 future().setSuccess(null);
             } else {
                 future().setFailure(commandFuture.cause());
-				getLogger().info("[KeeperMasterProcessJob][fail] clusterId:{}, shardId:{}, error:{}", clusterDbId, shardDbId, commandFuture.cause());
 				if (commandFuture.cause().getCause() != null && commandFuture.cause().getCause() instanceof KeeperMasterCheckNotAsExpectedException) {
 					EventMonitor.DEFAULT.logAlertEvent("KeeperMaster." + ((KeeperMasterCheckNotAsExpectedException) commandFuture.cause().getCause()).getAlert().name());
 				} else {
