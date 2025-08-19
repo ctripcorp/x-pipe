@@ -211,7 +211,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         lostGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
         execGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
         rdbParser = new DefaultRdbParser();
-        status = new AtomicReference<>(STATUS.NONE);
+        status = new AtomicReference<>(STATUS.UNKNOWN);
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
