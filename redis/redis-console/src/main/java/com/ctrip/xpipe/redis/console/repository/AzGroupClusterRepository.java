@@ -7,11 +7,11 @@ import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.mapper.AzGroupClusterMapper;
 import com.ctrip.xpipe.redis.console.model.AzGroupModel;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;

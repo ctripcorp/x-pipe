@@ -7,8 +7,6 @@ import com.ctrip.xpipe.utils.EncryptUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 import static com.ctrip.xpipe.api.config.ConfigProvider.COMMON_CONFIG;

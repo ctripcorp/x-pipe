@@ -4,7 +4,8 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import org.junit.Before;
 
 import java.util.List;

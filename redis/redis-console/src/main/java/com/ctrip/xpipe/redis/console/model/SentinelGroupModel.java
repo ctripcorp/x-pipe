@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;

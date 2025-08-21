@@ -6,13 +6,13 @@ import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEventBus;
 import com.ctrip.xpipe.redis.checker.alert.event.Subscriber;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.Executor;
 

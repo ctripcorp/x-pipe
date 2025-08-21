@@ -31,7 +31,7 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     private org.codehaus.plexus.logging.Logger m_logger;
 
     private static final String ctripDalDataSource =
-        "com.ctrip.xpipe.service.datasource.CtripDynamicDataSource";
+        "com.ctrip.xpipe.service.datasource.CtripDalBasedDataSource";
     private static final String ctripDalDataSourceFactory =
         "com.ctrip.xpipe.service.datasource.CtripDalDataSourceFactory";
 
@@ -59,8 +59,8 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
             try {
                 m_factory = (DataSourceFactory)(Class.forName(ctripDalDataSourceFactory).newInstance());
                 Class<?> clazz = Class.forName(ctripDalDataSource);
-                Constructor<?> constructor = clazz.getConstructor(DataSourceFactory.class);
-                m_delegate = (DataSource) constructor.newInstance(m_factory);
+                Constructor<?> constructor = clazz.getConstructor();
+                m_delegate = (DataSource) constructor.newInstance();
             } catch (Throwable ex) {
                 logger.error("Loading ctrip datasource failed", ex);
             }

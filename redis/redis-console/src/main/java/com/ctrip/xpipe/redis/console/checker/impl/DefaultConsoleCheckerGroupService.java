@@ -8,10 +8,10 @@ import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
 import com.ctrip.xpipe.redis.console.checker.command.InstanceHealthCheckGetGroupCommand;
 import com.ctrip.xpipe.redis.console.checker.command.InstanceHealthStatusGetGroupCommand;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;

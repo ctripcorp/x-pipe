@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.checker.cluster;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.utils.StringUtil;
 
-import javax.annotation.PostConstruct;
-
 public class AllCheckerLeaderElector extends AbstractCheckerLeaderElector implements TopElement {
     
     private String currentDcId;

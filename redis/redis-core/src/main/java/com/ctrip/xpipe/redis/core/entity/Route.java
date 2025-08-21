@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.utils.ObjectUtils;

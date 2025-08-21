@@ -11,6 +11,12 @@
       <dependency>
          <groupId>com.ctrip.framework.xpipe.redis</groupId>
          <artifactId>redis-core</artifactId>
+         <exclusions>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-container-default</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <dependency>
          <groupId>com.ctrip.framework.xpipe.redis</groupId>
@@ -76,18 +82,26 @@
       <!-- mybatis plus + ctrip dal -->
       <dependency>
          <groupId>com.baomidou</groupId>
-         <artifactId>mybatis-plus-boot-starter</artifactId>
-         <version>3.5.3.1</version>
+         <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+         <version>3.5.12</version>
       </dependency>
 
-      <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
       <dependency>
-         <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-starter-velocity</artifactId>
+         <groupId>org.eclipse.sisu</groupId>
+         <artifactId>org.eclipse.sisu.plexus</artifactId>
+         <version>0.9.0.M4</version>
       </dependency>
+
       <dependency>
-         <groupId>org.apache.velocity</groupId>
-         <artifactId>velocity</artifactId>
+         <groupId>com.google.inject</groupId>
+         <artifactId>guice</artifactId>
+         <version>5.1.0</version>
+         <exclusions>
+            <exclusion>
+               <groupId>aopalliance</groupId>
+               <artifactId>aopalliance</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <!-- test -->
       <dependency>
@@ -102,6 +116,17 @@
          <type>test-jar</type>
          <scope>test</scope>
       </dependency>
+
+      <dependency>
+         <groupId>com.google.protobuf</groupId>
+         <artifactId>protobuf-java</artifactId>
+      </dependency>
+
+      <dependency>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-thymeleaf</artifactId>
+      </dependency>
+
       <dependency>
          <groupId>org.apache.curator</groupId>
          <artifactId>curator-test</artifactId>
@@ -115,8 +140,13 @@
       <dependency>
          <groupId>com.baomidou</groupId>
          <artifactId>mybatis-plus-generator</artifactId>
-         <version>3.5.3.1</version>
+         <version>3.5.12</version>
          <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-collections4</artifactId>
+         <version>4.4</version>
       </dependency>
    </dependencies>
    <profiles>

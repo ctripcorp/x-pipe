@@ -4,7 +4,6 @@ import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
 import org.junit.Before;
 import org.junit.BeforeClass;

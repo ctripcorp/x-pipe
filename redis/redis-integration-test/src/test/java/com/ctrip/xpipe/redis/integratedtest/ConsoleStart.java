@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import org.unidal.test.jetty.JettyServer;
 

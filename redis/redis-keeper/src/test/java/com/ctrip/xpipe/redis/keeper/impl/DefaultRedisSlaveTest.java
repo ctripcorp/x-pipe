@@ -30,7 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -66,7 +66,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
-        redisSlave= new DefaultRedisSlave(redisClient);
+        redisSlave = new DefaultRedisSlave(redisClient);
 
         redisSlave.setRdbDumpMaxWaitMilli(waitDumpMilli);
 
@@ -77,17 +77,17 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         redisSlave.close();
 
-        //should success
+        // should success
         redisSlave.sendMessage(randomString(10).getBytes());
         redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes()));
 
-        //should fail
+        // should fail
         shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
         redisSlave.markPsyncProcessed();
-        //all should fail
+        // all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
         shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
@@ -107,7 +107,6 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         waitConditionUntilTimeOut(() -> redisSlave.getCloseState().isClosed());
     }
 
-
     @Test
     public void testCloseTimeoutNotMarkPsyncProcessed() throws IOException {
 
@@ -123,13 +122,13 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     public void testConcurrentCloseAndMarkPsyncProcessed() throws IOException, InterruptedException {
 
         int rount = 10;
-        final AtomicReference<Exception>  exception = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(rount*2);
+        final AtomicReference<Exception> exception = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(rount * 2);
 
-        for(int i=0;i<rount;i++) {
+        for (int i = 0; i < rount; i++) {
 
             RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
-            redisSlave= new DefaultRedisSlave(redisClient);
+            redisSlave = new DefaultRedisSlave(redisClient);
 
             executors.execute(new Runnable() {
                 @Override
@@ -139,7 +138,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
                     } catch (Exception e) {
                         logger.error("error close slave", e);
                         exception.set(e);
-                    }finally {
+                    } finally {
                         latch.countDown();
                     }
                 }
@@ -151,7 +150,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
                     try {
                         sleep(3);
                         redisSlave.markPsyncProcessed();
-                    }finally {
+                    } finally {
                         latch.countDown();
                     }
                 }
@@ -161,8 +160,6 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         latch.await(5, TimeUnit.SECONDS);
         Assert.assertNull(exception.get());
     }
-
-
 
     @SuppressWarnings("resource")
     @Test
@@ -230,7 +227,8 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
     @Test
     public void testSlaveClosedWhenSendCommandFail() throws Exception {
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
-        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(any(), any());
+        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(any(),
+                any());
 
         redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(0));
         Assert.assertTrue(redisSlave.isOpen());

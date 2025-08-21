@@ -4,15 +4,12 @@ import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyRequestResponseProtocol;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.ProxyReqResProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyReqResProtocol;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author chen.zhu

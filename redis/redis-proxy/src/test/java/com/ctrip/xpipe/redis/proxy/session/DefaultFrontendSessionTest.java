@@ -16,13 +16,13 @@ import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 29, 2018
+ *         <p>
+ *         May 29, 2018
  */
 public class DefaultFrontendSessionTest {
 
@@ -57,7 +57,7 @@ public class DefaultFrontendSessionTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                while(!queue.isEmpty()) {
+                while (!queue.isEmpty()) {
                     queue.poll().onEstablished();
                 }
                 return null;

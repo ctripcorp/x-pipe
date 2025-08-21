@@ -22,6 +22,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -43,7 +44,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected DcClusterShardService dcClusterShardService;
     @Autowired
     protected KeeperContainerService keeperContainerService;
+
     @Autowired
+    @Lazy
     protected ClusterMetaModifiedNotifier notifier;
     @Autowired
     protected ClusterMonitorModifiedNotifier monitorNotifier;

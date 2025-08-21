@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!-- The title is now set using th:text -->
+    <title th:text="${title}">XPipe Alert</title>
+</head>
+<body>
+<!-- Using th:text for safe text insertion and |...| for easy concatenation -->
+<span th:text="'[XPipe异常告警]'"></span><br/>
+<span>[环境：<span style="color:red" th:text="${environment}">PROD</span>]</span><br/>
+<span>[项目: <span style="color:red">100004374 xpipe管理控制台</span>]</span><br/>
+<span th:text="|异常名称: ${title}|"></span><br/>
+<span th:text="|时间: ${time}|"></span><br/>
+<span th:text="|XPipe相关事宜请联系 [${xpipeAdminEmails}]|"></span>
+<br/>
+
+<div>
+    <h4 th:text="|发送自XPipe Console源 IP 地址： ${localIpAddr}|"></h4>
+
+    <!--
+      Conditional blocks:
+      - Velocity's #if(...) is replaced by th:if="${...}"
+      - <th:block> is a special Thymeleaf tag that acts as a container but doesn't output any HTML itself.
+        It's perfect for conditional logic without adding extra <div>s.
+      - I've replaced "-------------------" with a proper <hr> tag for better semantics.
+    -->
+    <th:block th:if="${XREDIS_VERSION_NOT_VALID}">
+        <hr>
+        <h4>从机房Redis版本错误</h4>
+        <p>说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3</p>
+    </th:block>
+
+    <th:block th:if="${REDIS_REPL_DISKLESS_SYNC_ERROR}">
+        <hr>
+        <h4>Redis配置错误</h4>
+        <p>说明：Redis配置项repl-diskless-sync在Redis版本2.8.22以下，应该为NO</p>
+    </th:block>
+
+    <th:block th:if="${CLIENT_INCONSIS}">
+        <hr>
+        <h4>CRedis | XPipe 数据不一致</h4>
+        <p>说明：发现CRedis和XPipe信息不一致</p>
+    </th:block>
+
+    <th:block th:if="${CLIENT_INSTANCE_NOT_OK}">
+        <hr>
+        <h4>CRedis中实例故障或连接故障</h4>
+        <p>说明：CRedis中实例不可读或不可用</p>
+    </th:block>
+
+    <th:block th:if="${REDIS_CONF_REWRITE_FAILURE}">
+        <hr>
+        <h4>Redis CONF REWRITE 错误</h4>
+        <p>说明：Redis CONF REWRITE 错误</p>
+    </th:block>
+
+    <th:block th:if="${QUORUM_DOWN_FAIL}">
+        <hr>
+        <h4>Quorum Down Fail 错误</h4>
+        <p>说明：Console会从多个点判断一个redis节点是否挂掉，如果没有达到大多数一致(一部分监测点认为Redis节点挂，另一部分认为OK，可能是网络抖动引起)，则报此错误</p>
+    </th:block>
+
+    <th:block th:if="${MIGRATION_MANY_UNFINISHED}">
+        <hr>
+        <h4>多数迁移失败 错误</h4>
+        <p>说明：请查看迁移历史</p>
+    </th:block>
+
+    <th:block th:if="${SENTINEL_RESET}">
+        <hr>
+        <h4>Redis CONF REWRITE 错误</h4>
+        <p>说明：Redis CONF REWRITE 错误</p>
+    </th:block>
+
+    <th:block th:if="${MARK_INSTANCE_UP}">
+        <hr>
+        <h4>CRedis Instance Mark UP</h4>
+        <p>说明：Redis 实例恢复之后，会调用CRedis API将Redis在CRedis服务端标记为"可读"状态</p>
+    </th:block>
+
+    <th:block th:if="${MARK_INSTANCE_DOWN}">
+        <hr>
+        <h4>CRedis Instance Mark Down</h4>
+        <p>说明：Redis 实例故障之后(多数console认定Delay时间过长)，会调用CRedis API将Redis在CRedis服务端标记为"不可读"状态</p>
+    </th:block>
+
+    <th:block th:if="${REPL_BACKLOG_NOT_ACTIVE}">
+        <hr>
+        <h4>Redis Replication Backlog Non-Active</h4>
+        <p>说明：Redis repl_backlog_active 参数为0，表示Redis用于PSync的backlog未开启或被删除，切换时可能引起全量同步</p>
+    </th:block>
+
+    <table border="1">
+        <thead>
+        <tr>
+            <th>报错类型</th>
+            <th>Redis DC</th>
+            <th>Redis集群</th>
+            <th>Redis分片</th>
+            <th>机器IP</th>
+            <th>Redis端口</th>
+            <th>错误信息</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <!--
+              Safe Navigation Operator `?.` replaces Velocity's `$!`.
+              It prevents NullPointerException if `redisAlert` or `hostPort` is null.
+              Also, using JavaBean property access (e.g., `alertType`) is cleaner.
+            -->
+            <td th:text="${redisAlert?.alertType}"></td>
+            <td th:text="${redisAlert?.dc}"></td>
+            <td th:text="${redisAlert?.clusterId}"></td>
+            <td th:text="${redisAlert?.shardId}"></td>
+            <td th:text="${redisAlert?.hostPort?.host}"></td>
+            <td th:text="${redisAlert?.hostPort?.port}"></td>
+            <td th:text="${redisAlert?.message}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

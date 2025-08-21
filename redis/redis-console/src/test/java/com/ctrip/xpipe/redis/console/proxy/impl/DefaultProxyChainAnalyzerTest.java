@@ -15,8 +15,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,10 +37,14 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         ProxyMonitorCollector collector2 = mock(ProxyMonitorCollector.class);
         String tunnelId1 = generateTunnelId();
         String tunnelId2 = generateTunnelId();
-        when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("SHAOY"), tunnelId1)
-                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
-        when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("FRA-AWS"), tunnelId2)
-                .setTunnelSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
+        when(collector1.getTunnelInfos())
+                .thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("SHAOY"), tunnelId1)
+                        .setTunnelSocketStatsResult(genTunnelSSR(tunnelId1))
+                        .setTunnelStatsResult(genTunnelSR(tunnelId1))));
+        when(collector2.getTunnelInfos())
+                .thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("FRA-AWS"), tunnelId2)
+                        .setTunnelSocketStatsResult(genTunnelSSR(tunnelId2))
+                        .setTunnelStatsResult(genTunnelSR(tunnelId2))));
         when(manager.getProxyMonitorResults()).thenReturn(Lists.newArrayList(collector1, collector2));
 
         String cluster = "cluster", shard = "shard";

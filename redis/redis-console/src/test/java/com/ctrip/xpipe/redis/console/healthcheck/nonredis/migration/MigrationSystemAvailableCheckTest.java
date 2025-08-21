@@ -17,7 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +74,5 @@ public class MigrationSystemAvailableCheckTest extends AbstractConsoleDbTest {
     public void testGetResult() {
         Assert.assertTrue(check.getResult().isAvaiable());
     }
-
 
 }

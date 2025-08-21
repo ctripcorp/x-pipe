@@ -24,8 +24,11 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
-import com.ctrip.xpipe.redis.console.resources.*;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerOuterClientCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultDcRelationsService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -66,6 +69,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    @Primary
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public MetaCache metaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         return new CheckerMetaCache(checkerConfig, checkerConsoleService);
@@ -77,6 +81,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    @Primary
     @Profile(AbstractProfile.PROFILE_NAME_TEST)
     public MetaCache testMetaCache() {
         return new TestMetaCache();

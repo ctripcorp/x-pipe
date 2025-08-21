@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.console.migration;
 
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
-import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
+import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;

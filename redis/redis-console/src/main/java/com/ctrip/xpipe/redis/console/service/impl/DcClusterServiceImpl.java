@@ -8,12 +8,16 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -31,9 +35,11 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	private ClusterService clusterService;
 
 	@Autowired
+	@Lazy
 	private ShardModelService shardModelService;
 
 	@Autowired
+	@Lazy
 	private SourceModelService sourceModelService;
 
 	@Autowired

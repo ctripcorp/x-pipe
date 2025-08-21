@@ -5,7 +5,10 @@ import com.ctrip.xpipe.database.ConnectionPoolHolder;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ResourceInfo;
 import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.spring.AbstractController;
+import jakarta.annotation.Resource;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,7 +16,6 @@ import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +46,9 @@ public class ResourceController extends AbstractController {
     private DataSource dataSource;
 
     private static final String CLAZZ_DELEGATED_EXECUTOR_SERVICE = "DelegatedExecutorService";
+
+    @Autowired
+    private PlexusContainer plexusContainer;
 
     @GetMapping("/resource")
     public ResourceInfo getResource() {
@@ -110,7 +115,7 @@ public class ResourceController extends AbstractController {
         synchronized (this) {
             if (null != dataSource) return dataSource;
             try {
-                DataSourceManager dataSourceManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+                DataSourceManager dataSourceManager = plexusContainer.lookup(DataSourceManager.class);
                 if (dataSourceManager.getDataSourceNames().isEmpty()) {
                     logger.info("[tryGetDataSource] no datasource found");
                 } else {

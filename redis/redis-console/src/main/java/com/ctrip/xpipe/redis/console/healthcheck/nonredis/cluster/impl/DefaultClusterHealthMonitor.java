@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
-import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;

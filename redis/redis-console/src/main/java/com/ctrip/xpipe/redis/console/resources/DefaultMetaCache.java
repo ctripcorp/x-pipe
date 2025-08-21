@@ -20,9 +20,9 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PreDestroy;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

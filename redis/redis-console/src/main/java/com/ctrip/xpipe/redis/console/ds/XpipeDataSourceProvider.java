@@ -67,13 +67,26 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
 
     public void setBaseDirRef(String baseDirRef) {
         this.m_baseDirRef = baseDirRef;
+        this.reInit();
     }
 
     public void setDatasourceFile(String datasourceFile) {
         this.m_datasourceFile = datasourceFile;
+        this.reInit();
     }
 
     public void setDefaultBaseDir(String defaultBaseDir) {
         this.m_defaultBaseDir = defaultBaseDir;
+        this.reInit();
+    }
+
+    private void reInit() {
+        // only for test
+        m_delegate = null;
+        try {
+            this.initialize();
+        } catch (Throwable ex) {
+            logger.error("[reInit]" + ex);
+        }
     }
 }

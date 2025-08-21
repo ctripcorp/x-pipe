@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.console.repository;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ctrip.xpipe.redis.console.entity.ClusterEntity;
 import com.ctrip.xpipe.redis.console.mapper.ClusterMapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;

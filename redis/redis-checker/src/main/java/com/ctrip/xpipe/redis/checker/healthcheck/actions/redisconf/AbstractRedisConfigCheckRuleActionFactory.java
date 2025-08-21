@@ -6,9 +6,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.google.common.collect.Lists;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;

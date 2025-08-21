@@ -24,8 +24,8 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.matches;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.when;
 
 /**

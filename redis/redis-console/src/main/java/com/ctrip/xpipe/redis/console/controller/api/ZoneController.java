@@ -6,10 +6,10 @@ import com.ctrip.xpipe.redis.console.model.ZoneModel;
 import com.ctrip.xpipe.redis.console.model.ZoneTbl;
 import com.ctrip.xpipe.redis.console.service.ZoneService;
 import com.ctrip.xpipe.spring.AbstractController;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**

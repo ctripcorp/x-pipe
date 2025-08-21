@@ -3,23 +3,20 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLoading;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
-import java.util.Collections;
-import java.util.List;
 /**
  * @author chen.zhu
  * <p>
@@ -36,18 +33,21 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     protected AlertManager alertManager;
 
     @Autowired
+    @Lazy
     protected DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Autowired
     private RemoteCheckerManager remoteCheckerManager;
 
     @Autowired
+    @Lazy
     private StabilityHolder siteStability;
 
     @Autowired
     private CheckerConfig checkerConfig;
 
     @Autowired
+    @Lazy
     private OuterClientAggregator outerClientAggregator;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();

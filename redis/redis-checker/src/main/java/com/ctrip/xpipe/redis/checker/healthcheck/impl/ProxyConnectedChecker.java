@@ -8,12 +8,12 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommand;
 import com.ctrip.xpipe.redis.core.proxy.command.entity.ProxyPongEntity;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.CompletableFuture;

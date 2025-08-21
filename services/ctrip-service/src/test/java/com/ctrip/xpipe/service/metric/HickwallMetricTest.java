@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author lishanglin
- * date 2021/10/27
+ *         date 2021/10/27
  */
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class HickwallMetricTest extends AbstractServiceTest {
@@ -100,7 +100,7 @@ public class HickwallMetricTest extends AbstractServiceTest {
         measurementField.setAccessible(true);
         fieldsField.setAccessible(true);
 
-        String measurement = (String)measurementField.get(point);
+        String measurement = (String) measurementField.get(point);
         Map<String, Object> fields = (Map<String, Object>) fieldsField.get(point);
 
         return new Pair<>(measurement, (Double) fields.get("value"));

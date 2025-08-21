@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCheckRuleCreateInfo;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

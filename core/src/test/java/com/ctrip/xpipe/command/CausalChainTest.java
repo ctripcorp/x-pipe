@@ -5,12 +5,10 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 

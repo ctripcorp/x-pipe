@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.controller.config;
 
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.HandlerInterceptor;
 
-public class DisableConsoleInterceptor extends HandlerInterceptorAdapter {
+public class DisableConsoleInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)

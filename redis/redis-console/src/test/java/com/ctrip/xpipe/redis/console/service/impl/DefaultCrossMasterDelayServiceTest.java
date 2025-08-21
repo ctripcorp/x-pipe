@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -16,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
 import java.util.HashMap;

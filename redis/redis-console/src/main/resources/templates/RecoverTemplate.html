@@ -1,0 +1,75 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block>
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+    <h5 id="toc_0"><font color="red">[XPipe 告警恢复通知]</font>
+        <!-- Place this tag where you want the button to render. -->
+        <a class="github-button" href="https://github.com/ctripcorp/x-pipe" data-size="large" data-show-count="true" aria-label="Star ctripcorp/x-pipe on GitHub">点赞XPipe</a>
+    </h5>
+    <!-- 使用 th:text 来安全地显示文本，可以防止 XSS 攻击 -->
+    环境信息: <font color="red" th:text="'[' + ${environment} + ']'">[PRO]</font><br/>
+    <!-- 使用 |...| 语法进行简单的字符串拼接 -->
+    <span th:text="'[时间: ' + ${time} + ']'">[时间: 2023-10-27]</span><br/>
+    XPipe相关事宜请联系 <span th:text="'[' + ${xpipeAdminEmails} + ']'">[admin@example.com]</span><br/>
+    <hr>
+    <strong th:text="|发送自XPipe Console，源 IP 地址： ${localIpAddr}|">发送自XPipe Console，源 IP 地址： 127.0.0.1</strong>
+
+    <!--
+      外层循环：使用 th:each 遍历 Map.entrySet()
+      th:block 是完美的容器，因为它不会在最终的HTML中产生任何标签
+    -->
+    <th:block th:each="entity : ${redisAlerts.entrySet()}">
+        <hr>
+        <!--
+          注意：Thymeleaf 的安全导航操作符 `?.` 等同于 Velocity 的 `$!{...}`
+          它可以在调用链中任何一环为 null 时安全地返回 null，而不是抛出异常。
+        -->
+        <h6 id="toc_1" th:text="|${entity.key.name()} : ${entity.key.detailDesc()?.title}|">ALERT_TYPE : Alert Title</h6>
+        <blockquote>
+            <p th:text="${entity.key.detailDesc()?.desc}">Alert description here.</p>
+        </blockquote>
+
+        <table border="1">
+            <thead>
+            <tr>
+                <th>报错类型</th>
+                <th>Redis DC</th>
+                <th>Redis集群</th>
+                <th>Redis分片</th>
+                <th>Redis-IP</th>
+                <th>Redis-Port</th>
+                <th>错误信息</th>
+                <th>最近一次报错时间</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 内层循环：遍历 List -->
+            <tr th:each="redisAlert : ${entity.value}">
+                <!--
+                  Thymeleaf 遵循 JavaBean 规范，可以直接访问属性名 (alertType)
+                  它会自动调用 getAlertType() 方法。
+                -->
+                <td th:text="${redisAlert.alertType}"></td>
+                <td th:text="${redisAlert.dc}"></td>
+                <!--
+                  URL 构建：使用 @{...} 语法，并用 |...| 进行拼接，非常清晰
+                -->
+                <td><a th:href="@{|${xpipeurl}/#/cluster_dc_shards/${redisAlert.clusterId}/${redisAlert.dc}|}" th:text="${redisAlert.clusterId}">cluster-name</a></td>
+                <td th:text="${redisAlert.shardId}"></td>
+                <td th:text="${redisAlert.hostPort?.host}"></td>
+                <td th:text="${redisAlert.hostPort?.port}"></td>
+                <td th:text="${redisAlert.message}"></td>
+                <!--
+                  调用工具类方法：如果 dateTimeUtils 是一个 Spring Bean，可以用 #beanName.methodName() 调用
+                -->
+                <td th:text="${#dateTimeUtils.timeAsString(redisAlert.date)}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </th:block>
+</th:block>
+
+</body>
+</html>

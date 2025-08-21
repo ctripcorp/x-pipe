@@ -3,10 +3,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.OsUtils;
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -15,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;

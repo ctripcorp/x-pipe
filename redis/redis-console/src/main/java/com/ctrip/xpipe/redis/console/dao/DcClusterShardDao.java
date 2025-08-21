@@ -4,13 +4,14 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,11 +31,14 @@ public class DcClusterShardDao extends AbstractXpipeConsoleDAO{
 
 	@Autowired
 	private RedisDao redisDao;
+
+	@Autowired
+	private PlexusContainer container;
 	
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+			dcClusterShardTblDao = container.lookup(DcClusterShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}
