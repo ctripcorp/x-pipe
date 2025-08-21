@@ -147,7 +147,7 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_DIRECT=100
     META_SPACE=128
     MAX_META_SPACE=128
-    JAVA_OPTS="$JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
+    JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 elif [ $ENV = "UAT" ];then
     #GB
     USED_MEM=`getSafeXmx`
@@ -155,7 +155,7 @@ elif [ $ENV = "UAT" ];then
     MAX_DIRECT=100
     META_SPACE=256
     MAX_META_SPACE=256
-    JAVA_OPTS="$JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -Dio.netty.leakDetectionLevel=advanced -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
+    JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -Dio.netty.leakDetectionLevel=advanced -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 
 else
     #MB
@@ -164,7 +164,7 @@ else
     MAX_DIRECT=100
     META_SPACE=256
     MAX_META_SPACE=256
-    JAVA_OPTS="$JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005 -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
+    JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 fi
 export JAVA_OPTS="$JAVA_OPTS -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:MaxTenuringThreshold=8 -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+ExplicitGCInvokesConcurrent -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xlog:gc*:file=$LOG_DIR/heap_trace.txt:time,uptime,level,tags -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/ -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -Djava.security.egd=file:/dev/./urandom -XX:+UseZGC"
 PATH_TO_JAR=$SERVICE_NAME".jar"
