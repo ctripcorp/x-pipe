@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver.model;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.tuple.Pair;

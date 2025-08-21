@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
 import com.google.common.collect.Sets;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

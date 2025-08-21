@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;

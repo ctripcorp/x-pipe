@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.lifecycle.Ordered;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.tuple.Pair;
 
 /**

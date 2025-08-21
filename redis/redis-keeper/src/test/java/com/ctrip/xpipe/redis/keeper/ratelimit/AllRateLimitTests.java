@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
-import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
+import com.ctrip.xpipe.redis.keeper.impl.fakeredis.FakeRedisRdbDumpLong;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;

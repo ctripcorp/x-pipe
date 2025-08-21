@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManager;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;

@@ -2,19 +2,17 @@ package com.ctrip.xpipe.redis.core.proxy.parser;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.ProxyContentParser;
-import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class TestForAbstractProxyProtocolParser extends AbstractTest {
 

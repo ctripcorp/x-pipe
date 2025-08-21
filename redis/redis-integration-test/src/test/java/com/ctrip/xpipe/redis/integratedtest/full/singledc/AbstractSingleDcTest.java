@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import org.junit.Assert;
 import org.junit.Before;
 
-import java.awt.*;
+import java.awt.IllegalComponentStateException;
 import java.util.List;
 
 

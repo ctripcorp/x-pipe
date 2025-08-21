@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;

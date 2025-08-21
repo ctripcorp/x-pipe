@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 public class CrdtSubscribeCommandTest extends AbstractTest {
 

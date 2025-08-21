@@ -5,17 +5,13 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.ClusterMigrationStatus;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.ClusterMigrationStatusV2;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationHistoryReq;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
-import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;

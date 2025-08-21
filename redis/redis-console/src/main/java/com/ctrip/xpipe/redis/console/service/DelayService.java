@@ -4,7 +4,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 
-import java.util.List;
 import java.util.Map;
 
 /**

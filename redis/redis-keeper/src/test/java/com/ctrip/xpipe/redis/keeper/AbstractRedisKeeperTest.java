@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneK
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;

@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MockMetricProxy;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;

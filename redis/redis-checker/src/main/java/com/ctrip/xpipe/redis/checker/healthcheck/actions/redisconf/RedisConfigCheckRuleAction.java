@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf;
 
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import org.slf4j.Logger;

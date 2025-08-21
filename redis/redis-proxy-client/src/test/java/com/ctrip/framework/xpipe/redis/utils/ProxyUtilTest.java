@@ -1,6 +1,5 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
 import org.junit.After;
 import org.junit.Assert;

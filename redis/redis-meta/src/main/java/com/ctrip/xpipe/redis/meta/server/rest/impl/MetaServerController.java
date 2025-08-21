@@ -1,14 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardCurrentMetaModel;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentOneWayShardMeta;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentShardKeeperMeta;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 import static com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
 

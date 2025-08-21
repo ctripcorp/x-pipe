@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderAware;
 import org.springframework.beans.factory.annotation.Autowired;

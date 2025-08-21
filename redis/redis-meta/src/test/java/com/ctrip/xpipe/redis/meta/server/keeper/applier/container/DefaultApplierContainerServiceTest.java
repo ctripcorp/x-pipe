@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.applier.container;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ApplierContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.ApplierTransMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import okhttp3.mockwebserver.MockResponse;

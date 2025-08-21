@@ -10,7 +10,10 @@ import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
 import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptor;
 import org.unidal.lookup.ContainerLoader;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

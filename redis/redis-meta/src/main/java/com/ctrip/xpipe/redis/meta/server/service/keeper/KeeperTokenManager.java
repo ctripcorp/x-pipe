@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.service.keeper;
 
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
-import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * @author chen.zhu

@@ -3,9 +3,6 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * @author wenchao.meng
  *

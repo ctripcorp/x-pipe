@@ -9,7 +9,6 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.pool2.PooledObject;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Field;

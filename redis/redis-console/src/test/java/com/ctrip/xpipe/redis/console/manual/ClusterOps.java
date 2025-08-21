@@ -7,10 +7,7 @@ import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
-
-import java.util.ArrayList;
 
 /**
  * @author wenchao.meng

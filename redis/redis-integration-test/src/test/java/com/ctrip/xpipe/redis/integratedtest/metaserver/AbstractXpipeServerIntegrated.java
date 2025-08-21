@@ -46,8 +46,6 @@ import static com.ctrip.xpipe.foundation.DefaultFoundationService.LOCAL_IP_KEY;
 import static com.ctrip.xpipe.redis.checker.cluster.AbstractCheckerLeaderElector.KEY_CHECKER_ID;
 import static com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean.*;
 import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_METASERVERS;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CHECKER;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 
 

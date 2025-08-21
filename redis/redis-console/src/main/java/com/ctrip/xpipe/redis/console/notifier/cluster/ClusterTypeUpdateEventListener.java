@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;

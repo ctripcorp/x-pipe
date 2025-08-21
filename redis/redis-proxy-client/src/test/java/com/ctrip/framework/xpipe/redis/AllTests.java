@@ -6,7 +6,10 @@ import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdapt
 import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyConnectProtocolTest;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddressTest;
 import com.ctrip.framework.xpipe.redis.proxy.RouteOptionParserTest;
-import com.ctrip.framework.xpipe.redis.utils.*;
+import com.ctrip.framework.xpipe.redis.utils.ConnectionUtilTest;
+import com.ctrip.framework.xpipe.redis.utils.JarFileUrlJarTest;
+import com.ctrip.framework.xpipe.redis.utils.JdkVersionTest;
+import com.ctrip.framework.xpipe.redis.utils.ProxyUtilTest;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

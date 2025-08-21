@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.leader;
 
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;

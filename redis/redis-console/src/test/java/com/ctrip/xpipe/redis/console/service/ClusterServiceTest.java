@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
-import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
 import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
 import org.junit.Before;
 import org.junit.Test;

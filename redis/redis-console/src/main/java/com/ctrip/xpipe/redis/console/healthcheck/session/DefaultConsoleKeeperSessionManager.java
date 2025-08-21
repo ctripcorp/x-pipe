@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console.healthcheck.session;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;

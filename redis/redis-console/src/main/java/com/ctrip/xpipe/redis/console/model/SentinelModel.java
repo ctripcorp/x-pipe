@@ -4,7 +4,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;

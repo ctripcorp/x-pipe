@@ -4,7 +4,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
-import com.ctrip.xpipe.redis.checker.alert.message.forward.ForwardAlertService;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;

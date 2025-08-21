@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
-import static com.ctrip.xpipe.cluster.ClusterType.SINGLE_DC;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RedisMsgCollectorTest {

@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.service.keeper;
 
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.MetaServerLeaderAware;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

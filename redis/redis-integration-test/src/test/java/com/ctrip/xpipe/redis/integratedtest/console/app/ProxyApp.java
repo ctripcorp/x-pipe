@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
-import org.springframework.boot.SpringApplication;
 
 public class ProxyApp {
     public static void main(String[] args) throws Exception {

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;

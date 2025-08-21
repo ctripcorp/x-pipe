@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.core;
 
 import com.ctrip.xpipe.redis.core.entity.DiskIOStatInfoTest;
 import com.ctrip.xpipe.redis.core.meta.*;
-import com.ctrip.xpipe.redis.core.meta.comparator.*;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparatorTest;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparatorTest;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparatorTest;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceTest;

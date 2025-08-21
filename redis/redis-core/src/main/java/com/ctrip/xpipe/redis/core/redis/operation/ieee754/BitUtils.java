@@ -23,12 +23,7 @@
  */
 package com.ctrip.xpipe.redis.core.redis.operation.ieee754;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
 
 public final class BitUtils {
     private BitUtils() {

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.server;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Sync;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGenerator;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
@@ -12,13 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import static com.ctrip.xpipe.redis.core.protocal.Sync.SIDNO_SEPARATOR;
 
 /**
  * @author hailu

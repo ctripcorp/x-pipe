@@ -4,8 +4,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * @author lishanglin
  * date 2021/1/18

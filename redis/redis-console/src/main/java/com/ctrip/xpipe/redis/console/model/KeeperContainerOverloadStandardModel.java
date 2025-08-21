@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import java.util.List;
-
 public class KeeperContainerOverloadStandardModel {
 
     private long peerDataOverload;

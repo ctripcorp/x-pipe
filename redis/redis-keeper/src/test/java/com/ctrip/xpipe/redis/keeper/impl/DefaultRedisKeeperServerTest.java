@@ -21,7 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
+import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.REDIS_REPL_WAIT_SEQ_FSYNC;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

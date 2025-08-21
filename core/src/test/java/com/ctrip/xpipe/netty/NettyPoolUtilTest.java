@@ -3,13 +3,9 @@ package com.ctrip.xpipe.netty;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.TcpPortCheck;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Test;
 

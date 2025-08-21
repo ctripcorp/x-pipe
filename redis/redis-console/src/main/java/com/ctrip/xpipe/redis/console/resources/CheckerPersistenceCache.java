@@ -8,7 +8,10 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import org.springframework.web.client.RestClientException;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CheckerPersistenceCache extends AbstractPersistenceCache {

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
 import com.ctrip.xpipe.redis.console.model.AzInfoModel;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Map;

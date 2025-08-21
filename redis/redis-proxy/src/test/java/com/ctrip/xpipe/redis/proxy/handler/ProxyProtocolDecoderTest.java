@@ -11,10 +11,7 @@ import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.concurrent.TimeoutException;
 
 public class ProxyProtocolDecoderTest extends AbstractProxyIntegrationTest {
 

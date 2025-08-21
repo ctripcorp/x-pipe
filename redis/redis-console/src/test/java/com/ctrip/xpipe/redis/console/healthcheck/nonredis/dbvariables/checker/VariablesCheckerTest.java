@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import org.junit.Before;
 import org.junit.Test;

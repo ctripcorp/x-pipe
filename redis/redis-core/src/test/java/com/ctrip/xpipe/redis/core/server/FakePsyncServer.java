@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.server;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;

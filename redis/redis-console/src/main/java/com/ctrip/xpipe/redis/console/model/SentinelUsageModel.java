@@ -2,9 +2,7 @@ package com.ctrip.xpipe.redis.console.model;
 
 import com.google.common.collect.Maps;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

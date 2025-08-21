@@ -1,14 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
-import com.ctrip.xpipe.utils.StringUtil;
-
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;

@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
-import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
@@ -16,7 +15,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

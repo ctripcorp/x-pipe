@@ -4,15 +4,10 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
-import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
-import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 
 public class InstanceHealthCheckGetGroupCommand extends AbstractCommand<Map<HostPort, String>> {
 

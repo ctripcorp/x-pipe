@@ -6,7 +6,6 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
-import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.buffer.ByteBuf;

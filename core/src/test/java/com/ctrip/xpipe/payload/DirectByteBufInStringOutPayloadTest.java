@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.CountDownLatch;
 
 public class DirectByteBufInStringOutPayloadTest extends AbstractTest {

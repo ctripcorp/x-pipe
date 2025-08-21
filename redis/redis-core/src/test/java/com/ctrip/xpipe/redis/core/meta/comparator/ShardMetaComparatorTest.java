@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import org.junit.Assert;
 import org.junit.Before;

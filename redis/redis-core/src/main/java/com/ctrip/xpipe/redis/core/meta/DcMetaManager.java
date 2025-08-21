@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**

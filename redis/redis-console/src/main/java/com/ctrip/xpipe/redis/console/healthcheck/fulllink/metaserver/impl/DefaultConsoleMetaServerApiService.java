@@ -10,8 +10,6 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 @Component
 public class DefaultConsoleMetaServerApiService extends AbstractService implements ConsoleMetaServerApiService {
 

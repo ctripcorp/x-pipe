@@ -4,7 +4,6 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParser;
 import io.netty.buffer.Unpooled;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.proxy.parser.monitor;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyReqResOptionParser;
-import io.netty.channel.Channel;
 
 /**
  * @author chen.zhu

@@ -18,7 +18,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.when;
 
 /**
  * @author lishanglin

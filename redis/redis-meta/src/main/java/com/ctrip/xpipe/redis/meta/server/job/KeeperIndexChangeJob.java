@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.*;
+import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetIndexCommand;
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
 /**

@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.applier.threshold;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSleepCommand;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 /**
  * @author Slight

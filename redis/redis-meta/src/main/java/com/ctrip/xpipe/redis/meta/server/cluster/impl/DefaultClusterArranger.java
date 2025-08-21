@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;

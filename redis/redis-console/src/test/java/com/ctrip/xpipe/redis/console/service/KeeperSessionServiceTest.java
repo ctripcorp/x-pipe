@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.session.KeeperConsoleSessionMan
 import com.ctrip.xpipe.redis.console.service.impl.KeeperSessionServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;

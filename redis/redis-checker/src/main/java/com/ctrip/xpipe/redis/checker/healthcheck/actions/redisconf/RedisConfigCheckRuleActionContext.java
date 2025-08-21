@@ -3,8 +3,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 
-import java.util.Map;
-
 public class RedisConfigCheckRuleActionContext extends AbstractActionContext<String, RedisHealthCheckInstance> {
 
     private RedisCheckRule redisCheckRule;

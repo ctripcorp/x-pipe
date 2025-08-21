@@ -2,7 +2,6 @@ package com.ctrip.xpipe.netty.commands;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.pool.ChannelHandlerFactory;
 import com.ctrip.xpipe.pool.DefaultChannelHandlerFactory;
 import com.ctrip.xpipe.utils.FastThreadLocalThreadFactory;
@@ -11,7 +10,6 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.logging.LoggingHandler;
 import org.apache.commons.pool2.KeyedPooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
