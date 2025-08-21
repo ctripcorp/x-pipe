@@ -91,6 +91,9 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @InstanceDependency
     public AtomicReference<String> replId;
 
+    @InstanceDependency
+    public AtomicReference<String> replProto;
+
     public final int listeningPort;
 
     public final ClusterId clusterId;
@@ -215,6 +218,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
         execGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
         rdbParser = new DefaultRdbParser();
         protoChanged = new AtomicBoolean(false);
+        replProto = new AtomicReference<>();
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,

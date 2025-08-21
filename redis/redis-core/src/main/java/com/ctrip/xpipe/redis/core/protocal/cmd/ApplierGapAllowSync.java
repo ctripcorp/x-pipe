@@ -68,7 +68,7 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
 
     @Override
     public SyncRequest getSyncRequest() {
-        if(replProto == null || replProto.get() == null || StringUtil.trimEquals(replProto.get(), PSYNC)) {
+        if(replProto.get() == null || StringUtil.trimEquals(replProto.get(), PSYNC)) {
             return getPsyncRequest();
         } else {
             return getXsyncRequest();

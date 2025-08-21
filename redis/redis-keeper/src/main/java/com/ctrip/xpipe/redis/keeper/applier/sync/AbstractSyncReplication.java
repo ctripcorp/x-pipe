@@ -46,9 +46,6 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     @InstanceDependency
     public RdbParser<?> rdbParser;
 
-    @InstanceDependency
-    public AtomicBoolean protoChanged;
-
     protected ApplierServer applierServer;
 
     protected Endpoint endpoint;

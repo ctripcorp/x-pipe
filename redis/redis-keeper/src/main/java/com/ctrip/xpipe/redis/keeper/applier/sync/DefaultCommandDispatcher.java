@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -18,8 +17,6 @@ import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
-import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -74,9 +71,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<String> replId;
 
-    @VisibleForTesting
-    Set<String> receivedSids;
-
     private RedisClientProtocol<Object[]> protocolParser = new ArrayParser();
 
     // in order to aggregate the entire transaction into one command
@@ -90,14 +84,11 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     public DefaultCommandDispatcher() {
 
-        this.receivedSids = new HashSet<>();
-
         this.transactionCommand = new AtomicReference<>();
     }
 
     @VisibleForTesting
     void resetState() {
-        this.receivedSids = new HashSet<>();
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
         this.transactionCommand.set(null);
         this.execGtidSet.set(new GtidSet(GtidSet.EMPTY_GTIDSET));
@@ -166,10 +157,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             Object[] payload = protocol.getPayload();
             RedisOp redisOp = parser.parse(payload);
             String gtid = redisOp.getOpGtid();
-            doOnRedisOp(redisOp, mergeBuf.readerIndex() - pre);
-            if(!StringUtil.isEmpty(gtid)) {
-                execGtidSet.get().add(gtid);
-            }
+            doOnRedisOp(redisOp, mergeBuf.readerIndex() - pre, gtid);
             this.protocolParser.reset();
             byteBuf.skipBytes(byteBuf.readableBytes());
         }
@@ -212,65 +200,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
     }
 
-    private class GtidCompensateJob implements Runnable {
-
-        private final String sourceId;
-
-        private final long last;
-
-        private final long current;
-
-        public GtidCompensateJob(String sourceId, long last, long current) {
-            this.sourceId = sourceId;
-            this.last = last;
-            this.current = current;
-        }
-
-        @Override
-        public void run() {
-            logger.debug("[updateGtidState] add leap gtid {}:{}-{} to gtid_executed {}", sourceId, last + 1, current - 1, execGtidSet.get());
-            execGtidSet.get().compensate(sourceId, last + 1, current - 1);
-        }
-    }
-
-    public boolean /* skip? */ updateGtidState(String gtid) {
-
-        if (null == gtid) {
-            return false;
-        }
-
-        Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
-
-        if (receivedSids.add(parsed.getKey())) {
-            //sid first received
-            execGtidSet.get().rise(gtid);
-
-            stateThread.execute(new GtidRiseJob(gtid));
-        } else {
-            //sid already received, transactionId may leap
-            long last = execGtidSet.get().rise(gtid);
-            long current = parsed.getValue();
-            if (current <= last) {
-                //gtid under low watermark
-                return true;
-            }
-            if (current - last > 10000) {
-                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}", last, current, gtid, execGtidSet.toString());
-            }
-            if (current > last + 1) {
-                stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
-            }
-        }
-
-        try {
-            gtidDistanceThreshold.get().tryPass(execGtidSet.get().lwmSum());
-        } catch (InterruptedException interrupted) {
-            logger.info("[updateGtidState] gtidDistanceThreshold.tryPass() interrupted, probably quit.");
-            throw new XpipeRuntimeException("gtidDistanceThreshold.tryPass() interrupted, probably quit", interrupted);
-        }
-        return false;
-    }
-
     protected int toInt(byte[] value) {
         int rt = 0;
         for (byte b : value) {
@@ -281,22 +210,24 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return rt;
     }
 
-    private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate) {
+    private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate, String gtid) {
         transactionCommand.set(new TransactionCommand());
-        transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate);
+        transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate, gtid);
     }
 
-    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate) {
-        transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate);
+    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate, String gtid) {
+        transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate, gtid);
         TransactionCommand command = transactionCommand.getAndSet(null);
-        sequenceController.submit(command, command.commandOffset());
+        sequenceController.submit(command, command.commandOffset(), command.getGtidSet());
     }
 
-    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand, long commandOffsetToAccumulate) {
+    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand, long commandOffsetToAccumulate, String gtid) {
         if (transactionCommand.get() != null) {
-            transactionCommand.get().addTransactionCommands(redisOpCommand, commandOffsetToAccumulate);
+            transactionCommand.get().addTransactionCommands(redisOpCommand, commandOffsetToAccumulate, gtid);
         } else {
-            sequenceController.submit(redisOpCommand, commandOffsetToAccumulate);
+            GtidSet gtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+            gtidSet.add(gtid);
+            sequenceController.submit(redisOpCommand, commandOffsetToAccumulate, gtidSet);
         }
     }
 
@@ -336,7 +267,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return redisOp.getOpType().name();
     }
 
-    private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
+    private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate, String gtid) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
         redisOp.clearGtid();
@@ -361,19 +292,21 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         if (RedisOpType.MULTI.equals(redisOp.getOpType())) {
-            addTransactionStart(new DefaultMultiCommand(client, redisOp), commandOffsetToAccumulate);
+            addTransactionStart(new DefaultMultiCommand(client, redisOp), commandOffsetToAccumulate, gtid);
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
-            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate);
+            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate, gtid);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads),
+                    commandOffsetToAccumulate, gtid);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber),
+                    commandOffsetToAccumulate, gtid);
         }
     }
 
     @Override
     public void onRedisOp(RedisOp redisOp) {
-        doOnRedisOp(redisOp, 0);
+        doOnRedisOp(redisOp, 0, null);
     }
 
     @Override

@@ -28,7 +28,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultCommandDispatcherTest.class,
         AbstractInstanceNodeTest.class,
         DefaultApplierServerTest.class,
-
+        SequenceControllerToFakeXsyncServerTest.class,
+        DefaultApplierServerTest.class,
+        ApplierServerToFakeXsyncServerTest.class,
         TransactionCommandTest.class,
 })
 public class AllApplierTests {

@@ -37,44 +37,6 @@ public class DefaultCommandDispatcherTest {
     }
 
     @Test
-    public void testSkip() {
-
-        dispatcher.updateGtidState("A:5");
-        assertTrue(dispatcher.receivedSids.contains("A"));
-
-        assertTrue(dispatcher.updateGtidState("A:5"));
-        assertTrue(dispatcher.updateGtidState("A:3"));
-        assertFalse(dispatcher.updateGtidState("A:6"));
-    }
-
-    @Test
-    public void testFirstReceived() {
-
-        assertFalse(dispatcher.receivedSids.contains("A"));
-        assertFalse(dispatcher.receivedSids.contains("B"));
-
-        dispatcher.updateGtidState("A:5");
-        assertTrue(dispatcher.receivedSids.contains("A"));
-
-        dispatcher.updateGtidState("B:10");
-        assertTrue(dispatcher.receivedSids.contains("B"));
-    }
-
-    @Test
-    public void testLeap() {
-
-        assertFalse(dispatcher.receivedSids.contains("A"));
-
-        dispatcher.updateGtidState("A:5");
-        assertTrue(dispatcher.receivedSids.contains("A"));
-
-        dispatcher.updateGtidState("A:7");
-
-        dispatcher.updateGtidState("A:9");
-
-    }
-
-    @Test
     public void toInt() {
         for (int i = 0; i < 257; i++) {
 

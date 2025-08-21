@@ -131,6 +131,6 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         RedisOp redisOp = parser.parse(rawCmdArgs);
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp, 0);
 
-        sequenceController.submit(command, 0);
+        sequenceController.submit(command, 0, new GtidSet(""));
     }
 }

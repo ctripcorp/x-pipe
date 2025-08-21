@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
@@ -78,9 +79,9 @@ public class DefaultApplierCommandTest extends AbstractTest {
         RedisOpDataCommand c3 = new DefaultDataCommand(client, newSetOp("SET", "K", "V14"), 0);
         RedisOpDataCommand c4 = new DefaultDataCommand(client, newSetOp("SET", "K", "V16"), 0);
 
-        controller.submit(c1, 0);
-        controller.submit(c2, 0);
-        controller.submit(c3, 0);
-        controller.submit(c4, 0);
+        controller.submit(c1, 0, new GtidSet(""));
+        controller.submit(c2, 0, new GtidSet(""));
+        controller.submit(c3, 0, new GtidSet(""));
+        controller.submit(c4, 0, new GtidSet(""));
     }
 }

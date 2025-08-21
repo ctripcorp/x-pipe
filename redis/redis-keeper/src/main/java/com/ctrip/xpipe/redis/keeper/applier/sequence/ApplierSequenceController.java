@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 
 /**
@@ -10,5 +11,5 @@ import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
  */
 public interface ApplierSequenceController extends Lifecycle {
 
-    void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate);
+    void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate, GtidSet gtidSet);
 }
